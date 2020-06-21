@@ -19,14 +19,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pirsch.SetStore(pirsch.NewPostgresStore(db))
+	// create a new tracker using postgres as its data store
+	tracker := pirsch.NewTracker(pirsch.NewPostgresStore(db))
+
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" { // don't track resources
-			go pirsch.SaveHit(r)
+		// don't track resources, just the main page in this demo
+		// in a real application we would split the handlers for pages and resource endpoints
+		// and only track the page handlers
+		if r.URL.Path == "/" {
+			tracker.Hit(r)
 		}
 
 		w.Write([]byte("<h1>Hello World!</h1>"))
 	}))
+
 	log.Println("starting server...")
 	http.ListenAndServe(":8080", nil)
 }

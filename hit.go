@@ -4,21 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
-)
-
-const (
-	hitsBufferSize      = 200
-	hitsBufferThreshold = 100 // save at 50% full
-	hitsBufferTimeout   = time.Second * 15
-)
-
-var (
-	m         sync.Mutex
-	hits      = make(chan Hit, hitsBufferSize)
-	lastSave  = time.Now()
-	saveTimer *time.Timer
 )
 
 // Hit represents a single data point/page view.
@@ -41,10 +27,8 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
-// SaveHit saves a request as a new data point.
-// It's recommended to call this function within its own goroutine.
-func SaveHit(r *http.Request) {
-	hits <- Hit{
+func hitFromRequest(r *http.Request) Hit {
+	return Hit{
 		Fingerprint: Fingerprint(r),
 		Path:        r.URL.Path,
 		Query:       r.URL.RawQuery,
@@ -54,32 +38,6 @@ func SaveHit(r *http.Request) {
 		Browser:     r.UserAgent(),
 		Ref:         r.Header.Get("Referer"),
 		Time:        time.Now(),
-	}
-	saveInStore()
-}
-
-func saveInStore() {
-	if len(hits) > hitsBufferSize-hitsBufferThreshold || (len(hits) > 0 && lastSave.Before(time.Now().Add(-hitsBufferTimeout))) {
-		m.Lock()
-		defer m.Unlock()
-		buffer := make([]Hit, 0, len(hits))
-
-		for i := 0; i < len(hits); i++ {
-			buffer = append(buffer, <-hits)
-		}
-
-		lastSave = time.Now()
-
-		if saveTimer != nil {
-			saveTimer.Stop()
-		}
-
-		saveTimer = nil
-		go store.Save(buffer)
-	} else if saveTimer == nil {
-		m.Lock()
-		defer m.Unlock()
-		saveTimer = time.AfterFunc(hitsBufferTimeout, saveInStore)
 	}
 }
 

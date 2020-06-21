@@ -1,22 +1,20 @@
 package pirsch
 
-var (
-	store Store
-)
+import "log"
 
-// Store defines an interface to store data.
+// Store defines an interface to persists hits.
 type Store interface {
 	// Save stores a batch of hits.
 	Save([]Hit)
 }
 
-// DefaultStore implements the Store interface and does nothing.
+// DefaultStore implements the Store interface and logs each request.
+// The main purpose for this is for testing, not for usage in a real application.
 type DefaultStore struct{}
 
-// Save does nothing.
-func (store *DefaultStore) Save(hits []Hit) {}
-
-// SetStore sets the store used to save data.
-func SetStore(s Store) {
-	store = s
+// Save logs the requests.
+func (store *DefaultStore) Save(hits []Hit) {
+	for _, hit := range hits {
+		log.Println(hit)
+	}
 }
