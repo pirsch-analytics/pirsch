@@ -2,11 +2,13 @@ package pirsch
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 )
 
 const (
-	postgresSaveQuery = `INSERT INTO "hit" (fingerprint, path, query, fragment, url, language, browser, ref, time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	postgresSaveQuery = `INSERT INTO "hit" (fingerprint, path, query, fragment, url, language, user_agent, ref, time) VALUES `
 )
 
 // PostgresStore implements the Store interface.
@@ -21,22 +23,29 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 
 // Save implements the Store interface.
 func (store *PostgresStore) Save(hits []Hit) {
-	// TODO batch insert
-	for _, hit := range hits {
-		_, err := store.DB.Exec(postgresSaveQuery,
-			hit.Fingerprint,
-			hit.Path,
-			hit.Query,
-			hit.Fragment,
-			hit.URL,
-			hit.Language,
-			hit.UserAgent,
-			hit.Ref,
-			hit.Time)
+	args := make([]interface{}, 0, len(hits)*9)
+	var query strings.Builder
+	query.WriteString(postgresSaveQuery)
 
-		if err != nil {
-			log.Printf("error saving hit: %s", err)
-			break
-		}
+	for i, hit := range hits {
+		args = append(args, hit.Fingerprint)
+		args = append(args, hit.Path)
+		args = append(args, hit.Query)
+		args = append(args, hit.Fragment)
+		args = append(args, hit.URL)
+		args = append(args, hit.Language)
+		args = append(args, hit.UserAgent)
+		args = append(args, hit.Ref)
+		args = append(args, hit.Time)
+		index := i * 9
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9))
+	}
+
+	queryStr := query.String()
+	_, err := store.DB.Exec(queryStr[:len(queryStr)-1], args...)
+
+	if err != nil {
+		log.Printf("error saving hits: %s", err)
 	}
 }
