@@ -30,6 +30,7 @@ type TrackerConfig struct {
 
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
+// In case of an error it will panic.
 type Tracker struct {
 	store            Store
 	hits             chan Hit
@@ -121,17 +122,25 @@ func (tracker *Tracker) aggregate() {
 			hits = append(hits, hit)
 
 			if len(hits) > tracker.workerBufferSize/2 {
-				tracker.store.Save(hits)
+				if err := tracker.store.Save(hits); err != nil {
+					panic(err)
+				}
+
 				hits = hits[:0]
 			}
 		case <-time.After(tracker.workerTimeout):
 			if len(hits) > 0 {
-				tracker.store.Save(hits)
+				if err := tracker.store.Save(hits); err != nil {
+					panic(err)
+				}
+
 				hits = hits[:0]
 			}
 		case <-tracker.flush:
 			if len(hits) > 0 {
-				tracker.store.Save(hits)
+				if err := tracker.store.Save(hits); err != nil {
+					panic(err)
+				}
 			}
 
 			// signal that we're done and close worker

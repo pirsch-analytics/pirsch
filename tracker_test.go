@@ -16,9 +16,50 @@ func newTestStore() *testStore {
 	return &testStore{make([]Hit, 0)}
 }
 
-func (store *testStore) Save(hits []Hit) {
+func (store *testStore) Save(hits []Hit) error {
 	log.Printf("Saved %d hits", len(hits))
 	store.hits = append(store.hits, hits...)
+	return nil
+}
+
+func (store *testStore) DeleteHitsByDay(t time.Time) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerDay(day *VisitorsPerDay) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerHour(hour *VisitorsPerHour) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerLanguage(language *VisitorsPerLanguage) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
+	panic("implement me")
+}
+
+func (store *testStore) Days() ([]time.Time, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerDay(t time.Time) (int, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerDayAndHour(t time.Time) ([]VisitorsPerHour, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerLanguage(t time.Time) ([]VisitorsPerLanguage, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerPage(t time.Time) ([]VisitorsPerPage, error) {
+	panic("implement me")
 }
 
 func TestTrackerHitTimeout(t *testing.T) {
