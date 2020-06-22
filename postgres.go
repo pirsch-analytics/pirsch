@@ -23,7 +23,7 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 
 // Save implements the Store interface.
 func (store *PostgresStore) Save(hits []Hit) {
-	args := make([]interface{}, 0, len(hits)*9)
+	args := make([]interface{}, 0, len(hits)*7)
 	var query strings.Builder
 	query.WriteString(postgresSaveQuery)
 
@@ -35,7 +35,7 @@ func (store *PostgresStore) Save(hits []Hit) {
 		args = append(args, hit.UserAgent)
 		args = append(args, hit.Ref)
 		args = append(args, hit.Time)
-		index := i * 9
+		index := i * 7
 		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
 			index+1, index+2, index+3, index+4, index+5, index+6, index+7))
 	}
