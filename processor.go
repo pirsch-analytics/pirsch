@@ -5,16 +5,19 @@ import (
 	"time"
 )
 
-// TODO docs
+// Processor processes hits to reduce them into meaningful statistics.
 type Processor struct {
 	store Store
 }
 
+// NewProcessor creates a new Processor for given Store.
 func NewProcessor(store Store) *Processor {
 	return &Processor{store}
 }
 
-func (processor *Processor) Analyze() {
+// Process processes all hits in database and deletes them afterwards.
+// It will panic in case of an error.
+func (processor *Processor) Process() {
 	days, err := processor.store.Days()
 	panicOnErr(err)
 
