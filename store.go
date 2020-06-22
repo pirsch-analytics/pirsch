@@ -2,14 +2,14 @@ package pirsch
 
 import "log"
 
-// Store defines an interface to persists hits.
+// Store defines an interface to persists hits and other data.
 type Store interface {
-	// Save stores a batch of hits.
+	// Save persists a list of hits.
 	Save([]Hit)
 }
 
 // DefaultStore implements the Store interface and logs each request.
-// The main purpose for this is for testing, not for usage in a real application.
+// The main purpose of this is testing, it is not intended for real world usage.
 type DefaultStore struct{}
 
 // Save logs the requests.

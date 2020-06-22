@@ -11,7 +11,7 @@ import (
 )
 
 // Fingerprint returns a hash for given request.
-// The hash is unique for the visitor, but not for the page.
+// The hash is unique for the visitor, not for the page.
 func Fingerprint(r *http.Request) string {
 	var sb strings.Builder
 	sb.WriteString(r.Header.Get("User-Agent"))

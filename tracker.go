@@ -3,6 +3,7 @@ package pirsch
 import (
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type Tracker struct {
 	hits  chan Hit
 }
 
+// NewTracker creates a new tracker for given store.
 func NewTracker(store Store) *Tracker {
 	ncpu := runtime.NumCPU()
 	tracker := &Tracker{
@@ -32,10 +34,32 @@ func NewTracker(store Store) *Tracker {
 	return tracker
 }
 
+// Hit stores the given request.
+// The request might be ignored if it meets certain conditions.
+// The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
 func (tracker *Tracker) Hit(r *http.Request) {
 	go func() {
-		tracker.hits <- hitFromRequest(r)
+		if !tracker.ignoreHit(r) {
+			tracker.hits <- hitFromRequest(r)
+		}
 	}()
+}
+
+func (tracker *Tracker) ignoreHit(r *http.Request) bool {
+	if r.Header.Get("X-Moz") == "prefetch" || // ignore bowser prefetching data
+		r.Header.Get("X-Purpose") == "prefetch" ||
+		r.Header.Get("X-Purpose") == "preview" ||
+		r.Header.Get("Purpose") == "prefetch" ||
+		r.Header.Get("Purpose") == "preview" {
+		return true
+	}
+
+	userAgent := strings.ToLower(r.Header.Get("User-Agent"))
+
+	return strings.Contains(userAgent, "bot") || // words often used in bot names
+		strings.Contains(userAgent, "crawler") ||
+		strings.Contains(userAgent, "spider") ||
+		strings.Contains(userAgent, "://") // URLs
 }
 
 func (tracker *Tracker) aggregate() {

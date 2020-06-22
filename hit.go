@@ -16,7 +16,7 @@ type Hit struct {
 	Fragment    string    `db:"fragment" json:"fragment,omitempty"`
 	URL         string    `db:"url" json:"url,omitempty"`
 	Language    string    `db:"language" json:"language,omitempty"`
-	Browser     string    `db:"browser" json:"browser,omitempty"`
+	UserAgent   string    `db:"user_agent" json:"user_agent,omitempty"`
 	Ref         string    `db:"ref" json:"ref,omitempty"`
 	Time        time.Time `db:"time" json:"time"`
 }
@@ -35,7 +35,7 @@ func hitFromRequest(r *http.Request) Hit {
 		Fragment:    r.URL.Fragment,
 		URL:         r.URL.String(),
 		Language:    getLanguage(r),
-		Browser:     r.UserAgent(),
+		UserAgent:   r.UserAgent(),
 		Ref:         r.Header.Get("Referer"),
 		Time:        time.Now(),
 	}
