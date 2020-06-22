@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	postgresSaveQuery = `INSERT INTO "hit" (fingerprint, path, query, fragment, url, language, user_agent, ref, time) VALUES `
+	postgresSaveQuery = `INSERT INTO "hit" (fingerprint, path, url, language, user_agent, ref, time) VALUES `
 )
 
 // PostgresStore implements the Store interface.
@@ -30,16 +30,14 @@ func (store *PostgresStore) Save(hits []Hit) {
 	for i, hit := range hits {
 		args = append(args, hit.Fingerprint)
 		args = append(args, hit.Path)
-		args = append(args, hit.Query)
-		args = append(args, hit.Fragment)
 		args = append(args, hit.URL)
 		args = append(args, hit.Language)
 		args = append(args, hit.UserAgent)
 		args = append(args, hit.Ref)
 		args = append(args, hit.Time)
 		index := i * 9
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9))
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7))
 	}
 
 	queryStr := query.String()

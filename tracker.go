@@ -8,26 +8,68 @@ import (
 )
 
 const (
-	workerBufferSize = 100
-	workerTimeout    = time.Second * 10
+	defaultWorkerBufferSize = 100
+	defaultWorkerTimeout    = time.Second * 10
 )
+
+// TrackerConfig is the optional configuration for the Tracker.
+type TrackerConfig struct {
+	// Worker sets the number of workers that are used to store hits.
+	// Must be greater or equal to 1.
+	Worker int
+
+	// WorkerBufferSize is the size of the buffer used to store hits.
+	// Must be greater or equal to 2. The hits are stored when the buffer size reaches half of its maximum.
+	WorkerBufferSize int
+
+	// WorkerTimeout sets the timeout used to store hits.
+	// This is used to allow the workers to store hits even if the buffer is not full.
+	// It's recommended to set this to a few seconds.
+	WorkerTimeout time.Duration
+}
 
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
 type Tracker struct {
-	store Store
-	hits  chan Hit
+	store            Store
+	hits             chan Hit
+	flush            chan bool
+	worker           int
+	workerBufferSize int
+	workerTimeout    time.Duration
 }
 
-// NewTracker creates a new tracker for given store.
-func NewTracker(store Store) *Tracker {
-	ncpu := runtime.NumCPU()
-	tracker := &Tracker{
-		store: store,
-		hits:  make(chan Hit, ncpu*workerBufferSize),
+// NewTracker creates a new tracker for given store and config.
+// Pass nil for the config to use the defaults.
+func NewTracker(store Store, config *TrackerConfig) *Tracker {
+	worker := runtime.NumCPU()
+	bufferSize := defaultWorkerBufferSize
+	timeout := defaultWorkerTimeout
+
+	if config != nil {
+		if config.Worker > 0 {
+			worker = config.Worker
+		}
+
+		if config.WorkerBufferSize > 1 {
+			bufferSize = config.WorkerBufferSize
+		}
+
+		if config.WorkerTimeout > 0 {
+			timeout = config.WorkerTimeout
+		}
 	}
 
-	for i := 0; i < ncpu; i++ {
+	tracker := &Tracker{
+		store:            store,
+		hits:             make(chan Hit, worker*bufferSize),
+		flush:            make(chan bool),
+		worker:           worker,
+		workerBufferSize: bufferSize,
+		workerTimeout:    timeout,
+	}
+
+	for i := 0; i < worker; i++ {
 		go tracker.aggregate()
 	}
 
@@ -43,6 +85,14 @@ func (tracker *Tracker) Hit(r *http.Request) {
 			tracker.hits <- hitFromRequest(r)
 		}
 	}()
+}
+
+// Flush flushes all hits to store and stops recording hits.
+func (tracker *Tracker) Flush() {
+	for i := 0; i < tracker.worker; i++ {
+		tracker.flush <- true
+		<-tracker.flush
+	}
 }
 
 func (tracker *Tracker) ignoreHit(r *http.Request) bool {
@@ -63,22 +113,30 @@ func (tracker *Tracker) ignoreHit(r *http.Request) bool {
 }
 
 func (tracker *Tracker) aggregate() {
-	hits := make([]Hit, 0, workerBufferSize)
+	hits := make([]Hit, 0, tracker.workerBufferSize)
 
 	for {
 		select {
 		case hit := <-tracker.hits:
 			hits = append(hits, hit)
 
-			if len(hits) > workerBufferSize/2 {
+			if len(hits) > tracker.workerBufferSize/2 {
 				tracker.store.Save(hits)
 				hits = hits[:0]
 			}
-		case <-time.After(workerTimeout):
+		case <-time.After(tracker.workerTimeout):
 			if len(hits) > 0 {
 				tracker.store.Save(hits)
 				hits = hits[:0]
 			}
+		case <-tracker.flush:
+			if len(hits) > 0 {
+				tracker.store.Save(hits)
+			}
+
+			// signal that we're done and close worker
+			tracker.flush <- true
+			break
 		}
 	}
 }

@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// create a new tracker using postgres as its data store
-	tracker := pirsch.NewTracker(pirsch.NewPostgresStore(db))
+	tracker := pirsch.NewTracker(pirsch.NewPostgresStore(db), nil)
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// don't track resources, just the main page in this demo

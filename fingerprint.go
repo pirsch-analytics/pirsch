@@ -33,11 +33,7 @@ func getIP(r *http.Request) string {
 	if forwarded != "" {
 		// we are just interested in the first one
 		ips := strings.Split(forwarded, ",")
-		host, _, err := net.SplitHostPort(ips[0])
-
-		if err == nil {
-			return host
-		}
+		return ips[0]
 	}
 
 	host, _, err := net.SplitHostPort(r.RemoteAddr)

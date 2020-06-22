@@ -2,8 +2,6 @@ CREATE TABLE "hit" (
     id bigint NOT NULL UNIQUE,
     fingerprint varchar(32) NOT NULL,
     path varchar(2000),
-    query varchar(2000),
-    fragment varchar(200),
     url varchar(2000),
     language varchar(10),
     user_agent varchar(200),
