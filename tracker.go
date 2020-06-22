@@ -122,25 +122,17 @@ func (tracker *Tracker) aggregate() {
 			hits = append(hits, hit)
 
 			if len(hits) > tracker.workerBufferSize/2 {
-				if err := tracker.store.Save(hits); err != nil {
-					panic(err)
-				}
-
+				panicOnErr(tracker.store.Save(hits))
 				hits = hits[:0]
 			}
 		case <-time.After(tracker.workerTimeout):
 			if len(hits) > 0 {
-				if err := tracker.store.Save(hits); err != nil {
-					panic(err)
-				}
-
+				panicOnErr(tracker.store.Save(hits))
 				hits = hits[:0]
 			}
 		case <-tracker.flush:
 			if len(hits) > 0 {
-				if err := tracker.store.Save(hits); err != nil {
-					panic(err)
-				}
+				panicOnErr(tracker.store.Save(hits))
 			}
 
 			// signal that we're done and close worker

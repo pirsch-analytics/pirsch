@@ -16,33 +16,33 @@ func NewProcessor(store Store) *Processor {
 
 func (processor *Processor) Analyze() {
 	days, err := processor.store.Days()
-	processor.panicOnErr(err)
+	panicOnErr(err)
 
 	for _, day := range days {
 		var wg sync.WaitGroup
 		wg.Add(5)
 		go func() {
-			processor.panicOnErr(processor.visitorCount(day))
+			panicOnErr(processor.visitorCount(day))
 			wg.Done()
 		}()
 		go func() {
-			processor.panicOnErr(processor.visitorCountHour(day))
+			panicOnErr(processor.visitorCountHour(day))
 			wg.Done()
 		}()
 		go func() {
-			processor.panicOnErr(processor.languageCount(day))
+			panicOnErr(processor.languageCount(day))
 			wg.Done()
 		}()
 		go func() {
-			processor.panicOnErr(processor.pageViews(day))
+			panicOnErr(processor.pageViews(day))
 			wg.Done()
 		}()
 		go func() {
-			processor.panicOnErr(processor.visitorPageFlow(day))
+			panicOnErr(processor.visitorPageFlow(day))
 			wg.Done()
 		}()
 		wg.Wait()
-		processor.panicOnErr(processor.store.DeleteHitsByDay(day))
+		panicOnErr(processor.store.DeleteHitsByDay(day))
 	}
 }
 
@@ -110,10 +110,4 @@ func (processor *Processor) pageViews(day time.Time) error {
 func (processor *Processor) visitorPageFlow(day time.Time) error {
 	// TODO
 	return nil
-}
-
-func (processor *Processor) panicOnErr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
