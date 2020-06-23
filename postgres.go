@@ -112,9 +112,10 @@ func (store *PostgresStore) Days() ([]time.Time, error) {
 }
 
 func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1::timestamp AND time < $1::timestamp + INTERVAL '1 day'`
 	var visitors int
 
-	if err := store.DB.Get(&visitors, `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1::timestamp AND time < $1::timestamp + INTERVAL '1 day'`, day); err != nil {
+	if err := store.DB.Get(&visitors, query, day); err != nil {
 		return 0, err
 	}
 

@@ -70,8 +70,10 @@ func (processor *Processor) visitorCountHour(day time.Time) error {
 	}
 
 	for _, visitors := range visitors {
-		if err := processor.store.SaveVisitorsPerHour(&visitors); err != nil {
-			return err
+		if visitors.Visitors > 0 {
+			if err := processor.store.SaveVisitorsPerHour(&visitors); err != nil {
+				return err
+			}
 		}
 	}
 
