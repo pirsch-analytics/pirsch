@@ -19,8 +19,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// create a new tracker using postgres as its data store
-	tracker := pirsch.NewTracker(pirsch.NewPostgresStore(db), nil)
+	// create a new tracker and processor using postgres as its data store
+	store := pirsch.NewPostgresStore(db)
+	tracker := pirsch.NewTracker(store, nil)
+	processor := pirsch.NewProcessor(store)
+	pirsch.RunAtMidnight(processor.Process)
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// don't track resources, just the main page in this demo
