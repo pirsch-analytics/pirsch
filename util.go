@@ -6,7 +6,8 @@ import "time"
 func RunAtMidnight(f func()) {
 	go func() {
 		for {
-			time.AfterFunc(timeToMidnight(), f)
+			<-time.After(timeToMidnight())
+			f()
 		}
 	}()
 }
