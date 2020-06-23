@@ -3,6 +3,7 @@ package pirsch
 import (
 	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"strings"
 	"time"
 )
@@ -13,12 +14,12 @@ const (
 
 // PostgresStore implements the Store interface.
 type PostgresStore struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 // NewPostgresStore creates a new postgres storage for given database connection.
 func NewPostgresStore(db *sql.DB) *PostgresStore {
-	return &PostgresStore{db}
+	return &PostgresStore{sqlx.NewDb(db, "postgres")}
 }
 
 // Save implements the Store interface.
@@ -61,7 +62,7 @@ func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 }
 
 func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
-	_, err := store.DB.Exec(`INSERT INTO "visitors_per_day" (day, visitors) VALUES ($1, $2)`, visitors.Day, visitors.Visitors)
+	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
 
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
 }
 
 func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error {
-	_, err := store.DB.Exec(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES ($1, $2)`, visitors.DayAndHour, visitors.Visitors)
+	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
 
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error
 }
 
 func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguage) error {
-	_, err := store.DB.Exec(`INSERT INTO "visitor_per_language" (day, language, visitors) VALUES ($1, $2, $3)`, visitors.Day, visitors.Language, visitors.Visitors)
+	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
 
 	if err != nil {
 		return err
@@ -91,7 +92,7 @@ func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguag
 }
 
 func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error {
-	_, err := store.DB.Exec(`INSERT INTO "visitor_per_page" (day, path, visitors) VALUES ($1, $2, $3)`, visitors.Day, visitors.Path, visitors.Visitors)
+	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
 
 	if err != nil {
 		return err
@@ -101,33 +102,19 @@ func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error
 }
 
 func (store *PostgresStore) Days() ([]time.Time, error) {
-	rows, err := store.DB.Query(`SELECT DISTINCT date(time) FROM "hit"`)
+	var days []time.Time
 
-	if err != nil {
+	if err := store.DB.Select(&days, `SELECT DISTINCT date(time) FROM "hit"`); err != nil {
 		return nil, err
-	}
-
-	defer rows.Close()
-	days := make([]time.Time, 0)
-
-	for rows.Next() {
-		var day time.Time
-
-		if err := rows.Scan(&day); err != nil {
-			return nil, err
-		}
-
-		days = append(days, day)
 	}
 
 	return days, nil
 }
 
 func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
-	row := store.DB.QueryRow(`SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1 AND time < $1 + INTERVAL '1 day'`, day)
 	var visitors int
 
-	if err := row.Scan(&visitors); err != nil && err != sql.ErrNoRows {
+	if err := store.DB.Get(&visitors, `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1::timestamp AND time < $1::timestamp + INTERVAL '1 day'`, day); err != nil {
 		return 0, err
 	}
 
@@ -135,88 +122,52 @@ func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
 }
 
 func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerHour, error) {
-	rows, err := store.DB.Query(`SELECT "day_and_hour", (
+	query := `SELECT "day_and_hour", (
 			SELECT count(DISTINCT fingerprint) FROM "hit"
 			WHERE time >= "day_and_hour"
 			AND time < "day_and_hour" + INTERVAL '1 hour'
 		) "visitors"
 		FROM (
 			SELECT * FROM generate_series(
-				$1,
-				$1 + INTERVAL '23 hours',
+				$1::timestamp,
+				$1::timestamp + INTERVAL '23 hours',
 				interval '1 hour'
 			) "day_and_hour"
-		) AS hours`, day)
+		) AS hours`
+	var visitors []VisitorsPerHour
 
-	if err != nil {
+	if err := store.DB.Select(&visitors, query, day); err != nil {
 		return nil, err
-	}
-
-	defer rows.Close()
-	visitors := make([]VisitorsPerHour, 0)
-
-	for rows.Next() {
-		var visitor VisitorsPerHour
-
-		if err := rows.Scan(&visitor.DayAndHour, &visitor.Visitors); err != nil {
-			return nil, err
-		}
-
-		visitors = append(visitors, visitor)
 	}
 
 	return visitors, nil
 }
 
 func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLanguage, error) {
-	rows, err := store.DB.Query(`SELECT $1 "day", "language", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT $1::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
 		FROM hit
-		WHERE time >= $1
-		AND time < $1 + INTERVAL '1 day'
-		GROUP BY "language"`, day)
+		WHERE time >= $1::timestamp
+		AND time < $1::timestamp + INTERVAL '1 day'
+		GROUP BY "language"`
+	var visitors []VisitorsPerLanguage
 
-	if err != nil {
+	if err := store.DB.Select(&visitors, query, day); err != nil {
 		return nil, err
-	}
-
-	defer rows.Close()
-	visitors := make([]VisitorsPerLanguage, 0)
-
-	for rows.Next() {
-		var visitor VisitorsPerLanguage
-
-		if err := rows.Scan(&visitor.Day, &visitor.Language, &visitor.Visitors); err != nil {
-			return nil, err
-		}
-
-		visitors = append(visitors, visitor)
 	}
 
 	return visitors, nil
 }
 
 func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, error) {
-	rows, err := store.DB.Query(`SELECT $1 "day", "path", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT $1::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
 		FROM hit
-		WHERE time >= $1
-		AND time < $1 + INTERVAL '1 day'
-		GROUP BY "path"`, day)
+		WHERE time >= $1::timestamp
+		AND time < $1::timestamp + INTERVAL '1 day'
+		GROUP BY "path"`
+	var visitors []VisitorsPerPage
 
-	if err != nil {
+	if err := store.DB.Select(&visitors, query, day); err != nil {
 		return nil, err
-	}
-
-	defer rows.Close()
-	visitors := make([]VisitorsPerPage, 0)
-
-	for rows.Next() {
-		var visitor VisitorsPerPage
-
-		if err := rows.Scan(&visitor.Day, &visitor.Path, &visitor.Visitors); err != nil {
-			return nil, err
-		}
-
-		visitors = append(visitors, visitor)
 	}
 
 	return visitors, nil
