@@ -23,7 +23,7 @@ func (processor *Processor) Process() {
 
 	for _, day := range days {
 		var wg sync.WaitGroup
-		wg.Add(5)
+		wg.Add(4)
 		go func() {
 			panicOnErr(processor.visitorCount(day))
 			wg.Done()
@@ -38,10 +38,6 @@ func (processor *Processor) Process() {
 		}()
 		go func() {
 			panicOnErr(processor.pageViews(day))
-			wg.Done()
-		}()
-		go func() {
-			panicOnErr(processor.visitorPageFlow(day))
 			wg.Done()
 		}()
 		wg.Wait()
@@ -109,10 +105,5 @@ func (processor *Processor) pageViews(day time.Time) error {
 		}
 	}
 
-	return nil
-}
-
-func (processor *Processor) visitorPageFlow(day time.Time) error {
-	// TODO
 	return nil
 }
