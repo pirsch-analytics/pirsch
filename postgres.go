@@ -104,7 +104,7 @@ func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error
 func (store *PostgresStore) Days() ([]time.Time, error) {
 	var days []time.Time
 
-	if err := store.DB.Select(&days, `SELECT DISTINCT date(time) FROM "hit"`); err != nil {
+	if err := store.DB.Select(&days, `SELECT DISTINCT date(time) FROM "hit" WHERE time < current_date`); err != nil {
 		return nil, err
 	}
 

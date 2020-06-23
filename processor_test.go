@@ -125,12 +125,12 @@ func checkPageViewCount(t *testing.T, store *PostgresStore) {
 
 func createTestdata(t *testing.T, store Store) {
 	cleanupDB(t)
-	createHit(t, store, "fp1", "/", "en", "ua1", day(2020, 6, 22, 7))
-	createHit(t, store, "fp2", "/", "en", "ua2", day(2020, 6, 22, 7))
-	createHit(t, store, "fp3", "/page", "de", "ua3", day(2020, 6, 22, 8))
-	createHit(t, store, "fp4", "/", "en", "ua4", day(2020, 6, 23, 9))
-	createHit(t, store, "fp5", "/", "en", "ua5", day(2020, 6, 23, 9))
-	createHit(t, store, "fp6", "/different-page", "jp", "ua6", day(2020, 6, 23, 10))
+	createHit(t, store, "fp1", "/", "en", "ua1", day(2020, 6, 21, 7))
+	createHit(t, store, "fp2", "/", "en", "ua2", day(2020, 6, 21, 7))
+	createHit(t, store, "fp3", "/page", "de", "ua3", day(2020, 6, 21, 8))
+	createHit(t, store, "fp4", "/", "en", "ua4", day(2020, 6, 22, 9))
+	createHit(t, store, "fp5", "/", "en", "ua5", day(2020, 6, 22, 9))
+	createHit(t, store, "fp6", "/different-page", "jp", "ua6", day(2020, 6, 22, 10))
 }
 
 func createHit(t *testing.T, store Store, fingerprint, path, lang, userAgent string, time time.Time) {
