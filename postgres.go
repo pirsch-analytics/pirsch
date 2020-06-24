@@ -51,6 +51,7 @@ func (store *PostgresStore) Save(hits []Hit) error {
 	return nil
 }
 
+// DeleteHitsByDay implements the Store interface.
 func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 	_, err := store.DB.Exec(`DELETE FROM "hit" WHERE time >= $1 AND time < $1 + INTERVAL '1 day'`, day)
 
@@ -61,6 +62,7 @@ func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 	return nil
 }
 
+// SaveVisitorsPerDay implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
 	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
 
@@ -71,6 +73,7 @@ func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
 	return nil
 }
 
+// SaveVisitorsPerHour implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error {
 	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
 
@@ -81,6 +84,7 @@ func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error
 	return nil
 }
 
+// SaveVisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguage) error {
 	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
 
@@ -91,6 +95,7 @@ func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguag
 	return nil
 }
 
+// SaveVisitorsPerPage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error {
 	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
 
@@ -101,6 +106,7 @@ func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error
 	return nil
 }
 
+// Days implements the Store interface.
 func (store *PostgresStore) Days() ([]time.Time, error) {
 	var days []time.Time
 
@@ -111,6 +117,7 @@ func (store *PostgresStore) Days() ([]time.Time, error) {
 	return days, nil
 }
 
+// VisitorsPerDay implements the Store interface.
 func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
 	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1::timestamp AND time < $1::timestamp + INTERVAL '1 day'`
 	var visitors int
@@ -122,6 +129,7 @@ func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
 	return visitors, nil
 }
 
+// VisitorsPerDayAndHour implements the Store interface.
 func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerHour, error) {
 	query := `SELECT "day_and_hour", (
 			SELECT count(DISTINCT fingerprint) FROM "hit"
@@ -144,6 +152,7 @@ func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerH
 	return visitors, nil
 }
 
+// VisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLanguage, error) {
 	query := `SELECT $1::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
 		FROM hit
@@ -159,6 +168,7 @@ func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLan
 	return visitors, nil
 }
 
+// VisitorsPerPage implements the Store interface.
 func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, error) {
 	query := `SELECT $1::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
 		FROM hit

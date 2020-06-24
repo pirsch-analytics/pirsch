@@ -174,3 +174,16 @@ func TestTrackerIgnoreHitUserAgent(t *testing.T) {
 		t.Fatal("Hit with regular User-Agent must not be ignored")
 	}
 }
+
+func TestTrackerIgnoreHitBotUserAgent(t *testing.T) {
+	tracker := NewTracker(newTestStore(), nil)
+
+	for _, botUserAgent := range userAgentBotList {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", botUserAgent)
+
+		if !tracker.ignoreHit(req) {
+			t.Fatalf("Hit with user agent '%v' must have been ignored", botUserAgent)
+		}
+	}
+}
