@@ -188,3 +188,20 @@ func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, e
 
 	return visitors, nil
 }
+
+func (store *PostgresStore) Visitors(from time.Time, to time.Time) ([]VisitorsPerDay, error) {
+	query := `SELECT "date" "day",
+		CASE WHEN "visitors_per_day".visitors IS NULL THEN 0 ELSE "visitors_per_day".visitors END
+		FROM (
+			SELECT * FROM generate_series($1, $2, interval '1 day') "date"
+		) AS date_series
+		LEFT JOIN "visitors_per_day" ON date("visitors_per_day"."day") = date("date")
+		ORDER BY "date" ASC`
+	var visitors []VisitorsPerDay
+
+	if err := store.DB.Select(&visitors, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}

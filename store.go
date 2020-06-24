@@ -36,4 +36,8 @@ type Store interface {
 
 	// VisitorsPerPage returns the unique visitor count per page and day.
 	VisitorsPerPage(time.Time) ([]VisitorsPerPage, error)
+
+	// Visitors returns the visitors within given time frame.
+	// This does not include today.
+	Visitors(time.Time, time.Time) ([]VisitorsPerDay, error)
 }
