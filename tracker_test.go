@@ -8,66 +8,12 @@ import (
 	"time"
 )
 
-type testStore struct {
-	hits []Hit
-}
-
-func newTestStore() *testStore {
-	return &testStore{make([]Hit, 0)}
-}
-
-func (store *testStore) Save(hits []Hit) error {
-	log.Printf("Saved %d hits", len(hits))
-	store.hits = append(store.hits, hits...)
-	return nil
-}
-
-func (store *testStore) DeleteHitsByDay(t time.Time) error {
-	panic("implement me")
-}
-
-func (store *testStore) SaveVisitorsPerDay(day *VisitorsPerDay) error {
-	panic("implement me")
-}
-
-func (store *testStore) SaveVisitorsPerHour(hour *VisitorsPerHour) error {
-	panic("implement me")
-}
-
-func (store *testStore) SaveVisitorsPerLanguage(language *VisitorsPerLanguage) error {
-	panic("implement me")
-}
-
-func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
-	panic("implement me")
-}
-
-func (store *testStore) Days() ([]time.Time, error) {
-	panic("implement me")
-}
-
-func (store *testStore) VisitorsPerDay(t time.Time) (int, error) {
-	panic("implement me")
-}
-
-func (store *testStore) VisitorsPerDayAndHour(t time.Time) ([]VisitorsPerHour, error) {
-	panic("implement me")
-}
-
-func (store *testStore) VisitorsPerLanguage(t time.Time) ([]VisitorsPerLanguage, error) {
-	panic("implement me")
-}
-
-func (store *testStore) VisitorsPerPage(t time.Time) ([]VisitorsPerPage, error) {
-	panic("implement me")
-}
-
 func TestTrackerHitTimeout(t *testing.T) {
 	store := newTestStore()
 	tracker := NewTracker(store, &TrackerConfig{WorkerTimeout: time.Second * 2})
 	tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil))
 	tracker.Hit(httptest.NewRequest(http.MethodGet, "/hello-world", nil))
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 4)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
@@ -92,10 +38,22 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	time.Sleep(time.Second) // allow all hits to be tracked
-	tracker.Flush()
+	tracker.Stop()
 
 	if len(store.hits) != 7 {
 		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
+	}
+}
+
+func TestTrackerHitPage(t *testing.T) {
+	store := newTestStore()
+	tracker := NewTracker(store, nil)
+	tracker.HitPage(httptest.NewRequest(http.MethodGet, "/", nil), "/some-page")
+	time.Sleep(time.Second) // allow all hits to be tracked
+	tracker.Stop()
+
+	if len(store.hits) != 1 {
+		t.Fatalf("One request must have been tracked, but was: %v", len(store.hits))
 	}
 }
 
@@ -186,4 +144,58 @@ func TestTrackerIgnoreHitBotUserAgent(t *testing.T) {
 			t.Fatalf("Hit with user agent '%v' must have been ignored", botUserAgent)
 		}
 	}
+}
+
+type testStore struct {
+	hits []Hit
+}
+
+func newTestStore() *testStore {
+	return &testStore{make([]Hit, 0)}
+}
+
+func (store *testStore) Save(hits []Hit) error {
+	log.Printf("Saved %d hits", len(hits))
+	store.hits = append(store.hits, hits...)
+	return nil
+}
+
+func (store *testStore) DeleteHitsByDay(t time.Time) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerDay(day *VisitorsPerDay) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerHour(hour *VisitorsPerHour) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerLanguage(language *VisitorsPerLanguage) error {
+	panic("implement me")
+}
+
+func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
+	panic("implement me")
+}
+
+func (store *testStore) Days() ([]time.Time, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerDay(t time.Time) (int, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerDayAndHour(t time.Time) ([]VisitorsPerHour, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerLanguage(t time.Time) ([]VisitorsPerLanguage, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorsPerPage(t time.Time) ([]VisitorsPerPage, error) {
+	panic("implement me")
 }

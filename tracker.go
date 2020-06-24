@@ -1,7 +1,9 @@
 package pirsch
 
 import (
+	"context"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -34,10 +36,11 @@ type TrackerConfig struct {
 type Tracker struct {
 	store            Store
 	hits             chan Hit
-	flush            chan bool
 	worker           int
 	workerBufferSize int
 	workerTimeout    time.Duration
+	workerCancel     context.CancelFunc
+	workerDone       chan bool
 }
 
 // NewTracker creates a new tracker for given store and config.
@@ -64,16 +67,12 @@ func NewTracker(store Store, config *TrackerConfig) *Tracker {
 	tracker := &Tracker{
 		store:            store,
 		hits:             make(chan Hit, worker*bufferSize),
-		flush:            make(chan bool),
 		worker:           worker,
 		workerBufferSize: bufferSize,
 		workerTimeout:    timeout,
+		workerDone:       make(chan bool),
 	}
-
-	for i := 0; i < worker; i++ {
-		go tracker.aggregate()
-	}
-
+	tracker.startWorker()
 	return tracker
 }
 
@@ -88,11 +87,36 @@ func (tracker *Tracker) Hit(r *http.Request) {
 	}()
 }
 
-// Flush flushes all hits to store and stops recording hits.
+// HitPage works like Hit, but sets the path to the given path.
+// This can be useful in case you have a single endpoint to track requests that you call from JavaScript for example.
+func (tracker *Tracker) HitPage(r *http.Request, path string) {
+	go func() {
+		if !tracker.ignoreHit(r) {
+			u, err := url.Parse(r.RequestURI)
+
+			if err == nil {
+				hit := hitFromRequest(r)
+				u.Path = path
+				hit.Path = path
+				hit.URL = u.String()
+				tracker.hits <- hit
+			}
+		}
+	}()
+}
+
+// Flush flushes all hits to store.
 func (tracker *Tracker) Flush() {
+	tracker.Stop()
+	tracker.startWorker()
+}
+
+// Stop flushes and stops all workers.
+func (tracker *Tracker) Stop() {
+	tracker.workerCancel()
+
 	for i := 0; i < tracker.worker; i++ {
-		tracker.flush <- true
-		<-tracker.flush
+		<-tracker.workerDone
 	}
 }
 
@@ -123,7 +147,16 @@ func (tracker *Tracker) ignoreHit(r *http.Request) bool {
 	return false
 }
 
-func (tracker *Tracker) aggregate() {
+func (tracker *Tracker) startWorker() {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	tracker.workerCancel = cancelFunc
+
+	for i := 0; i < tracker.worker; i++ {
+		go tracker.aggregate(ctx)
+	}
+}
+
+func (tracker *Tracker) aggregate(ctx context.Context) {
 	hits := make([]Hit, 0, tracker.workerBufferSize)
 
 	for {
@@ -131,7 +164,7 @@ func (tracker *Tracker) aggregate() {
 		case hit := <-tracker.hits:
 			hits = append(hits, hit)
 
-			if len(hits) > tracker.workerBufferSize/2 {
+			if len(hits) == tracker.workerBufferSize {
 				panicOnErr(tracker.store.Save(hits))
 				hits = hits[:0]
 			}
@@ -140,14 +173,13 @@ func (tracker *Tracker) aggregate() {
 				panicOnErr(tracker.store.Save(hits))
 				hits = hits[:0]
 			}
-		case <-tracker.flush:
+		case <-ctx.Done():
 			if len(hits) > 0 {
 				panicOnErr(tracker.store.Save(hits))
 			}
 
-			// signal that we're done and close worker
-			tracker.flush <- true
-			break
+			tracker.workerDone <- true
+			return
 		}
 	}
 }

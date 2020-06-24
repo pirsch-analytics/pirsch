@@ -142,7 +142,8 @@ func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerH
 				$1::timestamp + INTERVAL '23 hours',
 				interval '1 hour'
 			) "day_and_hour"
-		) AS hours`
+		) AS hours
+		ORDER BY "day_and_hour" ASC`
 	var visitors []VisitorsPerHour
 
 	if err := store.DB.Select(&visitors, query, day); err != nil {
@@ -154,11 +155,13 @@ func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerH
 
 // VisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLanguage, error) {
-	query := `SELECT $1::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
-		FROM hit
-		WHERE time >= $1::timestamp
-		AND time < $1::timestamp + INTERVAL '1 day'
-		GROUP BY "language"`
+	query := `SELECT * FROM (
+			SELECT $1::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
+			FROM hit
+			WHERE time >= $1::timestamp
+			AND time < $1::timestamp + INTERVAL '1 day'
+			GROUP BY "language"
+		) AS results ORDER BY "day" ASC`
 	var visitors []VisitorsPerLanguage
 
 	if err := store.DB.Select(&visitors, query, day); err != nil {
@@ -170,11 +173,13 @@ func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLan
 
 // VisitorsPerPage implements the Store interface.
 func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, error) {
-	query := `SELECT $1::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
-		FROM hit
-		WHERE time >= $1::timestamp
-		AND time < $1::timestamp + INTERVAL '1 day'
-		GROUP BY "path"`
+	query := `SELECT * FROM (
+			SELECT $1::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
+			FROM hit
+			WHERE time >= $1::timestamp
+			AND time < $1::timestamp + INTERVAL '1 day'
+			GROUP BY "path"
+		) AS results ORDER BY "day" ASC`
 	var visitors []VisitorsPerPage
 
 	if err := store.DB.Select(&visitors, query, day); err != nil {
