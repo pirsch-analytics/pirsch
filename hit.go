@@ -26,7 +26,7 @@ func (hit Hit) String() string {
 }
 
 func hitFromRequest(r *http.Request) Hit {
-	now := time.Now() // capture first to get as close as possible
+	now := time.Now().UTC() // capture first to get as close as possible
 	return Hit{
 		Fingerprint: Fingerprint(r),
 		Path:        r.URL.Path,

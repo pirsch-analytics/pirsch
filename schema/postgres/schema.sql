@@ -6,7 +6,7 @@ CREATE TABLE "hit" (
     language varchar(10),
     user_agent varchar(200),
     ref varchar(200),
-    time timestamp with time zone NOT NULL
+    time timestamp without time zone NOT NULL
 );
 
 CREATE SEQUENCE hit_id_seq
@@ -25,7 +25,7 @@ CREATE INDEX hit_time_index ON hit(time);
 
 CREATE TABLE "visitors_per_day" (
     id bigint NOT NULL UNIQUE,
-    day timestamp with time zone NOT NULL,
+    day date NOT NULL,
     visitors integer NOT NULL
 );
 
@@ -43,7 +43,7 @@ CREATE INDEX visitors_per_day_day_index ON visitors_per_day(day);
 
 CREATE TABLE "visitors_per_hour" (
     id bigint NOT NULL UNIQUE,
-    day_and_hour timestamp with time zone NOT NULL,
+    day_and_hour timestamp without time zone NOT NULL,
     visitors integer NOT NULL
 );
 
@@ -61,7 +61,7 @@ CREATE INDEX visitors_per_hour_day_and_hour_index ON visitors_per_hour(day_and_h
 
 CREATE TABLE "visitors_per_language" (
     id bigint NOT NULL UNIQUE,
-    day timestamp with time zone NOT NULL,
+    day date NOT NULL,
     language varchar(10) NOT NULL,
     visitors integer NOT NULL
 );
@@ -80,7 +80,7 @@ CREATE INDEX visitors_per_language_day_index ON visitors_per_language(day);
 
 CREATE TABLE "visitors_per_page" (
     id bigint NOT NULL UNIQUE,
-    day timestamp with time zone NOT NULL,
+    day date NOT NULL,
     path varchar(2000) NOT NULL,
     visitors integer NOT NULL
 );

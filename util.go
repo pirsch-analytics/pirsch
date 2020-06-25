@@ -14,7 +14,7 @@ func RunAtMidnight(f func()) {
 
 func timeToMidnight() time.Duration {
 	now := time.Now()
-	midnight := time.Date(now.Year(), now.Month(), now.Day(), 24, 0, 0, 0, now.Location())
+	midnight := time.Date(now.Year(), now.Month(), now.Day(), 24, 0, 0, 0, time.UTC)
 	return midnight.Sub(now)
 }
 

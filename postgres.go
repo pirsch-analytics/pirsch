@@ -119,7 +119,7 @@ func (store *PostgresStore) Days() ([]time.Time, error) {
 
 // VisitorsPerDay implements the Store interface.
 func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
-	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE "time" = $1`
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE date("time") = $1`
 	var visitors int
 
 	if err := store.DB.Get(&visitors, query, day); err != nil {
@@ -231,16 +231,16 @@ func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]Visit
 		CASE WHEN "visitors_per_page".visitors IS NULL THEN 0 ELSE "visitors_per_page".visitors END
 		FROM (
 			SELECT * FROM generate_series(
+				$1::timestamp,
 				$2::timestamp,
-				$3::timestamp,
 				INTERVAL '1 day'
 			) "date"
 		) AS date_series
-		LEFT JOIN "visitors_per_page" ON date("visitors_per_page"."day") = date("date") AND "visitors_per_page"."path" = $1
+		LEFT JOIN "visitors_per_page" ON date("visitors_per_page"."day") = date("date") AND "visitors_per_page"."path" = $3
 		ORDER BY "date" ASC`
 	var visitors []VisitorsPerDay
 
-	if err := store.DB.Select(&visitors, query, path, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, from, to, path); err != nil {
 		return nil, err
 	}
 

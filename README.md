@@ -26,6 +26,8 @@ Pirsch tracks the following data points at the moment:
 * visitors per day and page
 * visitors per day and language
 
+All timestamps are stored as UTC.
+
 It's theoretically possible to track the visitor flow (which page was seen first, which one was opened next and so one), but this is not implemented at the moment. Here is a list of the limitations of Pirsch:
 
 * track sessions, as the salt will prevent you from tracking a user across two days

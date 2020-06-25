@@ -20,14 +20,14 @@ func TestAnalyzerVisitors(t *testing.T) {
 		t.Fatalf("Must have returns statistics for seven days, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Day.Equal(pastDay(6)) ||
-		visitors[1].Day.Equal(pastDay(5)) ||
-		visitors[2].Day.Equal(pastDay(4)) ||
-		visitors[3].Day.Equal(pastDay(3)) ||
-		visitors[4].Day.Equal(pastDay(2)) ||
-		visitors[5].Day.Equal(pastDay(1)) ||
-		visitors[6].Day.Equal(pastDay(0)) {
-		t.Fatal("Days not as expected")
+	if !equalDay(visitors[0].Day, pastDay(6)) ||
+		!equalDay(visitors[1].Day, pastDay(5)) ||
+		!equalDay(visitors[2].Day, pastDay(4)) ||
+		!equalDay(visitors[3].Day, pastDay(3)) ||
+		!equalDay(visitors[4].Day, pastDay(2)) ||
+		!equalDay(visitors[5].Day, pastDay(1)) ||
+		!equalDay(visitors[6].Day, pastDay(0)) {
+		t.Fatalf("Days not as expected: %v", visitors)
 	}
 
 	if visitors[0].Visitors != 0 ||
@@ -37,7 +37,7 @@ func TestAnalyzerVisitors(t *testing.T) {
 		visitors[4].Visitors != 39 ||
 		visitors[5].Visitors != 42 ||
 		visitors[6].Visitors != 3 {
-		t.Fatal("Visitors not as expected")
+		t.Fatalf("Visitors not as expected: %v", visitors)
 	}
 }
 
@@ -56,14 +56,14 @@ func TestAnalyzerVisitorsFiltered(t *testing.T) {
 		t.Fatalf("Must have returns statistics for two days, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Day.Equal(pastDay(3)) ||
-		visitors[1].Day.Equal(pastDay(2)) {
-		t.Fatal("Days not as expected")
+	if !equalDay(visitors[0].Day, pastDay(3)) ||
+		!equalDay(visitors[1].Day, pastDay(2)) {
+		t.Fatalf("Days not as expected: %v", visitors)
 	}
 
 	if visitors[0].Visitors != 26 ||
 		visitors[1].Visitors != 39 {
-		t.Fatal("Visitors not as expected")
+		t.Fatalf("Visitors not as expected: %v", visitors)
 	}
 }
 
@@ -95,7 +95,7 @@ func TestAnalyzerPageVisits(t *testing.T) {
 	}
 
 	if visits[0].Visits[5].Visitors != 45 ||
-		visits[1].Visits[5].Visitors != 67 ||
+		visits[1].Visits[4].Visitors != 67 ||
 		visits[2].Visits[5].Visitors != 23 {
 		t.Fatal("Visitors not as expected")
 	}
@@ -115,9 +115,9 @@ func createAnalyzerTestdata(t *testing.T, store Store) {
 	createHit(t, store, "fp1", "/", "en", "ua1", pastDay(0))
 	createHit(t, store, "fp2", "/foo", "de", "ua2", pastDay(0))
 	createHit(t, store, "fp3", "/bar", "jp", "ua3", pastDay(0))
-	createVisitorPerDay(t, store, pastDay(0), 42)
-	createVisitorPerDay(t, store, pastDay(1), 39)
-	createVisitorPerDay(t, store, pastDay(2), 26)
+	createVisitorPerDay(t, store, pastDay(1), 42)
+	createVisitorPerDay(t, store, pastDay(2), 39)
+	createVisitorPerDay(t, store, pastDay(3), 26)
 	createVisitorPerPage(t, store, pastDay(1), "/", 45)
 	createVisitorPerPage(t, store, pastDay(1), "/foo", 23)
 	createVisitorPerPage(t, store, pastDay(2), "/bar", 67)
@@ -141,5 +141,9 @@ func createVisitorPerPage(t *testing.T, store Store, day time.Time, path string,
 
 func pastDay(n int) time.Time {
 	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, now.Location())
+	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
+}
+
+func equalDay(a, b time.Time) bool {
+	return a.Year() == b.Year() && a.Month() == b.Month() && a.Day() == b.Day()
 }

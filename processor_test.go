@@ -32,7 +32,7 @@ func checkhits(t *testing.T, store *PostgresStore) {
 func checkVisitorCount(t *testing.T, store *PostgresStore) {
 	var visitors []VisitorsPerDay
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" ORDER BY day`); err != nil {
+	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" ORDER BY "day"`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +48,7 @@ func checkVisitorCount(t *testing.T, store *PostgresStore) {
 func checkVisitorCountHour(t *testing.T, store *PostgresStore) {
 	var visitors []VisitorsPerHour
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" ORDER BY day_and_hour`); err != nil {
+	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" ORDER BY "day_and_hour"`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -74,7 +74,7 @@ func checkVisitorCountHour(t *testing.T, store *PostgresStore) {
 func checkLanguageCount(t *testing.T, store *PostgresStore) {
 	var visitors []VisitorsPerLanguage
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" ORDER BY day, language`); err != nil {
+	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" ORDER BY "day", "language"`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -100,7 +100,7 @@ func checkLanguageCount(t *testing.T, store *PostgresStore) {
 func checkPageViewCount(t *testing.T, store *PostgresStore) {
 	var visitors []VisitorsPerPage
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" ORDER BY day, path`); err != nil {
+	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" ORDER BY "day", "path"`); err != nil {
 		t.Fatal(err)
 	}
 

@@ -72,7 +72,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 		pageVisits[i].Visits = visitors
 	}
 
-	/*today := analyzer.today()
+	today := analyzer.today()
 
 	if today.Equal(filter.To) {
 		visitors, err := analyzer.store.VisitorsPerPage(today)
@@ -86,7 +86,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 				{Day: today, Visitors: visitor.Visitors},
 			}})
 		}
-	}*/
+	}
 
 	return pageVisits, nil
 }
@@ -101,12 +101,12 @@ func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
 		}
 	}
 
-	filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, filter.From.Location())
-	filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, filter.To.Location())
+	filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, time.UTC)
+	filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, time.UTC)
 	return filter
 }
 
 func (analyzer *Analyzer) today() time.Time {
 	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 }
