@@ -182,7 +182,7 @@ func TestAnalyzerLanguagesFiltered(t *testing.T) {
 	}
 
 	if langs[0].Language != "jp" || langs[0].Visitors != 52 || !about(langs[0].RelativeVisitors, 0.8) ||
-		langs[2].Language != "de" || langs[2].Visitors != 13 || !about(langs[2].RelativeVisitors, 0.2) {
+		langs[1].Language != "de" || langs[1].Visitors != 13 || !about(langs[1].RelativeVisitors, 0.2) {
 		t.Fatalf("Languages not as expected: %v", langs)
 	}
 }
@@ -205,7 +205,7 @@ func TestAnalyzerValidateFilter(t *testing.T) {
 
 func createAnalyzerTestdata(t *testing.T, store Store) {
 	createHit(t, store, "fp1", "/", "en", "ua1", pastDay(0))
-	createHit(t, store, "fp2", "/foo", "de", "ua2", pastDay(0))
+	createHit(t, store, "fp2", "/foo", "De", "ua2", pastDay(0))
 	createHit(t, store, "fp3", "/bar", "jp", "ua3", pastDay(0))
 	createVisitorPerDay(t, store, pastDay(1), 42)
 	createVisitorPerDay(t, store, pastDay(2), 39)
@@ -213,9 +213,9 @@ func createAnalyzerTestdata(t *testing.T, store Store) {
 	createVisitorPerPage(t, store, pastDay(1), "/", 45)
 	createVisitorPerPage(t, store, pastDay(1), "/laa", 23)
 	createVisitorPerPage(t, store, pastDay(2), "/bar", 67)
-	createVisitorPerLanguage(t, store, pastDay(1), "en", 49)
+	createVisitorPerLanguage(t, store, pastDay(1), "En", 49)
 	createVisitorPerLanguage(t, store, pastDay(2), "de", 13)
-	createVisitorPerLanguage(t, store, pastDay(3), "jp", 52)
+	createVisitorPerLanguage(t, store, pastDay(3), "jP", 52)
 }
 
 func createVisitorPerDay(t *testing.T, store Store, day time.Time, visitors int) {

@@ -251,12 +251,12 @@ func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]Visit
 func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLanguage, error) {
 	query := `SELECT * FROM (
 			SELECT "language", sum("visitors") "visitors" FROM (
-				SELECT "language", sum("visitors") "visitors" FROM "visitors_per_language"
+				SELECT lower("language") "language", sum("visitors") "visitors" FROM "visitors_per_language"
 				WHERE "day" >= date($1::timestamp)
 				AND "day" <= date($2::timestamp)
 				GROUP BY "language"
 				UNION
-				SELECT "language", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				SELECT lower("language") "language", count(DISTINCT fingerprint) "visitors" FROM "hit"
 				WHERE "time" >= date($1::timestamp)
 				AND "time" <= date($2::timestamp)
 				GROUP BY "language"
