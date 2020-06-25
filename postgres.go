@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"log"
 	"strings"
 	"time"
 )
@@ -64,45 +65,49 @@ func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 
 // SaveVisitorsPerDay implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
-	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
+	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
 
 	if err != nil {
 		return err
 	}
 
+	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerHour implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error {
-	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
+	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
 
 	if err != nil {
 		return err
 	}
 
+	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguage) error {
-	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
+	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
 
 	if err != nil {
 		return err
 	}
 
+	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerPage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error {
-	_, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
+	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
 
 	if err != nil {
 		return err
 	}
 
+	closeRows(rows)
 	return nil
 }
 
@@ -309,4 +314,10 @@ func (store *PostgresStore) ActiveVisitors(from time.Time) (int, error) {
 	}
 
 	return visitors, nil
+}
+
+func closeRows(rows *sqlx.Rows) {
+	if err := rows.Close(); err != nil {
+		log.Printf("error closing rows: %s", err)
+	}
 }
