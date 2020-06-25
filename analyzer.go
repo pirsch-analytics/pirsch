@@ -72,22 +72,6 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 		pageVisits[i].Visits = visitors
 	}
 
-	today := analyzer.today()
-
-	if today.Equal(filter.To) {
-		visitors, err := analyzer.store.VisitorsPerPage(today)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, visitor := range visitors {
-			pageVisits = append(pageVisits, PageVisits{Path: visitor.Path, Visits: []VisitorsPerDay{
-				{Day: today, Visitors: visitor.Visitors},
-			}})
-		}
-	}
-
 	return pageVisits, nil
 }
 
