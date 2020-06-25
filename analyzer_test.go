@@ -78,25 +78,60 @@ func TestAnalyzerPageVisits(t *testing.T) {
 		t.Fatalf("Visits must be returned, but was:  %v", err)
 	}
 
-	if len(visits) != 3 {
+	if len(visits) != 4 {
 		t.Fatalf("Must have returns statistics for three pages, but was: %v", len(visits))
 	}
 
 	if visits[0].Path != "/" ||
 		visits[1].Path != "/bar" ||
-		visits[2].Path != "/foo" {
+		visits[2].Path != "/foo" ||
+		visits[3].Path != "/laa" {
 		t.Fatal("Paths not as expected")
 	}
 
 	if len(visits[0].Visits) != 7 ||
 		len(visits[1].Visits) != 7 ||
-		len(visits[2].Visits) != 7 {
+		len(visits[2].Visits) != 7 ||
+		len(visits[3].Visits) != 7 {
 		t.Fatal("Page visits not as expected")
 	}
 
 	if visits[0].Visits[5].Visitors != 45 ||
+		visits[0].Visits[6].Visitors != 1 ||
 		visits[1].Visits[4].Visitors != 67 ||
-		visits[2].Visits[5].Visitors != 23 {
+		visits[1].Visits[6].Visitors != 1 ||
+		visits[2].Visits[6].Visitors != 1 ||
+		visits[3].Visits[5].Visitors != 23 ||
+		visits[3].Visits[6].Visitors != 0 {
+		t.Fatal("Visitors not as expected")
+	}
+}
+
+func TestAnalyzerPageVisitsFiltered(t *testing.T) {
+	store := NewPostgresStore(db)
+	cleanupDB(t)
+	createAnalyzerTestdata(t, store)
+	analyzer := NewAnalyzer(store)
+	visits, err := analyzer.PageVisits(&Filter{pastDay(3), pastDay(2)})
+
+	if err != nil {
+		t.Fatalf("Visits must be returned, but was:  %v", err)
+	}
+
+	if len(visits) != 1 {
+		t.Fatalf("Must have returns statistics for one page, but was: %v", len(visits))
+	}
+
+	if visits[0].Path != "/bar" {
+		t.Fatal("Path not as expected")
+	}
+
+	if len(visits[0].Visits) != 2 {
+		t.Fatal("Page visits not as expected")
+	}
+
+	if visits[0].Visits[0].Visitors != 0 ||
+		visits[0].Visits[1].Visitors != 67 {
 		t.Fatal("Visitors not as expected")
 	}
 }
@@ -109,6 +144,12 @@ func TestAnalyzerValidateFilter(t *testing.T) {
 	if filter == nil || !filter.From.Equal(pastDay(6)) || !filter.To.Equal(pastDay(0)) {
 		t.Fatalf("Filter not as expected: %v", filter)
 	}
+
+	filter = analyzer.validateFilter(&Filter{From: pastDay(2), To: pastDay(5)})
+
+	if filter == nil || !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
+		t.Fatalf("Filter not as expected: %v", filter)
+	}
 }
 
 func createAnalyzerTestdata(t *testing.T, store Store) {
@@ -119,7 +160,7 @@ func createAnalyzerTestdata(t *testing.T, store Store) {
 	createVisitorPerDay(t, store, pastDay(2), 39)
 	createVisitorPerDay(t, store, pastDay(3), 26)
 	createVisitorPerPage(t, store, pastDay(1), "/", 45)
-	createVisitorPerPage(t, store, pastDay(1), "/foo", 23)
+	createVisitorPerPage(t, store, pastDay(1), "/laa", 23)
 	createVisitorPerPage(t, store, pastDay(2), "/bar", 67)
 }
 
