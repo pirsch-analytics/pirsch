@@ -44,3 +44,9 @@ type VisitorLanguage struct {
 	Visitors         int     `db:"visitors" json:"visitors"`
 	RelativeVisitors float64 `db:"-" json:"relative_visitors"`
 }
+
+// HourlyVisitors is the unique visitor count per hour.
+type HourlyVisitors struct {
+	Hour     int `db:"hour" json:"hour"`
+	Visitors int `db:"visitors" json:"visitors"`
+}

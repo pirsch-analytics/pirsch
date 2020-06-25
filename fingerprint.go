@@ -16,7 +16,7 @@ func Fingerprint(r *http.Request) string {
 	var sb strings.Builder
 	sb.WriteString(r.Header.Get("User-Agent"))
 	sb.WriteString(getIP(r))
-	sb.WriteString(time.Now().Format("20060102"))
+	sb.WriteString(time.Now().UTC().Format("20060102"))
 	hash := md5.New()
 
 	if _, err := io.WriteString(hash, sb.String()); err != nil {

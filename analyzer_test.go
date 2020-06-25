@@ -187,6 +187,52 @@ func TestAnalyzerLanguagesFiltered(t *testing.T) {
 	}
 }
 
+func TestAnalyzerHourlyVisitors(t *testing.T) {
+	store := NewPostgresStore(db)
+	cleanupDB(t)
+	createAnalyzerTestdata(t, store)
+	analyzer := NewAnalyzer(store)
+	visitors, err := analyzer.HourlyVisitors(nil)
+
+	if err != nil {
+		t.Fatalf("Visitors must be returned, but was:  %v", err)
+	}
+
+	if len(visitors) != 24 {
+		t.Fatalf("Number of hours must always be 24, but was: %v", len(visitors))
+	}
+
+	if visitors[0].Visitors != 3 ||
+		visitors[6].Visitors != 32 ||
+		visitors[11].Visitors != 8 ||
+		visitors[17].Visitors != 29 {
+		t.Fatalf("Visitors not as expected. %v", visitors)
+	}
+}
+
+func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
+	store := NewPostgresStore(db)
+	cleanupDB(t)
+	createAnalyzerTestdata(t, store)
+	analyzer := NewAnalyzer(store)
+	visitors, err := analyzer.HourlyVisitors(&Filter{pastDay(3), pastDay(2)})
+
+	if err != nil {
+		t.Fatalf("Visitors must be returned, but was:  %v", err)
+	}
+
+	if len(visitors) != 24 {
+		t.Fatalf("Number of hours must always be 24, but was: %v", len(visitors))
+	}
+
+	if visitors[0].Visitors != 0 ||
+		visitors[6].Visitors != 0 ||
+		visitors[11].Visitors != 8 ||
+		visitors[17].Visitors != 29 {
+		t.Fatalf("Visitors not as expected. %v", visitors)
+	}
+}
+
 func TestAnalyzerValidateFilter(t *testing.T) {
 	store := NewPostgresStore(db)
 	analyzer := NewAnalyzer(store)
@@ -203,6 +249,24 @@ func TestAnalyzerValidateFilter(t *testing.T) {
 	}
 }
 
+func TestAnalyzerActiveVisitors(t *testing.T) {
+	store := NewPostgresStore(db)
+	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
+	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
+	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
+	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
+	analyzer := NewAnalyzer(store)
+	visitors, err := analyzer.ActiveVisitors(time.Second * 10)
+
+	if err != nil {
+		t.Fatalf("Visitors must be returned, but was:  %v", err)
+	}
+
+	if visitors != 3 {
+		t.Fatalf("Visitor count not as expected, was: %v", visitors)
+	}
+}
+
 func createAnalyzerTestdata(t *testing.T, store Store) {
 	createHit(t, store, "fp1", "/", "en", "ua1", pastDay(0))
 	createHit(t, store, "fp2", "/foo", "De", "ua2", pastDay(0))
@@ -216,6 +280,9 @@ func createAnalyzerTestdata(t *testing.T, store Store) {
 	createVisitorPerLanguage(t, store, pastDay(1), "En", 49)
 	createVisitorPerLanguage(t, store, pastDay(2), "de", 13)
 	createVisitorPerLanguage(t, store, pastDay(3), "jP", 52)
+	createVisitorPerHour(t, store, pastDay(1).Add(time.Hour*6).Add(time.Minute*23), 32)
+	createVisitorPerHour(t, store, pastDay(2).Add(time.Hour*11).Add(time.Minute*11), 8)
+	createVisitorPerHour(t, store, pastDay(3).Add(time.Hour*17).Add(time.Minute*59), 29)
 }
 
 func createVisitorPerDay(t *testing.T, store Store, day time.Time, visitors int) {
@@ -238,6 +305,14 @@ func createVisitorPerLanguage(t *testing.T, store Store, day time.Time, lang str
 	visitor := VisitorsPerLanguage{Day: day, Language: lang, Visitors: visitors}
 
 	if err := store.SaveVisitorsPerLanguage(&visitor); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func createVisitorPerHour(t *testing.T, store Store, dayAndHour time.Time, visitors int) {
+	visitor := VisitorsPerHour{DayAndHour: dayAndHour, Visitors: visitors}
+
+	if err := store.SaveVisitorsPerHour(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }

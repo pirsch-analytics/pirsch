@@ -215,3 +215,11 @@ func (store *testStore) PageVisits(s string, t time.Time, t2 time.Time) ([]Visit
 func (store *testStore) VisitorLanguages(t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
 	panic("implement me")
 }
+
+func (store *testStore) HourlyVisitors(t time.Time, t2 time.Time) ([]HourlyVisitors, error) {
+	panic("implement me")
+}
+
+func (store *testStore) ActiveVisitors(t time.Time) (int, error) {
+	panic("implement me")
+}

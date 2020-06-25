@@ -143,6 +143,39 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, err
 	return langs, total, nil
 }
 
+// HourlyVisitors returns the absolute and relative visitor count per language for given time frame.
+func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, error) {
+	filter = analyzer.validateFilter(filter)
+	visitors, err := analyzer.store.HourlyVisitors(filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	visitorsPerHour := make([]HourlyVisitors, 24)
+
+	for i := range visitorsPerHour {
+		visitorsPerHour[i].Hour = i
+	}
+
+	for _, visitor := range visitors {
+		visitorsPerHour[visitor.Hour].Visitors = visitor.Visitors
+	}
+
+	return visitorsPerHour, nil
+}
+
+// ActiveVisitors returns unique visitors last active within given duration.
+func (analyzer *Analyzer) ActiveVisitors(d time.Duration) (int, error) {
+	visitors, err := analyzer.store.ActiveVisitors(time.Now().UTC().Add(-d))
+
+	if err != nil {
+		return 0, err
+	}
+
+	return visitors, nil
+}
+
 func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
 	today := analyzer.today()
 

@@ -52,4 +52,11 @@ type Store interface {
 	// VisitorLanguages returns the languages within given time frame for unique visitors.
 	// It does include today.
 	VisitorLanguages(time.Time, time.Time) ([]VisitorLanguage, error)
+
+	// HourlyVisitors returns unique visitors per hour for given time frame.
+	// It does include today.
+	HourlyVisitors(time.Time, time.Time) ([]HourlyVisitors, error)
+
+	// ActiveVisitors returns unique visitors starting at given time.
+	ActiveVisitors(time.Time) (int, error)
 }

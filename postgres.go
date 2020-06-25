@@ -272,3 +272,41 @@ func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLangu
 
 	return languages, nil
 }
+
+// VisitorLanguages implements the Store interface.
+func (store *PostgresStore) HourlyVisitors(from, to time.Time) ([]HourlyVisitors, error) {
+	query := `SELECT * FROM (
+			SELECT "hour", sum("visitors") "visitors" FROM (
+				SELECT EXTRACT(HOUR FROM "day_and_hour") "hour", sum("visitors") "visitors" FROM "visitors_per_hour"
+				WHERE date("day_and_hour") >= date($1::timestamp)
+				AND date("day_and_hour") <= date($2::timestamp)
+				GROUP BY "hour"
+				UNION
+				SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE date("time") >= date($1::timestamp)
+				AND date("time") <= date($2::timestamp)
+				GROUP BY "hour"
+			) AS results
+			GROUP BY "hour"
+		) AS hours
+		ORDER BY "hour" ASC`
+	var visitors []HourlyVisitors
+
+	if err := store.DB.Select(&visitors, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// ActiveVisitors implements the Store interface.
+func (store *PostgresStore) ActiveVisitors(from time.Time) (int, error) {
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE "time" > $1`
+	var visitors int
+
+	if err := store.DB.Get(&visitors, query, from); err != nil {
+		return 0, err
+	}
+
+	return visitors, nil
+}

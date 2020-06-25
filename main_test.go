@@ -13,6 +13,7 @@ var (
 
 func TestMain(m *testing.M) {
 	connectDB()
+	defer closeDB()
 	os.Exit(m.Run())
 }
 
@@ -25,6 +26,14 @@ func connectDB() {
 	}
 
 	if err := db.Ping(); err != nil {
+		panic(err)
+	}
+
+	db.SetMaxOpenConns(1)
+}
+
+func closeDB() {
+	if err := db.Close(); err != nil {
 		panic(err)
 	}
 }
