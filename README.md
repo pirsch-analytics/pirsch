@@ -3,7 +3,12 @@
 [![GoDoc](https://godoc.org/github.com/emvi/pirsch?status.svg)](https://godoc.org/github.com/emvi/pirsch)
 [![Go Report Card](https://goreportcard.com/badge/github.com/emvi/pirsch)](https://goreportcard.com/report/github.com/emvi/pirsch)
 
-**State of the project**: we are currently testing how precise Pirsch is by comparing it to other solutions.
+**State of the project**: we are currently testing how precise Pirsch is by comparing it to other solutions. There are also things that are incomplete:
+
+* add "real time" statistics to analyzer
+* add language statistics to analyzer
+* add time of day statistics to analyzer
+* Analyzer documentation
 
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data must be implemented by yourself. We might add a UI for Pirsch in the future.
 
