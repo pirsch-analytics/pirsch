@@ -31,3 +31,16 @@ type VisitorsPerPage struct {
 	Path     string    `db:"path" json:"path"`
 	Visitors int       `db:"visitors" json:"visitors"`
 }
+
+// PageVisits is the visitor count per day for each path.
+type PageVisits struct {
+	Path   string
+	Visits []VisitorsPerDay
+}
+
+// VisitorLanguage is the unique visitor count per language.
+type VisitorLanguage struct {
+	Language         string  `db:"language" json:"language"`
+	Visitors         int     `db:"visitors" json:"visitors"`
+	RelativeVisitors float64 `db:"-" json:"relative_visitors"`
+}

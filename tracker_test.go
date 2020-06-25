@@ -200,14 +200,18 @@ func (store *testStore) VisitorsPerPage(t time.Time) ([]VisitorsPerPage, error) 
 	panic("implement me")
 }
 
-func (store *testStore) Visitors(t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
-	panic("implement me")
-}
-
 func (store *testStore) Paths(t time.Time, t2 time.Time) ([]string, error) {
 	panic("implement me")
 }
 
+func (store *testStore) Visitors(t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
+	panic("implement me")
+}
+
 func (store *testStore) PageVisits(s string, t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorLanguages(t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
 	panic("implement me")
 }

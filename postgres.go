@@ -189,6 +189,20 @@ func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, e
 	return visitors, nil
 }
 
+// Paths implements the Store interface.
+func (store *PostgresStore) Paths(from, to time.Time) ([]string, error) {
+	query := `SELECT * FROM (
+			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE "day" >= $1 AND "day" <= $2
+		) AS paths ORDER BY length("path"), "path" ASC`
+	var paths []string
+
+	if err := store.DB.Select(&paths, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return paths, nil
+}
+
 // Visitors implements the Store interface.
 func (store *PostgresStore) Visitors(from, to time.Time) ([]VisitorsPerDay, error) {
 	query := `SELECT "date" "day",
@@ -211,20 +225,6 @@ func (store *PostgresStore) Visitors(from, to time.Time) ([]VisitorsPerDay, erro
 	return visitors, nil
 }
 
-// Paths implements the Store interface.
-func (store *PostgresStore) Paths(from, to time.Time) ([]string, error) {
-	query := `SELECT * FROM (
-			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE "day" >= $1 AND "day" <= $2
-		) AS paths ORDER BY length("path"), "path" ASC`
-	var paths []string
-
-	if err := store.DB.Select(&paths, query, from, to); err != nil {
-		return nil, err
-	}
-
-	return paths, nil
-}
-
 // PageVisits implements the Store interface.
 func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]VisitorsPerDay, error) {
 	query := `SELECT "date" "day",
@@ -245,4 +245,30 @@ func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]Visit
 	}
 
 	return visitors, nil
+}
+
+// VisitorLanguages implements the Store interface.
+func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLanguage, error) {
+	query := `SELECT * FROM (
+			SELECT "language", sum("visitors") "visitors" FROM (
+				SELECT "language", sum("visitors") "visitors" FROM "visitors_per_language"
+				WHERE "day" >= date($1::timestamp)
+				AND "day" <= date($2::timestamp)
+				GROUP BY "language"
+				UNION
+				SELECT "language", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE "time" >= date($1::timestamp)
+				AND "time" <= date($2::timestamp)
+				GROUP BY "language"
+			) AS results
+			GROUP BY "language"
+		) AS langs
+		ORDER BY "visitors" DESC`
+	var languages []VisitorLanguage
+
+	if err := store.DB.Select(&languages, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return languages, nil
 }

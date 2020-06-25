@@ -16,11 +16,6 @@ func (filter *Filter) Days() int {
 	return int(filter.To.Sub(filter.From).Hours()) / 24
 }
 
-type PageVisits struct {
-	Path   string
-	Visits []VisitorsPerDay
-}
-
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store Store
@@ -59,6 +54,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	return visitors, nil
 }
 
+// PageVisits returns the visitors per page per day for given time frame.
 func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	filter = analyzer.validateFilter(filter)
 	paths, err := analyzer.store.Paths(filter.From, filter.To)
@@ -123,6 +119,28 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	}
 
 	return pageVisits, nil
+}
+
+// Languages returns the absolute and relative visitor count per language for given time frame.
+func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, error) {
+	filter = analyzer.validateFilter(filter)
+	langs, err := analyzer.store.VisitorLanguages(filter.From, filter.To)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total := 0
+
+	for _, lang := range langs {
+		total += lang.Visitors
+	}
+
+	for i := range langs {
+		langs[i].RelativeVisitors = float64(langs[i].Visitors) / float64(total)
+	}
+
+	return langs, total, nil
 }
 
 func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
