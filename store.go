@@ -40,4 +40,12 @@ type Store interface {
 	// Visitors returns the visitors within given time frame.
 	// This does not include today.
 	Visitors(time.Time, time.Time) ([]VisitorsPerDay, error)
+
+	// Paths returns distinct paths for page visits.
+	// This does not include today.
+	Paths(time.Time, time.Time) ([]string, error)
+
+	// PageVisits returns the page visits within given time frame for given path.
+	// This does not include today.
+	PageVisits(string, time.Time, time.Time) ([]VisitorsPerDay, error)
 }

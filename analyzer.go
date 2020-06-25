@@ -2,14 +2,15 @@ package pirsch
 
 import "time"
 
-const (
-	week = time.Hour * 24 * 7
-)
-
 // Filter is used to specify the time frame for the Analyzer.
 type Filter struct {
 	From time.Time
 	To   time.Time
+}
+
+type PageVisits struct {
+	Path   string
+	Visits []VisitorsPerDay
 }
 
 // Analyzer provides an interface to analyze processed data and hits.
@@ -17,10 +18,14 @@ type Analyzer struct {
 	store Store
 }
 
+// NewAnalyzer returns a new Analyzer for given Store.
+func NewAnalyzer(store Store) *Analyzer {
+	return &Analyzer{store}
+}
+
 // Visitors returns the visitors per day for the given time frame.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	filter = analyzer.validateFilter(filter)
-	analyzer.removeTime(filter)
 	visitors, err := analyzer.store.Visitors(filter.From, filter.To)
 
 	if err != nil {
@@ -46,30 +51,59 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	return visitors, nil
 }
 
+func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
+	filter = analyzer.validateFilter(filter)
+	paths, err := analyzer.store.Paths(filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pageVisits := make([]PageVisits, len(paths))
+
+	for i, path := range paths {
+		visitors, err := analyzer.store.PageVisits(path, filter.From, filter.To)
+
+		if err != nil {
+			return nil, err
+		}
+
+		pageVisits[i].Path = path
+		pageVisits[i].Visits = visitors
+	}
+
+	/*today := analyzer.today()
+
+	if today.Equal(filter.To) {
+		visitors, err := analyzer.store.VisitorsPerPage(today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, visitor := range visitors {
+			pageVisits = append(pageVisits, PageVisits{Path: visitor.Path, Visits: []VisitorsPerDay{
+				{Day: today, Visitors: visitor.Visitors},
+			}})
+		}
+	}*/
+
+	return pageVisits, nil
+}
+
 func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
-	now := time.Now()
+	today := analyzer.today()
 
 	if filter == nil {
 		return &Filter{
-			From: now.Add(-week),
-			To:   now,
+			From: today.Add(-time.Hour * 24 * 6), // 7 including today
+			To:   today,
 		}
 	}
 
-	if filter.To.After(now) {
-		filter.To = now
-	}
-
-	if filter.From.After(filter.To) {
-		filter.From = filter.To.Add(-week)
-	}
-
-	return filter
-}
-
-func (analyzer *Analyzer) removeTime(filter *Filter) {
 	filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, filter.From.Location())
 	filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, filter.To.Location())
+	return filter
 }
 
 func (analyzer *Analyzer) today() time.Time {

@@ -119,7 +119,7 @@ func (store *PostgresStore) Days() ([]time.Time, error) {
 
 // VisitorsPerDay implements the Store interface.
 func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
-	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE time > $1::timestamp AND time < $1::timestamp + INTERVAL '1 day'`
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE "time" = $1`
 	var visitors int
 
 	if err := store.DB.Get(&visitors, query, day); err != nil {
@@ -179,7 +179,7 @@ func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, e
 			WHERE time >= $1::timestamp
 			AND time < $1::timestamp + INTERVAL '1 day'
 			GROUP BY "path"
-		) AS results ORDER BY "day" ASC`
+		) AS results ORDER BY "day", "path" ASC`
 	var visitors []VisitorsPerPage
 
 	if err := store.DB.Select(&visitors, query, day); err != nil {
@@ -189,17 +189,58 @@ func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, e
 	return visitors, nil
 }
 
-func (store *PostgresStore) Visitors(from time.Time, to time.Time) ([]VisitorsPerDay, error) {
+// Visitors implements the Store interface.
+func (store *PostgresStore) Visitors(from, to time.Time) ([]VisitorsPerDay, error) {
 	query := `SELECT "date" "day",
 		CASE WHEN "visitors_per_day".visitors IS NULL THEN 0 ELSE "visitors_per_day".visitors END
 		FROM (
-			SELECT * FROM generate_series($1, $2, interval '1 day') "date"
+			SELECT * FROM generate_series(
+				$1::timestamp,
+				$2::timestamp,
+				INTERVAL '1 day'
+			) "date"
 		) AS date_series
 		LEFT JOIN "visitors_per_day" ON date("visitors_per_day"."day") = date("date")
 		ORDER BY "date" ASC`
 	var visitors []VisitorsPerDay
 
 	if err := store.DB.Select(&visitors, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// Paths implements the Store interface.
+func (store *PostgresStore) Paths(from, to time.Time) ([]string, error) {
+	query := `SELECT * FROM (
+			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE "day" >= $1 AND "day" <= $2
+		) AS paths ORDER BY length("path"), "path" ASC`
+	var paths []string
+
+	if err := store.DB.Select(&paths, query, from, to); err != nil {
+		return nil, err
+	}
+
+	return paths, nil
+}
+
+// PageVisits implements the Store interface.
+func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]VisitorsPerDay, error) {
+	query := `SELECT "date" "day",
+		CASE WHEN "visitors_per_page".visitors IS NULL THEN 0 ELSE "visitors_per_page".visitors END
+		FROM (
+			SELECT * FROM generate_series(
+				$2::timestamp,
+				$3::timestamp,
+				INTERVAL '1 day'
+			) "date"
+		) AS date_series
+		LEFT JOIN "visitors_per_page" ON date("visitors_per_page"."day") = date("date") AND "visitors_per_page"."path" = $1
+		ORDER BY "date" ASC`
+	var visitors []VisitorsPerDay
+
+	if err := store.DB.Select(&visitors, query, path, from, to); err != nil {
 		return nil, err
 	}
 
