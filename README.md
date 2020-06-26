@@ -3,12 +3,7 @@
 [![GoDoc](https://godoc.org/github.com/emvi/pirsch?status.svg)](https://godoc.org/github.com/emvi/pirsch)
 [![Go Report Card](https://goreportcard.com/badge/github.com/emvi/pirsch)](https://goreportcard.com/report/github.com/emvi/pirsch)
 
-**State of the project**: we are currently testing how precise Pirsch is by comparing it to other solutions. There are also things that are incomplete:
-
-* add "real time" statistics to analyzer
-* add language statistics to analyzer
-* add time of day statistics to analyzer
-* Analyzer documentation
+**State of the project**: we are currently testing how precise Pirsch is by comparing it to other solutions.
 
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data must be implemented by yourself. We might add a UI for Pirsch in the future.
 
@@ -69,14 +64,31 @@ http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 }))
 ```
 
-Instead of calling `Hit`, you can also call `HitPage`, which allows you to specify an alternative path independen of the one provided in the request.
+Instead of calling `Hit`, you can also call `HitPage`, which allows you to specify an alternative path independent of the one provided in the request.
 That can be used to implement a single tracking endpoint which you call using an Ajax request providing the path of the current page.
+
+To analyze hits and processed data you can use the analyzer, which provides some functions to extract useful data.
+
+```
+// this also needs access to the store
+analyzer := pirsch.NewAnalyzer(store)
+
+// as an example, lets extract the total number of visitors
+// the filter is used to specify the time frame you're looking at (days) and is optional
+// if you pass nil, the Analyzer returns data for the past week including today
+visitors, err := analyzer.Visitors(&pirsch.Filter{
+    From: yesterday(),
+    To: today()
+})
+```
 
 Read the full documentation for more details.
 
 ## Contribution
 
 All contributions are welcome! You can extend the bot list or processor for example, to extract more useful data. Please open a pull requests for your changes and tickets in case you would like to discuss something or have a question.
+
+To run the tests you'll need a Postgres database and a schema called `pirsch`. The user and password is set to `postgres`. To add another data store, the Store interface must be implemented. Pirsch makes heavy use of SQL to aggregate and analyze data.
 
 ## License
 
