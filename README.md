@@ -82,7 +82,7 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 })
 ```
 
-Read the full documentation for more details.
+Read the full documentation for more details or check out [this](https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w) article.
 
 ## Contribution
 
