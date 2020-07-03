@@ -11,7 +11,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "user-agent")
 	req.Header.Set("Referer", "ref")
-	hit := hitFromRequest(req)
+	hit := hitFromRequest(req, "salt")
 
 	if hit.Fingerprint == "" ||
 		hit.Path != "/test/path" ||

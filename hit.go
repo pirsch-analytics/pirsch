@@ -25,10 +25,10 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
-func hitFromRequest(r *http.Request) Hit {
+func hitFromRequest(r *http.Request, salt string) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 	return Hit{
-		Fingerprint: Fingerprint(r),
+		Fingerprint: Fingerprint(r, salt),
 		Path:        r.URL.Path,
 		URL:         r.URL.String(),
 		Language:    getLanguage(r),

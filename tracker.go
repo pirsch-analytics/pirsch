@@ -35,6 +35,7 @@ type TrackerConfig struct {
 // In case of an error it will panic.
 type Tracker struct {
 	store            Store
+	salt             string
 	hits             chan Hit
 	worker           int
 	workerBufferSize int
@@ -43,9 +44,10 @@ type Tracker struct {
 	workerDone       chan bool
 }
 
-// NewTracker creates a new tracker for given store and config.
+// NewTracker creates a new tracker for given store, salt and config.
 // Pass nil for the config to use the defaults.
-func NewTracker(store Store, config *TrackerConfig) *Tracker {
+// The salt is mandatory.
+func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 	worker := runtime.NumCPU()
 	bufferSize := defaultWorkerBufferSize
 	timeout := defaultWorkerTimeout
@@ -66,6 +68,7 @@ func NewTracker(store Store, config *TrackerConfig) *Tracker {
 
 	tracker := &Tracker{
 		store:            store,
+		salt:             salt,
 		hits:             make(chan Hit, worker*bufferSize),
 		worker:           worker,
 		workerBufferSize: bufferSize,
@@ -82,7 +85,7 @@ func NewTracker(store Store, config *TrackerConfig) *Tracker {
 func (tracker *Tracker) Hit(r *http.Request) {
 	go func() {
 		if !tracker.ignoreHit(r) {
-			tracker.hits <- hitFromRequest(r)
+			tracker.hits <- hitFromRequest(r, tracker.salt)
 		}
 	}()
 }
@@ -95,7 +98,7 @@ func (tracker *Tracker) HitPage(r *http.Request, path string) {
 			u, err := url.Parse(r.RequestURI)
 
 			if err == nil {
-				hit := hitFromRequest(r)
+				hit := hitFromRequest(r, tracker.salt)
 				u.Path = path
 				hit.Path = path
 				hit.URL = u.String()

@@ -45,8 +45,9 @@ Here is a quick demo on how to use the library:
 store := pirsch.NewPostgresStore(db)
 
 // Tracker is the main component of Pirsch
+// the salt is used to prevent anyone from generating fingerprints like yours (to prevent man in the middle attacks), pick something random
 // an optional configuration can be used to change things like worker count, timeouts and so on
-tracker := pirsch.NewTracker(store, nil)
+tracker := pirsch.NewTracker(store, "secret_salt", nil)
 
 // the Processor analyzes hits and stores the reduced data points in store
 // it's recommended to run the Process method once a day
@@ -69,6 +70,10 @@ That can be used to implement a single tracking endpoint which you call using an
 
 To analyze hits and processed data you can use the analyzer, which provides some functions to extract useful data.
 
+The secret salt passed to `NewTracker` should not be known outside of your organization, as it can be used to generate fingerprints that are like yours.
+This is used to prevent people from outside your organization to track your visitors and gain data from it.
+Note that while you can generate the salt at random, the fingerprints will change too. To get reliable data configure a fixed salt and treat it like a password.
+
 ```
 // this also needs access to the store
 analyzer := pirsch.NewAnalyzer(store)
@@ -83,6 +88,17 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 ```
 
 Read the full documentation for more details or check out [this](https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w) article.
+
+## Changelog
+
+### 1.1.0
+
+* added a secret salt to prevent generating fingerprints to identify visitors on other websites (man in the middle)
+* extended bot list
+
+### 1.0.0
+
+Initial release.
 
 ## Contribution
 

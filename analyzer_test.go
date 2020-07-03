@@ -252,9 +252,9 @@ func TestAnalyzerValidateFilter(t *testing.T) {
 func TestAnalyzerActiveVisitors(t *testing.T) {
 	store := NewPostgresStore(db)
 	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
-	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
-	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
-	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
+	createHit(t, store, "fp2", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
+	createHit(t, store, "fp3", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
+	createHit(t, store, "fp4", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
 	analyzer := NewAnalyzer(store)
 	visitors, err := analyzer.ActiveVisitors(time.Second * 10)
 

@@ -10,7 +10,7 @@ import (
 
 func TestTrackerHitTimeout(t *testing.T) {
 	store := newTestStore()
-	tracker := NewTracker(store, &TrackerConfig{WorkerTimeout: time.Second * 2})
+	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
 	tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil))
 	tracker.Hit(httptest.NewRequest(http.MethodGet, "/hello-world", nil))
 	time.Sleep(time.Second * 4)
@@ -28,7 +28,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 
 func TestTrackerHitLimit(t *testing.T) {
 	store := newTestStore()
-	tracker := NewTracker(store, &TrackerConfig{
+	tracker := NewTracker(store, "salt", &TrackerConfig{
 		Worker:           1,
 		WorkerBufferSize: 10,
 	})
@@ -47,7 +47,7 @@ func TestTrackerHitLimit(t *testing.T) {
 
 func TestTrackerHitPage(t *testing.T) {
 	store := newTestStore()
-	tracker := NewTracker(store, nil)
+	tracker := NewTracker(store, "salt", nil)
 	tracker.HitPage(httptest.NewRequest(http.MethodGet, "/", nil), "/some-page")
 	time.Sleep(time.Second) // allow all hits to be tracked
 	tracker.Stop()
@@ -60,7 +60,7 @@ func TestTrackerHitPage(t *testing.T) {
 func TestTrackerIgnoreHitPrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Moz", "prefetch")
-	tracker := NewTracker(newTestStore(), nil)
+	tracker := NewTracker(newTestStore(), "salt", nil)
 
 	if !tracker.ignoreHit(req) {
 		t.Fatal("Hit with X-Moz header must be ignored")
@@ -102,7 +102,7 @@ func TestTrackerIgnoreHitPrefetch(t *testing.T) {
 func TestTrackerIgnoreHitUserAgent(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "This is a bot request")
-	tracker := NewTracker(newTestStore(), nil)
+	tracker := NewTracker(newTestStore(), "salt", nil)
 
 	if !tracker.ignoreHit(req) {
 		t.Fatal("Hit with keyword in User-Agent must be ignored")
@@ -134,7 +134,7 @@ func TestTrackerIgnoreHitUserAgent(t *testing.T) {
 }
 
 func TestTrackerIgnoreHitBotUserAgent(t *testing.T) {
-	tracker := NewTracker(newTestStore(), nil)
+	tracker := NewTracker(newTestStore(), "salt", nil)
 
 	for _, botUserAgent := range userAgentBotList {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
