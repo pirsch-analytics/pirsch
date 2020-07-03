@@ -124,7 +124,7 @@ func (tracker *Tracker) Stop() {
 }
 
 func (tracker *Tracker) ignoreHit(r *http.Request) bool {
-	if r.Header.Get("X-Moz") == "prefetch" || // ignore browser prefetching data
+	if r.Header.Get("X-Moz") == "prefetch" || // ignore browsers pre-fetching data
 		r.Header.Get("X-Purpose") == "prefetch" ||
 		r.Header.Get("X-Purpose") == "preview" ||
 		r.Header.Get("Purpose") == "prefetch" ||
@@ -134,14 +134,7 @@ func (tracker *Tracker) ignoreHit(r *http.Request) bool {
 
 	userAgent := strings.ToLower(r.Header.Get("User-Agent"))
 
-	if strings.Contains(userAgent, "bot") || // words often used in bot names
-		strings.Contains(userAgent, "crawler") ||
-		strings.Contains(userAgent, "spider") ||
-		strings.Contains(userAgent, "://") { // URLs
-		return true
-	}
-
-	for _, botUserAgent := range userAgentBotList {
+	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			return true
 		}

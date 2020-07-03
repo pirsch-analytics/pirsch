@@ -136,7 +136,7 @@ func TestTrackerIgnoreHitUserAgent(t *testing.T) {
 func TestTrackerIgnoreHitBotUserAgent(t *testing.T) {
 	tracker := NewTracker(newTestStore(), "salt", nil)
 
-	for _, botUserAgent := range userAgentBotList {
+	for _, botUserAgent := range userAgentBlacklist {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
 
