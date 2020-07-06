@@ -21,11 +21,11 @@ type TrackerConfig struct {
 	Worker int
 
 	// WorkerBufferSize is the size of the buffer used to store hits.
-	// Must be greater or equal to 2. The hits are stored when the buffer size reaches half of its maximum.
+	// Must be greater than 0. The hits are stored in batch when the buffer is full.
 	WorkerBufferSize int
 
 	// WorkerTimeout sets the timeout used to store hits.
-	// This is used to allow the workers to store hits even if the buffer is not full.
+	// This is used to allow the workers to store hits even if the buffer is not full yet.
 	// It's recommended to set this to a few seconds.
 	WorkerTimeout time.Duration
 }
@@ -57,7 +57,7 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 			worker = config.Worker
 		}
 
-		if config.WorkerBufferSize > 1 {
+		if config.WorkerBufferSize > 0 {
 			bufferSize = config.WorkerBufferSize
 		}
 
