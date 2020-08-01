@@ -2,6 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/emvi/pirsch?status.svg)](https://godoc.org/github.com/emvi/pirsch)
 [![Go Report Card](https://goreportcard.com/badge/github.com/emvi/pirsch)](https://goreportcard.com/report/github.com/emvi/pirsch)
+<a href="https://discord.gg/5UWdRh"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
 
 **State of the project**: we are currently testing how precise Pirsch is by comparing it to other solutions.
 
