@@ -41,7 +41,7 @@ To store hits and statistics, Pirsch uses a database. Right now only Postgres is
 
 Here is a quick demo on how to use the library:
 
-```
+```Go
 // create a Postgres store using the sql.DB database connection "db"
 store := pirsch.NewPostgresStore(db)
 
@@ -75,7 +75,7 @@ The secret salt passed to `NewTracker` should not be known outside of your organ
 This is used to prevent people from outside your organization to track your visitors and gain data from it.
 Note that while you can generate the salt at random, the fingerprints will change too. To get reliable data configure a fixed salt and treat it like a password.
 
-```
+```Go
 // this also needs access to the store
 analyzer := pirsch.NewAnalyzer(store)
 
