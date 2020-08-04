@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="gopher.svg" width="200px" />
+</p>
+
 # Pirsch
 
 [![GoDoc](https://godoc.org/github.com/emvi/pirsch?status.svg)](https://godoc.org/github.com/emvi/pirsch)
