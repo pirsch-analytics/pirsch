@@ -262,8 +262,8 @@ func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLangu
 				GROUP BY "language"
 				UNION
 				SELECT lower("language") "language", count(DISTINCT fingerprint) "visitors" FROM "hit"
-				WHERE "time" >= date($1::timestamp)
-				AND "time" <= date($2::timestamp)
+				WHERE date("time") >= date($1::timestamp)
+				AND date("time") <= date($2::timestamp)
 				GROUP BY "language"
 			) AS results
 			GROUP BY "language"
