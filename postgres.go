@@ -30,12 +30,12 @@ func (store *PostgresStore) Save(hits []Hit) error {
 	query.WriteString(postgresSaveQuery)
 
 	for i, hit := range hits {
-		args = append(args, hit.Fingerprint)
-		args = append(args, hit.Path)
-		args = append(args, hit.URL)
-		args = append(args, hit.Language)
-		args = append(args, hit.UserAgent)
-		args = append(args, hit.Ref)
+		args = append(args, shortenString(hit.Fingerprint, 2000))
+		args = append(args, shortenString(hit.Path, 2000))
+		args = append(args, shortenString(hit.URL, 2000))
+		args = append(args, shortenString(hit.Language, 10))
+		args = append(args, shortenString(hit.UserAgent, 200))
+		args = append(args, shortenString(hit.Ref, 200))
 		args = append(args, hit.Time)
 		index := i * 7
 		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
