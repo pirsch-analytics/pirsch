@@ -96,6 +96,11 @@ Read the full documentation for more details or check out [this](https://marvinb
 
 ## Changelog
 
+### 1.1.1
+
+* fixed error in case values are too long
+* fixed language statistics not including today
+
 ### 1.1.0
 
 * added a secret salt to prevent generating fingerprints to identify visitors on other websites (man in the middle)
