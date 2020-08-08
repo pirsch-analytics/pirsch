@@ -52,6 +52,10 @@ func (processor *Processor) visitorCount(day time.Time) error {
 		return err
 	}
 
+	if visitors == 0 {
+		return nil
+	}
+
 	return processor.store.SaveVisitorsPerDay(&VisitorsPerDay{
 		Day:      day,
 		Visitors: visitors,
@@ -84,8 +88,10 @@ func (processor *Processor) languageCount(day time.Time) error {
 	}
 
 	for _, visitors := range visitors {
-		if err := processor.store.SaveVisitorsPerLanguage(&visitors); err != nil {
-			return err
+		if visitors.Visitors > 0 {
+			if err := processor.store.SaveVisitorsPerLanguage(&visitors); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -100,8 +106,10 @@ func (processor *Processor) pageViews(day time.Time) error {
 	}
 
 	for _, visitors := range visitors {
-		if err := processor.store.SaveVisitorsPerPage(&visitors); err != nil {
-			return err
+		if visitors.Visitors > 0 {
+			if err := processor.store.SaveVisitorsPerPage(&visitors); err != nil {
+				return err
+			}
 		}
 	}
 

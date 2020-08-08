@@ -44,7 +44,7 @@ func getLanguage(r *http.Request) string {
 	if lang != "" {
 		langs := strings.Split(lang, ";")
 		parts := strings.Split(langs[0], ",")
-		return parts[0]
+		return strings.ToLower(parts[0])
 	}
 
 	return ""

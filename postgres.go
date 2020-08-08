@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-const (
-	postgresSaveQuery = `INSERT INTO "hit" (fingerprint, path, url, language, user_agent, ref, time) VALUES `
-)
-
 // PostgresStore implements the Store interface.
 type PostgresStore struct {
 	DB *sqlx.DB
@@ -27,7 +23,7 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 func (store *PostgresStore) Save(hits []Hit) error {
 	args := make([]interface{}, 0, len(hits)*7)
 	var query strings.Builder
-	query.WriteString(postgresSaveQuery)
+	query.WriteString(`INSERT INTO "hit" (fingerprint, path, url, language, user_agent, ref, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, shortenString(hit.Fingerprint, 2000))
@@ -65,49 +61,97 @@ func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 
 // SaveVisitorsPerDay implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
-	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
+	day := new(VisitorsPerDay)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_day" WHERE date(day) = date($1)`, visitors.Day)
 
 	if err != nil {
-		return err
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Visitors += visitors.Visitors
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitors_per_day" SET visitors = :visitors WHERE id = :id`, day); err != nil {
+			return err
+		}
 	}
 
-	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerHour implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error {
-	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
+	day := new(VisitorsPerHour)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_hour" WHERE date(day_and_hour) = date($1) AND extract(hour from day_and_hour) = extract(hour from $1)`, visitors.DayAndHour)
 
 	if err != nil {
-		return err
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Visitors += visitors.Visitors
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitors_per_hour" SET visitors = :visitors WHERE id = :id`, day); err != nil {
+			return err
+		}
 	}
 
-	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguage) error {
-	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
+	day := new(VisitorsPerLanguage)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_language" WHERE date(day) = date($1) AND language = $2`, visitors.Day, visitors.Language)
 
 	if err != nil {
-		return err
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Visitors += visitors.Visitors
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitors_per_language" SET visitors = :visitors WHERE id = :id`, day); err != nil {
+			return err
+		}
 	}
 
-	closeRows(rows)
 	return nil
 }
 
 // SaveVisitorsPerPage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error {
-	rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
+	day := new(VisitorsPerPage)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_page" WHERE date(day) = date($1) AND path = $2`, visitors.Day, visitors.Path)
 
 	if err != nil {
-		return err
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Visitors += visitors.Visitors
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitors_per_page" SET visitors = :visitors WHERE id = :id`, day); err != nil {
+			return err
+		}
 	}
 
-	closeRows(rows)
 	return nil
 }
 

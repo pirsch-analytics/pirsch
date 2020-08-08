@@ -16,7 +16,7 @@ func TestHitFromRequest(t *testing.T) {
 	if hit.Fingerprint == "" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar#anchor" ||
-		hit.Language != "de-DE" ||
+		hit.Language != "de-de" ||
 		hit.UserAgent != "user-agent" ||
 		hit.Ref != "ref" ||
 		hit.Time.IsZero() {
