@@ -10,7 +10,11 @@ func TestProcessor_Process(t *testing.T) {
 	store := NewPostgresStore(db)
 	createTestdata(t, store, 0)
 	processor := NewProcessor(store)
-	processor.Process()
+
+	if err := processor.Process(); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
+
 	checkhits(t, store, 0)
 	checkVisitorCount(t, store, 0, 3, 3)
 	checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
@@ -22,7 +26,11 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 	store := NewPostgresStore(db)
 	createTestdata(t, store, 1)
 	processor := NewProcessor(store)
-	processor.ProcessTenant(sql.NullInt64{Int64: 1, Valid: true})
+
+	if err := processor.ProcessTenant(sql.NullInt64{Int64: 1, Valid: true}); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
+
 	checkhits(t, store, 1)
 	checkVisitorCount(t, store, 1, 3, 3)
 	checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
@@ -35,7 +43,11 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 	createTestdata(t, store, 0)
 	createTestDays(t, store)
 	processor := NewProcessor(store)
-	processor.Process()
+
+	if err := processor.Process(); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
+
 	checkhits(t, store, 0)
 	checkVisitorCount(t, store, 0, 42+3, 3)
 	checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
