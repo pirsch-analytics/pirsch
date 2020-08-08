@@ -29,7 +29,7 @@ Pirsch tracks the following data points:
 * visitors per day and page
 * visitors per day and language
 
-All timestamps are stored as UTC.
+All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field.
 
 It's theoretically possible to track the visitor flow (which page was seen first, which one was visited next, etc.), but this is not implemented at the moment. Here is a list of the limitations of Pirsch:
 
@@ -60,17 +60,15 @@ pirsch.RunAtMidnight(processor.Process) // helper function to run a function at 
 
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     // a call to Hit will track the request
-    // note that Pirsch stores the path and URL, therefor you should make sure you only call it for the endpoints you're interersted in
+    // note that Pirsch stores the path and URL, therefor you should make sure you only call it for the endpoints you're interested in
+    // you can also modify the path by passing in the options argument
     if r.URL.Path == "/" {
-        tracker.Hit(r)
+        tracker.Hit(r, nil)
     }
 
     w.Write([]byte("<h1>Hello World!</h1>"))
 }))
 ```
-
-Instead of calling `Hit`, you can also call `HitPage`, which allows you to specify an alternative path independent of the current request path.
-That can also be used to implement a single tracking endpoint, which you can call using Ajax.
 
 To analyze hits and processed data you can use the analyzer, which provides convenience functions to extract useful information.
 
@@ -93,6 +91,10 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details and check out [this](https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w) article.
 
 ## Changelog
+
+### 1.2.0
+
+*WIP*
 
 ### 1.1.1
 

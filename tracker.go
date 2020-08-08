@@ -3,7 +3,6 @@ package pirsch
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -82,28 +81,10 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 // Hit stores the given request.
 // The request might be ignored if it meets certain conditions.
 // The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
-func (tracker *Tracker) Hit(r *http.Request) {
+func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	go func() {
 		if !tracker.ignoreHit(r) {
-			tracker.hits <- hitFromRequest(r, tracker.salt)
-		}
-	}()
-}
-
-// HitPage works like Hit, but sets the path to the given path.
-// This can be useful in case you have a single endpoint to track requests that you call from JavaScript for example.
-func (tracker *Tracker) HitPage(r *http.Request, path string) {
-	go func() {
-		if !tracker.ignoreHit(r) {
-			u, err := url.Parse(r.RequestURI)
-
-			if err == nil {
-				hit := hitFromRequest(r, tracker.salt)
-				u.Path = path
-				hit.Path = path
-				hit.URL = u.String()
-				tracker.hits <- hit
-			}
+			tracker.hits <- hitFromRequest(r, tracker.salt, options)
 		}
 	}()
 }

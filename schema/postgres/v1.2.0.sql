@@ -1,0 +1,10 @@
+ALTER TABLE "hit" ADD COLUMN tenant_id bigint;
+ALTER TABLE "visitors_per_day" ADD COLUMN tenant_id bigint;
+ALTER TABLE "visitors_per_hour" ADD COLUMN tenant_id bigint;
+ALTER TABLE "visitors_per_language" ADD COLUMN tenant_id bigint;
+ALTER TABLE "visitors_per_page" ADD COLUMN tenant_id bigint;
+CREATE INDEX hit_tenant_id_index ON hit(tenant_id);
+CREATE INDEX visitors_per_day_tenant_id_index ON visitors_per_day(tenant_id);
+CREATE INDEX visitors_per_hour_tenant_id_index ON visitors_per_hour(tenant_id);
+CREATE INDEX visitors_per_language_tenant_id_index ON visitors_per_language(tenant_id);
+CREATE INDEX visitors_per_page_tenant_id_index ON visitors_per_page(tenant_id);

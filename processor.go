@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"sync"
 	"time"
 )
@@ -18,35 +19,42 @@ func NewProcessor(store Store) *Processor {
 // Process processes all hits in database and deletes them afterwards.
 // It will panic in case of an error.
 func (processor *Processor) Process() {
-	days, err := processor.store.Days()
+	processor.ProcessTenant(NullTenant)
+}
+
+// ProcessTenant processes all hits in database for given tenant and deletes them afterwards.
+// The tenant can be set to nil if you don't split your data (which is usually the case).
+// It will panic in case of an error.
+func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) {
+	days, err := processor.store.Days(tenantID)
 	panicOnErr(err)
 
 	for _, day := range days {
 		var wg sync.WaitGroup
 		wg.Add(4)
 		go func() {
-			panicOnErr(processor.visitorCount(day))
+			panicOnErr(processor.visitorCount(tenantID, day))
 			wg.Done()
 		}()
 		go func() {
-			panicOnErr(processor.visitorCountHour(day))
+			panicOnErr(processor.visitorCountHour(tenantID, day))
 			wg.Done()
 		}()
 		go func() {
-			panicOnErr(processor.languageCount(day))
+			panicOnErr(processor.languageCount(tenantID, day))
 			wg.Done()
 		}()
 		go func() {
-			panicOnErr(processor.pageViews(day))
+			panicOnErr(processor.pageViews(tenantID, day))
 			wg.Done()
 		}()
 		wg.Wait()
-		panicOnErr(processor.store.DeleteHitsByDay(day))
+		panicOnErr(processor.store.DeleteHitsByDay(tenantID, day))
 	}
 }
 
-func (processor *Processor) visitorCount(day time.Time) error {
-	visitors, err := processor.store.VisitorsPerDay(day)
+func (processor *Processor) visitorCount(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.VisitorsPerDay(tenantID, day)
 
 	if err != nil {
 		return err
@@ -57,13 +65,14 @@ func (processor *Processor) visitorCount(day time.Time) error {
 	}
 
 	return processor.store.SaveVisitorsPerDay(&VisitorsPerDay{
+		TenantID: tenantID,
 		Day:      day,
 		Visitors: visitors,
 	})
 }
 
-func (processor *Processor) visitorCountHour(day time.Time) error {
-	visitors, err := processor.store.VisitorsPerDayAndHour(day)
+func (processor *Processor) visitorCountHour(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.VisitorsPerDayAndHour(tenantID, day)
 
 	if err != nil {
 		return err
@@ -80,8 +89,8 @@ func (processor *Processor) visitorCountHour(day time.Time) error {
 	return nil
 }
 
-func (processor *Processor) languageCount(day time.Time) error {
-	visitors, err := processor.store.VisitorsPerLanguage(day)
+func (processor *Processor) languageCount(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.VisitorsPerLanguage(tenantID, day)
 
 	if err != nil {
 		return err
@@ -98,8 +107,8 @@ func (processor *Processor) languageCount(day time.Time) error {
 	return nil
 }
 
-func (processor *Processor) pageViews(day time.Time) error {
-	visitors, err := processor.store.VisitorsPerPage(day)
+func (processor *Processor) pageViews(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.VisitorsPerPage(tenantID, day)
 
 	if err != nil {
 		return err

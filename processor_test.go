@@ -1,40 +1,59 @@
 package pirsch
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
 
 func TestProcessor_Process(t *testing.T) {
 	store := NewPostgresStore(db)
-	createTestdata(t, store)
+	createTestdata(t, store, 0)
 	processor := NewProcessor(store)
 	processor.Process()
-	checkhits(t, store)
-	checkVisitorCount(t, store, 3, 3)
-	checkVisitorCountHour(t, store, 2, 1, 2, 1)
-	checkLanguageCount(t, store, 1, 2, 2, 1)
-	checkPageViewCount(t, store, 2, 1, 2, 1)
+	checkhits(t, store, 0)
+	checkVisitorCount(t, store, 0, 3, 3)
+	checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
+	checkLanguageCount(t, store, 0, 1, 2, 2, 1)
+	checkPageViewCount(t, store, 0, 2, 1, 2, 1)
+}
+
+func TestProcessor_ProcessTenant(t *testing.T) {
+	store := NewPostgresStore(db)
+	createTestdata(t, store, 1)
+	processor := NewProcessor(store)
+	processor.ProcessTenant(sql.NullInt64{Int64: 1, Valid: true})
+	checkhits(t, store, 1)
+	checkVisitorCount(t, store, 1, 3, 3)
+	checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
+	checkLanguageCount(t, store, 1, 1, 2, 2, 1)
+	checkPageViewCount(t, store, 1, 2, 1, 2, 1)
 }
 
 func TestProcessor_ProcessSameDay(t *testing.T) {
 	store := NewPostgresStore(db)
-	createTestdata(t, store)
+	createTestdata(t, store, 0)
 	createTestDays(t, store)
 	processor := NewProcessor(store)
 	processor.Process()
-	checkhits(t, store)
-	checkVisitorCount(t, store, 42+3, 3)
-	checkVisitorCountHour(t, store, 2, 1, 31+2, 1)
-	checkLanguageCount(t, store, 1, 7+2, 2, 1)
-	checkPageViewCount(t, store, 2, 1, 2, 66+1)
+	checkhits(t, store, 0)
+	checkVisitorCount(t, store, 0, 42+3, 3)
+	checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
+	checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
+	checkPageViewCount(t, store, 0, 2, 1, 2, 66+1)
 }
 
-func checkhits(t *testing.T, store *PostgresStore) {
+func checkhits(t *testing.T, store *PostgresStore, tenantID int64) {
 	var count int
 
-	if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit"`); err != nil {
-		t.Fatal(err)
+	if tenantID == 0 {
+		if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit"`); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE tenant_id = $1`, tenantID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if count != 0 {
@@ -42,11 +61,17 @@ func checkhits(t *testing.T, store *PostgresStore) {
 	}
 }
 
-func checkVisitorCount(t *testing.T, store *PostgresStore, day1, day2 int) {
+func checkVisitorCount(t *testing.T, store *PostgresStore, tenantID int64, day1, day2 int) {
 	var visitors []VisitorsPerDay
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" ORDER BY "day"`); err != nil {
-		t.Fatal(err)
+	if tenantID == 0 {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" ORDER BY "day"`); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" WHERE tenant_id = $1 ORDER BY "day"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if len(visitors) != 2 {
@@ -58,11 +83,17 @@ func checkVisitorCount(t *testing.T, store *PostgresStore, day1, day2 int) {
 	}
 }
 
-func checkVisitorCountHour(t *testing.T, store *PostgresStore, hour1, hour2, hour3, hour4 int) {
+func checkVisitorCountHour(t *testing.T, store *PostgresStore, tenantID int64, hour1, hour2, hour3, hour4 int) {
 	var visitors []VisitorsPerHour
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" ORDER BY "day_and_hour"`); err != nil {
-		t.Fatal(err)
+	if tenantID == 0 {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" ORDER BY "day_and_hour"`); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" WHERE tenant_id = $1 ORDER BY "day_and_hour"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if len(visitors) != 4 {
@@ -84,11 +115,17 @@ func checkVisitorCountHour(t *testing.T, store *PostgresStore, hour1, hour2, hou
 	}
 }
 
-func checkLanguageCount(t *testing.T, store *PostgresStore, lang1, lang2, lang3, lang4 int) {
+func checkLanguageCount(t *testing.T, store *PostgresStore, tenantID int64, lang1, lang2, lang3, lang4 int) {
 	var visitors []VisitorsPerLanguage
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" ORDER BY "day", "language"`); err != nil {
-		t.Fatal(err)
+	if tenantID == 0 {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" ORDER BY "day", "language"`); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" WHERE tenant_id = $1 ORDER BY "day", "language"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if len(visitors) != 4 {
@@ -110,11 +147,17 @@ func checkLanguageCount(t *testing.T, store *PostgresStore, lang1, lang2, lang3,
 	}
 }
 
-func checkPageViewCount(t *testing.T, store *PostgresStore, views1, views2, views3, views4 int) {
+func checkPageViewCount(t *testing.T, store *PostgresStore, tenantID int64, views1, views2, views3, views4 int) {
 	var visitors []VisitorsPerPage
 
-	if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" ORDER BY "day", "path"`); err != nil {
-		t.Fatal(err)
+	if tenantID == 0 {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" WHERE tenant_id = $1 ORDER BY "day", "path"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if len(visitors) != 4 {
@@ -136,14 +179,14 @@ func checkPageViewCount(t *testing.T, store *PostgresStore, views1, views2, view
 	}
 }
 
-func createTestdata(t *testing.T, store Store) {
+func createTestdata(t *testing.T, store Store, tenantID int64) {
 	cleanupDB(t)
-	createHit(t, store, "fp1", "/", "en", "ua1", day(2020, 6, 21, 7))
-	createHit(t, store, "fp2", "/", "en", "ua2", day(2020, 6, 21, 7))
-	createHit(t, store, "fp3", "/page", "de", "ua3", day(2020, 6, 21, 8))
-	createHit(t, store, "fp4", "/", "en", "ua4", day(2020, 6, 22, 9))
-	createHit(t, store, "fp5", "/", "en", "ua5", day(2020, 6, 22, 9))
-	createHit(t, store, "fp6", "/different-page", "jp", "ua6", day(2020, 6, 22, 10))
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", day(2020, 6, 21, 7))
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", day(2020, 6, 21, 7))
+	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", day(2020, 6, 21, 8))
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", day(2020, 6, 22, 9))
+	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", day(2020, 6, 22, 9))
+	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", day(2020, 6, 22, 10))
 }
 
 func createTestDays(t *testing.T, store Store) {
@@ -186,8 +229,9 @@ func createTestDays(t *testing.T, store Store) {
 	}
 }
 
-func createHit(t *testing.T, store Store, fingerprint, path, lang, userAgent string, time time.Time) {
+func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent string, time time.Time) {
 	hit := Hit{
+		TenantID:    sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
 		Fingerprint: fingerprint,
 		Path:        path,
 		Language:    lang,

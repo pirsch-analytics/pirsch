@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// number of arguments to store
+const hitParamCount = 8
+
 // PostgresStore implements the Store interface.
 type PostgresStore struct {
 	DB *sqlx.DB
@@ -21,11 +24,12 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 
 // Save implements the Store interface.
 func (store *PostgresStore) Save(hits []Hit) error {
-	args := make([]interface{}, 0, len(hits)*7)
+	args := make([]interface{}, 0, len(hits)*hitParamCount)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (fingerprint, path, url, language, user_agent, ref, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, time) VALUES `)
 
 	for i, hit := range hits {
+		args = append(args, hit.TenantID)
 		args = append(args, shortenString(hit.Fingerprint, 2000))
 		args = append(args, shortenString(hit.Path, 2000))
 		args = append(args, shortenString(hit.URL, 2000))
@@ -33,9 +37,9 @@ func (store *PostgresStore) Save(hits []Hit) error {
 		args = append(args, shortenString(hit.UserAgent, 200))
 		args = append(args, shortenString(hit.Ref, 200))
 		args = append(args, hit.Time)
-		index := i * 7
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7))
+		index := i * hitParamCount
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8))
 	}
 
 	queryStr := query.String()
@@ -49,8 +53,8 @@ func (store *PostgresStore) Save(hits []Hit) error {
 }
 
 // DeleteHitsByDay implements the Store interface.
-func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
-	_, err := store.DB.Exec(`DELETE FROM "hit" WHERE time >= $1 AND time < $1 + INTERVAL '1 day'`, day)
+func (store *PostgresStore) DeleteHitsByDay(tenantID sql.NullInt64, day time.Time) error {
+	_, err := store.DB.Exec(`DELETE FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND time >= $2 AND time < $2 + INTERVAL '1 day'`, tenantID, day)
 
 	if err != nil {
 		return err
@@ -62,10 +66,10 @@ func (store *PostgresStore) DeleteHitsByDay(day time.Time) error {
 // SaveVisitorsPerDay implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
 	day := new(VisitorsPerDay)
-	err := store.DB.Get(day, `SELECT * FROM "visitors_per_day" WHERE date(day) = date($1)`, visitors.Day)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_day" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2)`, visitors.TenantID, visitors.Day)
 
 	if err != nil {
-		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (day, visitors) VALUES (:day, :visitors)`, visitors)
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_day" (tenant_id, day, visitors) VALUES (:tenant_id, :day, :visitors)`, visitors)
 
 		if err != nil {
 			return err
@@ -86,10 +90,10 @@ func (store *PostgresStore) SaveVisitorsPerDay(visitors *VisitorsPerDay) error {
 // SaveVisitorsPerHour implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error {
 	day := new(VisitorsPerHour)
-	err := store.DB.Get(day, `SELECT * FROM "visitors_per_hour" WHERE date(day_and_hour) = date($1) AND extract(hour from day_and_hour) = extract(hour from $1)`, visitors.DayAndHour)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_hour" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day_and_hour) = date($2) AND extract(hour from day_and_hour) = extract(hour from $2)`, visitors.TenantID, visitors.DayAndHour)
 
 	if err != nil {
-		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (day_and_hour, visitors) VALUES (:day_and_hour, :visitors)`, visitors)
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_hour" (tenant_id, day_and_hour, visitors) VALUES (:tenant_id, :day_and_hour, :visitors)`, visitors)
 
 		if err != nil {
 			return err
@@ -110,10 +114,10 @@ func (store *PostgresStore) SaveVisitorsPerHour(visitors *VisitorsPerHour) error
 // SaveVisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguage) error {
 	day := new(VisitorsPerLanguage)
-	err := store.DB.Get(day, `SELECT * FROM "visitors_per_language" WHERE date(day) = date($1) AND language = $2`, visitors.Day, visitors.Language)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_language" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND language = $3`, visitors.TenantID, visitors.Day, visitors.Language)
 
 	if err != nil {
-		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (day, language, visitors) VALUES (:day, :language, :visitors)`, visitors)
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_language" (tenant_id, day, language, visitors) VALUES (:tenant_id, :day, :language, :visitors)`, visitors)
 
 		if err != nil {
 			return err
@@ -134,10 +138,10 @@ func (store *PostgresStore) SaveVisitorsPerLanguage(visitors *VisitorsPerLanguag
 // SaveVisitorsPerPage implements the Store interface.
 func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error {
 	day := new(VisitorsPerPage)
-	err := store.DB.Get(day, `SELECT * FROM "visitors_per_page" WHERE date(day) = date($1) AND path = $2`, visitors.Day, visitors.Path)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND path = $3`, visitors.TenantID, visitors.Day, visitors.Path)
 
 	if err != nil {
-		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (day, path, visitors) VALUES (:day, :path, :visitors)`, visitors)
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_page" (tenant_id, day, path, visitors) VALUES (:tenant_id, :day, :path, :visitors)`, visitors)
 
 		if err != nil {
 			return err
@@ -156,10 +160,10 @@ func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error
 }
 
 // Days implements the Store interface.
-func (store *PostgresStore) Days() ([]time.Time, error) {
+func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	var days []time.Time
 
-	if err := store.DB.Select(&days, `SELECT DISTINCT date(time) FROM "hit" WHERE time < current_date`); err != nil {
+	if err := store.DB.Select(&days, `SELECT DISTINCT date(time) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND time < current_date`, tenantID); err != nil {
 		return nil, err
 	}
 
@@ -167,11 +171,11 @@ func (store *PostgresStore) Days() ([]time.Time, error) {
 }
 
 // VisitorsPerDay implements the Store interface.
-func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
-	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE date("time") = $1`
+func (store *PostgresStore) VisitorsPerDay(tenantID sql.NullInt64, day time.Time) (int, error) {
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2`
 	var visitors int
 
-	if err := store.DB.Get(&visitors, query, day); err != nil {
+	if err := store.DB.Get(&visitors, query, tenantID, day); err != nil {
 		return 0, err
 	}
 
@@ -179,23 +183,25 @@ func (store *PostgresStore) VisitorsPerDay(day time.Time) (int, error) {
 }
 
 // VisitorsPerDayAndHour implements the Store interface.
-func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerHour, error) {
+func (store *PostgresStore) VisitorsPerDayAndHour(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerHour, error) {
 	query := `SELECT "day_and_hour", (
 			SELECT count(DISTINCT fingerprint) FROM "hit"
-			WHERE time >= "day_and_hour"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= "day_and_hour"
 			AND time < "day_and_hour" + INTERVAL '1 hour'
-		) "visitors"
+		) "visitors",
+		$1 AS "tenant_id"
 		FROM (
 			SELECT * FROM generate_series(
-				$1::timestamp,
-				$1::timestamp + INTERVAL '23 hours',
+				$2::timestamp,
+				$2::timestamp + INTERVAL '23 hours',
 				interval '1 hour'
 			) "day_and_hour"
 		) AS hours
 		ORDER BY "day_and_hour" ASC`
 	var visitors []VisitorsPerHour
 
-	if err := store.DB.Select(&visitors, query, day); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
 		return nil, err
 	}
 
@@ -203,17 +209,18 @@ func (store *PostgresStore) VisitorsPerDayAndHour(day time.Time) ([]VisitorsPerH
 }
 
 // VisitorsPerLanguage implements the Store interface.
-func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLanguage, error) {
+func (store *PostgresStore) VisitorsPerLanguage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerLanguage, error) {
 	query := `SELECT * FROM (
-			SELECT $1::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
+			SELECT tenant_id, $2::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
 			FROM hit
-			WHERE time >= $1::timestamp
-			AND time < $1::timestamp + INTERVAL '1 day'
-			GROUP BY "language"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			GROUP BY tenant_id, "language"
 		) AS results ORDER BY "day" ASC`
 	var visitors []VisitorsPerLanguage
 
-	if err := store.DB.Select(&visitors, query, day); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
 		return nil, err
 	}
 
@@ -221,17 +228,18 @@ func (store *PostgresStore) VisitorsPerLanguage(day time.Time) ([]VisitorsPerLan
 }
 
 // VisitorsPerPage implements the Store interface.
-func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, error) {
+func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerPage, error) {
 	query := `SELECT * FROM (
-			SELECT $1::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
+			SELECT tenant_id, $2::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
 			FROM hit
-			WHERE time >= $1::timestamp
-			AND time < $1::timestamp + INTERVAL '1 day'
-			GROUP BY "path"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			GROUP BY tenant_id, "path"
 		) AS results ORDER BY "day", "path" ASC`
 	var visitors []VisitorsPerPage
 
-	if err := store.DB.Select(&visitors, query, day); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
 		return nil, err
 	}
 
@@ -239,13 +247,13 @@ func (store *PostgresStore) VisitorsPerPage(day time.Time) ([]VisitorsPerPage, e
 }
 
 // Paths implements the Store interface.
-func (store *PostgresStore) Paths(from, to time.Time) ([]string, error) {
+func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([]string, error) {
 	query := `SELECT * FROM (
-			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE "day" >= $1 AND "day" <= $2
+			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "day" >= $2 AND "day" <= $3
 		) AS paths ORDER BY length("path"), "path" ASC`
 	var paths []string
 
-	if err := store.DB.Select(&paths, query, from, to); err != nil {
+	if err := store.DB.Select(&paths, query, tenantID, from, to); err != nil {
 		return nil, err
 	}
 
@@ -253,21 +261,21 @@ func (store *PostgresStore) Paths(from, to time.Time) ([]string, error) {
 }
 
 // Visitors implements the Store interface.
-func (store *PostgresStore) Visitors(from, to time.Time) ([]VisitorsPerDay, error) {
-	query := `SELECT "date" "day",
+func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]VisitorsPerDay, error) {
+	query := `SELECT tenant_id, "date" "day",
 		CASE WHEN "visitors_per_day".visitors IS NULL THEN 0 ELSE "visitors_per_day".visitors END
 		FROM (
 			SELECT * FROM generate_series(
-				$1::timestamp,
 				$2::timestamp,
+				$3::timestamp,
 				INTERVAL '1 day'
 			) "date"
 		) AS date_series
-		LEFT JOIN "visitors_per_day" ON date("visitors_per_day"."day") = date("date")
+		LEFT JOIN "visitors_per_day" ON ($1::bigint IS NULL OR tenant_id = $1) AND date("visitors_per_day"."day") = date("date")
 		ORDER BY "date" ASC`
 	var visitors []VisitorsPerDay
 
-	if err := store.DB.Select(&visitors, query, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
 		return nil, err
 	}
 
@@ -275,21 +283,21 @@ func (store *PostgresStore) Visitors(from, to time.Time) ([]VisitorsPerDay, erro
 }
 
 // PageVisits implements the Store interface.
-func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]VisitorsPerDay, error) {
-	query := `SELECT "date" "day",
+func (store *PostgresStore) PageVisits(tenantID sql.NullInt64, path string, from, to time.Time) ([]VisitorsPerDay, error) {
+	query := `SELECT tenant_id, "date" "day",
 		CASE WHEN "visitors_per_page".visitors IS NULL THEN 0 ELSE "visitors_per_page".visitors END
 		FROM (
 			SELECT * FROM generate_series(
-				$1::timestamp,
 				$2::timestamp,
+				$3::timestamp,
 				INTERVAL '1 day'
 			) "date"
 		) AS date_series
-		LEFT JOIN "visitors_per_page" ON date("visitors_per_page"."day") = date("date") AND "visitors_per_page"."path" = $3
+		LEFT JOIN "visitors_per_page" ON ($1::bigint IS NULL OR tenant_id = $1) AND date("visitors_per_page"."day") = date("date") AND "visitors_per_page"."path" = $4
 		ORDER BY "date" ASC`
 	var visitors []VisitorsPerDay
 
-	if err := store.DB.Select(&visitors, query, from, to, path); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -297,17 +305,19 @@ func (store *PostgresStore) PageVisits(path string, from, to time.Time) ([]Visit
 }
 
 // VisitorLanguages implements the Store interface.
-func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLanguage, error) {
+func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]VisitorLanguage, error) {
 	query := `SELECT * FROM (
 			SELECT "language", sum("visitors") "visitors" FROM (
 				SELECT lower("language") "language", sum("visitors") "visitors" FROM "visitors_per_language"
-				WHERE "day" >= date($1::timestamp)
-				AND "day" <= date($2::timestamp)
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
 				GROUP BY "language"
 				UNION
 				SELECT lower("language") "language", count(DISTINCT fingerprint) "visitors" FROM "hit"
-				WHERE date("time") >= date($1::timestamp)
-				AND date("time") <= date($2::timestamp)
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
 				GROUP BY "language"
 			) AS results
 			GROUP BY "language"
@@ -315,7 +325,7 @@ func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLangu
 		ORDER BY "visitors" DESC`
 	var languages []VisitorLanguage
 
-	if err := store.DB.Select(&languages, query, from, to); err != nil {
+	if err := store.DB.Select(&languages, query, tenantID, from, to); err != nil {
 		return nil, err
 	}
 
@@ -323,17 +333,19 @@ func (store *PostgresStore) VisitorLanguages(from, to time.Time) ([]VisitorLangu
 }
 
 // VisitorLanguages implements the Store interface.
-func (store *PostgresStore) HourlyVisitors(from, to time.Time) ([]HourlyVisitors, error) {
+func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]HourlyVisitors, error) {
 	query := `SELECT * FROM (
 			SELECT "hour", sum("visitors") "visitors" FROM (
 				SELECT EXTRACT(HOUR FROM "day_and_hour") "hour", sum("visitors") "visitors" FROM "visitors_per_hour"
-				WHERE date("day_and_hour") >= date($1::timestamp)
-				AND date("day_and_hour") <= date($2::timestamp)
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("day_and_hour") >= date($2::timestamp)
+				AND date("day_and_hour") <= date($3::timestamp)
 				GROUP BY "hour"
 				UNION
 				SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors" FROM "hit"
-				WHERE date("time") >= date($1::timestamp)
-				AND date("time") <= date($2::timestamp)
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
 				GROUP BY "hour"
 			) AS results
 			GROUP BY "hour"
@@ -341,7 +353,7 @@ func (store *PostgresStore) HourlyVisitors(from, to time.Time) ([]HourlyVisitors
 		ORDER BY "hour" ASC`
 	var visitors []HourlyVisitors
 
-	if err := store.DB.Select(&visitors, query, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
 		return nil, err
 	}
 
@@ -349,11 +361,11 @@ func (store *PostgresStore) HourlyVisitors(from, to time.Time) ([]HourlyVisitors
 }
 
 // ActiveVisitors implements the Store interface.
-func (store *PostgresStore) ActiveVisitors(from time.Time) (int, error) {
-	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE "time" > $1`
+func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Time) (int, error) {
+	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "time" > $2`
 	var visitors int
 
-	if err := store.DB.Get(&visitors, query, from); err != nil {
+	if err := store.DB.Get(&visitors, query, tenantID, from); err != nil {
 		return 0, err
 	}
 

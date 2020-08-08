@@ -23,7 +23,7 @@ func main() {
 	store := pirsch.NewPostgresStore(db)
 	tracker := pirsch.NewTracker(store, nil)
 	processor := pirsch.NewProcessor(store)
-	pirsch.RunAtMidnight(processor.Process)
+	pirsch.RunAtMidnight(processor.ProcessTenant)
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// don't track resources, just the main page in this demo
