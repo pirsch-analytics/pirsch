@@ -1,14 +1,21 @@
 package pirsch
 
 import (
+	"database/sql"
 	"sort"
 	"time"
 )
 
-// Filter is used to specify the time frame for the Analyzer.
+// Filter is used to specify the time frame and tenant for the Analyzer.
 type Filter struct {
+	// TenantID is the optional tenant ID used to filter results.
+	TenantID sql.NullInt64
+
+	// From is the start of the selection.
 	From time.Time
-	To   time.Time
+
+	// To is the end of the selection.
+	To time.Time
 }
 
 // Days returns the number of days covered by the filter.
@@ -29,7 +36,7 @@ func NewAnalyzer(store Store) *Analyzer {
 // Visitors returns the visitors per day for the given time frame.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	filter = analyzer.validateFilter(filter)
-	visitors, err := analyzer.store.Visitors(filter.From, filter.To)
+	visitors, err := analyzer.store.Visitors(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -38,7 +45,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	today := analyzer.today()
 
 	if today.Equal(filter.To) {
-		visitorsToday, err := analyzer.store.VisitorsPerDay(today)
+		visitorsToday, err := analyzer.store.VisitorsPerDay(filter.TenantID, today)
 
 		if err != nil {
 			return nil, err
@@ -57,7 +64,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 // PageVisits returns the visitors per page per day for given time frame.
 func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	filter = analyzer.validateFilter(filter)
-	paths, err := analyzer.store.Paths(filter.From, filter.To)
+	paths, err := analyzer.store.Paths(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -66,7 +73,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	pageVisits := make([]PageVisits, len(paths))
 
 	for i, path := range paths {
-		visitors, err := analyzer.store.PageVisits(path, filter.From, filter.To)
+		visitors, err := analyzer.store.PageVisits(filter.TenantID, path, filter.From, filter.To)
 
 		if err != nil {
 			return nil, err
@@ -79,7 +86,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	today := analyzer.today()
 
 	if today.Equal(filter.To) {
-		pageVisitsToday, err := analyzer.store.VisitorsPerPage(today)
+		pageVisitsToday, err := analyzer.store.VisitorsPerPage(filter.TenantID, today)
 
 		if err != nil {
 			return nil, err
@@ -124,7 +131,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 // Languages returns the absolute and relative visitor count per language for given time frame.
 func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, error) {
 	filter = analyzer.validateFilter(filter)
-	langs, err := analyzer.store.VisitorLanguages(filter.From, filter.To)
+	langs, err := analyzer.store.VisitorLanguages(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, 0, err
@@ -146,7 +153,7 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, err
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.
 func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, error) {
 	filter = analyzer.validateFilter(filter)
-	visitors, err := analyzer.store.HourlyVisitors(filter.From, filter.To)
+	visitors, err := analyzer.store.HourlyVisitors(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -166,8 +173,8 @@ func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, erro
 }
 
 // ActiveVisitors returns unique visitors last active within given duration.
-func (analyzer *Analyzer) ActiveVisitors(d time.Duration) (int, error) {
-	visitors, err := analyzer.store.ActiveVisitors(time.Now().UTC().Add(-d))
+func (analyzer *Analyzer) ActiveVisitors(tenantID sql.NullInt64, d time.Duration) (int, error) {
+	visitors, err := analyzer.store.ActiveVisitors(tenantID, time.Now().UTC().Add(-d))
 
 	if err != nil {
 		return 0, err
@@ -186,8 +193,13 @@ func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
 		}
 	}
 
-	filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, time.UTC)
-	filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, time.UTC)
+	if filter.From.IsZero() && filter.To.IsZero() {
+		filter.From = today.Add(-time.Hour * 24 * 6) // 7 including today
+		filter.To = today
+	} else {
+		filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, time.UTC)
+		filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, time.UTC)
+	}
 
 	if filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From

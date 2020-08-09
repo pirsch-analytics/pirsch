@@ -1,16 +1,80 @@
 package pirsch
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
 
 func TestAnalyzerVisitors(t *testing.T) {
+	testAnalyzerVisitors(t, 0)
+	testAnalyzerVisitors(t, 1)
+}
+
+func TestAnalyzerVisitorsFiltered(t *testing.T) {
+	testAnalyzerVisitorsFiltered(t, 0)
+	testAnalyzerVisitorsFiltered(t, 1)
+}
+
+func TestAnalyzerPageVisits(t *testing.T) {
+	testAnalyzerPageVisits(t, 0)
+	testAnalyzerPageVisits(t, 1)
+}
+
+func TestAnalyzerPageVisitsFiltered(t *testing.T) {
+	testAnalyzerPageVisitsFiltered(t, 0)
+	testAnalyzerPageVisitsFiltered(t, 1)
+}
+
+func TestAnalyzerLanguages(t *testing.T) {
+	testAnalyzerLanguages(t, 0)
+	testAnalyzerLanguages(t, 1)
+}
+
+func TestAnalyzerLanguagesFiltered(t *testing.T) {
+	testAnalyzerLanguagesFiltered(t, 0)
+	testAnalyzerLanguagesFiltered(t, 1)
+}
+
+func TestAnalyzerHourlyVisitors(t *testing.T) {
+	testAnalyzerHourlyVisitors(t, 0)
+	testAnalyzerHourlyVisitors(t, 1)
+}
+
+func TestAnalyzerActiveVisitors(t *testing.T) {
+	testAnalyzerActiveVisitors(t, 0)
+	testAnalyzerActiveVisitors(t, 1)
+}
+
+func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
+	testAnalyzerHourlyVisitorsFiltered(t, 0)
+	testAnalyzerHourlyVisitorsFiltered(t, 1)
+}
+
+func TestAnalyzerValidateFilter(t *testing.T) {
+	store := NewPostgresStore(db)
+	analyzer := NewAnalyzer(store)
+	filter := analyzer.validateFilter(nil)
+
+	if filter == nil || !filter.From.Equal(pastDay(6)) || !filter.To.Equal(pastDay(0)) {
+		t.Fatalf("Filter not as expected: %v", filter)
+	}
+
+	filter = analyzer.validateFilter(&Filter{From: pastDay(2), To: pastDay(5)})
+
+	if filter == nil || !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
+		t.Fatalf("Filter not as expected: %v", filter)
+	}
+}
+
+func testAnalyzerVisitors(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visitors, err := analyzer.Visitors(nil)
+	visitors, err := analyzer.Visitors(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+	})
 
 	if err != nil {
 		t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -41,12 +105,16 @@ func TestAnalyzerVisitors(t *testing.T) {
 	}
 }
 
-func TestAnalyzerVisitorsFiltered(t *testing.T) {
+func testAnalyzerVisitorsFiltered(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visitors, err := analyzer.Visitors(&Filter{pastDay(3), pastDay(2)})
+	visitors, err := analyzer.Visitors(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		From:     pastDay(3),
+		To:       pastDay(2),
+	})
 
 	if err != nil {
 		t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -67,12 +135,14 @@ func TestAnalyzerVisitorsFiltered(t *testing.T) {
 	}
 }
 
-func TestAnalyzerPageVisits(t *testing.T) {
+func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visits, err := analyzer.PageVisits(nil)
+	visits, err := analyzer.PageVisits(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+	})
 
 	if err != nil {
 		t.Fatalf("Visits must be returned, but was:  %v", err)
@@ -107,12 +177,16 @@ func TestAnalyzerPageVisits(t *testing.T) {
 	}
 }
 
-func TestAnalyzerPageVisitsFiltered(t *testing.T) {
+func testAnalyzerPageVisitsFiltered(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visits, err := analyzer.PageVisits(&Filter{pastDay(3), pastDay(2)})
+	visits, err := analyzer.PageVisits(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		From:     pastDay(3),
+		To:       pastDay(2),
+	})
 
 	if err != nil {
 		t.Fatalf("Visits must be returned, but was:  %v", err)
@@ -136,12 +210,14 @@ func TestAnalyzerPageVisitsFiltered(t *testing.T) {
 	}
 }
 
-func TestAnalyzerLanguages(t *testing.T) {
+func testAnalyzerLanguages(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	langs, total, err := analyzer.Languages(nil)
+	langs, total, err := analyzer.Languages(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+	})
 
 	if err != nil {
 		t.Fatalf("Languages must be returned, but was:  %v", err)
@@ -162,12 +238,16 @@ func TestAnalyzerLanguages(t *testing.T) {
 	}
 }
 
-func TestAnalyzerLanguagesFiltered(t *testing.T) {
+func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	langs, total, err := analyzer.Languages(&Filter{pastDay(3), pastDay(2)})
+	langs, total, err := analyzer.Languages(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		From:     pastDay(3),
+		To:       pastDay(2),
+	})
 
 	if err != nil {
 		t.Fatalf("Languages must be returned, but was:  %v", err)
@@ -187,12 +267,14 @@ func TestAnalyzerLanguagesFiltered(t *testing.T) {
 	}
 }
 
-func TestAnalyzerHourlyVisitors(t *testing.T) {
+func testAnalyzerHourlyVisitors(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visitors, err := analyzer.HourlyVisitors(nil)
+	visitors, err := analyzer.HourlyVisitors(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+	})
 
 	if err != nil {
 		t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -210,12 +292,16 @@ func TestAnalyzerHourlyVisitors(t *testing.T) {
 	}
 }
 
-func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
+func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
 	cleanupDB(t)
-	createAnalyzerTestdata(t, store)
+	createAnalyzerTestdata(t, store, tenantID)
 	analyzer := NewAnalyzer(store)
-	visitors, err := analyzer.HourlyVisitors(&Filter{pastDay(3), pastDay(2)})
+	visitors, err := analyzer.HourlyVisitors(&Filter{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		From:     pastDay(3),
+		To:       pastDay(2),
+	})
 
 	if err != nil {
 		t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -233,30 +319,14 @@ func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
 	}
 }
 
-func TestAnalyzerValidateFilter(t *testing.T) {
+func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(db)
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
+	createHit(t, store, tenantID, "fp3", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
 	analyzer := NewAnalyzer(store)
-	filter := analyzer.validateFilter(nil)
-
-	if filter == nil || !filter.From.Equal(pastDay(6)) || !filter.To.Equal(pastDay(0)) {
-		t.Fatalf("Filter not as expected: %v", filter)
-	}
-
-	filter = analyzer.validateFilter(&Filter{From: pastDay(2), To: pastDay(5)})
-
-	if filter == nil || !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
-		t.Fatalf("Filter not as expected: %v", filter)
-	}
-}
-
-func TestAnalyzerActiveVisitors(t *testing.T) {
-	store := NewPostgresStore(db)
-	createHit(t, store, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
-	createHit(t, store, "fp2", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
-	createHit(t, store, "fp3", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
-	createHit(t, store, "fp4", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
-	analyzer := NewAnalyzer(store)
-	visitors, err := analyzer.ActiveVisitors(time.Second * 10)
+	visitors, err := analyzer.ActiveVisitors(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0}, time.Second*10)
 
 	if err != nil {
 		t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -267,50 +337,66 @@ func TestAnalyzerActiveVisitors(t *testing.T) {
 	}
 }
 
-func createAnalyzerTestdata(t *testing.T, store Store) {
-	createHit(t, store, "fp1", "/", "en", "ua1", pastDay(0))
-	createHit(t, store, "fp2", "/foo", "De", "ua2", pastDay(0))
-	createHit(t, store, "fp3", "/bar", "jp", "ua3", pastDay(0))
-	createVisitorPerDay(t, store, pastDay(1), 42)
-	createVisitorPerDay(t, store, pastDay(2), 39)
-	createVisitorPerDay(t, store, pastDay(3), 26)
-	createVisitorPerPage(t, store, pastDay(1), "/", 45)
-	createVisitorPerPage(t, store, pastDay(1), "/laa", 23)
-	createVisitorPerPage(t, store, pastDay(2), "/bar", 67)
-	createVisitorPerLanguage(t, store, pastDay(1), "En", 49)
-	createVisitorPerLanguage(t, store, pastDay(2), "de", 13)
-	createVisitorPerLanguage(t, store, pastDay(3), "jP", 52)
-	createVisitorPerHour(t, store, pastDay(1).Add(time.Hour*6).Add(time.Minute*23), 32)
-	createVisitorPerHour(t, store, pastDay(2).Add(time.Hour*11).Add(time.Minute*11), 8)
-	createVisitorPerHour(t, store, pastDay(3).Add(time.Hour*17).Add(time.Minute*59), 29)
+func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", pastDay(0))
+	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", pastDay(0))
+	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", pastDay(0))
+	createVisitorPerDay(t, store, tenantID, pastDay(1), 42)
+	createVisitorPerDay(t, store, tenantID, pastDay(2), 39)
+	createVisitorPerDay(t, store, tenantID, pastDay(3), 26)
+	createVisitorPerPage(t, store, tenantID, pastDay(1), "/", 45)
+	createVisitorPerPage(t, store, tenantID, pastDay(1), "/laa", 23)
+	createVisitorPerPage(t, store, tenantID, pastDay(2), "/bar", 67)
+	createVisitorPerLanguage(t, store, tenantID, pastDay(1), "En", 49)
+	createVisitorPerLanguage(t, store, tenantID, pastDay(2), "de", 13)
+	createVisitorPerLanguage(t, store, tenantID, pastDay(3), "jP", 52)
+	createVisitorPerHour(t, store, tenantID, pastDay(1).Add(time.Hour*6).Add(time.Minute*23), 32)
+	createVisitorPerHour(t, store, tenantID, pastDay(2).Add(time.Hour*11).Add(time.Minute*11), 8)
+	createVisitorPerHour(t, store, tenantID, pastDay(3).Add(time.Hour*17).Add(time.Minute*59), 29)
 }
 
-func createVisitorPerDay(t *testing.T, store Store, day time.Time, visitors int) {
-	visitor := VisitorsPerDay{Day: day, Visitors: visitors}
+func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Time, visitors int) {
+	visitor := VisitorsPerDay{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		Day:      day,
+		Visitors: visitors,
+	}
 
 	if err := store.SaveVisitorsPerDay(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func createVisitorPerPage(t *testing.T, store Store, day time.Time, path string, visitors int) {
-	visitor := VisitorsPerPage{Day: day, Path: path, Visitors: visitors}
+func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Time, path string, visitors int) {
+	visitor := VisitorsPerPage{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		Day:      day,
+		Path:     path, Visitors: visitors,
+	}
 
 	if err := store.SaveVisitorsPerPage(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func createVisitorPerLanguage(t *testing.T, store Store, day time.Time, lang string, visitors int) {
-	visitor := VisitorsPerLanguage{Day: day, Language: lang, Visitors: visitors}
+func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day time.Time, lang string, visitors int) {
+	visitor := VisitorsPerLanguage{
+		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		Day:      day, Language: lang,
+		Visitors: visitors,
+	}
 
 	if err := store.SaveVisitorsPerLanguage(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func createVisitorPerHour(t *testing.T, store Store, dayAndHour time.Time, visitors int) {
-	visitor := VisitorsPerHour{DayAndHour: dayAndHour, Visitors: visitors}
+func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour time.Time, visitors int) {
+	visitor := VisitorsPerHour{
+		TenantID:   sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		DayAndHour: dayAndHour,
+		Visitors:   visitors,
+	}
 
 	if err := store.SaveVisitorsPerHour(&visitor); err != nil {
 		t.Fatal(err)

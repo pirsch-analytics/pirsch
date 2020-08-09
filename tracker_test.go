@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -11,8 +12,8 @@ import (
 func TestTrackerHitTimeout(t *testing.T) {
 	store := newTestStore()
 	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
-	tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil))
-	tracker.Hit(httptest.NewRequest(http.MethodGet, "/hello-world", nil))
+	tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil), nil)
+	tracker.Hit(httptest.NewRequest(http.MethodGet, "/hello-world", nil), nil)
 	time.Sleep(time.Second * 4)
 
 	if len(store.hits) != 2 {
@@ -34,7 +35,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	})
 
 	for i := 0; i < 7; i++ {
-		tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil))
+		tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil), nil)
 	}
 
 	time.Sleep(time.Second) // allow all hits to be tracked
@@ -42,18 +43,6 @@ func TestTrackerHitLimit(t *testing.T) {
 
 	if len(store.hits) != 7 {
 		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
-	}
-}
-
-func TestTrackerHitPage(t *testing.T) {
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", nil)
-	tracker.HitPage(httptest.NewRequest(http.MethodGet, "/", nil), "/some-page")
-	time.Sleep(time.Second) // allow all hits to be tracked
-	tracker.Stop()
-
-	if len(store.hits) != 1 {
-		t.Fatalf("One request must have been tracked, but was: %v", len(store.hits))
 	}
 }
 
@@ -160,7 +149,7 @@ func (store *testStore) Save(hits []Hit) error {
 	return nil
 }
 
-func (store *testStore) DeleteHitsByDay(t time.Time) error {
+func (store *testStore) DeleteHitsByDay(tenantID sql.NullInt64, t time.Time) error {
 	panic("implement me")
 }
 
@@ -180,46 +169,46 @@ func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
 	panic("implement me")
 }
 
-func (store *testStore) Days() ([]time.Time, error) {
+func (store *testStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerDay(t time.Time) (int, error) {
+func (store *testStore) VisitorsPerDay(tenantID sql.NullInt64, t time.Time) (int, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerDayAndHour(t time.Time) ([]VisitorsPerHour, error) {
+func (store *testStore) VisitorsPerDayAndHour(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerHour, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerLanguage(t time.Time) ([]VisitorsPerLanguage, error) {
+func (store *testStore) VisitorsPerLanguage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerLanguage, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerPage(t time.Time) ([]VisitorsPerPage, error) {
+func (store *testStore) VisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerPage, error) {
 	panic("implement me")
 }
 
-func (store *testStore) Paths(t time.Time, t2 time.Time) ([]string, error) {
+func (store *testStore) Paths(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]string, error) {
 	panic("implement me")
 }
 
-func (store *testStore) Visitors(t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
+func (store *testStore) Visitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
 	panic("implement me")
 }
 
-func (store *testStore) PageVisits(s string, t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
+func (store *testStore) PageVisits(tenantID sql.NullInt64, s string, t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorLanguages(t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
+func (store *testStore) VisitorLanguages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
 	panic("implement me")
 }
 
-func (store *testStore) HourlyVisitors(t time.Time, t2 time.Time) ([]HourlyVisitors, error) {
+func (store *testStore) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]HourlyVisitors, error) {
 	panic("implement me")
 }
 
-func (store *testStore) ActiveVisitors(t time.Time) (int, error) {
+func (store *testStore) ActiveVisitors(tenantID sql.NullInt64, t time.Time) (int, error) {
 	panic("implement me")
 }

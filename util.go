@@ -2,7 +2,7 @@ package pirsch
 
 import "time"
 
-// RunAtMidnight calls given function on each day of month on midnight.
+// RunAtMidnight calls given function on each day of month on midnight (UTC).
 func RunAtMidnight(f func()) {
 	go func() {
 		for {
