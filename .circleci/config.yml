@@ -27,4 +27,4 @@ jobs:
       - run:
           name: Migrate schema
           command: psql -h localhost -p 5432 -U postgres < /go/src/github.com/emvi/pirsch/schema/postgres/test.sql
-      - run: go test -cover .
+      - run: sleep 5 && go test -cover .
