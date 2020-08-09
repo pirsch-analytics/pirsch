@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: golang
       - image: postgres
-      	environment:
+        environment:
           POSTGRES_DB: pirsch
     working_directory: /go/src/github.com/emvi/pirsch
     steps:
