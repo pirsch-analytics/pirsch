@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 
 func connectDB() {
 	var err error
-	db, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch sslmode=disable timezone=UTC")
+	db, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch search_path=public sslmode=disable timezone=UTC")
 
 	if err != nil {
 		panic(err)
