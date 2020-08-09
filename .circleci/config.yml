@@ -5,13 +5,15 @@ jobs:
       - image: golang
       - image: postgres
         environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: pirsch
     working_directory: /go/src/github.com/emvi/pirsch
     steps:
       - checkout
       - run:
           name: Installing dependencies
-          command: sudo apt-get install postgresql-client
+          command: apt-get install postgresql-client
       - run:
           name: Waiting for Postgres to be ready
           command: |
