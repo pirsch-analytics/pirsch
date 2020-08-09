@@ -94,7 +94,12 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ### 1.2.0
 
-*WIP*
+**You need to update the schema by running the `v1.2.0.sql` migration script!**
+
+* the processor now returns an error
+* the processor now updates existing statistics in case it has been run before. It's now possible to run it as often as you want without messing up the statistics
+* (optional) multi-tenancy support to track multiple domains using the same database. In case you don't want to use it, use null as the `tenant_id`
+* improved IP extraction from X-Forwarded-For, Forwarded and X-Real-IP headers
 
 ### 1.1.1
 
