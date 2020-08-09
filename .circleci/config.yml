@@ -13,7 +13,7 @@ jobs:
       - checkout
       - run:
           name: Installing dependencies
-          command: sudo apt-get update && apt-get install postgresql-client
+          command: apt-get update && apt-get install postgresql-client
       - run:
           name: Waiting for Postgres to be ready
           command: |
