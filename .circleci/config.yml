@@ -26,5 +26,7 @@ jobs:
             echo Failed waiting for Postgres && exit 1
       - run:
           name: Migrate schema
-          command: psql -h localhost -p 5432 -U postgres < /go/src/github.com/emvi/pirsch/schema/postgres/test.sql
-      - run: sleep 5 && go test -cover .
+          command: psql -h localhost -p 5432 -U postgres -d pirsch < /go/src/github.com/emvi/pirsch/schema/postgres/test.sql
+      - run:
+          name: Run tests
+          command: sleep 5 && go test -cover .

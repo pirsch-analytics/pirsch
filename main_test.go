@@ -39,23 +39,23 @@ func closeDB() {
 }
 
 func cleanupDB(t *testing.T) {
-	if _, err := db.Exec(`DELETE FROM public."hit"`); err != nil {
+	if _, err := db.Exec(`DELETE FROM "hit"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM public."visitors_per_day"`); err != nil {
+	if _, err := db.Exec(`DELETE FROM "visitors_per_day"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM public."visitors_per_hour"`); err != nil {
+	if _, err := db.Exec(`DELETE FROM "visitors_per_hour"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM public."visitors_per_language"`); err != nil {
+	if _, err := db.Exec(`DELETE FROM "visitors_per_language"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM public."visitors_per_page"`); err != nil {
+	if _, err := db.Exec(`DELETE FROM "visitors_per_page"`); err != nil {
 		t.Fatal(err)
 	}
 }
