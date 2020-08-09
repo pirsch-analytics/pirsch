@@ -15,7 +15,7 @@ func TestProcessor_Process(t *testing.T) {
 		t.Fatalf("Data must have been processed, but was: %v", err)
 	}
 
-	checkhits(t, store, 0)
+	checkHits(t, store, 0)
 	checkVisitorCount(t, store, 0, 3, 3)
 	checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
 	checkLanguageCount(t, store, 0, 1, 2, 2, 1)
@@ -31,7 +31,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 		t.Fatalf("Data must have been processed, but was: %v", err)
 	}
 
-	checkhits(t, store, 1)
+	checkHits(t, store, 1)
 	checkVisitorCount(t, store, 1, 3, 3)
 	checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
 	checkLanguageCount(t, store, 1, 1, 2, 2, 1)
@@ -48,43 +48,21 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 		t.Fatalf("Data must have been processed, but was: %v", err)
 	}
 
-	checkhits(t, store, 0)
+	checkHits(t, store, 0)
 	checkVisitorCount(t, store, 0, 42+3, 3)
 	checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
 	checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
 	checkPageViewCount(t, store, 0, 2, 1, 2, 66+1)
 }
 
-func checkhits(t *testing.T, store *PostgresStore, tenantID int64) {
-	var count int
-
-	if tenantID == 0 {
-		if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit"`); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE tenant_id = $1`, tenantID); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if count != 0 {
+func checkHits(t *testing.T, store *PostgresStore, tenantID int64) {
+	if count := store.CountHits(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0}); count != 0 {
 		t.Fatalf("Hits must have been cleaned up after processing days, but was: %v", count)
 	}
 }
 
 func checkVisitorCount(t *testing.T, store *PostgresStore, tenantID int64, day1, day2 int) {
-	var visitors []VisitorsPerDay
-
-	if tenantID == 0 {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" ORDER BY "day"`); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_day" WHERE tenant_id = $1 ORDER BY "day"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
-	}
+	visitors := store.VisitorsPerDay(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
 
 	if len(visitors) != 2 {
 		t.Fatalf("Two visitors per day must have been created, but was: %v", len(visitors))
@@ -96,17 +74,7 @@ func checkVisitorCount(t *testing.T, store *PostgresStore, tenantID int64, day1,
 }
 
 func checkVisitorCountHour(t *testing.T, store *PostgresStore, tenantID int64, hour1, hour2, hour3, hour4 int) {
-	var visitors []VisitorsPerHour
-
-	if tenantID == 0 {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" ORDER BY "day_and_hour"`); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_hour" WHERE tenant_id = $1 ORDER BY "day_and_hour"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
-	}
+	visitors := store.VisitorsPerHour(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per hour must have been created, but was: %v", len(visitors))
@@ -128,17 +96,7 @@ func checkVisitorCountHour(t *testing.T, store *PostgresStore, tenantID int64, h
 }
 
 func checkLanguageCount(t *testing.T, store *PostgresStore, tenantID int64, lang1, lang2, lang3, lang4 int) {
-	var visitors []VisitorsPerLanguage
-
-	if tenantID == 0 {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" ORDER BY "day", "language"`); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_language" WHERE tenant_id = $1 ORDER BY "day", "language"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
-	}
+	visitors := store.VisitorsPerLanguage(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per language must have been created, but was: %v", len(visitors))
@@ -160,17 +118,7 @@ func checkLanguageCount(t *testing.T, store *PostgresStore, tenantID int64, lang
 }
 
 func checkPageViewCount(t *testing.T, store *PostgresStore, tenantID int64, views1, views2, views3, views4 int) {
-	var visitors []VisitorsPerPage
-
-	if tenantID == 0 {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" ORDER BY "day", "path"`); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		if err := store.DB.Select(&visitors, `SELECT * FROM "visitors_per_page" WHERE tenant_id = $1 ORDER BY "day", "path"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
-	}
+	visitors := store.VisitorsPerPage(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per page must have been created, but was: %v", len(visitors))

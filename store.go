@@ -33,17 +33,17 @@ type Store interface {
 	// Days returns the days at least one hit exists for.
 	Days(sql.NullInt64) ([]time.Time, error)
 
-	// VisitorsPerDay returns the unique visitor count for per day.
-	VisitorsPerDay(sql.NullInt64, time.Time) (int, error)
+	// CountVisitorsPerDay returns the unique visitor count for per day.
+	CountVisitorsPerDay(sql.NullInt64, time.Time) (int, error)
 
-	// VisitorsPerHour returns the unique visitor count per day and hour.
-	VisitorsPerDayAndHour(sql.NullInt64, time.Time) ([]VisitorsPerHour, error)
+	// CountVisitorsPerDayAndHour returns the unique visitor count per day and hour.
+	CountVisitorsPerDayAndHour(sql.NullInt64, time.Time) ([]VisitorsPerHour, error)
 
-	// VisitorsPerLanguage returns the unique visitor count per language and day.
-	VisitorsPerLanguage(sql.NullInt64, time.Time) ([]VisitorsPerLanguage, error)
+	// CountVisitorsPerLanguage returns the unique visitor count per language and day.
+	CountVisitorsPerLanguage(sql.NullInt64, time.Time) ([]VisitorsPerLanguage, error)
 
-	// VisitorsPerPage returns the unique visitor count per page and day.
-	VisitorsPerPage(sql.NullInt64, time.Time) ([]VisitorsPerPage, error)
+	// CountVisitorsPerPage returns the unique visitor count per page and day.
+	CountVisitorsPerPage(sql.NullInt64, time.Time) ([]VisitorsPerPage, error)
 
 	// Paths returns distinct paths for page visits.
 	// This does not include today.
@@ -67,4 +67,19 @@ type Store interface {
 
 	// ActiveVisitors returns unique visitors starting at given time.
 	ActiveVisitors(sql.NullInt64, time.Time) (int, error)
+
+	// CountHits returns the number of hits for given tenant ID.
+	CountHits(sql.NullInt64) int
+
+	// VisitorsPerDay returns all visitors per day for given tenant ID in order.
+	VisitorsPerDay(sql.NullInt64) []VisitorsPerDay
+
+	// VisitorsPerHour returns all visitors per hour for given tenant ID in order.
+	VisitorsPerHour(sql.NullInt64) []VisitorsPerHour
+
+	// VisitorsPerLanguage returns all visitors per language for given tenant ID in order.
+	VisitorsPerLanguage(sql.NullInt64) []VisitorsPerLanguage
+
+	// VisitorsPerPage returns all visitors per page for given tenant ID in order.
+	VisitorsPerPage(sql.NullInt64) []VisitorsPerPage
 }

@@ -171,7 +171,7 @@ func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 }
 
 // VisitorsPerDay implements the Store interface.
-func (store *PostgresStore) VisitorsPerDay(tenantID sql.NullInt64, day time.Time) (int, error) {
+func (store *PostgresStore) CountVisitorsPerDay(tenantID sql.NullInt64, day time.Time) (int, error) {
 	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2`
 	var visitors int
 
@@ -183,7 +183,7 @@ func (store *PostgresStore) VisitorsPerDay(tenantID sql.NullInt64, day time.Time
 }
 
 // VisitorsPerDayAndHour implements the Store interface.
-func (store *PostgresStore) VisitorsPerDayAndHour(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerHour, error) {
+func (store *PostgresStore) CountVisitorsPerDayAndHour(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerHour, error) {
 	query := `SELECT "day_and_hour", (
 			SELECT count(DISTINCT fingerprint) FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
@@ -209,7 +209,7 @@ func (store *PostgresStore) VisitorsPerDayAndHour(tenantID sql.NullInt64, day ti
 }
 
 // VisitorsPerLanguage implements the Store interface.
-func (store *PostgresStore) VisitorsPerLanguage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerLanguage, error) {
+func (store *PostgresStore) CountVisitorsPerLanguage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerLanguage, error) {
 	query := `SELECT * FROM (
 			SELECT tenant_id, $2::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
 			FROM hit
@@ -228,7 +228,7 @@ func (store *PostgresStore) VisitorsPerLanguage(tenantID sql.NullInt64, day time
 }
 
 // VisitorsPerPage implements the Store interface.
-func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerPage, error) {
+func (store *PostgresStore) CountVisitorsPerPage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerPage, error) {
 	query := `SELECT * FROM (
 			SELECT tenant_id, $2::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
 			FROM hit
@@ -370,6 +370,61 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Tim
 	}
 
 	return visitors, nil
+}
+
+// CountHits implements the Store interface.
+func (store *PostgresStore) CountHits(tenantID sql.NullInt64) int {
+	var count int
+
+	if err := store.DB.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1)`, tenantID); err != nil {
+		return 0
+	}
+
+	return count
+}
+
+// VisitorsPerDay implements the Store interface.
+func (store *PostgresStore) VisitorsPerDay(tenantID sql.NullInt64) []VisitorsPerDay {
+	var entities []VisitorsPerDay
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_day" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day"`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
+}
+
+// VisitorsPerHour implements the Store interface.
+func (store *PostgresStore) VisitorsPerHour(tenantID sql.NullInt64) []VisitorsPerHour {
+	var entities []VisitorsPerHour
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_hour" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day_and_hour"`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
+}
+
+// VisitorsPerLanguage implements the Store interface.
+func (store *PostgresStore) VisitorsPerLanguage(tenantID sql.NullInt64) []VisitorsPerLanguage {
+	var entities []VisitorsPerLanguage
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_language" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "language"`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
+}
+
+// VisitorsPerPage implements the Store interface.
+func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPerPage {
+	var entities []VisitorsPerPage
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "path"`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
 }
 
 func closeRows(rows *sqlx.Rows) {

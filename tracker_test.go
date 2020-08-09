@@ -173,19 +173,19 @@ func (store *testStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerDay(tenantID sql.NullInt64, t time.Time) (int, error) {
+func (store *testStore) CountVisitorsPerDay(tenantID sql.NullInt64, t time.Time) (int, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerDayAndHour(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerHour, error) {
+func (store *testStore) CountVisitorsPerDayAndHour(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerHour, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerLanguage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerLanguage, error) {
+func (store *testStore) CountVisitorsPerLanguage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerLanguage, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerPage, error) {
+func (store *testStore) CountVisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerPage, error) {
 	panic("implement me")
 }
 
@@ -211,4 +211,29 @@ func (store *testStore) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 t
 
 func (store *testStore) ActiveVisitors(tenantID sql.NullInt64, t time.Time) (int, error) {
 	panic("implement me")
+}
+
+func (store *testStore) CountHits(tenantID sql.NullInt64) int {
+	panic("implement me")
+	return 0
+}
+
+func (store *testStore) VisitorsPerDay(tenantID sql.NullInt64) []VisitorsPerDay {
+	panic("implement me")
+	return nil
+}
+
+func (store *testStore) VisitorsPerHour(tenantID sql.NullInt64) []VisitorsPerHour {
+	panic("implement me")
+	return nil
+}
+
+func (store *testStore) VisitorsPerLanguage(tenantID sql.NullInt64) []VisitorsPerLanguage {
+	panic("implement me")
+	return nil
+}
+
+func (store *testStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPerPage {
+	panic("implement me")
+	return nil
 }

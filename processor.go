@@ -92,7 +92,7 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 }
 
 func (processor *Processor) visitorCount(tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.VisitorsPerDay(tenantID, day)
+	visitors, err := processor.store.CountVisitorsPerDay(tenantID, day)
 
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (processor *Processor) visitorCount(tenantID sql.NullInt64, day time.Time) 
 }
 
 func (processor *Processor) visitorCountHour(tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.VisitorsPerDayAndHour(tenantID, day)
+	visitors, err := processor.store.CountVisitorsPerDayAndHour(tenantID, day)
 
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (processor *Processor) visitorCountHour(tenantID sql.NullInt64, day time.Ti
 }
 
 func (processor *Processor) languageCount(tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.VisitorsPerLanguage(tenantID, day)
+	visitors, err := processor.store.CountVisitorsPerLanguage(tenantID, day)
 
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (processor *Processor) languageCount(tenantID sql.NullInt64, day time.Time)
 }
 
 func (processor *Processor) pageViews(tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.VisitorsPerPage(tenantID, day)
+	visitors, err := processor.store.CountVisitorsPerPage(tenantID, day)
 
 	if err != nil {
 		return err
