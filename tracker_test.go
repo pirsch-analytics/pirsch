@@ -10,10 +10,14 @@ import (
 )
 
 func TestTrackerHitTimeout(t *testing.T) {
+	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req1.Header.Add("User-Agent", "valid")
+	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
+	req2.Header.Add("User-Agent", "valid")
 	store := newTestStore()
 	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
-	tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil), nil)
-	tracker.Hit(httptest.NewRequest(http.MethodGet, "/hello-world", nil), nil)
+	tracker.Hit(req1, nil)
+	tracker.Hit(req2, nil)
 	time.Sleep(time.Second * 4)
 
 	if len(store.hits) != 2 {
@@ -35,7 +39,9 @@ func TestTrackerHitLimit(t *testing.T) {
 	})
 
 	for i := 0; i < 7; i++ {
-		tracker.Hit(httptest.NewRequest(http.MethodGet, "/", nil), nil)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Add("User-Agent", "valid")
+		tracker.Hit(req, nil)
 	}
 
 	time.Sleep(time.Second) // allow all hits to be tracked
@@ -48,6 +54,7 @@ func TestTrackerHitLimit(t *testing.T) {
 
 func TestTrackerIgnoreHitPrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "valid")
 	req.Header.Set("X-Moz", "prefetch")
 	tracker := NewTracker(newTestStore(), "salt", nil)
 
@@ -119,6 +126,12 @@ func TestTrackerIgnoreHitUserAgent(t *testing.T) {
 
 	if tracker.ignoreHit(req) {
 		t.Fatal("Hit with regular User-Agent must not be ignored")
+	}
+
+	req.Header.Set("User-Agent", "")
+
+	if !tracker.ignoreHit(req) {
+		t.Fatal("Hit with empty User-Agent must be ignored")
 	}
 }
 
