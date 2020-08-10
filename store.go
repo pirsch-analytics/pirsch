@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
-// NullTenant can be used to pass no tenant to filters and functions.
-var NullTenant = sql.NullInt64{}
+// NullTenant can be used to pass no (null) tenant to filters and functions.
+// This is an invalid sql.NullInt64 with a value of 0.
+var NullTenant = NewTenantID(0)
 
 // Store defines an interface to persists hits and other data.
 // The first parameter (if required) is always the tenant ID and can be left out (pirsch.NullTenant), if you don't want to split your data.

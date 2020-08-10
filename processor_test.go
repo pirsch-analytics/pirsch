@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 )
@@ -27,7 +26,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 	createTestdata(t, store, 1)
 	processor := NewProcessor(store)
 
-	if err := processor.ProcessTenant(sql.NullInt64{Int64: 1, Valid: true}); err != nil {
+	if err := processor.ProcessTenant(NewTenantID(1)); err != nil {
 		t.Fatalf("Data must have been processed, but was: %v", err)
 	}
 
@@ -56,13 +55,13 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 }
 
 func checkHits(t *testing.T, store *PostgresStore, tenantID int64) {
-	if count := store.CountHits(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0}); count != 0 {
+	if count := store.CountHits(NewTenantID(tenantID)); count != 0 {
 		t.Fatalf("Hits must have been cleaned up after processing days, but was: %v", count)
 	}
 }
 
 func checkVisitorCount(t *testing.T, store *PostgresStore, tenantID int64, day1, day2 int) {
-	visitors := store.VisitorsPerDay(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
+	visitors := store.VisitorsPerDay(NewTenantID(tenantID))
 
 	if len(visitors) != 2 {
 		t.Fatalf("Two visitors per day must have been created, but was: %v", len(visitors))
@@ -74,7 +73,7 @@ func checkVisitorCount(t *testing.T, store *PostgresStore, tenantID int64, day1,
 }
 
 func checkVisitorCountHour(t *testing.T, store *PostgresStore, tenantID int64, hour1, hour2, hour3, hour4 int) {
-	visitors := store.VisitorsPerHour(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
+	visitors := store.VisitorsPerHour(NewTenantID(tenantID))
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per hour must have been created, but was: %v", len(visitors))
@@ -96,7 +95,7 @@ func checkVisitorCountHour(t *testing.T, store *PostgresStore, tenantID int64, h
 }
 
 func checkLanguageCount(t *testing.T, store *PostgresStore, tenantID int64, lang1, lang2, lang3, lang4 int) {
-	visitors := store.VisitorsPerLanguage(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
+	visitors := store.VisitorsPerLanguage(NewTenantID(tenantID))
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per language must have been created, but was: %v", len(visitors))
@@ -118,7 +117,7 @@ func checkLanguageCount(t *testing.T, store *PostgresStore, tenantID int64, lang
 }
 
 func checkPageViewCount(t *testing.T, store *PostgresStore, tenantID int64, views1, views2, views3, views4 int) {
-	visitors := store.VisitorsPerPage(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0})
+	visitors := store.VisitorsPerPage(NewTenantID(tenantID))
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per page must have been created, but was: %v", len(visitors))
@@ -191,7 +190,7 @@ func createTestDays(t *testing.T, store Store) {
 
 func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent string, time time.Time) {
 	hit := Hit{
-		TenantID:    sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		TenantID:    NewTenantID(tenantID),
 		Fingerprint: fingerprint,
 		Path:        path,
 		Language:    lang,

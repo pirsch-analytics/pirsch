@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +12,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("User-Agent", "user-agent")
 	req.Header.Set("Referer", "ref")
 	hit := hitFromRequest(req, "salt", &HitOptions{
-		TenantID: sql.NullInt64{Int64: 42, Valid: true},
+		TenantID: NewTenantID(42),
 	})
 
 	if hit.TenantID.Int64 != 42 ||
