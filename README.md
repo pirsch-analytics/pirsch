@@ -56,7 +56,8 @@ tracker := pirsch.NewTracker(store, "secret_salt", nil)
 
 // the Processor analyzes hits and stores the reduced data points in store
 // it's recommended to run the Process method once a day, but you can run it as often as you want
-processor := pirsch.NewProcessor(store)
+// the config can be used to enable/disable certain features of the processor
+processor := pirsch.NewProcessor(store, nil)
 pirsch.RunAtMidnight(processor.Process) // helper function to run a function at midnight (UTC)
 
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

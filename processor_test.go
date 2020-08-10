@@ -8,7 +8,7 @@ import (
 func TestProcessor_Process(t *testing.T) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, 0)
-		processor := NewProcessor(store)
+		processor := NewProcessor(store, nil)
 
 		if err := processor.Process(); err != nil {
 			t.Fatalf("Data must have been processed, but was: %v", err)
@@ -25,7 +25,7 @@ func TestProcessor_Process(t *testing.T) {
 func TestProcessor_ProcessTenant(t *testing.T) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, 1)
-		processor := NewProcessor(store)
+		processor := NewProcessor(store, nil)
 
 		if err := processor.ProcessTenant(NewTenantID(1)); err != nil {
 			t.Fatalf("Data must have been processed, but was: %v", err)
@@ -43,7 +43,7 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, 0)
 		createTestDays(t, store)
-		processor := NewProcessor(store)
+		processor := NewProcessor(store, nil)
 
 		if err := processor.Process(); err != nil {
 			t.Fatalf("Data must have been processed, but was: %v", err)
