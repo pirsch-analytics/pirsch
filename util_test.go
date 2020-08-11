@@ -38,3 +38,15 @@ func TestShortenString(t *testing.T) {
 		t.Fatalf("String must not have been shortened, but was: %v", out)
 	}
 }
+
+func TestContainsString(t *testing.T) {
+	list := []string{"a", "b", "c", "d"}
+
+	if containsString(list, "e") {
+		t.Fatal("List must not contain string 'e'")
+	}
+
+	if !containsString(list, "c") {
+		t.Fatal("List must contain string 'c'")
+	}
+}

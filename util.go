@@ -48,3 +48,13 @@ func shortenString(str string, maxLen int) string {
 
 	return str
 }
+
+func containsString(list []string, str string) bool {
+	for _, item := range list {
+		if item == str {
+			return true
+		}
+	}
+
+	return false
+}

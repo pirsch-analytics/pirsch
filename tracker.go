@@ -26,63 +26,81 @@ type TrackerConfig struct {
 	// This is used to allow the workers to store hits even if the buffer is not full yet.
 	// It's recommended to set this to a few seconds.
 	WorkerTimeout time.Duration
+
+	// RefererDomainBlacklist see HitOptions.RefererDomainBlacklist.
+	RefererDomainBlacklist []string
+
+	// RefererDomainBlacklistIncludesSubdomains see HitOptions.RefererDomainBlacklistIncludesSubdomains.
+	RefererDomainBlacklistIncludesSubdomains bool
+}
+
+func (config *TrackerConfig) validate() {
+	if config.Worker < 1 {
+		config.Worker = runtime.NumCPU()
+	}
+
+	if config.WorkerBufferSize < 1 {
+		config.WorkerBufferSize = defaultWorkerBufferSize
+	}
+
+	if config.WorkerTimeout <= 0 {
+		config.WorkerTimeout = defaultWorkerTimeout
+	}
 }
 
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
 // It panics in case it cannot store requests into the configured store.
 type Tracker struct {
-	store            Store
-	salt             string
-	hits             chan Hit
-	worker           int
-	workerBufferSize int
-	workerTimeout    time.Duration
-	workerCancel     context.CancelFunc
-	workerDone       chan bool
+	store                                    Store
+	salt                                     string
+	hits                                     chan Hit
+	worker                                   int
+	workerBufferSize                         int
+	workerTimeout                            time.Duration
+	workerCancel                             context.CancelFunc
+	workerDone                               chan bool
+	refererDomainBlacklist                   []string
+	refererDomainBlacklistIncludesSubdomains bool
 }
 
 // NewTracker creates a new tracker for given store, salt and config.
 // Pass nil for the config to use the defaults.
 // The salt is mandatory.
 func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
-	worker := runtime.NumCPU()
-	bufferSize := defaultWorkerBufferSize
-	timeout := defaultWorkerTimeout
-
-	if config != nil {
-		if config.Worker > 0 {
-			worker = config.Worker
-		}
-
-		if config.WorkerBufferSize > 0 {
-			bufferSize = config.WorkerBufferSize
-		}
-
-		if config.WorkerTimeout > 0 {
-			timeout = config.WorkerTimeout
-		}
+	if config == nil {
+		config = &TrackerConfig{}
 	}
 
+	config.validate()
 	tracker := &Tracker{
-		store:            store,
-		salt:             salt,
-		hits:             make(chan Hit, worker*bufferSize),
-		worker:           worker,
-		workerBufferSize: bufferSize,
-		workerTimeout:    timeout,
-		workerDone:       make(chan bool),
+		store:                                    store,
+		salt:                                     salt,
+		hits:                                     make(chan Hit, config.Worker*config.WorkerBufferSize),
+		worker:                                   config.Worker,
+		workerBufferSize:                         config.WorkerBufferSize,
+		workerTimeout:                            config.WorkerTimeout,
+		workerDone:                               make(chan bool),
+		refererDomainBlacklist:                   config.RefererDomainBlacklist,
+		refererDomainBlacklistIncludesSubdomains: config.RefererDomainBlacklistIncludesSubdomains,
 	}
 	tracker.startWorker()
 	return tracker
 }
 
 // Hit stores the given request.
-// The request might be ignored if it meets certain conditions.
+// The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	go func() {
 		if !IgnoreHit(r) {
+			if options == nil {
+				options = &HitOptions{
+					RefererDomainBlacklist:                   tracker.refererDomainBlacklist,
+					RefererDomainBlacklistIncludesSubdomains: tracker.refererDomainBlacklistIncludesSubdomains,
+				}
+			}
+
 			tracker.hits <- HitFromRequest(r, tracker.salt, options)
 		}
 	}()

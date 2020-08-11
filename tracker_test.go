@@ -5,9 +5,40 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 	"time"
 )
+
+func TestTrackerConfigValidate(t *testing.T) {
+	cfg := &TrackerConfig{}
+	cfg.validate()
+
+	if cfg.Worker != runtime.NumCPU() ||
+		cfg.WorkerBufferSize != defaultWorkerBufferSize ||
+		cfg.WorkerTimeout != defaultWorkerTimeout ||
+		len(cfg.RefererDomainBlacklist) != 0 ||
+		cfg.RefererDomainBlacklistIncludesSubdomains {
+		t.Fatal("TrackerConfig must have default values")
+	}
+
+	cfg = &TrackerConfig{
+		Worker:                                   123,
+		WorkerBufferSize:                         42,
+		WorkerTimeout:                            time.Second * 57,
+		RefererDomainBlacklist:                   []string{"localhost"},
+		RefererDomainBlacklistIncludesSubdomains: true,
+	}
+	cfg.validate()
+
+	if cfg.Worker != 123 ||
+		cfg.WorkerBufferSize != 42 ||
+		cfg.WorkerTimeout != time.Second*57 ||
+		len(cfg.RefererDomainBlacklist) != 1 ||
+		!cfg.RefererDomainBlacklistIncludesSubdomains {
+		t.Fatal("TrackerConfig must have set values")
+	}
+}
 
 func TestTrackerHitTimeout(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)

@@ -30,6 +30,17 @@ type HitOptions struct {
 	// Path can be specified to manually overwrite the path stored for the request.
 	// This will also affect the URL.
 	Path string
+
+	// RefererDomainBlacklist is used to filter out unwanted referers from the Referer header.
+	// This can be used to filter out traffic from your own site or subdomains.
+	// To filter your own domain and subdomains, add your domain to the list and set RefererDomainBlacklistIncludesSubdomains to true.
+	// This way the referer for blog.mypage.com -> mypage.com won't be saved.
+	RefererDomainBlacklist []string
+
+	// RefererDomainBlacklistIncludesSubdomains set to true to include all subdomains in the RefererDomainBlacklist,
+	// or else subdomains must explicitly be included in the blacklist.
+	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
+	RefererDomainBlacklistIncludesSubdomains bool
 }
 
 // String implements the Stringer interface.
@@ -71,7 +82,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		URL:         requestURL,
 		Language:    getLanguage(r),
 		UserAgent:   r.UserAgent(),
-		Ref:         r.Header.Get("Referer"),
+		Ref:         getReferer(r, options.RefererDomainBlacklist, options.RefererDomainBlacklistIncludesSubdomains),
 		Time:        now,
 	}
 }
@@ -79,16 +90,18 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
 func IgnoreHit(r *http.Request) bool {
+	// empty User-Agents are usually bots
 	userAgent := strings.TrimSpace(strings.ToLower(r.Header.Get("User-Agent")))
 
 	if userAgent == "" {
 		return true
 	}
 
+	// ignore browsers pre-fetching data
 	xPurpose := r.Header.Get("X-Purpose")
 	purpose := r.Header.Get("Purpose")
 
-	if r.Header.Get("X-Moz") == "prefetch" || // ignore browsers pre-fetching data
+	if r.Header.Get("X-Moz") == "prefetch" ||
 		xPurpose == "prefetch" ||
 		xPurpose == "preview" ||
 		purpose == "prefetch" ||
@@ -96,6 +109,7 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
+	// filter for bot keywords
 	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			return true
@@ -115,4 +129,55 @@ func getLanguage(r *http.Request) string {
 	}
 
 	return ""
+}
+
+func getReferer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
+	referer := r.Header.Get("Referer")
+
+	if referer == "" {
+		return ""
+	}
+
+	u, err := url.Parse(referer)
+
+	if err != nil {
+		return ""
+	}
+
+	hostname := u.Hostname()
+
+	if ignoreSubdomain {
+		hostname = stripSubdomain(hostname)
+	}
+
+	if containsString(domainBlacklist, hostname) {
+		return ""
+	}
+
+	return referer
+}
+
+func stripSubdomain(hostname string) string {
+	if hostname == "" {
+		return ""
+	}
+
+	runes := []rune(hostname)
+	index := len(runes) - 1
+	dots := 0
+
+	for i := index; i > 0; i-- {
+		if runes[i] == '.' {
+			dots++
+
+			if dots == 2 {
+				index++
+				break
+			}
+		}
+
+		index--
+	}
+
+	return hostname[index:]
 }

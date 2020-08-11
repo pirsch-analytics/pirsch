@@ -131,3 +131,68 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 		}
 	}
 }
+
+func TestGetReferer(t *testing.T) {
+	input := []struct {
+		referer         string
+		blacklist       []string
+		ignoreSubdomain bool
+	}{
+		{"http://boring.old/domain", nil, false},
+		{"https://with.subdomain.com/", nil, false},
+		{"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42", nil, false},
+		{"http://boring.old/domain", []string{"boring.old"}, false},
+		{"https://with.subdomain.com/", []string{"boring.old"}, false},
+		{"https://sub.boring.old/domain", []string{"boring.old"}, false},
+		{"https://sub.boring.old/domain", []string{"boring.old"}, true},
+	}
+	expected := []string{
+		"http://boring.old/domain",
+		"https://with.subdomain.com/",
+		"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42",
+		"",
+		"https://with.subdomain.com/",
+		"https://sub.boring.old/domain",
+		"",
+	}
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r.Header.Add("Referer", in.referer)
+
+		if referer := getReferer(r, in.blacklist, in.ignoreSubdomain); referer != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], referer)
+		}
+	}
+}
+
+func TestStripSubdomain(t *testing.T) {
+	input := []string{
+		"",
+		".",
+		"..",
+		"...",
+		" ",
+		"\t",
+		"boring.old",
+		"with.subdomain.com",
+		"with.multiple.subdomains.com",
+	}
+	expected := []string{
+		"",
+		".",
+		"..",
+		".",
+		" ",
+		"\t",
+		"boring.old",
+		"subdomain.com",
+		"subdomains.com",
+	}
+
+	for i, in := range input {
+		if hostname := stripSubdomain(in); hostname != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], hostname)
+		}
+	}
+}
