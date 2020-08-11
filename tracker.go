@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -31,7 +30,7 @@ type TrackerConfig struct {
 
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
-// In case of an error it will panic.
+// It panics in case it cannot store requests into the configured store.
 type Tracker struct {
 	store            Store
 	salt             string
@@ -83,8 +82,8 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 // The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	go func() {
-		if !tracker.ignoreHit(r) {
-			tracker.hits <- hitFromRequest(r, tracker.salt, options)
+		if !IgnoreHit(r) {
+			tracker.hits <- HitFromRequest(r, tracker.salt, options)
 		}
 	}()
 }
@@ -102,33 +101,6 @@ func (tracker *Tracker) Stop() {
 	for i := 0; i < tracker.worker; i++ {
 		<-tracker.workerDone
 	}
-}
-
-func (tracker *Tracker) ignoreHit(r *http.Request) bool {
-	userAgent := strings.TrimSpace(strings.ToLower(r.Header.Get("User-Agent")))
-
-	if userAgent == "" {
-		return true
-	}
-
-	xPurpose := r.Header.Get("X-Purpose")
-	purpose := r.Header.Get("Purpose")
-
-	if r.Header.Get("X-Moz") == "prefetch" || // ignore browsers pre-fetching data
-		xPurpose == "prefetch" ||
-		xPurpose == "preview" ||
-		purpose == "prefetch" ||
-		purpose == "preview" {
-		return true
-	}
-
-	for _, botUserAgent := range userAgentBlacklist {
-		if strings.Contains(userAgent, botUserAgent) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (tracker *Tracker) startWorker() {

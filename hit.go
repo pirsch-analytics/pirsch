@@ -38,7 +38,10 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
-func hitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
+// HitFromRequest returns a new Hit for given request, salt and HitOptions.
+// The salt must stay consistent to track visitors across multiple calls.
+// The easiest way to track visitors is to use the Tracker.
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	// set default options in case they're nil
@@ -71,6 +74,35 @@ func hitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		Ref:         r.Header.Get("Referer"),
 		Time:        now,
 	}
+}
+
+// IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
+// The easiest way to track visitors is to use the Tracker.
+func IgnoreHit(r *http.Request) bool {
+	userAgent := strings.TrimSpace(strings.ToLower(r.Header.Get("User-Agent")))
+
+	if userAgent == "" {
+		return true
+	}
+
+	xPurpose := r.Header.Get("X-Purpose")
+	purpose := r.Header.Get("Purpose")
+
+	if r.Header.Get("X-Moz") == "prefetch" || // ignore browsers pre-fetching data
+		xPurpose == "prefetch" ||
+		xPurpose == "preview" ||
+		purpose == "prefetch" ||
+		purpose == "preview" {
+		return true
+	}
+
+	for _, botUserAgent := range userAgentBlacklist {
+		if strings.Contains(userAgent, botUserAgent) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getLanguage(r *http.Request) string {
