@@ -57,3 +57,9 @@ type HourlyVisitors struct {
 	Hour     int `db:"hour" json:"hour"`
 	Visitors int `db:"visitors" json:"visitors"`
 }
+
+// PageVisitors is the visitor count for each path.
+type PageVisitors struct {
+	Path     string `db:"path" json:"path"`
+	Visitors int    `db:"visitors" json:"visitors"`
+}

@@ -236,7 +236,7 @@ func (store *PostgresStore) CountVisitorsPerPage(tenantID sql.NullInt64, day tim
 			AND time >= $2::timestamp
 			AND time < $2::timestamp + INTERVAL '1 day'
 			GROUP BY tenant_id, "path"
-		) AS results ORDER BY "day", "path" ASC`
+		) AS results ORDER BY "day", length("path") ASC`
 	var visitors []VisitorsPerPage
 
 	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
@@ -367,6 +367,23 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Tim
 
 	if err := store.DB.Get(&visitors, query, tenantID, from); err != nil {
 		return 0, err
+	}
+
+	return visitors, nil
+}
+
+// ActiveVisitorsPerPage implements the Store interface.
+func (store *PostgresStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, from time.Time) ([]PageVisitors, error) {
+	query := `SELECT "path", count(DISTINCT fingerprint) AS "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "time" > $2
+		GROUP BY "path"
+		ORDER BY length("path") ASC`
+	var visitors []PageVisitors
+
+	if err := store.DB.Select(&visitors, query, tenantID, from); err != nil {
+		return nil, err
 	}
 
 	return visitors, nil

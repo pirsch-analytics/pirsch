@@ -172,12 +172,23 @@ func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, erro
 	return visitorsPerHour, nil
 }
 
-// ActiveVisitors returns unique visitors last active within given duration.
+// ActiveVisitors returns the number of unique visitors active within the given duration.
 func (analyzer *Analyzer) ActiveVisitors(tenantID sql.NullInt64, d time.Duration) (int, error) {
 	visitors, err := analyzer.store.ActiveVisitors(tenantID, time.Now().UTC().Add(-d))
 
 	if err != nil {
 		return 0, err
+	}
+
+	return visitors, nil
+}
+
+// ActiveVisitorsPages returns the number of unique visitors active within the given duration and the corresponding pages.
+func (analyzer *Analyzer) ActiveVisitorsPages(tenantID sql.NullInt64, d time.Duration) ([]PageVisitors, error) {
+	visitors, err := analyzer.store.ActiveVisitorsPerPage(tenantID, time.Now().UTC().Add(-d))
+
+	if err != nil {
+		return nil, err
 	}
 
 	return visitors, nil

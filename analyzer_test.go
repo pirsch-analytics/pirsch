@@ -45,6 +45,11 @@ func TestAnalyzerActiveVisitors(t *testing.T) {
 	testAnalyzerActiveVisitors(t, 1)
 }
 
+func TestAnalyzerActiveVisitorsPages(t *testing.T) {
+	testAnalyzerActiveVisitorsPages(t, 0)
+	testAnalyzerActiveVisitorsPages(t, 1)
+}
+
 func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
 	testAnalyzerHourlyVisitorsFiltered(t, 0)
 	testAnalyzerHourlyVisitorsFiltered(t, 1)
@@ -329,6 +334,7 @@ func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 
 func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
+		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
 		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
 		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
@@ -342,6 +348,31 @@ func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 
 		if visitors != 3 {
 			t.Fatalf("Visitor count not as expected, was: %v", visitors)
+		}
+	}
+}
+
+func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
+		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
+		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
+		analyzer := NewAnalyzer(store)
+		visitors, err := analyzer.ActiveVisitorsPages(NewTenantID(tenantID), time.Second*10)
+
+		if err != nil {
+			t.Fatalf("Visitors must be returned, but was:  %v", err)
+		}
+
+		if len(visitors) != 2 {
+			t.Fatalf("Visitor count not as expected, was: %v", visitors)
+		}
+
+		if visitors[0].Path != "/" || visitors[0].Visitors != 1 ||
+			visitors[1].Path != "/bar" || visitors[1].Visitors != 2 {
+			t.Fatalf("Paths not as expected, was: %v", visitors)
 		}
 	}
 }

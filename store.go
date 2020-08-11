@@ -69,6 +69,9 @@ type Store interface {
 	// ActiveVisitors returns unique visitors starting at given time.
 	ActiveVisitors(sql.NullInt64, time.Time) (int, error)
 
+	// ActiveVisitorsPerPage returns unique visitors per page starting at given time.
+	ActiveVisitorsPerPage(sql.NullInt64, time.Time) ([]PageVisitors, error)
+
 	// CountHits returns the number of hits for given tenant ID.
 	CountHits(sql.NullInt64) int
 

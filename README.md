@@ -30,7 +30,7 @@ Pirsch tracks the following data points:
 * visitors per day and page
 * visitors per day and language
 
-All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field.
+All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
 
 It's theoretically possible to track the visitor flow (which page was seen first, which one was visited next, etc.), but this is not implemented at the moment. Here is a list of the limitations of Pirsch:
 

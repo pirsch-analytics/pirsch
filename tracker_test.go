@@ -226,6 +226,10 @@ func (store *testStore) ActiveVisitors(tenantID sql.NullInt64, t time.Time) (int
 	panic("implement me")
 }
 
+func (store *testStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]PageVisitors, error) {
+	panic("implement me")
+}
+
 func (store *testStore) CountHits(tenantID sql.NullInt64) int {
 	panic("implement me")
 	return 0
