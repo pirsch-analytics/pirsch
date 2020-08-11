@@ -23,6 +23,10 @@ type ProcessorConfig struct {
 	// ProcessPageViews enables/disabled processing the page views.
 	// The default is true (enabled).
 	ProcessPageViews bool
+
+	// ProcessVisitorPerReferer enables/disabled processing the visitor count per referer.
+	// The default is true (enabled).
+	ProcessVisitorPerReferer bool
 }
 
 // Processor processes hits to reduce them into meaningful statistics.
@@ -36,10 +40,11 @@ type Processor struct {
 func NewProcessor(store Store, config *ProcessorConfig) *Processor {
 	if config == nil {
 		config = &ProcessorConfig{
-			ProcessVisitors:       true,
-			ProcessVisitorPerHour: true,
-			ProcessLanguages:      true,
-			ProcessPageViews:      true,
+			ProcessVisitors:          true,
+			ProcessVisitorPerHour:    true,
+			ProcessLanguages:         true,
+			ProcessPageViews:         true,
+			ProcessVisitorPerReferer: true,
 		}
 	}
 
@@ -109,6 +114,17 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 				wg.Add(1)
 				go func() {
 					if err := processor.countPageViews(tenantID, day); err != nil {
+						errChan <- err
+					}
+
+					wg.Done()
+				}()
+			}
+
+			if processor.config.ProcessVisitorPerReferer {
+				wg.Add(1)
+				go func() {
+					if err := processor.countVisitorPerReferer(tenantID, day); err != nil {
 						errChan <- err
 					}
 
@@ -199,6 +215,24 @@ func (processor *Processor) countPageViews(tenantID sql.NullInt64, day time.Time
 	for _, visitors := range visitors {
 		if visitors.Visitors > 0 {
 			if err := processor.store.SaveVisitorsPerPage(&visitors); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) countVisitorPerReferer(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsPerReferer(tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, visitors := range visitors {
+		if visitors.Visitors > 0 {
+			if err := processor.store.SaveVisitorsPerReferer(&visitors); err != nil {
 				return err
 			}
 		}

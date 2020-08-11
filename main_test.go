@@ -73,4 +73,8 @@ func cleanupPostgresDB(t *testing.T) {
 	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_page"`); err != nil {
 		t.Fatal(err)
 	}
+
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_referer"`); err != nil {
+		t.Fatal(err)
+	}
 }

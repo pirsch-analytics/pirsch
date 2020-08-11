@@ -117,6 +117,10 @@ func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
 	panic("implement me")
 }
 
+func (store *testStore) SaveVisitorsPerReferer(page *VisitorsPerReferer) error {
+	panic("implement me")
+}
+
 func (store *testStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
@@ -137,7 +141,15 @@ func (store *testStore) CountVisitorsPerPage(tenantID sql.NullInt64, t time.Time
 	panic("implement me")
 }
 
+func (store *testStore) CountVisitorsPerReferer(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerReferer, error) {
+	panic("implement me")
+}
+
 func (store *testStore) Paths(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]string, error) {
+	panic("implement me")
+}
+
+func (store *testStore) Referer(nullInt64 sql.NullInt64, t time.Time, t2 time.Time) ([]string, error) {
 	panic("implement me")
 }
 
@@ -146,6 +158,10 @@ func (store *testStore) Visitors(tenantID sql.NullInt64, t time.Time, t2 time.Ti
 }
 
 func (store *testStore) PageVisits(tenantID sql.NullInt64, s string, t time.Time, t2 time.Time) ([]VisitorsPerDay, error) {
+	panic("implement me")
+}
+
+func (store *testStore) RefererVisits(tenantID sql.NullInt64, s string, t time.Time, t2 time.Time) ([]VisitorsPerReferer, error) {
 	panic("implement me")
 }
 
@@ -186,6 +202,11 @@ func (store *testStore) VisitorsPerLanguage(tenantID sql.NullInt64) []VisitorsPe
 }
 
 func (store *testStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPerPage {
+	panic("implement me")
+	return nil
+}
+
+func (store *testStore) VisitorsPerReferer(tenantID sql.NullInt64) []VisitorsPerReferer {
 	panic("implement me")
 	return nil
 }

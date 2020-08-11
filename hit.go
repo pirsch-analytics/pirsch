@@ -31,7 +31,7 @@ type HitOptions struct {
 	// This will also affect the URL.
 	Path string
 
-	// RefererDomainBlacklist is used to filter out unwanted referers from the Referer header.
+	// RefererDomainBlacklist is used to filter out unwanted referer from the Ref header.
 	// This can be used to filter out traffic from your own site or subdomains.
 	// To filter your own domain and subdomains, add your domain to the list and set RefererDomainBlacklistIncludesSubdomains to true.
 	// This way the referer for blog.mypage.com -> mypage.com won't be saved.
@@ -132,7 +132,7 @@ func getLanguage(r *http.Request) string {
 }
 
 func getReferer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
-	referer := r.Header.Get("Referer")
+	referer := r.Header.Get("Ref")
 
 	if referer == "" {
 		return ""
@@ -154,7 +154,10 @@ func getReferer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool)
 		return ""
 	}
 
-	return referer
+	// remove query parameters and anchor
+	u.RawQuery = ""
+	u.Fragment = ""
+	return u.String()
 }
 
 func stripSubdomain(hostname string) string {

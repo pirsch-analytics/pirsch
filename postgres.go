@@ -159,6 +159,30 @@ func (store *PostgresStore) SaveVisitorsPerPage(visitors *VisitorsPerPage) error
 	return nil
 }
 
+// SaveVisitorsPerReferer implements the Store interface.
+func (store *PostgresStore) SaveVisitorsPerReferer(visitors *VisitorsPerReferer) error {
+	day := new(VisitorsPerReferer)
+	err := store.DB.Get(day, `SELECT * FROM "visitors_per_referer" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND ref = $3`, visitors.TenantID, visitors.Day, visitors.Ref)
+
+	if err != nil {
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitors_per_referer" (tenant_id, day, ref, visitors) VALUES (:tenant_id, :day, :ref, :visitors)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Visitors += visitors.Visitors
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitors_per_referer" SET visitors = :visitors WHERE id = :id`, day); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Days implements the Store interface.
 func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	var days []time.Time
@@ -246,6 +270,25 @@ func (store *PostgresStore) CountVisitorsPerPage(tenantID sql.NullInt64, day tim
 	return visitors, nil
 }
 
+// CountVisitorsPerReferer implements the Store interface.
+func (store *PostgresStore) CountVisitorsPerReferer(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerReferer, error) {
+	query := `SELECT * FROM (
+			SELECT tenant_id, $2::timestamp "day", "ref", count(DISTINCT fingerprint) "visitors"
+			FROM hit
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			GROUP BY tenant_id, ref
+		) AS results ORDER BY "day", length("ref") ASC`
+	var visitors []VisitorsPerReferer
+
+	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // Paths implements the Store interface.
 func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([]string, error) {
 	query := `SELECT * FROM (
@@ -258,6 +301,20 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 	}
 
 	return paths, nil
+}
+
+// Referer implements the Store interface.
+func (store *PostgresStore) Referer(tenantID sql.NullInt64, from, to time.Time) ([]string, error) {
+	query := `SELECT * FROM (
+			SELECT DISTINCT "ref" FROM "visitors_per_referer" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "day" >= $2 AND "day" <= $3
+		) AS referer ORDER BY length("ref"), "ref" ASC`
+	var referer []string
+
+	if err := store.DB.Select(&referer, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return referer, nil
 }
 
 // Visitors implements the Store interface.
@@ -298,6 +355,28 @@ func (store *PostgresStore) PageVisits(tenantID sql.NullInt64, path string, from
 	var visitors []VisitorsPerDay
 
 	if err := store.DB.Select(&visitors, query, tenantID, from, to, path); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// RefererVisits implements the Store interface.
+func (store *PostgresStore) RefererVisits(tenantID sql.NullInt64, referer string, from, to time.Time) ([]VisitorsPerReferer, error) {
+	query := `SELECT tenant_id, "date" "day",
+		CASE WHEN "visitors_per_referer".visitors IS NULL THEN 0 ELSE "visitors_per_referer".visitors END
+		FROM (
+			SELECT * FROM generate_series(
+				$2::timestamp,
+				$3::timestamp,
+				INTERVAL '1 day'
+			) "date"
+		) AS date_series
+		LEFT JOIN "visitors_per_referer" ON ($1::bigint IS NULL OR tenant_id = $1) AND date("visitors_per_referer"."day") = date("date") AND "visitors_per_referer"."ref" = $4
+		ORDER BY "date" ASC`
+	var visitors []VisitorsPerReferer
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to, referer); err != nil {
 		return nil, err
 	}
 
@@ -438,6 +517,17 @@ func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPe
 	var entities []VisitorsPerPage
 
 	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "path"`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
+}
+
+// VisitorsPerReferer implements the Store interface.
+func (store *PostgresStore) VisitorsPerReferer(tenantID sql.NullInt64) []VisitorsPerReferer {
+	var entities []VisitorsPerReferer
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_referer" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "ref"`, tenantID); err != nil {
 		return nil
 	}
 

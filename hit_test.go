@@ -10,7 +10,7 @@ func TestHitFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "user-agent")
-	req.Header.Set("Referer", "ref")
+	req.Header.Set("Ref", "ref")
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		TenantID: NewTenantID(42),
 	})
@@ -140,7 +140,7 @@ func TestGetReferer(t *testing.T) {
 	}{
 		{"http://boring.old/domain", nil, false},
 		{"https://with.subdomain.com/", nil, false},
-		{"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42", nil, false},
+		{"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42#anchor", nil, false},
 		{"http://boring.old/domain", []string{"boring.old"}, false},
 		{"https://with.subdomain.com/", []string{"boring.old"}, false},
 		{"https://sub.boring.old/domain", []string{"boring.old"}, false},
@@ -149,7 +149,7 @@ func TestGetReferer(t *testing.T) {
 	expected := []string{
 		"http://boring.old/domain",
 		"https://with.subdomain.com/",
-		"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42",
+		"https://with.multiple.subdomains.com/and/a/path",
 		"",
 		"https://with.subdomain.com/",
 		"https://sub.boring.old/domain",
@@ -158,7 +158,7 @@ func TestGetReferer(t *testing.T) {
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Add("Referer", in.referer)
+		r.Header.Add("Ref", in.referer)
 
 		if referer := getReferer(r, in.blacklist, in.ignoreSubdomain); referer != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], referer)

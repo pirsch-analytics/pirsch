@@ -19,6 +19,7 @@ func TestProcessor_Process(t *testing.T) {
 		checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 0, 1, 2, 2, 1)
 		checkPageViewCount(t, store, 0, 2, 1, 2, 1)
+		checkRefererCount(t, store, 0, 3, 2, 1)
 	}
 }
 
@@ -36,6 +37,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 		checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 1, 1, 2, 2, 1)
 		checkPageViewCount(t, store, 1, 2, 1, 2, 1)
+		checkRefererCount(t, store, 1, 3, 2, 1)
 	}
 }
 
@@ -54,6 +56,7 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 		checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
 		checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
 		checkPageViewCount(t, store, 0, 2, 1, 2, 66+1)
+		checkRefererCount(t, store, 0, 13+3, 2, 1)
 	}
 }
 
@@ -141,14 +144,34 @@ func checkPageViewCount(t *testing.T, store Store, tenantID int64, views1, views
 	}
 }
 
+func checkRefererCount(t *testing.T, store Store, tenantID int64, views1, views2, views3 int) {
+	visitors := store.VisitorsPerReferer(NewTenantID(tenantID))
+
+	if len(visitors) != 3 {
+		t.Fatalf("Three visitors per referer must have been created, but was: %v", len(visitors))
+	}
+
+	if visitors[0].Ref != "ref1" ||
+		visitors[1].Ref != "ref2" ||
+		visitors[2].Ref != "ref3" {
+		t.Fatal("Referer not as expected")
+	}
+
+	if visitors[0].Visitors != views1 ||
+		visitors[1].Visitors != views2 ||
+		visitors[2].Visitors != views3 {
+		t.Fatal("Visitors not as expected")
+	}
+}
+
 func createTestdata(t *testing.T, store Store, tenantID int64) {
 	cleanupDB(t)
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", day(2020, 6, 21, 7))
-	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", day(2020, 6, 21, 7))
-	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", day(2020, 6, 21, 8))
-	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", day(2020, 6, 22, 9))
-	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", day(2020, 6, 22, 9))
-	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", day(2020, 6, 22, 10))
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7))
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7))
+	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8))
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9))
+	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9))
+	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10))
 }
 
 func createTestDays(t *testing.T, store Store) {
@@ -189,9 +212,19 @@ func createTestDays(t *testing.T, store Store) {
 	if err := store.SaveVisitorsPerPage(&visitorsPerPage); err != nil {
 		t.Fatal(err)
 	}
+
+	visitorsPerReferer := VisitorsPerReferer{
+		Day:      day(2020, 6, 21, 7),
+		Ref:      "ref1",
+		Visitors: 13,
+	}
+
+	if err := store.SaveVisitorsPerReferer(&visitorsPerReferer); err != nil {
+		t.Fatal(err)
+	}
 }
 
-func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent string, time time.Time) {
+func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time) {
 	hit := Hit{
 		TenantID:    NewTenantID(tenantID),
 		Fingerprint: fingerprint,
@@ -199,6 +232,7 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		Language:    lang,
 		UserAgent:   userAgent,
 		Time:        time,
+		Ref:         ref,
 	}
 
 	if err := store.Save([]Hit{hit}); err != nil {
