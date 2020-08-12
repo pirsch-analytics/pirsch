@@ -39,10 +39,25 @@ type VisitorsPerPage struct {
 	Visitors int           `db:"visitors" json:"visitors"`
 }
 
+// VisitorsPerReferer is the unique visitor count per referer and day.
+type VisitorsPerReferer struct {
+	ID       int64         `db:"id" json:"id"`
+	TenantID sql.NullInt64 `db:"tenant_id" json:"tenant_id"`
+	Day      time.Time     `db:"day" json:"day"`
+	Ref      string        `db:"ref" json:"ref"`
+	Visitors int           `db:"visitors" json:"visitors"`
+}
+
 // PageVisits is the visitor count per day for each path.
 type PageVisits struct {
 	Path   string
 	Visits []VisitorsPerDay
+}
+
+// RefererVisits is the visitor count per day for each referer.
+type RefererVisits struct {
+	Referer string
+	Visits  []VisitorsPerReferer
 }
 
 // VisitorLanguage is the unique visitor count per language.
@@ -56,4 +71,10 @@ type VisitorLanguage struct {
 type HourlyVisitors struct {
 	Hour     int `db:"hour" json:"hour"`
 	Visitors int `db:"visitors" json:"visitors"`
+}
+
+// PageVisitors is the visitor count for each path.
+type PageVisitors struct {
+	Path     string `db:"path" json:"path"`
+	Visitors int    `db:"visitors" json:"visitors"`
 }

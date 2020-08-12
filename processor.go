@@ -6,14 +6,52 @@ import (
 	"time"
 )
 
-// Processor processes hits to reduce them into meaningful statistics.
-type Processor struct {
-	store Store
+// ProcessorConfig is the optional configuration for the Processor.
+type ProcessorConfig struct {
+	// ProcessVisitors enables/disabled processing the visitor count.
+	// The default is true (enabled).
+	ProcessVisitors bool
+
+	// ProcessVisitorPerHour enables/disabled processing the visitor count per hour.
+	// The default is true (enabled).
+	ProcessVisitorPerHour bool
+
+	// ProcessLanguages enables/disabled processing the language count.
+	// The default is true (enabled).
+	ProcessLanguages bool
+
+	// ProcessPageViews enables/disabled processing the page views.
+	// The default is true (enabled).
+	ProcessPageViews bool
+
+	// ProcessVisitorPerReferer enables/disabled processing the visitor count per referer.
+	// The default is true (enabled).
+	ProcessVisitorPerReferer bool
 }
 
-// NewProcessor creates a new Processor for given Store.
-func NewProcessor(store Store) *Processor {
-	return &Processor{store}
+// Processor processes hits to reduce them into meaningful statistics.
+type Processor struct {
+	store  Store
+	config ProcessorConfig
+}
+
+// NewProcessor creates a new Processor for given Store and config.
+// Pass nil for the config to use the defaults.
+func NewProcessor(store Store, config *ProcessorConfig) *Processor {
+	if config == nil {
+		config = &ProcessorConfig{
+			ProcessVisitors:          true,
+			ProcessVisitorPerHour:    true,
+			ProcessLanguages:         true,
+			ProcessPageViews:         true,
+			ProcessVisitorPerReferer: true,
+		}
+	}
+
+	return &Processor{
+		store:  store,
+		config: *config,
+	}
 }
 
 // Process processes all hits in database and deletes them afterwards.
@@ -38,39 +76,61 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 
 		go func() {
 			var wg sync.WaitGroup
-			wg.Add(4)
 
-			go func() {
-				if err := processor.visitorCount(tenantID, day); err != nil {
-					errChan <- err
-				}
+			if processor.config.ProcessVisitors {
+				wg.Add(1)
+				go func() {
+					if err := processor.countVisitors(tenantID, day); err != nil {
+						errChan <- err
+					}
 
-				wg.Done()
-			}()
+					wg.Done()
+				}()
+			}
 
-			go func() {
-				if err := processor.visitorCountHour(tenantID, day); err != nil {
-					errChan <- err
-				}
+			if processor.config.ProcessVisitorPerHour {
+				wg.Add(1)
+				go func() {
+					if err := processor.countVisitorPerHour(tenantID, day); err != nil {
+						errChan <- err
+					}
 
-				wg.Done()
-			}()
+					wg.Done()
+				}()
+			}
 
-			go func() {
-				if err := processor.languageCount(tenantID, day); err != nil {
-					errChan <- err
-				}
+			if processor.config.ProcessLanguages {
+				wg.Add(1)
+				go func() {
+					if err := processor.countLanguages(tenantID, day); err != nil {
+						errChan <- err
+					}
 
-				wg.Done()
-			}()
+					wg.Done()
+				}()
+			}
 
-			go func() {
-				if err := processor.pageViews(tenantID, day); err != nil {
-					errChan <- err
-				}
+			if processor.config.ProcessPageViews {
+				wg.Add(1)
+				go func() {
+					if err := processor.countPageViews(tenantID, day); err != nil {
+						errChan <- err
+					}
 
-				wg.Done()
-			}()
+					wg.Done()
+				}()
+			}
+
+			if processor.config.ProcessVisitorPerReferer {
+				wg.Add(1)
+				go func() {
+					if err := processor.countVisitorPerReferer(tenantID, day); err != nil {
+						errChan <- err
+					}
+
+					wg.Done()
+				}()
+			}
 
 			wg.Wait()
 			close(waitChan)
@@ -91,7 +151,7 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 	return nil
 }
 
-func (processor *Processor) visitorCount(tenantID sql.NullInt64, day time.Time) error {
+func (processor *Processor) countVisitors(tenantID sql.NullInt64, day time.Time) error {
 	visitors, err := processor.store.CountVisitorsPerDay(tenantID, day)
 
 	if err != nil {
@@ -109,7 +169,7 @@ func (processor *Processor) visitorCount(tenantID sql.NullInt64, day time.Time) 
 	})
 }
 
-func (processor *Processor) visitorCountHour(tenantID sql.NullInt64, day time.Time) error {
+func (processor *Processor) countVisitorPerHour(tenantID sql.NullInt64, day time.Time) error {
 	visitors, err := processor.store.CountVisitorsPerDayAndHour(tenantID, day)
 
 	if err != nil {
@@ -127,7 +187,7 @@ func (processor *Processor) visitorCountHour(tenantID sql.NullInt64, day time.Ti
 	return nil
 }
 
-func (processor *Processor) languageCount(tenantID sql.NullInt64, day time.Time) error {
+func (processor *Processor) countLanguages(tenantID sql.NullInt64, day time.Time) error {
 	visitors, err := processor.store.CountVisitorsPerLanguage(tenantID, day)
 
 	if err != nil {
@@ -145,7 +205,7 @@ func (processor *Processor) languageCount(tenantID sql.NullInt64, day time.Time)
 	return nil
 }
 
-func (processor *Processor) pageViews(tenantID sql.NullInt64, day time.Time) error {
+func (processor *Processor) countPageViews(tenantID sql.NullInt64, day time.Time) error {
 	visitors, err := processor.store.CountVisitorsPerPage(tenantID, day)
 
 	if err != nil {
@@ -155,6 +215,24 @@ func (processor *Processor) pageViews(tenantID sql.NullInt64, day time.Time) err
 	for _, visitors := range visitors {
 		if visitors.Visitors > 0 {
 			if err := processor.store.SaveVisitorsPerPage(&visitors); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) countVisitorPerReferer(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsPerReferer(tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, visitors := range visitors {
+		if visitors.Visitors > 0 {
+			if err := processor.store.SaveVisitorsPerReferer(&visitors); err != nil {
 				return err
 			}
 		}

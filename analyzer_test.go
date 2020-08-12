@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 )
@@ -19,6 +18,11 @@ func TestAnalyzerVisitorsFiltered(t *testing.T) {
 func TestAnalyzerPageVisits(t *testing.T) {
 	testAnalyzerPageVisits(t, 0)
 	testAnalyzerPageVisits(t, 1)
+}
+
+func TestAnalyzerRefererVisits(t *testing.T) {
+	testAnalyzerRefererVisits(t, 0)
+	testAnalyzerRefererVisits(t, 1)
 }
 
 func TestAnalyzerPageVisitsFiltered(t *testing.T) {
@@ -44,6 +48,11 @@ func TestAnalyzerHourlyVisitors(t *testing.T) {
 func TestAnalyzerActiveVisitors(t *testing.T) {
 	testAnalyzerActiveVisitors(t, 0)
 	testAnalyzerActiveVisitors(t, 1)
+}
+
+func TestAnalyzerActiveVisitorsPages(t *testing.T) {
+	testAnalyzerActiveVisitorsPages(t, 0)
+	testAnalyzerActiveVisitorsPages(t, 1)
 }
 
 func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
@@ -74,7 +83,7 @@ func testAnalyzerVisitors(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.Visitors(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 		})
 
 		if err != nil {
@@ -113,7 +122,7 @@ func testAnalyzerVisitorsFiltered(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.Visitors(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 			From:     pastDay(3),
 			To:       pastDay(2),
 		})
@@ -144,7 +153,7 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visits, err := analyzer.PageVisits(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 		})
 
 		if err != nil {
@@ -152,7 +161,7 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 		}
 
 		if len(visits) != 4 {
-			t.Fatalf("Must have returns statistics for three pages, but was: %v", len(visits))
+			t.Fatalf("Must have returns statistics for four pages, but was: %v", len(visits))
 		}
 
 		if visits[0].Path != "/" ||
@@ -181,13 +190,53 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 	}
 }
 
+func testAnalyzerRefererVisits(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		visits, err := analyzer.RefererVisits(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("Visits must be returned, but was:  %v", err)
+		}
+
+		if len(visits) != 3 {
+			t.Fatalf("Must have returns statistics for three referer, but was: %v", len(visits))
+		}
+
+		if visits[0].Referer != "ref1" ||
+			visits[1].Referer != "ref2" ||
+			visits[2].Referer != "ref3" {
+			t.Fatal("Referer not as expected")
+		}
+
+		if len(visits[0].Visits) != 7 ||
+			len(visits[1].Visits) != 7 ||
+			len(visits[2].Visits) != 7 {
+			t.Fatal("Referer visits not as expected")
+		}
+
+		if visits[0].Visits[5].Visitors != 32 ||
+			visits[0].Visits[6].Visitors != 1 ||
+			visits[1].Visits[5].Visitors != 43 ||
+			visits[1].Visits[6].Visitors != 1 ||
+			visits[2].Visits[4].Visitors != 54 ||
+			visits[2].Visits[6].Visitors != 1 {
+			t.Fatal("Visitors not as expected")
+		}
+	}
+}
+
 func testAnalyzerPageVisitsFiltered(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visits, err := analyzer.PageVisits(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 			From:     pastDay(3),
 			To:       pastDay(2),
 		})
@@ -221,7 +270,7 @@ func testAnalyzerLanguages(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		langs, total, err := analyzer.Languages(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 		})
 
 		if err != nil {
@@ -250,7 +299,7 @@ func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		langs, total, err := analyzer.Languages(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 			From:     pastDay(3),
 			To:       pastDay(2),
 		})
@@ -280,7 +329,7 @@ func testAnalyzerHourlyVisitors(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.HourlyVisitors(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 		})
 
 		if err != nil {
@@ -306,7 +355,7 @@ func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.HourlyVisitors(&Filter{
-			TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+			TenantID: NewTenantID(tenantID),
 			From:     pastDay(3),
 			To:       pastDay(2),
 		})
@@ -330,12 +379,13 @@ func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 
 func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*5))
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*3))
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*9))
-		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", time.Now().UTC().Add(-time.Second*11))
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
+		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
 		analyzer := NewAnalyzer(store)
-		visitors, err := analyzer.ActiveVisitors(sql.NullInt64{Int64: tenantID, Valid: tenantID != 0}, time.Second*10)
+		visitors, err := analyzer.ActiveVisitors(NewTenantID(tenantID), time.Second*10)
 
 		if err != nil {
 			t.Fatalf("Visitors must be returned, but was:  %v", err)
@@ -347,16 +397,44 @@ func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	}
 }
 
+func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
+		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
+		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
+		analyzer := NewAnalyzer(store)
+		visitors, err := analyzer.ActiveVisitorsPages(NewTenantID(tenantID), time.Second*10)
+
+		if err != nil {
+			t.Fatalf("Visitors must be returned, but was:  %v", err)
+		}
+
+		if len(visitors) != 2 {
+			t.Fatalf("Visitor count not as expected, was: %v", visitors)
+		}
+
+		if visitors[0].Path != "/bar" || visitors[0].Visitors != 2 ||
+			visitors[1].Path != "/" || visitors[1].Visitors != 1 {
+			t.Fatalf("Paths not as expected, was: %v", visitors)
+		}
+	}
+}
+
 func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", pastDay(0))
-	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", pastDay(0))
-	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", pastDay(0))
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0))
+	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0))
+	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0))
 	createVisitorPerDay(t, store, tenantID, pastDay(1), 42)
 	createVisitorPerDay(t, store, tenantID, pastDay(2), 39)
 	createVisitorPerDay(t, store, tenantID, pastDay(3), 26)
 	createVisitorPerPage(t, store, tenantID, pastDay(1), "/", 45)
 	createVisitorPerPage(t, store, tenantID, pastDay(1), "/laa", 23)
 	createVisitorPerPage(t, store, tenantID, pastDay(2), "/bar", 67)
+	createVisitorPerReferer(t, store, tenantID, pastDay(1), "ref1", 32)
+	createVisitorPerReferer(t, store, tenantID, pastDay(1), "ref2", 43)
+	createVisitorPerReferer(t, store, tenantID, pastDay(2), "ref3", 54)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(1), "En", 49)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(2), "de", 13)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(3), "jP", 52)
@@ -367,7 +445,7 @@ func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
 
 func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Time, visitors int) {
 	visitor := VisitorsPerDay{
-		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		TenantID: NewTenantID(tenantID),
 		Day:      day,
 		Visitors: visitors,
 	}
@@ -379,9 +457,10 @@ func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Tim
 
 func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Time, path string, visitors int) {
 	visitor := VisitorsPerPage{
-		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		TenantID: NewTenantID(tenantID),
 		Day:      day,
-		Path:     path, Visitors: visitors,
+		Path:     path,
+		Visitors: visitors,
 	}
 
 	if err := store.SaveVisitorsPerPage(&visitor); err != nil {
@@ -389,10 +468,24 @@ func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Ti
 	}
 }
 
+func createVisitorPerReferer(t *testing.T, store Store, tenantID int64, day time.Time, referer string, visitors int) {
+	visitor := VisitorsPerReferer{
+		TenantID: NewTenantID(tenantID),
+		Day:      day,
+		Ref:      referer,
+		Visitors: visitors,
+	}
+
+	if err := store.SaveVisitorsPerReferer(&visitor); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day time.Time, lang string, visitors int) {
 	visitor := VisitorsPerLanguage{
-		TenantID: sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
-		Day:      day, Language: lang,
+		TenantID: NewTenantID(tenantID),
+		Day:      day,
+		Language: lang,
 		Visitors: visitors,
 	}
 
@@ -403,7 +496,7 @@ func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day tim
 
 func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour time.Time, visitors int) {
 	visitor := VisitorsPerHour{
-		TenantID:   sql.NullInt64{Int64: tenantID, Valid: tenantID != 0},
+		TenantID:   NewTenantID(tenantID),
 		DayAndHour: dayAndHour,
 		Visitors:   visitors,
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	db *sql.DB
+	postgresDB *sql.DB
 )
 
 func TestMain(m *testing.M) {
@@ -17,45 +17,64 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// open test database connections
 func connectDB() {
+	connectPostgresDB()
+}
+
+// close test database connections
+func closeDB() {
+	closePostgresDB()
+}
+
+// clean up all test databases
+func cleanupDB(t *testing.T) {
+	cleanupPostgresDB(t)
+}
+
+func connectPostgresDB() {
 	var err error
-	db, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch search_path=public sslmode=disable timezone=UTC")
+	postgresDB, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch search_path=public sslmode=disable timezone=UTC")
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := db.Ping(); err != nil {
+	if err := postgresDB.Ping(); err != nil {
 		panic(err)
 	}
 
-	db.SetMaxOpenConns(1)
+	postgresDB.SetMaxOpenConns(1)
 }
 
-func closeDB() {
-	if err := db.Close(); err != nil {
+func closePostgresDB() {
+	if err := postgresDB.Close(); err != nil {
 		panic(err)
 	}
 }
 
-func cleanupDB(t *testing.T) {
-	if _, err := db.Exec(`DELETE FROM "hit"`); err != nil {
+func cleanupPostgresDB(t *testing.T) {
+	if _, err := postgresDB.Exec(`DELETE FROM "hit"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM "visitors_per_day"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_day"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM "visitors_per_hour"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_hour"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM "visitors_per_language"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_language"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`DELETE FROM "visitors_per_page"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_page"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_referer"`); err != nil {
 		t.Fatal(err)
 	}
 }

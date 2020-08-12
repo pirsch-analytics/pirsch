@@ -30,7 +30,7 @@ Pirsch tracks the following data points:
 * visitors per day and page
 * visitors per day and language
 
-All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field.
+All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
 
 It's theoretically possible to track the visitor flow (which page was seen first, which one was visited next, etc.), but this is not implemented at the moment. Here is a list of the limitations of Pirsch:
 
@@ -56,7 +56,8 @@ tracker := pirsch.NewTracker(store, "secret_salt", nil)
 
 // the Processor analyzes hits and stores the reduced data points in store
 // it's recommended to run the Process method once a day, but you can run it as often as you want
-processor := pirsch.NewProcessor(store)
+// the config can be used to enable/disable certain features of the processor
+processor := pirsch.NewProcessor(store, nil)
 pirsch.RunAtMidnight(processor.Process) // helper function to run a function at midnight (UTC)
 
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +93,20 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details and check out [this](https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w) article.
 
 ## Changelog
+
+### 1.3.0
+
+**You need to update the schema by running the `v1.3.0.sql` migration script!**
+
+* added cancel function to `RunAtMidnight`
+* added helper function for tenant IDs
+* hits for an empty User-Agent will be ignored from now on
+* added configuration options to `Processor`
+* `IgnoreHit` and `HitFromRequest` are now exported functions
+* added options to filter for unwanted referer, like your own domain
+* added referer statistics to `Processor` and `Analyzer`
+* added method to `Analyzer` to extract active visitor pages
+* `Analyzer` results are now sorted by visitors in descending order instead of path and referer length
 
 ### 1.2.0
 
