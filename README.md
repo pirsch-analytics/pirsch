@@ -98,7 +98,7 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 **You need to update the schema by running the `v1.2.0.sql` migration script!**
 
 * the processor now returns an error
-* the processor now updates existing statistics in case it has been run before. It's now possible to run it as often as you want without messing up the statistics
+* the processor now updates existing statistics in case it has been run before, but keep in mind that it drops hits and therefor breaks tracking users that return on the same day. It's recommended to run the processor for days in the past excluding today
 * (optional) multi-tenancy support to track multiple domains using the same database. In case you don't want to use it, use null as the `tenant_id`
 * improved IP extraction from X-Forwarded-For, Forwarded and X-Real-IP headers
 
