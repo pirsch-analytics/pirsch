@@ -13,7 +13,7 @@ func RunAtMidnight(f func()) context.CancelFunc {
 
 	go func() {
 		for {
-			now := time.Now()
+			now := time.Now().UTC()
 			midnight := time.Date(now.Year(), now.Month(), now.Day(), 24, 0, 0, 0, time.UTC)
 			timeToMidnight := midnight.Sub(now)
 

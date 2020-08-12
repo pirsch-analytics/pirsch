@@ -94,6 +94,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### (unreleased)
+
+* fixed helper function `RunAtMidnight` not using UTC for all times
+
 ### 1.3.1
 
 * added statistics for visitor count per page and referer
