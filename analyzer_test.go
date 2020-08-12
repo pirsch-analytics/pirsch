@@ -30,6 +30,16 @@ func TestAnalyzerPageVisitsFiltered(t *testing.T) {
 	testAnalyzerPageVisitsFiltered(t, 1)
 }
 
+func TestAnalyzerPages(t *testing.T) {
+	testAnalyzerPages(t, 0)
+	testAnalyzerPages(t, 1)
+}
+
+func TestAnalyzerPagesFiltered(t *testing.T) {
+	testAnalyzerPagesFiltered(t, 0)
+	testAnalyzerPagesFiltered(t, 1)
+}
+
 func TestAnalyzerLanguages(t *testing.T) {
 	testAnalyzerLanguages(t, 0)
 	testAnalyzerLanguages(t, 1)
@@ -38,6 +48,16 @@ func TestAnalyzerLanguages(t *testing.T) {
 func TestAnalyzerLanguagesFiltered(t *testing.T) {
 	testAnalyzerLanguagesFiltered(t, 0)
 	testAnalyzerLanguagesFiltered(t, 1)
+}
+
+func TestAnalyzerReferer(t *testing.T) {
+	testAnalyzerReferer(t, 0)
+	testAnalyzerReferer(t, 1)
+}
+
+func TestAnalyzerRefererFiltered(t *testing.T) {
+	testAnalyzerRefererFiltered(t, 0)
+	testAnalyzerRefererFiltered(t, 1)
 }
 
 func TestAnalyzerHourlyVisitors(t *testing.T) {
@@ -264,6 +284,57 @@ func testAnalyzerPageVisitsFiltered(t *testing.T, tenantID int64) {
 	}
 }
 
+func testAnalyzerPages(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		pages, err := analyzer.Pages(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("Pages must be returned, but was:  %v", err)
+		}
+
+		if len(pages) != 4 {
+			t.Fatalf("Number of pages not as expected: %v", len(pages))
+		}
+
+		if pages[0].Path != "/bar" || pages[0].Visitors != 68 ||
+			pages[1].Path != "/" || pages[1].Visitors != 46 ||
+			pages[2].Path != "/laa" || pages[2].Visitors != 23 ||
+			pages[3].Path != "/foo" || pages[3].Visitors != 1 {
+			t.Fatalf("Pages not as expected: %v", pages)
+		}
+	}
+}
+
+func testAnalyzerPagesFiltered(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		pages, err := analyzer.Pages(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(3),
+			To:       pastDay(2),
+		})
+
+		if err != nil {
+			t.Fatalf("Pages must be returned, but was:  %v", err)
+		}
+
+		if len(pages) != 1 {
+			t.Fatalf("Number of pages not as expected: %v", len(pages))
+		}
+
+		if pages[0].Path != "/bar" || pages[0].Visitors != 67 {
+			t.Fatalf("Pages not as expected: %v", pages)
+		}
+	}
+}
+
 func testAnalyzerLanguages(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
@@ -319,6 +390,56 @@ func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 		if langs[0].Language != "jp" || langs[0].Visitors != 52 || !about(langs[0].RelativeVisitors, 0.8) ||
 			langs[1].Language != "de" || langs[1].Visitors != 13 || !about(langs[1].RelativeVisitors, 0.2) {
 			t.Fatalf("Languages not as expected: %v", langs)
+		}
+	}
+}
+
+func testAnalyzerReferer(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		referer, err := analyzer.Referer(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("Referer must be returned, but was:  %v", err)
+		}
+
+		if len(referer) != 3 {
+			t.Fatalf("Number of referer not as expected: %v", len(referer))
+		}
+
+		if referer[0].Referer != "ref3" || referer[0].Visitors != 55 ||
+			referer[1].Referer != "ref2" || referer[1].Visitors != 44 ||
+			referer[2].Referer != "ref1" || referer[2].Visitors != 33 {
+			t.Fatalf("Referer not as expected: %v", referer)
+		}
+	}
+}
+
+func testAnalyzerRefererFiltered(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		referer, err := analyzer.Referer(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(3),
+			To:       pastDay(2),
+		})
+
+		if err != nil {
+			t.Fatalf("Referer must be returned, but was:  %v", err)
+		}
+
+		if len(referer) != 1 {
+			t.Fatalf("Number of referer not as expected: %v", len(referer))
+		}
+
+		if referer[0].Referer != "ref3" || referer[0].Visitors != 54 {
+			t.Fatalf("Referer not as expected: %v", referer)
 		}
 	}
 }

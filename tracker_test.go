@@ -165,7 +165,15 @@ func (store *testStore) RefererVisits(tenantID sql.NullInt64, s string, t time.T
 	panic("implement me")
 }
 
+func (store *testStore) VisitorPages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorPage, error) {
+	panic("implement me")
+}
+
 func (store *testStore) VisitorLanguages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
+	panic("implement me")
+}
+
+func (store *testStore) VisitorReferer(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorReferer, error) {
 	panic("implement me")
 }
 

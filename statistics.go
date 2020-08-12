@@ -60,11 +60,23 @@ type RefererVisits struct {
 	Visits  []VisitorsPerReferer
 }
 
+// VisitorPage is the unique visitor count per page.
+type VisitorPage struct {
+	Path     string `db:"path" json:"path"`
+	Visitors int    `db:"visitors" json:"visitors"`
+}
+
 // VisitorLanguage is the unique visitor count per language.
 type VisitorLanguage struct {
 	Language         string  `db:"language" json:"language"`
 	Visitors         int     `db:"visitors" json:"visitors"`
 	RelativeVisitors float64 `db:"-" json:"relative_visitors"`
+}
+
+// VisitorReferer is the unique visitor count per referer.
+type VisitorReferer struct {
+	Referer  string `db:"ref" json:"referer"`
+	Visitors int    `db:"visitors" json:"visitors"`
 }
 
 // HourlyVisitors is the unique visitor count per hour.

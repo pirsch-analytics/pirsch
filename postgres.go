@@ -383,6 +383,34 @@ func (store *PostgresStore) RefererVisits(tenantID sql.NullInt64, referer string
 	return visitors, nil
 }
 
+// VisitorPages implements the Store interface.
+func (store *PostgresStore) VisitorPages(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorPage, error) {
+	query := `SELECT * FROM (
+			SELECT "path", sum("visitors") "visitors" FROM (
+				SELECT "path", sum("visitors") "visitors" FROM "visitors_per_page"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				GROUP BY "path"
+				UNION
+				SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				GROUP BY "path"
+			) AS results
+			GROUP BY "path"
+		) AS pages
+		ORDER BY "visitors" DESC`
+	var pages []VisitorPage
+
+	if err := store.DB.Select(&pages, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return pages, nil
+}
+
 // VisitorLanguages implements the Store interface.
 func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]VisitorLanguage, error) {
 	query := `SELECT * FROM (
@@ -409,6 +437,34 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 	}
 
 	return languages, nil
+}
+
+// VisitorReferer implements the Store interface.
+func (store *PostgresStore) VisitorReferer(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorReferer, error) {
+	query := `SELECT * FROM (
+			SELECT "ref", sum("visitors") "visitors" FROM (
+				SELECT "ref", sum("visitors") "visitors" FROM "visitors_per_referer"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				GROUP BY "ref"
+				UNION
+				SELECT "ref", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				GROUP BY "ref"
+			) AS results
+			GROUP BY "ref"
+		) AS referer
+		ORDER BY "visitors" DESC`
+	var referer []VisitorReferer
+
+	if err := store.DB.Select(&referer, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return referer, nil
 }
 
 // VisitorLanguages implements the Store interface.

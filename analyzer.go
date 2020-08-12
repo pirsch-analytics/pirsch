@@ -205,6 +205,18 @@ func (analyzer *Analyzer) RefererVisits(filter *Filter) ([]RefererVisits, error)
 	return refererVisits, nil
 }
 
+// Pages returns the absolute visitor count per page for given time frame.
+func (analyzer *Analyzer) Pages(filter *Filter) ([]VisitorPage, error) {
+	filter = analyzer.validateFilter(filter)
+	pages, err := analyzer.store.VisitorPages(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pages, nil
+}
+
 // Languages returns the absolute and relative visitor count per language for given time frame.
 func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, error) {
 	filter = analyzer.validateFilter(filter)
@@ -225,6 +237,18 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, err
 	}
 
 	return langs, total, nil
+}
+
+// Referer returns the absolute visitor count per referer for given time frame.
+func (analyzer *Analyzer) Referer(filter *Filter) ([]VisitorReferer, error) {
+	filter = analyzer.validateFilter(filter)
+	referer, err := analyzer.store.VisitorReferer(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return referer, nil
 }
 
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.
