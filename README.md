@@ -94,6 +94,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.3.1
+
+* added statistics for visitor count per page and referer
+
 ### 1.3.0
 
 **You need to update the schema by running the `v1.3.0.sql` migration script!**
