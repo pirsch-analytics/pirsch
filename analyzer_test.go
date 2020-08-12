@@ -415,8 +415,8 @@ func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 			t.Fatalf("Visitor count not as expected, was: %v", visitors)
 		}
 
-		if visitors[0].Path != "/" || visitors[0].Visitors != 1 ||
-			visitors[1].Path != "/bar" || visitors[1].Visitors != 2 {
+		if visitors[0].Path != "/bar" || visitors[0].Visitors != 2 ||
+			visitors[1].Path != "/" || visitors[1].Visitors != 1 {
 			t.Fatalf("Paths not as expected, was: %v", visitors)
 		}
 	}

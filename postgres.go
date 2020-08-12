@@ -260,7 +260,7 @@ func (store *PostgresStore) CountVisitorsPerPage(tenantID sql.NullInt64, day tim
 			AND time >= $2::timestamp
 			AND time < $2::timestamp + INTERVAL '1 day'
 			GROUP BY tenant_id, "path"
-		) AS results ORDER BY "day", length("path") ASC`
+		) AS results ORDER BY "day" ASC, "visitors" DESC`
 	var visitors []VisitorsPerPage
 
 	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
@@ -279,7 +279,7 @@ func (store *PostgresStore) CountVisitorsPerReferer(tenantID sql.NullInt64, day 
 			AND time >= $2::timestamp
 			AND time < $2::timestamp + INTERVAL '1 day'
 			GROUP BY tenant_id, ref
-		) AS results ORDER BY "day", length("ref") ASC`
+		) AS results ORDER BY "day" ASC, "visitors" DESC`
 	var visitors []VisitorsPerReferer
 
 	if err := store.DB.Select(&visitors, query, tenantID, day); err != nil {
@@ -458,7 +458,7 @@ func (store *PostgresStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, from t
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "time" > $2
 		GROUP BY "path"
-		ORDER BY length("path") ASC`
+		ORDER BY "visitors" DESC`
 	var visitors []PageVisitors
 
 	if err := store.DB.Select(&visitors, query, tenantID, from); err != nil {
@@ -516,7 +516,7 @@ func (store *PostgresStore) VisitorsPerLanguage(tenantID sql.NullInt64) []Visito
 func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPerPage {
 	var entities []VisitorsPerPage
 
-	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "path"`, tenantID); err != nil {
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day" ASC, "visitors" DESC`, tenantID); err != nil {
 		return nil
 	}
 
@@ -527,7 +527,7 @@ func (store *PostgresStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPe
 func (store *PostgresStore) VisitorsPerReferer(tenantID sql.NullInt64) []VisitorsPerReferer {
 	var entities []VisitorsPerReferer
 
-	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_referer" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day", "ref"`, tenantID); err != nil {
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_referer" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day" ASC, "visitors" DESC`, tenantID); err != nil {
 		return nil
 	}
 

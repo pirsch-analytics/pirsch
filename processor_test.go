@@ -18,7 +18,7 @@ func TestProcessor_Process(t *testing.T) {
 		checkVisitorCount(t, store, 0, 3, 3)
 		checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 0, 1, 2, 2, 1)
-		checkPageViewCount(t, store, 0, 2, 1, 2, 1)
+		checkPageViewCount(t, store, 0, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
 		checkRefererCount(t, store, 0, 3, 2, 1)
 	}
 }
@@ -36,7 +36,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 		checkVisitorCount(t, store, 1, 3, 3)
 		checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 1, 1, 2, 2, 1)
-		checkPageViewCount(t, store, 1, 2, 1, 2, 1)
+		checkPageViewCount(t, store, 1, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
 		checkRefererCount(t, store, 1, 3, 2, 1)
 	}
 }
@@ -55,7 +55,7 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 		checkVisitorCount(t, store, 0, 42+3, 3)
 		checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
 		checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
-		checkPageViewCount(t, store, 0, 2, 1, 2, 66+1)
+		checkPageViewCount(t, store, 0, "/", "/page", "/different-page", "/", 2, 1, 66+1, 2)
 		checkRefererCount(t, store, 0, 13+3, 2, 1)
 	}
 }
@@ -122,17 +122,17 @@ func checkLanguageCount(t *testing.T, store Store, tenantID int64, lang1, lang2,
 	}
 }
 
-func checkPageViewCount(t *testing.T, store Store, tenantID int64, views1, views2, views3, views4 int) {
+func checkPageViewCount(t *testing.T, store Store, tenantID int64, path1, path2, path3, path4 string, views1, views2, views3, views4 int) {
 	visitors := store.VisitorsPerPage(NewTenantID(tenantID))
 
 	if len(visitors) != 4 {
 		t.Fatalf("Four visitors per page must have been created, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Path != "/" ||
-		visitors[1].Path != "/page" ||
-		visitors[2].Path != "/" ||
-		visitors[3].Path != "/different-page" {
+	if visitors[0].Path != path1 ||
+		visitors[1].Path != path2 ||
+		visitors[2].Path != path3 ||
+		visitors[3].Path != path4 {
 		t.Fatal("Paths not as expected")
 	}
 
