@@ -203,63 +203,6 @@ func (analyzer *Analyzer) RefererVisits(filter *Filter) ([]RefererVisits, error)
 	}
 
 	return refererVisits, nil
-	/*filter = analyzer.validateFilter(filter)
-	referer, err := analyzer.store.Referer(filter.TenantID, filter.From, filter.To)
-
-	if err != nil {
-		return nil, err
-	}
-
-	refererVisits := make([]RefererVisits, len(referer))
-
-	for i, ref := range referer {
-		visitors, err := analyzer.store.RefererVisits(filter.TenantID, ref, filter.From, filter.To)
-
-		if err != nil {
-			return nil, err
-		}
-
-		refererVisits[i].Referer = ref
-		refererVisits[i].Visits = visitors
-	}
-
-	today := analyzer.today()
-
-	if today.Equal(filter.To) {
-		refererVisitsToday, err := analyzer.store.CountVisitorsPerReferer(filter.TenantID, today)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, visitToday := range refererVisitsToday {
-			found := false
-
-			for _, visit := range refererVisits {
-				if visitToday.Ref == visit.Referer {
-					visit.Visits[len(visit.Visits)-1].Visitors = visitToday.Visitors
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				visits := make([]VisitorsPerReferer, filter.Days()+1)
-
-				for i := range visits {
-					visits[i].Day = filter.From.Add(time.Hour * 24 * time.Duration(i))
-				}
-
-				visits[len(visits)-1].Visitors = visitToday.Visitors
-				refererVisits = append(refererVisits, RefererVisits{
-					Referer: visitToday.Ref,
-					Visits:  visits,
-				})
-			}
-		}
-	}
-
-	return refererVisits, nil*/
 }
 
 // Languages returns the absolute and relative visitor count per language for given time frame.
