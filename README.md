@@ -94,9 +94,9 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
-### (unreleased)
+### 1.3.2
 
-**You need to update the schema by running the `v1.3.0.sql` migration script!**
+**You need to update the schema by running the `v1.3.2.sql` migration script!**
 
 * fixed helper function `RunAtMidnight` not using UTC for all times
 * referer -> referrer
