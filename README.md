@@ -96,11 +96,14 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ### (unreleased)
 
+**You need to update the schema by running the `v1.3.0.sql` migration script!**
+
 * fixed helper function `RunAtMidnight` not using UTC for all times
+* referer -> referrer
 
 ### 1.3.1
 
-* added statistics for visitor count per page and referer
+* added statistics for visitor count per page and referrer
 
 ### 1.3.0
 
@@ -111,10 +114,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 * hits for an empty User-Agent will be ignored from now on
 * added configuration options to `Processor`
 * `IgnoreHit` and `HitFromRequest` are now exported functions
-* added options to filter for unwanted referer, like your own domain
-* added referer statistics to `Processor` and `Analyzer`
+* added options to filter for unwanted referrer, like your own domain
+* added referrer statistics to `Processor` and `Analyzer`
 * added method to `Analyzer` to extract active visitor pages
-* `Analyzer` results are now sorted by visitors in descending order instead of path and referer length
+* `Analyzer` results are now sorted by visitors in descending order instead of path and referrer length
 
 ### 1.2.0
 

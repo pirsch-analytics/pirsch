@@ -31,16 +31,16 @@ type HitOptions struct {
 	// This will also affect the URL.
 	Path string
 
-	// RefererDomainBlacklist is used to filter out unwanted referer from the Ref header.
+	// ReferrerDomainBlacklist is used to filter out unwanted referrer from the Ref header.
 	// This can be used to filter out traffic from your own site or subdomains.
-	// To filter your own domain and subdomains, add your domain to the list and set RefererDomainBlacklistIncludesSubdomains to true.
-	// This way the referer for blog.mypage.com -> mypage.com won't be saved.
-	RefererDomainBlacklist []string
+	// To filter your own domain and subdomains, add your domain to the list and set ReferrerDomainBlacklistIncludesSubdomains to true.
+	// This way the referrer for blog.mypage.com -> mypage.com won't be saved.
+	ReferrerDomainBlacklist []string
 
-	// RefererDomainBlacklistIncludesSubdomains set to true to include all subdomains in the RefererDomainBlacklist,
+	// ReferrerDomainBlacklistIncludesSubdomains set to true to include all subdomains in the ReferrerDomainBlacklist,
 	// or else subdomains must explicitly be included in the blacklist.
 	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
-	RefererDomainBlacklistIncludesSubdomains bool
+	ReferrerDomainBlacklistIncludesSubdomains bool
 }
 
 // String implements the Stringer interface.
@@ -82,7 +82,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		URL:         requestURL,
 		Language:    getLanguage(r),
 		UserAgent:   r.UserAgent(),
-		Ref:         getReferer(r, options.RefererDomainBlacklist, options.RefererDomainBlacklistIncludesSubdomains),
+		Ref:         getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains),
 		Time:        now,
 	}
 }
@@ -131,14 +131,14 @@ func getLanguage(r *http.Request) string {
 	return ""
 }
 
-func getReferer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
-	referer := r.Header.Get("Ref")
+func getReferrer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
+	referrer := r.Header.Get("Ref")
 
-	if referer == "" {
+	if referrer == "" {
 		return ""
 	}
 
-	u, err := url.Parse(referer)
+	u, err := url.Parse(referrer)
 
 	if err != nil {
 		return ""

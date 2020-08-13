@@ -133,76 +133,76 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	return pageVisits, nil
 }
 
-// RefererVisits returns the visitors per referer per day for given time frame.
-func (analyzer *Analyzer) RefererVisits(filter *Filter) ([]RefererVisits, error) {
-	// clean up filter and select all referer
+// ReferrerVisits returns the visitors per referrer per day for given time frame.
+func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, error) {
+	// clean up filter and select all referrer
 	filter = analyzer.validateFilter(filter)
-	referer, err := analyzer.store.Referer(filter.TenantID, filter.From, filter.To)
+	referrer, err := analyzer.store.Referrer(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// select all processed referer views and store them
-	refererVisits := make([]RefererVisits, len(referer))
+	// select all processed referrer views and store them
+	referrerVisits := make([]ReferrerVisits, len(referrer))
 
-	for i, ref := range referer {
-		visitors, err := analyzer.store.RefererVisits(filter.TenantID, ref, filter.From, filter.To)
+	for i, ref := range referrer {
+		visitors, err := analyzer.store.ReferrerVisits(filter.TenantID, ref, filter.From, filter.To)
 
 		if err != nil {
 			return nil, err
 		}
 
-		refererVisits[i].Referer = ref
-		refererVisits[i].Visits = visitors
+		referrerVisits[i].Referrer = ref
+		referrerVisits[i].Visits = visitors
 	}
 
-	// add hits to list of referer views in case the filter includes today
+	// add hits to list of referrer views in case the filter includes today
 	today := analyzer.today()
 
 	if today.Equal(filter.To) {
-		refererVisitsToday, err := analyzer.store.CountVisitorsPerReferer(filter.TenantID, today)
+		referrerVisitsToday, err := analyzer.store.CountVisitorsPerReferrer(filter.TenantID, today)
 
 		if err != nil {
 			return nil, err
 		}
 
-		for _, visitToday := range refererVisitsToday {
-			// find the referer we can set the visitor count for, ...
+		for _, visitToday := range referrerVisitsToday {
+			// find the referrer we can set the visitor count for, ...
 			found := false
 
-			for _, visit := range refererVisits {
-				if visitToday.Ref == visit.Referer {
+			for _, visit := range referrerVisits {
+				if visitToday.Ref == visit.Referrer {
 					visit.Visits[len(visit.Visits)-1].Visitors = visitToday.Visitors
 					found = true
 					break
 				}
 			}
 
-			// ... or else add the referer
+			// ... or else add the referrer
 			if !found {
-				visits := make([]VisitorsPerReferer, filter.Days()+1)
+				visits := make([]VisitorsPerReferrer, filter.Days()+1)
 
 				for i := range visits {
 					visits[i].Day = filter.From.Add(time.Hour * 24 * time.Duration(i))
 				}
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
-				refererVisits = append(refererVisits, RefererVisits{
-					Referer: visitToday.Ref,
-					Visits:  visits,
+				referrerVisits = append(referrerVisits, ReferrerVisits{
+					Referrer: visitToday.Ref,
+					Visits:   visits,
 				})
 			}
 		}
 
-		// sort referer by length and alphabetically
-		sort.Slice(refererVisits, func(i, j int) bool {
-			return len(refererVisits[i].Referer) < len(refererVisits[j].Referer) ||
-				refererVisits[i].Referer < refererVisits[j].Referer
+		// sort referrer by length and alphabetically
+		sort.Slice(referrerVisits, func(i, j int) bool {
+			return len(referrerVisits[i].Referrer) < len(referrerVisits[j].Referrer) ||
+				referrerVisits[i].Referrer < referrerVisits[j].Referrer
 		})
 	}
 
-	return refererVisits, nil
+	return referrerVisits, nil
 }
 
 // Pages returns the absolute visitor count per page for given time frame.
@@ -239,16 +239,16 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, err
 	return langs, total, nil
 }
 
-// Referer returns the absolute visitor count per referer for given time frame.
-func (analyzer *Analyzer) Referer(filter *Filter) ([]VisitorReferer, error) {
+// Referrer returns the absolute visitor count per referrer for given time frame.
+func (analyzer *Analyzer) Referrer(filter *Filter) ([]VisitorReferrer, error) {
 	filter = analyzer.validateFilter(filter)
-	referer, err := analyzer.store.VisitorReferer(filter.TenantID, filter.From, filter.To)
+	referrer, err := analyzer.store.VisitorReferrer(filter.TenantID, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return referer, nil
+	return referrer, nil
 }
 
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.

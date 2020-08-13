@@ -17,25 +17,25 @@ func TestTrackerConfigValidate(t *testing.T) {
 	if cfg.Worker != runtime.NumCPU() ||
 		cfg.WorkerBufferSize != defaultWorkerBufferSize ||
 		cfg.WorkerTimeout != defaultWorkerTimeout ||
-		len(cfg.RefererDomainBlacklist) != 0 ||
-		cfg.RefererDomainBlacklistIncludesSubdomains {
+		len(cfg.ReferrerDomainBlacklist) != 0 ||
+		cfg.ReferrerDomainBlacklistIncludesSubdomains {
 		t.Fatal("TrackerConfig must have default values")
 	}
 
 	cfg = &TrackerConfig{
-		Worker:                                   123,
-		WorkerBufferSize:                         42,
-		WorkerTimeout:                            time.Second * 57,
-		RefererDomainBlacklist:                   []string{"localhost"},
-		RefererDomainBlacklistIncludesSubdomains: true,
+		Worker:                  123,
+		WorkerBufferSize:        42,
+		WorkerTimeout:           time.Second * 57,
+		ReferrerDomainBlacklist: []string{"localhost"},
+		ReferrerDomainBlacklistIncludesSubdomains: true,
 	}
 	cfg.validate()
 
 	if cfg.Worker != 123 ||
 		cfg.WorkerBufferSize != 42 ||
 		cfg.WorkerTimeout != time.Second*57 ||
-		len(cfg.RefererDomainBlacklist) != 1 ||
-		!cfg.RefererDomainBlacklistIncludesSubdomains {
+		len(cfg.ReferrerDomainBlacklist) != 1 ||
+		!cfg.ReferrerDomainBlacklistIncludesSubdomains {
 		t.Fatal("TrackerConfig must have set values")
 	}
 }
@@ -117,7 +117,7 @@ func (store *testStore) SaveVisitorsPerPage(page *VisitorsPerPage) error {
 	panic("implement me")
 }
 
-func (store *testStore) SaveVisitorsPerReferer(page *VisitorsPerReferer) error {
+func (store *testStore) SaveVisitorsPerReferrer(page *VisitorsPerReferrer) error {
 	panic("implement me")
 }
 
@@ -141,7 +141,7 @@ func (store *testStore) CountVisitorsPerPage(tenantID sql.NullInt64, t time.Time
 	panic("implement me")
 }
 
-func (store *testStore) CountVisitorsPerReferer(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerReferer, error) {
+func (store *testStore) CountVisitorsPerReferrer(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerReferrer, error) {
 	panic("implement me")
 }
 
@@ -149,7 +149,7 @@ func (store *testStore) Paths(tenantID sql.NullInt64, t time.Time, t2 time.Time)
 	panic("implement me")
 }
 
-func (store *testStore) Referer(nullInt64 sql.NullInt64, t time.Time, t2 time.Time) ([]string, error) {
+func (store *testStore) Referrer(nullInt64 sql.NullInt64, t time.Time, t2 time.Time) ([]string, error) {
 	panic("implement me")
 }
 
@@ -161,7 +161,7 @@ func (store *testStore) PageVisits(tenantID sql.NullInt64, s string, t time.Time
 	panic("implement me")
 }
 
-func (store *testStore) RefererVisits(tenantID sql.NullInt64, s string, t time.Time, t2 time.Time) ([]VisitorsPerReferer, error) {
+func (store *testStore) ReferrerVisits(tenantID sql.NullInt64, s string, t time.Time, t2 time.Time) ([]VisitorsPerReferrer, error) {
 	panic("implement me")
 }
 
@@ -173,7 +173,7 @@ func (store *testStore) VisitorLanguages(tenantID sql.NullInt64, t time.Time, t2
 	panic("implement me")
 }
 
-func (store *testStore) VisitorReferer(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorReferer, error) {
+func (store *testStore) VisitorReferrer(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorReferrer, error) {
 	panic("implement me")
 }
 
@@ -214,7 +214,7 @@ func (store *testStore) VisitorsPerPage(tenantID sql.NullInt64) []VisitorsPerPag
 	return nil
 }
 
-func (store *testStore) VisitorsPerReferer(tenantID sql.NullInt64) []VisitorsPerReferer {
+func (store *testStore) VisitorsPerReferrer(tenantID sql.NullInt64) []VisitorsPerReferrer {
 	panic("implement me")
 	return nil
 }

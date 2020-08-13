@@ -24,9 +24,9 @@ type ProcessorConfig struct {
 	// The default is true (enabled).
 	ProcessPageViews bool
 
-	// ProcessVisitorPerReferer enables/disabled processing the visitor count per referer.
+	// ProcessVisitorPerReferrer enables/disabled processing the visitor count per referrer.
 	// The default is true (enabled).
-	ProcessVisitorPerReferer bool
+	ProcessVisitorPerReferrer bool
 }
 
 // Processor processes hits to reduce them into meaningful statistics.
@@ -40,11 +40,11 @@ type Processor struct {
 func NewProcessor(store Store, config *ProcessorConfig) *Processor {
 	if config == nil {
 		config = &ProcessorConfig{
-			ProcessVisitors:          true,
-			ProcessVisitorPerHour:    true,
-			ProcessLanguages:         true,
-			ProcessPageViews:         true,
-			ProcessVisitorPerReferer: true,
+			ProcessVisitors:           true,
+			ProcessVisitorPerHour:     true,
+			ProcessLanguages:          true,
+			ProcessPageViews:          true,
+			ProcessVisitorPerReferrer: true,
 		}
 	}
 
@@ -121,10 +121,10 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 				}()
 			}
 
-			if processor.config.ProcessVisitorPerReferer {
+			if processor.config.ProcessVisitorPerReferrer {
 				wg.Add(1)
 				go func() {
-					if err := processor.countVisitorPerReferer(tenantID, day); err != nil {
+					if err := processor.countVisitorPerReferrer(tenantID, day); err != nil {
 						errChan <- err
 					}
 
@@ -223,8 +223,8 @@ func (processor *Processor) countPageViews(tenantID sql.NullInt64, day time.Time
 	return nil
 }
 
-func (processor *Processor) countVisitorPerReferer(tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.CountVisitorsPerReferer(tenantID, day)
+func (processor *Processor) countVisitorPerReferrer(tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsPerReferrer(tenantID, day)
 
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (processor *Processor) countVisitorPerReferer(tenantID sql.NullInt64, day t
 
 	for _, visitors := range visitors {
 		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerReferer(&visitors); err != nil {
+			if err := processor.store.SaveVisitorsPerReferrer(&visitors); err != nil {
 				return err
 			}
 		}

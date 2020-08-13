@@ -27,11 +27,11 @@ type TrackerConfig struct {
 	// It's recommended to set this to a few seconds.
 	WorkerTimeout time.Duration
 
-	// RefererDomainBlacklist see HitOptions.RefererDomainBlacklist.
-	RefererDomainBlacklist []string
+	// ReferrerDomainBlacklist see HitOptions.ReferrerDomainBlacklist.
+	ReferrerDomainBlacklist []string
 
-	// RefererDomainBlacklistIncludesSubdomains see HitOptions.RefererDomainBlacklistIncludesSubdomains.
-	RefererDomainBlacklistIncludesSubdomains bool
+	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
+	ReferrerDomainBlacklistIncludesSubdomains bool
 }
 
 func (config *TrackerConfig) validate() {
@@ -52,16 +52,16 @@ func (config *TrackerConfig) validate() {
 // It provides methods to track requests and store them in a data store.
 // It panics in case it cannot store requests into the configured store.
 type Tracker struct {
-	store                                    Store
-	salt                                     string
-	hits                                     chan Hit
-	worker                                   int
-	workerBufferSize                         int
-	workerTimeout                            time.Duration
-	workerCancel                             context.CancelFunc
-	workerDone                               chan bool
-	refererDomainBlacklist                   []string
-	refererDomainBlacklistIncludesSubdomains bool
+	store                                     Store
+	salt                                      string
+	hits                                      chan Hit
+	worker                                    int
+	workerBufferSize                          int
+	workerTimeout                             time.Duration
+	workerCancel                              context.CancelFunc
+	workerDone                                chan bool
+	referrerDomainBlacklist                   []string
+	referrerDomainBlacklistIncludesSubdomains bool
 }
 
 // NewTracker creates a new tracker for given store, salt and config.
@@ -74,15 +74,15 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 
 	config.validate()
 	tracker := &Tracker{
-		store:                                    store,
-		salt:                                     salt,
-		hits:                                     make(chan Hit, config.Worker*config.WorkerBufferSize),
-		worker:                                   config.Worker,
-		workerBufferSize:                         config.WorkerBufferSize,
-		workerTimeout:                            config.WorkerTimeout,
-		workerDone:                               make(chan bool),
-		refererDomainBlacklist:                   config.RefererDomainBlacklist,
-		refererDomainBlacklistIncludesSubdomains: config.RefererDomainBlacklistIncludesSubdomains,
+		store:                   store,
+		salt:                    salt,
+		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
+		worker:                  config.Worker,
+		workerBufferSize:        config.WorkerBufferSize,
+		workerTimeout:           config.WorkerTimeout,
+		workerDone:              make(chan bool),
+		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
+		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
 	}
 	tracker.startWorker()
 	return tracker
@@ -96,8 +96,8 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		if !IgnoreHit(r) {
 			if options == nil {
 				options = &HitOptions{
-					RefererDomainBlacklist:                   tracker.refererDomainBlacklist,
-					RefererDomainBlacklistIncludesSubdomains: tracker.refererDomainBlacklistIncludesSubdomains,
+					ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
+					ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 				}
 			}
 

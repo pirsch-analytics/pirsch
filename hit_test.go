@@ -132,9 +132,9 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 	}
 }
 
-func TestGetReferer(t *testing.T) {
+func TestGetReferrer(t *testing.T) {
 	input := []struct {
-		referer         string
+		referrer        string
 		blacklist       []string
 		ignoreSubdomain bool
 	}{
@@ -158,10 +158,10 @@ func TestGetReferer(t *testing.T) {
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Add("Ref", in.referer)
+		r.Header.Add("Ref", in.referrer)
 
-		if referer := getReferer(r, in.blacklist, in.ignoreSubdomain); referer != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], referer)
+		if referrer := getReferrer(r, in.blacklist, in.ignoreSubdomain); referrer != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], referrer)
 		}
 	}
 }

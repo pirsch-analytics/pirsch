@@ -31,8 +31,8 @@ type Store interface {
 	// SaveVisitorsPerPage persists unique visitors per day and page.
 	SaveVisitorsPerPage(*VisitorsPerPage) error
 
-	// SaveVisitorsPerReferer persists unique visitors per day and referer.
-	SaveVisitorsPerReferer(*VisitorsPerReferer) error
+	// SaveVisitorsPerReferrer persists unique visitors per day and referrer.
+	SaveVisitorsPerReferrer(*VisitorsPerReferrer) error
 
 	// Days returns the days at least one hit exists for.
 	Days(sql.NullInt64) ([]time.Time, error)
@@ -49,16 +49,16 @@ type Store interface {
 	// CountVisitorsPerPage returns the unique visitor count per page and day.
 	CountVisitorsPerPage(sql.NullInt64, time.Time) ([]VisitorsPerPage, error)
 
-	// CountVisitorsPerReferer returns the unique visitor count per referer and day.
-	CountVisitorsPerReferer(sql.NullInt64, time.Time) ([]VisitorsPerReferer, error)
+	// CountVisitorsPerReferrer returns the unique visitor count per referrer and day.
+	CountVisitorsPerReferrer(sql.NullInt64, time.Time) ([]VisitorsPerReferrer, error)
 
 	// Paths returns distinct paths for page visits.
 	// This does not include today.
 	Paths(sql.NullInt64, time.Time, time.Time) ([]string, error)
 
-	// Referer returns distinct referer for page visits.
+	// Referrer returns distinct referrer for page visits.
 	// This does not include today.
-	Referer(sql.NullInt64, time.Time, time.Time) ([]string, error)
+	Referrer(sql.NullInt64, time.Time, time.Time) ([]string, error)
 
 	// Visitors returns the visitors within given time frame.
 	// This does not include today.
@@ -68,9 +68,9 @@ type Store interface {
 	// This does not include today.
 	PageVisits(sql.NullInt64, string, time.Time, time.Time) ([]VisitorsPerDay, error)
 
-	// RefererVisits returns the referer visits within given time frame for given referer.
+	// ReferrerVisits returns the referrer visits within given time frame for given referrer.
 	// This does not include today.
-	RefererVisits(sql.NullInt64, string, time.Time, time.Time) ([]VisitorsPerReferer, error)
+	ReferrerVisits(sql.NullInt64, string, time.Time, time.Time) ([]VisitorsPerReferrer, error)
 
 	// VisitorPages returns the pages within given time frame for unique visitors.
 	// It does include today.
@@ -80,9 +80,9 @@ type Store interface {
 	// It does include today.
 	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]VisitorLanguage, error)
 
-	// VisitorReferer returns the languages within given time frame for unique visitors.
+	// VisitorReferrer returns the languages within given time frame for unique visitors.
 	// It does include today.
-	VisitorReferer(sql.NullInt64, time.Time, time.Time) ([]VisitorReferer, error)
+	VisitorReferrer(sql.NullInt64, time.Time, time.Time) ([]VisitorReferrer, error)
 
 	// HourlyVisitors returns unique visitors per hour for given time frame.
 	// It does include today.
@@ -109,6 +109,6 @@ type Store interface {
 	// VisitorsPerPage returns all visitors per page for given tenant ID in alphabetical order.
 	VisitorsPerPage(sql.NullInt64) []VisitorsPerPage
 
-	// VisitorsPerReferer returns all visitors per referer for given tenant ID in alphabetical order.
-	VisitorsPerReferer(sql.NullInt64) []VisitorsPerReferer
+	// VisitorsPerReferrer returns all visitors per referrer for given tenant ID in alphabetical order.
+	VisitorsPerReferrer(sql.NullInt64) []VisitorsPerReferrer
 }

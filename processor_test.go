@@ -19,7 +19,7 @@ func TestProcessor_Process(t *testing.T) {
 		checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 0, 1, 2, 2, 1)
 		checkPageViewCount(t, store, 0, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
-		checkRefererCount(t, store, 0, 3, 2, 1)
+		checkReferrerCount(t, store, 0, 3, 2, 1)
 	}
 }
 
@@ -37,7 +37,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 		checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
 		checkLanguageCount(t, store, 1, 1, 2, 2, 1)
 		checkPageViewCount(t, store, 1, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
-		checkRefererCount(t, store, 1, 3, 2, 1)
+		checkReferrerCount(t, store, 1, 3, 2, 1)
 	}
 }
 
@@ -56,7 +56,7 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 		checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
 		checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
 		checkPageViewCount(t, store, 0, "/", "/page", "/different-page", "/", 2, 1, 66+1, 2)
-		checkRefererCount(t, store, 0, 13+3, 2, 1)
+		checkReferrerCount(t, store, 0, 13+3, 2, 1)
 	}
 }
 
@@ -144,17 +144,17 @@ func checkPageViewCount(t *testing.T, store Store, tenantID int64, path1, path2,
 	}
 }
 
-func checkRefererCount(t *testing.T, store Store, tenantID int64, views1, views2, views3 int) {
-	visitors := store.VisitorsPerReferer(NewTenantID(tenantID))
+func checkReferrerCount(t *testing.T, store Store, tenantID int64, views1, views2, views3 int) {
+	visitors := store.VisitorsPerReferrer(NewTenantID(tenantID))
 
 	if len(visitors) != 3 {
-		t.Fatalf("Three visitors per referer must have been created, but was: %v", len(visitors))
+		t.Fatalf("Three visitors per referrer must have been created, but was: %v", len(visitors))
 	}
 
 	if visitors[0].Ref != "ref1" ||
 		visitors[1].Ref != "ref2" ||
 		visitors[2].Ref != "ref3" {
-		t.Fatal("Referer not as expected")
+		t.Fatal("Referrer not as expected")
 	}
 
 	if visitors[0].Visitors != views1 ||
@@ -213,13 +213,13 @@ func createTestDays(t *testing.T, store Store) {
 		t.Fatal(err)
 	}
 
-	visitorsPerReferer := VisitorsPerReferer{
+	visitorsPerReferrer := VisitorsPerReferrer{
 		Day:      day(2020, 6, 21, 7),
 		Ref:      "ref1",
 		Visitors: 13,
 	}
 
-	if err := store.SaveVisitorsPerReferer(&visitorsPerReferer); err != nil {
+	if err := store.SaveVisitorsPerReferrer(&visitorsPerReferrer); err != nil {
 		t.Fatal(err)
 	}
 }

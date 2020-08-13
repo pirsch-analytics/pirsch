@@ -20,9 +20,9 @@ func TestAnalyzerPageVisits(t *testing.T) {
 	testAnalyzerPageVisits(t, 1)
 }
 
-func TestAnalyzerRefererVisits(t *testing.T) {
-	testAnalyzerRefererVisits(t, 0)
-	testAnalyzerRefererVisits(t, 1)
+func TestAnalyzerReferrerVisits(t *testing.T) {
+	testAnalyzerReferrerVisits(t, 0)
+	testAnalyzerReferrerVisits(t, 1)
 }
 
 func TestAnalyzerPageVisitsFiltered(t *testing.T) {
@@ -50,14 +50,14 @@ func TestAnalyzerLanguagesFiltered(t *testing.T) {
 	testAnalyzerLanguagesFiltered(t, 1)
 }
 
-func TestAnalyzerReferer(t *testing.T) {
-	testAnalyzerReferer(t, 0)
-	testAnalyzerReferer(t, 1)
+func TestAnalyzerReferrer(t *testing.T) {
+	testAnalyzerReferrer(t, 0)
+	testAnalyzerReferrer(t, 1)
 }
 
-func TestAnalyzerRefererFiltered(t *testing.T) {
-	testAnalyzerRefererFiltered(t, 0)
-	testAnalyzerRefererFiltered(t, 1)
+func TestAnalyzerReferrerFiltered(t *testing.T) {
+	testAnalyzerReferrerFiltered(t, 0)
+	testAnalyzerReferrerFiltered(t, 1)
 }
 
 func TestAnalyzerHourlyVisitors(t *testing.T) {
@@ -210,12 +210,12 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 	}
 }
 
-func testAnalyzerRefererVisits(t *testing.T, tenantID int64) {
+func testAnalyzerReferrerVisits(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
-		visits, err := analyzer.RefererVisits(&Filter{
+		visits, err := analyzer.ReferrerVisits(&Filter{
 			TenantID: NewTenantID(tenantID),
 		})
 
@@ -224,19 +224,19 @@ func testAnalyzerRefererVisits(t *testing.T, tenantID int64) {
 		}
 
 		if len(visits) != 3 {
-			t.Fatalf("Must have returns statistics for three referer, but was: %v", len(visits))
+			t.Fatalf("Must have returns statistics for three referrer, but was: %v", len(visits))
 		}
 
-		if visits[0].Referer != "ref1" ||
-			visits[1].Referer != "ref2" ||
-			visits[2].Referer != "ref3" {
-			t.Fatal("Referer not as expected")
+		if visits[0].Referrer != "ref1" ||
+			visits[1].Referrer != "ref2" ||
+			visits[2].Referrer != "ref3" {
+			t.Fatal("Referrer not as expected")
 		}
 
 		if len(visits[0].Visits) != 7 ||
 			len(visits[1].Visits) != 7 ||
 			len(visits[2].Visits) != 7 {
-			t.Fatal("Referer visits not as expected")
+			t.Fatal("Referrer visits not as expected")
 		}
 
 		if visits[0].Visits[5].Visitors != 32 ||
@@ -394,52 +394,52 @@ func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 	}
 }
 
-func testAnalyzerReferer(t *testing.T, tenantID int64) {
+func testAnalyzerReferrer(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
-		referer, err := analyzer.Referer(&Filter{
+		referrer, err := analyzer.Referrer(&Filter{
 			TenantID: NewTenantID(tenantID),
 		})
 
 		if err != nil {
-			t.Fatalf("Referer must be returned, but was:  %v", err)
+			t.Fatalf("Referrer must be returned, but was:  %v", err)
 		}
 
-		if len(referer) != 3 {
-			t.Fatalf("Number of referer not as expected: %v", len(referer))
+		if len(referrer) != 3 {
+			t.Fatalf("Number of referrer not as expected: %v", len(referrer))
 		}
 
-		if referer[0].Referer != "ref3" || referer[0].Visitors != 55 ||
-			referer[1].Referer != "ref2" || referer[1].Visitors != 44 ||
-			referer[2].Referer != "ref1" || referer[2].Visitors != 33 {
-			t.Fatalf("Referer not as expected: %v", referer)
+		if referrer[0].Referrer != "ref3" || referrer[0].Visitors != 55 ||
+			referrer[1].Referrer != "ref2" || referrer[1].Visitors != 44 ||
+			referrer[2].Referrer != "ref1" || referrer[2].Visitors != 33 {
+			t.Fatalf("Referrer not as expected: %v", referrer)
 		}
 	}
 }
 
-func testAnalyzerRefererFiltered(t *testing.T, tenantID int64) {
+func testAnalyzerReferrerFiltered(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
 		createAnalyzerTestdata(t, store, tenantID)
 		analyzer := NewAnalyzer(store)
-		referer, err := analyzer.Referer(&Filter{
+		referrer, err := analyzer.Referrer(&Filter{
 			TenantID: NewTenantID(tenantID),
 			From:     pastDay(3),
 			To:       pastDay(2),
 		})
 
 		if err != nil {
-			t.Fatalf("Referer must be returned, but was:  %v", err)
+			t.Fatalf("Referrer must be returned, but was:  %v", err)
 		}
 
-		if len(referer) != 1 {
-			t.Fatalf("Number of referer not as expected: %v", len(referer))
+		if len(referrer) != 1 {
+			t.Fatalf("Number of referrer not as expected: %v", len(referrer))
 		}
 
-		if referer[0].Referer != "ref3" || referer[0].Visitors != 54 {
-			t.Fatalf("Referer not as expected: %v", referer)
+		if referrer[0].Referrer != "ref3" || referrer[0].Visitors != 54 {
+			t.Fatalf("Referrer not as expected: %v", referrer)
 		}
 	}
 }
@@ -553,9 +553,9 @@ func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
 	createVisitorPerPage(t, store, tenantID, pastDay(1), "/", 45)
 	createVisitorPerPage(t, store, tenantID, pastDay(1), "/laa", 23)
 	createVisitorPerPage(t, store, tenantID, pastDay(2), "/bar", 67)
-	createVisitorPerReferer(t, store, tenantID, pastDay(1), "ref1", 32)
-	createVisitorPerReferer(t, store, tenantID, pastDay(1), "ref2", 43)
-	createVisitorPerReferer(t, store, tenantID, pastDay(2), "ref3", 54)
+	createVisitorPerReferrer(t, store, tenantID, pastDay(1), "ref1", 32)
+	createVisitorPerReferrer(t, store, tenantID, pastDay(1), "ref2", 43)
+	createVisitorPerReferrer(t, store, tenantID, pastDay(2), "ref3", 54)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(1), "En", 49)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(2), "de", 13)
 	createVisitorPerLanguage(t, store, tenantID, pastDay(3), "jP", 52)
@@ -589,15 +589,15 @@ func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Ti
 	}
 }
 
-func createVisitorPerReferer(t *testing.T, store Store, tenantID int64, day time.Time, referer string, visitors int) {
-	visitor := VisitorsPerReferer{
+func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day time.Time, referrer string, visitors int) {
+	visitor := VisitorsPerReferrer{
 		TenantID: NewTenantID(tenantID),
 		Day:      day,
-		Ref:      referer,
+		Ref:      referrer,
 		Visitors: visitors,
 	}
 
-	if err := store.SaveVisitorsPerReferer(&visitor); err != nil {
+	if err := store.SaveVisitorsPerReferrer(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }
