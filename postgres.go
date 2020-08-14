@@ -194,7 +194,7 @@ func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	return days, nil
 }
 
-// VisitorsPerDay implements the Store interface.
+// CountVisitorsPerDay implements the Store interface.
 func (store *PostgresStore) CountVisitorsPerDay(tenantID sql.NullInt64, day time.Time) (int, error) {
 	query := `SELECT count(DISTINCT fingerprint) FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2`
 	var visitors int
@@ -206,7 +206,7 @@ func (store *PostgresStore) CountVisitorsPerDay(tenantID sql.NullInt64, day time
 	return visitors, nil
 }
 
-// VisitorsPerDayAndHour implements the Store interface.
+// CountVisitorsPerDayAndHour implements the Store interface.
 func (store *PostgresStore) CountVisitorsPerDayAndHour(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerHour, error) {
 	query := `SELECT "day_and_hour", (
 			SELECT count(DISTINCT fingerprint) FROM "hit"
@@ -232,7 +232,7 @@ func (store *PostgresStore) CountVisitorsPerDayAndHour(tenantID sql.NullInt64, d
 	return visitors, nil
 }
 
-// VisitorsPerLanguage implements the Store interface.
+// CountVisitorsPerLanguage implements the Store interface.
 func (store *PostgresStore) CountVisitorsPerLanguage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerLanguage, error) {
 	query := `SELECT * FROM (
 			SELECT tenant_id, $2::timestamp "day", "language", count(DISTINCT fingerprint) "visitors"
@@ -251,7 +251,7 @@ func (store *PostgresStore) CountVisitorsPerLanguage(tenantID sql.NullInt64, day
 	return visitors, nil
 }
 
-// VisitorsPerPage implements the Store interface.
+// CountVisitorsPerPage implements the Store interface.
 func (store *PostgresStore) CountVisitorsPerPage(tenantID sql.NullInt64, day time.Time) ([]VisitorsPerPage, error) {
 	query := `SELECT * FROM (
 			SELECT tenant_id, $2::timestamp "day", "path", count(DISTINCT fingerprint) "visitors"
@@ -467,7 +467,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Ti
 	return referrer, nil
 }
 
-// VisitorLanguages implements the Store interface.
+// HourlyVisitors implements the Store interface.
 func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]HourlyVisitors, error) {
 	query := `SELECT * FROM (
 			SELECT "hour", sum("visitors") "visitors" FROM (
