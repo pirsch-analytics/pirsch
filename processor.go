@@ -76,60 +76,29 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 
 		go func() {
 			var wg sync.WaitGroup
-
-			if processor.config.ProcessVisitors {
-				wg.Add(1)
-				go func() {
-					if err := processor.countVisitors(tenantID, day); err != nil {
-						errChan <- err
-					}
-
-					wg.Done()
-				}()
+			processors := []struct {
+				f    func(sql.NullInt64, time.Time) error
+				exec bool
+			}{
+				{processor.countVisitors, processor.config.ProcessVisitors},
+				{processor.countVisitorPerHour, processor.config.ProcessVisitorPerHour},
+				{processor.countLanguages, processor.config.ProcessLanguages},
+				{processor.countPageViews, processor.config.ProcessPageViews},
+				{processor.countVisitorPerReferrer, processor.config.ProcessVisitorPerReferrer},
 			}
 
-			if processor.config.ProcessVisitorPerHour {
-				wg.Add(1)
-				go func() {
-					if err := processor.countVisitorPerHour(tenantID, day); err != nil {
-						errChan <- err
-					}
+			for _, proc := range processors {
+				if proc.exec {
+					f := proc.f // the function reference needs to be local, or else it will run the function in the list
+					wg.Add(1)
+					go func() {
+						if err := f(tenantID, day); err != nil {
+							errChan <- err
+						}
 
-					wg.Done()
-				}()
-			}
-
-			if processor.config.ProcessLanguages {
-				wg.Add(1)
-				go func() {
-					if err := processor.countLanguages(tenantID, day); err != nil {
-						errChan <- err
-					}
-
-					wg.Done()
-				}()
-			}
-
-			if processor.config.ProcessPageViews {
-				wg.Add(1)
-				go func() {
-					if err := processor.countPageViews(tenantID, day); err != nil {
-						errChan <- err
-					}
-
-					wg.Done()
-				}()
-			}
-
-			if processor.config.ProcessVisitorPerReferrer {
-				wg.Add(1)
-				go func() {
-					if err := processor.countVisitorPerReferrer(tenantID, day); err != nil {
-						errChan <- err
-					}
-
-					wg.Done()
-				}()
+						wg.Done()
+					}()
+				}
 			}
 
 			wg.Wait()
