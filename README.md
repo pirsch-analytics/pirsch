@@ -9,6 +9,8 @@
 [![CircleCI](https://circleci.com/gh/emvi/pirsch.svg?style=svg)](https://circleci.com/gh/emvi/pirsch)
 <a href="https://discord.gg/fAYm4Cz"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
 
+**State of the project: still under heavy development, as we add more features until we're satisified. Our plan is to add session tracking and extracting more data from the User-Agent header, then it should become more stable.**
+
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data (dashboard) is not part of this project.
 
 The name is in German and refers to a special kind of hunt: *the hunter carefully and quietly enters the area to be hunted, he stalks against the wind in order to get as close as possible to the prey without being noticed.*
