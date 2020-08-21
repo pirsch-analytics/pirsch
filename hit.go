@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+var referrerQueryParams = []string{
+	"ref",
+	"referer",
+	"referrer",
+}
+
 // Hit represents a single data point/page visit.
 type Hit struct {
 	ID          int64         `db:"id" json:"id"`
@@ -132,7 +138,7 @@ func getLanguage(r *http.Request) string {
 }
 
 func getReferrer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
-	referrer := r.Header.Get("Ref")
+	referrer := getReferrerFromHeaderOrQuery(r)
 
 	if referrer == "" {
 		return ""
@@ -158,6 +164,22 @@ func getReferrer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool
 	u.RawQuery = ""
 	u.Fragment = ""
 	return u.String()
+}
+
+func getReferrerFromHeaderOrQuery(r *http.Request) string {
+	referrer := r.Header.Get("Referer")
+
+	if referrer == "" {
+		for _, param := range referrerQueryParams {
+			referrer = r.URL.Query().Get(param)
+
+			if referrer != "" {
+				return referrer
+			}
+		}
+	}
+
+	return referrer
 }
 
 func stripSubdomain(hostname string) string {

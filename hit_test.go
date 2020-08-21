@@ -10,7 +10,7 @@ func TestHitFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "user-agent")
-	req.Header.Set("Ref", "ref")
+	req.Header.Set("Referer", "ref")
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		TenantID: NewTenantID(42),
 	})
@@ -158,10 +158,39 @@ func TestGetReferrer(t *testing.T) {
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Add("Ref", in.referrer)
+		r.Header.Add("Referer", in.referrer)
 
 		if referrer := getReferrer(r, in.blacklist, in.ignoreSubdomain); referrer != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], referrer)
+		}
+	}
+}
+
+func TestGetReferrerFromHeaderOrQuery(t *testing.T) {
+	input := [][]string{
+		{"", ""},
+		{"ref", ""},
+		{"ref", "domain"},
+		{"referer", ""},
+		{"referer", "domain"},
+		{"referrer", ""},
+		{"referrer", "domain"},
+	}
+	expected := []string{
+		"",
+		"",
+		"domain",
+		"",
+		"domain",
+		"",
+		"domain",
+	}
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
+
+		if out := getReferrerFromHeaderOrQuery(r); out != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
 		}
 	}
 }
