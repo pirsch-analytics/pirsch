@@ -7,7 +7,7 @@ import (
 const (
 	uaSystemLeftDelimiter  = '('
 	uaSystemRightDelimiter = ')'
-	systemDelimiter        = ";"
+	uaSystemDelimiter      = ";"
 )
 
 // UserAgent contains information extracted from the User-Agent header.
@@ -37,7 +37,7 @@ func parseUserAgent(ua string) ([]string, []string) {
 	systemEnd := strings.IndexRune(ua, uaSystemRightDelimiter)
 
 	if systemStart > -1 && systemEnd > -1 && systemStart < systemEnd {
-		systemParts := strings.Split(ua[systemStart+1:systemEnd], systemDelimiter)
+		systemParts := strings.Split(ua[systemStart+1:systemEnd], uaSystemDelimiter)
 		versions = strings.Fields(ua[:systemStart] + " " + ua[systemEnd+1:])
 		system = make([]string, 0, len(systemParts))
 
