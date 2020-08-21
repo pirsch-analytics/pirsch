@@ -96,6 +96,11 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.3.3
+
+* fixed extracting Referer header
+* added ref, referer and referrer query parameters for referrers, when Referer header is not present
+
 ### 1.3.2
 
 **You need to update the schema by running the `v1.3.2.sql` migration script!**
