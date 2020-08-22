@@ -2,6 +2,15 @@ package pirsch
 
 import "testing"
 
+// this can be used to manually test a User-Agent string
+func TestParseUserAgentManually(t *testing.T) {
+	ua := ParseUserAgent("Mozilla/5.0 (iPad; CPU OS 10_15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/28.0 Mobile/15E148 Safari/605.1.15")
+	t.Log(ua.OS)
+	t.Log(ua.OSVersion)
+	t.Log(ua.Browser)
+	t.Log(ua.BrowserVersion)
+}
+
 func TestParseUserAgent(t *testing.T) {
 	// just a simple test to check ParseUserAgent returns something for a clean User-Agent
 	ua := ParseUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0")
@@ -21,7 +30,7 @@ func TestGetBrowser(t *testing.T) {
 		browser, version := getBrowser(products, system, ua.os)
 
 		if browser != ua.browser {
-			t.Fatalf("Expected browser %v for user agent '%v', but was: %v", ua.browser, ua.ua, browser)
+			t.Fatalf("Expected browser '%v' for user agent '%v', but was: %v", ua.browser, ua.ua, browser)
 		}
 
 		if version != ua.browserVersion {
@@ -36,7 +45,7 @@ func TestGetOS(t *testing.T) {
 		os, version := getOS(system)
 
 		if os != ua.os {
-			t.Fatalf("Expected OS %v for user agent '%v', but was: %v", ua.browser, ua.ua, os)
+			t.Fatalf("Expected OS '%v' for user agent '%v', but was: %v", ua.os, ua.ua, os)
 		}
 
 		if version != ua.osVersion {

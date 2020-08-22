@@ -66,6 +66,46 @@ func ParseUserAgent(ua string) UserAgent {
 	return userAgent
 }
 
+func getOS(system []string) (string, string) {
+	os := ""
+	version := ""
+
+	for _, sys := range system {
+		if strings.HasPrefix(sys, "Windows Phone") || strings.HasPrefix(sys, "Windows Mobile") {
+			os = OSWindowsMobile
+			version = getWindowsMobileVersion(sys)
+			break
+		} else if strings.HasPrefix(sys, "Windows") {
+			os = OSWindows
+			version = getWindowsVersion(sys)
+			// leave a chance to detect IE...
+		} else if strings.HasPrefix(sys, "Intel Mac OS X") {
+			os = OSMac
+			version = getMacVersion(sys)
+			break
+		} else if strings.HasPrefix(sys, "Linux") {
+			os = OSLinux
+			// this might be Android...
+		} else if strings.HasPrefix(sys, "Android") {
+			if prefix := findPrefix(system, "Windows Mobile"); prefix != "" {
+				os = OSWindowsMobile
+				version = getProductVersion(prefix, 1)
+				break
+			}
+
+			os = OSAndroid
+			version = getAndroidVersion(sys)
+			break
+		} else if strings.HasPrefix(sys, "CPU iPhone OS") || strings.HasPrefix(sys, "CPU OS") {
+			os = OSiOS
+			version = getiOSVersion(sys)
+			break
+		}
+	}
+
+	return os, version
+}
+
 func getBrowser(products []string, system []string, os string) (string, string) {
 	browser := ""
 	version := ""
@@ -78,7 +118,7 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 	for _, product := range products {
 		if strings.HasPrefix(product, "Chrome/") {
 			// Chrome can be pretty much anything, so check for other browsers before deciding that this is Chrome
-			if prefix := findPrefix(products, "Edg/", "Edge/"); prefix != "" {
+			if prefix := findPrefix(products, "Edg/", "Edge/", "EdgA/"); prefix != "" {
 				browser = BrowserEdge
 				version = getProductVersion(prefix, 1)
 				break
@@ -105,6 +145,18 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 			version = getProductVersion(product, 1)
 			break
 		} else if (os == OSMac || os == OSiOS) && (strings.HasPrefix(product, "Safari/") || product == "Mobile/15E148") {
+			if prefix := findPrefix(products, "FxiOS/"); prefix != "" {
+				browser = BrowserFirefox
+				version = getProductVersion(prefix, 2)
+				break
+			}
+
+			if prefix := findPrefix(products, "EdgiOS/"); prefix != "" {
+				browser = BrowserEdge
+				version = getProductVersion(prefix, 1)
+				break
+			}
+
 			// TODO this might falsely identify Chrome?
 			browser = BrowserSafari
 			version = safariVersions[getProductVersion(product, 1)]
@@ -113,40 +165,6 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 	}
 
 	return browser, version
-}
-
-func getOS(system []string) (string, string) {
-	os := ""
-	version := ""
-
-	for _, sys := range system {
-		if strings.HasPrefix(sys, "Windows Phone") {
-			os = OSWindowsMobile
-			version = getWindowsMobileVersion(sys)
-			break
-		} else if strings.HasPrefix(sys, "Windows") {
-			os = OSWindows
-			version = getWindowsVersion(sys)
-			// leave a chance to detect IE...
-		} else if strings.HasPrefix(sys, "Intel Mac OS X") {
-			os = OSMac
-			version = getMacVersion(sys)
-			break
-		} else if strings.HasPrefix(sys, "Linux") {
-			os = OSLinux
-			// this might be Android...
-		} else if strings.HasPrefix(sys, "Android") {
-			os = OSAndroid
-			version = getAndroidVersion(sys)
-			break
-		} else if strings.HasPrefix(sys, "CPU iPhone OS") || strings.HasPrefix(sys, "CPU OS") {
-			os = OSiOS
-			version = getiOSVersion(sys)
-			break
-		}
-	}
-
-	return os, version
 }
 
 // isIE checks if the user agent is IE from the system information part and returns the version number,
@@ -213,10 +231,10 @@ func getiOSVersion(system string) string {
 	// CPU OS <version> like ...
 	if len(parts) > 3 {
 		if parts[2] == "OS" {
-			return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 1)
+			return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 2)
 		}
 
-		return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 1)
+		return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 2)
 	}
 
 	return ""
