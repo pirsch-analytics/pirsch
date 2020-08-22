@@ -368,6 +368,16 @@ var userAgentsSafari = []testUserAgent{
 		os:             OSiOS,
 		osVersion:      "6.0",
 	},
+	{
+		ua:        "Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US) AppleWebKit/533.17.8 (KHTML, like Gecko) Version/5.0.1 Safari/533.17.8",
+		os:        OSWindows,
+		osVersion: "XP",
+	},
+	{
+		ua:      "Mozilla/5.0 (Macintosh; U; PPC Mac OS X; sv-se) AppleWebKit/419 (KHTML, like Gecko) Safari/419.3",
+		browser: BrowserSafari,
+		os:      OSMac,
+	},
 }
 
 var userAgentsIE = []testUserAgent{

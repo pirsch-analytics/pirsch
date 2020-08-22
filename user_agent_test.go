@@ -4,7 +4,7 @@ import "testing"
 
 // this can be used to manually test a User-Agent string
 func TestParseUserAgentManually(t *testing.T) {
-	ua := ParseUserAgent("Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36 OPR/27.0.1689.76")
+	ua := ParseUserAgent("Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US) AppleWebKit/533.17.8 (KHTML, like Gecko) Version/5.0.1 Safari/533.17.8")
 	t.Log(ua.OS)
 	t.Log(ua.OSVersion)
 	t.Log(ua.Browser)

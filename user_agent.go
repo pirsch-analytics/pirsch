@@ -79,7 +79,7 @@ func getOS(system []string) (string, string) {
 			os = OSWindows
 			version = getWindowsVersion(sys)
 			// leave a chance to detect IE...
-		} else if strings.HasPrefix(sys, "Intel Mac OS X") {
+		} else if strings.HasPrefix(sys, "Intel Mac OS X") || strings.HasPrefix(sys, "PPC Mac OS X") {
 			os = OSMac
 			version = getMacVersion(sys)
 			break
@@ -115,68 +115,49 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 		return BrowserIE, v
 	}
 
+	productChrome := ""
+	productSafari := ""
+
 	for _, product := range products {
 		if strings.HasPrefix(product, "Chrome/") {
-			// Chrome can be pretty much anything, so check for other browsers before deciding that this is Chrome
-			if prefix := findPrefix(products, "Edg/", "Edge/", "EdgA/"); prefix != "" {
-				browser = BrowserEdge
-				version = getProductVersion(prefix, 1)
-				break
-			}
-
-			if prefix := findPrefix(products, "Opera/", "OPR/"); prefix != "" {
-				browser = BrowserOpera
-				version = getProductVersion(prefix, 1)
-				break
-			}
-
-			browser = BrowserChrome
-			version = getProductVersion(product, 1)
+			productChrome = product
+		} else if strings.HasPrefix(product, "Safari/") {
+			productSafari = product
+		} else if strings.HasPrefix(product, "CriOS/") {
+			return BrowserChrome, getProductVersion(product, 1)
+		} else if strings.HasPrefix(product, "Edg/") || strings.HasPrefix(product, "Edge/") || strings.HasPrefix(product, "EdgA/") || strings.HasPrefix(product, "EdgiOS/") {
+			return BrowserEdge, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Chromium/") {
-			browser = BrowserChrome
-			version = getProductVersion(product, 1)
-			break
-		} else if strings.HasPrefix(product, "Firefox/") {
-			browser = BrowserFirefox
-			version = getProductVersion(product, 1)
-			break
+			return BrowserChrome, getProductVersion(product, 1)
+		} else if strings.HasPrefix(product, "Firefox/") || strings.HasPrefix(product, "FxiOS/") {
+			return BrowserFirefox, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Opera/") || strings.HasPrefix(product, "OPR/") {
-			browser = BrowserOpera
-			version = getProductVersion(product, 1)
-			break
-		} else if (os == OSMac || os == OSiOS) && strings.HasPrefix(product, "Safari/") {
-			if prefix := findPrefix(products, "CriOS/"); prefix != "" {
-				browser = BrowserChrome
-				version = getProductVersion(prefix, 1)
-				break
-			}
-
-			if prefix := findPrefix(products, "FxiOS/"); prefix != "" {
-				browser = BrowserFirefox
-				version = getProductVersion(prefix, 2)
-				break
-			}
-
-			if prefix := findPrefix(products, "EdgiOS/"); prefix != "" {
-				browser = BrowserEdge
-				version = getProductVersion(prefix, 1)
-				break
-			}
-
-			productVersion := findPrefix(products, "Version/")
-
-			if productVersion != "" {
-				version = getProductVersion(productVersion, 1)
-			} else {
-				version = safariVersions[getProductVersion(product, 1)]
-			}
-
-			browser = BrowserSafari
-			break
+			return BrowserOpera, getProductVersion(product, 1)
 		}
 	}
 
+	// When we made it to this point, it's gone get ugly and inaccurate, as Safari and Chrome send almost identical
+	// user agents most of the time. But anyhting coming from Mac or iOS is most likely Safari, I guess...
+	if (os == OSMac || os == OSiOS) && productSafari != "" {
+		browser = BrowserSafari
+		version = getSafariVersion(products, productSafari)
+	} else if productChrome != "" {
+		browser = BrowserChrome
+		version = getProductVersion(productChrome, 1)
+	}
+
 	return browser, version
+}
+
+// older Safari versions send their version number inside the Version/ product string instead of the Safari/ part
+func getSafariVersion(products []string, productSafari string) string {
+	productVersion := findPrefix(products, "Version/")
+
+	if productVersion != "" {
+		return getProductVersion(productVersion, 1)
+	}
+
+	return safariVersions[getProductVersion(productSafari, 1)]
 }
 
 // isIE checks if the user agent is IE from the system information part and returns the version number,
