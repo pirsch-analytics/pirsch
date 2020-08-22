@@ -130,6 +130,13 @@ var userAgentsOpera = []testUserAgent{
 		os:             OSAndroid,
 		osVersion:      "10",
 	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36 OPR/27.0.1689.76",
+		browser:        BrowserOpera,
+		browserVersion: "27.0",
+		os:             OSWindows,
+		osVersion:      "8",
+	},
 }
 
 var userAgentsFirefox = []testUserAgent{
@@ -228,6 +235,108 @@ var userAgentsChrome = []testUserAgent{
 		browserVersion: "84.0",
 		os:             OSLinux,
 	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSWindows,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSWindows,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSLinux,
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; SM-A205U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; SM-N960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; LM-Q720) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; LM-X420) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; LM-Q710(FGN)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "84.0",
+		os:             OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1",
+		browser:        BrowserChrome,
+		browserVersion: "56.0",
+		os:             OSiOS,
+		osVersion:      "10.3",
+	},
+	{ // this can be optimized, but it's a fairly old Android version
+		ua:        "Mozilla/5.0 (Linux; U; Android 4.1.1; en-gb; Build/KLP) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30",
+		os:        OSAndroid,
+		osVersion: "4.1.1",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 4.4; Nexus 5 Build/_BuildID_) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "30.0",
+		os:             OSAndroid,
+		osVersion:      "4.4",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 5.1.1; Nexus 5 Build/LMY48B; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/43.0.2357.65 Mobile Safari/537.36",
+		browser:        BrowserChrome,
+		browserVersion: "43.0",
+		os:             OSAndroid,
+		osVersion:      "5.1.1",
+	},
 }
 
 var userAgentsSafari = []testUserAgent{
@@ -237,6 +346,27 @@ var userAgentsSafari = []testUserAgent{
 		browserVersion: "6.0",
 		os:             OSMac,
 		osVersion:      "10.15.6",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1",
+		browser:        BrowserSafari,
+		browserVersion: "10.0",
+		os:             OSiOS,
+		osVersion:      "10.3",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25",
+		browser:        BrowserSafari,
+		browserVersion: "6.0",
+		os:             OSiOS,
+		osVersion:      "6.0",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25",
+		browser:        BrowserSafari,
+		browserVersion: "6.0",
+		os:             OSiOS,
+		osVersion:      "6.0",
 	},
 }
 

@@ -144,7 +144,13 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 			browser = BrowserOpera
 			version = getProductVersion(product, 1)
 			break
-		} else if (os == OSMac || os == OSiOS) && (strings.HasPrefix(product, "Safari/") || product == "Mobile/15E148") {
+		} else if (os == OSMac || os == OSiOS) && strings.HasPrefix(product, "Safari/") {
+			if prefix := findPrefix(products, "CriOS/"); prefix != "" {
+				browser = BrowserChrome
+				version = getProductVersion(prefix, 1)
+				break
+			}
+
 			if prefix := findPrefix(products, "FxiOS/"); prefix != "" {
 				browser = BrowserFirefox
 				version = getProductVersion(prefix, 2)
@@ -157,9 +163,15 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 				break
 			}
 
-			// TODO this might falsely identify Chrome?
+			productVersion := findPrefix(products, "Version/")
+
+			if productVersion != "" {
+				version = getProductVersion(productVersion, 1)
+			} else {
+				version = safariVersions[getProductVersion(product, 1)]
+			}
+
 			browser = BrowserSafari
-			version = safariVersions[getProductVersion(product, 1)]
 			break
 		}
 	}

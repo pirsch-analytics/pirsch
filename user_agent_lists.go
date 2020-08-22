@@ -8,7 +8,7 @@ var (
 		"(KHTML,", // we split by space, so this was "(KHTML like Gecko)"
 		"like",
 		"Gecko", // just Gecko, to ignore it in IE user agent, as a product version string and in "(KHTML like Gecko)"
-		"Version/",
+		//"Version/",
 		"Mobile/",
 		"QtWebEngine/",
 	}
