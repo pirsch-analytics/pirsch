@@ -48,6 +48,26 @@ type VisitorsPerReferrer struct {
 	Visitors int           `db:"visitors" json:"visitors"`
 }
 
+// VisitorsPerOS is the unique visitor count per operating system and day.
+type VisitorsPerOS struct {
+	ID        int64          `db:"id" json:"id"`
+	TenantID  sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	Day       time.Time      `db:"day" json:"day"`
+	OS        sql.NullString `db:"os" json:"os"`
+	OSVersion sql.NullString `db:"os_version" json:"version"`
+	Visitors  int            `db:"visitors" json:"visitors"`
+}
+
+// VisitorsPerBrowser is the unique visitor count per browser and day.
+type VisitorsPerBrowser struct {
+	ID             int64          `db:"id" json:"id"`
+	TenantID       sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	Day            time.Time      `db:"day" json:"day"`
+	Browser        sql.NullString `db:"browser" json:"browser"`
+	BrowserVersion sql.NullString `db:"browser_version" json:"version"`
+	Visitors       int            `db:"visitors" json:"visitors"`
+}
+
 // Stats bundles all statistics into a single object.
 // The meaning of the data depends on the actual use of this struct.
 type Stats struct {

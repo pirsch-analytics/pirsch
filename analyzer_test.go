@@ -501,10 +501,10 @@ func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
-		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5), "", "", "", "")
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3), "", "", "", "")
+		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9), "", "", "", "")
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11), "", "", "", "")
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.ActiveVisitors(NewTenantID(tenantID), time.Second*10)
 
@@ -521,10 +521,10 @@ func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
-		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
-		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
-		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5), "", "", "", "")
+		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3), "", "", "", "")
+		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9), "", "", "", "")
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11), "", "", "", "")
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.ActiveVisitorsPages(NewTenantID(tenantID), time.Second*10)
 
@@ -544,9 +544,9 @@ func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 }
 
 func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0))
-	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0))
-	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0))
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0), "", "", "", "")
+	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0), "", "", "", "")
+	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0), "", "", "", "")
 	createVisitorPerDay(t, store, tenantID, pastDay(1), 42)
 	createVisitorPerDay(t, store, tenantID, pastDay(2), 39)
 	createVisitorPerDay(t, store, tenantID, pastDay(3), 26)

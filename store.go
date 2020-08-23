@@ -34,6 +34,12 @@ type Store interface {
 	// SaveVisitorsPerReferrer persists unique visitors per day and referrer.
 	SaveVisitorsPerReferrer(*VisitorsPerReferrer) error
 
+	// SaveVisitorsPerOS persists unique visitors per day and operating system.
+	SaveVisitorsPerOS(*VisitorsPerOS) error
+
+	// SaveVisitorsPerBrowser persists unique visitors per day and browser.
+	SaveVisitorsPerBrowser(*VisitorsPerBrowser) error
+
 	// Days returns the days at least one hit exists for.
 	Days(sql.NullInt64) ([]time.Time, error)
 
@@ -51,6 +57,12 @@ type Store interface {
 
 	// CountVisitorsPerReferrer returns the unique visitor count per referrer and day.
 	CountVisitorsPerReferrer(sql.NullInt64, time.Time) ([]VisitorsPerReferrer, error)
+
+	// CountVisitorsPerOSAndVersion returns the unique visitor count per operating system, version and day.
+	CountVisitorsPerOSAndVersion(sql.NullInt64, time.Time) ([]VisitorsPerOS, error)
+
+	// CountVisitorsPerBrowserAndVersion returns the unique visitor count per browser, version and day.
+	CountVisitorsPerBrowserAndVersion(sql.NullInt64, time.Time) ([]VisitorsPerBrowser, error)
 
 	// Paths returns distinct paths for page visits.
 	// This does not include today.
@@ -97,18 +109,24 @@ type Store interface {
 	// CountHits returns the number of hits for given tenant ID.
 	CountHits(sql.NullInt64) int
 
-	// VisitorsPerDay returns all visitors per day for given tenant ID in order.
+	// VisitorsPerDay returns all visitors per day for given tenant ID sorted by days.
 	VisitorsPerDay(sql.NullInt64) []VisitorsPerDay
 
-	// VisitorsPerHour returns all visitors per hour for given tenant ID in order.
+	// VisitorsPerHour returns all visitors per hour for given tenant ID sorted by days.
 	VisitorsPerHour(sql.NullInt64) []VisitorsPerHour
 
 	// VisitorsPerLanguage returns all visitors per language for given tenant ID in alphabetical order.
 	VisitorsPerLanguage(sql.NullInt64) []VisitorsPerLanguage
 
-	// VisitorsPerPage returns all visitors per page for given tenant ID in alphabetical order.
+	// VisitorsPerPage returns all visitors per page for given tenant ID sorted by days.
 	VisitorsPerPage(sql.NullInt64) []VisitorsPerPage
 
-	// VisitorsPerReferrer returns all visitors per referrer for given tenant ID in alphabetical order.
+	// VisitorsPerReferrer returns all visitors per referrer for given tenant ID sorted by days.
 	VisitorsPerReferrer(sql.NullInt64) []VisitorsPerReferrer
+
+	// VisitorsPerOS returns all visitors per operating system for given tenant ID sorted by days.
+	VisitorsPerOS(sql.NullInt64) []VisitorsPerOS
+
+	// VisitorsPerBrowser returns all visitors per browsers for given tenant ID sorted by days.
+	VisitorsPerBrowser(sql.NullInt64) []VisitorsPerBrowser
 }
