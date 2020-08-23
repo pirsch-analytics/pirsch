@@ -64,7 +64,7 @@ type Store interface {
 	// This does not include today.
 	Visitors(sql.NullInt64, time.Time, time.Time) ([]VisitorsPerDay, error)
 
-	// PageVisits returns the page visits within given time frame for given path.
+	// Stats returns the page visits within given time frame for given path.
 	// This does not include today.
 	PageVisits(sql.NullInt64, string, time.Time, time.Time) ([]VisitorsPerDay, error)
 
@@ -74,25 +74,25 @@ type Store interface {
 
 	// VisitorPages returns the pages within given time frame for unique visitors.
 	// It does include today.
-	VisitorPages(sql.NullInt64, time.Time, time.Time) ([]VisitorPage, error)
+	VisitorPages(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
 	// VisitorLanguages returns the languages within given time frame for unique visitors.
 	// It does include today.
-	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]VisitorLanguage, error)
+	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
 	// VisitorReferrer returns the languages within given time frame for unique visitors.
 	// It does include today.
-	VisitorReferrer(sql.NullInt64, time.Time, time.Time) ([]VisitorReferrer, error)
+	VisitorReferrer(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
 	// HourlyVisitors returns unique visitors per hour for given time frame.
 	// It does include today.
-	HourlyVisitors(sql.NullInt64, time.Time, time.Time) ([]HourlyVisitors, error)
+	HourlyVisitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
 	// ActiveVisitors returns unique visitors starting at given time.
 	ActiveVisitors(sql.NullInt64, time.Time) (int, error)
 
 	// ActiveVisitorsPerPage returns unique visitors per page starting at given time.
-	ActiveVisitorsPerPage(sql.NullInt64, time.Time) ([]PageVisitors, error)
+	ActiveVisitorsPerPage(sql.NullInt64, time.Time) ([]Stats, error)
 
 	// CountHits returns the number of hits for given tenant ID.
 	CountHits(sql.NullInt64) int

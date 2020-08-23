@@ -343,7 +343,7 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 	return visitors, nil
 }
 
-// PageVisits implements the Store interface.
+// Stats implements the Store interface.
 func (store *PostgresStore) PageVisits(tenantID sql.NullInt64, path string, from, to time.Time) ([]VisitorsPerDay, error) {
 	query := `SELECT tenant_id, "date" "day",
 		CASE WHEN "visitors_per_page".visitors IS NULL THEN 0 ELSE "visitors_per_page".visitors END
@@ -388,7 +388,7 @@ func (store *PostgresStore) ReferrerVisits(tenantID sql.NullInt64, referrer stri
 }
 
 // VisitorPages implements the Store interface.
-func (store *PostgresStore) VisitorPages(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorPage, error) {
+func (store *PostgresStore) VisitorPages(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
 			SELECT "path", sum("visitors") "visitors" FROM (
 				SELECT "path", sum("visitors") "visitors" FROM "visitors_per_page"
@@ -406,7 +406,7 @@ func (store *PostgresStore) VisitorPages(tenantID sql.NullInt64, from time.Time,
 			GROUP BY "path"
 		) AS pages
 		ORDER BY "visitors" DESC`
-	var pages []VisitorPage
+	var pages []Stats
 
 	if err := store.DB.Select(&pages, query, tenantID, from, to); err != nil {
 		return nil, err
@@ -416,7 +416,7 @@ func (store *PostgresStore) VisitorPages(tenantID sql.NullInt64, from time.Time,
 }
 
 // VisitorLanguages implements the Store interface.
-func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]VisitorLanguage, error) {
+func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
 			SELECT "language", sum("visitors") "visitors" FROM (
 				SELECT lower("language") "language", sum("visitors") "visitors" FROM "visitors_per_language"
@@ -434,7 +434,7 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 			GROUP BY "language"
 		) AS langs
 		ORDER BY "visitors" DESC`
-	var languages []VisitorLanguage
+	var languages []Stats
 
 	if err := store.DB.Select(&languages, query, tenantID, from, to); err != nil {
 		return nil, err
@@ -444,7 +444,7 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 }
 
 // VisitorReferrer implements the Store interface.
-func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorReferrer, error) {
+func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
 			SELECT "ref", sum("visitors") "visitors" FROM (
 				SELECT "ref", sum("visitors") "visitors" FROM "visitors_per_referrer"
@@ -462,7 +462,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Ti
 			GROUP BY "ref"
 		) AS referrer
 		ORDER BY "visitors" DESC`
-	var referrer []VisitorReferrer
+	var referrer []Stats
 
 	if err := store.DB.Select(&referrer, query, tenantID, from, to); err != nil {
 		return nil, err
@@ -472,7 +472,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Ti
 }
 
 // HourlyVisitors implements the Store interface.
-func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]HourlyVisitors, error) {
+func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
 			SELECT "hour", sum("visitors") "visitors" FROM (
 				SELECT EXTRACT(HOUR FROM "day_and_hour") "hour", sum("visitors") "visitors" FROM "visitors_per_hour"
@@ -490,7 +490,7 @@ func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time
 			GROUP BY "hour"
 		) AS hours
 		ORDER BY "hour" ASC`
-	var visitors []HourlyVisitors
+	var visitors []Stats
 
 	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
 		return nil, err
@@ -512,14 +512,14 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Tim
 }
 
 // ActiveVisitorsPerPage implements the Store interface.
-func (store *PostgresStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, from time.Time) ([]PageVisitors, error) {
+func (store *PostgresStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, from time.Time) ([]Stats, error) {
 	query := `SELECT "path", count(DISTINCT fingerprint) AS "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "time" > $2
 		GROUP BY "path"
 		ORDER BY "visitors" DESC`
-	var visitors []PageVisitors
+	var visitors []Stats
 
 	if err := store.DB.Select(&visitors, query, tenantID, from); err != nil {
 		return nil, err

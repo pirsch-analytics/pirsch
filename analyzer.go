@@ -61,8 +61,8 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	return visitors, nil
 }
 
-// PageVisits returns the visitors per page per day for given time frame.
-func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
+// Stats returns the visitors per page per day for given time frame.
+func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 	// clean up filter and select all paths
 	filter = analyzer.validateFilter(filter)
 	paths, err := analyzer.store.Paths(filter.TenantID, filter.From, filter.To)
@@ -72,7 +72,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 	}
 
 	// select all processed path views and store them
-	pageVisits := make([]PageVisits, len(paths))
+	pageVisits := make([]Stats, len(paths))
 
 	for i, path := range paths {
 		visitors, err := analyzer.store.PageVisits(filter.TenantID, path, filter.From, filter.To)
@@ -82,7 +82,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 		}
 
 		pageVisits[i].Path = path
-		pageVisits[i].Visits = visitors
+		pageVisits[i].VisitorsPerDay = visitors
 	}
 
 	// add hits to list of path views in case the filter includes today
@@ -101,7 +101,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 
 			for _, visit := range pageVisits {
 				if visitToday.Path == visit.Path {
-					visit.Visits[len(visit.Visits)-1].Visitors = visitToday.Visitors
+					visit.VisitorsPerDay[len(visit.VisitorsPerDay)-1].Visitors = visitToday.Visitors
 					found = true
 					break
 				}
@@ -116,9 +116,9 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 				}
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
-				pageVisits = append(pageVisits, PageVisits{
-					Path:   visitToday.Path,
-					Visits: visits,
+				pageVisits = append(pageVisits, Stats{
+					Path:           visitToday.Path,
+					VisitorsPerDay: visits,
 				})
 			}
 		}
@@ -134,7 +134,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]PageVisits, error) {
 }
 
 // ReferrerVisits returns the visitors per referrer per day for given time frame.
-func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, error) {
+func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 	// clean up filter and select all referrer
 	filter = analyzer.validateFilter(filter)
 	referrer, err := analyzer.store.Referrer(filter.TenantID, filter.From, filter.To)
@@ -144,7 +144,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, erro
 	}
 
 	// select all processed referrer views and store them
-	referrerVisits := make([]ReferrerVisits, len(referrer))
+	referrerVisits := make([]Stats, len(referrer))
 
 	for i, ref := range referrer {
 		visitors, err := analyzer.store.ReferrerVisits(filter.TenantID, ref, filter.From, filter.To)
@@ -154,7 +154,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, erro
 		}
 
 		referrerVisits[i].Referrer = ref
-		referrerVisits[i].Visits = visitors
+		referrerVisits[i].VisitorsPerReferrer = visitors
 	}
 
 	// add hits to list of referrer views in case the filter includes today
@@ -173,7 +173,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, erro
 
 			for _, visit := range referrerVisits {
 				if visitToday.Ref == visit.Referrer {
-					visit.Visits[len(visit.Visits)-1].Visitors = visitToday.Visitors
+					visit.VisitorsPerReferrer[len(visit.VisitorsPerReferrer)-1].Visitors = visitToday.Visitors
 					found = true
 					break
 				}
@@ -188,9 +188,9 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, erro
 				}
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
-				referrerVisits = append(referrerVisits, ReferrerVisits{
-					Referrer: visitToday.Ref,
-					Visits:   visits,
+				referrerVisits = append(referrerVisits, Stats{
+					Referrer:            visitToday.Ref,
+					VisitorsPerReferrer: visits,
 				})
 			}
 		}
@@ -206,7 +206,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]ReferrerVisits, erro
 }
 
 // Pages returns the absolute visitor count per page for given time frame.
-func (analyzer *Analyzer) Pages(filter *Filter) ([]VisitorPage, error) {
+func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 	filter = analyzer.validateFilter(filter)
 	pages, err := analyzer.store.VisitorPages(filter.TenantID, filter.From, filter.To)
 
@@ -218,7 +218,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]VisitorPage, error) {
 }
 
 // Languages returns the absolute and relative visitor count per language for given time frame.
-func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, error) {
+func (analyzer *Analyzer) Languages(filter *Filter) ([]Stats, int, error) {
 	filter = analyzer.validateFilter(filter)
 	langs, err := analyzer.store.VisitorLanguages(filter.TenantID, filter.From, filter.To)
 
@@ -240,7 +240,7 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]VisitorLanguage, int, err
 }
 
 // Referrer returns the absolute visitor count per referrer for given time frame.
-func (analyzer *Analyzer) Referrer(filter *Filter) ([]VisitorReferrer, error) {
+func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 	filter = analyzer.validateFilter(filter)
 	referrer, err := analyzer.store.VisitorReferrer(filter.TenantID, filter.From, filter.To)
 
@@ -252,7 +252,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]VisitorReferrer, error) {
 }
 
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.
-func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, error) {
+func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.validateFilter(filter)
 	visitors, err := analyzer.store.HourlyVisitors(filter.TenantID, filter.From, filter.To)
 
@@ -260,7 +260,7 @@ func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]HourlyVisitors, erro
 		return nil, err
 	}
 
-	visitorsPerHour := make([]HourlyVisitors, 24)
+	visitorsPerHour := make([]Stats, 24)
 
 	for i := range visitorsPerHour {
 		visitorsPerHour[i].Hour = i
@@ -285,7 +285,7 @@ func (analyzer *Analyzer) ActiveVisitors(tenantID sql.NullInt64, d time.Duration
 }
 
 // ActiveVisitorsPages returns the number of unique visitors active within the given duration and the corresponding pages.
-func (analyzer *Analyzer) ActiveVisitorsPages(tenantID sql.NullInt64, d time.Duration) ([]PageVisitors, error) {
+func (analyzer *Analyzer) ActiveVisitorsPages(tenantID sql.NullInt64, d time.Duration) ([]Stats, error) {
 	visitors, err := analyzer.store.ActiveVisitorsPerPage(tenantID, time.Now().UTC().Add(-d))
 
 	if err != nil {

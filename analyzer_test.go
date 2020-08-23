@@ -191,20 +191,20 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 			t.Fatal("Paths not as expected")
 		}
 
-		if len(visits[0].Visits) != 7 ||
-			len(visits[1].Visits) != 7 ||
-			len(visits[2].Visits) != 7 ||
-			len(visits[3].Visits) != 7 {
+		if len(visits[0].VisitorsPerDay) != 7 ||
+			len(visits[1].VisitorsPerDay) != 7 ||
+			len(visits[2].VisitorsPerDay) != 7 ||
+			len(visits[3].VisitorsPerDay) != 7 {
 			t.Fatal("Page visits not as expected")
 		}
 
-		if visits[0].Visits[5].Visitors != 45 ||
-			visits[0].Visits[6].Visitors != 1 ||
-			visits[1].Visits[4].Visitors != 67 ||
-			visits[1].Visits[6].Visitors != 1 ||
-			visits[2].Visits[6].Visitors != 1 ||
-			visits[3].Visits[5].Visitors != 23 ||
-			visits[3].Visits[6].Visitors != 0 {
+		if visits[0].VisitorsPerDay[5].Visitors != 45 ||
+			visits[0].VisitorsPerDay[6].Visitors != 1 ||
+			visits[1].VisitorsPerDay[4].Visitors != 67 ||
+			visits[1].VisitorsPerDay[6].Visitors != 1 ||
+			visits[2].VisitorsPerDay[6].Visitors != 1 ||
+			visits[3].VisitorsPerDay[5].Visitors != 23 ||
+			visits[3].VisitorsPerDay[6].Visitors != 0 {
 			t.Fatal("Visitors not as expected")
 		}
 	}
@@ -233,18 +233,18 @@ func testAnalyzerReferrerVisits(t *testing.T, tenantID int64) {
 			t.Fatal("Referrer not as expected")
 		}
 
-		if len(visits[0].Visits) != 7 ||
-			len(visits[1].Visits) != 7 ||
-			len(visits[2].Visits) != 7 {
+		if len(visits[0].VisitorsPerReferrer) != 7 ||
+			len(visits[1].VisitorsPerReferrer) != 7 ||
+			len(visits[2].VisitorsPerReferrer) != 7 {
 			t.Fatal("Referrer visits not as expected")
 		}
 
-		if visits[0].Visits[5].Visitors != 32 ||
-			visits[0].Visits[6].Visitors != 1 ||
-			visits[1].Visits[5].Visitors != 43 ||
-			visits[1].Visits[6].Visitors != 1 ||
-			visits[2].Visits[4].Visitors != 54 ||
-			visits[2].Visits[6].Visitors != 1 {
+		if visits[0].VisitorsPerReferrer[5].Visitors != 32 ||
+			visits[0].VisitorsPerReferrer[6].Visitors != 1 ||
+			visits[1].VisitorsPerReferrer[5].Visitors != 43 ||
+			visits[1].VisitorsPerReferrer[6].Visitors != 1 ||
+			visits[2].VisitorsPerReferrer[4].Visitors != 54 ||
+			visits[2].VisitorsPerReferrer[6].Visitors != 1 {
 			t.Fatal("Visitors not as expected")
 		}
 	}
@@ -273,12 +273,12 @@ func testAnalyzerPageVisitsFiltered(t *testing.T, tenantID int64) {
 			t.Fatal("Path not as expected")
 		}
 
-		if len(visits[0].Visits) != 2 {
+		if len(visits[0].VisitorsPerDay) != 2 {
 			t.Fatal("Page visits not as expected")
 		}
 
-		if visits[0].Visits[0].Visitors != 0 ||
-			visits[0].Visits[1].Visitors != 67 {
+		if visits[0].VisitorsPerDay[0].Visitors != 0 ||
+			visits[0].VisitorsPerDay[1].Visitors != 67 {
 			t.Fatal("Visitors not as expected")
 		}
 	}

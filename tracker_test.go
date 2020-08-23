@@ -165,19 +165,19 @@ func (store *testStore) ReferrerVisits(tenantID sql.NullInt64, s string, t time.
 	panic("implement me")
 }
 
-func (store *testStore) VisitorPages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorPage, error) {
+func (store *testStore) VisitorPages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorLanguages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorLanguage, error) {
+func (store *testStore) VisitorLanguages(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }
 
-func (store *testStore) VisitorReferrer(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]VisitorReferrer, error) {
+func (store *testStore) VisitorReferrer(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }
 
-func (store *testStore) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]HourlyVisitors, error) {
+func (store *testStore) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }
 
@@ -185,7 +185,7 @@ func (store *testStore) ActiveVisitors(tenantID sql.NullInt64, t time.Time) (int
 	panic("implement me")
 }
 
-func (store *testStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]PageVisitors, error) {
+func (store *testStore) ActiveVisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]Stats, error) {
 	panic("implement me")
 }
 
