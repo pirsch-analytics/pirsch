@@ -84,17 +84,25 @@ type Store interface {
 	// This does not include today.
 	ReferrerVisits(sql.NullInt64, string, time.Time, time.Time) ([]VisitorsPerReferrer, error)
 
-	// VisitorPages returns the pages within given time frame for unique visitors.
+	// VisitorPages returns the pages and unique visitor count for given time frame.
 	// It does include today.
 	VisitorPages(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
-	// VisitorLanguages returns the languages within given time frame for unique visitors.
+	// VisitorLanguages returns the language and unique visitor count for given time frame.
 	// It does include today.
 	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
-	// VisitorReferrer returns the languages within given time frame for unique visitors.
+	// VisitorReferrer returns the referrer and unique visitor count for given time frame.
 	// It does include today.
 	VisitorReferrer(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
+
+	// VisitorOS returns the OS and unique visitor count for given time frame.
+	// It does include today.
+	VisitorOS(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
+
+	// VisitorBrowser returns the browser and unique visitor count for given time frame.
+	// It does include today.
+	VisitorBrowser(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
 	// HourlyVisitors returns unique visitors per hour for given time frame.
 	// It does include today.

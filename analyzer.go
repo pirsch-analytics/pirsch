@@ -81,7 +81,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 			return nil, err
 		}
 
-		pageVisits[i].Path = path
+		pageVisits[i].Path = sql.NullString{String: path, Valid: true}
 		pageVisits[i].VisitorsPerDay = visitors
 	}
 
@@ -100,7 +100,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 			found := false
 
 			for _, visit := range pageVisits {
-				if visitToday.Path == visit.Path {
+				if visitToday.Path == visit.Path.String {
 					visit.VisitorsPerDay[len(visit.VisitorsPerDay)-1].Visitors = visitToday.Visitors
 					found = true
 					break
@@ -117,7 +117,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
 				pageVisits = append(pageVisits, Stats{
-					Path:           visitToday.Path,
+					Path:           sql.NullString{String: visitToday.Path, Valid: true},
 					VisitorsPerDay: visits,
 				})
 			}
@@ -125,8 +125,8 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 
 		// sort paths by length and alphabetically
 		sort.Slice(pageVisits, func(i, j int) bool {
-			return len(pageVisits[i].Path) < len(pageVisits[j].Path) ||
-				pageVisits[i].Path < pageVisits[j].Path
+			return len(pageVisits[i].Path.String) < len(pageVisits[j].Path.String) ||
+				pageVisits[i].Path.String < pageVisits[j].Path.String
 		})
 	}
 
@@ -153,7 +153,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 			return nil, err
 		}
 
-		referrerVisits[i].Referrer = ref
+		referrerVisits[i].Referrer = sql.NullString{String: ref, Valid: true}
 		referrerVisits[i].VisitorsPerReferrer = visitors
 	}
 
@@ -172,7 +172,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 			found := false
 
 			for _, visit := range referrerVisits {
-				if visitToday.Ref == visit.Referrer {
+				if visitToday.Ref == visit.Referrer.String {
 					visit.VisitorsPerReferrer[len(visit.VisitorsPerReferrer)-1].Visitors = visitToday.Visitors
 					found = true
 					break
@@ -189,7 +189,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
 				referrerVisits = append(referrerVisits, Stats{
-					Referrer:            visitToday.Ref,
+					Referrer:            sql.NullString{String: visitToday.Ref, Valid: true},
 					VisitorsPerReferrer: visits,
 				})
 			}
@@ -197,8 +197,8 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 
 		// sort referrer by length and alphabetically
 		sort.Slice(referrerVisits, func(i, j int) bool {
-			return len(referrerVisits[i].Referrer) < len(referrerVisits[j].Referrer) ||
-				referrerVisits[i].Referrer < referrerVisits[j].Referrer
+			return len(referrerVisits[i].Referrer.String) < len(referrerVisits[j].Referrer.String) ||
+				referrerVisits[i].Referrer.String < referrerVisits[j].Referrer.String
 		})
 	}
 
@@ -249,6 +249,30 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 	}
 
 	return referrer, nil
+}
+
+// OS returns the absolute visitor count per operating system for given time frame.
+func (analyzer *Analyzer) OS(filter *Filter) ([]Stats, error) {
+	filter = analyzer.validateFilter(filter)
+	os, err := analyzer.store.VisitorOS(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return os, nil
+}
+
+// Browser returns the absolute visitor count per browser for given time frame.
+func (analyzer *Analyzer) Browser(filter *Filter) ([]Stats, error) {
+	filter = analyzer.validateFilter(filter)
+	browser, err := analyzer.store.VisitorBrowser(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return browser, nil
 }
 
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.

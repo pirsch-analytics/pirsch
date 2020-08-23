@@ -124,6 +124,14 @@ func (store *storeMock) VisitorReferrer(tenantID sql.NullInt64, t time.Time, t2 
 	panic("implement me")
 }
 
+func (store *storeMock) VisitorOS(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) VisitorBrowser(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
+	panic("implement me")
+}
+
 func (store *storeMock) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }

@@ -71,9 +71,11 @@ type VisitorsPerBrowser struct {
 // Stats bundles all statistics into a single object.
 // The meaning of the data depends on the actual use of this struct.
 type Stats struct {
-	Path                string                `db:"path" json:"path"`
-	Language            string                `db:"language" json:"language"`
-	Referrer            string                `db:"ref" json:"referrer"`
+	Path                sql.NullString        `db:"path" json:"path"`
+	Language            sql.NullString        `db:"language" json:"language"`
+	Referrer            sql.NullString        `db:"ref" json:"referrer"`
+	OS                  sql.NullString        `db:"os" json:"os"`
+	Browser             sql.NullString        `db:"browser" json:"browser"`
 	Hour                int                   `db:"hour" json:"hour"`
 	Visitors            int                   `db:"visitors" json:"visitors"`
 	RelativeVisitors    float64               `db:"-" json:"relative_visitors"`

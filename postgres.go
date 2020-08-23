@@ -554,6 +554,62 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from time.Ti
 	return referrer, nil
 }
 
+// VisitorOS implements the Store interface.
+func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
+	query := `SELECT * FROM (
+			SELECT "os", sum("visitors") "visitors" FROM (
+				SELECT "os", sum("visitors") "visitors" FROM "visitors_per_os"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				GROUP BY "os"
+				UNION
+				SELECT "os", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				GROUP BY "os"
+			) AS results
+			GROUP BY "os"
+		) AS operating_systems
+		ORDER BY "visitors" DESC`
+	var os []Stats
+
+	if err := store.DB.Select(&os, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return os, nil
+}
+
+// VisitorBrowser implements the Store interface.
+func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from time.Time, to time.Time) ([]Stats, error) {
+	query := `SELECT * FROM (
+			SELECT "browser", sum("visitors") "visitors" FROM (
+				SELECT "browser", sum("visitors") "visitors" FROM "visitors_per_browser"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				GROUP BY "browser"
+				UNION
+				SELECT "browser", count(DISTINCT fingerprint) "visitors" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				GROUP BY "browser"
+			) AS results
+			GROUP BY "browser"
+		) AS browser
+		ORDER BY "visitors" DESC`
+	var browser []Stats
+
+	if err := store.DB.Select(&browser, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return browser, nil
+}
+
 // HourlyVisitors implements the Store interface.
 func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
