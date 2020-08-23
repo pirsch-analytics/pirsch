@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -58,6 +59,26 @@ func TestAnalyzerReferrer(t *testing.T) {
 func TestAnalyzerReferrerFiltered(t *testing.T) {
 	testAnalyzerReferrerFiltered(t, 0)
 	testAnalyzerReferrerFiltered(t, 1)
+}
+
+func TestAnalyzerOS(t *testing.T) {
+	testAnalyzerOS(t, 0)
+	testAnalyzerOS(t, 1)
+}
+
+func TestAnalyzerOSFiltered(t *testing.T) {
+	testAnalyzerOSFiltered(t, 0)
+	testAnalyzerOSFiltered(t, 1)
+}
+
+func TestAnalyzerBrowser(t *testing.T) {
+	testAnalyzerBrowser(t, 0)
+	testAnalyzerBrowser(t, 1)
+}
+
+func TestAnalyzerBrowserFiltered(t *testing.T) {
+	testAnalyzerBrowserFiltered(t, 0)
+	testAnalyzerBrowserFiltered(t, 1)
 }
 
 func TestAnalyzerHourlyVisitors(t *testing.T) {
@@ -184,27 +205,27 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 			t.Fatalf("Must have returns statistics for four pages, but was: %v", len(visits))
 		}
 
-		if visits[0].Path != "/" ||
-			visits[1].Path != "/bar" ||
-			visits[2].Path != "/foo" ||
-			visits[3].Path != "/laa" {
+		if visits[0].Path.String != "/" ||
+			visits[1].Path.String != "/bar" ||
+			visits[2].Path.String != "/foo" ||
+			visits[3].Path.String != "/laa" {
 			t.Fatal("Paths not as expected")
 		}
 
-		if len(visits[0].Visits) != 7 ||
-			len(visits[1].Visits) != 7 ||
-			len(visits[2].Visits) != 7 ||
-			len(visits[3].Visits) != 7 {
+		if len(visits[0].VisitorsPerDay) != 7 ||
+			len(visits[1].VisitorsPerDay) != 7 ||
+			len(visits[2].VisitorsPerDay) != 7 ||
+			len(visits[3].VisitorsPerDay) != 7 {
 			t.Fatal("Page visits not as expected")
 		}
 
-		if visits[0].Visits[5].Visitors != 45 ||
-			visits[0].Visits[6].Visitors != 1 ||
-			visits[1].Visits[4].Visitors != 67 ||
-			visits[1].Visits[6].Visitors != 1 ||
-			visits[2].Visits[6].Visitors != 1 ||
-			visits[3].Visits[5].Visitors != 23 ||
-			visits[3].Visits[6].Visitors != 0 {
+		if visits[0].VisitorsPerDay[5].Visitors != 45 ||
+			visits[0].VisitorsPerDay[6].Visitors != 1 ||
+			visits[1].VisitorsPerDay[4].Visitors != 67 ||
+			visits[1].VisitorsPerDay[6].Visitors != 1 ||
+			visits[2].VisitorsPerDay[6].Visitors != 1 ||
+			visits[3].VisitorsPerDay[5].Visitors != 23 ||
+			visits[3].VisitorsPerDay[6].Visitors != 0 {
 			t.Fatal("Visitors not as expected")
 		}
 	}
@@ -227,24 +248,24 @@ func testAnalyzerReferrerVisits(t *testing.T, tenantID int64) {
 			t.Fatalf("Must have returns statistics for three referrer, but was: %v", len(visits))
 		}
 
-		if visits[0].Referrer != "ref1" ||
-			visits[1].Referrer != "ref2" ||
-			visits[2].Referrer != "ref3" {
+		if visits[0].Referrer.String != "ref1" ||
+			visits[1].Referrer.String != "ref2" ||
+			visits[2].Referrer.String != "ref3" {
 			t.Fatal("Referrer not as expected")
 		}
 
-		if len(visits[0].Visits) != 7 ||
-			len(visits[1].Visits) != 7 ||
-			len(visits[2].Visits) != 7 {
+		if len(visits[0].VisitorsPerReferrer) != 7 ||
+			len(visits[1].VisitorsPerReferrer) != 7 ||
+			len(visits[2].VisitorsPerReferrer) != 7 {
 			t.Fatal("Referrer visits not as expected")
 		}
 
-		if visits[0].Visits[5].Visitors != 32 ||
-			visits[0].Visits[6].Visitors != 1 ||
-			visits[1].Visits[5].Visitors != 43 ||
-			visits[1].Visits[6].Visitors != 1 ||
-			visits[2].Visits[4].Visitors != 54 ||
-			visits[2].Visits[6].Visitors != 1 {
+		if visits[0].VisitorsPerReferrer[5].Visitors != 32 ||
+			visits[0].VisitorsPerReferrer[6].Visitors != 1 ||
+			visits[1].VisitorsPerReferrer[5].Visitors != 43 ||
+			visits[1].VisitorsPerReferrer[6].Visitors != 1 ||
+			visits[2].VisitorsPerReferrer[4].Visitors != 54 ||
+			visits[2].VisitorsPerReferrer[6].Visitors != 1 {
 			t.Fatal("Visitors not as expected")
 		}
 	}
@@ -269,16 +290,16 @@ func testAnalyzerPageVisitsFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Must have returns statistics for one page, but was: %v", len(visits))
 		}
 
-		if visits[0].Path != "/bar" {
+		if visits[0].Path.String != "/bar" {
 			t.Fatal("Path not as expected")
 		}
 
-		if len(visits[0].Visits) != 2 {
+		if len(visits[0].VisitorsPerDay) != 2 {
 			t.Fatal("Page visits not as expected")
 		}
 
-		if visits[0].Visits[0].Visitors != 0 ||
-			visits[0].Visits[1].Visitors != 67 {
+		if visits[0].VisitorsPerDay[0].Visitors != 0 ||
+			visits[0].VisitorsPerDay[1].Visitors != 67 {
 			t.Fatal("Visitors not as expected")
 		}
 	}
@@ -301,10 +322,10 @@ func testAnalyzerPages(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of pages not as expected: %v", len(pages))
 		}
 
-		if pages[0].Path != "/bar" || pages[0].Visitors != 68 ||
-			pages[1].Path != "/" || pages[1].Visitors != 46 ||
-			pages[2].Path != "/laa" || pages[2].Visitors != 23 ||
-			pages[3].Path != "/foo" || pages[3].Visitors != 1 {
+		if pages[0].Path.String != "/bar" || pages[0].Visitors != 68 ||
+			pages[1].Path.String != "/" || pages[1].Visitors != 46 ||
+			pages[2].Path.String != "/laa" || pages[2].Visitors != 23 ||
+			pages[3].Path.String != "/foo" || pages[3].Visitors != 1 {
 			t.Fatalf("Pages not as expected: %v", pages)
 		}
 	}
@@ -329,7 +350,7 @@ func testAnalyzerPagesFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of pages not as expected: %v", len(pages))
 		}
 
-		if pages[0].Path != "/bar" || pages[0].Visitors != 67 {
+		if pages[0].Path.String != "/bar" || pages[0].Visitors != 67 {
 			t.Fatalf("Pages not as expected: %v", pages)
 		}
 	}
@@ -356,9 +377,9 @@ func testAnalyzerLanguages(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of languages not as expected: %v", len(langs))
 		}
 
-		if langs[0].Language != "jp" || langs[0].Visitors != 53 || !about(langs[0].RelativeVisitors, 0.45) ||
-			langs[1].Language != "en" || langs[1].Visitors != 50 || !about(langs[1].RelativeVisitors, 0.42) ||
-			langs[2].Language != "de" || langs[2].Visitors != 14 || !about(langs[2].RelativeVisitors, 0.11) {
+		if langs[0].Language.String != "jp" || langs[0].Visitors != 53 || !about(langs[0].RelativeVisitors, 0.45) ||
+			langs[1].Language.String != "en" || langs[1].Visitors != 50 || !about(langs[1].RelativeVisitors, 0.42) ||
+			langs[2].Language.String != "de" || langs[2].Visitors != 14 || !about(langs[2].RelativeVisitors, 0.11) {
 			t.Fatalf("Languages not as expected: %v", langs)
 		}
 	}
@@ -387,8 +408,8 @@ func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of languages not as expected: %v", len(langs))
 		}
 
-		if langs[0].Language != "jp" || langs[0].Visitors != 52 || !about(langs[0].RelativeVisitors, 0.8) ||
-			langs[1].Language != "de" || langs[1].Visitors != 13 || !about(langs[1].RelativeVisitors, 0.2) {
+		if langs[0].Language.String != "jp" || langs[0].Visitors != 52 || !about(langs[0].RelativeVisitors, 0.8) ||
+			langs[1].Language.String != "de" || langs[1].Visitors != 13 || !about(langs[1].RelativeVisitors, 0.2) {
 			t.Fatalf("Languages not as expected: %v", langs)
 		}
 	}
@@ -411,9 +432,9 @@ func testAnalyzerReferrer(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of referrer not as expected: %v", len(referrer))
 		}
 
-		if referrer[0].Referrer != "ref3" || referrer[0].Visitors != 55 ||
-			referrer[1].Referrer != "ref2" || referrer[1].Visitors != 44 ||
-			referrer[2].Referrer != "ref1" || referrer[2].Visitors != 33 {
+		if referrer[0].Referrer.String != "ref3" || referrer[0].Visitors != 55 ||
+			referrer[1].Referrer.String != "ref2" || referrer[1].Visitors != 44 ||
+			referrer[2].Referrer.String != "ref1" || referrer[2].Visitors != 33 {
 			t.Fatalf("Referrer not as expected: %v", referrer)
 		}
 	}
@@ -438,8 +459,108 @@ func testAnalyzerReferrerFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of referrer not as expected: %v", len(referrer))
 		}
 
-		if referrer[0].Referrer != "ref3" || referrer[0].Visitors != 54 {
+		if referrer[0].Referrer.String != "ref3" || referrer[0].Visitors != 54 {
 			t.Fatalf("Referrer not as expected: %v", referrer)
+		}
+	}
+}
+
+func testAnalyzerOS(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		os, err := analyzer.OS(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("OS must be returned, but was:  %v", err)
+		}
+
+		if len(os) != 2 {
+			t.Fatalf("Number of OS not as expected: %v", len(os))
+		}
+
+		if os[0].OS.String != OSWindows || os[0].Visitors != 125 ||
+			os[1].OS.String != OSMac || os[1].Visitors != 20 {
+			t.Fatalf("OS not as expected: %v", os)
+		}
+	}
+}
+
+func testAnalyzerOSFiltered(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		os, err := analyzer.OS(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(3),
+			To:       pastDay(2),
+		})
+
+		if err != nil {
+			t.Fatalf("OS must be returned, but was:  %v", err)
+		}
+
+		if len(os) != 2 {
+			t.Fatalf("Number of OS not as expected: %v", len(os))
+		}
+
+		if os[0].OS.String != OSWindows || os[0].Visitors != 72 ||
+			os[1].OS.String != OSMac || os[1].Visitors != 19 {
+			t.Fatalf("OS not as expected: %v", os)
+		}
+	}
+}
+
+func testAnalyzerBrowser(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		browser, err := analyzer.Browser(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("Browser must be returned, but was:  %v", err)
+		}
+
+		if len(browser) != 2 {
+			t.Fatalf("Number of browser not as expected: %v", len(browser))
+		}
+
+		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 124 ||
+			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 24 {
+			t.Fatalf("Browser not as expected: %v", browser)
+		}
+	}
+}
+
+func testAnalyzerBrowserFiltered(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		browser, err := analyzer.Browser(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(3),
+			To:       pastDay(2),
+		})
+
+		if err != nil {
+			t.Fatalf("Browser must be returned, but was:  %v", err)
+		}
+
+		if len(browser) != 2 {
+			t.Fatalf("Number of browser not as expected: %v", len(browser))
+		}
+
+		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 66 ||
+			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 23 {
+			t.Fatalf("Browser not as expected: %v", browser)
 		}
 	}
 }
@@ -501,10 +622,10 @@ func testAnalyzerHourlyVisitorsFiltered(t *testing.T, tenantID int64) {
 func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
-		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5), "", "", "", "")
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3), "", "", "", "")
+		createHit(t, store, tenantID, "fp3", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9), "", "", "", "")
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11), "", "", "", "")
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.ActiveVisitors(NewTenantID(tenantID), time.Second*10)
 
@@ -521,10 +642,10 @@ func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
 func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5))
-		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3))
-		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9))
-		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11))
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*5), "", "", "", "")
+		createHit(t, store, tenantID, "fp2", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*3), "", "", "", "")
+		createHit(t, store, tenantID, "fp3", "/bar", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*9), "", "", "", "")
+		createHit(t, store, tenantID, "fp4", "/", "en", "ua1", "ref", time.Now().UTC().Add(-time.Second*11), "", "", "", "")
 		analyzer := NewAnalyzer(store)
 		visitors, err := analyzer.ActiveVisitorsPages(NewTenantID(tenantID), time.Second*10)
 
@@ -536,17 +657,17 @@ func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 			t.Fatalf("Visitor count not as expected, was: %v", visitors)
 		}
 
-		if visitors[0].Path != "/bar" || visitors[0].Visitors != 2 ||
-			visitors[1].Path != "/" || visitors[1].Visitors != 1 {
+		if visitors[0].Path.String != "/bar" || visitors[0].Visitors != 2 ||
+			visitors[1].Path.String != "/" || visitors[1].Visitors != 1 {
 			t.Fatalf("Paths not as expected, was: %v", visitors)
 		}
 	}
 }
 
 func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0))
-	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0))
-	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0))
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0), OSWindows, "10", BrowserChrome, "84.0")
+	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0), OSWindows, "10", BrowserChrome, "84.0")
+	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0), OSMac, "10.14.3", BrowserSafari, "13.0")
 	createVisitorPerDay(t, store, tenantID, pastDay(1), 42)
 	createVisitorPerDay(t, store, tenantID, pastDay(2), 39)
 	createVisitorPerDay(t, store, tenantID, pastDay(3), 26)
@@ -562,6 +683,12 @@ func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
 	createVisitorPerHour(t, store, tenantID, pastDay(1).Add(time.Hour*6).Add(time.Minute*23), 32)
 	createVisitorPerHour(t, store, tenantID, pastDay(2).Add(time.Hour*11).Add(time.Minute*11), 8)
 	createVisitorPerHour(t, store, tenantID, pastDay(3).Add(time.Hour*17).Add(time.Minute*59), 29)
+	createVisitorPerOS(t, store, tenantID, pastDay(1), OSWindows, "10", 51)
+	createVisitorPerOS(t, store, tenantID, pastDay(2), OSWindows, "10", 72)
+	createVisitorPerOS(t, store, tenantID, pastDay(3), OSMac, "10.14.3", 19)
+	createVisitorPerBrowser(t, store, tenantID, pastDay(1), BrowserChrome, "84.0", 56)
+	createVisitorPerBrowser(t, store, tenantID, pastDay(2), BrowserChrome, "84.0", 66)
+	createVisitorPerBrowser(t, store, tenantID, pastDay(3), BrowserSafari, "13.0", 23)
 }
 
 func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Time, visitors int) {
@@ -623,6 +750,34 @@ func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour 
 	}
 
 	if err := store.SaveVisitorsPerHour(&visitor); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func createVisitorPerOS(t *testing.T, store Store, tenantID int64, day time.Time, os, osVersion string, visitors int) {
+	visitor := VisitorsPerOS{
+		TenantID:  NewTenantID(tenantID),
+		Day:       day,
+		OS:        sql.NullString{String: os, Valid: os != ""},
+		OSVersion: sql.NullString{String: osVersion, Valid: osVersion != ""},
+		Visitors:  visitors,
+	}
+
+	if err := store.SaveVisitorsPerOS(&visitor); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func createVisitorPerBrowser(t *testing.T, store Store, tenantID int64, day time.Time, browser, browserVersion string, visitors int) {
+	visitor := VisitorsPerBrowser{
+		TenantID:       NewTenantID(tenantID),
+		Day:            day,
+		Browser:        sql.NullString{String: browser, Valid: browser != ""},
+		BrowserVersion: sql.NullString{String: browserVersion, Valid: browserVersion != ""},
+		Visitors:       visitors,
+	}
+
+	if err := store.SaveVisitorsPerBrowser(&visitor); err != nil {
 		t.Fatal(err)
 	}
 }

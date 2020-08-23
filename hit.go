@@ -17,15 +17,19 @@ var referrerQueryParams = []string{
 
 // Hit represents a single data point/page visit.
 type Hit struct {
-	ID          int64         `db:"id" json:"id"`
-	TenantID    sql.NullInt64 `db:"tenant_id" json:"tenant_id"`
-	Fingerprint string        `db:"fingerprint" json:"fingerprint"`
-	Path        string        `db:"path" json:"path,omitempty"`
-	URL         string        `db:"url" json:"url,omitempty"`
-	Language    string        `db:"language" json:"language,omitempty"`
-	UserAgent   string        `db:"user_agent" json:"user_agent,omitempty"`
-	Ref         string        `db:"ref" json:"ref,omitempty"`
-	Time        time.Time     `db:"time" json:"time"`
+	ID             int64          `db:"id" json:"id"`
+	TenantID       sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
+	Path           sql.NullString `db:"path" json:"path,omitempty"`
+	URL            sql.NullString `db:"url" json:"url,omitempty"`
+	Language       sql.NullString `db:"language" json:"language,omitempty"`
+	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
+	Ref            sql.NullString `db:"ref" json:"ref,omitempty"`
+	OS             sql.NullString `db:"os" json:"os,omitempty"`
+	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
+	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
+	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
+	Time           time.Time      `db:"time" json:"time"`
 }
 
 // HitOptions is used to manipulate the data saved on a hit.
@@ -81,15 +85,32 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		options.Path = r.URL.Path
 	}
 
+	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+	path := shortenString(options.Path, 2000)
+	requestURL = shortenString(requestURL, 2000)
+	ua := r.UserAgent()
+	uaInfo := ParseUserAgent(ua)
+	uaInfo.OS = shortenString(uaInfo.OS, 20)
+	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
+	uaInfo.Browser = shortenString(uaInfo.Browser, 20)
+	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
+	ua = shortenString(ua, 200)
+	lang := shortenString(getLanguage(r), 10)
+	ref := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+
 	return Hit{
-		TenantID:    options.TenantID,
-		Fingerprint: Fingerprint(r, salt),
-		Path:        options.Path,
-		URL:         requestURL,
-		Language:    getLanguage(r),
-		UserAgent:   r.UserAgent(),
-		Ref:         getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains),
-		Time:        now,
+		TenantID:       options.TenantID,
+		Fingerprint:    Fingerprint(r, salt),
+		Path:           sql.NullString{String: path, Valid: path != ""},
+		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
+		Language:       sql.NullString{String: lang, Valid: lang != ""},
+		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},
+		Ref:            sql.NullString{String: ref, Valid: ref != ""},
+		OS:             sql.NullString{String: uaInfo.OS, Valid: uaInfo.OS != ""},
+		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
+		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
+		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
+		Time:           now,
 	}
 }
 
@@ -205,4 +226,13 @@ func stripSubdomain(hostname string) string {
 	}
 
 	return hostname[index:]
+}
+
+func shortenString(str string, n int) string {
+	// we intentionally use len instead of utf8.RuneCountInString here
+	if len(str) > n {
+		return str[:n]
+	}
+
+	return str
 }

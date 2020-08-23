@@ -48,45 +48,37 @@ type VisitorsPerReferrer struct {
 	Visitors int           `db:"visitors" json:"visitors"`
 }
 
-// PageVisits is the visitor count per day for each path.
-type PageVisits struct {
-	Path   string
-	Visits []VisitorsPerDay
+// VisitorsPerOS is the unique visitor count per operating system and day.
+type VisitorsPerOS struct {
+	ID        int64          `db:"id" json:"id"`
+	TenantID  sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	Day       time.Time      `db:"day" json:"day"`
+	OS        sql.NullString `db:"os" json:"os"`
+	OSVersion sql.NullString `db:"os_version" json:"version"`
+	Visitors  int            `db:"visitors" json:"visitors"`
 }
 
-// ReferrerVisits is the visitor count per day for each referrer.
-type ReferrerVisits struct {
-	Referrer string
-	Visits   []VisitorsPerReferrer
+// VisitorsPerBrowser is the unique visitor count per browser and day.
+type VisitorsPerBrowser struct {
+	ID             int64          `db:"id" json:"id"`
+	TenantID       sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	Day            time.Time      `db:"day" json:"day"`
+	Browser        sql.NullString `db:"browser" json:"browser"`
+	BrowserVersion sql.NullString `db:"browser_version" json:"version"`
+	Visitors       int            `db:"visitors" json:"visitors"`
 }
 
-// VisitorPage is the unique visitor count per page.
-type VisitorPage struct {
-	Path     string `db:"path" json:"path"`
-	Visitors int    `db:"visitors" json:"visitors"`
-}
-
-// VisitorLanguage is the unique visitor count per language.
-type VisitorLanguage struct {
-	Language         string  `db:"language" json:"language"`
-	Visitors         int     `db:"visitors" json:"visitors"`
-	RelativeVisitors float64 `db:"-" json:"relative_visitors"`
-}
-
-// VisitorReferrer is the unique visitor count per referrer.
-type VisitorReferrer struct {
-	Referrer string `db:"ref" json:"referrer"`
-	Visitors int    `db:"visitors" json:"visitors"`
-}
-
-// HourlyVisitors is the unique visitor count per hour.
-type HourlyVisitors struct {
-	Hour     int `db:"hour" json:"hour"`
-	Visitors int `db:"visitors" json:"visitors"`
-}
-
-// PageVisitors is the visitor count for each path.
-type PageVisitors struct {
-	Path     string `db:"path" json:"path"`
-	Visitors int    `db:"visitors" json:"visitors"`
+// Stats bundles all statistics into a single object.
+// The meaning of the data depends on the actual use of this struct.
+type Stats struct {
+	Path                sql.NullString        `db:"path" json:"path"`
+	Language            sql.NullString        `db:"language" json:"language"`
+	Referrer            sql.NullString        `db:"ref" json:"referrer"`
+	OS                  sql.NullString        `db:"os" json:"os"`
+	Browser             sql.NullString        `db:"browser" json:"browser"`
+	Hour                int                   `db:"hour" json:"hour"`
+	Visitors            int                   `db:"visitors" json:"visitors"`
+	RelativeVisitors    float64               `db:"-" json:"relative_visitors"`
+	VisitorsPerDay      []VisitorsPerDay      `db:"-" json:"visitors_per_day"`
+	VisitorsPerReferrer []VisitorsPerReferrer `db:"-" json:"visitors_per_referrer"`
 }
