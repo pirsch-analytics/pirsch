@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -228,11 +229,11 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 	hit := Hit{
 		TenantID:    NewTenantID(tenantID),
 		Fingerprint: fingerprint,
-		Path:        path,
-		Language:    lang,
-		UserAgent:   userAgent,
+		Path:        sql.NullString{String: path, Valid: path != ""},
+		Language:    sql.NullString{String: lang, Valid: path != ""},
+		UserAgent:   sql.NullString{String: userAgent, Valid: path != ""},
+		Ref:         sql.NullString{String: ref, Valid: path != ""},
 		Time:        time,
-		Ref:         ref,
 	}
 
 	if err := store.Save([]Hit{hit}); err != nil {

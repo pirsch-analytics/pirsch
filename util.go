@@ -41,14 +41,6 @@ func panicOnErr(err error) {
 	}
 }
 
-func shortenString(str string, maxLen int) string {
-	if len(str) > maxLen {
-		return str[:maxLen]
-	}
-
-	return str
-}
-
 func containsString(list []string, str string) bool {
 	for _, item := range list {
 		if item == str {

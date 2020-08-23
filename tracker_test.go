@@ -56,8 +56,8 @@ func TestTrackerHitTimeout(t *testing.T) {
 	}
 
 	// ignore order...
-	if store.hits[0].Path != "/" && store.hits[0].Path != "/hello-world" ||
-		store.hits[1].Path != "/" && store.hits[1].Path != "/hello-world" {
+	if store.hits[0].Path.String != "/" && store.hits[0].Path.String != "/hello-world" ||
+		store.hits[1].Path.String != "/" && store.hits[1].Path.String != "/hello-world" {
 		t.Fatalf("Hits not as expected: %v %v", store.hits[0], store.hits[1])
 	}
 }

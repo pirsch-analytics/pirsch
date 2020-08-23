@@ -26,20 +26,24 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 func (store *PostgresStore) Save(hits []Hit) error {
 	args := make([]interface{}, 0, len(hits)*hitParamCount)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, os, os_version, browser, browser_version, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
-		args = append(args, shortenString(hit.Fingerprint, 2000))
-		args = append(args, shortenString(hit.Path, 2000))
-		args = append(args, shortenString(hit.URL, 2000))
-		args = append(args, shortenString(hit.Language, 10))
-		args = append(args, shortenString(hit.UserAgent, 200))
-		args = append(args, shortenString(hit.Ref, 200))
+		args = append(args, hit.Fingerprint)
+		args = append(args, hit.Path)
+		args = append(args, hit.URL)
+		args = append(args, hit.Language)
+		args = append(args, hit.UserAgent)
+		args = append(args, hit.Ref)
+		args = append(args, hit.OS)
+		args = append(args, hit.OSVersion)
+		args = append(args, hit.Browser)
+		args = append(args, hit.BrowserVersion)
 		args = append(args, hit.Time)
 		index := i * hitParamCount
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8))
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12))
 	}
 
 	queryStr := query.String()

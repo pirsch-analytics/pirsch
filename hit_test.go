@@ -9,7 +9,7 @@ import (
 func TestHitFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
-	req.Header.Set("User-Agent", "user-agent")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "ref")
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		TenantID: NewTenantID(42),
@@ -18,11 +18,15 @@ func TestHitFromRequest(t *testing.T) {
 	if hit.TenantID.Int64 != 42 ||
 		!hit.TenantID.Valid ||
 		hit.Fingerprint == "" ||
-		hit.Path != "/test/path" ||
-		hit.URL != "/test/path?query=param&foo=bar#anchor" ||
-		hit.Language != "de-de" ||
-		hit.UserAgent != "user-agent" ||
-		hit.Ref != "ref" ||
+		hit.Path.String != "/test/path" ||
+		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
+		hit.Language.String != "de-de" ||
+		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
+		hit.Ref.String != "ref" ||
+		hit.OS.String != OSWindows ||
+		hit.OSVersion.String != "10" ||
+		hit.Browser.String != BrowserChrome ||
+		hit.BrowserVersion.String != "84.0" ||
 		hit.Time.IsZero() {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
@@ -34,8 +38,8 @@ func TestHitFromRequestPath(t *testing.T) {
 		Path: "/new/custom/path",
 	})
 
-	if hit.Path != "/new/custom/path" ||
-		hit.URL != "/new/custom/path?query=param&foo=bar#anchor" {
+	if hit.Path.String != "/new/custom/path" ||
+		hit.URL.String != "/new/custom/path?query=param&foo=bar#anchor" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
@@ -223,5 +227,19 @@ func TestStripSubdomain(t *testing.T) {
 		if hostname := stripSubdomain(in); hostname != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], hostname)
 		}
+	}
+}
+
+func TestShortenString(t *testing.T) {
+	out := shortenString("Hello World", 5)
+
+	if out != "Hello" {
+		t.Fatalf("String must have been shortened to 'Hello', but was: %v", out)
+	}
+
+	out = shortenString("Hello World", 50)
+
+	if out != "Hello World" {
+		t.Fatalf("String must not have been shortened, but was: %v", out)
 	}
 }
