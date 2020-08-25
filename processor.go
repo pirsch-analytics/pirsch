@@ -74,30 +74,34 @@ func (processor *Processor) Process() error {
 // The tenant can be set to nil if you don't split your data (which is usually the case).
 // It will panic in case of an error.
 func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
+	// this explicitly excludes "today", because we might not have collected all visitors
+	// and the hits will be deleted after the processor has finished reducing the data
 	days, err := processor.store.Days(tenantID)
 
 	if err != nil {
 		return err
 	}
 
+	// a list of all processing functions and if they're enabled/disabled
+	processors := []struct {
+		f    func(sql.NullInt64, time.Time) error
+		exec bool
+	}{
+		{processor.countVisitors, processor.config.ProcessVisitors},
+		{processor.countVisitorPerHour, processor.config.ProcessVisitorPerHour},
+		{processor.countLanguages, processor.config.ProcessLanguages},
+		{processor.countPageViews, processor.config.ProcessPageViews},
+		{processor.countVisitorPerReferrer, processor.config.ProcessVisitorPerReferrer},
+		{processor.countVisitorPerOS, processor.config.ProcessVisitorPerOS},
+		{processor.countVisitorPerBrowser, processor.config.ProcessVisitorPerBrowser},
+	}
+
 	for _, day := range days {
 		waitChan := make(chan struct{})
-		errChan := make(chan error, 4)
+		errChan := make(chan error, len(processors))
 
 		go func() {
 			var wg sync.WaitGroup
-			processors := []struct {
-				f    func(sql.NullInt64, time.Time) error
-				exec bool
-			}{
-				{processor.countVisitors, processor.config.ProcessVisitors},
-				{processor.countVisitorPerHour, processor.config.ProcessVisitorPerHour},
-				{processor.countLanguages, processor.config.ProcessLanguages},
-				{processor.countPageViews, processor.config.ProcessPageViews},
-				{processor.countVisitorPerReferrer, processor.config.ProcessVisitorPerReferrer},
-				{processor.countVisitorPerOS, processor.config.ProcessVisitorPerOS},
-				{processor.countVisitorPerBrowser, processor.config.ProcessVisitorPerBrowser},
-			}
 
 			for _, proc := range processors {
 				if proc.exec {
