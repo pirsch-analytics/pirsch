@@ -301,7 +301,7 @@ func createTestDays(t *testing.T, store Store) {
 
 func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string) {
 	hit := Hit{
-		TenantID:       NewTenantID(tenantID),
+		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		Language:       sql.NullString{String: lang, Valid: path != ""},

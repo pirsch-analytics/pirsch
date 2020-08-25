@@ -144,9 +144,9 @@ func (processor *Processor) countVisitors(tenantID sql.NullInt64, day time.Time)
 	}
 
 	return processor.store.SaveVisitorsPerDay(&VisitorsPerDay{
-		TenantID: tenantID,
-		Day:      day,
-		Visitors: visitors,
+		BaseEntity: BaseEntity{TenantID: tenantID},
+		Day:        day,
+		Visitors:   visitors,
 	})
 }
 

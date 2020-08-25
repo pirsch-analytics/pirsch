@@ -693,9 +693,9 @@ func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
 
 func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Time, visitors int) {
 	visitor := VisitorsPerDay{
-		TenantID: NewTenantID(tenantID),
-		Day:      day,
-		Visitors: visitors,
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		Visitors:   visitors,
 	}
 
 	if err := store.SaveVisitorsPerDay(&visitor); err != nil {
@@ -705,10 +705,10 @@ func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Tim
 
 func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Time, path string, visitors int) {
 	visitor := VisitorsPerPage{
-		TenantID: NewTenantID(tenantID),
-		Day:      day,
-		Path:     path,
-		Visitors: visitors,
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		Path:       path,
+		Visitors:   visitors,
 	}
 
 	if err := store.SaveVisitorsPerPage(&visitor); err != nil {
@@ -718,10 +718,10 @@ func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Ti
 
 func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day time.Time, referrer string, visitors int) {
 	visitor := VisitorsPerReferrer{
-		TenantID: NewTenantID(tenantID),
-		Day:      day,
-		Ref:      referrer,
-		Visitors: visitors,
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		Ref:        referrer,
+		Visitors:   visitors,
 	}
 
 	if err := store.SaveVisitorsPerReferrer(&visitor); err != nil {
@@ -731,10 +731,10 @@ func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day tim
 
 func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day time.Time, lang string, visitors int) {
 	visitor := VisitorsPerLanguage{
-		TenantID: NewTenantID(tenantID),
-		Day:      day,
-		Language: lang,
-		Visitors: visitors,
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		Language:   lang,
+		Visitors:   visitors,
 	}
 
 	if err := store.SaveVisitorsPerLanguage(&visitor); err != nil {
@@ -744,7 +744,7 @@ func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day tim
 
 func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour time.Time, visitors int) {
 	visitor := VisitorsPerHour{
-		TenantID:   NewTenantID(tenantID),
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 		DayAndHour: dayAndHour,
 		Visitors:   visitors,
 	}
@@ -756,11 +756,11 @@ func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour 
 
 func createVisitorPerOS(t *testing.T, store Store, tenantID int64, day time.Time, os, osVersion string, visitors int) {
 	visitor := VisitorsPerOS{
-		TenantID:  NewTenantID(tenantID),
-		Day:       day,
-		OS:        sql.NullString{String: os, Valid: os != ""},
-		OSVersion: sql.NullString{String: osVersion, Valid: osVersion != ""},
-		Visitors:  visitors,
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		OS:         sql.NullString{String: os, Valid: os != ""},
+		OSVersion:  sql.NullString{String: osVersion, Valid: osVersion != ""},
+		Visitors:   visitors,
 	}
 
 	if err := store.SaveVisitorsPerOS(&visitor); err != nil {
@@ -770,7 +770,7 @@ func createVisitorPerOS(t *testing.T, store Store, tenantID int64, day time.Time
 
 func createVisitorPerBrowser(t *testing.T, store Store, tenantID int64, day time.Time, browser, browserVersion string, visitors int) {
 	visitor := VisitorsPerBrowser{
-		TenantID:       NewTenantID(tenantID),
+		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Day:            day,
 		Browser:        sql.NullString{String: browser, Valid: browser != ""},
 		BrowserVersion: sql.NullString{String: browserVersion, Valid: browserVersion != ""},
