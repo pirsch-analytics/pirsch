@@ -404,6 +404,7 @@ func (store *PostgresStore) CountVisitorsPerBrowserAndVersion(tenantID sql.NullI
 	return visitors, nil
 }
 
+// CountVisitorPlatforms implements the Store interface.
 func (store *PostgresStore) CountVisitorPlatforms(tenantID sql.NullInt64, day time.Time) (*VisitorPlatform, error) {
 	query := `SELECT
 		(
@@ -491,7 +492,7 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 	return visitors, nil
 }
 
-// Stats implements the Store interface.
+// PageVisits implements the Store interface.
 func (store *PostgresStore) PageVisits(tenantID sql.NullInt64, path string, from, to time.Time) ([]VisitorsPerDay, error) {
 	query := `SELECT tenant_id, "date" "day",
 		CASE WHEN "visitors_per_page".visitors IS NULL THEN 0 ELSE "visitors_per_page".visitors END
@@ -860,6 +861,7 @@ func (store *PostgresStore) VisitorsPerBrowser(tenantID sql.NullInt64) []Visitor
 	return entities
 }
 
+// VisitorsPerPlatform implements the Store interface.
 func (store *PostgresStore) VisitorsPerPlatform(tenantID sql.NullInt64) []VisitorPlatform {
 	var entities []VisitorPlatform
 

@@ -44,7 +44,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	return visitors, nil
 }
 
-// Stats returns the visitors per page per day for given time frame.
+// PageVisits returns the visitors per page per day for given time frame.
 func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 	// clean up filter and select all paths
 	filter = analyzer.validateFilter(filter)

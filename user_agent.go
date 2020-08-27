@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	// Browser
 	BrowserChrome  = "Chrome"
 	BrowserFirefox = "Firefox"
 	BrowserSafari  = "Safari"
@@ -14,7 +13,6 @@ const (
 	BrowserEdge    = "Edge"
 	BrowserIE      = "IE"
 
-	// Operating System
 	OSWindows       = "Windows"
 	OSMac           = "Mac"
 	OSLinux         = "Linux"
@@ -137,7 +135,7 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 	}
 
 	// When we made it to this point, it's gone get ugly and inaccurate, as Safari and Chrome send almost identical
-	// user agents most of the time. But anyhting coming from Mac or iOS is most likely Safari, I guess...
+	// user agents most of the time. But anything coming from Mac or iOS is most likely Safari, I guess...
 	if (os == OSMac || os == OSiOS) && productSafari != "" {
 		browser = BrowserSafari
 		version = getSafariVersion(products, productSafari)
