@@ -6,18 +6,40 @@ import (
 )
 
 const (
-	BrowserChrome  = "Chrome"
-	BrowserFirefox = "Firefox"
-	BrowserSafari  = "Safari"
-	BrowserOpera   = "Opera"
-	BrowserEdge    = "Edge"
-	BrowserIE      = "IE"
+	// BrowserChrome represents the Chrome and Chromium browser.
+	BrowserChrome = "Chrome"
 
-	OSWindows       = "Windows"
-	OSMac           = "Mac"
-	OSLinux         = "Linux"
-	OSAndroid       = "Android"
-	OSiOS           = "iOS"
+	// BrowserFirefox represents the Firefox browser.
+	BrowserFirefox = "Firefox"
+
+	// BrowserSafari  represents the Safari browser.
+	BrowserSafari = "Safari"
+
+	// BrowserOpera represents the Opera browser.
+	BrowserOpera = "Opera"
+
+	// BrowserEdge represents the Edge browser.
+	BrowserEdge = "Edge"
+
+	// BrowserIE represents the Internet Explorer browser.
+	BrowserIE = "IE"
+
+	// OSWindows represents the Windows operating system.
+	OSWindows = "Windows"
+
+	// OSMac represents the Mac operating system.
+	OSMac = "Mac"
+
+	// OSLinux represents a Linux distribution.
+	OSLinux = "Linux"
+
+	// OSAndroid represents the Android operating system.
+	OSAndroid = "Android"
+
+	// OSiOS represents the iOS operating system.
+	OSiOS = "iOS"
+
+	// OSWindowsMobile represents the Windows Mobile operating system.
 	OSWindowsMobile = "Windows Mobile"
 
 	// used to parse the User-Agent header
