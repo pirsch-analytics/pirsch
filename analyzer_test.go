@@ -101,23 +101,6 @@ func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
 	testAnalyzerHourlyVisitorsFiltered(t, 1)
 }
 
-func TestAnalyzerValidateFilter(t *testing.T) {
-	for _, store := range testStorageBackends() {
-		analyzer := NewAnalyzer(store)
-		filter := analyzer.validateFilter(nil)
-
-		if filter == nil || !filter.From.Equal(pastDay(6)) || !filter.To.Equal(pastDay(0)) {
-			t.Fatalf("Filter not as expected: %v", filter)
-		}
-
-		filter = analyzer.validateFilter(&Filter{From: pastDay(2), To: pastDay(5)})
-
-		if filter == nil || !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
-			t.Fatalf("Filter not as expected: %v", filter)
-		}
-	}
-}
-
 func testAnalyzerVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
