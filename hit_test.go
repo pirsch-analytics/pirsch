@@ -27,6 +27,8 @@ func TestHitFromRequest(t *testing.T) {
 		hit.OSVersion.String != "10" ||
 		hit.Browser.String != BrowserChrome ||
 		hit.BrowserVersion.String != "84.0" ||
+		!hit.Desktop ||
+		hit.Mobile ||
 		hit.Time.IsZero() {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}

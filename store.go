@@ -40,6 +40,9 @@ type Store interface {
 	// SaveVisitorsPerBrowser persists unique visitors per day and browser.
 	SaveVisitorsPerBrowser(*VisitorsPerBrowser) error
 
+	// SaveVisitorPlatform persists visitors per platform and day.
+	SaveVisitorPlatform(*VisitorPlatform) error
+
 	// Days returns the days at least one hit exists for.
 	Days(sql.NullInt64) ([]time.Time, error)
 
@@ -63,6 +66,9 @@ type Store interface {
 
 	// CountVisitorsPerBrowserAndVersion returns the unique visitor count per browser, version and day.
 	CountVisitorsPerBrowserAndVersion(sql.NullInt64, time.Time) ([]VisitorsPerBrowser, error)
+
+	// CountVisitorPlatforms returns the unique visitor count per platform and day.
+	CountVisitorPlatforms(sql.NullInt64, time.Time) (*VisitorPlatform, error)
 
 	// Paths returns distinct paths for page visits.
 	// This does not include today.
@@ -137,4 +143,7 @@ type Store interface {
 
 	// VisitorsPerBrowser returns all visitors per browsers for given tenant ID sorted by days.
 	VisitorsPerBrowser(sql.NullInt64) []VisitorsPerBrowser
+
+	// VisitorPlatform returns all visitor platforms for given tenant ID sorted by days.
+	VisitorPlatform(sql.NullInt64) []VisitorPlatform
 }

@@ -29,6 +29,8 @@ type Hit struct {
 	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
 	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
 	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
+	Desktop        bool           `db:"desktop" json:"desktop"`
+	Mobile         bool           `db:"mobile" json:"mobile"`
 	Time           time.Time      `db:"time" json:"time"`
 }
 
@@ -110,6 +112,8 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
 		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
 		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
+		Desktop:        uaInfo.IsDesktop(),
+		Mobile:         uaInfo.IsMobile(),
 		Time:           now,
 	}
 }

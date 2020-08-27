@@ -23,6 +23,7 @@ func TestProcessor_Process(t *testing.T) {
 		checkReferrerCount(t, store, 0, 3, 2, 1)
 		checkOSCount(t, store, 0, 2, 1, 1, 1, 1)
 		checkBrowserCount(t, store, 0, 3, 1, 1, 1)
+		checkPlatformCount(t, store, 0, 3, 0, 0, 1, 1, 1)
 	}
 }
 
@@ -43,6 +44,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 		checkReferrerCount(t, store, 1, 3, 2, 1)
 		checkOSCount(t, store, 1, 2, 1, 1, 1, 1)
 		checkBrowserCount(t, store, 1, 3, 1, 1, 1)
+		checkPlatformCount(t, store, 1, 3, 0, 0, 1, 1, 1)
 	}
 }
 
@@ -64,6 +66,7 @@ func TestProcessor_ProcessSameDay(t *testing.T) {
 		checkReferrerCount(t, store, 0, 13+3, 2, 1)
 		checkOSCount(t, store, 0, 19+2, 1, 1, 1, 1)
 		checkBrowserCount(t, store, 0, 18+3, 1, 1, 1)
+		checkPlatformCount(t, store, 0, 29+3, 37, 4, 1, 1, 1)
 	}
 }
 
@@ -217,14 +220,27 @@ func checkBrowserCount(t *testing.T, store Store, tenantID int64, views1, views2
 	}
 }
 
+func checkPlatformCount(t *testing.T, store Store, tenantID int64, desktop1, mobile1, unknown1, desktop2, mobile2, unknown2 int) {
+	visitors := store.VisitorPlatform(NewTenantID(tenantID))
+
+	if len(visitors) != 2 {
+		t.Fatalf("Four visitor platforms must have been created, but was: %v", len(visitors))
+	}
+
+	if visitors[0].Desktop != desktop1 || visitors[0].Mobile != mobile1 || visitors[0].Unknown != unknown1 ||
+		visitors[1].Desktop != desktop2 || visitors[1].Mobile != mobile2 || visitors[1].Unknown != unknown2 {
+		t.Fatal("Platforms not as expected")
+	}
+}
+
 func createTestdata(t *testing.T, store Store, tenantID int64) {
 	cleanupDB(t)
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0")
-	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0")
-	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), OSMac, "10.15.3", BrowserChrome, "84.0")
-	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), OSWindows, "10", BrowserFirefox, "53.0")
-	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), OSLinux, "", BrowserFirefox, "54.0")
-	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), OSAndroid, "8.0", BrowserChrome, "84.0")
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), OSMac, "10.15.3", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), OSWindows, "10", BrowserFirefox, "53.0", true, false)
+	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), OSLinux, "", BrowserFirefox, "54.0", false, false)
+	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
 }
 
 func createTestDays(t *testing.T, store Store) {
@@ -297,9 +313,20 @@ func createTestDays(t *testing.T, store Store) {
 	if err := store.SaveVisitorsPerBrowser(&visitorsPerBrowser); err != nil {
 		t.Fatal(err)
 	}
+
+	visitorPlatforms := VisitorPlatform{
+		Day:     day(2020, 6, 21, 7),
+		Desktop: 29,
+		Mobile:  37,
+		Unknown: 4,
+	}
+
+	if err := store.SaveVisitorPlatform(&visitorPlatforms); err != nil {
+		t.Fatal(err)
+	}
 }
 
-func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string) {
+func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
 	hit := Hit{
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
@@ -311,6 +338,8 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		OSVersion:      sql.NullString{String: osVersion, Valid: osVersion != ""},
 		Browser:        sql.NullString{String: browser, Valid: browser != ""},
 		BrowserVersion: sql.NullString{String: browserVersion, Valid: browserVersion != ""},
+		Desktop:        desktop,
+		Mobile:         mobile,
 		Time:           time,
 	}
 

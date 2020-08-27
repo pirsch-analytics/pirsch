@@ -60,6 +60,10 @@ func (store *storeMock) SaveVisitorsPerBrowser(visitors *VisitorsPerBrowser) err
 	panic("implement me")
 }
 
+func (store *storeMock) SaveVisitorPlatform(*VisitorPlatform) error {
+	panic("implement me")
+}
+
 func (store *storeMock) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
@@ -89,6 +93,10 @@ func (store *storeMock) CountVisitorsPerOSAndVersion(tenantID sql.NullInt64, t t
 }
 
 func (store *storeMock) CountVisitorsPerBrowserAndVersion(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerBrowser, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorPlatforms(sql.NullInt64, time.Time) (*VisitorPlatform, error) {
 	panic("implement me")
 }
 
@@ -173,5 +181,9 @@ func (store *storeMock) VisitorsPerOS(tenantID sql.NullInt64) []VisitorsPerOS {
 }
 
 func (store *storeMock) VisitorsPerBrowser(tenantID sql.NullInt64) []VisitorsPerBrowser {
+	panic("implement me")
+}
+
+func (store *storeMock) VisitorPlatform(tenantID sql.NullInt64) []VisitorPlatform {
 	panic("implement me")
 }

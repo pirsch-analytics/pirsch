@@ -21,9 +21,9 @@ func NewPostgresStore(db *sql.DB) *PostgresStore {
 
 // Save implements the Store interface.
 func (store *PostgresStore) Save(hits []Hit) error {
-	args := make([]interface{}, 0, len(hits)*12)
+	args := make([]interface{}, 0, len(hits)*14)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, os, os_version, browser, browser_version, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
@@ -37,10 +37,12 @@ func (store *PostgresStore) Save(hits []Hit) error {
 		args = append(args, hit.OSVersion)
 		args = append(args, hit.Browser)
 		args = append(args, hit.BrowserVersion)
+		args = append(args, hit.Desktop)
+		args = append(args, hit.Mobile)
 		args = append(args, hit.Time)
-		index := i * 12
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12))
+		index := i * 14
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14))
 	}
 
 	queryStr := query.String()
@@ -232,6 +234,32 @@ func (store *PostgresStore) SaveVisitorsPerBrowser(visitors *VisitorsPerBrowser)
 	return nil
 }
 
+// SaveVisitorPlatform implements the Store interface.
+func (store *PostgresStore) SaveVisitorPlatform(visitors *VisitorPlatform) error {
+	day := new(VisitorPlatform)
+	err := store.DB.Get(day, `SELECT * FROM "visitor_platform" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2)`, visitors.TenantID, visitors.Day)
+
+	if err != nil {
+		rows, err := store.DB.NamedQuery(`INSERT INTO "visitor_platform" (tenant_id, day, desktop, mobile, unknown) VALUES (:tenant_id, :day, :desktop, :mobile, :unknown)`, visitors)
+
+		if err != nil {
+			return err
+		}
+
+		closeRows(rows)
+	} else {
+		day.Desktop += visitors.Desktop
+		day.Mobile += visitors.Mobile
+		day.Unknown += visitors.Unknown
+
+		if _, err := store.DB.NamedExec(`UPDATE "visitor_platform" SET desktop = :desktop, mobile = :mobile, unknown = :unknown WHERE id = :id`, day); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Days implements the Store interface.
 func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	var days []time.Time
@@ -374,6 +402,43 @@ func (store *PostgresStore) CountVisitorsPerBrowserAndVersion(tenantID sql.NullI
 	}
 
 	return visitors, nil
+}
+
+func (store *PostgresStore) CountVisitorPlatforms(tenantID sql.NullInt64, day time.Time) (*VisitorPlatform, error) {
+	query := `SELECT
+		(
+			SELECT COUNT(1) FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			AND desktop IS TRUE
+			AND mobile IS FALSE
+		) AS "desktop",
+		(
+			SELECT COUNT(1) FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			AND desktop IS FALSE
+			AND mobile IS TRUE
+		) AS "mobile",
+		(
+			SELECT COUNT(1) FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND time >= $2::timestamp
+			AND time < $2::timestamp + INTERVAL '1 day'
+			AND desktop IS FALSE
+			AND mobile IS FALSE
+		) AS "unknown",
+		$1 AS "tenant_id",
+		date($2) AS "day"`
+	platform := new(VisitorPlatform)
+
+	if err := store.DB.Get(platform, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return platform, nil
 }
 
 // Paths implements the Store interface.
@@ -749,6 +814,16 @@ func (store *PostgresStore) VisitorsPerBrowser(tenantID sql.NullInt64) []Visitor
 	var entities []VisitorsPerBrowser
 
 	if err := store.DB.Select(&entities, `SELECT * FROM "visitors_per_browser" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day" ASC, "visitors" DESC`, tenantID); err != nil {
+		return nil
+	}
+
+	return entities
+}
+
+func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64) []VisitorPlatform {
+	var entities []VisitorPlatform
+
+	if err := store.DB.Select(&entities, `SELECT * FROM "visitor_platform" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day" ASC`, tenantID); err != nil {
 		return nil
 	}
 

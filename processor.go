@@ -35,6 +35,10 @@ type ProcessorConfig struct {
 	// ProcessVisitorPerBrowser enables/disabled processing the visitor count per browser.
 	// The default is true (enabled).
 	ProcessVisitorPerBrowser bool
+
+	// ProcessPlatform enables/disabled processing the visitor platform.
+	// The default is true (enabled).
+	ProcessPlatform bool
 }
 
 // Processor processes hits to reduce them into meaningful statistics.
@@ -55,6 +59,7 @@ func NewProcessor(store Store, config *ProcessorConfig) *Processor {
 			ProcessVisitorPerReferrer: true,
 			ProcessVisitorPerOS:       true,
 			ProcessVisitorPerBrowser:  true,
+			ProcessPlatform:           true,
 		}
 	}
 
@@ -94,6 +99,7 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 		{processor.countVisitorPerReferrer, processor.config.ProcessVisitorPerReferrer},
 		{processor.countVisitorPerOS, processor.config.ProcessVisitorPerOS},
 		{processor.countVisitorPerBrowser, processor.config.ProcessVisitorPerBrowser},
+		{processor.countVisitorPlatform, processor.config.ProcessPlatform},
 	}
 
 	for _, day := range days {
@@ -260,4 +266,14 @@ func (processor *Processor) countVisitorPerBrowser(tenantID sql.NullInt64, day t
 	}
 
 	return nil
+}
+
+func (processor *Processor) countVisitorPlatform(tenantID sql.NullInt64, day time.Time) error {
+	platform, err := processor.store.CountVisitorPlatforms(tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	return processor.store.SaveVisitorPlatform(platform)
 }

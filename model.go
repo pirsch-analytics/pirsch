@@ -74,6 +74,16 @@ type VisitorsPerBrowser struct {
 	Visitors       int            `db:"visitors" json:"visitors"`
 }
 
+// VisitorPlatform is the visitor count per platform and day.
+type VisitorPlatform struct {
+	BaseEntity
+
+	Day     time.Time `db:"day" json:"day"`
+	Desktop int       `db:"desktop" json:"desktop"`
+	Mobile  int       `db:"mobile" json:"mobile"`
+	Unknown int       `db:"unknown" json:"unknown"`
+}
+
 // Stats bundles all statistics into a single object.
 // The meaning of the data depends on the context.
 // It's not persisted in the database.
