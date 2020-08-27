@@ -675,6 +675,46 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from time.Tim
 	return browser, nil
 }
 
+// VisitorPlatform implements the Store interface.
+func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from time.Time, to time.Time) (*Stats, error) {
+	query := `SELECT sum("desktop") "platform_desktop_visitors",
+				sum("mobile") "platform_mobile_visitors",
+				sum("unknown") "platform_unknown_visitors" FROM (
+				SELECT "desktop", "mobile", "unknown" FROM "visitor_platform"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				UNION
+				SELECT count(DISTINCT fingerprint) "desktop", 0 "mobile", 0 "unknown" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND "desktop" IS TRUE
+				AND "mobile" IS FALSE
+				UNION
+				SELECT 0 "desktop", count(DISTINCT fingerprint) "mobile", 0 "unknown" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND "desktop" IS FALSE
+				AND "mobile" IS TRUE
+				UNION
+				SELECT 0 "desktop", 0 "mobile", count(DISTINCT fingerprint) "unknown" FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND "desktop" IS FALSE
+				AND "mobile" IS FALSE
+			) AS results`
+	platforms := new(Stats)
+
+	if err := store.DB.Get(platforms, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return platforms, nil
+}
+
 // HourlyVisitors implements the Store interface.
 func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
@@ -820,7 +860,7 @@ func (store *PostgresStore) VisitorsPerBrowser(tenantID sql.NullInt64) []Visitor
 	return entities
 }
 
-func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64) []VisitorPlatform {
+func (store *PostgresStore) VisitorsPerPlatform(tenantID sql.NullInt64) []VisitorPlatform {
 	var entities []VisitorPlatform
 
 	if err := store.DB.Select(&entities, `SELECT * FROM "visitor_platform" WHERE ($1::bigint IS NULL OR tenant_id = $1) ORDER BY "day" ASC`, tenantID); err != nil {

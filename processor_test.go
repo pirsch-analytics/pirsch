@@ -221,7 +221,7 @@ func checkBrowserCount(t *testing.T, store Store, tenantID int64, views1, views2
 }
 
 func checkPlatformCount(t *testing.T, store Store, tenantID int64, desktop1, mobile1, unknown1, desktop2, mobile2, unknown2 int) {
-	visitors := store.VisitorPlatform(NewTenantID(tenantID))
+	visitors := store.VisitorsPerPlatform(NewTenantID(tenantID))
 
 	if len(visitors) != 2 {
 		t.Fatalf("Four visitor platforms must have been created, but was: %v", len(visitors))

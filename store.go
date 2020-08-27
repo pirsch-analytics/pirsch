@@ -110,6 +110,10 @@ type Store interface {
 	// It does include today.
 	VisitorBrowser(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
+	// VisitorPlatform returns the platform and unique visitor count for given time frame.
+	// It does include today.
+	VisitorPlatform(sql.NullInt64, time.Time, time.Time) (*Stats, error)
+
 	// HourlyVisitors returns unique visitors per hour for given time frame.
 	// It does include today.
 	HourlyVisitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
@@ -144,6 +148,6 @@ type Store interface {
 	// VisitorsPerBrowser returns all visitors per browsers for given tenant ID sorted by days.
 	VisitorsPerBrowser(sql.NullInt64) []VisitorsPerBrowser
 
-	// VisitorPlatform returns all visitor platforms for given tenant ID sorted by days.
-	VisitorPlatform(sql.NullInt64) []VisitorPlatform
+	// VisitorsPerPlatform returns all visitor platforms for given tenant ID sorted by days.
+	VisitorsPerPlatform(sql.NullInt64) []VisitorPlatform
 }

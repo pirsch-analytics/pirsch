@@ -81,6 +81,16 @@ func TestAnalyzerBrowserFiltered(t *testing.T) {
 	testAnalyzerBrowserFiltered(t, 1)
 }
 
+func TestAnalyzerPlatform(t *testing.T) {
+	testAnalyzerPlatform(t, 0)
+	testAnalyzerPlatform(t, 1)
+}
+
+func TestAnalyzerPlatformFiltered(t *testing.T) {
+	testAnalyzerPlatformFiltered(t, 0)
+	testAnalyzerPlatformFiltered(t, 1)
+}
+
 func TestAnalyzerHourlyVisitors(t *testing.T) {
 	testAnalyzerHourlyVisitors(t, 0)
 	testAnalyzerHourlyVisitors(t, 1)
@@ -360,9 +370,9 @@ func testAnalyzerLanguages(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of languages not as expected: %v", len(langs))
 		}
 
-		if langs[0].Language.String != "jp" || langs[0].Visitors != 53 || !about(langs[0].RelativeVisitors, 0.45) ||
-			langs[1].Language.String != "en" || langs[1].Visitors != 50 || !about(langs[1].RelativeVisitors, 0.42) ||
-			langs[2].Language.String != "de" || langs[2].Visitors != 14 || !about(langs[2].RelativeVisitors, 0.11) {
+		if langs[0].Language.String != "jp" || langs[0].Visitors != 53 || !inRange(langs[0].RelativeVisitors, 0.45) ||
+			langs[1].Language.String != "en" || langs[1].Visitors != 50 || !inRange(langs[1].RelativeVisitors, 0.42) ||
+			langs[2].Language.String != "de" || langs[2].Visitors != 14 || !inRange(langs[2].RelativeVisitors, 0.11) {
 			t.Fatalf("Languages not as expected: %v", langs)
 		}
 	}
@@ -391,8 +401,8 @@ func testAnalyzerLanguagesFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of languages not as expected: %v", len(langs))
 		}
 
-		if langs[0].Language.String != "jp" || langs[0].Visitors != 52 || !about(langs[0].RelativeVisitors, 0.8) ||
-			langs[1].Language.String != "de" || langs[1].Visitors != 13 || !about(langs[1].RelativeVisitors, 0.2) {
+		if langs[0].Language.String != "jp" || langs[0].Visitors != 52 || !inRange(langs[0].RelativeVisitors, 0.8) ||
+			langs[1].Language.String != "de" || langs[1].Visitors != 13 || !inRange(langs[1].RelativeVisitors, 0.2) {
 			t.Fatalf("Languages not as expected: %v", langs)
 		}
 	}
@@ -548,6 +558,62 @@ func testAnalyzerBrowserFiltered(t *testing.T, tenantID int64) {
 	}
 }
 
+func testAnalyzerPlatform(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		platform, err := analyzer.Platform(&Filter{
+			TenantID: NewTenantID(tenantID),
+		})
+
+		if err != nil {
+			t.Fatalf("Platform must be returned, but was:  %v", err)
+		}
+
+		if platform.PlatformDesktopVisitors != 33 ||
+			platform.PlatformMobileVisitors != 12 ||
+			platform.PlatformUnknownVisitors != 98 {
+			t.Fatalf("Platforms not as expected: %v", platform)
+		}
+
+		if !inRange(platform.PlatformDesktopRelative, 0.23) ||
+			!inRange(platform.PlatformMobileRelative, 0.08) ||
+			!inRange(platform.PlatformUnknownRelative, 0.68) {
+			t.Fatalf("Relative platform usage not as expected: %v", platform)
+		}
+	}
+}
+
+func testAnalyzerPlatformFiltered(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createAnalyzerTestdata(t, store, tenantID)
+		analyzer := NewAnalyzer(store)
+		platform, err := analyzer.Platform(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(3),
+			To:       pastDay(2),
+		})
+
+		if err != nil {
+			t.Fatalf("Platform must be returned, but was:  %v", err)
+		}
+
+		if platform.PlatformDesktopVisitors != 0 ||
+			platform.PlatformMobileVisitors != 11 ||
+			platform.PlatformUnknownVisitors != 97 {
+			t.Fatalf("Platforms not as expected: %v", platform)
+		}
+
+		if !inRange(platform.PlatformDesktopRelative, 0) ||
+			!inRange(platform.PlatformMobileRelative, 0.1) ||
+			!inRange(platform.PlatformUnknownRelative, 0.89) {
+			t.Fatalf("Relative platform usage not as expected: %v", platform)
+		}
+	}
+}
+
 func testAnalyzerHourlyVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
@@ -648,8 +714,8 @@ func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 }
 
 func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0), OSWindows, "10", BrowserChrome, "84.0", false, false)
-	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0), OSWindows, "10", BrowserChrome, "84.0", false, false)
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", pastDay(0), OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp2", "/foo", "De", "ua2", "ref2", pastDay(0), OSWindows, "10", BrowserChrome, "84.0", false, true)
 	createHit(t, store, tenantID, "fp3", "/bar", "jp", "ua3", "ref3", pastDay(0), OSMac, "10.14.3", BrowserSafari, "13.0", false, false)
 	createVisitorPerDay(t, store, tenantID, pastDay(1), 42)
 	createVisitorPerDay(t, store, tenantID, pastDay(2), 39)
@@ -672,6 +738,9 @@ func createAnalyzerTestdata(t *testing.T, store Store, tenantID int64) {
 	createVisitorPerBrowser(t, store, tenantID, pastDay(1), BrowserChrome, "84.0", 56)
 	createVisitorPerBrowser(t, store, tenantID, pastDay(2), BrowserChrome, "84.0", 66)
 	createVisitorPerBrowser(t, store, tenantID, pastDay(3), BrowserSafari, "13.0", 23)
+	createVisitorPlatform(t, store, tenantID, pastDay(1), 32, 0, 0)
+	createVisitorPlatform(t, store, tenantID, pastDay(2), 0, 11, 0)
+	createVisitorPlatform(t, store, tenantID, pastDay(3), 0, 0, 97)
 }
 
 func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Time, visitors int) {
@@ -765,6 +834,20 @@ func createVisitorPerBrowser(t *testing.T, store Store, tenantID int64, day time
 	}
 }
 
+func createVisitorPlatform(t *testing.T, store Store, tenantID int64, day time.Time, desktop, mobile, unknown int) {
+	visitor := VisitorPlatform{
+		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+		Day:        day,
+		Desktop:    desktop,
+		Mobile:     mobile,
+		Unknown:    unknown,
+	}
+
+	if err := store.SaveVisitorPlatform(&visitor); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
@@ -774,6 +857,6 @@ func equalDay(a, b time.Time) bool {
 	return a.Year() == b.Year() && a.Month() == b.Month() && a.Day() == b.Day()
 }
 
-func about(f, target float64) bool {
+func inRange(f, target float64) bool {
 	return f > target-0.01 && f < target+0.01
 }

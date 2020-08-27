@@ -140,6 +140,10 @@ func (store *storeMock) VisitorBrowser(tenantID sql.NullInt64, from time.Time, t
 	panic("implement me")
 }
 
+func (store *storeMock) VisitorPlatform(tenantID sql.NullInt64, from time.Time, to time.Time) (*Stats, error) {
+	panic("implement me")
+}
+
 func (store *storeMock) HourlyVisitors(tenantID sql.NullInt64, t time.Time, t2 time.Time) ([]Stats, error) {
 	panic("implement me")
 }
@@ -184,6 +188,6 @@ func (store *storeMock) VisitorsPerBrowser(tenantID sql.NullInt64) []VisitorsPer
 	panic("implement me")
 }
 
-func (store *storeMock) VisitorPlatform(tenantID sql.NullInt64) []VisitorPlatform {
+func (store *storeMock) VisitorsPerPlatform(tenantID sql.NullInt64) []VisitorPlatform {
 	panic("implement me")
 }

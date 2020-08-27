@@ -88,14 +88,20 @@ type VisitorPlatform struct {
 // The meaning of the data depends on the context.
 // It's not persisted in the database.
 type Stats struct {
-	Path                sql.NullString        `db:"path" json:"path,omitempty"`
-	Language            sql.NullString        `db:"language" json:"language,omitempty"`
-	Referrer            sql.NullString        `db:"ref" json:"referrer,omitempty"`
-	OS                  sql.NullString        `db:"os" json:"os,omitempty"`
-	Browser             sql.NullString        `db:"browser" json:"browser,omitempty"`
-	Hour                int                   `db:"hour" json:"hour,omitempty"`
-	Visitors            int                   `db:"visitors" json:"visitors,omitempty"`
-	RelativeVisitors    float64               `db:"-" json:"relative_visitors,omitempty"`
-	VisitorsPerDay      []VisitorsPerDay      `db:"-" json:"visitors_per_day,omitempty"`
-	VisitorsPerReferrer []VisitorsPerReferrer `db:"-" json:"visitors_per_referrer,omitempty"`
+	Path                    sql.NullString        `db:"path" json:"path,omitempty"`
+	Language                sql.NullString        `db:"language" json:"language,omitempty"`
+	Referrer                sql.NullString        `db:"ref" json:"referrer,omitempty"`
+	OS                      sql.NullString        `db:"os" json:"os,omitempty"`
+	Browser                 sql.NullString        `db:"browser" json:"browser,omitempty"`
+	Hour                    int                   `db:"hour" json:"hour,omitempty"`
+	Visitors                int                   `db:"visitors" json:"visitors,omitempty"`
+	PlatformDesktopVisitors int                   `db:"platform_desktop_visitors" json:"platform_desktop_visitors,omitempty"`
+	PlatformMobileVisitors  int                   `db:"platform_mobile_visitors" json:"platform_mobile_visitors,omitempty"`
+	PlatformUnknownVisitors int                   `db:"platform_unknown_visitors" json:"platform_unknown_visitors,omitempty"`
+	PlatformDesktopRelative float64               `db:"-" json:"platform_desktop_relative,omitempty"`
+	PlatformMobileRelative  float64               `db:"-" json:"platform_mobile_relative,omitempty"`
+	PlatformUnknownRelative float64               `db:"-" json:"platform_unknown_relative,omitempty"`
+	RelativeVisitors        float64               `db:"-" json:"relative_visitors,omitempty"`
+	VisitorsPerDay          []VisitorsPerDay      `db:"-" json:"visitors_per_day,omitempty"`
+	VisitorsPerReferrer     []VisitorsPerReferrer `db:"-" json:"visitors_per_referrer,omitempty"`
 }

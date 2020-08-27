@@ -258,6 +258,22 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]Stats, error) {
 	return browser, nil
 }
 
+// Platform returns the relative platform usage for given time frame.
+func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
+	filter = analyzer.validateFilter(filter)
+	platform, err := analyzer.store.VisitorPlatform(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sum := float64(platform.PlatformDesktopVisitors + platform.PlatformMobileVisitors + platform.PlatformUnknownVisitors)
+	platform.PlatformDesktopRelative = float64(platform.PlatformDesktopVisitors) / sum
+	platform.PlatformMobileRelative = float64(platform.PlatformMobileVisitors) / sum
+	platform.PlatformUnknownRelative = float64(platform.PlatformUnknownVisitors) / sum
+	return platform, nil
+}
+
 // HourlyVisitors returns the absolute and relative visitor count per language for given time frame.
 func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.validateFilter(filter)
