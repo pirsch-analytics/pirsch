@@ -475,8 +475,8 @@ func testAnalyzerOS(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of OS not as expected: %v", len(os))
 		}
 
-		if os[0].OS.String != OSWindows || os[0].Visitors != 125 ||
-			os[1].OS.String != OSMac || os[1].Visitors != 20 {
+		if os[0].OS.String != OSWindows || os[0].Visitors != 125 || !inRange(os[0].RelativeVisitors, 0.86) ||
+			os[1].OS.String != OSMac || os[1].Visitors != 20 || !inRange(os[1].RelativeVisitors, 0.13) {
 			t.Fatalf("OS not as expected: %v", os)
 		}
 	}
@@ -501,8 +501,8 @@ func testAnalyzerOSFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of OS not as expected: %v", len(os))
 		}
 
-		if os[0].OS.String != OSWindows || os[0].Visitors != 72 ||
-			os[1].OS.String != OSMac || os[1].Visitors != 19 {
+		if os[0].OS.String != OSWindows || os[0].Visitors != 72 || !inRange(os[0].RelativeVisitors, 0.79) ||
+			os[1].OS.String != OSMac || os[1].Visitors != 19 || !inRange(os[1].RelativeVisitors, 0.2) {
 			t.Fatalf("OS not as expected: %v", os)
 		}
 	}
@@ -525,8 +525,8 @@ func testAnalyzerBrowser(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of browser not as expected: %v", len(browser))
 		}
 
-		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 124 ||
-			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 24 {
+		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 124 || !inRange(browser[0].RelativeVisitors, 0.83) ||
+			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 24 || !inRange(browser[1].RelativeVisitors, 0.16) {
 			t.Fatalf("Browser not as expected: %v", browser)
 		}
 	}
@@ -551,8 +551,8 @@ func testAnalyzerBrowserFiltered(t *testing.T, tenantID int64) {
 			t.Fatalf("Number of browser not as expected: %v", len(browser))
 		}
 
-		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 66 ||
-			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 23 {
+		if browser[0].Browser.String != BrowserChrome || browser[0].Visitors != 66 || !inRange(browser[0].RelativeVisitors, 0.74) ||
+			browser[1].Browser.String != BrowserSafari || browser[1].Visitors != 23 || !inRange(browser[1].RelativeVisitors, 0.25) {
 			t.Fatalf("Browser not as expected: %v", browser)
 		}
 	}

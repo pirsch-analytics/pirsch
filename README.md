@@ -96,6 +96,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.4.1
+
+* added relative visitor statistics for OS and browser usage
+
 ### 1.4.0
 
 **You need to update the schema by running the `v1.4.0.sql` migration script!**

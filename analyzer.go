@@ -243,6 +243,16 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]Stats, error) {
 		return nil, err
 	}
 
+	sum := 0
+
+	for _, o := range os {
+		sum += o.Visitors
+	}
+
+	for i := range os {
+		os[i].RelativeVisitors = float64(os[i].Visitors) / float64(sum)
+	}
+
 	return os, nil
 }
 
@@ -253,6 +263,16 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]Stats, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	sum := 0
+
+	for _, b := range browser {
+		sum += b.Visitors
+	}
+
+	for i := range browser {
+		browser[i].RelativeVisitors = float64(browser[i].Visitors) / float64(sum)
 	}
 
 	return browser, nil
