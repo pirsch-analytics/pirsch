@@ -96,6 +96,16 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.4.0
+
+**You need to update the schema by running the `v1.4.0.sql` migration script!**
+
+* added parsing the User-Agent header to extract the OS, OS version, browser, and browser version
+* added OS, browser and platform statistics to Processor and Analyzer
+* Pirsch now uses a single struct for all statistics called `Stats`
+* fixed error channel size in Processor
+* a few smaller refactorings
+
 ### 1.3.3
 
 * fixed extracting Referer header
