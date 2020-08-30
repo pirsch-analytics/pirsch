@@ -35,12 +35,6 @@ func NewTenantID(id int64) sql.NullInt64 {
 	return sql.NullInt64{Int64: id, Valid: id > 0}
 }
 
-func panicOnErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func containsString(list []string, str string) bool {
 	for _, item := range list {
 		if item == str {

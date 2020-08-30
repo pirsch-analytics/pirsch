@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"log"
 	"time"
 )
@@ -10,7 +11,7 @@ import (
 // We test against real databases. To test all storage solutions, they must be installed an configured.
 func testStorageBackends() []Store {
 	return []Store{
-		NewPostgresStore(postgresDB),
+		NewPostgresStore(postgresDB, nil),
 	}
 }
 
@@ -28,39 +29,39 @@ func (store *storeMock) Save(hits []Hit) error {
 	return nil
 }
 
-func (store *storeMock) DeleteHitsByDay(tenantID sql.NullInt64, t time.Time) error {
+func (store *storeMock) DeleteHitsByDay(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerDay(day *VisitorsPerDay) error {
+func (store *storeMock) SaveVisitorsPerDay(tx *sqlx.Tx, day *VisitorsPerDay) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerHour(hour *VisitorsPerHour) error {
+func (store *storeMock) SaveVisitorsPerHour(tx *sqlx.Tx, hour *VisitorsPerHour) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerLanguage(language *VisitorsPerLanguage) error {
+func (store *storeMock) SaveVisitorsPerLanguage(tx *sqlx.Tx, language *VisitorsPerLanguage) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerPage(page *VisitorsPerPage) error {
+func (store *storeMock) SaveVisitorsPerPage(tx *sqlx.Tx, page *VisitorsPerPage) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerReferrer(page *VisitorsPerReferrer) error {
+func (store *storeMock) SaveVisitorsPerReferrer(tx *sqlx.Tx, page *VisitorsPerReferrer) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerOS(visitors *VisitorsPerOS) error {
+func (store *storeMock) SaveVisitorsPerOS(tx *sqlx.Tx, visitors *VisitorsPerOS) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorsPerBrowser(visitors *VisitorsPerBrowser) error {
+func (store *storeMock) SaveVisitorsPerBrowser(tx *sqlx.Tx, visitors *VisitorsPerBrowser) error {
 	panic("implement me")
 }
 
-func (store *storeMock) SaveVisitorPlatform(*VisitorPlatform) error {
+func (store *storeMock) SaveVisitorPlatform(tx *sqlx.Tx, visitors *VisitorPlatform) error {
 	panic("implement me")
 }
 
@@ -68,35 +69,35 @@ func (store *storeMock) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerDay(tenantID sql.NullInt64, t time.Time) (int, error) {
+func (store *storeMock) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) (int, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerDayAndHour(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerHour, error) {
+func (store *storeMock) CountVisitorsPerDayAndHour(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerHour, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerLanguage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerLanguage, error) {
+func (store *storeMock) CountVisitorsPerLanguage(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerLanguage, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerPage(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerPage, error) {
+func (store *storeMock) CountVisitorsPerPage(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerPage, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerReferrer(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerReferrer, error) {
+func (store *storeMock) CountVisitorsPerReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerReferrer, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerOSAndVersion(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerOS, error) {
+func (store *storeMock) CountVisitorsPerOSAndVersion(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerOS, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorsPerBrowserAndVersion(tenantID sql.NullInt64, t time.Time) ([]VisitorsPerBrowser, error) {
+func (store *storeMock) CountVisitorsPerBrowserAndVersion(tx *sqlx.Tx, tenantID sql.NullInt64, t time.Time) ([]VisitorsPerBrowser, error) {
 	panic("implement me")
 }
 
-func (store *storeMock) CountVisitorPlatforms(sql.NullInt64, time.Time) (*VisitorPlatform, error) {
+func (store *storeMock) CountVisitorPlatforms(tx *sqlx.Tx, tentantID sql.NullInt64, t time.Time) (*VisitorPlatform, error) {
 	panic("implement me")
 }
 
@@ -190,4 +191,27 @@ func (store *storeMock) VisitorsPerBrowser(tenantID sql.NullInt64) []VisitorsPer
 
 func (store *storeMock) VisitorsPerPlatform(tenantID sql.NullInt64) []VisitorPlatform {
 	panic("implement me")
+}
+
+func (store *storeMock) NewTx() *sqlx.Tx {
+	/*tx, err := store.DB.Beginx()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return tx*/
+	return nil
+}
+
+func (store *storeMock) Commit(tx *sqlx.Tx) {
+	if err := tx.Commit(); err != nil {
+		panic(err)
+	}
+}
+
+func (store *storeMock) Rollback(tx *sqlx.Tx) {
+	if err := tx.Rollback(); err != nil {
+		panic(err)
+	}
 }

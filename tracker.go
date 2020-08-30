@@ -2,7 +2,9 @@ package pirsch
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 )
@@ -32,6 +34,10 @@ type TrackerConfig struct {
 
 	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
+
+	// Logger is the log.Logger used for logging.
+	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
+	Logger *log.Logger
 }
 
 func (config *TrackerConfig) validate() {
@@ -46,11 +52,15 @@ func (config *TrackerConfig) validate() {
 	if config.WorkerTimeout <= 0 {
 		config.WorkerTimeout = defaultWorkerTimeout
 	}
+
+	if config.Logger == nil {
+		config.Logger = log.New(os.Stdout, logPrefix, log.LstdFlags)
+	}
 }
 
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
-// It panics in case it cannot store requests into the configured store.
+// Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
 	salt                                      string
@@ -62,6 +72,7 @@ type Tracker struct {
 	workerDone                                chan bool
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
+	logger                                    *log.Logger
 }
 
 // NewTracker creates a new tracker for given store, salt and config.
@@ -69,7 +80,7 @@ type Tracker struct {
 // The salt is mandatory.
 func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 	if config == nil {
-		config = &TrackerConfig{}
+		config = &TrackerConfig{} // the default values are set by validate
 	}
 
 	config.validate()
@@ -83,6 +94,7 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
+		logger: config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -139,17 +151,25 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 			hits = append(hits, hit)
 
 			if len(hits) == tracker.workerBufferSize {
-				panicOnErr(tracker.store.Save(hits))
+				if err := tracker.store.Save(hits); err != nil {
+					tracker.logger.Printf("error saving hits: %s", err)
+				}
+
 				hits = hits[:0]
 			}
 		case <-time.After(tracker.workerTimeout):
 			if len(hits) > 0 {
-				panicOnErr(tracker.store.Save(hits))
+				if err := tracker.store.Save(hits); err != nil {
+					tracker.logger.Printf("error saving hits: %s", err)
+				}
+
 				hits = hits[:0]
 			}
 		case <-ctx.Done():
 			if len(hits) > 0 {
-				panicOnErr(tracker.store.Save(hits))
+				if err := tracker.store.Save(hits); err != nil {
+					tracker.logger.Printf("error saving hits: %s", err)
+				}
 			}
 
 			tracker.workerDone <- true

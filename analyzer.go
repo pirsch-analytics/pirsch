@@ -28,7 +28,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	today := today()
 
 	if today.Equal(filter.To) {
-		visitorsToday, err := analyzer.store.CountVisitorsPerDay(filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsPerDay(nil, filter.TenantID, today)
 
 		if err != nil {
 			return nil, err
@@ -72,7 +72,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 	today := today()
 
 	if today.Equal(filter.To) {
-		pageVisitsToday, err := analyzer.store.CountVisitorsPerPage(filter.TenantID, today)
+		pageVisitsToday, err := analyzer.store.CountVisitorsPerPage(nil, filter.TenantID, today)
 
 		if err != nil {
 			return nil, err
@@ -144,7 +144,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 	today := today()
 
 	if today.Equal(filter.To) {
-		referrerVisitsToday, err := analyzer.store.CountVisitorsPerReferrer(filter.TenantID, today)
+		referrerVisitsToday, err := analyzer.store.CountVisitorsPerReferrer(nil, filter.TenantID, today)
 
 		if err != nil {
 			return nil, err

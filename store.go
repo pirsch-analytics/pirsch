@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"time"
 )
 
@@ -17,58 +18,58 @@ type Store interface {
 	Save([]Hit) error
 
 	// DeleteHitsByDay deletes all hits on given day.
-	DeleteHitsByDay(sql.NullInt64, time.Time) error
+	DeleteHitsByDay(*sqlx.Tx, sql.NullInt64, time.Time) error
 
 	// SaveVisitorsPerDay persists unique visitors per day.
-	SaveVisitorsPerDay(*VisitorsPerDay) error
+	SaveVisitorsPerDay(*sqlx.Tx, *VisitorsPerDay) error
 
 	// SaveVisitorsPerHour persists unique visitors per day and hour.
-	SaveVisitorsPerHour(*VisitorsPerHour) error
+	SaveVisitorsPerHour(*sqlx.Tx, *VisitorsPerHour) error
 
 	// SaveVisitorsPerLanguage persists unique visitors per day and language.
-	SaveVisitorsPerLanguage(*VisitorsPerLanguage) error
+	SaveVisitorsPerLanguage(*sqlx.Tx, *VisitorsPerLanguage) error
 
 	// SaveVisitorsPerPage persists unique visitors per day and page.
-	SaveVisitorsPerPage(*VisitorsPerPage) error
+	SaveVisitorsPerPage(*sqlx.Tx, *VisitorsPerPage) error
 
 	// SaveVisitorsPerReferrer persists unique visitors per day and referrer.
-	SaveVisitorsPerReferrer(*VisitorsPerReferrer) error
+	SaveVisitorsPerReferrer(*sqlx.Tx, *VisitorsPerReferrer) error
 
 	// SaveVisitorsPerOS persists unique visitors per day and operating system.
-	SaveVisitorsPerOS(*VisitorsPerOS) error
+	SaveVisitorsPerOS(*sqlx.Tx, *VisitorsPerOS) error
 
 	// SaveVisitorsPerBrowser persists unique visitors per day and browser.
-	SaveVisitorsPerBrowser(*VisitorsPerBrowser) error
+	SaveVisitorsPerBrowser(*sqlx.Tx, *VisitorsPerBrowser) error
 
 	// SaveVisitorPlatform persists visitors per platform and day.
-	SaveVisitorPlatform(*VisitorPlatform) error
+	SaveVisitorPlatform(*sqlx.Tx, *VisitorPlatform) error
 
 	// Days returns the days at least one hit exists for.
 	Days(sql.NullInt64) ([]time.Time, error)
 
 	// CountVisitorsPerDay returns the unique visitor count for per day.
-	CountVisitorsPerDay(sql.NullInt64, time.Time) (int, error)
+	CountVisitorsPerDay(*sqlx.Tx, sql.NullInt64, time.Time) (int, error)
 
 	// CountVisitorsPerDayAndHour returns the unique visitor count per day and hour.
-	CountVisitorsPerDayAndHour(sql.NullInt64, time.Time) ([]VisitorsPerHour, error)
+	CountVisitorsPerDayAndHour(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerHour, error)
 
 	// CountVisitorsPerLanguage returns the unique visitor count per language and day.
-	CountVisitorsPerLanguage(sql.NullInt64, time.Time) ([]VisitorsPerLanguage, error)
+	CountVisitorsPerLanguage(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerLanguage, error)
 
 	// CountVisitorsPerPage returns the unique visitor count per page and day.
-	CountVisitorsPerPage(sql.NullInt64, time.Time) ([]VisitorsPerPage, error)
+	CountVisitorsPerPage(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerPage, error)
 
 	// CountVisitorsPerReferrer returns the unique visitor count per referrer and day.
-	CountVisitorsPerReferrer(sql.NullInt64, time.Time) ([]VisitorsPerReferrer, error)
+	CountVisitorsPerReferrer(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerReferrer, error)
 
 	// CountVisitorsPerOSAndVersion returns the unique visitor count per operating system, version and day.
-	CountVisitorsPerOSAndVersion(sql.NullInt64, time.Time) ([]VisitorsPerOS, error)
+	CountVisitorsPerOSAndVersion(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerOS, error)
 
 	// CountVisitorsPerBrowserAndVersion returns the unique visitor count per browser, version and day.
-	CountVisitorsPerBrowserAndVersion(sql.NullInt64, time.Time) ([]VisitorsPerBrowser, error)
+	CountVisitorsPerBrowserAndVersion(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerBrowser, error)
 
 	// CountVisitorPlatforms returns the unique visitor count per platform and day.
-	CountVisitorPlatforms(sql.NullInt64, time.Time) (*VisitorPlatform, error)
+	CountVisitorPlatforms(*sqlx.Tx, sql.NullInt64, time.Time) (*VisitorPlatform, error)
 
 	// Paths returns distinct paths for page visits.
 	// This does not include today.
@@ -150,4 +151,10 @@ type Store interface {
 
 	// VisitorsPerPlatform returns all visitor platforms for given tenant ID sorted by days.
 	VisitorsPerPlatform(sql.NullInt64) []VisitorPlatform
+
+	NewTx() *sqlx.Tx
+
+	Commit(*sqlx.Tx)
+
+	Rollback(*sqlx.Tx)
 }

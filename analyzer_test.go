@@ -750,7 +750,7 @@ func createVisitorPerDay(t *testing.T, store Store, tenantID int64, day time.Tim
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerDay(&visitor); err != nil {
+	if err := store.SaveVisitorsPerDay(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -763,7 +763,7 @@ func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Ti
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerPage(&visitor); err != nil {
+	if err := store.SaveVisitorsPerPage(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -776,7 +776,7 @@ func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day tim
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerReferrer(&visitor); err != nil {
+	if err := store.SaveVisitorsPerReferrer(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -789,7 +789,7 @@ func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day tim
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerLanguage(&visitor); err != nil {
+	if err := store.SaveVisitorsPerLanguage(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -801,7 +801,7 @@ func createVisitorPerHour(t *testing.T, store Store, tenantID int64, dayAndHour 
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerHour(&visitor); err != nil {
+	if err := store.SaveVisitorsPerHour(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -815,7 +815,7 @@ func createVisitorPerOS(t *testing.T, store Store, tenantID int64, day time.Time
 		Visitors:   visitors,
 	}
 
-	if err := store.SaveVisitorsPerOS(&visitor); err != nil {
+	if err := store.SaveVisitorsPerOS(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -829,7 +829,7 @@ func createVisitorPerBrowser(t *testing.T, store Store, tenantID int64, day time
 		Visitors:       visitors,
 	}
 
-	if err := store.SaveVisitorsPerBrowser(&visitor); err != nil {
+	if err := store.SaveVisitorsPerBrowser(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -843,7 +843,7 @@ func createVisitorPlatform(t *testing.T, store Store, tenantID int64, day time.T
 		Unknown:    unknown,
 	}
 
-	if err := store.SaveVisitorPlatform(&visitor); err != nil {
+	if err := store.SaveVisitorPlatform(nil, &visitor); err != nil {
 		t.Fatal(err)
 	}
 }

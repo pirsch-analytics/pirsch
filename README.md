@@ -99,6 +99,9 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 ### 1.4.2
 
 * fixed null fields in model
+* fixed counting visitors multiple times (by using a transaction to rollback changes in case the processor fails)
+* added optional log.Logger to Tracker and PostgresStore
+* removed all panics and log errors instead
 
 ### 1.4.1
 

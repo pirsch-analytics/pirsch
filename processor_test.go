@@ -249,7 +249,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors: 42,
 	}
 
-	if err := store.SaveVisitorsPerDay(&visitorsPerDay); err != nil {
+	if err := store.SaveVisitorsPerDay(nil, &visitorsPerDay); err != nil {
 		t.Fatal(err)
 	}
 
@@ -258,7 +258,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors:   31,
 	}
 
-	if err := store.SaveVisitorsPerHour(&visitorsPerHour); err != nil {
+	if err := store.SaveVisitorsPerHour(nil, &visitorsPerHour); err != nil {
 		t.Fatal(err)
 	}
 
@@ -268,7 +268,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors: 7,
 	}
 
-	if err := store.SaveVisitorsPerLanguage(&visitorsPerLanguage); err != nil {
+	if err := store.SaveVisitorsPerLanguage(nil, &visitorsPerLanguage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -278,7 +278,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors: 66,
 	}
 
-	if err := store.SaveVisitorsPerPage(&visitorsPerPage); err != nil {
+	if err := store.SaveVisitorsPerPage(nil, &visitorsPerPage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -288,7 +288,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors: 13,
 	}
 
-	if err := store.SaveVisitorsPerReferrer(&visitorsPerReferrer); err != nil {
+	if err := store.SaveVisitorsPerReferrer(nil, &visitorsPerReferrer); err != nil {
 		t.Fatal(err)
 	}
 
@@ -299,7 +299,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors:  19,
 	}
 
-	if err := store.SaveVisitorsPerOS(&visitorsPerOS); err != nil {
+	if err := store.SaveVisitorsPerOS(nil, &visitorsPerOS); err != nil {
 		t.Fatal(err)
 	}
 
@@ -310,7 +310,7 @@ func createTestDays(t *testing.T, store Store) {
 		Visitors:       18,
 	}
 
-	if err := store.SaveVisitorsPerBrowser(&visitorsPerBrowser); err != nil {
+	if err := store.SaveVisitorsPerBrowser(nil, &visitorsPerBrowser); err != nil {
 		t.Fatal(err)
 	}
 
@@ -321,7 +321,7 @@ func createTestDays(t *testing.T, store Store) {
 		Unknown: 4,
 	}
 
-	if err := store.SaveVisitorPlatform(&visitorPlatforms); err != nil {
+	if err := store.SaveVisitorPlatform(nil, &visitorPlatforms); err != nil {
 		t.Fatal(err)
 	}
 }
