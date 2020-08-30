@@ -759,7 +759,7 @@ func createVisitorPerPage(t *testing.T, store Store, tenantID int64, day time.Ti
 	visitor := VisitorsPerPage{
 		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 		Day:        day,
-		Path:       path,
+		Path:       sql.NullString{String: path, Valid: path != ""},
 		Visitors:   visitors,
 	}
 
@@ -772,7 +772,7 @@ func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day tim
 	visitor := VisitorsPerReferrer{
 		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 		Day:        day,
-		Ref:        referrer,
+		Ref:        sql.NullString{String: referrer, Valid: referrer != ""},
 		Visitors:   visitors,
 	}
 
@@ -785,7 +785,7 @@ func createVisitorPerLanguage(t *testing.T, store Store, tenantID int64, day tim
 	visitor := VisitorsPerLanguage{
 		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 		Day:        day,
-		Language:   lang,
+		Language:   sql.NullString{String: lang, Valid: lang != ""},
 		Visitors:   visitors,
 	}
 

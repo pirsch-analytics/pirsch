@@ -96,6 +96,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.4.2
+
+* fixed null fields in model
+
 ### 1.4.1
 
 * added relative visitor statistics for OS and browser usage

@@ -83,7 +83,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 			found := false
 
 			for _, visit := range pageVisits {
-				if visitToday.Path == visit.Path.String {
+				if visitToday.Path.String == visit.Path.String {
 					visit.VisitorsPerDay[len(visit.VisitorsPerDay)-1].Visitors = visitToday.Visitors
 					found = true
 					break
@@ -100,7 +100,7 @@ func (analyzer *Analyzer) PageVisits(filter *Filter) ([]Stats, error) {
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
 				pageVisits = append(pageVisits, Stats{
-					Path:           sql.NullString{String: visitToday.Path, Valid: true},
+					Path:           visitToday.Path,
 					VisitorsPerDay: visits,
 				})
 			}
@@ -155,7 +155,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 			found := false
 
 			for _, visit := range referrerVisits {
-				if visitToday.Ref == visit.Referrer.String {
+				if visitToday.Ref.String == visit.Referrer.String {
 					visit.VisitorsPerReferrer[len(visit.VisitorsPerReferrer)-1].Visitors = visitToday.Visitors
 					found = true
 					break
@@ -172,7 +172,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
 				referrerVisits = append(referrerVisits, Stats{
-					Referrer:            sql.NullString{String: visitToday.Ref, Valid: true},
+					Referrer:            visitToday.Ref,
 					VisitorsPerReferrer: visits,
 				})
 			}

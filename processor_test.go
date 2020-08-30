@@ -117,10 +117,10 @@ func checkLanguageCount(t *testing.T, store Store, tenantID int64, lang1, lang2,
 		t.Fatalf("Four visitors per language must have been created, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Language != "de" ||
-		visitors[1].Language != "en" ||
-		visitors[2].Language != "en" ||
-		visitors[3].Language != "jp" {
+	if visitors[0].Language.String != "de" ||
+		visitors[1].Language.String != "en" ||
+		visitors[2].Language.String != "en" ||
+		visitors[3].Language.String != "jp" {
 		t.Fatal("Languages not as expected")
 	}
 
@@ -139,10 +139,10 @@ func checkPageViewCount(t *testing.T, store Store, tenantID int64, path1, path2,
 		t.Fatalf("Four visitors per page must have been created, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Path != path1 ||
-		visitors[1].Path != path2 ||
-		visitors[2].Path != path3 ||
-		visitors[3].Path != path4 {
+	if visitors[0].Path.String != path1 ||
+		visitors[1].Path.String != path2 ||
+		visitors[2].Path.String != path3 ||
+		visitors[3].Path.String != path4 {
 		t.Fatal("Paths not as expected")
 	}
 
@@ -161,9 +161,9 @@ func checkReferrerCount(t *testing.T, store Store, tenantID int64, views1, views
 		t.Fatalf("Three visitors per referrer must have been created, but was: %v", len(visitors))
 	}
 
-	if visitors[0].Ref != "ref1" ||
-		visitors[1].Ref != "ref2" ||
-		visitors[2].Ref != "ref3" {
+	if visitors[0].Ref.String != "ref1" ||
+		visitors[1].Ref.String != "ref2" ||
+		visitors[2].Ref.String != "ref3" {
 		t.Fatal("Referrer not as expected")
 	}
 
@@ -264,7 +264,7 @@ func createTestDays(t *testing.T, store Store) {
 
 	visitorsPerLanguage := VisitorsPerLanguage{
 		Day:      day(2020, 6, 21, 5),
-		Language: "en",
+		Language: sql.NullString{String: "en", Valid: true},
 		Visitors: 7,
 	}
 
@@ -274,7 +274,7 @@ func createTestDays(t *testing.T, store Store) {
 
 	visitorsPerPage := VisitorsPerPage{
 		Day:      day(2020, 6, 22, 5),
-		Path:     "/different-page",
+		Path:     sql.NullString{String: "/different-page", Valid: true},
 		Visitors: 66,
 	}
 
@@ -284,7 +284,7 @@ func createTestDays(t *testing.T, store Store) {
 
 	visitorsPerReferrer := VisitorsPerReferrer{
 		Day:      day(2020, 6, 21, 7),
-		Ref:      "ref1",
+		Ref:      sql.NullString{String: "ref1", Valid: true},
 		Visitors: 13,
 	}
 

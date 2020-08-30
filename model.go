@@ -31,27 +31,27 @@ type VisitorsPerHour struct {
 type VisitorsPerLanguage struct {
 	BaseEntity
 
-	Day      time.Time `db:"day" json:"day"`
-	Language string    `db:"language" json:"language"`
-	Visitors int       `db:"visitors" json:"visitors"`
+	Day      time.Time      `db:"day" json:"day"`
+	Language sql.NullString `db:"language" json:"language"`
+	Visitors int            `db:"visitors" json:"visitors"`
 }
 
 // VisitorsPerPage is the unique visitor count per path and day.
 type VisitorsPerPage struct {
 	BaseEntity
 
-	Day      time.Time `db:"day" json:"day"`
-	Path     string    `db:"path" json:"path"`
-	Visitors int       `db:"visitors" json:"visitors"`
+	Day      time.Time      `db:"day" json:"day"`
+	Path     sql.NullString `db:"path" json:"path"`
+	Visitors int            `db:"visitors" json:"visitors"`
 }
 
 // VisitorsPerReferrer is the unique visitor count per referrer and day.
 type VisitorsPerReferrer struct {
 	BaseEntity
 
-	Day      time.Time `db:"day" json:"day"`
-	Ref      string    `db:"ref" json:"ref"`
-	Visitors int       `db:"visitors" json:"visitors"`
+	Day      time.Time      `db:"day" json:"day"`
+	Ref      sql.NullString `db:"ref" json:"ref"`
+	Visitors int            `db:"visitors" json:"visitors"`
 }
 
 // VisitorsPerOS is the unique visitor count per operating system and day.
