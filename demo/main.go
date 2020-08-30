@@ -20,9 +20,9 @@ func main() {
 	}
 
 	// create a new tracker and processor using postgres as its data store
-	store := pirsch.NewPostgresStore(db)
+	store := pirsch.NewPostgresStore(db, nil)
 	tracker := pirsch.NewTracker(store, "salt", nil)
-	processor := pirsch.NewProcessor(store)
+	processor := pirsch.NewProcessor(store, nil)
 	pirsch.RunAtMidnight(func() {
 		if err := processor.Process(); err != nil {
 			panic(err)
