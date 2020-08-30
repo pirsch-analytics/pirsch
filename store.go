@@ -152,9 +152,12 @@ type Store interface {
 	// VisitorsPerPlatform returns all visitor platforms for given tenant ID sorted by days.
 	VisitorsPerPlatform(sql.NullInt64) []VisitorPlatform
 
+	// NewTx creates a new transaction and panic on failure.
 	NewTx() *sqlx.Tx
 
+	// Commit commits given transaction and logs the error.
 	Commit(*sqlx.Tx)
 
+	// Rollback rolls back given transaction and logs the error.
 	Rollback(*sqlx.Tx)
 }

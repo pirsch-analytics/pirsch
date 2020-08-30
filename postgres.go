@@ -988,6 +988,7 @@ func (store *PostgresStore) VisitorsPerPlatform(tenantID sql.NullInt64) []Visito
 	return entities
 }
 
+// NewTx implements the Store interface.
 func (store *PostgresStore) NewTx() *sqlx.Tx {
 	tx, err := store.DB.Beginx()
 
@@ -998,12 +999,14 @@ func (store *PostgresStore) NewTx() *sqlx.Tx {
 	return tx
 }
 
+// Commit implements the Store interface.
 func (store *PostgresStore) Commit(tx *sqlx.Tx) {
 	if err := tx.Commit(); err != nil {
 		store.logger.Printf("error committing transaction: %s", err)
 	}
 }
 
+// Rollback implements the Store interface.
 func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 	if err := tx.Rollback(); err != nil {
 		store.logger.Printf("error rolling back transaction: %s", err)
