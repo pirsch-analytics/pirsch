@@ -6,3 +6,4 @@ SET search_path TO public;
 \i /go/src/github.com/emvi/pirsch/schema/postgres/v1.3.0.sql
 \i /go/src/github.com/emvi/pirsch/schema/postgres/v1.3.2.sql
 \i /go/src/github.com/emvi/pirsch/schema/postgres/v1.4.0.sql
+\i /go/src/github.com/emvi/pirsch/schema/postgres/v1.4.3.sql

@@ -96,6 +96,12 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.4.3
+
+**You need to update the schema by running the `v1.4.3.sql` migration script!**
+
+* fixed saving processed data
+
 ### 1.4.2
 
 * fixed null fields in model
