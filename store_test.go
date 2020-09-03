@@ -80,3 +80,27 @@ func (store *storeMock) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
 func (store *storeMock) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) error {
 	panic("implement me")
 }
+
+func (store *storeMock) CountVisitorsByPath(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]VisitorStats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorsByPathAndHour(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]VisitorTimeStats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorsByPathAndLanguage(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]LanguageStats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorsByPathAndReferrer(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]ReferrerStats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorsByPathAndOS(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]OSStats, error) {
+	panic("implement me")
+}
+
+func (store *storeMock) CountVisitorsByPathAndBrowser(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]BrowserStats, error) {
+	panic("implement me")
+}

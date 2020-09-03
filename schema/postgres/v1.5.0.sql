@@ -1,5 +1,3 @@
--- TODO data migration
-
 CREATE TABLE "visitor_stats" (
     id bigint NOT NULL UNIQUE,
     tenant_id bigint,
