@@ -2,235 +2,218 @@ package pirsch
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"testing"
 	"time"
 )
 
-/*
 func TestProcessor_Process(t *testing.T) {
-	for _, store := range testStorageBackends() {
-		createTestdata(t, store, 0)
-		processor := NewProcessor(store, nil)
-
-		if err := processor.Process(); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
-		}
-
-		checkHits(t, store, 0)
-		checkVisitorCount(t, store, 0, 3, 3)
-		checkVisitorCountHour(t, store, 0, 2, 1, 2, 1)
-		checkLanguageCount(t, store, 0, 1, 2, 2, 1)
-		checkPageViewCount(t, store, 0, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
-		checkReferrerCount(t, store, 0, 3, 2, 1)
-		checkOSCount(t, store, 0, 2, 1, 1, 1, 1)
-		checkBrowserCount(t, store, 0, 3, 1, 1, 1)
-		checkPlatformCount(t, store, 0, 3, 0, 0, 1, 1, 1)
-	}
+	testProcess(t, 0)
 }
 
 func TestProcessor_ProcessTenant(t *testing.T) {
+	testProcess(t, 1)
+}
+
+func testProcess(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
-		createTestdata(t, store, 1)
+		createTestdata(t, store, tenantID)
 		processor := NewProcessor(store, nil)
 
-		if err := processor.ProcessTenant(NewTenantID(1)); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
+		if tenantID == 0 {
+			if err := processor.Process(); err != nil {
+				t.Fatalf("Data must have been processed, but was: %v", err)
+			}
+		} else {
+			if err := processor.ProcessTenant(sql.NullInt64{Int64: tenantID, Valid: true}); err != nil {
+				t.Fatalf("Data must have been processed, but was: %v", err)
+			}
 		}
 
-		checkHits(t, store, 1)
-		checkVisitorCount(t, store, 1, 3, 3)
-		checkVisitorCountHour(t, store, 1, 2, 1, 2, 1)
-		checkLanguageCount(t, store, 1, 1, 2, 2, 1)
-		checkPageViewCount(t, store, 1, "/", "/page", "/", "/different-page", 2, 1, 2, 1)
-		checkReferrerCount(t, store, 1, 3, 2, 1)
-		checkOSCount(t, store, 1, 2, 1, 1, 1, 1)
-		checkBrowserCount(t, store, 1, 3, 1, 1, 1)
-		checkPlatformCount(t, store, 1, 3, 0, 0, 1, 1, 1)
+		checkHits(t, tenantID)
+		checkVisitorStats(t, tenantID)
+		checkVisitorTimeStats(t, tenantID)
+		checkLanguageStats(t, tenantID)
+		checkReferrerStats(t, tenantID)
+		checkOSStats(t, tenantID)
+		checkBrowserStats(t, tenantID)
 	}
 }
 
-func TestProcessor_ProcessSameDay(t *testing.T) {
-	for _, store := range testStorageBackends() {
-		createTestdata(t, store, 0)
-		createTestDays(t, store)
-		processor := NewProcessor(store, nil)
+func checkHits(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	count := 1
 
-		if err := processor.Process(); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
+	if tenantID != 0 {
+		if err := db.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE tenant_id = $1`, tenantID); err != nil {
+			t.Fatal(err)
 		}
+	} else {
+		if err := db.Get(&count, `SELECT COUNT(1) FROM "hit"`); err != nil {
+			t.Fatal(err)
+		}
+	}
 
-		checkHits(t, store, 0)
-		checkVisitorCount(t, store, 0, 42+3, 3)
-		checkVisitorCountHour(t, store, 0, 2, 1, 31+2, 1)
-		checkLanguageCount(t, store, 0, 1, 7+2, 2, 1)
-		checkPageViewCount(t, store, 0, "/", "/page", "/different-page", "/", 2, 1, 66+1, 2)
-		checkReferrerCount(t, store, 0, 13+3, 2, 1)
-		checkOSCount(t, store, 0, 19+2, 1, 1, 1, 1)
-		checkBrowserCount(t, store, 0, 18+3, 1, 1, 1)
-		checkPlatformCount(t, store, 0, 29+3, 37, 4, 1, 1, 1)
+	if count != 0 {
+		t.Fatalf("Hits must have been cleaned up, but was: %v", count)
 	}
 }
 
-func checkHits(t *testing.T, store Store, tenantID int64) {
-	if count := store.CountHits(NewTenantID(tenantID)); count != 0 {
-		t.Fatalf("Hits must have been cleaned up after processing days, but was: %v", count)
+func checkVisitorStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []VisitorStats
+
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE tenant_id = $1 ORDER BY "day", "path"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if len(stats) != 4 {
+		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
+	}
+
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].PlatformDesktop != 2 || stats[0].PlatformMobile != 0 || stats[0].PlatformUnknown != 0 ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].PlatformDesktop != 1 || stats[1].PlatformMobile != 0 || stats[1].PlatformUnknown != 0 ||
+		stats[2].Path != "/" || stats[2].Visitors != 2 || stats[2].PlatformDesktop != 1 || stats[2].PlatformMobile != 0 || stats[2].PlatformUnknown != 1 ||
+		stats[3].Path != "/different-page" || stats[3].Visitors != 1 || stats[3].PlatformDesktop != 0 || stats[3].PlatformMobile != 1 || stats[3].PlatformUnknown != 0 {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
-func checkVisitorCount(t *testing.T, store Store, tenantID int64, day1, day2 int) {
-	visitors := store.VisitorsPerDay(NewTenantID(tenantID))
+func checkVisitorTimeStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []VisitorTimeStats
 
-	if len(visitors) != 2 {
-		t.Fatalf("Two visitors per day must have been created, but was: %v", len(visitors))
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "hour"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "path", "hour"`); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if visitors[0].Visitors != day1 || visitors[1].Visitors != day2 {
-		t.Fatal("Visitors not as expected")
-	}
-}
-
-func checkVisitorCountHour(t *testing.T, store Store, tenantID int64, hour1, hour2, hour3, hour4 int) {
-	visitors := store.VisitorsPerHour(NewTenantID(tenantID))
-
-	if len(visitors) != 4 {
-		t.Fatalf("Four visitors per hour must have been created, but was: %v", len(visitors))
+	if len(stats) != 96 {
+		t.Fatalf("96 stats must have been created, but was: %v", len(stats))
 	}
 
-	if visitors[0].DayAndHour.Hour() != 7 ||
-		visitors[1].DayAndHour.Hour() != 8 ||
-		visitors[2].DayAndHour.Hour() != 9 ||
-		visitors[3].DayAndHour.Hour() != 10 {
-		t.Fatal("Times not as expected")
-	}
-
-	if visitors[0].Visitors != hour1 ||
-		visitors[1].Visitors != hour2 ||
-		visitors[2].Visitors != hour3 ||
-		visitors[3].Visitors != hour4 {
-		t.Fatal("Visitors not as expected")
+	if stats[7].Path != "/" || stats[7].Visitors != 2 || stats[7].Hour != 7 ||
+		stats[32].Path != "/page" || stats[32].Visitors != 1 || stats[32].Hour != 8 ||
+		stats[57].Path != "/" || stats[57].Visitors != 2 || stats[57].Hour != 9 ||
+		stats[82].Path != "/different-page" || stats[82].Visitors != 1 || stats[82].Hour != 10 {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
-func checkLanguageCount(t *testing.T, store Store, tenantID int64, lang1, lang2, lang3, lang4 int) {
-	visitors := store.VisitorsPerLanguage(NewTenantID(tenantID))
+func checkLanguageStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []LanguageStats
 
-	if len(visitors) != 4 {
-		t.Fatalf("Four visitors per language must have been created, but was: %v", len(visitors))
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "language_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "language"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "language_stats" ORDER BY "day", "path", "language"`); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if visitors[0].Language.String != "de" ||
-		visitors[1].Language.String != "en" ||
-		visitors[2].Language.String != "en" ||
-		visitors[3].Language.String != "jp" {
-		t.Fatal("Languages not as expected")
+	if len(stats) != 4 {
+		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
 	}
 
-	if visitors[0].Visitors != lang1 ||
-		visitors[1].Visitors != lang2 ||
-		visitors[2].Visitors != lang3 ||
-		visitors[3].Visitors != lang4 {
-		t.Fatal("Visitors not as expected")
-	}
-}
-
-func checkPageViewCount(t *testing.T, store Store, tenantID int64, path1, path2, path3, path4 string, views1, views2, views3, views4 int) {
-	visitors := store.VisitorsPerPage(NewTenantID(tenantID))
-
-	if len(visitors) != 4 {
-		t.Fatalf("Four visitors per page must have been created, but was: %v", len(visitors))
-	}
-
-	if visitors[0].Path.String != path1 ||
-		visitors[1].Path.String != path2 ||
-		visitors[2].Path.String != path3 ||
-		visitors[3].Path.String != path4 {
-		t.Fatal("Paths not as expected")
-	}
-
-	if visitors[0].Visitors != views1 ||
-		visitors[1].Visitors != views2 ||
-		visitors[2].Visitors != views3 ||
-		visitors[3].Visitors != views4 {
-		t.Fatal("Visitors not as expected")
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].Language.String != "en" ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].Language.String != "de" ||
+		stats[2].Path != "/" || stats[2].Visitors != 2 || stats[2].Language.String != "en" ||
+		stats[3].Path != "/different-page" || stats[3].Visitors != 1 || stats[3].Language.String != "jp" {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
-func checkReferrerCount(t *testing.T, store Store, tenantID int64, views1, views2, views3 int) {
-	visitors := store.VisitorsPerReferrer(NewTenantID(tenantID))
+func checkReferrerStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []ReferrerStats
 
-	if len(visitors) != 3 {
-		t.Fatalf("Three visitors per referrer must have been created, but was: %v", len(visitors))
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "referrer_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "referrer"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "referrer_stats" ORDER BY "day", "path", "referrer"`); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if visitors[0].Ref.String != "ref1" ||
-		visitors[1].Ref.String != "ref2" ||
-		visitors[2].Ref.String != "ref3" {
-		t.Fatal("Referrer not as expected")
+	if len(stats) != 4 {
+		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
 	}
 
-	if visitors[0].Visitors != views1 ||
-		visitors[1].Visitors != views2 ||
-		visitors[2].Visitors != views3 {
-		t.Fatal("Visitors not as expected")
-	}
-}
-
-func checkOSCount(t *testing.T, store Store, tenantID int64, views1, views2, views3, views4, views5 int) {
-	visitors := store.VisitorsPerOS(NewTenantID(tenantID))
-
-	if len(visitors) != 5 {
-		t.Fatalf("Five visitors per OS must have been created, but was: %v", len(visitors))
-	}
-
-	if visitors[0].OS.String != OSWindows || visitors[0].OSVersion.String != "10" ||
-		visitors[1].OS.String != OSMac || visitors[1].OSVersion.String != "10.15.3" ||
-		visitors[2].OS.String != OSAndroid || visitors[2].OSVersion.String != "8.0" ||
-		visitors[3].OS.String != OSLinux || visitors[3].OSVersion.Valid ||
-		visitors[4].OS.String != OSWindows || visitors[4].OSVersion.String != "10" {
-		t.Fatal("OS not as expected")
-	}
-
-	if visitors[0].Visitors != views1 ||
-		visitors[1].Visitors != views2 ||
-		visitors[2].Visitors != views3 ||
-		visitors[3].Visitors != views4 ||
-		visitors[4].Visitors != views5 {
-		t.Fatal("Visitors not as expected")
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].Referrer.String != "ref1" ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].Referrer.String != "ref1" ||
+		stats[2].Path != "/" || stats[2].Visitors != 2 || stats[2].Referrer.String != "ref2" ||
+		stats[3].Path != "/different-page" || stats[3].Visitors != 1 || stats[3].Referrer.String != "ref3" {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
-func checkBrowserCount(t *testing.T, store Store, tenantID int64, views1, views2, views3, views4 int) {
-	visitors := store.VisitorsPerBrowser(NewTenantID(tenantID))
+func checkOSStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []OSStats
 
-	if len(visitors) != 4 {
-		t.Fatalf("Four visitors per brower must have been created, but was: %v", len(visitors))
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "os_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "os", "os_version"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "os_stats" ORDER BY "day", "path", "os", "os_version"`); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if visitors[0].Browser.String != BrowserChrome || visitors[0].BrowserVersion.String != "84.0" ||
-		visitors[1].Browser.String != BrowserChrome || visitors[1].BrowserVersion.String != "84.0" ||
-		visitors[2].Browser.String != BrowserFirefox || visitors[2].BrowserVersion.String != "53.0" ||
-		visitors[3].Browser.String != BrowserFirefox || visitors[3].BrowserVersion.String != "54.0" {
-		t.Fatal("Browser not as expected")
+	if len(stats) != 5 {
+		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
 	}
 
-	if visitors[0].Visitors != views1 ||
-		visitors[1].Visitors != views2 ||
-		visitors[2].Visitors != views3 ||
-		visitors[3].Visitors != views4 {
-		t.Fatal("Visitors not as expected")
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].OS.String != OSWindows || stats[0].OSVersion.String != "10" ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].OS.String != OSMac || stats[1].OSVersion.String != "10.15.3" ||
+		stats[2].Path != "/" || stats[2].Visitors != 1 || stats[2].OS.String != OSLinux || stats[2].OSVersion.String != "" ||
+		stats[3].Path != "/" || stats[3].Visitors != 1 || stats[3].OS.String != OSWindows || stats[3].OSVersion.String != "10" ||
+		stats[4].Path != "/different-page" || stats[4].Visitors != 1 || stats[4].OS.String != OSAndroid || stats[4].OSVersion.String != "8.0" {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
-func checkPlatformCount(t *testing.T, store Store, tenantID int64, desktop1, mobile1, unknown1, desktop2, mobile2, unknown2 int) {
-	visitors := store.VisitorsPerPlatform(NewTenantID(tenantID))
+func checkBrowserStats(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []BrowserStats
 
-	if len(visitors) != 2 {
-		t.Fatalf("Four visitor platforms must have been created, but was: %v", len(visitors))
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "browser_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "browser", "browser_version"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "browser_stats" ORDER BY "day", "path", "browser", "browser_version"`); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if visitors[0].Desktop != desktop1 || visitors[0].Mobile != mobile1 || visitors[0].Unknown != unknown1 ||
-		visitors[1].Desktop != desktop2 || visitors[1].Mobile != mobile2 || visitors[1].Unknown != unknown2 {
-		t.Fatal("Platforms not as expected")
+	if len(stats) != 5 {
+		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
+	}
+
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].Browser.String != BrowserChrome || stats[0].BrowserVersion.String != "84.0" ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].Browser.String != BrowserChrome || stats[1].BrowserVersion.String != "84.0" ||
+		stats[2].Path != "/" || stats[2].Visitors != 1 || stats[2].Browser.String != BrowserFirefox || stats[2].BrowserVersion.String != "53.0" ||
+		stats[3].Path != "/" || stats[3].Visitors != 1 || stats[3].Browser.String != BrowserFirefox || stats[3].BrowserVersion.String != "54.0" ||
+		stats[4].Path != "/different-page" || stats[4].Visitors != 1 || stats[4].Browser.String != BrowserChrome || stats[4].BrowserVersion.String != "84.0" {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 
@@ -244,90 +227,6 @@ func createTestdata(t *testing.T, store Store, tenantID int64) {
 	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
 }
 
-func createTestDays(t *testing.T, store Store) {
-	visitorsPerDay := VisitorsPerDay{
-		Day:      day(2020, 6, 21, 5),
-		Visitors: 42,
-	}
-
-	if err := store.SaveVisitorsPerDay(nil, &visitorsPerDay); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerHour := VisitorsPerHour{
-		DayAndHour: day(2020, 6, 22, 9),
-		Visitors:   31,
-	}
-
-	if err := store.SaveVisitorsPerHour(nil, &visitorsPerHour); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerLanguage := VisitorsPerLanguage{
-		Day:      day(2020, 6, 21, 5),
-		Language: sql.NullString{String: "en", Valid: true},
-		Visitors: 7,
-	}
-
-	if err := store.SaveVisitorsPerLanguage(nil, &visitorsPerLanguage); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerPage := VisitorsPerPage{
-		Day:      day(2020, 6, 22, 5),
-		Path:     sql.NullString{String: "/different-page", Valid: true},
-		Visitors: 66,
-	}
-
-	if err := store.SaveVisitorsPerPage(nil, &visitorsPerPage); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerReferrer := VisitorsPerReferrer{
-		Day:      day(2020, 6, 21, 7),
-		Ref:      sql.NullString{String: "ref1", Valid: true},
-		Visitors: 13,
-	}
-
-	if err := store.SaveVisitorsPerReferrer(nil, &visitorsPerReferrer); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerOS := VisitorsPerOS{
-		Day:       day(2020, 6, 21, 7),
-		OS:        sql.NullString{String: OSWindows, Valid: true},
-		OSVersion: sql.NullString{String: "10", Valid: true},
-		Visitors:  19,
-	}
-
-	if err := store.SaveVisitorsPerOS(nil, &visitorsPerOS); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorsPerBrowser := VisitorsPerBrowser{
-		Day:            day(2020, 6, 21, 7),
-		Browser:        sql.NullString{String: BrowserChrome, Valid: true},
-		BrowserVersion: sql.NullString{String: "84.0", Valid: true},
-		Visitors:       18,
-	}
-
-	if err := store.SaveVisitorsPerBrowser(nil, &visitorsPerBrowser); err != nil {
-		t.Fatal(err)
-	}
-
-	visitorPlatforms := VisitorPlatform{
-		Day:     day(2020, 6, 21, 7),
-		Desktop: 29,
-		Mobile:  37,
-		Unknown: 4,
-	}
-
-	if err := store.SaveVisitorPlatform(nil, &visitorPlatforms); err != nil {
-		t.Fatal(err)
-	}
-}
-*/
-
 func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
 	hit := Hit{
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -335,7 +234,7 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		Language:       sql.NullString{String: lang, Valid: path != ""},
 		UserAgent:      sql.NullString{String: userAgent, Valid: path != ""},
-		Ref:            sql.NullString{String: ref, Valid: path != ""},
+		Referrer:       sql.NullString{String: ref, Valid: path != ""},
 		OS:             sql.NullString{String: os, Valid: os != ""},
 		OSVersion:      sql.NullString{String: osVersion, Valid: osVersion != ""},
 		Browser:        sql.NullString{String: browser, Valid: browser != ""},

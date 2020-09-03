@@ -1,3 +1,5 @@
+ALTER TABLE "hit" RENAME COLUMN "ref" TO "referrer";
+
 CREATE TABLE "visitor_stats" (
     id bigint NOT NULL UNIQUE,
     tenant_id bigint,

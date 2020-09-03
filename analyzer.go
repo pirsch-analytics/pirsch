@@ -149,7 +149,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 			found := false
 
 			for _, visit := range referrerVisits {
-				if visitToday.Ref.String == visit.Referrer.String {
+				if visitToday.Referrer.String == visit.Referrer.String {
 					visit.VisitorsPerReferrer[len(visit.VisitorsPerReferrer)-1].Visitors = visitToday.Visitors
 					found = true
 					break
@@ -166,7 +166,7 @@ func (analyzer *Analyzer) ReferrerVisits(filter *Filter) ([]Stats, error) {
 
 				visits[len(visits)-1].Visitors = visitToday.Visitors
 				referrerVisits = append(referrerVisits, Stats{
-					Referrer:            visitToday.Ref,
+					Referrer:            visitToday.Referrer,
 					VisitorsPerReferrer: visits,
 				})
 			}

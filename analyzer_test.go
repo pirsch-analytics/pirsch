@@ -769,7 +769,7 @@ func createVisitorPerReferrer(t *testing.T, store Store, tenantID int64, day tim
 	visitor := VisitorsPerReferrer{
 		BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 		Day:        day,
-		Ref:        sql.NullString{String: referrer, Valid: referrer != ""},
+		Referrer:        sql.NullString{String: referrer, Valid: referrer != ""},
 		Visitors:   visitors,
 	}
 

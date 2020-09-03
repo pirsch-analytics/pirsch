@@ -58,35 +58,27 @@ func cleanupPostgresDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_day"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitor_stats"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_hour"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "visitor_time_stats"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_language"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "language_stats"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_page"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "referrer_stats"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_referrer"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "os_stats"`); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_os"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "visitors_per_browser"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "visitor_platform"`); err != nil {
+	if _, err := postgresDB.Exec(`DELETE FROM "browser_stats"`); err != nil {
 		t.Fatal(err)
 	}
 }

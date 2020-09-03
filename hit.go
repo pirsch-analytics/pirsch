@@ -24,7 +24,7 @@ type Hit struct {
 	URL            sql.NullString `db:"url" json:"url,omitempty"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
 	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
-	Ref            sql.NullString `db:"ref" json:"ref,omitempty"`
+	Referrer       sql.NullString `db:"referrer" json:"referrer,omitempty"`
 	OS             sql.NullString `db:"os" json:"os,omitempty"`
 	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
 	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
@@ -49,7 +49,7 @@ type HitOptions struct {
 	// This will also affect the URL.
 	Path string
 
-	// ReferrerDomainBlacklist is used to filter out unwanted referrer from the Ref header.
+	// ReferrerDomainBlacklist is used to filter out unwanted referrer from the Referrer header.
 	// This can be used to filter out traffic from your own site or subdomains.
 	// To filter your own domain and subdomains, add your domain to the list and set ReferrerDomainBlacklistIncludesSubdomains to true.
 	// This way the referrer for blog.mypage.com -> mypage.com won't be saved.
@@ -98,7 +98,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
-	ref := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	referrer := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
 
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
@@ -107,7 +107,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
 		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},
-		Ref:            sql.NullString{String: ref, Valid: ref != ""},
+		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
 		OS:             sql.NullString{String: uaInfo.OS, Valid: uaInfo.OS != ""},
 		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
 		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},

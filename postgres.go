@@ -70,7 +70,7 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 func (store *PostgresStore) SaveHits(hits []Hit) error {
 	args := make([]interface{}, 0, len(hits)*14)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
@@ -79,7 +79,7 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.URL)
 		args = append(args, hit.Language)
 		args = append(args, hit.UserAgent)
-		args = append(args, hit.Ref)
+		args = append(args, hit.Referrer)
 		args = append(args, hit.OS)
 		args = append(args, hit.OSVersion)
 		args = append(args, hit.Browser)
@@ -140,7 +140,7 @@ func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 
 // Paths implements the Store interface.
 func (store *PostgresStore) Paths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
-	query := `SELECT DISTINCT "path" FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "day" = $2`
+	query := `SELECT DISTINCT "path" FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2`
 	var paths []string
 
 	if err := store.DB.Select(&paths, query, tenantID, day); err != nil {
@@ -158,7 +158,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_stats"
+	err := tx.Get(existing, `SELECT id, visitors, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
@@ -324,7 +324,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND LOWER("path") = LOWER($3)
 				AND desktop IS TRUE
 				AND mobile IS FALSE
-			) AS "desktop",
+			) AS "platform_desktop",
 			(
 				SELECT COUNT(1) FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
@@ -333,7 +333,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND LOWER("path") = LOWER($3)
 				AND desktop IS FALSE
 				AND mobile IS TRUE
-			) AS "mobile",
+			) AS "platform_mobile",
 			(
 				SELECT COUNT(1) FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
@@ -342,7 +342,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND LOWER("path") = LOWER($3)
 				AND desktop IS FALSE
 				AND mobile IS FALSE
-			) AS "unknown"
+			) AS "platform_unknown"
 			FROM hit
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date

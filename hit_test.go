@@ -22,7 +22,7 @@ func TestHitFromRequest(t *testing.T) {
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de-de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
-		hit.Ref.String != "ref" ||
+		hit.Referrer.String != "ref" ||
 		hit.OS.String != OSWindows ||
 		hit.OSVersion.String != "10" ||
 		hit.Browser.String != BrowserChrome ||
