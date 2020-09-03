@@ -29,6 +29,12 @@ type Store interface {
 	// DeleteHitsByDay deletes all hits on given day.
 	DeleteHitsByDay(*sqlx.Tx, sql.NullInt64, time.Time) error
 
+	// Days returns the distinct days with at least one hit.
+	Days(sql.NullInt64) ([]time.Time, error)
+
+	// Paths returns the distinct paths for given day.
+	Paths(sql.NullInt64, time.Time) ([]string, error)
+
 	// SaveVisitorsPerDay persists unique visitors per day.
 	/*SaveVisitorsPerDay(*sqlx.Tx, *VisitorsPerDay) error
 
@@ -52,9 +58,6 @@ type Store interface {
 
 	// SaveVisitorPlatform persists visitors per platform and day.
 	SaveVisitorPlatform(*sqlx.Tx, *VisitorPlatform) error*/
-
-	// Days returns the days with at least one hit.
-	Days(sql.NullInt64) ([]time.Time, error)
 
 	// CountVisitorsPerDay returns the unique visitor count for per day.
 	/*CountVisitorsPerDay(*sqlx.Tx, sql.NullInt64, time.Time) (int, error)

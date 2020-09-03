@@ -52,3 +52,7 @@ func (store *storeMock) DeleteHitsByDay(tx *sqlx.Tx, tenantID sql.NullInt64, t t
 func (store *storeMock) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 	panic("implement me")
 }
+
+func (store *storeMock) Paths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
+	panic("implement me")
+}

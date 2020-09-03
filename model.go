@@ -15,9 +15,9 @@ type BaseEntity struct {
 type Stats struct {
 	BaseEntity
 
-	Day      time.Time      `db:"day" json:"day"`
-	Path     sql.NullString `db:"path" json:"path"`
-	Visitors int            `db:"visitors" json:"visitors"`
+	Day      time.Time `db:"day" json:"day"`
+	Path     string    `db:"path" json:"path"`
+	Visitors int       `db:"visitors" json:"visitors"`
 }
 
 // VisitorStats is the visitor count for each path on each day

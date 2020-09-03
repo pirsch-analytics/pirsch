@@ -123,6 +123,33 @@ func (store *PostgresStore) DeleteHitsByDay(tx *sqlx.Tx, tenantID sql.NullInt64,
 	return nil
 }
 
+// Days implements the Store interface.
+func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
+	query := `SELECT DISTINCT date("time")
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") < current_date`
+	var days []time.Time
+
+	if err := store.DB.Select(&days, query, tenantID); err != nil {
+		return nil, err
+	}
+
+	return days, nil
+}
+
+// Paths implements the Store interface.
+func (store *PostgresStore) Paths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
+	query := `SELECT DISTINCT "path" FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "day" = $2`
+	var paths []string
+
+	if err := store.DB.Select(&paths, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return paths, nil
+}
+
 // SaveVisitorsPerDay implements the Store interface.
 /*func (store *PostgresStore) SaveVisitorsPerDay(tx *sqlx.Tx, visitors *VisitorsPerDay) error {
 	if tx == nil {
@@ -357,21 +384,6 @@ func (store *PostgresStore) SaveVisitorPlatform(tx *sqlx.Tx, visitors *VisitorPl
 	return nil
 }*/
 
-// Days implements the Store interface.
-func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
-	query := `SELECT DISTINCT date("time")
-		FROM "hit"
-		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") < current_date`
-	var days []time.Time
-
-	if err := store.DB.Select(&days, query, tenantID); err != nil {
-		return nil, err
-	}
-
-	return days, nil
-}
-
 // CountVisitorsPerDay implements the Store interface.
 /*func (store *PostgresStore) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) (int, error) {
 	if tx == nil {
@@ -581,20 +593,6 @@ func (store *PostgresStore) CountVisitorPlatforms(tx *sqlx.Tx, tenantID sql.Null
 	}
 
 	return platform, nil
-}
-
-// Paths implements the Store interface.
-func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([]string, error) {
-	query := `SELECT * FROM (
-			SELECT DISTINCT "path" FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND "day" >= $2 AND "day" <= $3
-		) AS paths ORDER BY length("path"), "path" ASC`
-	var paths []string
-
-	if err := store.DB.Select(&paths, query, tenantID, from, to); err != nil {
-		return nil, err
-	}
-
-	return paths, nil
 }
 
 // Referrer implements the Store interface.

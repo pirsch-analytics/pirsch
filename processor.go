@@ -10,7 +10,7 @@ import (
 type ProcessorConfig struct {
 	// ProcessVisitors enables/disabled processing the visitor count.
 	// The default is true (enabled).
-	ProcessVisitors bool
+	/*ProcessVisitors bool
 
 	// ProcessVisitorPerHour enables/disabled processing the visitor count per hour.
 	// The default is true (enabled).
@@ -38,7 +38,7 @@ type ProcessorConfig struct {
 
 	// ProcessPlatform enables/disabled processing the visitor platform.
 	// The default is true (enabled).
-	ProcessPlatform bool
+	ProcessPlatform bool*/
 }
 
 type processorFunc struct {
@@ -57,14 +57,14 @@ type Processor struct {
 func NewProcessor(store Store, config *ProcessorConfig) *Processor {
 	if config == nil {
 		config = &ProcessorConfig{
-			ProcessVisitors:           true,
+			/*ProcessVisitors:           true,
 			ProcessVisitorPerHour:     true,
 			ProcessLanguages:          true,
 			ProcessPageViews:          true,
 			ProcessVisitorPerReferrer: true,
 			ProcessVisitorPerOS:       true,
 			ProcessVisitorPerBrowser:  true,
-			ProcessPlatform:           true,
+			ProcessPlatform:           true,*/
 		}
 	}
 
@@ -92,14 +92,14 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 
 	// a list of all processing functions and if they're enabled/disabled
 	processors := []processorFunc{
-		{processor.countVisitors, processor.config.ProcessVisitors},
+		/*{processor.countVisitors, processor.config.ProcessVisitors},
 		{processor.countVisitorPerHour, processor.config.ProcessVisitorPerHour},
 		{processor.countLanguages, processor.config.ProcessLanguages},
 		{processor.countPageViews, processor.config.ProcessPageViews},
 		{processor.countVisitorPerReferrer, processor.config.ProcessVisitorPerReferrer},
 		{processor.countVisitorPerOS, processor.config.ProcessVisitorPerOS},
 		{processor.countVisitorPerBrowser, processor.config.ProcessVisitorPerBrowser},
-		{processor.countVisitorPlatform, processor.config.ProcessPlatform},
+		{processor.countVisitorPlatform, processor.config.ProcessPlatform},*/
 	}
 
 	for _, day := range days {
@@ -112,14 +112,18 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 }
 
 func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time, processors []processorFunc) error {
+	paths, err := processor.store.Paths(tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
 	tx := processor.store.NewTx()
 
-	for _, proc := range processors {
-		if proc.exec {
-			if err := proc.f(tx, tenantID, day); err != nil {
-				processor.store.Rollback(tx)
-				return err
-			}
+	for _, path := range paths {
+		if err := processor.processPath(tx, tenantID, day, path, processors); err != nil {
+			processor.store.Rollback(tx)
+			return err
 		}
 	}
 
@@ -132,154 +136,14 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time, pr
 	return nil
 }
 
-func (processor *Processor) countVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerDay(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	if visitors == 0 {
-		return nil
-	}
-
-	return processor.store.SaveVisitorsPerDay(tx, &VisitorsPerDay{
-		BaseEntity: BaseEntity{TenantID: tenantID},
-		Day:        day,
-		Visitors:   visitors,
-	})*/
-
-	return nil
-}
-
-func (processor *Processor) countVisitorPerHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerDayAndHour(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerHour(tx, &visitors); err != nil {
+func (processor *Processor) processPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string, processors []processorFunc) error {
+	for _, proc := range processors {
+		if proc.exec {
+			if err := proc.f(tx, tenantID, day); err != nil {
 				return err
 			}
 		}
 	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countLanguages(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerLanguage(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerLanguage(tx, &visitors); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countPageViews(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerPage(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerPage(tx, &visitors); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countVisitorPerReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerReferrer(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerReferrer(tx, &visitors); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countVisitorPerOS(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerOSAndVersion(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerOS(tx, &visitors); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countVisitorPerBrowser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*visitors, err := processor.store.CountVisitorsPerBrowserAndVersion(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, visitors := range visitors {
-		if visitors.Visitors > 0 {
-			if err := processor.store.SaveVisitorsPerBrowser(tx, &visitors); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil*/
-
-	return nil
-}
-
-func (processor *Processor) countVisitorPlatform(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	/*platform, err := processor.store.CountVisitorPlatforms(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	return processor.store.SaveVisitorPlatform(tx, platform)*/
 
 	return nil
 }
