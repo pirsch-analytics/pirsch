@@ -41,8 +41,33 @@ func NewPostgresStore(db *sql.DB, config *PostgresConfig) *PostgresStore {
 	}
 }
 
+// NewTx implements the Store interface.
+func (store *PostgresStore) NewTx() *sqlx.Tx {
+	tx, err := store.DB.Beginx()
+
+	if err != nil {
+		store.logger.Fatalf("error creating new transaction: %s", err)
+	}
+
+	return tx
+}
+
+// Commit implements the Store interface.
+func (store *PostgresStore) Commit(tx *sqlx.Tx) {
+	if err := tx.Commit(); err != nil {
+		store.logger.Printf("error committing transaction: %s", err)
+	}
+}
+
+// Rollback implements the Store interface.
+func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
+	if err := tx.Rollback(); err != nil {
+		store.logger.Printf("error rolling back transaction: %s", err)
+	}
+}
+
 // Save implements the Store interface.
-func (store *PostgresStore) Save(hits []Hit) error {
+func (store *PostgresStore) SaveHits(hits []Hit) error {
 	args := make([]interface{}, 0, len(hits)*14)
 	var query strings.Builder
 	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, ref, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
@@ -99,7 +124,7 @@ func (store *PostgresStore) DeleteHitsByDay(tx *sqlx.Tx, tenantID sql.NullInt64,
 }
 
 // SaveVisitorsPerDay implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerDay(tx *sqlx.Tx, visitors *VisitorsPerDay) error {
+/*func (store *PostgresStore) SaveVisitorsPerDay(tx *sqlx.Tx, visitors *VisitorsPerDay) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
@@ -330,7 +355,7 @@ func (store *PostgresStore) SaveVisitorPlatform(tx *sqlx.Tx, visitors *VisitorPl
 	}
 
 	return nil
-}
+}*/
 
 // Days implements the Store interface.
 func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
@@ -348,7 +373,7 @@ func (store *PostgresStore) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 }
 
 // CountVisitorsPerDay implements the Store interface.
-func (store *PostgresStore) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) (int, error) {
+/*func (store *PostgresStore) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) (int, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
@@ -986,32 +1011,7 @@ func (store *PostgresStore) VisitorsPerPlatform(tenantID sql.NullInt64) []Visito
 	}
 
 	return entities
-}
-
-// NewTx implements the Store interface.
-func (store *PostgresStore) NewTx() *sqlx.Tx {
-	tx, err := store.DB.Beginx()
-
-	if err != nil {
-		store.logger.Fatalf("error creating new transaction: %s", err)
-	}
-
-	return tx
-}
-
-// Commit implements the Store interface.
-func (store *PostgresStore) Commit(tx *sqlx.Tx) {
-	if err := tx.Commit(); err != nil {
-		store.logger.Printf("error committing transaction: %s", err)
-	}
-}
-
-// Rollback implements the Store interface.
-func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil {
-		store.logger.Printf("error rolling back transaction: %s", err)
-	}
-}
+}*/
 
 func closeRows(rows *sqlx.Rows) {
 	if err := rows.Close(); err != nil {

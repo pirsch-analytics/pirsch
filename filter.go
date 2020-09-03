@@ -5,10 +5,13 @@ import (
 	"time"
 )
 
-// Filter is used to specify the time frame and tenant for the Analyzer.
+// Filter is used to specify the time frame, path and tenant for the Analyzer.
 type Filter struct {
 	// TenantID is the optional tenant ID used to filter results.
 	TenantID sql.NullInt64
+
+	// Path is the optional path for the selection.
+	Path string
 
 	// From is the start of the selection.
 	From time.Time

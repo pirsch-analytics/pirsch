@@ -151,7 +151,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 			hits = append(hits, hit)
 
 			if len(hits) == tracker.workerBufferSize {
-				if err := tracker.store.Save(hits); err != nil {
+				if err := tracker.store.SaveHits(hits); err != nil {
 					tracker.logger.Printf("error saving hits: %s", err)
 				}
 
@@ -159,7 +159,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 			}
 		case <-time.After(tracker.workerTimeout):
 			if len(hits) > 0 {
-				if err := tracker.store.Save(hits); err != nil {
+				if err := tracker.store.SaveHits(hits); err != nil {
 					tracker.logger.Printf("error saving hits: %s", err)
 				}
 
@@ -167,7 +167,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 			}
 		case <-ctx.Done():
 			if len(hits) > 0 {
-				if err := tracker.store.Save(hits); err != nil {
+				if err := tracker.store.SaveHits(hits); err != nil {
 					tracker.logger.Printf("error saving hits: %s", err)
 				}
 			}

@@ -7,21 +7,30 @@ import (
 )
 
 // NullTenant can be used to pass no (null) tenant to filters and functions.
-// This is an invalid sql.NullInt64 with a value of 0.
+// This is a sql.NullInt64 with a value of 0.
 var NullTenant = NewTenantID(0)
 
 // Store defines an interface to persists hits and other data.
 // The first parameter (if required) is always the tenant ID and can be left out (pirsch.NullTenant), if you don't want to split your data.
 // This is usually the case if you integrate Pirsch into your application.
 type Store interface {
-	// Save persists a list of hits.
-	Save([]Hit) error
+	// NewTx creates a new transaction and panic on failure.
+	NewTx() *sqlx.Tx
+
+	// Commit commits given transaction and logs the error.
+	Commit(*sqlx.Tx)
+
+	// Rollback rolls back given transaction and logs the error.
+	Rollback(*sqlx.Tx)
+
+	// SaveHits persists a list of hits.
+	SaveHits([]Hit) error
 
 	// DeleteHitsByDay deletes all hits on given day.
 	DeleteHitsByDay(*sqlx.Tx, sql.NullInt64, time.Time) error
 
 	// SaveVisitorsPerDay persists unique visitors per day.
-	SaveVisitorsPerDay(*sqlx.Tx, *VisitorsPerDay) error
+	/*SaveVisitorsPerDay(*sqlx.Tx, *VisitorsPerDay) error
 
 	// SaveVisitorsPerHour persists unique visitors per day and hour.
 	SaveVisitorsPerHour(*sqlx.Tx, *VisitorsPerHour) error
@@ -42,13 +51,13 @@ type Store interface {
 	SaveVisitorsPerBrowser(*sqlx.Tx, *VisitorsPerBrowser) error
 
 	// SaveVisitorPlatform persists visitors per platform and day.
-	SaveVisitorPlatform(*sqlx.Tx, *VisitorPlatform) error
+	SaveVisitorPlatform(*sqlx.Tx, *VisitorPlatform) error*/
 
-	// Days returns the days at least one hit exists for.
+	// Days returns the days with at least one hit.
 	Days(sql.NullInt64) ([]time.Time, error)
 
 	// CountVisitorsPerDay returns the unique visitor count for per day.
-	CountVisitorsPerDay(*sqlx.Tx, sql.NullInt64, time.Time) (int, error)
+	/*CountVisitorsPerDay(*sqlx.Tx, sql.NullInt64, time.Time) (int, error)
 
 	// CountVisitorsPerDayAndHour returns the unique visitor count per day and hour.
 	CountVisitorsPerDayAndHour(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorsPerHour, error)
@@ -150,14 +159,5 @@ type Store interface {
 	VisitorsPerBrowser(sql.NullInt64) []VisitorsPerBrowser
 
 	// VisitorsPerPlatform returns all visitor platforms for given tenant ID sorted by days.
-	VisitorsPerPlatform(sql.NullInt64) []VisitorPlatform
-
-	// NewTx creates a new transaction and panic on failure.
-	NewTx() *sqlx.Tx
-
-	// Commit commits given transaction and logs the error.
-	Commit(*sqlx.Tx)
-
-	// Rollback rolls back given transaction and logs the error.
-	Rollback(*sqlx.Tx)
+	VisitorsPerPlatform(sql.NullInt64) []VisitorPlatform*/
 }

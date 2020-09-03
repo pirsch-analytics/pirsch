@@ -1,11 +1,5 @@
 package pirsch
 
-import (
-	"database/sql"
-	"sort"
-	"time"
-)
-
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store Store
@@ -17,7 +11,7 @@ func NewAnalyzer(store Store) *Analyzer {
 }
 
 // Visitors returns the visitors per day for the given time frame.
-func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
+/*func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorsPerDay, error) {
 	filter = analyzer.validateFilter(filter)
 	visitors, err := analyzer.store.Visitors(filter.TenantID, filter.From, filter.To)
 
@@ -346,3 +340,4 @@ func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
 	filter.validate()
 	return filter
 }
+*/

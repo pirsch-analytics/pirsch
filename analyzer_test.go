@@ -1,11 +1,8 @@
 package pirsch
 
-import (
-	"database/sql"
-	"testing"
-	"time"
-)
+import "time"
 
+/*
 func TestAnalyzerVisitors(t *testing.T) {
 	testAnalyzerVisitors(t, 0)
 	testAnalyzerVisitors(t, 1)
@@ -847,6 +844,7 @@ func createVisitorPlatform(t *testing.T, store Store, tenantID int64, day time.T
 		t.Fatal(err)
 	}
 }
+*/
 
 func pastDay(n int) time.Time {
 	now := time.Now()
