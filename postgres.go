@@ -150,242 +150,192 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, day time.Time) ([]stri
 	return paths, nil
 }
 
-// SaveVisitorsPerDay implements the Store interface.
-/*func (store *PostgresStore) SaveVisitorsPerDay(tx *sqlx.Tx, visitors *VisitorsPerDay) error {
+// SaveVisitorStats implements the Store interface.
+func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerDay)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_day" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2)`, visitors.TenantID, visitors.Day)
+	existing := new(VisitorStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_day" (tenant_id, day, visitors) VALUES (:tenant_id, :day, :visitors)`, visitors)
+	if err == nil {
+		existing.Visitors += entity.Visitors
+		existing.PlatformDesktop += entity.PlatformDesktop
+		existing.PlatformMobile += entity.PlatformMobile
+		existing.PlatformUnknown += entity.PlatformUnknown
+
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, platform_desktop = $2, platform_mobile = $3, platform_unknown = $4 WHERE id = $5`,
+			existing.Visitors,
+			existing.PlatformDesktop,
+			existing.PlatformMobile,
+			existing.PlatformUnknown,
+			existing.ID); err != nil {
+			return err
+		}
+	} else {
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
 
 		if err != nil {
 			return err
 		}
 
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_day" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+		store.closeRows(rows)
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerHour implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerHour(tx *sqlx.Tx, visitors *VisitorsPerHour) error {
+// SaveVisitorTimeStats implements the Store interface.
+func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTimeStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerHour)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_hour" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day_and_hour) = date($2) AND extract(hour from day_and_hour) = extract(hour from $2)`, visitors.TenantID, visitors.DayAndHour)
+	existing := new(VisitorTimeStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_time_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)
+		AND "hour" = $4`, entity.TenantID, entity.Day, entity.Path, entity.Hour)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_hour" (tenant_id, day_and_hour, visitors) VALUES (:tenant_id, :day_and_hour, :visitors)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_hour" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors") VALUES (:tenant_id, :day, :path, :hour, :visitors)`,
+		`UPDATE "visitor_time_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerLanguage implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerLanguage(tx *sqlx.Tx, visitors *VisitorsPerLanguage) error {
+// SaveLanguageStats implements the Store interface.
+func (store *PostgresStore) SaveLanguageStats(tx *sqlx.Tx, entity *LanguageStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerLanguage)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_language" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND language = $3`, visitors.TenantID, visitors.Day, visitors.Language)
+	existing := new(LanguageStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "language_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)
+		AND LOWER("language") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Language)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_language" (tenant_id, day, language, visitors) VALUES (:tenant_id, :day, :language, :visitors)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_language" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "language_stats" ("tenant_id", "day", "path", "language", "visitors") VALUES (:tenant_id, :day, :path, :language, :visitors)`,
+		`UPDATE "language_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerPage implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerPage(tx *sqlx.Tx, visitors *VisitorsPerPage) error {
+// SaveReferrerStats implements the Store interface.
+func (store *PostgresStore) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerPage)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_page" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND path = $3`, visitors.TenantID, visitors.Day, visitors.Path)
+	existing := new(ReferrerStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "referrer_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)
+		AND LOWER("referrer") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Referrer)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_page" (tenant_id, day, path, visitors) VALUES (:tenant_id, :day, :path, :visitors)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_page" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "referrer_stats" ("tenant_id", "day", "path", "referrer", "visitors") VALUES (:tenant_id, :day, :path, :referrer, :visitors)`,
+		`UPDATE "referrer_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerReferrer implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerReferrer(tx *sqlx.Tx, visitors *VisitorsPerReferrer) error {
+// SaveOSStats implements the Store interface.
+func (store *PostgresStore) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerReferrer)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_referrer" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND ref = $3`, visitors.TenantID, visitors.Day, visitors.Ref)
+	existing := new(OSStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "os_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)
+		AND "os" = $4
+		AND "os_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.OS, entity.OSVersion)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_referrer" (tenant_id, day, ref, visitors) VALUES (:tenant_id, :day, :ref, :visitors)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_referrer" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "os_stats" ("tenant_id", "day", "path", "os", "os_version", "visitors") VALUES (:tenant_id, :day, :path, :os, :os_version, :visitors)`,
+		`UPDATE "os_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerOS implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerOS(tx *sqlx.Tx, visitors *VisitorsPerOS) error {
+// SaveBrowserStats implements the Store interface.
+func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	day := new(VisitorsPerOS)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_os" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND os = $3 AND os_version = $4`, visitors.TenantID, visitors.Day, visitors.OS, visitors.OSVersion)
+	existing := new(BrowserStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "browser_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND LOWER("path") = LOWER($3)
+		AND "browser" = $4
+		AND "browser_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.Browser, entity.BrowserVersion)
 
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_os" (tenant_id, day, os, os_version, visitors) VALUES (:tenant_id, :day, :os, :os_version, :visitors)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_os" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "browser_stats" ("tenant_id", "day", "path", "browser", "browser_version", "visitors") VALUES (:tenant_id, :day, :path, :browser, :browser_version, :visitors)`,
+		`UPDATE "browser_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// SaveVisitorsPerBrowser implements the Store interface.
-func (store *PostgresStore) SaveVisitorsPerBrowser(tx *sqlx.Tx, visitors *VisitorsPerBrowser) error {
-	if tx == nil {
-		tx = store.NewTx()
-		defer store.Commit(tx)
-	}
+func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing StatsEntity, found bool, insertQuery, updateQuery string) error {
+	if found {
+		visitors := existing.GetVisitors() + entity.GetVisitors()
 
-	day := new(VisitorsPerBrowser)
-	err := tx.Get(day, `SELECT * FROM "visitors_per_browser" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2) AND browser = $3 AND browser_version = $4`, visitors.TenantID, visitors.Day, visitors.Browser, visitors.BrowserVersion)
-
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitors_per_browser" (tenant_id, day, browser, browser_version, visitors) VALUES (:tenant_id, :day, :browser, :browser_version, :visitors)`, visitors)
+		if _, err := tx.Exec(updateQuery, visitors, existing.GetID()); err != nil {
+			return err
+		}
+	} else {
+		rows, err := tx.NamedQuery(insertQuery, entity)
 
 		if err != nil {
 			return err
 		}
 
-		closeRows(rows)
-	} else {
-		day.Visitors += visitors.Visitors
-
-		if _, err := tx.NamedExec(`UPDATE "visitors_per_browser" SET visitors = :visitors WHERE id = :id`, day); err != nil {
-			return err
-		}
+		store.closeRows(rows)
 	}
 
 	return nil
 }
 
-// SaveVisitorPlatform implements the Store interface.
-func (store *PostgresStore) SaveVisitorPlatform(tx *sqlx.Tx, visitors *VisitorPlatform) error {
-	if tx == nil {
-		tx = store.NewTx()
-		defer store.Commit(tx)
+func (store *PostgresStore) closeRows(rows *sqlx.Rows) {
+	if err := rows.Close(); err != nil {
+		store.logger.Printf("error closing rows: %s", err)
 	}
+}
 
-	day := new(VisitorPlatform)
-	err := tx.Get(day, `SELECT * FROM "visitor_platform" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date(day) = date($2)`, visitors.TenantID, visitors.Day)
-
-	if err != nil {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_platform" (tenant_id, day, desktop, mobile, unknown) VALUES (:tenant_id, :day, :desktop, :mobile, :unknown)`, visitors)
-
-		if err != nil {
-			return err
-		}
-
-		closeRows(rows)
-	} else {
-		day.Desktop += visitors.Desktop
-		day.Mobile += visitors.Mobile
-		day.Unknown += visitors.Unknown
-
-		if _, err := tx.NamedExec(`UPDATE "visitor_platform" SET desktop = :desktop, mobile = :mobile, unknown = :unknown WHERE id = :id`, day); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}*/
-
+/*
 // CountVisitorsPerDay implements the Store interface.
-/*func (store *PostgresStore) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) (int, error) {
+func (store *PostgresStore) CountVisitorsPerDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) (int, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
@@ -1010,10 +960,3 @@ func (store *PostgresStore) VisitorsPerPlatform(tenantID sql.NullInt64) []Visito
 
 	return entities
 }*/
-
-func closeRows(rows *sqlx.Rows) {
-	if err := rows.Close(); err != nil {
-		// TODO
-		log.Printf("error closing rows: %s", err)
-	}
-}

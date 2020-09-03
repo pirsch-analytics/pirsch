@@ -35,29 +35,23 @@ type Store interface {
 	// Paths returns the distinct paths for given day.
 	Paths(sql.NullInt64, time.Time) ([]string, error)
 
-	// SaveVisitorsPerDay persists unique visitors per day.
-	/*SaveVisitorsPerDay(*sqlx.Tx, *VisitorsPerDay) error
+	// SaveVisitorStats saves VisitorStats.
+	SaveVisitorStats(*sqlx.Tx, *VisitorStats) error
 
-	// SaveVisitorsPerHour persists unique visitors per day and hour.
-	SaveVisitorsPerHour(*sqlx.Tx, *VisitorsPerHour) error
+	// SaveVisitorTimeStats saves VisitorTimeStats.
+	SaveVisitorTimeStats(*sqlx.Tx, *VisitorTimeStats) error
 
-	// SaveVisitorsPerLanguage persists unique visitors per day and language.
-	SaveVisitorsPerLanguage(*sqlx.Tx, *VisitorsPerLanguage) error
+	// SaveLanguageStats saves LanguageStats.
+	SaveLanguageStats(*sqlx.Tx, *LanguageStats) error
 
-	// SaveVisitorsPerPage persists unique visitors per day and page.
-	SaveVisitorsPerPage(*sqlx.Tx, *VisitorsPerPage) error
+	// SaveReferrerStats saves ReferrerStats.
+	SaveReferrerStats(*sqlx.Tx, *ReferrerStats) error
 
-	// SaveVisitorsPerReferrer persists unique visitors per day and referrer.
-	SaveVisitorsPerReferrer(*sqlx.Tx, *VisitorsPerReferrer) error
+	// SaveOSStats saves OSStats.
+	SaveOSStats(*sqlx.Tx, *OSStats) error
 
-	// SaveVisitorsPerOS persists unique visitors per day and operating system.
-	SaveVisitorsPerOS(*sqlx.Tx, *VisitorsPerOS) error
-
-	// SaveVisitorsPerBrowser persists unique visitors per day and browser.
-	SaveVisitorsPerBrowser(*sqlx.Tx, *VisitorsPerBrowser) error
-
-	// SaveVisitorPlatform persists visitors per platform and day.
-	SaveVisitorPlatform(*sqlx.Tx, *VisitorPlatform) error*/
+	// SaveBrowserStats saves BrowserStats.
+	SaveBrowserStats(*sqlx.Tx, *BrowserStats) error
 
 	// CountVisitorsPerDay returns the unique visitor count for per day.
 	/*CountVisitorsPerDay(*sqlx.Tx, sql.NullInt64, time.Time) (int, error)

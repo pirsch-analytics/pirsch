@@ -5,7 +5,10 @@ CREATE TABLE "visitor_stats" (
     tenant_id bigint,
     day date NOT NULL,
     path varchar(2000) NOT NULL,
-    visitors integer NOT NULL
+    visitors integer NOT NULL,
+    platform_desktop integer NOT NULL,
+    platform_mobile integer NOT NULL,
+    platform_unknown integer NOT NULL
 );
 
 CREATE SEQUENCE visitor_stats_id_seq
@@ -26,7 +29,7 @@ CREATE TABLE "visitor_time_stats" (
     tenant_id bigint,
     day date NOT NULL,
     path varchar(2000) NOT NULL,
-    "time" time without time zone NOT NULL,
+    hour smallint NOT NULL,
     visitors integer NOT NULL
 );
 
@@ -132,29 +135,6 @@ ALTER TABLE ONLY "browser_stats" ALTER COLUMN id SET DEFAULT nextval('browser_st
 ALTER TABLE ONLY "browser_stats" ADD CONSTRAINT browser_stats_pkey PRIMARY KEY (id);
 CREATE INDEX browser_stats_day_index ON browser_stats(day);
 CREATE INDEX browser_stats_path_index ON browser_stats(path);
-
-CREATE TABLE "platform_stats" (
-    id bigint NOT NULL UNIQUE,
-    tenant_id bigint,
-    day date NOT NULL,
-    path varchar(2000) NOT NULL,
-    browser character varying(20),
-    browser_version character varying(20),
-    visitors integer NOT NULL
-);
-
-CREATE SEQUENCE platform_stats_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER SEQUENCE platform_stats_id_seq OWNED BY "platform_stats".id;
-ALTER TABLE ONLY "platform_stats" ALTER COLUMN id SET DEFAULT nextval('platform_stats_id_seq'::regclass);
-ALTER TABLE ONLY "platform_stats" ADD CONSTRAINT platform_stats_pkey PRIMARY KEY (id);
-CREATE INDEX platform_stats_day_index ON platform_stats(day);
-CREATE INDEX platform_stats_path_index ON platform_stats(path);
 
 DROP TABLE "visitor_platform";
 DROP TABLE "visitors_per_browser";

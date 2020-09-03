@@ -56,3 +56,27 @@ func (store *storeMock) Days(tenantID sql.NullInt64) ([]time.Time, error) {
 func (store *storeMock) Paths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
 	panic("implement me")
 }
+
+func (store *storeMock) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) error {
+	panic("implement me")
+}
+
+func (store *storeMock) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTimeStats) error {
+	panic("implement me")
+}
+
+func (store *storeMock) SaveLanguageStats(tx *sqlx.Tx, entity *LanguageStats) error {
+	panic("implement me")
+}
+
+func (store *storeMock) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats) error {
+	panic("implement me")
+}
+
+func (store *storeMock) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
+	panic("implement me")
+}
+
+func (store *storeMock) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) error {
+	panic("implement me")
+}
