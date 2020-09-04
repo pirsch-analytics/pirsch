@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -167,6 +168,51 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 				!visitors[1].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[1].Stats[2].Visitors != 0 ||
 				!visitors[1].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[1].Stats[3].Visitors != 1 {
 				t.Fatalf("Second path not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_Languages(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			stats := &LanguageStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        day(2020, 9, 2, 0),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Language: sql.NullString{String: "de", Valid: true},
+			}
+
+			if err := store.SaveLanguageStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.Languages(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     day(2020, 9, 1, 0),
+				To:       day(2020, 9, 4, 0),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].Language.String != "de" || visitors[0].Visitors != 43 ||
+				visitors[1].Language.String != "en" || visitors[1].Visitors != 1 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
 	}

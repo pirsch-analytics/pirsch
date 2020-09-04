@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"sort"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func NewAnalyzer(store Store) *Analyzer {
 // Use time.Minute*5 for example to see the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
-	visitors, err := analyzer.store.ActiveVisitors(filter.TenantID, filter.Path, time.Now().UTC().Add(-duration))
+	stats, err := analyzer.store.ActiveVisitors(filter.TenantID, filter.Path, time.Now().UTC().Add(-duration))
 
 	if err != nil {
 		return nil, 0, err
@@ -38,11 +39,11 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 	sum := 0
 
-	for _, v := range visitors {
+	for _, v := range stats {
 		sum += v.Visitors
 	}
 
-	return visitors, sum, nil
+	return stats, sum, nil
 }
 
 // Visitors returns the visitor count per day.
@@ -63,6 +64,48 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 			stats[len(stats)-1].Visitors += visitorsToday.Visitors
 		}
 	}
+
+	return stats, nil
+}
+
+// Languages returns the visitor count per language.
+func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorLanguages(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday && len(stats) > 0 {
+		visitorsToday, err := analyzer.store.CountVisitorsByLanguage(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.Language.String == v.Language.String {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
 
 	return stats, nil
 }

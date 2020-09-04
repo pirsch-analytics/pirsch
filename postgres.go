@@ -332,6 +332,7 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 	return paths, nil
 }
 
+// CountVisitors implements the Store interface.
 func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *Stats {
 	if tx == nil {
 		tx = store.NewTx()
@@ -456,7 +457,8 @@ func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, tenantID
 			AND "time" < $2::date + INTERVAL '1 day'
 			AND LOWER("path") = LOWER($3)
 			GROUP BY tenant_id, "language"
-		) AS results ORDER BY "day" ASC`
+		) AS results
+		ORDER BY "day" ASC`
 	var visitors []LanguageStats
 
 	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
@@ -541,6 +543,27 @@ func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID 
 	return visitors, nil
 }
 
+// CountVisitorsByLanguage implements the Store interface.
+func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]LanguageStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "language", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "language"`
+	var visitors []LanguageStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // ActiveVisitors implements the Store interface.
 func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]Stats, error) {
 	args := make([]interface{}, 0, 3)
@@ -590,6 +613,24 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 	return visitors, nil
 }
 
+// VisitorLanguages implements the Store interface.
+func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]LanguageStats, error) {
+	query := `SELECT "language", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "language_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "language", "visitors"
+		ORDER BY "visitors" DESC`
+	var visitors []LanguageStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
@@ -614,7 +655,7 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 }
 
 // Referrer implements the Store interface.
-func (store *PostgresStore) Referrer(tenantID sql.NullInt64, path string, from, to time.Time) ([]ReferrerStats, error) {
+/*func (store *PostgresStore) Referrer(tenantID sql.NullInt64, path string, from, to time.Time) ([]ReferrerStats, error) {
 	query := `SELECT "d" AS "day",
 		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
 		"referrer_stats"."referrer",
@@ -635,7 +676,7 @@ func (store *PostgresStore) Referrer(tenantID sql.NullInt64, path string, from, 
 	}
 
 	return visitors, nil
-}
+}*/
 
 func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing StatsEntity, found bool, insertQuery, updateQuery string) error {
 	if found {

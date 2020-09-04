@@ -77,6 +77,9 @@ type Store interface {
 	// CountVisitorsByPathAndBrowser returns the visitor count for given day and path grouped by browser and browser version.
 	CountVisitorsByPathAndBrowser(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]BrowserStats, error)
 
+	// CountVisitorsByLanguage returns the visitor count for given day grouped by language.
+	CountVisitorsByLanguage(*sqlx.Tx, sql.NullInt64, time.Time) ([]LanguageStats, error)
+
 	// ActiveVisitors returns the active visitors grouped by path for given duration and path.
 	// The path is optional and can be left empty to disable path filtering.
 	ActiveVisitors(sql.NullInt64, string, time.Time) ([]Stats, error)
@@ -84,9 +87,12 @@ type Store interface {
 	// Visitors returns the visitors for given time frame grouped by days.
 	Visitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
+	// VisitorLanguages returns the visitors for given time frame grouped by language.
+	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]LanguageStats, error)
+
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
 
 	// Referrer returns the visitors for given path and time frame grouped by days and referrer.
-	Referrer(sql.NullInt64, string, time.Time, time.Time) ([]ReferrerStats, error)
+	//Referrer(sql.NullInt64, string, time.Time, time.Time) ([]ReferrerStats, error)
 }
