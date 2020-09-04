@@ -1,5 +1,7 @@
 package pirsch
 
+import "time"
+
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store Store
@@ -8,6 +10,33 @@ type Analyzer struct {
 // NewAnalyzer returns a new Analyzer for given Store.
 func NewAnalyzer(store Store) *Analyzer {
 	return &Analyzer{store}
+}
+
+// ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
+func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]VisitorStats, int, error) {
+	filter = analyzer.validateFilter(filter)
+	visitors, err := analyzer.store.ActiveVisitors(filter.TenantID, filter.Path, time.Now().UTC().Add(-duration))
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	sum := 0
+
+	for _, v := range visitors {
+		sum += v.Visitors
+	}
+
+	return visitors, sum, nil
+}
+
+func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
+	if filter == nil {
+		return NewFilter(NullTenant)
+	}
+
+	filter.validate()
+	return filter
 }
 
 // Visitors returns the visitors per day for the given time frame.
@@ -308,36 +337,5 @@ func (analyzer *Analyzer) HourlyVisitors(filter *Filter) ([]Stats, error) {
 	}
 
 	return visitorsPerHour, nil
-}
-
-// ActiveVisitors returns the number of unique visitors active within the given duration.
-func (analyzer *Analyzer) ActiveVisitors(tenantID sql.NullInt64, d time.Duration) (int, error) {
-	visitors, err := analyzer.store.ActiveVisitors(tenantID, time.Now().UTC().Add(-d))
-
-	if err != nil {
-		return 0, err
-	}
-
-	return visitors, nil
-}
-
-// ActiveVisitorsPages returns the number of unique visitors active within the given duration and the corresponding pages.
-func (analyzer *Analyzer) ActiveVisitorsPages(tenantID sql.NullInt64, d time.Duration) ([]Stats, error) {
-	visitors, err := analyzer.store.ActiveVisitorsPerPage(tenantID, time.Now().UTC().Add(-d))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return visitors, nil
-}
-
-func (analyzer *Analyzer) validateFilter(filter *Filter) *Filter {
-	if filter == nil {
-		return NewFilter(NullTenant)
-	}
-
-	filter.validate()
-	return filter
 }
 */

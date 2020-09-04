@@ -70,4 +70,8 @@ type Store interface {
 
 	// CountVisitorsByPathAndBrowser returns the visitor count for given day and path grouped by browser and browser version.
 	CountVisitorsByPathAndBrowser(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]BrowserStats, error)
+
+	// ActiveVisitors returns the active visitors grouped by path for given duration and path.
+	// The path is optional and can be left empty to disable path filtering.
+	ActiveVisitors(sql.NullInt64, string, time.Time) ([]VisitorStats, error)
 }

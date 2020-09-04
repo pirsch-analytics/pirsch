@@ -1,6 +1,77 @@
 package pirsch
 
-import "time"
+import (
+	"testing"
+	"time"
+)
+
+func TestAnalyzer_ActiveVisitors(t *testing.T) {
+	testAnalyzerActiveVisitors(t, 0)
+	testAnalyzerActiveVisitors(t, 1)
+}
+
+func TestAnalyzer_ActiveVisitorsPathFilter(t *testing.T) {
+	testAnalyzerActiveVisitorsPathFilter(t, 0)
+	testAnalyzerActiveVisitorsPathFilter(t, 1)
+}
+
+func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+		analyzer := NewAnalyzer(store)
+		visitors, total, err := analyzer.ActiveVisitors(&Filter{
+			TenantID: NewTenantID(tenantID),
+		}, time.Second*30)
+
+		if err != nil {
+			t.Fatalf("Visitors must be returned, but was:  %v", err)
+		}
+
+		if total != 3 {
+			t.Fatalf("Three active visitors must have been returned, but was: %v", total)
+		}
+
+		if len(visitors) != 2 ||
+			visitors[0].Path != "/" || visitors[0].Visitors != 2 ||
+			visitors[1].Path != "/path" || visitors[1].Visitors != 1 {
+			t.Fatalf("Visitors not as expected: %v", visitors)
+		}
+	}
+}
+
+func testAnalyzerActiveVisitorsPathFilter(t *testing.T, tenantID int64) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
+		createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+		analyzer := NewAnalyzer(store)
+		visitors, total, err := analyzer.ActiveVisitors(&Filter{
+			TenantID: NewTenantID(tenantID),
+			Path:     "/PAth",
+		}, time.Second*30)
+
+		if err != nil {
+			t.Fatalf("Visitors must be returned, but was:  %v", err)
+		}
+
+		if total != 1 {
+			t.Fatalf("One active visitors must have been returned, but was: %v", total)
+		}
+
+		if len(visitors) != 1 ||
+			visitors[0].Path != "/path" || visitors[0].Visitors != 1 {
+			t.Fatalf("Visitors not as expected: %v", visitors)
+		}
+	}
+}
 
 /*
 func TestAnalyzerVisitors(t *testing.T) {

@@ -315,7 +315,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 	}
 
 	query := `SELECT * FROM (
-			SELECT tenant_id, $2::date "day", $3::varchar "path", count(DISTINCT fingerprint) "visitors",
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", count(DISTINCT fingerprint) "visitors",
 			(
 				SELECT COUNT(1) FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
@@ -343,7 +343,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown"
-			FROM hit
+			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
@@ -401,8 +401,8 @@ func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, tenantID
 	}
 
 	query := `SELECT * FROM (
-			SELECT tenant_id, $2::date "day", $3::varchar "path", "language", count(DISTINCT fingerprint) "visitors"
-			FROM hit
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", "language", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
@@ -426,8 +426,8 @@ func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, tenantID
 	}
 
 	query := `SELECT * FROM (
-			SELECT tenant_id, $2::date "day", $3::varchar "path", "referrer", count(DISTINCT fingerprint) "visitors"
-			FROM hit
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", "referrer", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
@@ -451,8 +451,8 @@ func (store *PostgresStore) CountVisitorsByPathAndOS(tx *sqlx.Tx, tenantID sql.N
 	}
 
 	query := `SELECT * FROM (
-			SELECT tenant_id, $2::date "day", $3::varchar "path", "os", "os_version", count(DISTINCT fingerprint) "visitors"
-			FROM hit
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", "os", "os_version", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
@@ -476,8 +476,8 @@ func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID 
 	}
 
 	query := `SELECT * FROM (
-			SELECT tenant_id, $2::date "day", $3::varchar "path", "browser", "browser_version", count(DISTINCT fingerprint) "visitors"
-			FROM hit
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", "browser", "browser_version", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
@@ -487,6 +487,32 @@ func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID 
 	var visitors []BrowserStats
 
 	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// ActiveVisitors implements the Store interface.
+func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]VisitorStats, error) {
+	args := make([]interface{}, 0, 3)
+	args = append(args, tenantID)
+	args = append(args, from)
+	query := `SELECT * FROM (
+			SELECT "tenant_id", "path", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND "time" > $2 `
+
+	if path != "" {
+		args = append(args, path)
+		query += `AND LOWER("path") = LOWER($3) `
+	}
+
+	query += `GROUP BY tenant_id, "path") AS results ORDER BY "visitors" DESC, "path" ASC`
+	var visitors []VisitorStats
+
+	if err := store.DB.Select(&visitors, query, args...); err != nil {
 		return nil, err
 	}
 

@@ -25,7 +25,7 @@ func testProcess(t *testing.T, tenantID int64) {
 				t.Fatalf("Data must have been processed, but was: %v", err)
 			}
 		} else {
-			if err := processor.ProcessTenant(sql.NullInt64{Int64: tenantID, Valid: true}); err != nil {
+			if err := processor.ProcessTenant(NewTenantID(tenantID)); err != nil {
 				t.Fatalf("Data must have been processed, but was: %v", err)
 			}
 		}
