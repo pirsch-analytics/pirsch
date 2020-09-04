@@ -255,3 +255,95 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
 }
+
+func TestPostgresStore_HitDays(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), "", "", "", "", false, false)
+	days, err := store.HitDays(NullTenant)
+
+	if err != nil {
+		t.Fatalf("Days must have been returned, but was: %v", err)
+	}
+
+	if len(days) != 2 ||
+		!equalDay(days[0], day(2020, 6, 21, 0)) ||
+		!equalDay(days[1], day(2020, 6, 22, 0)) {
+		t.Fatalf("Days not as expected: %v", days)
+	}
+}
+
+func TestPostgresStore_HitPaths(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
+
+	if err != nil {
+		t.Fatalf("Paths must have been returned, but was: %v", err)
+	}
+
+	if len(paths) != 0 {
+		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
+	}
+
+	paths, err = store.HitPaths(NullTenant, day(2020, 6, 21, 0))
+
+	if err != nil {
+		t.Fatalf("Paths must have been returned, but was: %v", err)
+	}
+
+	if len(paths) != 2 {
+		t.Fatalf("Two paths must have been returned, but was: %v", len(paths))
+	}
+
+	if paths[0] != "/" || paths[1] != "/path" {
+		t.Fatalf("Paths not as expected: %v", paths)
+	}
+}
+
+func TestPostgresStore_Paths(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	stats := &VisitorStats{
+		Stats: Stats{
+			Day:  day(2020, 6, 20, 7),
+			Path: "/stats",
+		},
+	}
+
+	if err := store.SaveVisitorStats(nil, stats); err != nil {
+		t.Fatal(err)
+	}
+
+	paths, err := store.Paths(NullTenant, day(2020, 6, 15, 0), day(2020, 6, 19, 0))
+
+	if err != nil {
+		t.Fatalf("Paths must have been returned, but was: %v", err)
+	}
+
+	if len(paths) != 0 {
+		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
+	}
+
+	paths, err = store.Paths(NullTenant, day(2020, 6, 20, 0), day(2020, 6, 25, 0))
+
+	if err != nil {
+		t.Fatalf("Paths must have been returned, but was: %v", err)
+	}
+
+	if len(paths) != 3 {
+		t.Fatalf("Three paths must have been returned, but was: %v", len(paths))
+	}
+
+	if paths[0] != "/" || paths[1] != "/path" || paths[2] != "/stats" {
+		t.Fatalf("Paths not as expected: %v", paths)
+	}
+}

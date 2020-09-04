@@ -29,12 +29,6 @@ type Store interface {
 	// DeleteHitsByDay deletes all hits on given day.
 	DeleteHitsByDay(*sqlx.Tx, sql.NullInt64, time.Time) error
 
-	// Days returns the distinct days with at least one hit.
-	Days(sql.NullInt64) ([]time.Time, error)
-
-	// Paths returns the distinct paths for given day.
-	Paths(sql.NullInt64, time.Time) ([]string, error)
-
 	// SaveVisitorStats saves VisitorStats.
 	SaveVisitorStats(*sqlx.Tx, *VisitorStats) error
 
@@ -53,8 +47,17 @@ type Store interface {
 	// SaveBrowserStats saves BrowserStats.
 	SaveBrowserStats(*sqlx.Tx, *BrowserStats) error
 
-	// CountVisitorsByPath returns the visitor count for given day and path.
-	CountVisitorsByPath(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]VisitorStats, error)
+	// HitDays returns the distinct days with at least one hit.
+	HitDays(sql.NullInt64) ([]time.Time, error)
+
+	// HitPaths returns the distinct paths for given day.
+	HitPaths(sql.NullInt64, time.Time) ([]string, error)
+
+	// Paths returns the distinct paths for given time frame.
+	Paths(sql.NullInt64, time.Time, time.Time) ([]string, error)
+
+	// CountVisitorsByPath returns the visitor count for given day, path, and if the platform should be included or not.
+	CountVisitorsByPath(*sqlx.Tx, sql.NullInt64, time.Time, string, bool) ([]VisitorStats, error)
 
 	// CountVisitorsByPathAndHour returns the visitor count for given day and path grouped by hour of day.
 	CountVisitorsByPathAndHour(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]VisitorTimeStats, error)
@@ -73,5 +76,8 @@ type Store interface {
 
 	// ActiveVisitors returns the active visitors grouped by path for given duration and path.
 	// The path is optional and can be left empty to disable path filtering.
-	ActiveVisitors(sql.NullInt64, string, time.Time) ([]VisitorStats, error)
+	ActiveVisitors(sql.NullInt64, string, time.Time) ([]Stats, error)
+
+	// Visitors returns the visitors for given path and time frame grouped by days.
+	Visitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
 }

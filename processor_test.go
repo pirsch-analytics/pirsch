@@ -18,7 +18,7 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 func testProcess(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, tenantID)
-		processor := NewProcessor(store, nil)
+		processor := NewProcessor(store)
 
 		if tenantID == 0 {
 			if err := processor.Process(); err != nil {

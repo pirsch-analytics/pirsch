@@ -6,179 +6,127 @@ import (
 )
 
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
-	testAnalyzerActiveVisitors(t, 0)
-	testAnalyzerActiveVisitors(t, 1)
-}
+	tenantIDs := []int64{0, 1}
 
-func TestAnalyzer_ActiveVisitorsPathFilter(t *testing.T) {
-	testAnalyzerActiveVisitorsPathFilter(t, 0)
-	testAnalyzerActiveVisitorsPathFilter(t, 1)
-}
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+			analyzer := NewAnalyzer(store)
+			visitors, total, err := analyzer.ActiveVisitors(&Filter{
+				TenantID: NewTenantID(tenantID),
+			}, time.Second*30)
 
-func testAnalyzerActiveVisitors(t *testing.T, tenantID int64) {
-	for _, store := range testStorageBackends() {
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
-		analyzer := NewAnalyzer(store)
-		visitors, total, err := analyzer.ActiveVisitors(&Filter{
-			TenantID: NewTenantID(tenantID),
-		}, time.Second*30)
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
 
-		if err != nil {
-			t.Fatalf("Visitors must be returned, but was:  %v", err)
-		}
+			if total != 3 {
+				t.Fatalf("Three active visitors must have been returned, but was: %v", total)
+			}
 
-		if total != 3 {
-			t.Fatalf("Three active visitors must have been returned, but was: %v", total)
-		}
-
-		if len(visitors) != 2 ||
-			visitors[0].Path != "/" || visitors[0].Visitors != 2 ||
-			visitors[1].Path != "/path" || visitors[1].Visitors != 1 {
-			t.Fatalf("Visitors not as expected: %v", visitors)
+			if len(visitors) != 2 ||
+				visitors[0].Path != "/" || visitors[0].Visitors != 2 ||
+				visitors[1].Path != "/path" || visitors[1].Visitors != 1 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
 		}
 	}
 }
 
-func testAnalyzerActiveVisitorsPathFilter(t *testing.T, tenantID int64) {
-	for _, store := range testStorageBackends() {
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
-		createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
-		analyzer := NewAnalyzer(store)
-		visitors, total, err := analyzer.ActiveVisitors(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/PAth",
-		}, time.Second*30)
+func TestAnalyzer_ActiveVisitorsPathFilter(t *testing.T) {
+	tenantIDs := []int64{0, 1}
 
-		if err != nil {
-			t.Fatalf("Visitors must be returned, but was:  %v", err)
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+			analyzer := NewAnalyzer(store)
+			visitors, total, err := analyzer.ActiveVisitors(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/PAth",
+			}, time.Second*30)
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if total != 1 {
+				t.Fatalf("One active visitor must have been returned, but was: %v", total)
+			}
+
+			if len(visitors) != 1 ||
+				visitors[0].Path != "/path" || visitors[0].Visitors != 1 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
 		}
+	}
+}
 
-		if total != 1 {
-			t.Fatalf("One active visitors must have been returned, but was: %v", total)
-		}
+func TestAnalyzer_Visitors(t *testing.T) {
+	tenantIDs := []int64{0, 1}
 
-		if len(visitors) != 1 ||
-			visitors[0].Path != "/path" || visitors[0].Visitors != 1 {
-			t.Fatalf("Visitors not as expected: %v", visitors)
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			stats := &VisitorStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        day(2020, 9, 2, 0),
+					Path:       "/path",
+					Visitors:   42,
+				},
+			}
+
+			if err := store.SaveVisitorStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.Visitors(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     day(2020, 9, 1, 0),
+				To:       day(2020, 9, 4, 0),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if len(visitors[0].Stats) != 4 || visitors[0].Path != "/" ||
+				!visitors[0].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[0].Stats[0].Visitors != 0 ||
+				!visitors[0].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[0].Stats[1].Visitors != 0 ||
+				!visitors[0].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[0].Stats[2].Visitors != 0 ||
+				!visitors[0].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[0].Stats[3].Visitors != 1 {
+				t.Fatalf("First path not as expected: %v", visitors)
+			}
+
+			if len(visitors[1].Stats) != 4 || visitors[1].Path != "/path" ||
+				!visitors[1].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[1].Stats[0].Visitors != 0 ||
+				!visitors[1].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[1].Stats[1].Visitors != 42 ||
+				!visitors[1].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[1].Stats[2].Visitors != 0 ||
+				!visitors[1].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[1].Stats[3].Visitors != 1 {
+				t.Fatalf("Second path not as expected: %v", visitors)
+			}
 		}
 	}
 }
 
 /*
-func TestAnalyzerVisitors(t *testing.T) {
-	testAnalyzerVisitors(t, 0)
-	testAnalyzerVisitors(t, 1)
-}
-
-func TestAnalyzerVisitorsFiltered(t *testing.T) {
-	testAnalyzerVisitorsFiltered(t, 0)
-	testAnalyzerVisitorsFiltered(t, 1)
-}
-
-func TestAnalyzerPageVisits(t *testing.T) {
-	testAnalyzerPageVisits(t, 0)
-	testAnalyzerPageVisits(t, 1)
-}
-
-func TestAnalyzerReferrerVisits(t *testing.T) {
-	testAnalyzerReferrerVisits(t, 0)
-	testAnalyzerReferrerVisits(t, 1)
-}
-
-func TestAnalyzerPageVisitsFiltered(t *testing.T) {
-	testAnalyzerPageVisitsFiltered(t, 0)
-	testAnalyzerPageVisitsFiltered(t, 1)
-}
-
-func TestAnalyzerPages(t *testing.T) {
-	testAnalyzerPages(t, 0)
-	testAnalyzerPages(t, 1)
-}
-
-func TestAnalyzerPagesFiltered(t *testing.T) {
-	testAnalyzerPagesFiltered(t, 0)
-	testAnalyzerPagesFiltered(t, 1)
-}
-
-func TestAnalyzerLanguages(t *testing.T) {
-	testAnalyzerLanguages(t, 0)
-	testAnalyzerLanguages(t, 1)
-}
-
-func TestAnalyzerLanguagesFiltered(t *testing.T) {
-	testAnalyzerLanguagesFiltered(t, 0)
-	testAnalyzerLanguagesFiltered(t, 1)
-}
-
-func TestAnalyzerReferrer(t *testing.T) {
-	testAnalyzerReferrer(t, 0)
-	testAnalyzerReferrer(t, 1)
-}
-
-func TestAnalyzerReferrerFiltered(t *testing.T) {
-	testAnalyzerReferrerFiltered(t, 0)
-	testAnalyzerReferrerFiltered(t, 1)
-}
-
-func TestAnalyzerOS(t *testing.T) {
-	testAnalyzerOS(t, 0)
-	testAnalyzerOS(t, 1)
-}
-
-func TestAnalyzerOSFiltered(t *testing.T) {
-	testAnalyzerOSFiltered(t, 0)
-	testAnalyzerOSFiltered(t, 1)
-}
-
-func TestAnalyzerBrowser(t *testing.T) {
-	testAnalyzerBrowser(t, 0)
-	testAnalyzerBrowser(t, 1)
-}
-
-func TestAnalyzerBrowserFiltered(t *testing.T) {
-	testAnalyzerBrowserFiltered(t, 0)
-	testAnalyzerBrowserFiltered(t, 1)
-}
-
-func TestAnalyzerPlatform(t *testing.T) {
-	testAnalyzerPlatform(t, 0)
-	testAnalyzerPlatform(t, 1)
-}
-
-func TestAnalyzerPlatformFiltered(t *testing.T) {
-	testAnalyzerPlatformFiltered(t, 0)
-	testAnalyzerPlatformFiltered(t, 1)
-}
-
-func TestAnalyzerHourlyVisitors(t *testing.T) {
-	testAnalyzerHourlyVisitors(t, 0)
-	testAnalyzerHourlyVisitors(t, 1)
-}
-
-func TestAnalyzerActiveVisitors(t *testing.T) {
-	testAnalyzerActiveVisitors(t, 0)
-	testAnalyzerActiveVisitors(t, 1)
-}
-
-func TestAnalyzerActiveVisitorsPages(t *testing.T) {
-	testAnalyzerActiveVisitorsPages(t, 0)
-	testAnalyzerActiveVisitorsPages(t, 1)
-}
-
-func TestAnalyzerHourlyVisitorsFiltered(t *testing.T) {
-	testAnalyzerHourlyVisitorsFiltered(t, 0)
-	testAnalyzerHourlyVisitorsFiltered(t, 1)
-}
-
 func testAnalyzerVisitors(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		cleanupDB(t)
@@ -203,7 +151,7 @@ func testAnalyzerVisitors(t *testing.T, tenantID int64) {
 			!equalDay(visitors[4].Day, pastDay(2)) ||
 			!equalDay(visitors[5].Day, pastDay(1)) ||
 			!equalDay(visitors[6].Day, pastDay(0)) {
-			t.Fatalf("Days not as expected: %v", visitors)
+			t.Fatalf("HitDays not as expected: %v", visitors)
 		}
 
 		if visitors[0].Visitors != 0 ||
@@ -239,7 +187,7 @@ func testAnalyzerVisitorsFiltered(t *testing.T, tenantID int64) {
 
 		if !equalDay(visitors[0].Day, pastDay(3)) ||
 			!equalDay(visitors[1].Day, pastDay(2)) {
-			t.Fatalf("Days not as expected: %v", visitors)
+			t.Fatalf("HitDays not as expected: %v", visitors)
 		}
 
 		if visitors[0].Visitors != 26 ||
@@ -270,7 +218,7 @@ func testAnalyzerPageVisits(t *testing.T, tenantID int64) {
 			visits[1].Path.String != "/bar" ||
 			visits[2].Path.String != "/foo" ||
 			visits[3].Path.String != "/laa" {
-			t.Fatal("Paths not as expected")
+			t.Fatal("HitPaths not as expected")
 		}
 
 		if len(visits[0].VisitorsPerDay) != 7 ||
@@ -776,7 +724,7 @@ func testAnalyzerActiveVisitorsPages(t *testing.T, tenantID int64) {
 
 		if visitors[0].Path.String != "/bar" || visitors[0].Visitors != 2 ||
 			visitors[1].Path.String != "/" || visitors[1].Visitors != 1 {
-			t.Fatalf("Paths not as expected, was: %v", visitors)
+			t.Fatalf("HitPaths not as expected, was: %v", visitors)
 		}
 	}
 }

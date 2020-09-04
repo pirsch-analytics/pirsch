@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -36,6 +37,7 @@ func (filter *Filter) Days() int {
 }
 
 func (filter *Filter) validate() {
+	filter.Path = strings.TrimSpace(filter.Path)
 	today := today()
 
 	if filter.From.IsZero() && filter.To.IsZero() {
