@@ -80,6 +80,15 @@ type Store interface {
 	// CountVisitorsByLanguage returns the visitor count for given day grouped by language.
 	CountVisitorsByLanguage(*sqlx.Tx, sql.NullInt64, time.Time) ([]LanguageStats, error)
 
+	// CountVisitorsByReferrer returns the visitor count for given day grouped by referrer.
+	CountVisitorsByReferrer(*sqlx.Tx, sql.NullInt64, time.Time) ([]ReferrerStats, error)
+
+	// CountVisitorsByOS returns the visitor count for given day grouped by operating system.
+	CountVisitorsByOS(*sqlx.Tx, sql.NullInt64, time.Time) ([]OSStats, error)
+
+	// CountVisitorsByBrowser returns the visitor count for given day grouped by browser.
+	CountVisitorsByBrowser(*sqlx.Tx, sql.NullInt64, time.Time) ([]BrowserStats, error)
+
 	// ActiveVisitors returns the active visitors grouped by path for given duration and path.
 	// The path is optional and can be left empty to disable path filtering.
 	ActiveVisitors(sql.NullInt64, string, time.Time) ([]Stats, error)
@@ -89,6 +98,15 @@ type Store interface {
 
 	// VisitorLanguages returns the visitors for given time frame grouped by language.
 	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]LanguageStats, error)
+
+	// VisitorReferrer returns the visitor count for given day grouped by referrer.
+	VisitorReferrer(tenantID sql.NullInt64, from, to time.Time) ([]ReferrerStats, error)
+
+	// VisitorOS returns the visitor count for given day grouped by operating system.
+	VisitorOS(tenantID sql.NullInt64, from, to time.Time) ([]OSStats, error)
+
+	// VisitorBrowser returns the visitor count for given day grouped by browser.
+	VisitorBrowser(tenantID sql.NullInt64, from, to time.Time) ([]BrowserStats, error)
 
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)

@@ -564,6 +564,69 @@ func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.Nu
 	return visitors, nil
 }
 
+// CountVisitorsByReferrer implements the Store interface.
+func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]ReferrerStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "referrer", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "referrer"`
+	var visitors []ReferrerStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// CountVisitorsByOS implements the Store interface.
+func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]OSStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "os", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "os"`
+	var visitors []OSStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// CountVisitorsByBrowser implements the Store interface.
+func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]BrowserStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "browser", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "browser"`
+	var visitors []BrowserStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // ActiveVisitors implements the Store interface.
 func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]Stats, error) {
 	args := make([]interface{}, 0, 3)
@@ -623,6 +686,60 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 		GROUP BY "language", "visitors"
 		ORDER BY "visitors" DESC`
 	var visitors []LanguageStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// VisitorReferrer implements the Store interface.
+func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to time.Time) ([]ReferrerStats, error) {
+	query := `SELECT "referrer", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "referrer_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "referrer", "visitors"
+		ORDER BY "visitors" DESC`
+	var visitors []ReferrerStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// VisitorOS implements the Store interface.
+func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time) ([]OSStats, error) {
+	query := `SELECT "os", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "os_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "os", "visitors"
+		ORDER BY "visitors" DESC`
+	var visitors []OSStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// VisitorBrowser implements the Store interface.
+func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time.Time) ([]BrowserStats, error) {
+	query := `SELECT "browser", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "browser_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "browser", "visitors"
+		ORDER BY "visitors" DESC`
+	var visitors []BrowserStats
 
 	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
 		return nil, err

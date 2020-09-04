@@ -110,6 +110,132 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 	return stats, nil
 }
 
+// Referrer returns the visitor count per referrer.
+func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorReferrer(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday && len(stats) > 0 {
+		visitorsToday, err := analyzer.store.CountVisitorsByReferrer(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.Referrer.String == v.Referrer.String {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
+
+	return stats, nil
+}
+
+// OS returns the visitor count per operating system.
+func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorOS(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday && len(stats) > 0 {
+		visitorsToday, err := analyzer.store.CountVisitorsByOS(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.OS.String == v.OS.String {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
+
+	return stats, nil
+}
+
+// Browser returns the visitor count per browser.
+func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorBrowser(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday && len(stats) > 0 {
+		visitorsToday, err := analyzer.store.CountVisitorsByBrowser(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.Browser.String == v.Browser.String {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
+
+	return stats, nil
+}
+
 // PageVisitors returns the visitors per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)
