@@ -78,7 +78,7 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
 			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -94,6 +94,52 @@ func TestAnalyzer_Visitors(t *testing.T) {
 
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.Visitors(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     day(2020, 9, 1, 0),
+				To:       day(2020, 9, 4, 0),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 4 {
+				t.Fatalf("Four visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if !visitors[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[0].Visitors != 0 ||
+				!visitors[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[1].Visitors != 42 ||
+				!visitors[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[2].Visitors != 0 ||
+				!visitors[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[3].Visitors != 2 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PageVisitors(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			stats := &VisitorStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        day(2020, 9, 2, 0),
+					Path:       "/path",
+					Visitors:   42,
+				},
+			}
+
+			if err := store.SaveVisitorStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.PageVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     day(2020, 9, 1, 0),
 				To:       day(2020, 9, 4, 0),
@@ -125,6 +171,62 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		}
 	}
 }
+
+/*func TestAnalyzer_Referrer(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref2", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			stats := &ReferrerStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        day(2020, 9, 2, 0),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Referrer: sql.NullString{String: "ref2", Valid: true},
+			}
+
+			if err := store.SaveReferrerStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.Referrer(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     day(2020, 9, 1, 0),
+				To:       day(2020, 9, 4, 0),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if len(visitors[0].Stats) != 4 || visitors[0].Path != "/" ||
+				!visitors[0].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[0].Stats[0].Visitors != 0 || visitors[0].Stats[0].Referrer.Valid ||
+				!visitors[0].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[0].Stats[1].Visitors != 0 || visitors[0].Stats[1].Referrer.Valid ||
+				!visitors[0].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[0].Stats[2].Visitors != 0 || visitors[0].Stats[2].Referrer.Valid ||
+				!visitors[0].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[0].Stats[3].Visitors != 1 || visitors[0].Stats[3].Referrer.String != "ref1" {
+				t.Fatalf("First path not as expected: %v", visitors)
+			}
+
+			if len(visitors[1].Stats) != 4 || visitors[1].Path != "/path" ||
+				!visitors[1].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[1].Stats[0].Visitors != 0 || visitors[0].Stats[0].Referrer.Valid ||
+				!visitors[1].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[1].Stats[1].Visitors != 42 || visitors[0].Stats[1].Referrer.String != "ref2" ||
+				!visitors[1].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[1].Stats[2].Visitors != 0 || visitors[1].Stats[2].Referrer.Valid ||
+				!visitors[1].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[1].Stats[3].Visitors != 1 || visitors[0].Stats[3].Referrer.String != "ref2" {
+				t.Fatalf("Second path not as expected: %v", visitors)
+			}
+		}
+	}
+}*/
 
 /*
 func testAnalyzerVisitors(t *testing.T, tenantID int64) {

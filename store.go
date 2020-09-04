@@ -56,6 +56,9 @@ type Store interface {
 	// Paths returns the distinct paths for given time frame.
 	Paths(sql.NullInt64, time.Time, time.Time) ([]string, error)
 
+	// CountVisitors returns the visitor count for given day.
+	CountVisitors(*sqlx.Tx, sql.NullInt64, time.Time) *Stats
+
 	// CountVisitorsByPath returns the visitor count for given day, path, and if the platform should be included or not.
 	CountVisitorsByPath(*sqlx.Tx, sql.NullInt64, time.Time, string, bool) ([]VisitorStats, error)
 
@@ -78,6 +81,12 @@ type Store interface {
 	// The path is optional and can be left empty to disable path filtering.
 	ActiveVisitors(sql.NullInt64, string, time.Time) ([]Stats, error)
 
-	// Visitors returns the visitors for given path and time frame grouped by days.
-	Visitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
+	// Visitors returns the visitors for given time frame grouped by days.
+	Visitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
+
+	// PageVisitors returns the visitors for given path and time frame grouped by days.
+	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
+
+	// Referrer returns the visitors for given path and time frame grouped by days and referrer.
+	Referrer(sql.NullInt64, string, time.Time, time.Time) ([]ReferrerStats, error)
 }

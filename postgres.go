@@ -332,6 +332,26 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 	return paths, nil
 }
 
+func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *Stats {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT date("time") "day", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "day"`
+	visitors := new(Stats)
+
+	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+		return nil
+	}
+
+	return visitors
+}
+
 // CountVisitorsByPath implements the Store interface.
 func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string, includePlatform bool) ([]VisitorStats, error) {
 	if tx == nil {
@@ -548,7 +568,30 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, 
 }
 
 // Visitors implements the Store interface.
-func (store *PostgresStore) Visitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
+func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
+	query := `SELECT "d" AS "day",
+		COALESCE(SUM("visitor_stats".visitors), 0) "visitors"
+		FROM (
+			SELECT * FROM generate_series(
+				$2::date,
+				$3::date,
+				INTERVAL '1 day'
+			) "d"
+		) AS date_series
+		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "visitor_stats"."day" = "d"
+		GROUP BY "d"
+		ORDER BY "d" ASC`
+	var visitors []Stats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// PageVisitors implements the Store interface.
+func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
 		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
 		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END
@@ -562,6 +605,30 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, path string, from, 
 		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "visitor_stats"."day" = "d" AND LOWER("path") = LOWER($4)
 		ORDER BY "d" ASC`
 	var visitors []Stats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to, path); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// Referrer implements the Store interface.
+func (store *PostgresStore) Referrer(tenantID sql.NullInt64, path string, from, to time.Time) ([]ReferrerStats, error) {
+	query := `SELECT "d" AS "day",
+		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
+		"referrer_stats"."referrer",
+		CASE WHEN "referrer_stats".visitors IS NULL THEN 0 ELSE "referrer_stats".visitors END
+		FROM (
+			SELECT * FROM generate_series(
+				$2::date,
+				$3::date,
+				INTERVAL '1 day'
+			) "d"
+		) AS date_series
+		LEFT JOIN "referrer_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "referrer_stats"."day" = "d" AND LOWER("path") = LOWER($4)
+		ORDER BY "d" ASC`
+	var visitors []ReferrerStats
 
 	if err := store.DB.Select(&visitors, query, tenantID, from, to, path); err != nil {
 		return nil, err

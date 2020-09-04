@@ -10,6 +10,12 @@ type PathVisitors struct {
 	Stats []Stats
 }
 
+// PathReferrer assigns a path to visitor statistics per day and referrer.
+type PathReferrer struct {
+	Path  string
+	Stats []ReferrerStats
+}
+
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store Store
@@ -39,8 +45,30 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return visitors, sum, nil
 }
 
-// Visitors returns the visitors per day for the given time frame and path.
-func (analyzer *Analyzer) Visitors(filter *Filter) ([]PathVisitors, error) {
+// Visitors returns the visitor count per day.
+func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.Visitors(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday && len(stats) > 0 {
+		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
+
+		if visitorsToday != nil {
+			stats[len(stats)-1].Visitors += visitorsToday.Visitors
+		}
+	}
+
+	return stats, nil
+}
+
+// PageVisitors returns the visitors per day for the given time frame grouped by path.
+func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)
 	paths := analyzer.getPaths(filter)
 	today := today()
@@ -48,13 +76,13 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]PathVisitors, error) {
 	stats := make([]PathVisitors, 0, len(paths))
 
 	for _, path := range paths {
-		visitors, err := analyzer.store.Visitors(filter.TenantID, path, filter.From, filter.To)
+		visitors, err := analyzer.store.PageVisitors(filter.TenantID, path, filter.From, filter.To)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if addToday {
+		if addToday && len(visitors) > 0 {
 			visitorsToday, err := analyzer.store.CountVisitorsByPath(nil, filter.TenantID, today, path, false)
 
 			if err != nil {
@@ -74,6 +102,42 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]PathVisitors, error) {
 
 	return stats, nil
 }
+
+// Referrer returns the visitor count per referrer, day, and for the given time frame and path.
+/*func (analyzer *Analyzer) Referrer(filter *Filter) ([]PathReferrer, error) {
+	filter = analyzer.getFilter(filter)
+	paths := analyzer.getPaths(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats := make([]PathReferrer, 0, len(paths))
+
+	for _, path := range paths {
+		visitors, err := analyzer.store.Referrer(filter.TenantID, path, filter.From, filter.To)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if addToday && len(visitors) > 0 {
+			visitorsToday, err := analyzer.store.CountVisitorsByPathAndReferrer(nil, filter.TenantID, today, path)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if len(visitorsToday) > 0 {
+				visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
+			}
+		}
+
+		stats = append(stats, PathReferrer{
+			Path:  path,
+			Stats: visitors,
+		})
+	}
+
+	return stats, nil
+}*/
 
 // getFilter validates and returns the given filter or a default filter if it is nil.
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
