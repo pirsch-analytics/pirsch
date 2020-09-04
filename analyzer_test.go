@@ -78,12 +78,12 @@ func TestAnalyzer_Visitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -96,8 +96,8 @@ func TestAnalyzer_Visitors(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.Visitors(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(3),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -108,10 +108,10 @@ func TestAnalyzer_Visitors(t *testing.T) {
 				t.Fatalf("Four visitors must have been returned, but was: %v", len(visitors))
 			}
 
-			if !visitors[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[0].Visitors != 0 ||
-				!visitors[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[1].Visitors != 42 ||
-				!visitors[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[2].Visitors != 0 ||
-				!visitors[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[3].Visitors != 2 {
+			if !visitors[0].Day.Equal(pastDay(3)) || visitors[0].Visitors != 0 ||
+				!visitors[1].Day.Equal(pastDay(2)) || visitors[1].Visitors != 42 ||
+				!visitors[2].Day.Equal(pastDay(1)) || visitors[2].Visitors != 0 ||
+				!visitors[3].Day.Equal(today()) || visitors[3].Visitors != 2 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
@@ -124,12 +124,12 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -142,8 +142,8 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.PageVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(3),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -155,18 +155,18 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 			}
 
 			if len(visitors[0].Stats) != 4 || visitors[0].Path != "/" ||
-				!visitors[0].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[0].Stats[0].Visitors != 0 ||
-				!visitors[0].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[0].Stats[1].Visitors != 0 ||
-				!visitors[0].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[0].Stats[2].Visitors != 0 ||
-				!visitors[0].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[0].Stats[3].Visitors != 1 {
+				!visitors[0].Stats[0].Day.Equal(pastDay(3)) || visitors[0].Stats[0].Visitors != 0 ||
+				!visitors[0].Stats[1].Day.Equal(pastDay(2)) || visitors[0].Stats[1].Visitors != 0 ||
+				!visitors[0].Stats[2].Day.Equal(pastDay(1)) || visitors[0].Stats[2].Visitors != 0 ||
+				!visitors[0].Stats[3].Day.Equal(today()) || visitors[0].Stats[3].Visitors != 1 {
 				t.Fatalf("First path not as expected: %v", visitors)
 			}
 
 			if len(visitors[1].Stats) != 4 || visitors[1].Path != "/path" ||
-				!visitors[1].Stats[0].Day.Equal(day(2020, 9, 1, 0)) || visitors[1].Stats[0].Visitors != 0 ||
-				!visitors[1].Stats[1].Day.Equal(day(2020, 9, 2, 0)) || visitors[1].Stats[1].Visitors != 42 ||
-				!visitors[1].Stats[2].Day.Equal(day(2020, 9, 3, 0)) || visitors[1].Stats[2].Visitors != 0 ||
-				!visitors[1].Stats[3].Day.Equal(day(2020, 9, 4, 0)) || visitors[1].Stats[3].Visitors != 1 {
+				!visitors[1].Stats[0].Day.Equal(pastDay(3)) || visitors[1].Stats[0].Visitors != 0 ||
+				!visitors[1].Stats[1].Day.Equal(pastDay(2)) || visitors[1].Stats[1].Visitors != 42 ||
+				!visitors[1].Stats[2].Day.Equal(pastDay(1)) || visitors[1].Stats[2].Visitors != 0 ||
+				!visitors[1].Stats[3].Day.Equal(today()) || visitors[1].Stats[3].Visitors != 1 {
 				t.Fatalf("Second path not as expected: %v", visitors)
 			}
 		}
@@ -179,12 +179,12 @@ func TestAnalyzer_Languages(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
 			stats := &LanguageStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -198,8 +198,8 @@ func TestAnalyzer_Languages(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.Languages(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(4),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -224,12 +224,12 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 9, 4, 0), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "ref2", day(2020, 9, 4, 0), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "ref2", today(), "", "", "", "", false, false)
 			stats := &ReferrerStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -243,8 +243,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.Referrer(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(4),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -269,12 +269,12 @@ func TestAnalyzer_OS(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), OSWindows, "10", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", day(2020, 9, 4, 0), OSMac, "10.15.3", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), OSWindows, "10", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), OSMac, "10.15.3", "", "", false, false)
 			stats := &OSStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -289,8 +289,8 @@ func TestAnalyzer_OS(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.OS(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(4),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -315,12 +315,12 @@ func TestAnalyzer_Browser(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", day(2020, 9, 4, 0), "", "", BrowserChrome, "84.0", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", day(2020, 9, 4, 0), "", "", BrowserFirefox, "54.0", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", BrowserChrome, "84.0", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", BrowserFirefox, "54.0", false, false)
 			stats := &BrowserStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        day(2020, 9, 2, 0),
+					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
 				},
@@ -335,8 +335,8 @@ func TestAnalyzer_Browser(t *testing.T) {
 			analyzer := NewAnalyzer(store)
 			visitors, err := analyzer.Browser(&Filter{
 				TenantID: NewTenantID(tenantID),
-				From:     day(2020, 9, 1, 0),
-				To:       day(2020, 9, 4, 0),
+				From:     pastDay(4),
+				To:       today(),
 			})
 
 			if err != nil {
@@ -349,6 +349,44 @@ func TestAnalyzer_Browser(t *testing.T) {
 
 			if visitors[0].Browser.String != BrowserChrome || visitors[0].Visitors != 43 ||
 				visitors[1].Browser.String != BrowserFirefox || visitors[1].Visitors != 1 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_Platform(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, true)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
+			stats := &VisitorStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+				},
+				PlatformDesktop: 42,
+				PlatformMobile:  43,
+				PlatformUnknown: 44,
+			}
+
+			if err := store.SaveVisitorStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors := analyzer.Platform(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if visitors.PlatformDesktop != 43 || visitors.PlatformMobile != 44 || visitors.PlatformUnknown != 45 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}

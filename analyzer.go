@@ -236,6 +236,30 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 	return stats, nil
 }
 
+// Platform returns the visitor count per browser.
+func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats := analyzer.store.VisitorPlatform(filter.TenantID, filter.From, filter.To)
+
+	if stats == nil {
+		stats = &VisitorStats{}
+	}
+
+	if addToday {
+		visitorsToday := analyzer.store.CountVisitorsByPlatform(nil, filter.TenantID, today)
+
+		if visitorsToday != nil {
+			stats.PlatformDesktop += visitorsToday.PlatformDesktop
+			stats.PlatformMobile += visitorsToday.PlatformMobile
+			stats.PlatformUnknown += visitorsToday.PlatformUnknown
+		}
+	}
+
+	return stats
+}
+
 // PageVisitors returns the visitors per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)

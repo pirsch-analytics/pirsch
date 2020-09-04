@@ -627,6 +627,43 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 	return visitors, nil
 }
 
+// CountVisitorsByPlatform implements the Store interface.
+func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *VisitorStats {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT (
+				SELECT COUNT(1) FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") = $2::date
+				AND desktop IS TRUE
+				AND mobile IS FALSE
+			) AS "platform_desktop",
+			(
+				SELECT COUNT(1) FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") = $2::date
+				AND desktop IS FALSE
+				AND mobile IS TRUE
+			) AS "platform_mobile",
+			(
+				SELECT COUNT(1) FROM "hit"
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") = $2::date
+				AND desktop IS FALSE
+				AND mobile IS FALSE
+			) AS "platform_unknown"`
+	visitors := new(VisitorStats)
+
+	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+		return nil
+	}
+
+	return visitors
+}
+
 // ActiveVisitors implements the Store interface.
 func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]Stats, error) {
 	args := make([]interface{}, 0, 3)
@@ -746,6 +783,24 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time
 	}
 
 	return visitors, nil
+}
+
+// VisitorPlatform implements the Store interface.
+func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to time.Time) *VisitorStats {
+	query := `SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
+		COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
+		COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
+		FROM "visitor_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date`
+	visitors := new(VisitorStats)
+
+	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil {
+		return nil
+	}
+
+	return visitors
 }
 
 // PageVisitors implements the Store interface.
