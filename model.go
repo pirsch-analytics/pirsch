@@ -11,97 +11,79 @@ type BaseEntity struct {
 	TenantID sql.NullInt64 `db:"tenant_id" json:"tenant_id"`
 }
 
-// VisitorsPerDay is the unique visitor count per day.
-type VisitorsPerDay struct {
-	BaseEntity
+// StatsEntity is an interface for all statistics entities.
+type StatsEntity interface {
+	// GetID returns the ID.
+	GetID() int64
 
-	Day      time.Time `db:"day" json:"day"`
-	Visitors int       `db:"visitors" json:"visitors"`
+	// GetVisitors returns the visitor count.
+	GetVisitors() int
 }
 
-// VisitorsPerHour is the unique visitor count per hour and day.
-type VisitorsPerHour struct {
+// Stats is the base entity for all statistics.
+type Stats struct {
 	BaseEntity
 
-	DayAndHour time.Time `db:"day_and_hour" json:"day_and_hour"`
-	Visitors   int       `db:"visitors" json:"visitors"`
+	Day              time.Time `db:"day" json:"day"`
+	Path             string    `db:"path" json:"path"`
+	Visitors         int       `db:"visitors" json:"visitors"`
+	RelativeVisitors float64   `db:"-" json:"relative_visitors"`
 }
 
-// VisitorsPerLanguage is the unique visitor count per language and day.
-type VisitorsPerLanguage struct {
-	BaseEntity
+func (stats *Stats) GetID() int64 {
+	return stats.BaseEntity.ID
+}
 
-	Day      time.Time      `db:"day" json:"day"`
+func (stats *Stats) GetVisitors() int {
+	return stats.Visitors
+}
+
+// VisitorStats is the visitor count for each path on each day and platform
+// and it is used to calculate the total visitor count for each day.
+type VisitorStats struct {
+	Stats
+
+	PlatformDesktop         int     `db:"platform_desktop" json:"platform_desktop"`
+	PlatformMobile          int     `db:"platform_mobile" json:"platform_mobile"`
+	PlatformUnknown         int     `db:"platform_unknown" json:"platform_unknown"`
+	RelativePlatformDesktop float64 `db:"-" json:"relative_platform_desktop"`
+	RelativePlatformMobile  float64 `db:"-" json:"relative_platform_mobile"`
+	RelativePlatformUnknown float64 `db:"-" json:"relative_platform_unknown"`
+}
+
+// VisitorTimeStats is the visitor count for each path on each day and hour (ranging from 0 to 23).
+type VisitorTimeStats struct {
+	Stats
+
+	Hour int `db:"hour" json:"hour"`
+}
+
+// LanguageStats is the visitor count for each path on each day and language.
+type LanguageStats struct {
+	Stats
+
 	Language sql.NullString `db:"language" json:"language"`
-	Visitors int            `db:"visitors" json:"visitors"`
 }
 
-// VisitorsPerPage is the unique visitor count per path and day.
-type VisitorsPerPage struct {
-	BaseEntity
+// ReferrerStats is the visitor count for each path on each day and referrer.
+type ReferrerStats struct {
+	Stats
 
-	Day      time.Time      `db:"day" json:"day"`
-	Path     sql.NullString `db:"path" json:"path"`
-	Visitors int            `db:"visitors" json:"visitors"`
+	Referrer sql.NullString `db:"referrer" json:"referrer"`
 }
 
-// VisitorsPerReferrer is the unique visitor count per referrer and day.
-type VisitorsPerReferrer struct {
-	BaseEntity
+// OSStats is the visitor count for each path on each day and operating system.
+type OSStats struct {
+	Stats
 
-	Day      time.Time      `db:"day" json:"day"`
-	Ref      sql.NullString `db:"ref" json:"ref"`
-	Visitors int            `db:"visitors" json:"visitors"`
-}
-
-// VisitorsPerOS is the unique visitor count per operating system and day.
-type VisitorsPerOS struct {
-	BaseEntity
-
-	Day       time.Time      `db:"day" json:"day"`
 	OS        sql.NullString `db:"os" json:"os"`
 	OSVersion sql.NullString `db:"os_version" json:"version"`
-	Visitors  int            `db:"visitors" json:"visitors"`
 }
 
-// VisitorsPerBrowser is the unique visitor count per browser and day.
-type VisitorsPerBrowser struct {
-	BaseEntity
+// BrowserStats is the visitor count for each path on each day and browser.
+type BrowserStats struct {
+	Stats
 
-	Day            time.Time      `db:"day" json:"day"`
 	Browser        sql.NullString `db:"browser" json:"browser"`
 	BrowserVersion sql.NullString `db:"browser_version" json:"version"`
-	Visitors       int            `db:"visitors" json:"visitors"`
-}
-
-// VisitorPlatform is the visitor count per platform and day.
-type VisitorPlatform struct {
-	BaseEntity
-
-	Day     time.Time `db:"day" json:"day"`
-	Desktop int       `db:"desktop" json:"desktop"`
-	Mobile  int       `db:"mobile" json:"mobile"`
-	Unknown int       `db:"unknown" json:"unknown"`
-}
-
-// Stats bundles all statistics into a single object.
-// The meaning of the data depends on the context.
-// It's not persisted in the database.
-type Stats struct {
-	Path                    sql.NullString        `db:"path" json:"path,omitempty"`
-	Language                sql.NullString        `db:"language" json:"language,omitempty"`
-	Referrer                sql.NullString        `db:"ref" json:"referrer,omitempty"`
-	OS                      sql.NullString        `db:"os" json:"os,omitempty"`
-	Browser                 sql.NullString        `db:"browser" json:"browser,omitempty"`
-	Hour                    int                   `db:"hour" json:"hour,omitempty"`
-	Visitors                int                   `db:"visitors" json:"visitors,omitempty"`
-	RelativeVisitors        float64               `db:"-" json:"relative_visitors,omitempty"`
-	PlatformDesktopVisitors int                   `db:"platform_desktop_visitors" json:"platform_desktop_visitors,omitempty"`
-	PlatformDesktopRelative float64               `db:"-" json:"platform_desktop_relative,omitempty"`
-	PlatformMobileVisitors  int                   `db:"platform_mobile_visitors" json:"platform_mobile_visitors,omitempty"`
-	PlatformMobileRelative  float64               `db:"-" json:"platform_mobile_relative,omitempty"`
-	PlatformUnknownVisitors int                   `db:"platform_unknown_visitors" json:"platform_unknown_visitors,omitempty"`
-	PlatformUnknownRelative float64               `db:"-" json:"platform_unknown_relative,omitempty"`
-	VisitorsPerDay          []VisitorsPerDay      `db:"-" json:"visitors_per_day,omitempty"`
-	VisitorsPerReferrer     []VisitorsPerReferrer `db:"-" json:"visitors_per_referrer,omitempty"`
 }
