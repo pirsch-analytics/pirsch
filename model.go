@@ -24,9 +24,10 @@ type StatsEntity interface {
 type Stats struct {
 	BaseEntity
 
-	Day      time.Time `db:"day" json:"day"`
-	Path     string    `db:"path" json:"path"`
-	Visitors int       `db:"visitors" json:"visitors"`
+	Day              time.Time `db:"day" json:"day"`
+	Path             string    `db:"path" json:"path"`
+	Visitors         int       `db:"visitors" json:"visitors"`
+	RelativeVisitors float64   `db:"-" json:"relative_visitors"`
 }
 
 func (stats *Stats) GetID() int64 {
@@ -42,9 +43,12 @@ func (stats *Stats) GetVisitors() int {
 type VisitorStats struct {
 	Stats
 
-	PlatformDesktop int `db:"platform_desktop" json:"platform_desktop"`
-	PlatformMobile  int `db:"platform_mobile" json:"platform_mobile"`
-	PlatformUnknown int `db:"platform_unknown" json:"platform_unknown"`
+	PlatformDesktop         int     `db:"platform_desktop" json:"platform_desktop"`
+	PlatformMobile          int     `db:"platform_mobile" json:"platform_mobile"`
+	PlatformUnknown         int     `db:"platform_unknown" json:"platform_unknown"`
+	RelativePlatformDesktop float64 `db:"-" json:"relative_platform_desktop"`
+	RelativePlatformMobile  float64 `db:"-" json:"relative_platform_mobile"`
+	RelativePlatformUnknown float64 `db:"-" json:"relative_platform_unknown"`
 }
 
 // VisitorTimeStats is the visitor count for each path on each day and hour (ranging from 0 to 23).
