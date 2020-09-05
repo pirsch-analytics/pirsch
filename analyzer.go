@@ -62,6 +62,18 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	return stats, nil
 }
 
+// VisitorHours returns the visitor count grouped by hour of day for given time frame.
+func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, error) {
+	filter = analyzer.getFilter(filter)
+	stats, err := analyzer.store.VisitorHours(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // Languages returns the visitor count per language.
 func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 	filter = analyzer.getFilter(filter)

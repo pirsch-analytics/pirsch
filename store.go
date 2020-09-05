@@ -99,6 +99,9 @@ type Store interface {
 	// Visitors returns the visitors for given time frame grouped by days.
 	Visitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)
 
+	// VisitorHours returns the visitors for given time frame grouped by hour of day.
+	VisitorHours(sql.NullInt64, time.Time, time.Time) ([]VisitorTimeStats, error)
+
 	// VisitorLanguages returns the visitors for given time frame grouped by language.
 	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]LanguageStats, error)
 

@@ -714,6 +714,36 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 	return visitors, nil
 }
 
+// VisitorHours implements the Store interface.
+func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
+	query := `SELECT "day_and_hour" "hour", COALESCE(sum("visitors"), 0) "visitors"
+		FROM generate_series(0, 23, 1) "day_and_hour"
+		LEFT JOIN (
+			SELECT "hour", sum("visitors") "visitors"
+			FROM "visitor_time_stats"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND "day" >= date($2::timestamp)
+			AND "day" <= date($3::timestamp)
+			GROUP BY "hour"
+			UNION
+			SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors"
+			FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND date("time") >= date($2::timestamp)
+			AND date("time") <= date($3::timestamp)
+			GROUP BY "hour"
+		) AS results ON "hour" = "day_and_hour"
+		GROUP BY "day_and_hour"
+		ORDER BY "day_and_hour" ASC`
+	var visitors []VisitorTimeStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // VisitorLanguages implements the Store interface.
 func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]LanguageStats, error) {
 	query := `SELECT "language", COALESCE(SUM("visitors"), 0) "visitors"
@@ -1032,34 +1062,3 @@ func (store *PostgresStore) closeRows(rows *sqlx.Rows) {
 		store.logger.Printf("error closing rows: %s", err)
 	}
 }
-
-// TODO
-/*
-// HourlyVisitors implements the Store interface.
-func (store *PostgresStore) HourlyVisitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
-	query := `SELECT * FROM (
-			SELECT "hour", sum("visitors") "visitors" FROM (
-				SELECT EXTRACT(HOUR FROM "day_and_hour") "hour", sum("visitors") "visitors" FROM "visitors_per_hour"
-				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("day_and_hour") >= date($2::timestamp)
-				AND date("day_and_hour") <= date($3::timestamp)
-				GROUP BY "hour"
-				UNION
-				SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors" FROM "hit"
-				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				GROUP BY "hour"
-			) AS results
-			GROUP BY "hour"
-		) AS hours
-		ORDER BY "hour" ASC`
-	var visitors []Stats
-
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
-		return nil, err
-	}
-
-	return visitors, nil
-}
-*/

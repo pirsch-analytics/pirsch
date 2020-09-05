@@ -118,6 +118,51 @@ func TestAnalyzer_Visitors(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_VisitorHours(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*5), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour*12), "", "", "", "", false, false)
+			stats := &VisitorTimeStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Hour: 5,
+			}
+
+			if err := store.SaveVisitorTimeStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.VisitorHours(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 24 {
+				t.Fatalf("24 visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[5].Hour != 5 || visitors[5].Visitors != 43 ||
+				visitors[12].Hour != 12 || visitors[12].Visitors != 1 {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
 func TestAnalyzer_Languages(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 
