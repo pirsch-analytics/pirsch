@@ -117,6 +117,18 @@ type Store interface {
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
 
-	// Referrer returns the visitors for given path and time frame grouped by days and referrer.
-	//Referrer(sql.NullInt64, string, time.Time, time.Time) ([]ReferrerStats, error)
+	// PageReferrer returns the visitors for given path and time frame grouped by referrer.
+	PageReferrer(sql.NullInt64, string, time.Time, time.Time) ([]ReferrerStats, error)
+
+	// PageLanguages returns the visitors for given path and time frame grouped by language.
+	PageLanguages(sql.NullInt64, string, time.Time, time.Time) ([]LanguageStats, error)
+
+	// PageOS returns the visitors for given path and time frame grouped by operating system.
+	PageOS(sql.NullInt64, string, time.Time, time.Time) ([]OSStats, error)
+
+	// PageBrowser returns the visitors for given path and time frame grouped by browser.
+	PageBrowser(sql.NullInt64, string, time.Time, time.Time) ([]BrowserStats, error)
+
+	// PagePlatform returns the visitors for given path and time frame grouped by platform.
+	PagePlatform(sql.NullInt64, string, time.Time, time.Time) *VisitorStats
 }

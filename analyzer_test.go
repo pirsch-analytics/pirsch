@@ -395,6 +395,236 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_PageLanguages(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
+			stats := &LanguageStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Language: sql.NullString{String: "de", Valid: true},
+			}
+
+			if err := store.SaveLanguageStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.PageLanguages(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].Language.String != "de" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].Language.String != "en" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PageReferrer(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref2", today(), "", "", "", "", false, false)
+			stats := &ReferrerStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Referrer: sql.NullString{String: "ref2", Valid: true},
+			}
+
+			if err := store.SaveReferrerStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.PageReferrer(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].Referrer.String != "ref2" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].Referrer.String != "ref1" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PageOS(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), OSMac, "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), OSMac, "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), OSWindows, "", "", "", false, false)
+			stats := &OSStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				OS: sql.NullString{String: OSWindows, Valid: true},
+			}
+
+			if err := store.SaveOSStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.PageOS(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].OS.String != OSWindows || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].OS.String != OSMac || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PageBrowser(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", BrowserFirefox, "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", BrowserFirefox, "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", BrowserChrome, "", false, false)
+			stats := &BrowserStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Browser: sql.NullString{String: BrowserChrome, Valid: true},
+			}
+
+			if err := store.SaveBrowserStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.PageBrowser(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].Browser.String != BrowserChrome || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].Browser.String != BrowserFirefox || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PagePlatform(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, true)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
+			stats := &VisitorStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+				},
+				PlatformDesktop: 42,
+				PlatformMobile:  43,
+				PlatformUnknown: 44,
+			}
+
+			if err := store.SaveVisitorStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors := analyzer.PagePlatform(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if visitors.PlatformDesktop != 43 || !inRange(visitors.RelativePlatformDesktop, 0.325) ||
+				visitors.PlatformMobile != 44 || !inRange(visitors.RelativePlatformMobile, 0.33) ||
+				visitors.PlatformUnknown != 45 || !inRange(visitors.RelativePlatformUnknown, 0.34) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)

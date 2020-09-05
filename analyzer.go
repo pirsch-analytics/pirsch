@@ -11,12 +11,6 @@ type PathVisitors struct {
 	Stats []Stats
 }
 
-// PathReferrer assigns a path to visitor statistics per day and referrer.
-type PathReferrer struct {
-	Path  string
-	Stats []ReferrerStats
-}
-
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store Store
@@ -340,41 +334,139 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	return stats, nil
 }
 
-// Referrer returns the visitor count per referrer, day, and for the given time frame and path.
-/*func (analyzer *Analyzer) Referrer(filter *Filter) ([]PathReferrer, error) {
+// PageLanguages returns the visitor count per language, day, path, and for the given time frame.
+// The path is mandatory.
+func (analyzer *Analyzer) PageLanguages(filter *Filter) ([]LanguageStats, error) {
 	filter = analyzer.getFilter(filter)
-	paths := analyzer.getPaths(filter)
-	today := today()
-	addToday := today.Equal(filter.To)
-	stats := make([]PathReferrer, 0, len(paths))
 
-	for _, path := range paths {
-		visitors, err := analyzer.store.Referrer(filter.TenantID, path, filter.From, filter.To)
+	if filter.Path == "" {
+		return []LanguageStats{}, nil
+	}
 
-		if err != nil {
-			return nil, err
-		}
+	stats, err := analyzer.store.PageLanguages(filter.TenantID, filter.Path, filter.From, filter.To)
 
-		if addToday && len(visitors) > 0 {
-			visitorsToday, err := analyzer.store.CountVisitorsByPathAndReferrer(nil, filter.TenantID, today, path)
+	if err != nil {
+		return nil, err
+	}
 
-			if err != nil {
-				return nil, err
-			}
+	var sum float64
 
-			if len(visitorsToday) > 0 {
-				visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
-			}
-		}
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
 
-		stats = append(stats, PathReferrer{
-			Path:  path,
-			Stats: visitors,
-		})
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
 	return stats, nil
-}*/
+}
+
+// PageReferrer returns the visitor count per referrer, day, path, and for the given time frame.
+// The path is mandatory.
+func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.Path == "" {
+		return []ReferrerStats{}, nil
+	}
+
+	stats, err := analyzer.store.PageReferrer(filter.TenantID, filter.Path, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var sum float64
+
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
+
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
+// PageOS returns the visitor count per operating system, day, path, and for the given time frame.
+// The path is mandatory.
+func (analyzer *Analyzer) PageOS(filter *Filter) ([]OSStats, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.Path == "" {
+		return []OSStats{}, nil
+	}
+
+	stats, err := analyzer.store.PageOS(filter.TenantID, filter.Path, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var sum float64
+
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
+
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
+// PageBrowser returns the visitor count per brower, day, path, and for the given time frame.
+// The path is mandatory.
+func (analyzer *Analyzer) PageBrowser(filter *Filter) ([]BrowserStats, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.Path == "" {
+		return []BrowserStats{}, nil
+	}
+
+	stats, err := analyzer.store.PageBrowser(filter.TenantID, filter.Path, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var sum float64
+
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
+
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
+// PagePlatform returns the visitor count per platform, day, path, and for the given time frame.
+// The path is mandatory.
+func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
+	filter = analyzer.getFilter(filter)
+
+	if filter.Path == "" {
+		return &VisitorStats{}
+	}
+
+	stats := analyzer.store.PagePlatform(filter.TenantID, filter.Path, filter.From, filter.To)
+
+	if stats == nil {
+		return &VisitorStats{}
+	}
+
+	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
+	stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
+	stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
+	stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+	return stats
+}
 
 // getFilter validates and returns the given filter or a default filter if it is nil.
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
