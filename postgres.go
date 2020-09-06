@@ -68,13 +68,14 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 
 // Save implements the Store interface.
 func (store *PostgresStore) SaveHits(hits []Hit) error {
-	args := make([]interface{}, 0, len(hits)*14)
+	args := make([]interface{}, 0, len(hits)*15)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
 		args = append(args, hit.Fingerprint)
+		args = append(args, hit.Session)
 		args = append(args, hit.Path)
 		args = append(args, hit.URL)
 		args = append(args, hit.Language)
@@ -87,9 +88,9 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.Desktop)
 		args = append(args, hit.Mobile)
 		args = append(args, hit.Time)
-		index := i * 14
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14))
+		index := i * 15
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15))
 	}
 
 	queryStr := query.String()
@@ -280,6 +281,17 @@ func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) 
 	return nil
 }
 
+func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
+	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "session" > $2 LIMIT 1`
+	var session time.Time
+
+	if err := store.DB.Get(&session, query, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading session timestamp: %s", err)
+	}
+
+	return session
+}
+
 // HitDays implements the Store interface.
 func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error) {
 	query := `SELECT DISTINCT date("time") AS "day"
@@ -347,7 +359,8 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 		GROUP BY "day"`
 	visitors := new(Stats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error counting visitors: %s", err)
 		return nil
 	}
 
@@ -658,7 +671,8 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 			) AS "platform_unknown"`
 	visitors := new(VisitorStats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error counting visitor platforms: %s", err)
 		return nil
 	}
 
@@ -827,7 +841,8 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 		AND "day" <= $3::date`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading visitor platforms: %s", err)
 		return nil
 	}
 
@@ -1030,7 +1045,8 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 		) AS platforms`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Get(visitors, query, tenantID, from, to, path); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading page platforms: %s", err)
 		return nil
 	}
 

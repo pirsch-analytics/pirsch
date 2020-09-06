@@ -12,6 +12,7 @@ import (
 const (
 	defaultWorkerBufferSize = 100
 	defaultWorkerTimeout    = time.Second * 10
+	maxWorkerTimeout        = time.Second * 60
 )
 
 // TrackerConfig is the optional configuration for the Tracker.
@@ -27,6 +28,7 @@ type TrackerConfig struct {
 	// WorkerTimeout sets the timeout used to store hits.
 	// This is used to allow the workers to store hits even if the buffer is not full yet.
 	// It's recommended to set this to a few seconds.
+	// If you leave it 0, the default timeout is used, else it is limted to 60 seconds.
 	WorkerTimeout time.Duration
 
 	// ReferrerDomainBlacklist see HitOptions.ReferrerDomainBlacklist.
@@ -51,6 +53,8 @@ func (config *TrackerConfig) validate() {
 
 	if config.WorkerTimeout <= 0 {
 		config.WorkerTimeout = defaultWorkerTimeout
+	} else if config.WorkerTimeout > maxWorkerTimeout {
+		config.WorkerTimeout = maxWorkerTimeout
 	}
 
 	if config.Logger == nil {

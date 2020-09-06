@@ -20,6 +20,7 @@ type Hit struct {
 	BaseEntity
 
 	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
+	Session        sql.NullTime   `db:"session" json:"session"`
 	Path           sql.NullString `db:"path" json:"path,omitempty"`
 	URL            sql.NullString `db:"url" json:"url,omitempty"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
@@ -59,6 +60,10 @@ type HitOptions struct {
 	// or else subdomains must explicitly be included in the blacklist.
 	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
 	ReferrerDomainBlacklistIncludesSubdomains bool
+
+	// Session is the timestamp this fingerprint was first seen to identify the session.
+	// Pass a zero time.Time to disable session tracking.
+	Session time.Time
 }
 
 // HitFromRequest returns a new Hit for given request, salt and HitOptions.
@@ -103,6 +108,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
 		Fingerprint:    Fingerprint(r, salt),
+		Session:        sql.NullTime{Time: options.Session, Valid: !options.Session.IsZero()},
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},

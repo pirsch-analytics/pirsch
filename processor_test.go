@@ -219,18 +219,19 @@ func checkBrowserStats(t *testing.T, tenantID int64) {
 
 func createTestdata(t *testing.T, store Store, tenantID int64) {
 	cleanupDB(t)
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), OSMac, "10.15.3", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), OSWindows, "10", BrowserFirefox, "53.0", true, false)
-	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), OSLinux, "", BrowserFirefox, "54.0", false, false)
-	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), time.Time{}, OSMac, "10.15.3", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), time.Time{}, OSWindows, "10", BrowserFirefox, "53.0", true, false)
+	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), time.Time{}, OSLinux, "", BrowserFirefox, "54.0", false, false)
+	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), time.Time{}, OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
 }
 
-func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
+func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time, session time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
 	hit := Hit{
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
+		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		Language:       sql.NullString{String: lang, Valid: path != ""},
 		UserAgent:      sql.NullString{String: userAgent, Valid: path != ""},

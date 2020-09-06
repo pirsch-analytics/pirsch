@@ -1,4 +1,5 @@
 ALTER TABLE "hit" RENAME COLUMN "ref" TO "referrer";
+ALTER TABLE "hit" ADD COLUMN "session" timestamp without time zone;
 
 CREATE TABLE "visitor_stats" (
     id bigint NOT NULL UNIQUE,

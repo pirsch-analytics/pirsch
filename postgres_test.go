@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"testing"
+	"time"
 )
 
 func TestPostgresStore_SaveVisitorStats(t *testing.T) {
@@ -256,12 +257,29 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 	}
 }
 
+func TestPostgresStore_Session(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", time.Now(), pastDay(2), "", "", "", "", false, false)
+	session := store.Session("fp", pastDay(1))
+
+	if !session.IsZero() {
+		t.Fatal("No session timestamp must have been found")
+	}
+
+	session = store.Session("fp", pastDay(3))
+
+	if session.IsZero() {
+		t.Fatal("Session timestamp must have been found")
+	}
+}
+
 func TestPostgresStore_HitDays(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", false, false)
 	days, err := store.HitDays(NullTenant)
 
 	if err != nil {
@@ -278,9 +296,9 @@ func TestPostgresStore_HitDays(t *testing.T) {
 func TestPostgresStore_HitPaths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
 	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
 
 	if err != nil {
@@ -309,9 +327,9 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 func TestPostgresStore_Paths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
 	stats := &VisitorStats{
 		Stats: Stats{
 			Day:  day(2020, 6, 20, 7),

@@ -47,6 +47,9 @@ type Store interface {
 	// SaveBrowserStats saves BrowserStats.
 	SaveBrowserStats(*sqlx.Tx, *BrowserStats) error
 
+	// Session returns the hits session timestamp for given fingerprint and max age.
+	Session(string, time.Time) time.Time
+
 	// HitDays returns the distinct days with at least one hit.
 	HitDays(sql.NullInt64) ([]time.Time, error)
 

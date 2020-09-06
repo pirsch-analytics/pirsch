@@ -12,11 +12,11 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), time.Time{}, "", "", "", "", false, false)
 			analyzer := NewAnalyzer(store)
 			visitors, total, err := analyzer.ActiveVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
@@ -45,11 +45,11 @@ func TestAnalyzer_ActiveVisitorsPathFilter(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), time.Time{}, "", "", "", "", false, false)
 			analyzer := NewAnalyzer(store)
 			visitors, total, err := analyzer.ActiveVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
@@ -78,8 +78,8 @@ func TestAnalyzer_Visitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -124,8 +124,8 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*5), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour*12), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*5), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour*12), time.Time{}, "", "", "", "", false, false)
 			stats := &VisitorTimeStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -169,8 +169,8 @@ func TestAnalyzer_Languages(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &LanguageStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -214,8 +214,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "ref2", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "ref2", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &ReferrerStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -259,8 +259,8 @@ func TestAnalyzer_OS(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), OSWindows, "10", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), OSMac, "10.15.3", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSWindows, "10", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, OSMac, "10.15.3", "", "", false, false)
 			stats := &OSStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -305,8 +305,8 @@ func TestAnalyzer_Browser(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", BrowserChrome, "84.0", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", BrowserFirefox, "54.0", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserChrome, "84.0", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "54.0", false, false)
 			stats := &BrowserStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -351,9 +351,9 @@ func TestAnalyzer_Platform(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", true, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, true)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", false, true)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -391,8 +391,8 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -446,9 +446,9 @@ func TestAnalyzer_PageLanguages(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &LanguageStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -493,9 +493,9 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref1", today(), "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref2", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref2", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &ReferrerStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -540,9 +540,9 @@ func TestAnalyzer_PageOS(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), OSMac, "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), OSMac, "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), OSWindows, "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSMac, "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, OSMac, "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, OSWindows, "", "", "", false, false)
 			stats := &OSStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -587,9 +587,9 @@ func TestAnalyzer_PageBrowser(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", BrowserFirefox, "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", BrowserFirefox, "", false, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", BrowserChrome, "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "", false, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", BrowserChrome, "", false, false)
 			stats := &BrowserStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
@@ -634,10 +634,10 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		for _, store := range testStorageBackends() {
 			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), "", "", "", "", true, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", true, false)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, true)
-			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), "", "", "", "", false, false)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", true, false)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, true)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false)
 			stats := &VisitorStats{
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},

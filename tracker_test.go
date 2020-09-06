@@ -36,6 +36,13 @@ func TestTrackerConfigValidate(t *testing.T) {
 		!cfg.ReferrerDomainBlacklistIncludesSubdomains {
 		t.Fatal("TrackerConfig must have set values")
 	}
+
+	cfg = &TrackerConfig{WorkerTimeout: time.Second * 142}
+	cfg.validate()
+
+	if cfg.WorkerTimeout != maxWorkerTimeout {
+		t.Fatalf("WorkerTimout must have been limited, but was: %v", cfg.WorkerTimeout)
+	}
 }
 
 func TestTrackerHitTimeout(t *testing.T) {
