@@ -37,6 +37,18 @@ type TrackerConfig struct {
 	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
+	// Sessions enables/disables session tracking.
+	// It's enabled by default.
+	Sessions bool
+
+	// SessionMaxAge is used to define how long a session runs at maximum.
+	// Set to one hour by default.
+	SessionMaxAge time.Duration
+
+	// SessionCleanupInterval sets the session cache lifetime.
+	// If not passed, the default will be used.
+	SessionCleanupInterval time.Duration
+
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *log.Logger
@@ -76,6 +88,7 @@ type Tracker struct {
 	workerDone                                chan bool
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
+	sessionCache                              *sessionCache
 	logger                                    *log.Logger
 }
 
@@ -84,10 +97,19 @@ type Tracker struct {
 // The salt is mandatory.
 func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 	if config == nil {
-		config = &TrackerConfig{} // the default values are set by validate
+		// the other default values are set by validate
+		config = &TrackerConfig{
+			Sessions: true,
+		}
 	}
 
 	config.validate()
+	var sessionCache *sessionCache
+
+	if config.Sessions {
+		sessionCache = newSessionCache(store, config.SessionMaxAge, config.SessionCleanupInterval)
+	}
+
 	tracker := &Tracker{
 		store:                   store,
 		salt:                    salt,
@@ -98,7 +120,8 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
-		logger: config.Logger,
+		sessionCache: sessionCache,
+		logger:       config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -115,6 +138,10 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 					ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 					ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 				}
+			}
+
+			if tracker.sessionCache != nil {
+				options.sessionCache = tracker.sessionCache
 			}
 
 			tracker.hits <- HitFromRequest(r, tracker.salt, options)

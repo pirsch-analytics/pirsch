@@ -61,9 +61,7 @@ type HitOptions struct {
 	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
-	// Session is the timestamp this fingerprint was first seen to identify the session.
-	// Pass a zero time.Time to disable session tracking.
-	Session time.Time
+	sessionCache *sessionCache
 }
 
 // HitFromRequest returns a new Hit for given request, salt and HitOptions.
@@ -93,6 +91,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	}
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+	fingerprint := Fingerprint(r, salt)
 	path := shortenString(options.Path, 2000)
 	requestURL = shortenString(requestURL, 2000)
 	ua := r.UserAgent()
@@ -104,11 +103,16 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
 	referrer := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	var session time.Time
+
+	if options.sessionCache != nil {
+		session = options.sessionCache.find(fingerprint)
+	}
 
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
-		Fingerprint:    Fingerprint(r, salt),
-		Session:        sql.NullTime{Time: options.Session, Valid: !options.Session.IsZero()},
+		Fingerprint:    fingerprint,
+		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},

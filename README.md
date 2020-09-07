@@ -48,30 +48,37 @@ To store hits and statistics, Pirsch uses a database. Right now only Postgres is
 Here is a quick demo on how to use the library:
 
 ```Go
-// create a Postgres store using the sql.DB database connection "db"
-store := pirsch.NewPostgresStore(db)
+// Create a new Postgres store to save statistics and hits.
+store := pirsch.NewPostgresStore(db, nil)
 
-// Tracker is the main component of Pirsch
-// the salt is used to prevent anyone from generating fingerprints like yours (to prevent man in the middle attacks), pick something random
-// an optional configuration can be used to change things like worker count, timeouts and so on
-tracker := pirsch.NewTracker(store, "secret_salt", nil)
+// Set up a default tracker with a salt.
+// This will buffer and store hits and generate sessions by default.
+tracker := pirsch.NewTracker(store, "salt", nil)
 
-// the Processor analyzes hits and stores the reduced data points in store
-// it's recommended to run the Process method once a day, but you can run it as often as you want
-// the config can be used to enable/disable certain features of the processor
-processor := pirsch.NewProcessor(store, nil)
-pirsch.RunAtMidnight(processor.Process) // helper function to run a function at midnight (UTC)
+// Create a new process and run it each day on midnight (UTC) to process the stored hits.
+// The processor also cleans up the hits.
+processor := pirsch.NewProcessor(store)
+pirsch.RunAtMidnight(func() {
+    if err := processor.Process(); err != nil {
+        panic(err)
+    }
+})
 
+// Create a handler to serve traffic.
+// We prevent tracking resources by checking the path. So a file on /my-file.txt won't create a new hit
+// but all page calls will be tracked.
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    // a call to Hit will track the request
-    // note that Pirsch stores the path and URL, therefor you should make sure you only call it for the endpoints you're interested in
-    // you can also modify the path by passing in the options argument
     if r.URL.Path == "/" {
         tracker.Hit(r, nil)
     }
 
     w.Write([]byte("<h1>Hello World!</h1>"))
 }))
+
+// And finally, start the server.
+// We don't flush hits on shutdown but you should add that in a real application by calling Tracker.Flush().
+log.Println("Starting server on port 8080...")
+http.ListenAndServe(":8080", nil)
 ```
 
 To analyze hits and processed data you can use the analyzer, which provides convenience functions to extract useful information.
@@ -80,21 +87,25 @@ The secret salt passed to `NewTracker` should not be known outside your organiza
 Note that while you can generate the salt at random, the fingerprints will change too. To get reliable data configure a fixed salt and treat it like a password.
 
 ```Go
-// this also needs access to the store
+// This also needs access to the store.
 analyzer := pirsch.NewAnalyzer(store)
 
-// as an example, lets extract the total number of visitors
-// the filter is used to specify the time frame you're looking at (days) and is optional
-// if you pass nil, the Analyzer returns data for the past week including today
+// As an example, lets extract the total number of visitors.
+// The filter is used to specify the time frame you're looking at (days) and is optional.
+// If you pass nil, the Analyzer returns data for the past week including today.
 visitors, err := analyzer.Visitors(&pirsch.Filter{
     From: yesterday(),
     To: today()
 })
 ```
 
-Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details and check out [this](https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w) article.
+Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details, check out `demo/main.go` or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
 
 ## Changelog
+
+### 1.5.0
+
+*WIP*
 
 ### 1.4.3
 

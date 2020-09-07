@@ -23,7 +23,8 @@ type sessionCache struct {
 
 // newSessionCache creates a new sessionCache.
 // If maxAge or cleanupInterval are set to 0, the default will be used.
-// cleanupInterval has a minimum of two times the Tracker worker maximum timeout and a maximum, to prevent running out of RAM.
+// maxAge is used to define how long a session runs at maximum. The session will be reset once a request is made within that time frame.
+// cleanupInterval has a minimum of two times the Tracker worker count and a maximum, to prevent running out of RAM.
 func newSessionCache(store Store, maxAge, cleanupInterval time.Duration) *sessionCache {
 	if cleanupInterval < minCleanupInterval {
 		cleanupInterval = minCleanupInterval
@@ -76,7 +77,6 @@ func (cache *sessionCache) find(fingerprint string) time.Time {
 	now := time.Now().UTC()
 	cache.m.RLock()
 	session := cache.active[fingerprint]
-	cache.m.RUnlock()
 
 	if session.IsZero() {
 		session = cache.inactive[fingerprint]
@@ -85,6 +85,7 @@ func (cache *sessionCache) find(fingerprint string) time.Time {
 			session = cache.store.Session(fingerprint, now.Add(-cache.maxAge))
 
 			if session.IsZero() {
+				cache.m.RUnlock()
 				cache.m.Lock()
 				cache.active[fingerprint] = now
 				cache.m.Unlock()
@@ -93,5 +94,6 @@ func (cache *sessionCache) find(fingerprint string) time.Time {
 		}
 	}
 
+	cache.m.RUnlock()
 	return session
 }

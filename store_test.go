@@ -3,6 +3,7 @@ package pirsch
 import (
 	"github.com/jmoiron/sqlx"
 	"log"
+	"time"
 )
 
 // This is a list of all storage backends to be used in tests.
@@ -45,4 +46,8 @@ func (store *storeMock) SaveHits(hits []Hit) error {
 	log.Printf("Saved %d hits", len(hits))
 	store.hits = append(store.hits, hits...)
 	return nil
+}
+
+func (store *storeMock) Session(fingerprint string, maxAge time.Time) time.Time {
+	return time.Now()
 }
