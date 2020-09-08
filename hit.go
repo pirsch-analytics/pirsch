@@ -150,7 +150,12 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
-	// filter for bot keywords
+	// filter referrer spammers
+	if ignoreReferrer(r) {
+		return true
+	}
+
+	// filter for bot keywords (most expensive operation last)
 	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			return true
@@ -158,6 +163,23 @@ func IgnoreHit(r *http.Request) bool {
 	}
 
 	return false
+}
+
+func ignoreReferrer(r *http.Request) bool {
+	referrer := getReferrerFromHeaderOrQuery(r)
+
+	if referrer == "" {
+		return false
+	}
+
+	u, err := url.Parse(referrer)
+
+	if err != nil {
+		return false
+	}
+
+	_, found := referrerBlacklist[u.Hostname()]
+	return found
 }
 
 func getLanguage(r *http.Request) string {

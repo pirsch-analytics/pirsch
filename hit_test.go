@@ -141,6 +141,21 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 	}
 }
 
+func TestIgnoreHitReferrer(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("Referer", "2your.site")
+
+	if !IgnoreHit(req) {
+		t.Fatal("Request must have been ignored")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/?ref=2your.site", nil)
+
+	if !IgnoreHit(req) {
+		t.Fatal("Request must have been ignored")
+	}
+}
+
 func TestGetReferrer(t *testing.T) {
 	input := []struct {
 		referrer        string
