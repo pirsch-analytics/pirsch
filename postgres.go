@@ -378,7 +378,9 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT date("time") "day", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT date("time") "day",
+        count(DISTINCT "fingerprint") "visitors",
+        count(DISTINCT("fingerprint", "session")) "sessions"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date
@@ -746,7 +748,8 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, 
 // Visitors implements the Store interface.
 func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
-		COALESCE(SUM("visitor_stats".visitors), 0) "visitors"
+		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
+        COALESCE(SUM("visitor_stats".sessions), 0) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -768,17 +771,21 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 
 // VisitorHours implements the Store interface.
 func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
-	query := `SELECT "day_and_hour" "hour", COALESCE(sum("visitors"), 0) "visitors"
+	query := `SELECT "day_and_hour" "hour",
+        COALESCE(sum("visitors"), 0) "visitors",
+		COALESCE(sum("sessions"), 0) "sessions"
 		FROM generate_series(0, 23, 1) "day_and_hour"
 		LEFT JOIN (
-			SELECT "hour", sum("visitors") "visitors"
+			SELECT "hour", sum("visitors") "visitors", sum("sessions") "sessions"
 			FROM "visitor_time_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "day" >= date($2::timestamp)
 			AND "day" <= date($3::timestamp)
 			GROUP BY "hour"
 			UNION
-			SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors"
+			SELECT EXTRACT(HOUR FROM "time") "hour",
+				count(DISTINCT "fingerprint") "visitors",
+				count(DISTINCT("fingerprint", "session")) "sessions"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND date("time") >= date($2::timestamp)
@@ -891,7 +898,8 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
 		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
-		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END
+		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END,
+		CASE WHEN "visitor_stats".sessions IS NULL THEN 0 ELSE "visitor_stats".sessions END
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,

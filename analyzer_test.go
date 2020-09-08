@@ -86,6 +86,7 @@ func TestAnalyzer_Visitors(t *testing.T) {
 					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
+					Sessions:   67,
 				},
 			}
 
@@ -108,10 +109,10 @@ func TestAnalyzer_Visitors(t *testing.T) {
 				t.Fatalf("Four visitors must have been returned, but was: %v", len(visitors))
 			}
 
-			if !visitors[0].Day.Equal(pastDay(3)) || visitors[0].Visitors != 0 ||
-				!visitors[1].Day.Equal(pastDay(2)) || visitors[1].Visitors != 42 ||
-				!visitors[2].Day.Equal(pastDay(1)) || visitors[2].Visitors != 0 ||
-				!visitors[3].Day.Equal(today()) || visitors[3].Visitors != 2 {
+			if !visitors[0].Day.Equal(pastDay(3)) || visitors[0].Visitors != 0 || visitors[0].Sessions != 0 ||
+				!visitors[1].Day.Equal(pastDay(2)) || visitors[1].Visitors != 42 || visitors[1].Sessions != 67 ||
+				!visitors[2].Day.Equal(pastDay(1)) || visitors[2].Visitors != 0 || visitors[2].Sessions != 0 ||
+				!visitors[3].Day.Equal(today()) || visitors[3].Visitors != 2 || visitors[3].Sessions != 2 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
@@ -132,6 +133,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
+					Sessions:   67,
 				},
 				Hour: 5,
 			}
@@ -155,8 +157,8 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 				t.Fatalf("24 visitors must have been returned, but was: %v", len(visitors))
 			}
 
-			if visitors[5].Hour != 5 || visitors[5].Visitors != 43 ||
-				visitors[12].Hour != 12 || visitors[12].Visitors != 1 {
+			if visitors[5].Hour != 5 || visitors[5].Visitors != 43 || visitors[5].Sessions != 68 ||
+				visitors[12].Hour != 12 || visitors[12].Visitors != 1 || visitors[12].Sessions != 1 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
@@ -399,6 +401,7 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
+					Sessions:   67,
 				},
 			}
 
@@ -422,18 +425,18 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 			}
 
 			if len(visitors[0].Stats) != 4 || visitors[0].Path != "/" ||
-				!visitors[0].Stats[0].Day.Equal(pastDay(3)) || visitors[0].Stats[0].Visitors != 0 ||
-				!visitors[0].Stats[1].Day.Equal(pastDay(2)) || visitors[0].Stats[1].Visitors != 0 ||
-				!visitors[0].Stats[2].Day.Equal(pastDay(1)) || visitors[0].Stats[2].Visitors != 0 ||
-				!visitors[0].Stats[3].Day.Equal(today()) || visitors[0].Stats[3].Visitors != 1 {
+				!visitors[0].Stats[0].Day.Equal(pastDay(3)) || visitors[0].Stats[0].Visitors != 0 || visitors[0].Stats[0].Sessions != 0 ||
+				!visitors[0].Stats[1].Day.Equal(pastDay(2)) || visitors[0].Stats[1].Visitors != 0 || visitors[0].Stats[1].Sessions != 0 ||
+				!visitors[0].Stats[2].Day.Equal(pastDay(1)) || visitors[0].Stats[2].Visitors != 0 || visitors[0].Stats[2].Sessions != 0 ||
+				!visitors[0].Stats[3].Day.Equal(today()) || visitors[0].Stats[3].Visitors != 1 || visitors[0].Stats[3].Sessions != 1 {
 				t.Fatalf("First path not as expected: %v", visitors)
 			}
 
 			if len(visitors[1].Stats) != 4 || visitors[1].Path != "/path" ||
-				!visitors[1].Stats[0].Day.Equal(pastDay(3)) || visitors[1].Stats[0].Visitors != 0 ||
-				!visitors[1].Stats[1].Day.Equal(pastDay(2)) || visitors[1].Stats[1].Visitors != 42 ||
-				!visitors[1].Stats[2].Day.Equal(pastDay(1)) || visitors[1].Stats[2].Visitors != 0 ||
-				!visitors[1].Stats[3].Day.Equal(today()) || visitors[1].Stats[3].Visitors != 1 {
+				!visitors[1].Stats[0].Day.Equal(pastDay(3)) || visitors[1].Stats[0].Visitors != 0 || visitors[1].Stats[0].Sessions != 0 ||
+				!visitors[1].Stats[1].Day.Equal(pastDay(2)) || visitors[1].Stats[1].Visitors != 42 || visitors[1].Stats[1].Sessions != 67 ||
+				!visitors[1].Stats[2].Day.Equal(pastDay(1)) || visitors[1].Stats[2].Visitors != 0 || visitors[1].Stats[2].Sessions != 0 ||
+				!visitors[1].Stats[3].Day.Equal(today()) || visitors[1].Stats[3].Visitors != 1 || visitors[1].Stats[3].Sessions != 1 {
 				t.Fatalf("Second path not as expected: %v", visitors)
 			}
 		}
