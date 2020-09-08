@@ -40,7 +40,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return stats, sum, nil
 }
 
-// Visitors returns the visitor count per day.
+// Visitors returns the visitor and session count per day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
@@ -56,13 +56,14 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 
 		if visitorsToday != nil {
 			stats[len(stats)-1].Visitors += visitorsToday.Visitors
+			stats[len(stats)-1].Sessions += visitorsToday.Sessions
 		}
 	}
 
 	return stats, nil
 }
 
-// VisitorHours returns the visitor count grouped by hour of day for given time frame.
+// VisitorHours returns the visitor and session count grouped by hour of day for given time frame.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, error) {
 	filter = analyzer.getFilter(filter)
 	stats, err := analyzer.store.VisitorHours(filter.TenantID, filter.From, filter.To)
@@ -310,7 +311,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	return stats
 }
 
-// PageVisitors returns the visitors per day for the given time frame grouped by path.
+// PageVisitors returns the visitors and sessions per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)
 	paths := analyzer.getPaths(filter)
@@ -334,6 +335,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 
 			if len(visitorsToday) > 0 {
 				visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
+				visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
 			}
 		}
 

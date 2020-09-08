@@ -11,15 +11,6 @@ type BaseEntity struct {
 	TenantID sql.NullInt64 `db:"tenant_id" json:"tenant_id"`
 }
 
-// StatsEntity is an interface for all statistics entities.
-type StatsEntity interface {
-	// GetID returns the ID.
-	GetID() int64
-
-	// GetVisitors returns the visitor count.
-	GetVisitors() int
-}
-
 // Stats is the base entity for all statistics.
 type Stats struct {
 	BaseEntity
@@ -27,6 +18,7 @@ type Stats struct {
 	Day              time.Time `db:"day" json:"day"`
 	Path             string    `db:"path" json:"path"`
 	Visitors         int       `db:"visitors" json:"visitors"`
+	Sessions         int       `db:"sessions" json:"sessions"`
 	RelativeVisitors float64   `db:"-" json:"relative_visitors"`
 }
 

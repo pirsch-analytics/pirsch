@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"testing"
+	"time"
 )
 
 func TestPostgresStore_SaveVisitorStats(t *testing.T) {
@@ -15,6 +16,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 			Day:      day(2020, 9, 3, 0),
 			Path:     "/",
 			Visitors: 42,
+			Sessions: 59,
 		},
 		PlatformDesktop: 123,
 		PlatformMobile:  89,
@@ -32,6 +34,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	}
 
 	stats.Visitors = 11
+	stats.Sessions = 17
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
@@ -46,6 +49,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	}
 
 	if stats.Visitors != 42+11 ||
+		stats.Sessions != 59+17 ||
 		stats.PlatformDesktop != 123+5 ||
 		stats.PlatformMobile != 89+3 ||
 		stats.PlatformUnknown != 52+1 {
@@ -62,6 +66,7 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 			Day:      day(2020, 9, 3, 0),
 			Path:     "/",
 			Visitors: 42,
+			Sessions: 59,
 		},
 		Hour: 5,
 	})
@@ -77,6 +82,7 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 	}
 
 	stats.Visitors = 11
+	stats.Sessions = 17
 	err = store.SaveVisitorTimeStats(nil, stats)
 
 	if err != nil {
@@ -87,7 +93,8 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stats.Visitors != 42+11 {
+	if stats.Visitors != 42+11 ||
+		stats.Sessions != 59+17 {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
 }
@@ -256,12 +263,29 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 	}
 }
 
+func TestPostgresStore_Session(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", time.Now(), pastDay(2), "", "", "", "", false, false)
+	session := store.Session("fp", pastDay(1))
+
+	if !session.IsZero() {
+		t.Fatal("No session timestamp must have been found")
+	}
+
+	session = store.Session("fp", pastDay(3))
+
+	if session.IsZero() {
+		t.Fatal("Session timestamp must have been found")
+	}
+}
+
 func TestPostgresStore_HitDays(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", false, false)
 	days, err := store.HitDays(NullTenant)
 
 	if err != nil {
@@ -278,9 +302,9 @@ func TestPostgresStore_HitDays(t *testing.T) {
 func TestPostgresStore_HitPaths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
 	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
 
 	if err != nil {
@@ -309,9 +333,9 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 func TestPostgresStore_Paths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
 	stats := &VisitorStats{
 		Stats: Stats{
 			Day:  day(2020, 6, 20, 7),

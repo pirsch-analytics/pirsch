@@ -36,6 +36,13 @@ func TestTrackerConfigValidate(t *testing.T) {
 		!cfg.ReferrerDomainBlacklistIncludesSubdomains {
 		t.Fatal("TrackerConfig must have set values")
 	}
+
+	cfg = &TrackerConfig{WorkerTimeout: time.Second * 142}
+	cfg.validate()
+
+	if cfg.WorkerTimeout != maxWorkerTimeout {
+		t.Fatalf("WorkerTimout must have been limited, but was: %v", cfg.WorkerTimeout)
+	}
 }
 
 func TestTrackerHitTimeout(t *testing.T) {
@@ -78,5 +85,30 @@ func TestTrackerHitLimit(t *testing.T) {
 
 	if len(store.hits) != 7 {
 		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
+	}
+}
+
+func TestTrackerHitSession(t *testing.T) {
+	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req1.Header.Add("User-Agent", "valid")
+	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
+	req2.Header.Add("User-Agent", "valid")
+	store := newTestStore()
+	tracker := NewTracker(store, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+		Sessions:      true,
+	})
+	tracker.Hit(req1, nil)
+	tracker.Hit(req2, nil)
+	time.Sleep(time.Second * 2)
+
+	if len(store.hits) != 2 {
+		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
+	}
+
+	// ignore order...
+	if !store.hits[0].Session.Valid || !store.hits[1].Session.Valid ||
+		store.hits[0].Session.Time.IsZero() || store.hits[1].Session.Time.IsZero() {
+		t.Fatalf("Hits not as expected: %v %v", store.hits[0], store.hits[1])
 	}
 }

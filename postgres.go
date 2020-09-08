@@ -14,6 +14,16 @@ const (
 	logPrefix = "[pirsch] "
 )
 
+// statsEntity is an interface for all statistics entities.
+// This is used to simplify saving entities in the database.
+type statsEntity interface {
+	// GetID returns the ID.
+	GetID() int64
+
+	// GetVisitors returns the visitor count.
+	GetVisitors() int
+}
+
 // PostgresConfig is the optional configuration for the PostgresStore.
 type PostgresConfig struct {
 	// Logger is the log.Logger used for logging.
@@ -68,13 +78,14 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 
 // Save implements the Store interface.
 func (store *PostgresStore) SaveHits(hits []Hit) error {
-	args := make([]interface{}, 0, len(hits)*14)
+	args := make([]interface{}, 0, len(hits)*15)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
 		args = append(args, hit.Fingerprint)
+		args = append(args, hit.Session)
 		args = append(args, hit.Path)
 		args = append(args, hit.URL)
 		args = append(args, hit.Language)
@@ -87,9 +98,9 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.Desktop)
 		args = append(args, hit.Mobile)
 		args = append(args, hit.Time)
-		index := i * 14
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14))
+		index := i * 15
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15))
 	}
 
 	queryStr := query.String()
@@ -131,19 +142,21 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
+	err := tx.Get(existing, `SELECT id, visitors, sessions, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
+		existing.Sessions += entity.Sessions
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, platform_desktop = $2, platform_mobile = $3, platform_unknown = $4 WHERE id = $5`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, platform_desktop = $3, platform_mobile = $4, platform_unknown = $5 WHERE id = $6`,
 			existing.Visitors,
+			existing.Sessions,
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
@@ -151,7 +164,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
 
 		if err != nil {
 			return err
@@ -171,16 +184,30 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 	}
 
 	existing := new(VisitorTimeStats)
-	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_time_stats"
+	err := tx.Get(existing, `SELECT id, visitors, sessions FROM "visitor_time_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)
 		AND "hour" = $4`, entity.TenantID, entity.Day, entity.Path, entity.Hour)
 
-	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
-		`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors") VALUES (:tenant_id, :day, :path, :hour, :visitors)`,
-		`UPDATE "visitor_time_stats" SET visitors = $1 WHERE id = $2`); err != nil {
-		return err
+	if err == nil {
+		existing.Visitors += entity.Visitors
+		existing.Sessions += entity.Sessions
+
+		if _, err := tx.Exec(`UPDATE "visitor_time_stats" SET visitors = $1, sessions = $2 WHERE id = $3`,
+			existing.Visitors,
+			existing.Sessions,
+			existing.ID); err != nil {
+			return err
+		}
+	} else {
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors", "sessions") VALUES (:tenant_id, :day, :path, :hour, :visitors, :sessions)`, entity)
+
+		if err != nil {
+			return err
+		}
+
+		store.closeRows(rows)
 	}
 
 	return nil
@@ -280,6 +307,17 @@ func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) 
 	return nil
 }
 
+func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
+	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "session" > $2 LIMIT 1`
+	var session time.Time
+
+	if err := store.DB.Get(&session, query, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading session timestamp: %s", err)
+	}
+
+	return session
+}
+
 // HitDays implements the Store interface.
 func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error) {
 	query := `SELECT DISTINCT date("time") AS "day"
@@ -340,14 +378,17 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT date("time") "day", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT date("time") "day",
+        count(DISTINCT "fingerprint") "visitors",
+        count(DISTINCT("fingerprint", "session")) "sessions"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date
 		GROUP BY "day"`
 	visitors := new(Stats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error counting visitors: %s", err)
 		return nil
 	}
 
@@ -361,7 +402,12 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT * FROM (SELECT "tenant_id", $2::date "day", $3::varchar "path", count(DISTINCT fingerprint) "visitors" `
+	query := `SELECT * FROM (
+    	SELECT "tenant_id",
+		$2::date "day",
+	    $3::varchar "path",
+	    count(DISTINCT "fingerprint") "visitors",
+		count(DISTINCT("fingerprint", "session")) "sessions" `
 
 	if includePlatform {
 		query += `, (
@@ -421,12 +467,19 @@ func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql
 		$3::varchar AS "path",
 		EXTRACT(HOUR FROM "day_and_hour") "hour",
 		(
-			SELECT count(DISTINCT fingerprint) FROM "hit"
+			SELECT count(DISTINCT "fingerprint") FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= "day_and_hour"
 			AND "time" < "day_and_hour" + INTERVAL '1 hour'
 			AND LOWER("path") = LOWER($3)
-		) "visitors"
+		) "visitors",
+       (
+			SELECT count(DISTINCT("fingerprint", "session")) FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND "time" >= "day_and_hour"
+			AND "time" < "day_and_hour" + INTERVAL '1 hour'
+			AND LOWER("path") = LOWER($3)
+		) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::timestamp,
@@ -658,7 +711,8 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 			) AS "platform_unknown"`
 	visitors := new(VisitorStats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil {
+	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error counting visitor platforms: %s", err)
 		return nil
 	}
 
@@ -694,7 +748,8 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, 
 // Visitors implements the Store interface.
 func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
-		COALESCE(SUM("visitor_stats".visitors), 0) "visitors"
+		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
+        COALESCE(SUM("visitor_stats".sessions), 0) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -716,17 +771,21 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 
 // VisitorHours implements the Store interface.
 func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
-	query := `SELECT "day_and_hour" "hour", COALESCE(sum("visitors"), 0) "visitors"
+	query := `SELECT "day_and_hour" "hour",
+        COALESCE(sum("visitors"), 0) "visitors",
+		COALESCE(sum("sessions"), 0) "sessions"
 		FROM generate_series(0, 23, 1) "day_and_hour"
 		LEFT JOIN (
-			SELECT "hour", sum("visitors") "visitors"
+			SELECT "hour", sum("visitors") "visitors", sum("sessions") "sessions"
 			FROM "visitor_time_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "day" >= date($2::timestamp)
 			AND "day" <= date($3::timestamp)
 			GROUP BY "hour"
 			UNION
-			SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT fingerprint) "visitors"
+			SELECT EXTRACT(HOUR FROM "time") "hour",
+				count(DISTINCT "fingerprint") "visitors",
+				count(DISTINCT("fingerprint", "session")) "sessions"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND date("time") >= date($2::timestamp)
@@ -827,7 +886,8 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 		AND "day" <= $3::date`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading visitor platforms: %s", err)
 		return nil
 	}
 
@@ -838,7 +898,8 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
 		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
-		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END
+		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END,
+		CASE WHEN "visitor_stats".sessions IS NULL THEN 0 ELSE "visitor_stats".sessions END
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -944,13 +1005,13 @@ func (store *PostgresStore) PageOS(tenantID sql.NullInt64, path string, from tim
 			GROUP BY "os"
 		) AS os
 		ORDER BY "visitors" DESC`
-	var os []OSStats
+	var osStats []OSStats
 
-	if err := store.DB.Select(&os, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&osStats, query, tenantID, from, to, path); err != nil {
 		return nil, err
 	}
 
-	return os, nil
+	return osStats, nil
 }
 
 // PageBrowser implements the Store interface.
@@ -1030,14 +1091,15 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 		) AS platforms`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Get(visitors, query, tenantID, from, to, path); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error reading page platforms: %s", err)
 		return nil
 	}
 
 	return visitors
 }
 
-func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing StatsEntity, found bool, insertQuery, updateQuery string) error {
+func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing statsEntity, found bool, insertQuery, updateQuery string) error {
 	if found {
 		visitors := existing.GetVisitors() + entity.GetVisitors()
 

@@ -15,6 +15,55 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 	testProcess(t, 1)
 }
 
+func TestProcessor_ProcessSessions(t *testing.T) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+
+		// create hits for two visitors and three sessions
+		now := time.Now()
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now.Add(time.Second*1), OSWindows, "10", BrowserChrome, "84.0", true, false)
+		processor := NewProcessor(store)
+
+		if err := processor.Process(); err != nil {
+			t.Fatalf("Data must have been processed, but was: %v", err)
+		}
+
+		checkHits(t, 0)
+		db := sqlx.NewDb(postgresDB, "postgres")
+		var visitorStats []VisitorStats
+		var timeStats []VisitorTimeStats
+
+		if err := db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+
+		if len(visitorStats) != 1 {
+			t.Fatalf("One visitor stats must have been created, but was: %v", len(visitorStats))
+		}
+
+		if len(timeStats) != 24 {
+			t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
+		}
+
+		if visitorStats[0].Visitors != 2 ||
+			visitorStats[0].Sessions != 3 {
+			t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
+		}
+
+		if timeStats[4].Visitors != 1 || timeStats[4].Sessions != 1 ||
+			timeStats[5].Visitors != 1 || timeStats[5].Sessions != 2 {
+			t.Fatalf("Visitor time stats must have two visitors and three sessions, but was: %v", timeStats)
+		}
+	}
+}
+
 func testProcess(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, tenantID)
@@ -219,18 +268,19 @@ func checkBrowserStats(t *testing.T, tenantID int64) {
 
 func createTestdata(t *testing.T, store Store, tenantID int64) {
 	cleanupDB(t)
-	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), OSWindows, "10", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), OSMac, "10.15.3", BrowserChrome, "84.0", true, false)
-	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), OSWindows, "10", BrowserFirefox, "53.0", true, false)
-	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), OSLinux, "", BrowserFirefox, "54.0", false, false)
-	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
+	createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", day(2020, 6, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "ref1", day(2020, 6, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp3", "/page", "de", "ua3", "ref1", day(2020, 6, 21, 8), time.Time{}, OSMac, "10.15.3", BrowserChrome, "84.0", true, false)
+	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), time.Time{}, OSWindows, "10", BrowserFirefox, "53.0", true, false)
+	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), time.Time{}, OSLinux, "", BrowserFirefox, "54.0", false, false)
+	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), time.Time{}, OSAndroid, "8.0", BrowserChrome, "84.0", false, true)
 }
 
-func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
+func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time, session time.Time, os, osVersion, browser, browserVersion string, desktop, mobile bool) {
 	hit := Hit{
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
+		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		Language:       sql.NullString{String: lang, Valid: path != ""},
 		UserAgent:      sql.NullString{String: userAgent, Valid: path != ""},

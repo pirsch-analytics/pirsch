@@ -20,6 +20,7 @@ type Hit struct {
 	BaseEntity
 
 	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
+	Session        sql.NullTime   `db:"session" json:"session"`
 	Path           sql.NullString `db:"path" json:"path,omitempty"`
 	URL            sql.NullString `db:"url" json:"url,omitempty"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
@@ -59,6 +60,8 @@ type HitOptions struct {
 	// or else subdomains must explicitly be included in the blacklist.
 	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
 	ReferrerDomainBlacklistIncludesSubdomains bool
+
+	sessionCache *sessionCache
 }
 
 // HitFromRequest returns a new Hit for given request, salt and HitOptions.
@@ -88,6 +91,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	}
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+	fingerprint := Fingerprint(r, salt)
 	path := shortenString(options.Path, 2000)
 	requestURL = shortenString(requestURL, 2000)
 	ua := r.UserAgent()
@@ -99,10 +103,16 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
 	referrer := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	var session time.Time
+
+	if options.sessionCache != nil {
+		session = options.sessionCache.find(fingerprint)
+	}
 
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
-		Fingerprint:    Fingerprint(r, salt),
+		Fingerprint:    fingerprint,
+		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
 		Path:           sql.NullString{String: path, Valid: path != ""},
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
@@ -140,7 +150,12 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
-	// filter for bot keywords
+	// filter referrer spammers
+	if ignoreReferrer(r) {
+		return true
+	}
+
+	// filter for bot keywords (most expensive operation last)
 	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			return true
@@ -148,6 +163,23 @@ func IgnoreHit(r *http.Request) bool {
 	}
 
 	return false
+}
+
+func ignoreReferrer(r *http.Request) bool {
+	referrer := getReferrerFromHeaderOrQuery(r)
+
+	if referrer == "" {
+		return false
+	}
+
+	u, err := url.Parse(referrer)
+
+	if err != nil {
+		return false
+	}
+
+	_, found := referrerBlacklist[u.Hostname()]
+	return found
 }
 
 func getLanguage(r *http.Request) string {
