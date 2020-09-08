@@ -105,6 +105,20 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ### 1.5.0
 
+**You need to update the schema by running the `v1.5.0.sql` migration script!**
+**WARNING: this release uses a new data structure to store statistics and is incompatible with previous versions. You need to migrate and drop the unused tables using the following statements:**
+
+```SQL
+DROP TABLE "visitor_platform";
+DROP TABLE "visitors_per_browser";
+DROP TABLE "visitors_per_day";
+DROP TABLE "visitors_per_hour";
+DROP TABLE "visitors_per_language";
+DROP TABLE "visitors_per_os";
+DROP TABLE "visitors_per_page";
+DROP TABLE "visitors_per_referrer";
+```
+
 *WIP*
 
 ### 1.4.3

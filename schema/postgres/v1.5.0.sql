@@ -7,6 +7,7 @@ CREATE TABLE "visitor_stats" (
     day date NOT NULL,
     path varchar(2000) NOT NULL,
     visitors integer NOT NULL,
+    sessions integer NOT NULL DEFAULT 0,
     platform_desktop integer NOT NULL,
     platform_mobile integer NOT NULL,
     platform_unknown integer NOT NULL
@@ -31,7 +32,8 @@ CREATE TABLE "visitor_time_stats" (
     day date NOT NULL,
     path varchar(2000) NOT NULL,
     hour smallint NOT NULL,
-    visitors integer NOT NULL
+    visitors integer NOT NULL,
+    sessions integer NOT NULL DEFAULT 0
 );
 
 CREATE SEQUENCE visitor_time_stats_id_seq
@@ -136,12 +138,3 @@ ALTER TABLE ONLY "browser_stats" ALTER COLUMN id SET DEFAULT nextval('browser_st
 ALTER TABLE ONLY "browser_stats" ADD CONSTRAINT browser_stats_pkey PRIMARY KEY (id);
 CREATE INDEX browser_stats_day_index ON browser_stats(day);
 CREATE INDEX browser_stats_path_index ON browser_stats(path);
-
-DROP TABLE "visitor_platform";
-DROP TABLE "visitors_per_browser";
-DROP TABLE "visitors_per_day";
-DROP TABLE "visitors_per_hour";
-DROP TABLE "visitors_per_language";
-DROP TABLE "visitors_per_os";
-DROP TABLE "visitors_per_page";
-DROP TABLE "visitors_per_referrer";
