@@ -15,6 +15,55 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 	testProcess(t, 1)
 }
 
+func TestProcessor_ProcessSessions(t *testing.T) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+
+		// create hits for two visitors and three sessions
+		now := time.Now()
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now, OSWindows, "10", BrowserChrome, "84.0", true, false)
+		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now.Add(time.Second*1), OSWindows, "10", BrowserChrome, "84.0", true, false)
+		processor := NewProcessor(store)
+
+		if err := processor.Process(); err != nil {
+			t.Fatalf("Data must have been processed, but was: %v", err)
+		}
+
+		checkHits(t, 0)
+		db := sqlx.NewDb(postgresDB, "postgres")
+		var visitorStats []VisitorStats
+		var timeStats []VisitorTimeStats
+
+		if err := db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "path"`); err != nil {
+			t.Fatal(err)
+		}
+
+		if len(visitorStats) != 1 {
+			t.Fatalf("One visitor stats must have been created, but was: %v", len(visitorStats))
+		}
+
+		if len(timeStats) != 24 {
+			t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
+		}
+
+		if visitorStats[0].Visitors != 2 ||
+			visitorStats[0].Sessions != 3 {
+			t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
+		}
+
+		if timeStats[4].Visitors != 1 || timeStats[4].Sessions != 1 ||
+			timeStats[5].Visitors != 1 || timeStats[5].Sessions != 2 {
+			t.Fatalf("Visitor time stats must have two visitors and three sessions, but was: %v", timeStats)
+		}
+	}
+}
+
 func testProcess(t *testing.T, tenantID int64) {
 	for _, store := range testStorageBackends() {
 		createTestdata(t, store, tenantID)

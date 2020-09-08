@@ -400,7 +400,12 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT * FROM (SELECT "tenant_id", $2::date "day", $3::varchar "path", count(DISTINCT fingerprint) "visitors" `
+	query := `SELECT * FROM (
+    	SELECT "tenant_id",
+		$2::date "day",
+	    $3::varchar "path",
+	    count(DISTINCT "fingerprint") "visitors",
+		count(DISTINCT("fingerprint", "session")) "sessions" `
 
 	if includePlatform {
 		query += `, (
@@ -460,12 +465,19 @@ func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql
 		$3::varchar AS "path",
 		EXTRACT(HOUR FROM "day_and_hour") "hour",
 		(
-			SELECT count(DISTINCT fingerprint) FROM "hit"
+			SELECT count(DISTINCT "fingerprint") FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= "day_and_hour"
 			AND "time" < "day_and_hour" + INTERVAL '1 hour'
 			AND LOWER("path") = LOWER($3)
-		) "visitors"
+		) "visitors",
+       (
+			SELECT count(DISTINCT("fingerprint", "session")) FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND "time" >= "day_and_hour"
+			AND "time" < "day_and_hour" + INTERVAL '1 hour'
+			AND LOWER("path") = LOWER($3)
+		) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::timestamp,
