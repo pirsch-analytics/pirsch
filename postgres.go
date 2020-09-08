@@ -14,6 +14,16 @@ const (
 	logPrefix = "[pirsch] "
 )
 
+// statsEntity is an interface for all statistics entities.
+// This is used to simplify saving entities in the database.
+type statsEntity interface {
+	// GetID returns the ID.
+	GetID() int64
+
+	// GetVisitors returns the visitor count.
+	GetVisitors() int
+}
+
 // PostgresConfig is the optional configuration for the PostgresStore.
 type PostgresConfig struct {
 	// Logger is the log.Logger used for logging.
@@ -1053,7 +1063,7 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 	return visitors
 }
 
-func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing StatsEntity, found bool, insertQuery, updateQuery string) error {
+func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing statsEntity, found bool, insertQuery, updateQuery string) error {
 	if found {
 		visitors := existing.GetVisitors() + entity.GetVisitors()
 
