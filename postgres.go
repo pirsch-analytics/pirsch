@@ -142,7 +142,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
@@ -150,13 +150,15 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	if err == nil {
 		existing.Visitors += entity.Visitors
 		existing.Sessions += entity.Sessions
+		existing.Bounces += entity.Bounces
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, platform_desktop = $3, platform_mobile = $4, platform_unknown = $5 WHERE id = $6`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, bounces = $3, platform_desktop = $4, platform_mobile = $5, platform_unknown = $6 WHERE id = $7`,
 			existing.Visitors,
 			existing.Sessions,
+			existing.Bounces,
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
@@ -164,7 +166,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
 
 		if err != nil {
 			return err
@@ -719,6 +721,40 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 	return visitors
 }
 
+// CountVisitorsByPathAndMaxOneHit implements the Store interface.
+func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	args := make([]interface{}, 0, 3)
+	args = append(args, tenantID)
+	args = append(args, day)
+	query := `SELECT count(DISTINCT "fingerprint")
+		FROM "hit" h
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date `
+
+	if path != "" {
+		args = append(args, path)
+		query += `AND LOWER("path") = LOWER($3) `
+	}
+
+	query += `AND (
+			SELECT COUNT(DISTINCT "path")
+			FROM "hit"
+			WHERE "fingerprint" = h."fingerprint"
+		) = 1`
+	var visitors int
+
+	if err := tx.Get(&visitors, query, args...); err != nil {
+		store.logger.Printf("error counting visitor with a maximum of one hit: %s", err)
+	}
+
+	return visitors
+}
+
 // ActiveVisitors implements the Store interface.
 func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]Stats, error) {
 	args := make([]interface{}, 0, 3)
@@ -749,7 +785,8 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, 
 func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
 		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
-        COALESCE(SUM("visitor_stats".sessions), 0) "sessions"
+        COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
+        COALESCE(SUM("visitor_stats".bounces), 0) "bounces"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -899,7 +936,8 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 	query := `SELECT "d" AS "day",
 		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
 		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END,
-		CASE WHEN "visitor_stats".sessions IS NULL THEN 0 ELSE "visitor_stats".sessions END
+		CASE WHEN "visitor_stats".sessions IS NULL THEN 0 ELSE "visitor_stats".sessions END,
+        CASE WHEN "visitor_stats".bounces IS NULL THEN 0 ELSE "visitor_stats".bounces END
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -907,7 +945,9 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 				INTERVAL '1 day'
 			) "d"
 		) AS date_series
-		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "visitor_stats"."day" = "d" AND LOWER("path") = LOWER($4)
+		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1)
+		AND "visitor_stats"."day" = "d"
+		AND LOWER("path") = LOWER($4)
 		ORDER BY "d" ASC`
 	var visitors []Stats
 

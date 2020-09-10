@@ -8,6 +8,7 @@ CREATE TABLE "visitor_stats" (
     path varchar(2000) NOT NULL,
     visitors integer NOT NULL,
     sessions integer NOT NULL DEFAULT 0,
+    bounces integer NOT NULL DEFAULT 0,
     platform_desktop integer NOT NULL,
     platform_mobile integer NOT NULL,
     platform_unknown integer NOT NULL
