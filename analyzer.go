@@ -40,7 +40,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return stats, sum, nil
 }
 
-// Visitors returns the visitor and session count per day.
+// Visitors returns the visitor count, session count, and bounce rate per day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
@@ -53,10 +53,18 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 
 	if addToday && len(stats) > 0 {
 		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
+		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
 
 		if visitorsToday != nil {
 			stats[len(stats)-1].Visitors += visitorsToday.Visitors
 			stats[len(stats)-1].Sessions += visitorsToday.Sessions
+			stats[len(stats)-1].Bounces += bouncesToday
+		}
+	}
+
+	for i := range stats {
+		if stats[i].Visitors > 0 {
+			stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
 		}
 	}
 
@@ -311,7 +319,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	return stats
 }
 
-// PageVisitors returns the visitors and sessions per day for the given time frame grouped by path.
+// PageVisitors returns the visitor count, session count, and bounce rate per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)
 	paths := analyzer.getPaths(filter)
@@ -333,9 +341,18 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 				return nil, err
 			}
 
+			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+
 			if len(visitorsToday) > 0 {
 				visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
 				visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
+				visitors[len(visitors)-1].Bounces += bouncesToday
+			}
+		}
+
+		for i := range visitors {
+			if visitors[i].Visitors > 0 {
+				visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
 			}
 		}
 

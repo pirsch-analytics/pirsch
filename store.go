@@ -95,7 +95,7 @@ type Store interface {
 	// CountVisitorsByPlatform returns the visitor count for given day grouped by platform.
 	CountVisitorsByPlatform(*sqlx.Tx, sql.NullInt64, time.Time) *VisitorStats
 
-	// CountVisitorsByPathAndMaxOneHit returns the visitor count for given day and path with a maximum of one hit.
+	// CountVisitorsByPathAndMaxOneHit returns the visitor count for given day and optional path with a maximum of one hit.
 	// This returns the absolut number of hits without further page calls and is used to calculate the bounce rate.
 	CountVisitorsByPathAndMaxOneHit(*sqlx.Tx, sql.NullInt64, time.Time, string) int
 
