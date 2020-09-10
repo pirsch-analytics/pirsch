@@ -126,10 +126,10 @@ func checkVisitorStats(t *testing.T, tenantID int64) {
 		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
 	}
 
-	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].PlatformDesktop != 2 || stats[0].PlatformMobile != 0 || stats[0].PlatformUnknown != 0 ||
-		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].PlatformDesktop != 1 || stats[1].PlatformMobile != 0 || stats[1].PlatformUnknown != 0 ||
-		stats[2].Path != "/" || stats[2].Visitors != 2 || stats[2].PlatformDesktop != 1 || stats[2].PlatformMobile != 0 || stats[2].PlatformUnknown != 1 ||
-		stats[3].Path != "/different-page" || stats[3].Visitors != 1 || stats[3].PlatformDesktop != 0 || stats[3].PlatformMobile != 1 || stats[3].PlatformUnknown != 0 {
+	if stats[0].Path != "/" || stats[0].Visitors != 2 || stats[0].PlatformDesktop != 2 || stats[0].PlatformMobile != 0 || stats[0].PlatformUnknown != 0 || stats[0].Bounces != 2 ||
+		stats[1].Path != "/page" || stats[1].Visitors != 1 || stats[1].PlatformDesktop != 1 || stats[1].PlatformMobile != 0 || stats[1].PlatformUnknown != 0 || stats[1].Bounces != 1 ||
+		stats[2].Path != "/" || stats[2].Visitors != 2 || stats[2].PlatformDesktop != 1 || stats[2].PlatformMobile != 0 || stats[2].PlatformUnknown != 1 || stats[2].Bounces != 2 ||
+		stats[3].Path != "/different-page" || stats[3].Visitors != 1 || stats[3].PlatformDesktop != 0 || stats[3].PlatformMobile != 1 || stats[3].PlatformUnknown != 0 || stats[3].Bounces != 1 {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }

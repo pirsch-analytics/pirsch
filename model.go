@@ -19,7 +19,9 @@ type Stats struct {
 	Path             string    `db:"path" json:"path"`
 	Visitors         int       `db:"visitors" json:"visitors"`
 	Sessions         int       `db:"sessions" json:"sessions"`
+	Bounces          int       `db:"bounces" json:"bounces"`
 	RelativeVisitors float64   `db:"-" json:"relative_visitors"`
+	BounceRate       float64   `db:"-" json:"bounce_rate"`
 }
 
 func (stats *Stats) GetID() int64 {

@@ -142,7 +142,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
@@ -150,13 +150,15 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	if err == nil {
 		existing.Visitors += entity.Visitors
 		existing.Sessions += entity.Sessions
+		existing.Bounces += entity.Bounces
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, platform_desktop = $3, platform_mobile = $4, platform_unknown = $5 WHERE id = $6`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, bounces = $3, platform_desktop = $4, platform_mobile = $5, platform_unknown = $6 WHERE id = $7`,
 			existing.Visitors,
 			existing.Sessions,
+			existing.Bounces,
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
@@ -164,7 +166,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
 
 		if err != nil {
 			return err
@@ -714,6 +716,32 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error counting visitor platforms: %s", err)
 		return nil
+	}
+
+	return visitors
+}
+
+// CountVisitorsByPathAndMaxOneHit implements the Store interface.
+func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT count(DISTINCT "fingerprint")
+		FROM "hit" h
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		AND LOWER("path") = LOWER($3)
+		AND (
+			SELECT COUNT(DISTINCT "path")
+			FROM "hit"
+			WHERE "fingerprint" = h."fingerprint"
+		) = 1`
+	var visitors int
+
+	if err := tx.Get(&visitors, query, tenantID, day, path); err != nil {
+		store.logger.Printf("error counting visitor with a maximum of one hit: %s", err)
 	}
 
 	return visitors

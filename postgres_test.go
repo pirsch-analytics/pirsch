@@ -17,6 +17,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 			Path:     "/",
 			Visitors: 42,
 			Sessions: 59,
+			Bounces:  11,
 		},
 		PlatformDesktop: 123,
 		PlatformMobile:  89,
@@ -35,6 +36,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 
 	stats.Visitors = 11
 	stats.Sessions = 17
+	stats.Bounces = 1
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
@@ -50,6 +52,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 
 	if stats.Visitors != 42+11 ||
 		stats.Sessions != 59+17 ||
+		stats.Bounces != 11+1 ||
 		stats.PlatformDesktop != 123+5 ||
 		stats.PlatformMobile != 89+3 ||
 		stats.PlatformUnknown != 52+1 {
@@ -369,5 +372,20 @@ func TestPostgresStore_Paths(t *testing.T) {
 
 	if paths[0] != "/" || paths[1] != "/path" || paths[2] != "/stats" {
 		t.Fatalf("Paths not as expected: %v", paths)
+	}
+}
+
+func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	visitors := store.CountVisitorsByPathAndMaxOneHit(nil, NullTenant, pastDay(5), "/")
+
+	if visitors != 2 {
+		t.Fatalf("Two visitors must have bounced, but was: %v", visitors)
 	}
 }

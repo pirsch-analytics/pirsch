@@ -103,7 +103,11 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 		return err
 	}
 
+	bounces := processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, path)
+
 	for _, v := range visitors {
+		v.Bounces = bounces
+
 		if err := processor.store.SaveVisitorStats(tx, &v); err != nil {
 			return err
 		}
