@@ -375,6 +375,24 @@ func TestPostgresStore_Paths(t *testing.T) {
 	}
 }
 
+func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false)
+	platforms := store.CountVisitorsByPlatform(nil, NullTenant, pastDay(1))
+
+	if platforms.PlatformDesktop != 1 ||
+		platforms.PlatformMobile != 1 ||
+		platforms.PlatformUnknown != 1 {
+		t.Fatalf("Platforms not as expected: %v", platforms)
+	}
+}
+
 func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)

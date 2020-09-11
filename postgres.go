@@ -691,21 +691,21 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 	}
 
 	query := `SELECT (
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") = $2::date
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") = $2::date
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") = $2::date
 				AND desktop IS FALSE
