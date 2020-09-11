@@ -756,25 +756,34 @@ func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantI
 }
 
 // ActiveVisitors implements the Store interface.
-func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, path string, from time.Time) ([]Stats, error) {
-	args := make([]interface{}, 0, 3)
-	args = append(args, tenantID)
-	args = append(args, from)
+func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Time) int {
+	query := `SELECT count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "time" > $2`
+	visitors := 0
+
+	if err := store.DB.Get(&visitors, query, tenantID, from); err != nil {
+		store.logger.Printf("error counting active visitors: %s", err)
+		return 0
+	}
+
+	return visitors
+}
+
+// ActivePageVisitors implements the Store interface.
+func (store *PostgresStore) ActivePageVisitors(tenantID sql.NullInt64, from time.Time) ([]Stats, error) {
 	query := `SELECT * FROM (
 			SELECT "tenant_id", "path", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" > $2 `
-
-	if path != "" {
-		args = append(args, path)
-		query += `AND LOWER("path") = LOWER($3) `
-	}
-
-	query += `GROUP BY tenant_id, "path") AS results ORDER BY "visitors" DESC, "path" ASC`
+			AND "time" > $2
+			GROUP BY tenant_id, "path"
+		) AS results
+		ORDER BY "visitors" DESC, "path" ASC`
 	var visitors []Stats
 
-	if err := store.DB.Select(&visitors, query, args...); err != nil {
+	if err := store.DB.Select(&visitors, query, tenantID, from); err != nil {
 		return nil, err
 	}
 

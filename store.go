@@ -99,9 +99,11 @@ type Store interface {
 	// This returns the absolut number of hits without further page calls and is used to calculate the bounce rate.
 	CountVisitorsByPathAndMaxOneHit(*sqlx.Tx, sql.NullInt64, time.Time, string) int
 
-	// ActiveVisitors returns the active visitors grouped by path for given duration and path.
-	// The path is optional and can be left empty to disable path filtering.
-	ActiveVisitors(sql.NullInt64, string, time.Time) ([]Stats, error)
+	// ActiveVisitors returns the active visitor count for given duration.
+	ActiveVisitors(sql.NullInt64, time.Time) int
+
+	// ActivePageVisitors returns the active visitors grouped by path for given duration.
+	ActivePageVisitors(sql.NullInt64, time.Time) ([]Stats, error)
 
 	// Visitors returns the visitors for given time frame grouped by days.
 	Visitors(sql.NullInt64, time.Time, time.Time) ([]Stats, error)

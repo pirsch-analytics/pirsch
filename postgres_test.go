@@ -389,3 +389,37 @@ func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 		t.Fatalf("Two visitors must have bounced, but was: %v", visitors)
 	}
 }
+
+func TestPostgresStore_ActiveVisitors(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false)
+	total := store.ActiveVisitors(NullTenant, time.Now().Add(-time.Second*10))
+
+	if total != 1 {
+		t.Fatalf("One active visitor must have been returned, but was: %v", total)
+	}
+}
+
+func TestPostgresStore_ActivePageVisitors(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", time.Now().Add(-time.Second*4), time.Time{}, "", "", "", "", false, false)
+	stats, err := store.ActivePageVisitors(NullTenant, time.Now().Add(-time.Second*10))
+
+	if err != nil {
+		t.Fatalf("Active page visitors must have been returned, but was: %v", err)
+	}
+
+	if len(stats) != 2 {
+		t.Fatalf("Two active page vistors must have been returned, but was: %v", len(stats))
+	}
+
+	if stats[0].Path != "/page" || stats[0].Visitors != 2 ||
+		stats[1].Path != "/" || stats[1].Visitors != 1 {
+		t.Fatalf("Visitor count not as expected: %v", stats)
+	}
+}

@@ -25,19 +25,14 @@ func NewAnalyzer(store Store) *Analyzer {
 // Use time.Minute*5 for example to see the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
-	stats, err := analyzer.store.ActiveVisitors(filter.TenantID, filter.Path, time.Now().UTC().Add(-duration))
+	from := time.Now().UTC().Add(-duration)
+	stats, err := analyzer.store.ActivePageVisitors(filter.TenantID, from)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	sum := 0
-
-	for _, v := range stats {
-		sum += v.Visitors
-	}
-
-	return stats, sum, nil
+	return stats, analyzer.store.ActiveVisitors(filter.TenantID, from), nil
 }
 
 // Visitors returns the visitor count, session count, and bounce rate per day.

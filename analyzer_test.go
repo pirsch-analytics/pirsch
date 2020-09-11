@@ -26,46 +26,13 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 				t.Fatalf("Visitors must be returned, but was:  %v", err)
 			}
 
-			if total != 3 {
-				t.Fatalf("Three active visitors must have been returned, but was: %v", total)
+			if total != 2 {
+				t.Fatalf("Two active visitors must have been returned, but was: %v", total)
 			}
 
 			if len(visitors) != 2 ||
 				visitors[0].Path != "/" || visitors[0].Visitors != 2 ||
 				visitors[1].Path != "/path" || visitors[1].Visitors != 1 {
-				t.Fatalf("Visitors not as expected: %v", visitors)
-			}
-		}
-	}
-}
-
-func TestAnalyzer_ActiveVisitorsPathFilter(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
-		for _, store := range testStorageBackends() {
-			cleanupDB(t)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), time.Time{}, "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), time.Time{}, "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), time.Time{}, "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), time.Time{}, "", "", "", "", false, false)
-			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), time.Time{}, "", "", "", "", false, false)
-			analyzer := NewAnalyzer(store)
-			visitors, total, err := analyzer.ActiveVisitors(&Filter{
-				TenantID: NewTenantID(tenantID),
-				Path:     "/PAth",
-			}, time.Second*30)
-
-			if err != nil {
-				t.Fatalf("Visitors must be returned, but was:  %v", err)
-			}
-
-			if total != 1 {
-				t.Fatalf("One active visitor must have been returned, but was: %v", total)
-			}
-
-			if len(visitors) != 1 ||
-				visitors[0].Path != "/path" || visitors[0].Visitors != 1 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
