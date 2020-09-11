@@ -46,14 +46,22 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 		return nil, err
 	}
 
-	if addToday && len(stats) > 0 {
+	if addToday {
 		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
 		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
 
-		if visitorsToday != nil {
-			stats[len(stats)-1].Visitors += visitorsToday.Visitors
-			stats[len(stats)-1].Sessions += visitorsToday.Sessions
-			stats[len(stats)-1].Bounces += bouncesToday
+		if len(stats) > 0 {
+			if visitorsToday != nil {
+				stats[len(stats)-1].Visitors += visitorsToday.Visitors
+				stats[len(stats)-1].Sessions += visitorsToday.Sessions
+				stats[len(stats)-1].Bounces += bouncesToday
+			}
+		} else {
+			stats = append(stats, Stats{
+				Visitors: visitorsToday.Visitors,
+				Sessions: visitorsToday.Sessions,
+				Bounces:  visitorsToday.Bounces,
+			})
 		}
 	}
 
@@ -89,7 +97,7 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 		return nil, err
 	}
 
-	if addToday && len(stats) > 0 {
+	if addToday {
 		visitorsToday, err := analyzer.store.CountVisitorsByLanguage(nil, filter.TenantID, today)
 
 		if err != nil {
@@ -141,7 +149,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		return nil, err
 	}
 
-	if addToday && len(stats) > 0 {
+	if addToday {
 		visitorsToday, err := analyzer.store.CountVisitorsByReferrer(nil, filter.TenantID, today)
 
 		if err != nil {
@@ -193,7 +201,7 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 		return nil, err
 	}
 
-	if addToday && len(stats) > 0 {
+	if addToday {
 		visitorsToday, err := analyzer.store.CountVisitorsByOS(nil, filter.TenantID, today)
 
 		if err != nil {
@@ -245,7 +253,7 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 		return nil, err
 	}
 
-	if addToday && len(stats) > 0 {
+	if addToday {
 		visitorsToday, err := analyzer.store.CountVisitorsByBrowser(nil, filter.TenantID, today)
 
 		if err != nil {
@@ -329,7 +337,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			return nil, err
 		}
 
-		if addToday && len(visitors) > 0 {
+		if addToday {
 			visitorsToday, err := analyzer.store.CountVisitorsByPath(nil, filter.TenantID, today, path, false)
 
 			if err != nil {
@@ -339,9 +347,17 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
 
 			if len(visitorsToday) > 0 {
-				visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
-				visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
-				visitors[len(visitors)-1].Bounces += bouncesToday
+				if len(visitors) > 0 {
+					visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
+					visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
+					visitors[len(visitors)-1].Bounces += bouncesToday
+				} else {
+					visitors = append(visitors, Stats{
+						Visitors: visitorsToday[0].Visitors,
+						Sessions: visitorsToday[0].Sessions,
+						Bounces:  bouncesToday,
+					})
+				}
 			}
 		}
 
