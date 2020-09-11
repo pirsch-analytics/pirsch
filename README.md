@@ -101,6 +101,12 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 ## Changelog
 
+### 1.5.1
+
+* fixed counting active visitors
+* fixed counting platforms
+* fixed reading statistics for today if no history exists
+
 ### 1.5.0
 
 **You need to update the schema by running the `v1.5.0.sql` migration script!**
