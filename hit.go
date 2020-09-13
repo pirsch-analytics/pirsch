@@ -111,6 +111,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		session = options.sessionCache.find(fingerprint)
 	}
 
+	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
+		options.ScreenWidth = 0
+		options.ScreenHeight = 0
+	}
+
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
 		Fingerprint:    fingerprint,
@@ -174,23 +179,12 @@ func IgnoreHit(r *http.Request) bool {
 // You might want to add additional checks before calling HitFromRequest afterwards (like for the HitOptions.TenantID).
 func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
-	width := getIntQueryParam(query.Get("width"))
-	height := getIntQueryParam(query.Get("height"))
-
-	if width < 0 {
-		width = 0
-	}
-
-	if height < 0 {
-		height = 0
-	}
-
 	return &HitOptions{
 		TenantID:     getNullInt64QueryParam(query.Get("tenant_id")),
 		URL:          getURLQueryParam(query.Get("location")),
 		Referrer:     getURLQueryParam(query.Get("referrer")),
-		ScreenWidth:  width,
-		ScreenHeight: height,
+		ScreenWidth:  getIntQueryParam(query.Get("width")),
+		ScreenHeight: getIntQueryParam(query.Get("height")),
 	}
 }
 

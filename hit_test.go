@@ -68,6 +68,36 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	}
 }
 
+func TestHitFromRequestScreenSize(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
+	hit := HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  -5,
+		ScreenHeight: 400,
+	})
+
+	if hit.ScreenWidth != 0 || hit.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+
+	hit = HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  400,
+		ScreenHeight: 0,
+	})
+
+	if hit.ScreenWidth != 0 || hit.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+
+	hit = HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  640,
+		ScreenHeight: 1024,
+	})
+
+	if hit.ScreenWidth != 640 || hit.ScreenHeight != 1024 {
+		t.Fatalf("Screen size must be set, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+}
+
 func TestIgnoreHitPrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")
