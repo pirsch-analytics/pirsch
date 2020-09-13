@@ -107,6 +107,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more
 
 *WIP*
 
+### 1.5.2
+
+* fixed grouping language, referrer, OS, and browser statistics
+
 ### 1.5.1
 
 * fixed counting active visitors
