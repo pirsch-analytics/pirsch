@@ -11,7 +11,13 @@ function Pirsch(options) {
         var referrer = document.referrer;
         var width = window.screen.width;
         var height = window.screen.height;
-        var url = endpoint+"?nocache="+nocache+"&tenant_id="+tenantID+"&location="+location+"&referrer="+referrer+"&width="+width+"&height="+height;
+        var url = endpoint+
+            "?nocache="+ nocache+
+            "&tenant_id="+tenantID+
+            "&location="+location+
+            "&referrer="+referrer+
+            "&width="+width+
+            "&height="+height;
 
         if(options.params) {
             for(var param in options.params) {
