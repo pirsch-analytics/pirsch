@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,6 +33,8 @@ type Hit struct {
 	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
 	Desktop        bool           `db:"desktop" json:"desktop"`
 	Mobile         bool           `db:"mobile" json:"mobile"`
+	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
+	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
 	Time           time.Time      `db:"time" json:"time"`
 }
 
@@ -46,9 +49,16 @@ type HitOptions struct {
 	// TenantID is optionally saved with a hit to split the data between multiple tenants.
 	TenantID sql.NullInt64
 
-	// Path can be specified to manually overwrite the path stored for the request.
+	// URL can be set to manually overwrite the URL stored for this request.
+	// This will also affect the Path, except it is set too.
+	URL string
+
+	// Path can be set to manually overwrite the path stored for the request.
 	// This will also affect the URL.
 	Path string
+
+	// Referrer can be set to manually overwrite the referrer from the request.
+	Referrer string
 
 	// ReferrerDomainBlacklist is used to filter out unwanted referrer from the Referrer header.
 	// This can be used to filter out traffic from your own site or subdomains.
@@ -60,6 +70,12 @@ type HitOptions struct {
 	// or else subdomains must explicitly be included in the blacklist.
 	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
 	ReferrerDomainBlacklistIncludesSubdomains bool
+
+	// ScreenWidth sets the screen width to be stored with the hit.
+	ScreenWidth int
+
+	// ScreenHeight sets the screen height to be stored with the hit.
+	ScreenHeight int
 
 	sessionCache *sessionCache
 }
@@ -75,25 +91,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		options = &HitOptions{}
 	}
 
-	// manually overwrite path if set
-	requestURL := r.URL.String()
-
-	if options.Path != "" {
-		u, err := url.Parse(r.RequestURI)
-
-		if err == nil {
-			// change path and re-assemble URL
-			u.Path = options.Path
-			requestURL = u.String()
-		}
-	} else {
-		options.Path = r.URL.Path
-	}
-
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+	getRequestURI(r, options)
 	fingerprint := Fingerprint(r, salt)
 	path := shortenString(options.Path, 2000)
-	requestURL = shortenString(requestURL, 2000)
+	requestURL := shortenString(options.URL, 2000)
 	ua := r.UserAgent()
 	uaInfo := ParseUserAgent(ua)
 	uaInfo.OS = shortenString(uaInfo.OS, 20)
@@ -102,7 +104,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
-	referrer := shortenString(getReferrer(r, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	referrer := shortenString(getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
 	var session time.Time
 
 	if options.sessionCache != nil {
@@ -124,6 +126,8 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
 		Desktop:        uaInfo.IsDesktop(),
 		Mobile:         uaInfo.IsMobile(),
+		ScreenWidth:    options.ScreenWidth,
+		ScreenHeight:   options.ScreenHeight,
 		Time:           now,
 	}
 }
@@ -165,6 +169,31 @@ func IgnoreHit(r *http.Request) bool {
 	return false
 }
 
+// HitOptionsFromRequest returns the HitOptions for given client request.
+// This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
+// You might want to add additional checks before calling HitFromRequest afterwards (like for the HitOptions.TenantID).
+func HitOptionsFromRequest(r *http.Request) *HitOptions {
+	query := r.URL.Query()
+	width := getIntQueryParam(query.Get("width"))
+	height := getIntQueryParam(query.Get("height"))
+
+	if width < 0 {
+		width = 0
+	}
+
+	if height < 0 {
+		height = 0
+	}
+
+	return &HitOptions{
+		TenantID:     getNullInt64QueryParam(query.Get("tenant_id")),
+		URL:          getURLQueryParam(query.Get("location")),
+		Referrer:     getURLQueryParam(query.Get("referrer")),
+		ScreenWidth:  width,
+		ScreenHeight: height,
+	}
+}
+
 func ignoreReferrer(r *http.Request) bool {
 	referrer := getReferrerFromHeaderOrQuery(r)
 
@@ -172,7 +201,7 @@ func ignoreReferrer(r *http.Request) bool {
 		return false
 	}
 
-	u, err := url.Parse(referrer)
+	u, err := url.ParseRequestURI(referrer)
 
 	if err != nil {
 		return false
@@ -180,6 +209,24 @@ func ignoreReferrer(r *http.Request) bool {
 
 	_, found := referrerBlacklist[u.Hostname()]
 	return found
+}
+
+func getRequestURI(r *http.Request, options *HitOptions) {
+	if options.URL == "" {
+		options.URL = r.URL.String()
+	}
+
+	u, err := url.ParseRequestURI(options.URL)
+
+	if err == nil {
+		if options.Path != "" {
+			// change path and re-assemble URL
+			u.Path = options.Path
+			options.URL = u.String()
+		} else {
+			options.Path = u.Path
+		}
+	}
 }
 
 func getLanguage(r *http.Request) string {
@@ -194,14 +241,20 @@ func getLanguage(r *http.Request) string {
 	return ""
 }
 
-func getReferrer(r *http.Request, domainBlacklist []string, ignoreSubdomain bool) string {
-	referrer := getReferrerFromHeaderOrQuery(r)
+func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSubdomain bool) string {
+	referrer := ""
+
+	if ref != "" {
+		referrer = ref
+	} else {
+		referrer = getReferrerFromHeaderOrQuery(r)
+	}
 
 	if referrer == "" {
 		return ""
 	}
 
-	u, err := url.Parse(referrer)
+	u, err := url.ParseRequestURI(referrer)
 
 	if err != nil {
 		return ""
@@ -271,4 +324,22 @@ func shortenString(str string, n int) string {
 	}
 
 	return str
+}
+
+func getNullInt64QueryParam(param string) sql.NullInt64 {
+	i, err := strconv.Atoi(param)
+	return sql.NullInt64{Int64: int64(i), Valid: err == nil}
+}
+
+func getIntQueryParam(param string) int {
+	i, _ := strconv.Atoi(param)
+	return i
+}
+
+func getURLQueryParam(param string) string {
+	if _, err := url.ParseRequestURI(param); err != nil {
+		return ""
+	}
+
+	return param
 }

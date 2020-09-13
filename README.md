@@ -97,9 +97,15 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 })
 ```
 
+*TODO frontend tracking (pirsch.js)*
+
 Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details, check out `demo/main.go` or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
 
 ## Changelog
+
+### 1.6.0
+
+*WIP*
 
 ### 1.5.1
 
