@@ -856,7 +856,7 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
-		GROUP BY "language", "visitors"
+		GROUP BY "language"
 		ORDER BY "visitors" DESC`
 	var visitors []LanguageStats
 
@@ -874,7 +874,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to tim
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
-		GROUP BY "referrer", "visitors"
+		GROUP BY "referrer"
 		ORDER BY "visitors" DESC`
 	var visitors []ReferrerStats
 
@@ -892,7 +892,7 @@ func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
-		GROUP BY "os", "visitors"
+		GROUP BY "os"
 		ORDER BY "visitors" DESC`
 	var visitors []OSStats
 
@@ -910,7 +910,7 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
-		GROUP BY "browser", "visitors"
+		GROUP BY "browser"
 		ORDER BY "visitors" DESC`
 	var visitors []BrowserStats
 
