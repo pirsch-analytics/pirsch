@@ -986,6 +986,24 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 	return visitors
 }
 
+// VisitorScreenSize implements the Store interface.
+func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to time.Time) ([]ScreenStats, error) {
+	query := `SELECT "width", "height", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "screen_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "width", "height"
+		ORDER BY "visitors" DESC`
+	var visitors []ScreenStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",

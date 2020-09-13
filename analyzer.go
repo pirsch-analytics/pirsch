@@ -322,6 +322,57 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	return stats
 }
 
+func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorScreenSize(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday {
+		visitorsToday, err := analyzer.store.CountVisitorsByScreenSize(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.Width == v.Width && s.Height == v.Height {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
+
+	var sum float64
+
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
+
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
 // PageVisitors returns the visitor count, session count, and bounce rate per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)

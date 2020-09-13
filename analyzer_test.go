@@ -355,6 +355,52 @@ func TestAnalyzer_Platform(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_Screen(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", false, false, 1920, 1080)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", false, false, 640, 1080)
+			stats := &ScreenStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				Width:  1920,
+				Height: 1080,
+			}
+
+			if err := store.SaveScreenStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.Screen(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(4),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].Width != 1920 || visitors[0].Height != 1080 || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].Width != 640 || visitors[1].Height != 1080 || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
 func TestAnalyzer_PageVisitors(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 
