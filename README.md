@@ -43,6 +43,8 @@ It's theoretically possible to track the visitor flow (which page was seen first
 
 To store hits and statistics, Pirsch uses a database. Right now only Postgres is supported, but new ones can easily be added by implementing the Store interface. The schema can be found within the schema directory. Changes will be added to migrations scripts, so that you can add them to your projects database migration or run them manually.
 
+### Server-side tracking
+
 Here is a quick demo on how to use the library:
 
 ```Go
@@ -97,9 +99,58 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 })
 ```
 
-Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for more details, check out `demo/main.go` or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
+### Client-side tracking
+
+You can also track visitors on the client side by adding `pirsch.js` to your website. It will perform a GET request to the configured endpoint.
+
+```HTML
+<!-- add the tracking script to the head area and call it -->
+<script type="text/javascript" src="pirsch.js"></script>
+<script type="text/javascript">
+    Pirsch({
+        endpoint: "/count",
+        tenant_id: 42,
+        params: {
+            optional_param: "test"
+        }
+    });
+</script>
+```
+
+The parameters to `Pirsch` are optional. Here is a list of the possible options.
+
+| Option | Description | Default |
+| - | - | - |
+| endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
+| tenant_id | The tenant ID to use, in case you plan to track multiple websites using the same backend or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
+| params | Additional parameters to send with the request. | {} (no parameters) |
+
+**You should allow users to opt-in for client-side tracking. To do that, you can set a cookie/localStorage entry on confirmation and call `Pirsch` when it is set.**
+
+To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
+
+```Go
+// Create an endpoint to handle client tracking requests.
+// HitOptionsFromRequest is a utility function to process the required parameters.
+// You might want to additional checks, like for the tenant ID.
+http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    tracker.Hit(r, pirsch.HitOptionsFromRequest(r))
+}))
+```
+
+`HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were send by the user.
+
+## Documentation
+
+Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
 
 ## Changelog
+
+### 1.6.0
+
+* added client side tracking (pirsch.js)
+* added screen size to Hit, Processor and Anlayzer for client side tracking
+* improved documentation and demos
 
 ### 1.5.2
 

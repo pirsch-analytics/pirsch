@@ -47,6 +47,9 @@ type Store interface {
 	// SaveBrowserStats saves BrowserStats.
 	SaveBrowserStats(*sqlx.Tx, *BrowserStats) error
 
+	// SaveScreenStats saves ScreenStats.
+	SaveScreenStats(*sqlx.Tx, *ScreenStats) error
+
 	// Session returns the hits session timestamp for given fingerprint and max age.
 	Session(string, time.Time) time.Time
 
@@ -92,6 +95,9 @@ type Store interface {
 	// CountVisitorsByBrowser returns the visitor count for given day grouped by browser.
 	CountVisitorsByBrowser(*sqlx.Tx, sql.NullInt64, time.Time) ([]BrowserStats, error)
 
+	// CountVisitorsByScreenSize returns the visitor count for given day grouped by screen size (width and height).
+	CountVisitorsByScreenSize(*sqlx.Tx, sql.NullInt64, time.Time) ([]ScreenStats, error)
+
 	// CountVisitorsByPlatform returns the visitor count for given day grouped by platform.
 	CountVisitorsByPlatform(*sqlx.Tx, sql.NullInt64, time.Time) *VisitorStats
 
@@ -114,17 +120,20 @@ type Store interface {
 	// VisitorLanguages returns the visitors for given time frame grouped by language.
 	VisitorLanguages(sql.NullInt64, time.Time, time.Time) ([]LanguageStats, error)
 
-	// VisitorReferrer returns the visitor count for given day grouped by referrer.
+	// VisitorReferrer returns the visitor count for given time frame grouped by referrer.
 	VisitorReferrer(sql.NullInt64, time.Time, time.Time) ([]ReferrerStats, error)
 
-	// VisitorOS returns the visitor count for given day grouped by operating system.
+	// VisitorOS returns the visitor count for given time frame grouped by operating system.
 	VisitorOS(sql.NullInt64, time.Time, time.Time) ([]OSStats, error)
 
-	// VisitorBrowser returns the visitor count for given day grouped by browser.
+	// VisitorBrowser returns the visitor count for given time frame grouped by browser.
 	VisitorBrowser(sql.NullInt64, time.Time, time.Time) ([]BrowserStats, error)
 
-	// VisitorPlatform returns the visitor count for given day grouped by platform.
+	// VisitorPlatform returns the visitor count for given time frame grouped by platform.
 	VisitorPlatform(sql.NullInt64, time.Time, time.Time) *VisitorStats
+
+	// VisitorScreenSize returns the visitor count for given time frame grouped by screen size (width and height).
+	VisitorScreenSize(sql.NullInt64, time.Time, time.Time) ([]ScreenStats, error)
 
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)

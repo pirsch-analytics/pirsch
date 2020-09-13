@@ -11,10 +11,12 @@ func TestHitFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
-	req.Header.Set("Referer", "ref")
+	req.Header.Set("Referer", "http://ref/")
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		TenantID:     NewTenantID(42),
 		sessionCache: newSessionCache(store, 0, 0),
+		ScreenWidth:  640,
+		ScreenHeight: 1024,
 	})
 
 	if hit.TenantID.Int64 != 42 ||
@@ -25,27 +27,74 @@ func TestHitFromRequest(t *testing.T) {
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de-de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
-		hit.Referrer.String != "ref" ||
+		hit.Referrer.String != "http://ref/" ||
 		hit.OS.String != OSWindows ||
 		hit.OSVersion.String != "10" ||
 		hit.Browser.String != BrowserChrome ||
 		hit.BrowserVersion.String != "84.0" ||
 		!hit.Desktop ||
 		hit.Mobile ||
+		hit.ScreenWidth != 640 ||
+		hit.ScreenHeight != 1024 ||
 		hit.Time.IsZero() {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
 
-func TestHitFromRequestPath(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
+func TestHitFromRequestOverwrite(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit := HitFromRequest(req, "salt", &HitOptions{
-		Path: "/new/custom/path",
+		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
 	if hit.Path.String != "/new/custom/path" ||
-		hit.URL.String != "/new/custom/path?query=param&foo=bar#anchor" {
+		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
 		t.Fatalf("Hit not as expected: %v", hit)
+	}
+}
+
+func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
+	hit := HitFromRequest(req, "salt", &HitOptions{
+		URL:      "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
+		Path:     "/new/custom/path",
+		Referrer: "http://custom.ref/",
+	})
+
+	if hit.Path.String != "/new/custom/path" ||
+		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
+		hit.Referrer.String != "http://custom.ref/" {
+		t.Fatalf("Hit not as expected: %v", hit)
+	}
+}
+
+func TestHitFromRequestScreenSize(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
+	hit := HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  -5,
+		ScreenHeight: 400,
+	})
+
+	if hit.ScreenWidth != 0 || hit.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+
+	hit = HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  400,
+		ScreenHeight: 0,
+	})
+
+	if hit.ScreenWidth != 0 || hit.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+
+	hit = HitFromRequest(req, "salt", &HitOptions{
+		ScreenWidth:  640,
+		ScreenHeight: 1024,
+	})
+
+	if hit.ScreenWidth != 640 || hit.ScreenHeight != 1024 {
+		t.Fatalf("Screen size must be set, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 }
 
@@ -156,6 +205,30 @@ func TestIgnoreHitReferrer(t *testing.T) {
 	}
 }
 
+func TestHitOptionsFromRequest(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
+	options := HitOptionsFromRequest(req)
+
+	if options.TenantID.Int64 != 0 ||
+		options.URL != "" ||
+		options.Referrer != "" ||
+		options.ScreenWidth != 0 ||
+		options.ScreenHeight != 0 {
+		t.Fatalf("Options not as expected: %v", options)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenant_id=42&location=http://foo.bar/test&referrer=http://ref/&width=640&height=1024", nil)
+	options = HitOptionsFromRequest(req)
+
+	if options.TenantID.Int64 != 42 ||
+		options.URL != "http://foo.bar/test" ||
+		options.Referrer != "http://ref/" ||
+		options.ScreenWidth != 640 ||
+		options.ScreenHeight != 1024 {
+		t.Fatalf("Options not as expected: %v", options)
+	}
+}
+
 func TestGetReferrer(t *testing.T) {
 	input := []struct {
 		referrer        string
@@ -184,7 +257,7 @@ func TestGetReferrer(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Add("Referer", in.referrer)
 
-		if referrer := getReferrer(r, in.blacklist, in.ignoreSubdomain); referrer != expected[i] {
+		if referrer := getReferrer(r, "", in.blacklist, in.ignoreSubdomain); referrer != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], referrer)
 		}
 	}
@@ -261,5 +334,51 @@ func TestShortenString(t *testing.T) {
 
 	if out != "Hello World" {
 		t.Fatalf("String must not have been shortened, but was: %v", out)
+	}
+}
+
+func TestGetNullInt64QueryParam(t *testing.T) {
+	input := []string{
+		"",
+		"   ",
+		"asdf",
+		"32asdf",
+		"42",
+	}
+	expected := []int64{
+		0,
+		0,
+		0,
+		0,
+		42,
+	}
+
+	for i, in := range input {
+		if out := getNullInt64QueryParam(in); out.Int64 != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
+		}
+	}
+}
+
+func TestGetIntQueryParam(t *testing.T) {
+	input := []string{
+		"",
+		"   ",
+		"asdf",
+		"32asdf",
+		"42",
+	}
+	expected := []int{
+		0,
+		0,
+		0,
+		0,
+		42,
+	}
+
+	for i, in := range input {
+		if out := getIntQueryParam(in); out != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
+		}
 	}
 }

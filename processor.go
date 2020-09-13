@@ -59,6 +59,11 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		}
 	}
 
+	if err := processor.screen(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
 	if err := processor.store.DeleteHitsByDay(tx, tenantID, day); err != nil {
 		processor.store.Rollback(tx)
 		return err
@@ -189,6 +194,22 @@ func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day tim
 
 	for _, v := range visitors {
 		if err := processor.store.SaveBrowserStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) screen(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByScreenSize(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveScreenStats(tx, &v); err != nil {
 			return err
 		}
 	}
