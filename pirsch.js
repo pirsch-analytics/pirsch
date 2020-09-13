@@ -12,6 +12,13 @@ function Pirsch(options) {
         var width = window.screen.width;
         var height = window.screen.height;
         var url = endpoint+"?nocache="+nocache+"&tenant_id="+tenantID+"&location="+location+"&referrer="+referrer+"&width="+width+"&height="+height;
+
+        if(options.params) {
+            for(var param in options.params) {
+                url += "&"+param+"="+options.params[param];
+            }
+        }
+
         var req = new XMLHttpRequest();
         req.open("GET", url);
         req.send();
