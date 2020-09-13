@@ -47,6 +47,9 @@ type Store interface {
 	// SaveBrowserStats saves BrowserStats.
 	SaveBrowserStats(*sqlx.Tx, *BrowserStats) error
 
+	// SaveScreenStats saves ScreenStats.
+	SaveScreenStats(*sqlx.Tx, *ScreenStats) error
+
 	// Session returns the hits session timestamp for given fingerprint and max age.
 	Session(string, time.Time) time.Time
 

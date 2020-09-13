@@ -81,3 +81,11 @@ type BrowserStats struct {
 	Browser        sql.NullString `db:"browser" json:"browser"`
 	BrowserVersion sql.NullString `db:"browser_version" json:"version"`
 }
+
+// ScreenStats is the visitor count for each screen resolution on each day.
+type ScreenStats struct {
+	Stats
+
+	Width  int `db:"width" json:"width"`
+	Height int `db:"height" json:"height"`
+}

@@ -125,6 +125,8 @@ The parameters to `Pirsch` are optional. Here is a list of the possible options.
 | tenant_id | The tenant ID to use, in case you plan to track multiple websites using the same backend or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
 | params | Additional parameters to send with the request. | {} (no parameters) |
 
+**You should allow users to opt-in for client-side tracking. To do that, you can set a cookie/localStorage entry on confirmation and call `Pirsch` when it is set.**
+
 To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
 
 ```Go

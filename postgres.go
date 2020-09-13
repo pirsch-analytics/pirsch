@@ -157,7 +157,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET visitors = $1, sessions = $2, bounces = $3, platform_desktop = $4, platform_mobile = $5, platform_unknown = $6 WHERE id = $7`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "platform_desktop" = $4, "platform_mobile" = $5, "platform_unknown" = $6 WHERE id = $7`,
 			existing.Visitors,
 			existing.Sessions,
 			existing.Bounces,
@@ -198,7 +198,7 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 		existing.Visitors += entity.Visitors
 		existing.Sessions += entity.Sessions
 
-		if _, err := tx.Exec(`UPDATE "visitor_time_stats" SET visitors = $1, sessions = $2 WHERE id = $3`,
+		if _, err := tx.Exec(`UPDATE "visitor_time_stats" SET "visitors" = $1, sessions = $2 WHERE id = $3`,
 			existing.Visitors,
 			existing.Sessions,
 			existing.ID); err != nil {
@@ -233,7 +233,7 @@ func (store *PostgresStore) SaveLanguageStats(tx *sqlx.Tx, entity *LanguageStats
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
 		`INSERT INTO "language_stats" ("tenant_id", "day", "path", "language", "visitors") VALUES (:tenant_id, :day, :path, :language, :visitors)`,
-		`UPDATE "language_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		`UPDATE "language_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
 
@@ -256,7 +256,7 @@ func (store *PostgresStore) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
 		`INSERT INTO "referrer_stats" ("tenant_id", "day", "path", "referrer", "visitors") VALUES (:tenant_id, :day, :path, :referrer, :visitors)`,
-		`UPDATE "referrer_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		`UPDATE "referrer_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
 
@@ -280,7 +280,7 @@ func (store *PostgresStore) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
 		`INSERT INTO "os_stats" ("tenant_id", "day", "path", "os", "os_version", "visitors") VALUES (:tenant_id, :day, :path, :os, :os_version, :visitors)`,
-		`UPDATE "os_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		`UPDATE "os_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
 
@@ -304,7 +304,30 @@ func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) 
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
 		`INSERT INTO "browser_stats" ("tenant_id", "day", "path", "browser", "browser_version", "visitors") VALUES (:tenant_id, :day, :path, :browser, :browser_version, :visitors)`,
-		`UPDATE "browser_stats" SET visitors = $1 WHERE id = $2`); err != nil {
+		`UPDATE "browser_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveScreenStats implements the Store interface.
+func (store *PostgresStore) SaveScreenStats(tx *sqlx.Tx, entity *ScreenStats) error {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	existing := new(ScreenStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "screen_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND "width" = $3
+		AND "height" = $4`, entity.TenantID, entity.Day, entity.Width, entity.Height)
+
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "screen_stats" ("tenant_id", "day", "width", "height", "visitors") VALUES (:tenant_id, :day, :width, :height, :visitors)`,
+		`UPDATE "screen_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
 
