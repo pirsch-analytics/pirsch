@@ -95,6 +95,9 @@ type Store interface {
 	// CountVisitorsByBrowser returns the visitor count for given day grouped by browser.
 	CountVisitorsByBrowser(*sqlx.Tx, sql.NullInt64, time.Time) ([]BrowserStats, error)
 
+	// CountVisitorsByScreenSize returns the visitor count for given day grouped by screen size (width and height).
+	CountVisitorsByScreenSize(*sqlx.Tx, sql.NullInt64, time.Time) ([]ScreenStats, error)
+
 	// CountVisitorsByPlatform returns the visitor count for given day grouped by platform.
 	CountVisitorsByPlatform(*sqlx.Tx, sql.NullInt64, time.Time) *VisitorStats
 

@@ -310,7 +310,7 @@ func TestPostgresStore_SaveScreenStats(t *testing.T) {
 func TestPostgresStore_Session(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", time.Now(), pastDay(2), "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", time.Now(), pastDay(2), "", "", "", "", false, false, 0, 0)
 	session := store.Session("fp", pastDay(1))
 
 	if !session.IsZero() {
@@ -327,9 +327,9 @@ func TestPostgresStore_Session(t *testing.T) {
 func TestPostgresStore_HitDays(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
 	days, err := store.HitDays(NullTenant)
 
 	if err != nil {
@@ -346,9 +346,9 @@ func TestPostgresStore_HitDays(t *testing.T) {
 func TestPostgresStore_HitPaths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
 	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
 
 	if err != nil {
@@ -377,9 +377,9 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 func TestPostgresStore_Paths(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", false, false, 0, 0)
 	stats := &VisitorStats{
 		Stats: Stats{
 			Day:  day(2020, 6, 20, 7),
@@ -419,12 +419,12 @@ func TestPostgresStore_Paths(t *testing.T) {
 func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false)
-	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true)
-	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true)
-	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, true, 0, 0)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", false, false, 0, 0)
 	platforms := store.CountVisitorsByPlatform(nil, NullTenant, pastDay(1))
 
 	if platforms.PlatformDesktop != 1 ||
@@ -437,11 +437,11 @@ func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
 func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", false, false, 0, 0)
 	visitors := store.CountVisitorsByPathAndMaxOneHit(nil, NullTenant, pastDay(5), "/")
 
 	if visitors != 2 {
@@ -452,8 +452,8 @@ func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 func TestPostgresStore_ActiveVisitors(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false, 0, 0)
 	total := store.ActiveVisitors(NullTenant, time.Now().Add(-time.Second*10))
 
 	if total != 1 {
@@ -464,9 +464,9 @@ func TestPostgresStore_ActiveVisitors(t *testing.T) {
 func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false)
-	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", time.Now().Add(-time.Second*4), time.Time{}, "", "", "", "", false, false)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", time.Now().Add(-time.Second*4), time.Time{}, "", "", "", "", false, false, 0, 0)
 	stats, err := store.ActivePageVisitors(NullTenant, time.Now().Add(-time.Second*10))
 
 	if err != nil {

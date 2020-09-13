@@ -708,6 +708,27 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 	return visitors, nil
 }
 
+// CountVisitorsByBrowser implements the Store interface.
+func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]ScreenStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "tenant_id", $2::date "day", "screen_width" "width", "screen_height" "height", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "tenant_id", "width", "height"`
+	var visitors []ScreenStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // CountVisitorsByPlatform implements the Store interface.
 func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *VisitorStats {
 	if tx == nil {
