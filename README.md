@@ -151,6 +151,7 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for deta
 * added client side tracking (pirsch.js)
 * added screen size to Hit, Processor and Anlayzer for client side tracking
 * improved documentation and demos
+* fixed counting bounces for path
 
 ### 1.5.2
 
