@@ -1007,10 +1007,10 @@ func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to t
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
-		CASE WHEN "path" IS NULL THEN '' ELSE "path" END,
-		CASE WHEN "visitor_stats".visitors IS NULL THEN 0 ELSE "visitor_stats".visitors END,
-		CASE WHEN "visitor_stats".sessions IS NULL THEN 0 ELSE "visitor_stats".sessions END,
-        CASE WHEN "visitor_stats".bounces IS NULL THEN 0 ELSE "visitor_stats".bounces END
+		COALESCE("path", '') "path",
+		COALESCE("visitor_stats".visitors, 0) "visitors",
+		COALESCE("visitor_stats".sessions, 0) "sessions",
+        COALESCE("visitor_stats".bounces, 0) "bounces"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
