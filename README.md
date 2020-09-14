@@ -15,7 +15,7 @@ The name is in German and refers to a special kind of hunt: *the hunter carefull
 
 ## How does it work?
 
-Pirsch generates a unique fingerprint for each visitor. The fingerprint is a hash of the visitors IP, User-Agent and a salt. The salt is re-generated at midnight to separate data for each day.
+Pirsch generates a unique fingerprint for each visitor. The fingerprint is a hash of the visitors IP, User-Agent, the date, and a salt. The date guarantee that the data is separated by day, so visitors can only be tracked for up to one day.
 
 Each time a visitor opens your page, Pirsch will store a hit. The hits are analyzed later to extract meaningful data and reduce storage usage by aggregation.
 
