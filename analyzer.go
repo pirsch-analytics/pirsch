@@ -395,7 +395,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 				return nil, err
 			}
 
-			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, path)
 
 			if len(visitorsToday) > 0 {
 				if len(visitors) > 0 {
