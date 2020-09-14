@@ -1799,6 +1799,7 @@ var referrerBlacklist = map[string]struct{}{
 	"udav.net":                             {},
 	"ufa.dienai.ru":                        {},
 	"ufolabs.net":                          {},
+	"ufprs.rfesc.net":                      {},
 	"uginekologa.com":                      {},
 	"ukrainian-poetry.com":                 {},
 	"ukrcargo.com":                         {},
