@@ -1916,6 +1916,7 @@ var referrerBlacklist = map[string]struct{}{
 	"website-speed-check.site":             {},
 	"website-speed-checker.site":           {},
 	"websitebottraffic.host":               {},
+	"websitebottraffic.xyz":                {},
 	"websites-reviews.com":                 {},
 	"websocial.me":                         {},
 	"weburlopener.com":                     {},
