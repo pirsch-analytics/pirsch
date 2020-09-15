@@ -62,22 +62,29 @@ func TestGetIP(t *testing.T) {
 		t.Fatalf("Expected '123.456.789.012', but was: %v", ip)
 	}
 
-	// X-Real-IP, priority 3
+	// X-Real-IP
 	r.Header.Set("X-Real-IP", "103.0.53.43")
 
 	if ip := getIP(r); ip != "103.0.53.43" {
 		t.Fatalf("Expected '103.0.53.43', but was: %v", ip)
 	}
 
-	// Forwarded, priority 2
+	// Forwarded
 	r.Header.Set("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43")
 
 	if ip := getIP(r); ip != "192.0.2.60" {
 		t.Fatalf("Expected '192.0.2.60', but was: %v", ip)
 	}
 
-	// X-Forwarded-For, priority 1
+	// X-Forwarded-For
 	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67")
+
+	if ip := getIP(r); ip != "127.0.0.1" {
+		t.Fatalf("Expected '127.0.0.1', but was: %v", ip)
+	}
+
+	// CF-Connecting-IP
+	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67")
 
 	if ip := getIP(r); ip != "127.0.0.1" {
 		t.Fatalf("Expected '127.0.0.1', but was: %v", ip)
