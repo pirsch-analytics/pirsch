@@ -107,7 +107,10 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 	var sessionCache *sessionCache
 
 	if config.Sessions {
-		sessionCache = newSessionCache(store, config.SessionMaxAge, config.SessionCleanupInterval)
+		sessionCache = newSessionCache(store, &sessionCacheConfig{
+			maxAge:          config.SessionMaxAge,
+			cleanupInterval: config.SessionCleanupInterval,
+		})
 	}
 
 	tracker := &Tracker{

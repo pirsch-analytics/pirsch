@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	defaultMaxAge      = time.Hour
+	defaultMaxAge      = time.Hour * 2
+	maxMaxAge          = time.Hour * 24
 	minCleanupInterval = maxWorkerTimeout * 2
-	maxCleanupInterval = maxWorkerTimeout + time.Minute*13
+	maxCleanupInterval = minCleanupInterval + time.Hour
 )
 
+// sessionCache caches sessions in two maps and swaps them after some time to clean up unused/outdated sessions.
+// If a session is not found in cache, it will be looked up in database and added to the cache.
 type sessionCache struct {
 	store      Store
 	maxAge     time.Duration
@@ -21,30 +24,45 @@ type sessionCache struct {
 	m          sync.RWMutex
 }
 
+// sessionCacheConfig is the (optional) configuration for the sessionCache.
+type sessionCacheConfig struct {
+	maxAge          time.Duration
+	cleanupInterval time.Duration
+}
+
+func (config *sessionCacheConfig) validate() {
+	if config.cleanupInterval < minCleanupInterval {
+		config.cleanupInterval = minCleanupInterval
+	} else if config.cleanupInterval > maxCleanupInterval {
+		config.cleanupInterval = maxCleanupInterval
+	}
+
+	if config.maxAge == 0 {
+		config.maxAge = defaultMaxAge
+	} else if config.maxAge > maxMaxAge {
+		config.maxAge = maxMaxAge
+	}
+}
+
 // newSessionCache creates a new sessionCache.
 // If maxAge or cleanupInterval are set to 0, the default will be used.
 // maxAge is used to define how long a session runs at maximum. The session will be reset once a request is made within that time frame.
 // cleanupInterval has a minimum of two times the Tracker worker count and a maximum, to prevent running out of RAM.
-func newSessionCache(store Store, maxAge, cleanupInterval time.Duration) *sessionCache {
-	if cleanupInterval < minCleanupInterval {
-		cleanupInterval = minCleanupInterval
-	} else if cleanupInterval > maxCleanupInterval {
-		cleanupInterval = maxCleanupInterval
+func newSessionCache(store Store, config *sessionCacheConfig) *sessionCache {
+	if config == nil {
+		config = new(sessionCacheConfig)
 	}
 
-	if maxAge == 0 {
-		maxAge = defaultMaxAge
-	}
-
+	config.validate()
 	ctx, cancel := context.WithCancel(context.Background())
 	cache := &sessionCache{
 		store:      store,
-		maxAge:     maxAge,
+		maxAge:     config.maxAge,
 		active:     make(map[string]time.Time),
 		inactive:   make(map[string]time.Time),
 		cancelFunc: cancel,
 	}
-	go cache.cleanup(ctx, cleanupInterval)
+	go cache.cleanup(ctx, config.cleanupInterval)
 	return cache
 }
 

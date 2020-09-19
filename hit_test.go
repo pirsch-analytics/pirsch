@@ -14,7 +14,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Referer", "http://ref/")
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		TenantID:     NewTenantID(42),
-		sessionCache: newSessionCache(store, 0, 0),
+		sessionCache: newSessionCache(store, nil),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})

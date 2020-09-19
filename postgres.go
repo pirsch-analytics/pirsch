@@ -335,7 +335,7 @@ func (store *PostgresStore) SaveScreenStats(tx *sqlx.Tx, entity *ScreenStats) er
 }
 
 func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
-	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "session" > $2 LIMIT 1`
+	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "time" > $2 LIMIT 1`
 	var session time.Time
 
 	if err := store.DB.Get(&session, query, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {

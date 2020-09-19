@@ -310,7 +310,7 @@ func TestPostgresStore_SaveScreenStats(t *testing.T) {
 func TestPostgresStore_Session(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", time.Now(), pastDay(2), "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua", "", pastDay(2), time.Now(), "", "", "", "", false, false, 0, 0)
 	session := store.Session("fp", pastDay(1))
 
 	if !session.IsZero() {
