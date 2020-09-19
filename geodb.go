@@ -3,8 +3,10 @@ package pirsch
 import (
 	"archive/tar"
 	"compress/gzip"
+	"github.com/oschwald/maxminddb-golang"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,8 +17,53 @@ const (
 	geoLite2Permalink     = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=LICENSE_KEY&suffix=tar.gz"
 	geoLite2LicenseKey    = "LICENSE_KEY"
 	geoLite2TarGzFilename = "GeoLite2-Country.tar.gz"
-	geoLite2Filename      = "GeoLite2-Country.mmdb"
+
+	// GeoLite2Filename is the default filename of the GeoLite2 database.
+	GeoLite2Filename = "GeoLite2-Country.mmdb"
 )
+
+// GeoDB maps IPs to their geo location based on MaxMinds GeoLite2 or GeoIP2 database.
+type GeoDB struct {
+	db *maxminddb.Reader
+}
+
+// NewGeoDB creates a new GeoDB for given database file.
+// If you use this in combination with GetGeoLite2, you should pass in the path to GeoLite2Filename (including the filename).
+func NewGeoDB(file string) (*GeoDB, error) {
+	db, err := maxminddb.Open(file)
+
+	if err != nil {
+		return nil, err
+	}
+
+	geoDB := &GeoDB{
+		db: db,
+	}
+	return geoDB, nil
+}
+
+// CountryCode looks up the country code for given IP.
+// If the IP is invalid it will return an empty string.
+// The country code is returned in lowercase.
+func (db *GeoDB) CountryCode(ip string) string {
+	parsedIP := net.ParseIP(ip)
+
+	if parsedIP == nil {
+		return ""
+	}
+
+	record := struct {
+		Country struct {
+			ISOCode string `maxminddb:"iso_code"`
+		} `maxminddb:"country"`
+	}{}
+
+	if err := db.db.Lookup(parsedIP, &record); err != nil {
+		return ""
+	}
+
+	return strings.ToLower(record.Country.ISOCode)
+}
 
 // GetGeoLite2 downloads and unpacks the MaxMind GeoLite2 database.
 // The tarball is downloaded and unpacked at the provided path. The directories will created if required.
@@ -89,8 +136,8 @@ func unpackGeoLite2(path string) error {
 			return err
 		}
 
-		if filepath.Base(header.Name) == geoLite2Filename {
-			out, err := os.Create(filepath.Join(path, geoLite2Filename))
+		if filepath.Base(header.Name) == GeoLite2Filename {
+			out, err := os.Create(filepath.Join(path, GeoLite2Filename))
 
 			if err != nil {
 				return err

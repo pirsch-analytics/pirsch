@@ -1,5 +1,5 @@
 .idea/
-geodb/
 js/node_modules/
 js/pirsch.min.js
+geodb/GeoLite2-Country.mmdb
 demos/frontend/pirsch.js
