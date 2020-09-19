@@ -29,6 +29,7 @@ type GeoDB struct {
 
 // NewGeoDB creates a new GeoDB for given database file.
 // If you use this in combination with GetGeoLite2, you should pass in the path to GeoLite2Filename (including the filename).
+// The database should be updated on a regular basis.
 func NewGeoDB(file string) (*GeoDB, error) {
 	db, err := maxminddb.Open(file)
 

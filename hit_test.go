@@ -3,6 +3,7 @@ package pirsch
 import (
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 )
 
@@ -95,6 +96,34 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 
 	if hit.ScreenWidth != 640 || hit.ScreenHeight != 1024 {
 		t.Fatalf("Screen size must be set, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
+	}
+}
+
+func TestHitFromRequestCountryCode(t *testing.T) {
+	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+
+	if err != nil {
+		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
+	req.RemoteAddr = "81.2.69.142"
+	hit := HitFromRequest(req, "salt", &HitOptions{
+		geoDB: geoDB,
+	})
+
+	if hit.CountryCode.String != "gb" {
+		t.Fatalf("Country code for hit must have been returned, but was: %v", hit.CountryCode.String)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
+	req.RemoteAddr = "127.0.0.1"
+	hit = HitFromRequest(req, "salt", &HitOptions{
+		geoDB: geoDB,
+	})
+
+	if hit.CountryCode.String != "" {
+		t.Fatalf("Country code for hit must be empty, but was: %v", hit.CountryCode.String)
 	}
 }
 

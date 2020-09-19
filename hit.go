@@ -31,6 +31,7 @@ type Hit struct {
 	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
 	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
 	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
+	CountryCode    sql.NullString `db:"country_code" json:"country_code"`
 	Desktop        bool           `db:"desktop" json:"desktop"`
 	Mobile         bool           `db:"mobile" json:"mobile"`
 	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
@@ -77,6 +78,7 @@ type HitOptions struct {
 	// ScreenHeight sets the screen height to be stored with the hit.
 	ScreenHeight int
 
+	geoDB        *GeoDB
 	sessionCache *sessionCache
 }
 
@@ -105,6 +107,12 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
 	referrer := shortenString(getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	countryCode := ""
+
+	if options.geoDB != nil {
+		countryCode = options.geoDB.CountryCode(getIP(r))
+	}
+
 	var session time.Time
 
 	if options.sessionCache != nil {
@@ -129,6 +137,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
 		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
 		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
+		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
 		Desktop:        uaInfo.IsDesktop(),
 		Mobile:         uaInfo.IsMobile(),
 		ScreenWidth:    options.ScreenWidth,
