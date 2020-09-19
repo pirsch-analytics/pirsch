@@ -55,7 +55,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Second * 4)
+	time.Sleep(time.Millisecond * 100)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
@@ -82,7 +82,7 @@ func TestTrackerHitLimit(t *testing.T) {
 		tracker.Hit(req, nil)
 	}
 
-	time.Sleep(time.Second) // allow all hits to be tracked
+	time.Sleep(time.Millisecond * 100)
 	tracker.Stop()
 
 	if len(store.hits) != 7 {
@@ -111,7 +111,7 @@ func TestTrackerCountryCode(t *testing.T) {
 	tracker.SetGeoDB(geoDB)
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Millisecond * 100)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
@@ -146,7 +146,7 @@ func TestTrackerHitSession(t *testing.T) {
 	})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Millisecond * 100)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
