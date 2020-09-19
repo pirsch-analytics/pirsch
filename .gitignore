@@ -1,2 +1,4 @@
 .idea/
+js/node_modules/
+js/pirsch.min.js
 demos/frontend/pirsch.js

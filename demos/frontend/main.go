@@ -32,7 +32,7 @@ func main() {
 }
 
 func copyPirschJs() {
-	content, err := ioutil.ReadFile("../../pirsch.js")
+	content, err := ioutil.ReadFile("../../js/pirsch.js")
 
 	if err != nil {
 		panic(err)

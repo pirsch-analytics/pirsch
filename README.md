@@ -21,23 +21,18 @@ Each time a visitor opens your page, Pirsch will store a hit. The hits are analy
 
 The tracking works without invading the visitor's privacy as no cookies are used nor required. Pirsch can track visitors using ad blockers that block trackers like Google Analytics.
 
-## Features and limitations
+## Features
 
-Pirsch tracks the following data points:
+Pirsch tracks the following data:
 
-* total visitors on each day
-* visitors per day and hour
-* visitors per day and page
-* visitors per day and language
+* visitors per day, path, and hour
+* languages
+* operating system and browser (including versions)
+* referrers
+* session count
+* bounces
 
 All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
-
-It's theoretically possible to track the visitor flow (which page was seen first, which one was visited next, etc.), but this is not implemented at the moment. Here is a list of the limitations of Pirsch:
-
-* tracking sessions is not possible at the moment as the salt will prevent you from tracking a user across two days
-* bots might not always be filtered out
-* rare cases where two fingerprints collide, if two visitors are behind the same proxy for example and the User-Agent is the same (or empty)
-* the accuracy might not be as high as with client-side solutions, because Pirsch can only collect information that is available to the server
 
 ## Usage
 
@@ -105,7 +100,7 @@ You can also track visitors on the client side by adding `pirsch.js` to your web
 
 ```HTML
 <!-- add the tracking script to the head area and configure it using attributes -->
-<script type="text/javascript" src="pirsch.js" id="pirschjs"
+<script type="text/javascript" src="js/pirsch.js" id="pirschjs"
         data-endpoint="/count"
         data-tenant-id="42"
         data-track-localhost
@@ -137,6 +132,10 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 ## Documentation
 
 Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
+
+## Build pirsch.js
+
+To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
 
 ## Changelog
 
