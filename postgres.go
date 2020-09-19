@@ -438,7 +438,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 
 	if includePlatform {
 		query += `, (
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
@@ -447,7 +447,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
@@ -456,7 +456,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
@@ -1166,7 +1166,7 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 		SUM("platform_unknown") "platform_unknown"
 		FROM (
 			SELECT (
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") >= date($2::timestamp)
 				AND date("time") <= date($3::timestamp)
@@ -1175,7 +1175,7 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") >= date($2::timestamp)
 				AND date("time") <= date($3::timestamp)
@@ -1184,7 +1184,7 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
-				SELECT COUNT(1) FROM "hit"
+				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") >= date($2::timestamp)
 				AND date("time") <= date($3::timestamp)

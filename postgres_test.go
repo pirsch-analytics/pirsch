@@ -416,6 +416,27 @@ func TestPostgresStore_Paths(t *testing.T) {
 	}
 }
 
+func TestPostgresStore_CountVisitorsByPath(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", true, false, 0, 0)
+	visitors, err := store.CountVisitorsByPath(nil, NullTenant, today(), "/", true)
+
+	if err != nil {
+		t.Fatalf("Visitors must have been returned, but was: %v", err)
+	}
+
+	if len(visitors) != 1 ||
+		visitors[0].Visitors != 1 ||
+		visitors[0].PlatformDesktop != 1 ||
+		visitors[0].PlatformMobile != 0 ||
+		visitors[0].PlatformUnknown != 0 {
+		t.Fatalf("Visitors not as expected: %v", visitors)
+	}
+}
+
 func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
