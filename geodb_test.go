@@ -34,6 +34,8 @@ func TestGeoDB_CountryCode(t *testing.T) {
 		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
 	}
 
+	defer db.Close()
+
 	if out := db.CountryCode("81.2.69.142"); out != "gb" {
 		t.Fatalf("Country code for GB must have been returned, but was: %v", out)
 	}

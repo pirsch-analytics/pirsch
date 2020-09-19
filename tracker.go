@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -49,6 +50,10 @@ type TrackerConfig struct {
 	// If not passed, the default will be used.
 	SessionCleanupInterval time.Duration
 
+	// GeoDB enables/disabled mapping IPs to country codes.
+	// Can be set/updated at runtime by calling Tracker.SetGeoDB.
+	GeoDB *GeoDB
+
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *log.Logger
@@ -88,6 +93,8 @@ type Tracker struct {
 	workerDone                                chan bool
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
+	geoDB                                     *GeoDB
+	geoDBMutex                                sync.RWMutex
 	sessionCache                              *sessionCache
 	logger                                    *log.Logger
 }
@@ -124,6 +131,7 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
 		sessionCache: sessionCache,
+		geoDB:        config.GeoDB,
 		logger:       config.Logger,
 	}
 	tracker.startWorker()
@@ -143,6 +151,12 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 				}
 			}
 
+			if tracker.geoDB != nil {
+				tracker.geoDBMutex.RLock()
+				defer tracker.geoDBMutex.RUnlock()
+				options.geoDB = tracker.geoDB
+			}
+
 			if tracker.sessionCache != nil {
 				options.sessionCache = tracker.sessionCache
 			}
@@ -156,6 +170,14 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 func (tracker *Tracker) Flush() {
 	tracker.Stop()
 	tracker.startWorker()
+}
+
+// SetGeoDB sets the GeoDB for the Tracker.
+// The call to this function is thread safe to enable life updates of the database.
+func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
+	tracker.geoDBMutex.Lock()
+	defer tracker.geoDBMutex.Unlock()
+	tracker.geoDB = geoDB
 }
 
 // Stop flushes and stops all workers.

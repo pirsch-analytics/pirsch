@@ -106,6 +106,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
 	}
 
+	defer geoDB.Close()
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
 	hit := HitFromRequest(req, "salt", &HitOptions{

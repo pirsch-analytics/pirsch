@@ -28,6 +28,7 @@ type GeoDB struct {
 }
 
 // NewGeoDB creates a new GeoDB for given database file.
+// Make sure you call GeoDB.Close to release the system resources!
 // If you use this in combination with GetGeoLite2, you should pass in the path to GeoLite2Filename (including the filename).
 // The database should be updated on a regular basis.
 func NewGeoDB(file string) (*GeoDB, error) {
@@ -41,6 +42,12 @@ func NewGeoDB(file string) (*GeoDB, error) {
 		db: db,
 	}
 	return geoDB, nil
+}
+
+// Close closes the database file handle and frees the system resources.
+// It's important to call this when you don't need the GeoDB anymore!
+func (db *GeoDB) Close() error {
+	return db.db.Close()
 }
 
 // CountryCode looks up the country code for given IP.

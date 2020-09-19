@@ -3,6 +3,7 @@ package pirsch
 import (
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -55,6 +56,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Second * 4)
+	tracker.Stop()
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
@@ -88,6 +90,50 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 }
 
+func TestTrackerCountryCode(t *testing.T) {
+	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+
+	if err != nil {
+		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
+	}
+
+	defer geoDB.Close()
+	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req1.Header.Add("User-Agent", "valid")
+	req1.RemoteAddr = "81.2.69.142"
+	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
+	req2.Header.Add("User-Agent", "valid")
+	req2.RemoteAddr = "127.0.0.1"
+	store := newTestStore()
+	tracker := NewTracker(store, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+	})
+	tracker.SetGeoDB(geoDB)
+	tracker.Hit(req1, nil)
+	tracker.Hit(req2, nil)
+	time.Sleep(time.Second * 2)
+	tracker.Stop()
+
+	if len(store.hits) != 2 {
+		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
+	}
+
+	foundGB := false
+	foundEmpty := false
+
+	for _, hit := range store.hits {
+		if hit.CountryCode.String == "gb" {
+			foundGB = true
+		} else if hit.CountryCode.String == "" {
+			foundEmpty = true
+		}
+	}
+
+	if !foundGB || !foundEmpty {
+		t.Fatalf("Hits not as expected: %v", store.hits)
+	}
+}
+
 func TestTrackerHitSession(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "valid")
@@ -101,6 +147,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Second * 2)
+	tracker.Stop()
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
