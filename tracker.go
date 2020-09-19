@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -86,6 +87,7 @@ type Tracker struct {
 	store                                     Store
 	salt                                      string
 	hits                                      chan Hit
+	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
 	workerTimeout                             time.Duration
@@ -142,6 +144,10 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
+	if atomic.LoadInt32(&tracker.stopped) > 0 {
+		return
+	}
+
 	go func() {
 		if !IgnoreHit(r) {
 			if options == nil {
@@ -166,10 +172,18 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	}()
 }
 
-// Flush flushes all hits to store.
+// Flush flushes all hits to store that are currently buffered by the workers.
+// Call Tracker.Stop to also save hits that are in the queue.
 func (tracker *Tracker) Flush() {
-	tracker.Stop()
+	tracker.stopWorker()
 	tracker.startWorker()
+}
+
+// Stop flushes and stops all workers.
+func (tracker *Tracker) Stop() {
+	atomic.StoreInt32(&tracker.stopped, 1)
+	tracker.stopWorker()
+	tracker.flushHits()
 }
 
 // SetGeoDB sets the GeoDB for the Tracker.
@@ -180,8 +194,16 @@ func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
 	tracker.geoDB = geoDB
 }
 
-// Stop flushes and stops all workers.
-func (tracker *Tracker) Stop() {
+func (tracker *Tracker) startWorker() {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	tracker.workerCancel = cancelFunc
+
+	for i := 0; i < tracker.worker; i++ {
+		go tracker.aggregate(ctx)
+	}
+}
+
+func (tracker *Tracker) stopWorker() {
 	tracker.workerCancel()
 
 	for i := 0; i < tracker.worker; i++ {
@@ -189,12 +211,38 @@ func (tracker *Tracker) Stop() {
 	}
 }
 
-func (tracker *Tracker) startWorker() {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	tracker.workerCancel = cancelFunc
+func (tracker *Tracker) flushHits() {
+	// this function will make sure all dangling hits will be saved in database before shutdown
+	// hits are buffered before saving
+	hits := make([]Hit, 0, tracker.workerBufferSize)
 
-	for i := 0; i < tracker.worker; i++ {
-		go tracker.aggregate(ctx)
+	for {
+		stop := false
+
+		select {
+		case hit := <-tracker.hits:
+			hits = append(hits, hit)
+
+			if len(hits) == tracker.workerBufferSize {
+				if err := tracker.store.SaveHits(hits); err != nil {
+					tracker.logger.Printf("error saving hits: %s", err)
+				}
+
+				hits = hits[:0]
+			}
+		default:
+			stop = true
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	if len(hits) > 0 {
+		if err := tracker.store.SaveHits(hits); err != nil {
+			tracker.logger.Printf("error saving hits: %s", err)
+		}
 	}
 }
 

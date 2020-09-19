@@ -55,7 +55,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 200)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
@@ -82,7 +82,7 @@ func TestTrackerHitLimit(t *testing.T) {
 		tracker.Hit(req, nil)
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 200)
 	tracker.Stop()
 
 	if len(store.hits) != 7 {
@@ -111,7 +111,7 @@ func TestTrackerCountryCode(t *testing.T) {
 	tracker.SetGeoDB(geoDB)
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 200)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
@@ -146,7 +146,7 @@ func TestTrackerHitSession(t *testing.T) {
 	})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 200)
 	tracker.Stop()
 
 	if len(store.hits) != 2 {
@@ -158,4 +158,29 @@ func TestTrackerHitSession(t *testing.T) {
 		store.hits[0].Session.Time.IsZero() || store.hits[1].Session.Time.IsZero() {
 		t.Fatalf("Hits not as expected: %v %v", store.hits[0], store.hits[1])
 	}
+}
+
+func BenchmarkTracker(b *testing.B) {
+	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+
+	if err != nil {
+		b.Fatalf("Geo DB must have been loaded, but was: %v", err)
+	}
+
+	defer geoDB.Close()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "valid")
+	req.RemoteAddr = "81.2.69.142"
+	store := NewPostgresStore(postgresDB, nil)
+	tracker := NewTracker(store, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+		Sessions:      true,
+		GeoDB:         geoDB,
+	})
+
+	for i := 0; i < 10000; i++ {
+		tracker.Hit(req, nil)
+	}
+
+	tracker.Stop()
 }
