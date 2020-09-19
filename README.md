@@ -104,28 +104,22 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 You can also track visitors on the client side by adding `pirsch.js` to your website. It will perform a GET request to the configured endpoint.
 
 ```HTML
-<!-- add the tracking script to the head area and call it -->
-<script type="text/javascript" src="pirsch.js"></script>
-<script type="text/javascript">
-    Pirsch({
-        endpoint: "/count",
-        tenant_id: 42,
-        params: {
-            optional_param: "test"
-        }
-    });
-</script>
+<!-- add the tracking script to the head area and configure it using attributes -->
+<script type="text/javascript" src="pirsch.js" id="pirschjs"
+        data-endpoint="/count"
+        data-tenant-id="42"
+        data-track-localhost
+        data-param-optional-param="test"></script>
 ```
 
-The parameters to `Pirsch` are optional. Here is a list of the possible options.
+The parameters are configured through HTML attributes. All of them are optional, except for the `id`. Here is a list of the possible options.
 
 | Option | Description | Default |
 | - | - | - |
-| endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
-| tenant_id | The tenant ID to use, in case you plan to track multiple websites using the same backend or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
-| params | Additional parameters to send with the request. | {} (no parameters) |
-
-**You should allow users to opt-in for client-side tracking. To do that, you can set a cookie/localStorage entry on confirmation and call `Pirsch` when it is set.**
+| data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
+| data-tenant-id | The tenant ID to use, in case you plan to track multiple websites using the same backend or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
+| data-track-localhost | Enable tracking hits on localhost. This is used for testing purposes only. | false |
+| data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
 To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
 

@@ -180,7 +180,7 @@ func IgnoreHit(r *http.Request) bool {
 func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
-		TenantID:     getNullInt64QueryParam(query.Get("tenant_id")),
+		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
 		URL:          getURLQueryParam(query.Get("location")),
 		Referrer:     getURLQueryParam(query.Get("referrer")),
 		ScreenWidth:  getIntQueryParam(query.Get("width")),

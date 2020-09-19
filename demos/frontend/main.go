@@ -21,6 +21,7 @@ func main() {
 	// You might want to additional checks, like for the tenant ID.
 	http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tracker.Hit(r, pirsch.HitOptionsFromRequest(r))
+		log.Println("Counted one hit")
 	}))
 
 	// Add a handler to serve index.html and pirsch.js.

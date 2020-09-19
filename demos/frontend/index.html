@@ -5,18 +5,20 @@
     <title>Demo</title>
 
     <!-- add the tracking script and call it -->
-    <script type="text/javascript" src="pirsch.js"></script>
-    <script type="text/javascript">
-        Pirsch({
-            endpoint: "/count",
-            tenant_id: 42,
-            params: {
-                optional_param: "test"
-            }
-        });
-    </script>
+    <script type="text/javascript" src="pirsch.js" id="pirschjs"
+        data-endpoint="/count"
+        data-tenant-id="42"
+        data-track-localhost
+        data-param-optional-param="test"></script>
 </head>
 <body>
     <h1>Hello World</h1>
+
+    <!-- uncomment to test tracking history changes -->
+    <!--<script type="text/javascript">
+        setTimeout(function() {
+            history.pushState({}, "", "/page");
+        }, 2000);
+    </script>-->
 </body>
 </html>
