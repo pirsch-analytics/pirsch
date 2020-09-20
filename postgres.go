@@ -76,7 +76,7 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 	}
 }
 
-// Save implements the Store interface.
+// SaveHits implements the Store interface.
 func (store *PostgresStore) SaveHits(hits []Hit) error {
 	args := make([]interface{}, 0, len(hits)*18)
 	var query strings.Builder
@@ -357,6 +357,7 @@ func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) 
 	return nil
 }
 
+// Session implements the Store interface.
 func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
 	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "time" > $2 LIMIT 1`
 	var session time.Time
@@ -731,7 +732,7 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 	return visitors, nil
 }
 
-// CountVisitorsByBrowser implements the Store interface.
+// CountVisitorsByScreenSize implements the Store interface.
 func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]ScreenStats, error) {
 	if tx == nil {
 		tx = store.NewTx()

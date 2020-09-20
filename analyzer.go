@@ -322,6 +322,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	return stats
 }
 
+// Screen returns the visitor count per screen size (width and height).
 func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
@@ -373,6 +374,7 @@ func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 	return stats, nil
 }
 
+// Country returns the visitor count per country.
 func (analyzer *Analyzer) Country(filter *Filter) ([]CountryStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()

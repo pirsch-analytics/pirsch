@@ -24,10 +24,12 @@ type Stats struct {
 	BounceRate       float64   `db:"-" json:"bounce_rate"`
 }
 
+// GetID returns the ID.
 func (stats *Stats) GetID() int64 {
 	return stats.BaseEntity.ID
 }
 
+// GetVisitors returns the visitor count.
 func (stats *Stats) GetVisitors() int {
 	return stats.Visitors
 }
