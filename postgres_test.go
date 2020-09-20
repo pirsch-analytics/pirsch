@@ -534,7 +534,7 @@ func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 	}
 
 	if len(stats) != 2 {
-		t.Fatalf("Two active page vistors must have been returned, but was: %v", len(stats))
+		t.Fatalf("Two active page visitors must have been returned, but was: %v", len(stats))
 	}
 
 	if stats[0].Path != "/page" || stats[0].Visitors != 2 ||
