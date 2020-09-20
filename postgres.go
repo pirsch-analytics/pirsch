@@ -1048,6 +1048,24 @@ func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to t
 	return visitors, nil
 }
 
+// VisitorCountry implements the Store interface.
+func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time.Time) ([]CountryStats, error) {
+	query := `SELECT "country_code", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "country_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "country_code"
+		ORDER BY "visitors" DESC`
+	var visitors []CountryStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",

@@ -141,6 +141,9 @@ type Store interface {
 	// VisitorScreenSize returns the visitor count for given time frame grouped by screen size (width and height).
 	VisitorScreenSize(sql.NullInt64, time.Time, time.Time) ([]ScreenStats, error)
 
+	// VisitorCountry returns the visitor count for given time frame grouped by country code.
+	VisitorCountry(sql.NullInt64, time.Time, time.Time) ([]CountryStats, error)
+
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)
 

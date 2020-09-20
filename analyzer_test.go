@@ -401,6 +401,51 @@ func TestAnalyzer_Screen(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_Country(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "de", false, false, 0, 0)
+			createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "gb", false, false, 0, 0)
+			stats := &CountryStats{
+				Stats: Stats{
+					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+					Day:        pastDay(2),
+					Path:       "/path",
+					Visitors:   42,
+				},
+				CountryCode: sql.NullString{String: "gb", Valid: true},
+			}
+
+			if err := store.SaveCountryStats(nil, stats); err != nil {
+				t.Fatal(err)
+			}
+
+			analyzer := NewAnalyzer(store)
+			visitors, err := analyzer.Country(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(4),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(visitors) != 2 {
+				t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+			}
+
+			if visitors[0].CountryCode.String != "gb" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+				visitors[1].CountryCode.String != "de" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
 func TestAnalyzer_PageVisitors(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 
