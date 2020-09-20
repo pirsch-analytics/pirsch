@@ -152,6 +152,8 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ### 1.6.0
 
+**You need to update the schema by running the `v1.6.0.sql` migration script!**
+
 * added client side tracking (pirsch.js)
 * added screen size to Hit, Processor and Anlayzer for client side tracking
 * Tracker.Stop now processes all hits in queue before shutting down (Tracker.Flush does not!)
