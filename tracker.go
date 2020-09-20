@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -49,6 +51,10 @@ type TrackerConfig struct {
 	// If not passed, the default will be used.
 	SessionCleanupInterval time.Duration
 
+	// GeoDB enables/disabled mapping IPs to country codes.
+	// Can be set/updated at runtime by calling Tracker.SetGeoDB.
+	GeoDB *GeoDB
+
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *log.Logger
@@ -81,6 +87,7 @@ type Tracker struct {
 	store                                     Store
 	salt                                      string
 	hits                                      chan Hit
+	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
 	workerTimeout                             time.Duration
@@ -88,6 +95,8 @@ type Tracker struct {
 	workerDone                                chan bool
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
+	geoDB                                     *GeoDB
+	geoDBMutex                                sync.RWMutex
 	sessionCache                              *sessionCache
 	logger                                    *log.Logger
 }
@@ -124,6 +133,7 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
 		sessionCache: sessionCache,
+		geoDB:        config.GeoDB,
 		logger:       config.Logger,
 	}
 	tracker.startWorker()
@@ -134,6 +144,10 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
+	if atomic.LoadInt32(&tracker.stopped) > 0 {
+		return
+	}
+
 	go func() {
 		if !IgnoreHit(r) {
 			if options == nil {
@@ -141,6 +155,12 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 					ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 					ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 				}
+			}
+
+			if tracker.geoDB != nil {
+				tracker.geoDBMutex.RLock()
+				defer tracker.geoDBMutex.RUnlock()
+				options.geoDB = tracker.geoDB
 			}
 
 			if tracker.sessionCache != nil {
@@ -152,19 +172,26 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	}()
 }
 
-// Flush flushes all hits to store.
+// Flush flushes all hits to store that are currently buffered by the workers.
+// Call Tracker.Stop to also save hits that are in the queue.
 func (tracker *Tracker) Flush() {
-	tracker.Stop()
+	tracker.stopWorker()
 	tracker.startWorker()
 }
 
 // Stop flushes and stops all workers.
 func (tracker *Tracker) Stop() {
-	tracker.workerCancel()
+	atomic.StoreInt32(&tracker.stopped, 1)
+	tracker.stopWorker()
+	tracker.flushHits()
+}
 
-	for i := 0; i < tracker.worker; i++ {
-		<-tracker.workerDone
-	}
+// SetGeoDB sets the GeoDB for the Tracker.
+// The call to this function is thread safe to enable life updates of the database.
+func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
+	tracker.geoDBMutex.Lock()
+	defer tracker.geoDBMutex.Unlock()
+	tracker.geoDB = geoDB
 }
 
 func (tracker *Tracker) startWorker() {
@@ -173,6 +200,49 @@ func (tracker *Tracker) startWorker() {
 
 	for i := 0; i < tracker.worker; i++ {
 		go tracker.aggregate(ctx)
+	}
+}
+
+func (tracker *Tracker) stopWorker() {
+	tracker.workerCancel()
+
+	for i := 0; i < tracker.worker; i++ {
+		<-tracker.workerDone
+	}
+}
+
+func (tracker *Tracker) flushHits() {
+	// this function will make sure all dangling hits will be saved in database before shutdown
+	// hits are buffered before saving
+	hits := make([]Hit, 0, tracker.workerBufferSize)
+
+	for {
+		stop := false
+
+		select {
+		case hit := <-tracker.hits:
+			hits = append(hits, hit)
+
+			if len(hits) == tracker.workerBufferSize {
+				if err := tracker.store.SaveHits(hits); err != nil {
+					tracker.logger.Printf("error saving hits: %s", err)
+				}
+
+				hits = hits[:0]
+			}
+		default:
+			stop = true
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	if len(hits) > 0 {
+		if err := tracker.store.SaveHits(hits); err != nil {
+			tracker.logger.Printf("error saving hits: %s", err)
+		}
 	}
 }
 

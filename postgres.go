@@ -78,9 +78,9 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 
 // Save implements the Store interface.
 func (store *PostgresStore) SaveHits(hits []Hit) error {
-	args := make([]interface{}, 0, len(hits)*17)
+	args := make([]interface{}, 0, len(hits)*18)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, desktop, mobile, screen_width, screen_height, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, country_code, desktop, mobile, screen_width, screen_height, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
@@ -95,14 +95,15 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.OSVersion)
 		args = append(args, hit.Browser)
 		args = append(args, hit.BrowserVersion)
+		args = append(args, hit.CountryCode)
 		args = append(args, hit.Desktop)
 		args = append(args, hit.Mobile)
 		args = append(args, hit.ScreenWidth)
 		args = append(args, hit.ScreenHeight)
 		args = append(args, hit.Time)
-		index := i * 17
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15, index+16, index+17))
+		index := i * 18
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15, index+16, index+17, index+18))
 	}
 
 	queryStr := query.String()
@@ -328,6 +329,28 @@ func (store *PostgresStore) SaveScreenStats(tx *sqlx.Tx, entity *ScreenStats) er
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
 		`INSERT INTO "screen_stats" ("tenant_id", "day", "width", "height", "visitors") VALUES (:tenant_id, :day, :width, :height, :visitors)`,
 		`UPDATE "screen_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveCountryStats implements the Store interface.
+func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) error {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	existing := new(CountryStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "country_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND "country_code" = $3`, entity.TenantID, entity.Day, entity.CountryCode)
+
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "country_stats" ("tenant_id", "day", "country_code", "visitors") VALUES (:tenant_id, :day, :country_code, :visitors)`,
+		`UPDATE "country_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
 
@@ -729,6 +752,27 @@ func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.
 	return visitors, nil
 }
 
+// CountVisitorsByCountryCode implements the Store interface.
+func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]CountryStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "tenant_id", $2::date "day", "country_code", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "tenant_id", "country_code"`
+	var visitors []CountryStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 // CountVisitorsByPlatform implements the Store interface.
 func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *VisitorStats {
 	if tx == nil {
@@ -996,6 +1040,24 @@ func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to t
 		GROUP BY "width", "height"
 		ORDER BY "visitors" DESC`
 	var visitors []ScreenStats
+
+	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// VisitorCountry implements the Store interface.
+func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time.Time) ([]CountryStats, error) {
+	query := `SELECT "country_code", COALESCE(SUM("visitors"), 0) "visitors"
+		FROM "country_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date
+		GROUP BY "country_code"
+		ORDER BY "visitors" DESC`
+	var visitors []CountryStats
 
 	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
 		return nil, err

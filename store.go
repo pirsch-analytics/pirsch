@@ -50,6 +50,9 @@ type Store interface {
 	// SaveScreenStats saves ScreenStats.
 	SaveScreenStats(*sqlx.Tx, *ScreenStats) error
 
+	// SaveCountryStats saves CountryStats.
+	SaveCountryStats(*sqlx.Tx, *CountryStats) error
+
 	// Session returns the hits session timestamp for given fingerprint and max age.
 	Session(string, time.Time) time.Time
 
@@ -98,6 +101,9 @@ type Store interface {
 	// CountVisitorsByScreenSize returns the visitor count for given day grouped by screen size (width and height).
 	CountVisitorsByScreenSize(*sqlx.Tx, sql.NullInt64, time.Time) ([]ScreenStats, error)
 
+	// CountVisitorsByCountryCode returns the visitor count for given day grouped by country code.
+	CountVisitorsByCountryCode(*sqlx.Tx, sql.NullInt64, time.Time) ([]CountryStats, error)
+
 	// CountVisitorsByPlatform returns the visitor count for given day grouped by platform.
 	CountVisitorsByPlatform(*sqlx.Tx, sql.NullInt64, time.Time) *VisitorStats
 
@@ -134,6 +140,9 @@ type Store interface {
 
 	// VisitorScreenSize returns the visitor count for given time frame grouped by screen size (width and height).
 	VisitorScreenSize(sql.NullInt64, time.Time, time.Time) ([]ScreenStats, error)
+
+	// VisitorCountry returns the visitor count for given time frame grouped by country code.
+	VisitorCountry(sql.NullInt64, time.Time, time.Time) ([]CountryStats, error)
 
 	// PageVisitors returns the visitors for given path and time frame grouped by days.
 	PageVisitors(sql.NullInt64, string, time.Time, time.Time) ([]Stats, error)

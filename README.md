@@ -129,6 +129,17 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 
 `HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were send by the user.
 
+## Mapping IPs to countries
+
+Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database is not included, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
+
+1. create an account at MaxMind
+2. generate a new license key
+3. call `GetGeoLite2` with the path you would like to extract the tarball to and pass your license key
+4. create a new GeoDB by using `NewGeoDB` and the file you downloaded and extracted using the step before
+
+The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeoDB` to update the GeoDB at runtime (thread-safe).
+
 ## Documentation
 
 Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
@@ -143,6 +154,7 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 * added client side tracking (pirsch.js)
 * added screen size to Hit, Processor and Anlayzer for client side tracking
+* Tracker.Stop now processes all hits in queue before shutting down (Tracker.Flush does not!)
 * improved documentation and demos
 * fixed counting bounces for path
 * fixed counting platforms
