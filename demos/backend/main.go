@@ -32,7 +32,7 @@ func main() {
 	// but all page calls will be tracked.
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			tracker.Hit(r, nil)
+			go tracker.Hit(r, nil)
 		}
 
 		w.Write([]byte("<h1>Hello World!</h1>"))

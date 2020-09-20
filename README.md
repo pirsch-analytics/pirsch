@@ -64,7 +64,7 @@ pirsch.RunAtMidnight(func() {
 // but all page calls will be tracked.
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
-        tracker.Hit(r, nil)
+        go tracker.Hit(r, nil)
     }
 
     w.Write([]byte("<h1>Hello World!</h1>"))
@@ -131,7 +131,7 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 
 ## Mapping IPs to countries
 
-Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database is not included, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
+Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database **is not included**, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
 
 1. create an account at MaxMind
 2. generate a new license key
@@ -149,6 +149,10 @@ Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for deta
 To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
 
 ## Changelog
+
+### 1.6.1
+
+* `Tracker.Hit` does no longer spawn its own goroutine, so you should do that yourself
 
 ### 1.6.0
 

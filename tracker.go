@@ -142,34 +142,32 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 
 // Hit stores the given request.
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
-// The actions performed within this function run in their own goroutine, so you don't need to create one yourself.
+// It's save (and recommended!) to call this function in its own goroutine.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	if atomic.LoadInt32(&tracker.stopped) > 0 {
 		return
 	}
 
-	go func() {
-		if !IgnoreHit(r) {
-			if options == nil {
-				options = &HitOptions{
-					ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
-					ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
-				}
+	if !IgnoreHit(r) {
+		if options == nil {
+			options = &HitOptions{
+				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
+				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 			}
-
-			if tracker.geoDB != nil {
-				tracker.geoDBMutex.RLock()
-				defer tracker.geoDBMutex.RUnlock()
-				options.geoDB = tracker.geoDB
-			}
-
-			if tracker.sessionCache != nil {
-				options.sessionCache = tracker.sessionCache
-			}
-
-			tracker.hits <- HitFromRequest(r, tracker.salt, options)
 		}
-	}()
+
+		if tracker.geoDB != nil {
+			tracker.geoDBMutex.RLock()
+			defer tracker.geoDBMutex.RUnlock()
+			options.geoDB = tracker.geoDB
+		}
+
+		if tracker.sessionCache != nil {
+			options.sessionCache = tracker.sessionCache
+		}
+
+		tracker.hits <- HitFromRequest(r, tracker.salt, options)
+	}
 }
 
 // Flush flushes all hits to store that are currently buffered by the workers.
