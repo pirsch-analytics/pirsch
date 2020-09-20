@@ -89,3 +89,10 @@ type ScreenStats struct {
 	Width  int `db:"width" json:"width"`
 	Height int `db:"height" json:"height"`
 }
+
+// CountryStats is the visitor count for each country on each day.
+type CountryStats struct {
+	Stats
+
+	CountryCode sql.NullString `db:"country_code" json:"country_code"`
+}

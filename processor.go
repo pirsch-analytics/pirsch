@@ -64,6 +64,11 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		return err
 	}
 
+	if err := processor.country(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
 	if err := processor.store.DeleteHitsByDay(tx, tenantID, day); err != nil {
 		processor.store.Rollback(tx)
 		return err
@@ -210,6 +215,22 @@ func (processor *Processor) screen(tx *sqlx.Tx, tenantID sql.NullInt64, day time
 
 	for _, v := range visitors {
 		if err := processor.store.SaveScreenStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) country(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByCountryCode(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveCountryStats(tx, &v); err != nil {
 			return err
 		}
 	}

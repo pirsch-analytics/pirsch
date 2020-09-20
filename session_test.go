@@ -73,7 +73,7 @@ func TestSessionCache(t *testing.T) {
 		t.Fatalf("Maps not as expected: %v %v", len(cache.active), len(cache.inactive))
 	}
 
-	createHit(t, store, 0, "fp", "/", "en", "ua1", "", today(), session, "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/", "en", "ua1", "", today(), session, "", "", "", "", "", false, false, 0, 0)
 	existing = cache.find("fp")
 
 	if existing.IsZero() {
@@ -97,7 +97,7 @@ func TestSessionCacheRenewal(t *testing.T) {
 
 	for i, created := range times {
 		cleanupDB(t)
-		createHit(t, store, 0, "fp", "/", "en", "ua1", "", created, session, "", "", "", "", false, false, 0, 0)
+		createHit(t, store, 0, "fp", "/", "en", "ua1", "", created, session, "", "", "", "", "", false, false, 0, 0)
 		cache := newSessionCache(store, &sessionCacheConfig{
 			maxAge: time.Hour,
 		})

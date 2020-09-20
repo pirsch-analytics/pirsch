@@ -335,6 +335,28 @@ func (store *PostgresStore) SaveScreenStats(tx *sqlx.Tx, entity *ScreenStats) er
 	return nil
 }
 
+// SaveCountryStats implements the Store interface.
+func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) error {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	existing := new(CountryStats)
+	err := tx.Get(existing, `SELECT id, visitors FROM "country_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" = $2
+		AND "country_code" = $3`, entity.TenantID, entity.Day, entity.CountryCode)
+
+	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
+		`INSERT INTO "country_stats" ("tenant_id", "day", "country_code", "visitors") VALUES (:tenant_id, :day, :country_code, :visitors)`,
+		`UPDATE "country_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
 	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "time" > $2 LIMIT 1`
 	var session time.Time
@@ -722,6 +744,27 @@ func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.
 		AND date("time") = $2::date
 		GROUP BY "tenant_id", "width", "height"`
 	var visitors []ScreenStats
+
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
+// CountVisitorsByCountryCode implements the Store interface.
+func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]CountryStats, error) {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT "tenant_id", $2::date "day", "country_code", count(DISTINCT fingerprint) "visitors"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		GROUP BY "tenant_id", "country_code"`
+	var visitors []CountryStats
 
 	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
 		return nil, err
