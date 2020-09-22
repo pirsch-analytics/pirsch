@@ -5,10 +5,16 @@ import (
 	"time"
 )
 
-// PathVisitors assigns a path to visitor statistics per day.
+// PathVisitors represents visitor statistics per day for a path.
 type PathVisitors struct {
 	Path  string
 	Stats []Stats
+}
+
+// TimeOfDayVisitors represents the visitor count per day and hour for a path.
+type TimeOfDayVisitors struct {
+	Day   time.Time
+	Stats []VisitorTimeStats
 }
 
 // Analyzer provides an interface to analyze processed data and hits.
@@ -421,6 +427,29 @@ func (analyzer *Analyzer) Country(filter *Filter) ([]CountryStats, error) {
 
 	for i := range stats {
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
+// TimeOfDay returns the visitor count per day and hour for given time frame.
+func (analyzer *Analyzer) TimeOfDay(filter *Filter) ([]TimeOfDayVisitors, error) {
+	filter = analyzer.getFilter(filter)
+	from := filter.From
+	stats := make([]TimeOfDayVisitors, 0)
+
+	for !from.After(filter.To) {
+		s, err := analyzer.VisitorHours(&Filter{From: from, To: from})
+
+		if err != nil {
+			return nil, err
+		}
+
+		stats = append(stats, TimeOfDayVisitors{
+			Day:   from,
+			Stats: s,
+		})
+		from = from.Add(time.Hour * 24)
 	}
 
 	return stats, nil

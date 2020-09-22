@@ -446,6 +446,124 @@ func TestAnalyzer_Country(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_TimeOfDay(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", pastDay(1).Add(time.Hour*9), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", pastDay(2).Add(time.Hour*10), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+			createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*17), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+			createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today().Add(time.Hour*18), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+			stats := []VisitorTimeStats{
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(2),
+						Path:       "/",
+						Visitors:   7,
+						Sessions:   8,
+					},
+					Hour: 9,
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(2),
+						Path:       "/",
+						Visitors:   11,
+						Sessions:   12,
+					},
+					Hour: 18,
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(1),
+						Path:       "/",
+						Visitors:   6,
+						Sessions:   7,
+					},
+					Hour: 9,
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(1),
+						Path:       "/",
+						Visitors:   9,
+						Sessions:   10,
+					},
+					Hour: 18,
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        today(),
+						Path:       "/",
+						Visitors:   10,
+						Sessions:   11,
+					},
+					Hour: 9,
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        today(),
+						Path:       "/",
+						Visitors:   14,
+						Sessions:   15,
+					},
+					Hour: 18,
+				},
+			}
+
+			for _, s := range stats {
+				if err := store.SaveVisitorTimeStats(nil, &s); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			analyzer := NewAnalyzer(store)
+			days, err := analyzer.TimeOfDay(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(2),
+				To:       today(),
+			})
+
+			if err != nil {
+				t.Fatalf("Visitors must be returned, but was:  %v", err)
+			}
+
+			if len(days) != 3 {
+				t.Fatalf("Three results must have been returned, but was: %v", len(days))
+			}
+
+			if !days[0].Day.Equal(pastDay(2)) ||
+				!days[1].Day.Equal(pastDay(1)) ||
+				!days[2].Day.Equal(today()) {
+				t.Fatalf("Days not as expected: %v", days)
+			}
+
+			if days[0].Stats[9].Visitors != 7 || days[0].Stats[10].Visitors != 1 || days[0].Stats[18].Visitors != 11 ||
+				days[0].Stats[9].Sessions != 8 || days[0].Stats[10].Sessions != 1 || days[0].Stats[18].Sessions != 12 {
+				t.Fatalf("First day not as expected: %v", days[0])
+			}
+
+			if days[1].Stats[9].Visitors != 7 || days[1].Stats[18].Visitors != 9 ||
+				days[1].Stats[9].Sessions != 8 || days[1].Stats[18].Sessions != 10 {
+				t.Fatalf("Second day not as expected: %v", days[1])
+			}
+
+			if days[2].Stats[9].Visitors != 10 || days[2].Stats[17].Visitors != 1 || days[2].Stats[18].Visitors != 15 ||
+				days[2].Stats[9].Sessions != 11 || days[2].Stats[17].Sessions != 1 || days[2].Stats[18].Sessions != 16 {
+				t.Fatalf("Third day not as expected: %v", days[2])
+			}
+		}
+	}
+}
+
 func TestAnalyzer_PageVisitors(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 

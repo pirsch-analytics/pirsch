@@ -921,8 +921,8 @@ func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time,
 			GROUP BY "hour"
 			UNION
 			SELECT EXTRACT(HOUR FROM "time") "hour",
-				count(DISTINCT "fingerprint") "visitors",
-				count(DISTINCT("fingerprint", "session")) "sessions"
+			count(DISTINCT "fingerprint") "visitors",
+			count(DISTINCT("fingerprint", "session")) "sessions"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND date("time") >= date($2::timestamp)
