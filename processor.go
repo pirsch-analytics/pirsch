@@ -28,7 +28,7 @@ func (processor *Processor) Process() error {
 func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 	// this explicitly excludes "today", because we might not have collected all visitors
 	// and the hits will be deleted after the processor has finished reducing the data
-	days, err := processor.store.HitDays(tenantID)
+	days, err := processor.store.HitDays(QueryParams{TenantID: tenantID})
 
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func (processor *Processor) ProcessTenant(tenantID sql.NullInt64) error {
 }
 
 func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) error {
-	paths, err := processor.store.HitPaths(tenantID, day)
+	paths, err := processor.store.HitPaths(QueryParams{TenantID: tenantID}, day)
 
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		return err
 	}
 
-	if err := processor.store.DeleteHitsByDay(tx, tenantID, day); err != nil {
+	if err := processor.store.DeleteHitsByDay(tx, QueryParams{TenantID: tenantID}, day); err != nil {
 		processor.store.Rollback(tx)
 		return err
 	}
@@ -107,13 +107,13 @@ func (processor *Processor) processPath(tx *sqlx.Tx, tenantID sql.NullInt64, day
 }
 
 func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPath(tx, tenantID, day, path, true)
+	visitors, err := processor.store.CountVisitorsByPath(tx, QueryParams{TenantID: tenantID}, day, path, true)
 
 	if err != nil {
 		return err
 	}
 
-	bounces := processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, path)
+	bounces := processor.store.CountVisitorsByPathAndMaxOneHit(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	for _, v := range visitors {
 		v.Bounces = bounces
@@ -127,7 +127,7 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 }
 
 func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndHour(tx, tenantID, day, path)
+	visitors, err := processor.store.CountVisitorsByPathAndHour(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, da
 }
 
 func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndLanguage(tx, tenantID, day, path)
+	visitors, err := processor.store.CountVisitorsByPathAndLanguage(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	if err != nil {
 		return err
@@ -159,7 +159,7 @@ func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day t
 }
 
 func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndReferrer(tx, tenantID, day, path)
+	visitors, err := processor.store.CountVisitorsByPathAndReferrer(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 }
 
 func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndOS(tx, tenantID, day, path)
+	visitors, err := processor.store.CountVisitorsByPathAndOS(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Tim
 }
 
 func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndBrowser(tx, tenantID, day, path)
+	visitors, err := processor.store.CountVisitorsByPathAndBrowser(tx, QueryParams{TenantID: tenantID}, day, path)
 
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day tim
 }
 
 func (processor *Processor) screen(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.CountVisitorsByScreenSize(tx, tenantID, day)
+	visitors, err := processor.store.CountVisitorsByScreenSize(tx, QueryParams{TenantID: tenantID}, day)
 
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (processor *Processor) screen(tx *sqlx.Tx, tenantID sql.NullInt64, day time
 }
 
 func (processor *Processor) country(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.CountVisitorsByCountryCode(tx, tenantID, day)
+	visitors, err := processor.store.CountVisitorsByCountryCode(tx, QueryParams{TenantID: tenantID}, day)
 
 	if err != nil {
 		return err

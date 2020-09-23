@@ -117,18 +117,19 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 }
 
 // DeleteHitsByDay implements the Store interface.
-func (store *PostgresStore) DeleteHitsByDay(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+func (store *PostgresStore) DeleteHitsByDay(tx *sqlx.Tx, params QueryParams, day time.Time) error {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `DELETE FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND time >= $2
-		AND time < $2 + INTERVAL '1 day'`
+		AND "time" AT TIME ZONE $2 >= $3
+		AND "time" AT TIME ZONE $2 < $3 + INTERVAL '1 day'`
 
-	_, err := tx.Exec(query, tenantID, day)
+	_, err := tx.Exec(query, params.TenantID, params.Timezone.String(), day)
 
 	if err != nil {
 		return err
@@ -358,11 +359,16 @@ func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) 
 }
 
 // Session implements the Store interface.
-func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
-	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "time" > $2 LIMIT 1`
+func (store *PostgresStore) Session(params QueryParams, fingerprint string, maxAge time.Time) time.Time {
+	params.validate()
+	query := `SELECT "session"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND fingerprint = $3
+		AND "time" AT TIME ZONE $2 > $4 LIMIT 1`
 	var session time.Time
 
-	if err := store.DB.Get(&session, query, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+	if err := store.DB.Get(&session, query, params.TenantID, params.Timezone.String(), fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error reading session timestamp: %s", err)
 	}
 
@@ -370,15 +376,16 @@ func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.T
 }
 
 // HitDays implements the Store interface.
-func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error) {
-	query := `SELECT DISTINCT date("time") AS "day"
+func (store *PostgresStore) HitDays(params QueryParams) ([]time.Time, error) {
+	params.validate()
+	query := `SELECT DISTINCT date("time") AT TIME ZONE $2 AS "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") < current_date
+		AND date("time") AT TIME ZONE $2 < current_date
 		ORDER BY "day" ASC`
 	var days []time.Time
 
-	if err := store.DB.Select(&days, query, tenantID); err != nil {
+	if err := store.DB.Select(&days, query, params.TenantID, params.Timezone.String()); err != nil {
 		return nil, err
 	}
 
@@ -386,11 +393,16 @@ func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error)
 }
 
 // HitPaths implements the Store interface.
-func (store *PostgresStore) HitPaths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
-	query := `SELECT DISTINCT "path" FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2 ORDER BY "path" ASC`
+func (store *PostgresStore) HitPaths(params QueryParams, day time.Time) ([]string, error) {
+	params.validate()
+	query := `SELECT DISTINCT "path"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") AT TIME ZONE $2 = $3
+		ORDER BY "path" ASC`
 	var paths []string
 
-	if err := store.DB.Select(&paths, query, tenantID, day); err != nil {
+	if err := store.DB.Select(&paths, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -398,24 +410,25 @@ func (store *PostgresStore) HitPaths(tenantID sql.NullInt64, day time.Time) ([]s
 }
 
 // Paths implements the Store interface.
-func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([]string, error) {
+func (store *PostgresStore) Paths(params QueryParams, from, to time.Time) ([]string, error) {
+	params.validate()
 	query := `SELECT DISTINCT "path" FROM (
 			SELECT "path"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND date("time") >= $2::date
-			AND date("time") <= $3::date
+			AND date("time") AT TIME ZONE $2 >= $3::date
+			AND date("time") AT TIME ZONE $2 <= $4::date
 			UNION
 			SELECT "path"
 			FROM "visitor_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "day" >= $2::date
-			AND "day" <= $3::date
+			AND "day" AT TIME ZONE $2 >= $3::date
+			AND "day" AT TIME ZONE $2 <= $4::date
 		) AS results
 		ORDER BY "path" ASC`
 	var paths []string
 
-	if err := store.DB.Select(&paths, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&paths, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -423,22 +436,23 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 }
 
 // CountVisitors implements the Store interface.
-func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *Stats {
+func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, params QueryParams, day time.Time) *Stats {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT date("time") "day",
+	params.validate()
+	query := `SELECT date("time") AT TIME ZONE $2 "day",
         count(DISTINCT "fingerprint") "visitors",
         count(DISTINCT("fingerprint", "session")) "sessions"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "day"`
 	visitors := new(Stats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+	if err := tx.Get(visitors, query, params.TenantID, params.Timezone.String(), day); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error counting visitors: %s", err)
 		return nil
 	}
@@ -447,16 +461,17 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 }
 
 // CountVisitorsByPath implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string, includePlatform bool) ([]VisitorStats, error) {
+func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, params QueryParams, day time.Time, path string, includePlatform bool) ([]VisitorStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT * FROM (
     	SELECT "tenant_id",
-		$2::date "day",
-	    $3::varchar "path",
+		$3::date AT TIME ZONE $2 "day",
+	    $4::varchar "path",
 	    count(DISTINCT "fingerprint") "visitors",
 		count(DISTINCT("fingerprint", "session")) "sessions" `
 
@@ -464,27 +479,27 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 		query += `, (
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "time" >= $2::date
-				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND "time" AT TIME ZONE $2 >= $3::date
+				AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+				AND LOWER("path") = LOWER($4)
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "time" >= $2::date
-				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND "time" AT TIME ZONE $2 >= $3::date
+				AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+				AND LOWER("path") = LOWER($4)
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "time" >= $2::date
-				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND "time" AT TIME ZONE $2 >= $3::date
+				AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+				AND LOWER("path") = LOWER($4)
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown" `
@@ -492,14 +507,14 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 
 	query += `FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= $2::date
-			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= $3::date
+			AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+			AND LOWER("path") = LOWER($4)
 			GROUP BY tenant_id, "path"
 		) AS results ORDER BY "day" ASC`
 	var visitors []VisitorStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -507,40 +522,41 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 }
 
 // CountVisitorsByPathAndHour implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]VisitorTimeStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, params QueryParams, day time.Time, path string) ([]VisitorTimeStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT $1::bigint AS "tenant_id",
-		$2::date AS "day",
-		$3::varchar AS "path",
+		$3::date AT TIME ZONE $2 AS "day",
+		$4::varchar AS "path",
 		EXTRACT(HOUR FROM "day_and_hour") "hour",
 		(
 			SELECT count(DISTINCT "fingerprint") FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= "day_and_hour"
-			AND "time" < "day_and_hour" + INTERVAL '1 hour'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= "day_and_hour"
+			AND "time" AT TIME ZONE $2 < "day_and_hour" + INTERVAL '1 hour'
+			AND LOWER("path") = LOWER($4)
 		) "visitors",
        (
 			SELECT count(DISTINCT("fingerprint", "session")) FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= "day_and_hour"
-			AND "time" < "day_and_hour" + INTERVAL '1 hour'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= "day_and_hour"
+			AND "time" AT TIME ZONE $2 < "day_and_hour" + INTERVAL '1 hour'
+			AND LOWER("path") = LOWER($4)
 		) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
-				$2::timestamp,
-				$2::timestamp + INTERVAL '23 hours',
+				$3::timestamp AT TIME ZONE $2,
+				$3::timestamp AT TIME ZONE $2 + INTERVAL '23 hours',
 				interval '1 hour'
 			) "day_and_hour"
 		) AS hours`
 	var visitors []VisitorTimeStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -548,25 +564,26 @@ func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql
 }
 
 // CountVisitorsByPathAndLanguage implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]LanguageStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, params QueryParams, day time.Time, path string) ([]LanguageStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT * FROM (
-			SELECT "tenant_id", $2::date "day", $3::varchar "path", "language", count(DISTINCT fingerprint) "visitors"
+			SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", $4::varchar "path", "language", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= $2::date
-			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= $3::date
+			AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+			AND LOWER("path") = LOWER($4)
 			GROUP BY tenant_id, "language"
 		) AS results
 		ORDER BY "day" ASC`
 	var visitors []LanguageStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -574,24 +591,25 @@ func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, tenantID
 }
 
 // CountVisitorsByPathAndReferrer implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]ReferrerStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, params QueryParams, day time.Time, path string) ([]ReferrerStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT * FROM (
-			SELECT "tenant_id", $2::date "day", $3::varchar "path", "referrer", count(DISTINCT fingerprint) "visitors"
+			SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", $4::varchar "path", "referrer", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= $2::date
-			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= $3::date
+			AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+			AND LOWER("path") = LOWER($4)
 			GROUP BY tenant_id, "referrer"
 		) AS results ORDER BY "day" ASC`
 	var visitors []ReferrerStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -599,24 +617,25 @@ func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, tenantID
 }
 
 // CountVisitorsByPathAndOS implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndOS(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]OSStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndOS(tx *sqlx.Tx, params QueryParams, day time.Time, path string) ([]OSStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT * FROM (
-			SELECT "tenant_id", $2::date "day", $3::varchar "path", "os", "os_version", count(DISTINCT fingerprint) "visitors"
+			SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", $4::varchar "path", "os", "os_version", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= $2::date
-			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= $3::date
+			AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+			AND LOWER("path") = LOWER($4)
 			GROUP BY tenant_id, "os", "os_version"
 		) AS results ORDER BY "day" ASC`
 	var visitors []OSStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -624,24 +643,25 @@ func (store *PostgresStore) CountVisitorsByPathAndOS(tx *sqlx.Tx, tenantID sql.N
 }
 
 // CountVisitorsByPathAndBrowser implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]BrowserStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, params QueryParams, day time.Time, path string) ([]BrowserStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT * FROM (
-			SELECT "tenant_id", $2::date "day", $3::varchar "path", "browser", "browser_version", count(DISTINCT fingerprint) "visitors"
+			SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", $4::varchar "path", "browser", "browser_version", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" >= $2::date
-			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND "time" AT TIME ZONE $2 >= $3::date
+			AND "time" AT TIME ZONE $2 < $3::date + INTERVAL '1 day'
+			AND LOWER("path") = LOWER($4)
 			GROUP BY tenant_id, "browser", "browser_version"
 		) AS results ORDER BY "day" ASC`
 	var visitors []BrowserStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day, path); err != nil {
 		return nil, err
 	}
 
@@ -649,20 +669,21 @@ func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID 
 }
 
 // CountVisitorsByLanguage implements the Store interface.
-func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]LanguageStats, error) {
+func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, params QueryParams, day time.Time) ([]LanguageStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT "language", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "language"`
 	var visitors []LanguageStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -670,20 +691,21 @@ func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.Nu
 }
 
 // CountVisitorsByReferrer implements the Store interface.
-func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]ReferrerStats, error) {
+func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, params QueryParams, day time.Time) ([]ReferrerStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT "referrer", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "referrer"`
 	var visitors []ReferrerStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -691,20 +713,21 @@ func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.Nu
 }
 
 // CountVisitorsByOS implements the Store interface.
-func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]OSStats, error) {
+func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, params QueryParams, day time.Time) ([]OSStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT "os", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "os"`
 	var visitors []OSStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -712,20 +735,21 @@ func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, tenantID sql.NullInt6
 }
 
 // CountVisitorsByBrowser implements the Store interface.
-func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]BrowserStats, error) {
+func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, params QueryParams, day time.Time) ([]BrowserStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT "browser", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "browser"`
 	var visitors []BrowserStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -733,20 +757,21 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 }
 
 // CountVisitorsByScreenSize implements the Store interface.
-func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]ScreenStats, error) {
+func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, params QueryParams, day time.Time) ([]ScreenStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "tenant_id", $2::date "day", "screen_width" "width", "screen_height" "height", count(DISTINCT fingerprint) "visitors"
+	params.validate()
+	query := `SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", "screen_width" "width", "screen_height" "height", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "tenant_id", "width", "height"`
 	var visitors []ScreenStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -754,20 +779,21 @@ func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.
 }
 
 // CountVisitorsByCountryCode implements the Store interface.
-func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]CountryStats, error) {
+func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, params QueryParams, day time.Time) ([]CountryStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "tenant_id", $2::date "day", "country_code", count(DISTINCT fingerprint) "visitors"
+	params.validate()
+	query := `SELECT "tenant_id", $3::date AT TIME ZONE $2 "day", "country_code", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
+		AND date("time") AT TIME ZONE $2 = $3::date
 		GROUP BY "tenant_id", "country_code"`
 	var visitors []CountryStats
 
-	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
+	if err := tx.Select(&visitors, query, params.TenantID, params.Timezone.String(), day); err != nil {
 		return nil, err
 	}
 
@@ -775,36 +801,37 @@ func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, tenantID sql
 }
 
 // CountVisitorsByPlatform implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) *VisitorStats {
+func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, params QueryParams, day time.Time) *VisitorStats {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
+	params.validate()
 	query := `SELECT (
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") = $2::date
+				AND date("time") AT TIME ZONE $2 = $3::date
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") = $2::date
+				AND date("time") AT TIME ZONE $2 = $3::date
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") = $2::date
+				AND date("time") AT TIME ZONE $2 = $3::date
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown"`
 	visitors := new(VisitorStats)
 
-	if err := tx.Get(visitors, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+	if err := tx.Get(visitors, query, params.TenantID, params.Timezone.String(), day); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error counting visitor platforms: %s", err)
 		return nil
 	}
@@ -813,23 +840,25 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 }
 
 // CountVisitorsByPathAndMaxOneHit implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
+func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, params QueryParams, day time.Time, path string) int {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	args := make([]interface{}, 0, 3)
-	args = append(args, tenantID)
+	params.validate()
+	args := make([]interface{}, 0, 4)
+	args = append(args, params.TenantID)
+	args = append(args, params.Timezone.String())
 	args = append(args, day)
 	query := `SELECT count(DISTINCT "fingerprint")
 		FROM "hit" h
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date `
+		AND date("time") AT TIME ZONE $2 = $3::date AT TIME ZONE $2 `
 
 	if path != "" {
 		args = append(args, path)
-		query += `AND LOWER("path") = LOWER($3) `
+		query += `AND LOWER("path") = LOWER($4) `
 	}
 
 	query += `AND (
@@ -847,14 +876,15 @@ func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantI
 }
 
 // ActiveVisitors implements the Store interface.
-func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Time) int {
+func (store *PostgresStore) ActiveVisitors(params QueryParams, from time.Time) int {
+	params.validate()
 	query := `SELECT count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "time" > $2`
+		AND "time" AT TIME ZONE $2 > $3`
 	visitors := 0
 
-	if err := store.DB.Get(&visitors, query, tenantID, from); err != nil {
+	if err := store.DB.Get(&visitors, query, params.TenantID, params.Timezone.String(), from); err != nil {
 		store.logger.Printf("error counting active visitors: %s", err)
 		return 0
 	}
@@ -863,18 +893,19 @@ func (store *PostgresStore) ActiveVisitors(tenantID sql.NullInt64, from time.Tim
 }
 
 // ActivePageVisitors implements the Store interface.
-func (store *PostgresStore) ActivePageVisitors(tenantID sql.NullInt64, from time.Time) ([]Stats, error) {
+func (store *PostgresStore) ActivePageVisitors(params QueryParams, from time.Time) ([]Stats, error) {
+	params.validate()
 	query := `SELECT * FROM (
 			SELECT "tenant_id", "path", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "time" > $2
+			AND "time" AT TIME ZONE $2 > $3
 			GROUP BY tenant_id, "path"
 		) AS results
 		ORDER BY "visitors" DESC, "path" ASC`
 	var visitors []Stats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from); err != nil {
 		return nil, err
 	}
 
@@ -882,15 +913,16 @@ func (store *PostgresStore) ActivePageVisitors(tenantID sql.NullInt64, from time
 }
 
 // Visitors implements the Store interface.
-func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
-	query := `SELECT "d" AS "day",
+func (store *PostgresStore) Visitors(params QueryParams, from, to time.Time) ([]Stats, error) {
+	params.validate()
+	query := `SELECT "d" AT TIME ZONE $2 "day",
 		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
         COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
         COALESCE(SUM("visitor_stats".bounces), 0) "bounces"
 		FROM (
 			SELECT * FROM generate_series(
-				$2::date,
-				$3::date,
+				$3::date AT TIME ZONE $2,
+				$4::date AT TIME ZONE $2,
 				INTERVAL '1 day'
 			) "d"
 		) AS date_series
@@ -899,7 +931,7 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 		ORDER BY "d" ASC`
 	var visitors []Stats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -907,7 +939,8 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 }
 
 // VisitorHours implements the Store interface.
-func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
+func (store *PostgresStore) VisitorHours(params QueryParams, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
+	params.validate()
 	query := `SELECT "day_and_hour" "hour",
         COALESCE(sum("visitors"), 0) "visitors",
 		COALESCE(sum("sessions"), 0) "sessions"
@@ -916,24 +949,24 @@ func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time,
 			SELECT "hour", sum("visitors") "visitors", sum("sessions") "sessions"
 			FROM "visitor_time_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "day" >= date($2::timestamp)
-			AND "day" <= date($3::timestamp)
+			AND "day" AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+			AND "day" AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
 			GROUP BY "hour"
 			UNION
-			SELECT EXTRACT(HOUR FROM "time") "hour",
+			SELECT EXTRACT(HOUR FROM "time" AT TIME ZONE $2) "hour",
 			count(DISTINCT "fingerprint") "visitors",
 			count(DISTINCT("fingerprint", "session")) "sessions"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND date("time") >= date($2::timestamp)
-			AND date("time") <= date($3::timestamp)
+			AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+			AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
 			GROUP BY "hour"
 		) AS results ON "hour" = "day_and_hour"
 		GROUP BY "day_and_hour"
 		ORDER BY "day_and_hour" ASC`
 	var visitors []VisitorTimeStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -941,17 +974,18 @@ func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time,
 }
 
 // VisitorLanguages implements the Store interface.
-func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]LanguageStats, error) {
+func (store *PostgresStore) VisitorLanguages(params QueryParams, from, to time.Time) ([]LanguageStats, error) {
+	params.validate()
 	query := `SELECT "language", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "language_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "language"
 		ORDER BY "visitors" DESC`
 	var visitors []LanguageStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -959,17 +993,18 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 }
 
 // VisitorReferrer implements the Store interface.
-func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to time.Time) ([]ReferrerStats, error) {
+func (store *PostgresStore) VisitorReferrer(params QueryParams, from, to time.Time) ([]ReferrerStats, error) {
+	params.validate()
 	query := `SELECT "referrer", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "referrer"
 		ORDER BY "visitors" DESC`
 	var visitors []ReferrerStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -977,17 +1012,18 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to tim
 }
 
 // VisitorOS implements the Store interface.
-func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time) ([]OSStats, error) {
+func (store *PostgresStore) VisitorOS(params QueryParams, from, to time.Time) ([]OSStats, error) {
+	params.validate()
 	query := `SELECT "os", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "os_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "os"
 		ORDER BY "visitors" DESC`
 	var visitors []OSStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -995,17 +1031,18 @@ func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time
 }
 
 // VisitorBrowser implements the Store interface.
-func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time.Time) ([]BrowserStats, error) {
+func (store *PostgresStore) VisitorBrowser(params QueryParams, from, to time.Time) ([]BrowserStats, error) {
+	params.validate()
 	query := `SELECT "browser", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "browser_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "browser"
 		ORDER BY "visitors" DESC`
 	var visitors []BrowserStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -1013,17 +1050,18 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time
 }
 
 // VisitorPlatform implements the Store interface.
-func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to time.Time) *VisitorStats {
+func (store *PostgresStore) VisitorPlatform(params QueryParams, from, to time.Time) *VisitorStats {
+	params.validate()
 	query := `SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
 		COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
 		COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date`
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil && err != sql.ErrNoRows {
+	if err := store.DB.Get(visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error reading visitor platforms: %s", err)
 		return nil
 	}
@@ -1032,17 +1070,18 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 }
 
 // VisitorScreenSize implements the Store interface.
-func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to time.Time) ([]ScreenStats, error) {
+func (store *PostgresStore) VisitorScreenSize(params QueryParams, from, to time.Time) ([]ScreenStats, error) {
+	params.validate()
 	query := `SELECT "width", "height", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "screen_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "width", "height"
 		ORDER BY "visitors" DESC`
 	var visitors []ScreenStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -1050,17 +1089,18 @@ func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to t
 }
 
 // VisitorCountry implements the Store interface.
-func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time.Time) ([]CountryStats, error) {
+func (store *PostgresStore) VisitorCountry(params QueryParams, from, to time.Time) ([]CountryStats, error) {
+	params.validate()
 	query := `SELECT "country_code", COALESCE(SUM("visitors"), 0) "visitors"
 		FROM "country_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND "day" >= $2::date
-		AND "day" <= $3::date
+		AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+		AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
 		GROUP BY "country_code"
 		ORDER BY "visitors" DESC`
 	var visitors []CountryStats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to); err != nil {
 		return nil, err
 	}
 
@@ -1068,26 +1108,27 @@ func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time
 }
 
 // PageVisitors implements the Store interface.
-func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
-	query := `SELECT "d" AS "day",
+func (store *PostgresStore) PageVisitors(params QueryParams, path string, from, to time.Time) ([]Stats, error) {
+	params.validate()
+	query := `SELECT "d" AT TIME ZONE $2 "day",
 		COALESCE("path", '') "path",
 		COALESCE("visitor_stats".visitors, 0) "visitors",
 		COALESCE("visitor_stats".sessions, 0) "sessions",
         COALESCE("visitor_stats".bounces, 0) "bounces"
 		FROM (
 			SELECT * FROM generate_series(
-				$2::date,
-				$3::date,
+				$3::date AT TIME ZONE $2,
+				$4::date AT TIME ZONE $2,
 				INTERVAL '1 day'
 			) "d"
 		) AS date_series
 		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1)
-		AND "visitor_stats"."day" = "d"
-		AND LOWER("path") = LOWER($4)
+		AND "visitor_stats"."day" AT TIME ZONE $2 = "d" AT TIME ZONE $2
+		AND LOWER("path") = LOWER($5)
 		ORDER BY "d" ASC`
 	var visitors []Stats
 
-	if err := store.DB.Select(&visitors, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&visitors, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -1095,23 +1136,24 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 }
 
 // PageLanguages implements the Store interface.
-func (store *PostgresStore) PageLanguages(tenantID sql.NullInt64, path string, from time.Time, to time.Time) ([]LanguageStats, error) {
+func (store *PostgresStore) PageLanguages(params QueryParams, path string, from time.Time, to time.Time) ([]LanguageStats, error) {
+	params.validate()
 	query := `SELECT * FROM (
 			SELECT "language", sum("visitors") "visitors" FROM (
 				SELECT "language", sum("visitors") "visitors"
 				FROM "language_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= date($2::timestamp)
-				AND "day" <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" AT TIME ZONE $2 >= date($3::timestamp AT TIME ZONE $2)
+				AND "day" AT TIME ZONE $2 <= date($4::timestamp AT TIME ZONE $2)
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "language"
 				UNION
 				SELECT "language", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "language"
 			) AS results
 			GROUP BY "language"
@@ -1119,7 +1161,7 @@ func (store *PostgresStore) PageLanguages(tenantID sql.NullInt64, path string, f
 		ORDER BY "visitors" DESC`
 	var languages []LanguageStats
 
-	if err := store.DB.Select(&languages, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&languages, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -1127,23 +1169,24 @@ func (store *PostgresStore) PageLanguages(tenantID sql.NullInt64, path string, f
 }
 
 // PageReferrer implements the Store interface.
-func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, from time.Time, to time.Time) ([]ReferrerStats, error) {
+func (store *PostgresStore) PageReferrer(params QueryParams, path string, from time.Time, to time.Time) ([]ReferrerStats, error) {
+	params.validate()
 	query := `SELECT * FROM (
 			SELECT "referrer", sum("visitors") "visitors" FROM (
 				SELECT "referrer", sum("visitors") "visitors"
 				FROM "referrer_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= date($2::timestamp)
-				AND "day" <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND "day" AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "referrer"
 				UNION
 				SELECT "referrer", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "referrer"
 			) AS results
 			GROUP BY "referrer"
@@ -1151,7 +1194,7 @@ func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, fr
 		ORDER BY "visitors" DESC`
 	var referrer []ReferrerStats
 
-	if err := store.DB.Select(&referrer, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&referrer, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -1159,23 +1202,24 @@ func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, fr
 }
 
 // PageOS implements the Store interface.
-func (store *PostgresStore) PageOS(tenantID sql.NullInt64, path string, from time.Time, to time.Time) ([]OSStats, error) {
+func (store *PostgresStore) PageOS(params QueryParams, path string, from time.Time, to time.Time) ([]OSStats, error) {
+	params.validate()
 	query := `SELECT * FROM (
 			SELECT "os", sum("visitors") "visitors" FROM (
 				SELECT "os", sum("visitors") "visitors"
 				FROM "os_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= date($2::timestamp)
-				AND "day" <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND "day" AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "os"
 				UNION
 				SELECT "os", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "os"
 			) AS results
 			GROUP BY "os"
@@ -1183,7 +1227,7 @@ func (store *PostgresStore) PageOS(tenantID sql.NullInt64, path string, from tim
 		ORDER BY "visitors" DESC`
 	var osStats []OSStats
 
-	if err := store.DB.Select(&osStats, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&osStats, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -1191,23 +1235,24 @@ func (store *PostgresStore) PageOS(tenantID sql.NullInt64, path string, from tim
 }
 
 // PageBrowser implements the Store interface.
-func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, from time.Time, to time.Time) ([]BrowserStats, error) {
+func (store *PostgresStore) PageBrowser(params QueryParams, path string, from time.Time, to time.Time) ([]BrowserStats, error) {
+	params.validate()
 	query := `SELECT * FROM (
 			SELECT "browser", sum("visitors") "visitors" FROM (
 				SELECT "browser", sum("visitors") "visitors"
 				FROM "browser_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= date($2::timestamp)
-				AND "day" <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND "day" AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "browser"
 				UNION
 				SELECT "browser", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				GROUP BY "browser"
 			) AS results
 			GROUP BY "browser"
@@ -1215,7 +1260,7 @@ func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, fro
 		ORDER BY "visitors" DESC`
 	var browser []BrowserStats
 
-	if err := store.DB.Select(&browser, query, tenantID, from, to, path); err != nil {
+	if err := store.DB.Select(&browser, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil {
 		return nil, err
 	}
 
@@ -1223,7 +1268,8 @@ func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, fro
 }
 
 // PagePlatform implements the Store interface.
-func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, from time.Time, to time.Time) *VisitorStats {
+func (store *PostgresStore) PagePlatform(params QueryParams, path string, from time.Time, to time.Time) *VisitorStats {
+	params.validate()
 	query := `SELECT SUM("platform_desktop") "platform_desktop",
 		SUM("platform_mobile") "platform_mobile",
 		SUM("platform_unknown") "platform_unknown"
@@ -1231,27 +1277,27 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 			SELECT (
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
 			(
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND date("time") >= date($2::timestamp)
-				AND date("time") <= date($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") AT TIME ZONE $2 >= date($3::timestamp) AT TIME ZONE $2
+				AND date("time") AT TIME ZONE $2 <= date($4::timestamp) AT TIME ZONE $2
+				AND LOWER("path") = LOWER($5)
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown"
@@ -1261,13 +1307,13 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 			COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
 			FROM "visitor_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "day" >= $2::date
-			AND "day" <= $3::date
-			AND LOWER("path") = LOWER($4)
+			AND "day" AT TIME ZONE $2 >= $3::date AT TIME ZONE $2
+			AND "day" AT TIME ZONE $2 <= $4::date AT TIME ZONE $2
+			AND LOWER("path") = LOWER($5)
 		) AS platforms`
 	visitors := new(VisitorStats)
 
-	if err := store.DB.Get(visitors, query, tenantID, from, to, path); err != nil && err != sql.ErrNoRows {
+	if err := store.DB.Get(visitors, query, params.TenantID, params.Timezone.String(), from, to, path); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error reading page platforms: %s", err)
 		return nil
 	}

@@ -100,7 +100,7 @@ func (cache *sessionCache) find(fingerprint string) time.Time {
 		session = cache.inactive[fingerprint]
 
 		if session.IsZero() {
-			session = cache.store.Session(fingerprint, now.Add(-cache.maxAge))
+			session = cache.store.Session(QueryParams{}, fingerprint, now.Add(-cache.maxAge))
 
 			if session.IsZero() {
 				cache.m.RUnlock()

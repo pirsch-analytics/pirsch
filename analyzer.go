@@ -32,13 +32,13 @@ func NewAnalyzer(store Store) *Analyzer {
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
 	from := time.Now().UTC().Add(-duration)
-	stats, err := analyzer.store.ActivePageVisitors(filter.TenantID, from)
+	stats, err := analyzer.store.ActivePageVisitors(QueryParams{TenantID: filter.TenantID}, from)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return stats, analyzer.store.ActiveVisitors(filter.TenantID, from), nil
+	return stats, analyzer.store.ActiveVisitors(QueryParams{TenantID: filter.TenantID}, from), nil
 }
 
 // Visitors returns the visitor count, session count, and bounce rate per day.
@@ -46,15 +46,15 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.Visitors(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.Visitors(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
-		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+		visitorsToday := analyzer.store.CountVisitors(nil, QueryParams{TenantID: filter.TenantID}, today)
+		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, QueryParams{TenantID: filter.TenantID}, today, "")
 
 		if len(stats) > 0 {
 			if visitorsToday != nil {
@@ -83,7 +83,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 // VisitorHours returns the visitor and session count grouped by hour of day for given time frame.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, error) {
 	filter = analyzer.getFilter(filter)
-	stats, err := analyzer.store.VisitorHours(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorHours(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -97,14 +97,14 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorLanguages(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorLanguages(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByLanguage(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByLanguage(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -149,14 +149,14 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorReferrer(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorReferrer(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByReferrer(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByReferrer(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -201,14 +201,14 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorOS(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorOS(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByOS(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByOS(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -253,14 +253,14 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorBrowser(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorBrowser(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByBrowser(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByBrowser(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -305,14 +305,14 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats := analyzer.store.VisitorPlatform(filter.TenantID, filter.From, filter.To)
+	stats := analyzer.store.VisitorPlatform(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if stats == nil {
 		stats = &VisitorStats{}
 	}
 
 	if addToday {
-		visitorsToday := analyzer.store.CountVisitorsByPlatform(nil, filter.TenantID, today)
+		visitorsToday := analyzer.store.CountVisitorsByPlatform(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if visitorsToday != nil {
 			stats.PlatformDesktop += visitorsToday.PlatformDesktop
@@ -333,14 +333,14 @@ func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorScreenSize(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorScreenSize(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByScreenSize(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByScreenSize(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -385,14 +385,14 @@ func (analyzer *Analyzer) Country(filter *Filter) ([]CountryStats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
-	stats, err := analyzer.store.VisitorCountry(filter.TenantID, filter.From, filter.To)
+	stats, err := analyzer.store.VisitorCountry(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if addToday {
-		visitorsToday, err := analyzer.store.CountVisitorsByCountryCode(nil, filter.TenantID, today)
+		visitorsToday, err := analyzer.store.CountVisitorsByCountryCode(nil, QueryParams{TenantID: filter.TenantID}, today)
 
 		if err != nil {
 			return nil, err
@@ -464,20 +464,20 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	stats := make([]PathVisitors, 0, len(paths))
 
 	for _, path := range paths {
-		visitors, err := analyzer.store.PageVisitors(filter.TenantID, path, filter.From, filter.To)
+		visitors, err := analyzer.store.PageVisitors(QueryParams{TenantID: filter.TenantID}, path, filter.From, filter.To)
 
 		if err != nil {
 			return nil, err
 		}
 
 		if addToday {
-			visitorsToday, err := analyzer.store.CountVisitorsByPath(nil, filter.TenantID, today, path, false)
+			visitorsToday, err := analyzer.store.CountVisitorsByPath(nil, QueryParams{TenantID: filter.TenantID}, today, path, false)
 
 			if err != nil {
 				return nil, err
 			}
 
-			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, path)
+			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, QueryParams{TenantID: filter.TenantID}, today, path)
 
 			if len(visitorsToday) > 0 {
 				if len(visitors) > 0 {
@@ -518,7 +518,7 @@ func (analyzer *Analyzer) PageLanguages(filter *Filter) ([]LanguageStats, error)
 		return []LanguageStats{}, nil
 	}
 
-	stats, err := analyzer.store.PageLanguages(filter.TenantID, filter.Path, filter.From, filter.To)
+	stats, err := analyzer.store.PageLanguages(QueryParams{TenantID: filter.TenantID}, filter.Path, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -546,7 +546,7 @@ func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) 
 		return []ReferrerStats{}, nil
 	}
 
-	stats, err := analyzer.store.PageReferrer(filter.TenantID, filter.Path, filter.From, filter.To)
+	stats, err := analyzer.store.PageReferrer(QueryParams{TenantID: filter.TenantID}, filter.Path, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -574,7 +574,7 @@ func (analyzer *Analyzer) PageOS(filter *Filter) ([]OSStats, error) {
 		return []OSStats{}, nil
 	}
 
-	stats, err := analyzer.store.PageOS(filter.TenantID, filter.Path, filter.From, filter.To)
+	stats, err := analyzer.store.PageOS(QueryParams{TenantID: filter.TenantID}, filter.Path, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -602,7 +602,7 @@ func (analyzer *Analyzer) PageBrowser(filter *Filter) ([]BrowserStats, error) {
 		return []BrowserStats{}, nil
 	}
 
-	stats, err := analyzer.store.PageBrowser(filter.TenantID, filter.Path, filter.From, filter.To)
+	stats, err := analyzer.store.PageBrowser(QueryParams{TenantID: filter.TenantID}, filter.Path, filter.From, filter.To)
 
 	if err != nil {
 		return nil, err
@@ -630,7 +630,7 @@ func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 		return &VisitorStats{}
 	}
 
-	stats := analyzer.store.PagePlatform(filter.TenantID, filter.Path, filter.From, filter.To)
+	stats := analyzer.store.PagePlatform(QueryParams{TenantID: filter.TenantID}, filter.Path, filter.From, filter.To)
 
 	if stats == nil {
 		return &VisitorStats{}
@@ -660,7 +660,7 @@ func (analyzer *Analyzer) getPaths(filter *Filter) []string {
 		return []string{filter.Path}
 	}
 
-	paths, err := analyzer.store.Paths(filter.TenantID, filter.From, filter.To)
+	paths, err := analyzer.store.Paths(QueryParams{TenantID: filter.TenantID}, filter.From, filter.To)
 
 	if err != nil {
 		return []string{}

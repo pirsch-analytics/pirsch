@@ -7,6 +7,19 @@ import (
 	"time"
 )
 
+func TestTimezone(t *testing.T) {
+	params := DefaultQueryParams()
+	now := time.Now().UTC()
+
+	if !now.In(params.Timezone).Equal(now) {
+		t.Fatal("Default time zone must be UTC")
+	}
+
+	if params.Timezone.String() != time.UTC.String() {
+		t.Fatalf("Default time zone must be UTC, but was: %v", params.Timezone.String())
+	}
+}
+
 func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	cleanupDB(t)
 	db := sqlx.NewDb(postgresDB, "postgres")
@@ -350,13 +363,13 @@ func TestPostgresStore_Session(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", pastDay(2), time.Now(), "", "", "", "", "", false, false, 0, 0)
-	session := store.Session("fp", pastDay(1))
+	session := store.Session(QueryParams{}, "fp", pastDay(1))
 
 	if !session.IsZero() {
 		t.Fatal("No session timestamp must have been found")
 	}
 
-	session = store.Session("fp", pastDay(3))
+	session = store.Session(QueryParams{}, "fp", pastDay(3))
 
 	if session.IsZero() {
 		t.Fatal("Session timestamp must have been found")
@@ -369,7 +382,7 @@ func TestPostgresStore_HitDays(t *testing.T) {
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	days, err := store.HitDays(NullTenant)
+	days, err := store.HitDays(QueryParams{})
 
 	if err != nil {
 		t.Fatalf("Days must have been returned, but was: %v", err)
@@ -388,7 +401,7 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
+	paths, err := store.HitPaths(QueryParams{}, day(2020, 6, 20, 0))
 
 	if err != nil {
 		t.Fatalf("Paths must have been returned, but was: %v", err)
@@ -398,7 +411,7 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
 	}
 
-	paths, err = store.HitPaths(NullTenant, day(2020, 6, 21, 0))
+	paths, err = store.HitPaths(QueryParams{}, day(2020, 6, 21, 0))
 
 	if err != nil {
 		t.Fatalf("Paths must have been returned, but was: %v", err)
@@ -430,7 +443,7 @@ func TestPostgresStore_Paths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	paths, err := store.Paths(NullTenant, day(2020, 6, 15, 0), day(2020, 6, 19, 0))
+	paths, err := store.Paths(QueryParams{}, day(2020, 6, 15, 0), day(2020, 6, 19, 0))
 
 	if err != nil {
 		t.Fatalf("Paths must have been returned, but was: %v", err)
@@ -440,7 +453,7 @@ func TestPostgresStore_Paths(t *testing.T) {
 		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
 	}
 
-	paths, err = store.Paths(NullTenant, day(2020, 6, 20, 0), day(2020, 6, 25, 0))
+	paths, err = store.Paths(QueryParams{}, day(2020, 6, 20, 0), day(2020, 6, 25, 0))
 
 	if err != nil {
 		t.Fatalf("Paths must have been returned, but was: %v", err)
@@ -461,7 +474,7 @@ func TestPostgresStore_CountVisitorsByPath(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
-	visitors, err := store.CountVisitorsByPath(nil, NullTenant, today(), "/", true)
+	visitors, err := store.CountVisitorsByPath(nil, QueryParams{}, today(), "/", true)
 
 	if err != nil {
 		t.Fatalf("Visitors must have been returned, but was: %v", err)
@@ -485,7 +498,7 @@ func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", "", false, true, 0, 0)
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	platforms := store.CountVisitorsByPlatform(nil, NullTenant, pastDay(1))
+	platforms := store.CountVisitorsByPlatform(nil, QueryParams{}, pastDay(1))
 
 	if platforms.PlatformDesktop != 1 ||
 		platforms.PlatformMobile != 1 ||
@@ -502,7 +515,7 @@ func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	visitors := store.CountVisitorsByPathAndMaxOneHit(nil, NullTenant, pastDay(5), "/")
+	visitors := store.CountVisitorsByPathAndMaxOneHit(nil, QueryParams{}, pastDay(5), "/")
 
 	if visitors != 2 {
 		t.Fatalf("Two visitors must have bounced, but was: %v", visitors)
@@ -514,7 +527,7 @@ func TestPostgresStore_ActiveVisitors(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	total := store.ActiveVisitors(NullTenant, time.Now().Add(-time.Second*10))
+	total := store.ActiveVisitors(QueryParams{}, time.Now().Add(-time.Second*10))
 
 	if total != 1 {
 		t.Fatalf("One active visitor must have been returned, but was: %v", total)
@@ -527,7 +540,7 @@ func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", time.Now().Add(-time.Second*4), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	stats, err := store.ActivePageVisitors(NullTenant, time.Now().Add(-time.Second*10))
+	stats, err := store.ActivePageVisitors(QueryParams{}, time.Now().Add(-time.Second*10))
 
 	if err != nil {
 		t.Fatalf("Active page visitors must have been returned, but was: %v", err)

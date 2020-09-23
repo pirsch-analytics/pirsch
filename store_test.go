@@ -46,6 +46,6 @@ func (store *storeMock) SaveHits(hits []Hit) error {
 	return nil
 }
 
-func (store *storeMock) Session(fingerprint string, maxAge time.Time) time.Time {
+func (store *storeMock) Session(params QueryParams, fingerprint string, maxAge time.Time) time.Time {
 	return time.Now()
 }
