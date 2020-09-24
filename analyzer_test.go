@@ -851,6 +851,34 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_TimeOfDayTimezone(t *testing.T) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		d := day(2020, 9, 24, 15)
+		createHit(t, store, 0, "fp", "/", "en", "ua", "", d, time.Time{}, "", "", "", "", "", false, false, 0, 0)
+		tz := time.FixedZone("test", 3600*3)
+		targetDate := d.In(tz)
+
+		if targetDate.Hour() != 18 {
+			t.Fatalf("Fixed time not as expected: %v", targetDate)
+		}
+
+		analyzer := NewAnalyzer(store, &AnalyzerConfig{
+			Timezone: tz,
+		})
+		visitors, _ := analyzer.TimeOfDay(&Filter{
+			From: day(2020, 9, 24, 0),
+			To:   day(2020, 9, 24, 0),
+		})
+
+		if len(visitors) != 1 || len(visitors[0].Stats) != 24 ||
+			!visitors[0].Day.Equal(day(2020, 9, 24, 0)) ||
+			visitors[0].Stats[18].Visitors != 1 {
+			t.Fatalf("Visitors not as expected: %v", visitors)
+		}
+	}
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)

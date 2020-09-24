@@ -51,6 +51,7 @@ func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
 
 // ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to see the active visitors for the past 5 minutes.
+// The correct date/time is not included.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
 	from := time.Now().UTC().Add(-duration)
@@ -58,10 +59,6 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 	if err != nil {
 		return nil, 0, err
-	}
-
-	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 	}
 
 	return stats, analyzer.store.ActiveVisitors(filter.TenantID, from), nil
@@ -98,8 +95,6 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
-
 		if stats[i].Visitors > 0 {
 			stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
 		}
@@ -118,9 +113,12 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, erro
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].Hour = hourInTimezone(stats[i].Hour, analyzer.timezone)
 	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Hour < stats[j].Hour
+	})
 
 	return stats, nil
 }
@@ -171,7 +169,6 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -224,7 +221,6 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -277,7 +273,6 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -330,7 +325,6 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -358,7 +352,6 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 		}
 	}
 
-	stats.Day = stats.Day.In(analyzer.timezone)
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
 	stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
 	stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
@@ -412,7 +405,6 @@ func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -465,7 +457,6 @@ func (analyzer *Analyzer) Country(filter *Filter) ([]CountryStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -485,13 +476,9 @@ func (analyzer *Analyzer) TimeOfDay(filter *Filter) ([]TimeOfDayVisitors, error)
 			return nil, err
 		}
 
-		for i := range s {
-			s[i].Day = s[i].Day.In(analyzer.timezone)
-			s[i].Hour = hourInTimezone(s[i].Hour, analyzer.timezone)
-		}
-
+		// no need to set timezone for hours and sort stats, as this is done by VisitorHours
 		stats = append(stats, TimeOfDayVisitors{
-			Day:   from.In(analyzer.timezone),
+			Day:   from,
 			Stats: s,
 		})
 		from = from.Add(time.Hour * 24)
@@ -540,8 +527,6 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 		}
 
 		for i := range visitors {
-			visitors[i].Day = visitors[i].Day.In(analyzer.timezone)
-
 			if visitors[i].Visitors > 0 {
 				visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
 			}
@@ -578,7 +563,6 @@ func (analyzer *Analyzer) PageLanguages(filter *Filter) ([]LanguageStats, error)
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -607,7 +591,6 @@ func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) 
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -636,7 +619,6 @@ func (analyzer *Analyzer) PageOS(filter *Filter) ([]OSStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -665,7 +647,6 @@ func (analyzer *Analyzer) PageBrowser(filter *Filter) ([]BrowserStats, error) {
 	}
 
 	for i := range stats {
-		stats[i].Day = stats[i].Day.In(analyzer.timezone)
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
 	}
 
@@ -687,7 +668,6 @@ func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 		return &VisitorStats{}
 	}
 
-	stats.Day = stats.Day.In(analyzer.timezone)
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
 	stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
 	stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
