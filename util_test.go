@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"testing"
+	"time"
 )
 
 func TestRunAtMidnight(t *testing.T) {
@@ -34,5 +35,17 @@ func TestContainsString(t *testing.T) {
 
 	if !containsString(list, "c") {
 		t.Fatal("List must contain string 'c'")
+	}
+}
+
+func TestHourInTimezone(t *testing.T) {
+	tz, err := time.LoadLocation("Europe/Berlin")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if out := hourInTimezone(5, tz); out != 6 {
+		t.Fatalf("Time not as expected: %v", out)
 	}
 }

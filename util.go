@@ -46,6 +46,10 @@ func containsString(list []string, str string) bool {
 }
 
 func today() time.Time {
-	now := time.Now()
+	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func hourInTimezone(hour int, timezone *time.Location) int {
+	return time.Date(2020, 1, 1, hour, 0, 0, 0, time.UTC).In(timezone).Hour()
 }

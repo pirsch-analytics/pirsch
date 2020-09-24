@@ -17,7 +17,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 			createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 			createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 			createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, total, err := analyzer.ActiveVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
 			}, time.Second*30)
@@ -62,7 +62,7 @@ func TestAnalyzer_Visitors(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Visitors(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(3),
@@ -110,7 +110,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.VisitorHours(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(3),
@@ -155,7 +155,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Languages(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -200,7 +200,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Referrer(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -246,7 +246,7 @@ func TestAnalyzer_OS(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.OS(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -292,7 +292,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Browser(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -339,7 +339,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors := analyzer.Platform(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(3),
@@ -378,7 +378,7 @@ func TestAnalyzer_Screen(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Screen(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -423,7 +423,7 @@ func TestAnalyzer_Country(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.Country(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(4),
@@ -525,7 +525,7 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 				}
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			days, err := analyzer.TimeOfDay(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(2),
@@ -587,7 +587,7 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.PageVisitors(&Filter{
 				TenantID: NewTenantID(tenantID),
 				From:     pastDay(3),
@@ -644,7 +644,7 @@ func TestAnalyzer_PageLanguages(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.PageLanguages(&Filter{
 				TenantID: NewTenantID(tenantID),
 				Path:     "/path",
@@ -691,7 +691,7 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.PageReferrer(&Filter{
 				TenantID: NewTenantID(tenantID),
 				Path:     "/path",
@@ -738,7 +738,7 @@ func TestAnalyzer_PageOS(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.PageOS(&Filter{
 				TenantID: NewTenantID(tenantID),
 				Path:     "/path",
@@ -785,7 +785,7 @@ func TestAnalyzer_PageBrowser(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors, err := analyzer.PageBrowser(&Filter{
 				TenantID: NewTenantID(tenantID),
 				Path:     "/path",
@@ -834,7 +834,7 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			analyzer := NewAnalyzer(store)
+			analyzer := NewAnalyzer(store, nil)
 			visitors := analyzer.PagePlatform(&Filter{
 				TenantID: NewTenantID(tenantID),
 				Path:     "/path",
