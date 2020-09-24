@@ -54,7 +54,7 @@ type Store interface {
 	SaveCountryStats(*sqlx.Tx, *CountryStats) error
 
 	// Session returns the hits session timestamp for given fingerprint and max age.
-	Session(string, time.Time) time.Time
+	Session(sql.NullInt64, string, time.Time) time.Time
 
 	// HitDays returns the distinct days with at least one hit.
 	HitDays(sql.NullInt64) ([]time.Time, error)

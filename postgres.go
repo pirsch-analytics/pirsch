@@ -358,11 +358,15 @@ func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) 
 }
 
 // Session implements the Store interface.
-func (store *PostgresStore) Session(fingerprint string, maxAge time.Time) time.Time {
-	query := `SELECT "session" FROM "hit" WHERE fingerprint = $1 AND "time" > $2 LIMIT 1`
+func (store *PostgresStore) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) time.Time {
+	query := `SELECT "session"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND fingerprint = $2
+	    AND "time" > $3 LIMIT 1`
 	var session time.Time
 
-	if err := store.DB.Get(&session, query, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+	if err := store.DB.Get(&session, query, tenantID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		store.logger.Printf("error reading session timestamp: %s", err)
 	}
 

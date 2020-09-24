@@ -40,14 +40,14 @@ func TestSessionCache(t *testing.T) {
 	defer cache.stop()
 
 	// cache miss -> create in active
-	session := cache.find("fp")
+	session := cache.find(NullTenant, "fp")
 
 	if session.IsZero() {
 		t.Fatal("New session must have been returned")
 	}
 
 	// find in active
-	existing := cache.find("fp")
+	existing := cache.find(NullTenant, "fp")
 
 	if !existing.Equal(session) {
 		t.Fatal("Existing session must have been found in active map")
@@ -60,7 +60,7 @@ func TestSessionCache(t *testing.T) {
 		t.Fatalf("Maps not as expected: %v %v", len(cache.active), len(cache.inactive))
 	}
 
-	existing = cache.find("fp")
+	existing = cache.find(NullTenant, "fp")
 
 	if !existing.Equal(session) {
 		t.Fatal("Existing session must have been found in inactive map")
@@ -74,7 +74,7 @@ func TestSessionCache(t *testing.T) {
 	}
 
 	createHit(t, store, 0, "fp", "/", "en", "ua1", "", today(), session, "", "", "", "", "", false, false, 0, 0)
-	existing = cache.find("fp")
+	existing = cache.find(NullTenant, "fp")
 
 	if existing.IsZero() {
 		t.Fatal("Existing session must have been found in database")
@@ -101,7 +101,7 @@ func TestSessionCacheRenewal(t *testing.T) {
 		cache := newSessionCache(store, &sessionCacheConfig{
 			maxAge: time.Hour,
 		})
-		s := cache.find("fp")
+		s := cache.find(NullTenant, "fp")
 
 		if found[i] && (s.Year() != session.Year() || s.Month() != session.Month() || s.Day() != session.Day() || s.Hour() != session.Hour() || s.Minute() != session.Minute() || s.Second() != session.Second()) {
 			t.Fatalf("Session  must have been found, but was: %v", s)

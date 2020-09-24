@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"time"
 )
@@ -46,6 +47,6 @@ func (store *storeMock) SaveHits(hits []Hit) error {
 	return nil
 }
 
-func (store *storeMock) Session(fingerprint string, maxAge time.Time) time.Time {
+func (store *storeMock) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) time.Time {
 	return time.Now()
 }

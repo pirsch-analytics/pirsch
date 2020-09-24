@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 	"time"
 )
@@ -89,7 +90,7 @@ func (cache *sessionCache) swap() {
 	cache.m.Unlock()
 }
 
-func (cache *sessionCache) find(fingerprint string) time.Time {
+func (cache *sessionCache) find(tenantID sql.NullInt64, fingerprint string) time.Time {
 	// look up the active cache, the non-active cache and the database (in that order)
 	// to find an existing session, or add and return a new timestamp if we can't find one
 	now := time.Now().UTC()
@@ -100,7 +101,7 @@ func (cache *sessionCache) find(fingerprint string) time.Time {
 		session = cache.inactive[fingerprint]
 
 		if session.IsZero() {
-			session = cache.store.Session(fingerprint, now.Add(-cache.maxAge))
+			session = cache.store.Session(tenantID, fingerprint, now.Add(-cache.maxAge))
 
 			if session.IsZero() {
 				cache.m.RUnlock()

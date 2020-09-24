@@ -116,7 +116,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	var session time.Time
 
 	if options.sessionCache != nil {
-		session = options.sessionCache.find(fingerprint)
+		session = options.sessionCache.find(options.TenantID, fingerprint)
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {

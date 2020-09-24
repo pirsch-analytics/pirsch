@@ -350,13 +350,13 @@ func TestPostgresStore_Session(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", pastDay(2), time.Now(), "", "", "", "", "", false, false, 0, 0)
-	session := store.Session("fp", pastDay(1))
+	session := store.Session(NullTenant, "fp", pastDay(1))
 
 	if !session.IsZero() {
 		t.Fatal("No session timestamp must have been found")
 	}
 
-	session = store.Session("fp", pastDay(3))
+	session = store.Session(NullTenant, "fp", pastDay(3))
 
 	if session.IsZero() {
 		t.Fatal("Session timestamp must have been found")
