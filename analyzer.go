@@ -19,16 +19,39 @@ type TimeOfDayVisitors struct {
 
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
-	store Store
+	store    Store
+	timezone *time.Location
+}
+
+// AnalyzerConfig is the (optional) configuration for the Analyzer.
+type AnalyzerConfig struct {
+	// Timezone sets the time zone for the result set.
+	// If not set, UTC will be used.
+	Timezone *time.Location
+}
+
+func (config *AnalyzerConfig) validate() {
+	if config.Timezone == nil {
+		config.Timezone = time.UTC
+	}
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.
-func NewAnalyzer(store Store) *Analyzer {
-	return &Analyzer{store}
+func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
+	if config == nil {
+		config = new(AnalyzerConfig)
+	}
+
+	config.validate()
+	return &Analyzer{
+		store:    store,
+		timezone: config.Timezone,
+	}
 }
 
 // ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to see the active visitors for the past 5 minutes.
+// The correct date/time is not included.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
 	from := time.Now().UTC().Add(-duration)
@@ -88,6 +111,14 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, erro
 	if err != nil {
 		return nil, err
 	}
+
+	for i := range stats {
+		stats[i].Hour = hourInTimezone(stats[i].Hour, analyzer.timezone)
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Hour < stats[j].Hour
+	})
 
 	return stats, nil
 }
@@ -445,6 +476,7 @@ func (analyzer *Analyzer) TimeOfDay(filter *Filter) ([]TimeOfDayVisitors, error)
 			return nil, err
 		}
 
+		// no need to set timezone for hours and sort stats, as this is done by VisitorHours
 		stats = append(stats, TimeOfDayVisitors{
 			Day:   from,
 			Stats: s,
