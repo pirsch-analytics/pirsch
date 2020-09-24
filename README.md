@@ -150,6 +150,11 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.7.0
+
+* added visitors statistics for time and day for a range of days to Analyzer
+* fixed reading sessions without tenant ID
+
 ### 1.6.1
 
 * `Tracker.Hit` does no longer spawn its own goroutine, so you should do that yourself
