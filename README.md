@@ -83,7 +83,8 @@ Note that while you can generate the salt at random, the fingerprints will chang
 
 ```Go
 // This also needs access to the store.
-analyzer := pirsch.NewAnalyzer(store)
+// You can set a time zone through the configuration to display local times.
+analyzer := pirsch.NewAnalyzer(store, nil)
 
 // As an example, lets extract the total number of visitors.
 // The filter is used to specify the time frame you're looking at (days) and is optional.
@@ -152,14 +153,11 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ### 1.7.0
 
+* `Tracker.Hit` does no longer spawn its own goroutine, so you should do that yourself
 * added visitors statistics for time and day for a range of days to Analyzer
 * added optional time zone to Analyzer
 * fixed reading sessions without tenant ID
 * fixed reading hit days without time zone
-
-### 1.6.1
-
-* `Tracker.Hit` does no longer spawn its own goroutine, so you should do that yourself
 
 ### 1.6.0
 
