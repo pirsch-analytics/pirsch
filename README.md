@@ -150,10 +150,11 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
-### 1.7.0
+### 1.6.2
 
 * added visitors statistics for time and day for a range of days to Analyzer
 * fixed reading sessions without tenant ID
+* fixed reading hit days without time zone
 
 ### 1.6.1
 

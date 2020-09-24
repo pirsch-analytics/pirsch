@@ -378,7 +378,7 @@ func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error)
 	query := `SELECT DISTINCT date("time") AS "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") < current_date
+		AND date("time") < current_date AT TIME ZONE 'UTC'
 		ORDER BY "day" ASC`
 	var days []time.Time
 
