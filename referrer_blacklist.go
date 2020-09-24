@@ -1747,6 +1747,7 @@ var referrerBlacklist = map[string]struct{}{
 	"thesensehousehotel.com":               {},
 	"thesmartsearch.net":                   {},
 	"timmy.by":                             {},
+	"tmqfs.prizesk.com":                    {},
 	"tocan.biz":                            {},
 	"tocan.com.ua":                         {},
 	"tokshow.online":                       {},
