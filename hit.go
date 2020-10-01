@@ -206,11 +206,12 @@ func ignoreReferrer(r *http.Request) bool {
 
 	u, err := url.ParseRequestURI(referrer)
 
-	if err != nil {
-		return false
+	if err == nil {
+		referrer = u.Hostname()
 	}
 
-	_, found := referrerBlacklist[u.Hostname()]
+	referrer = stripSubdomain(referrer)
+	_, found := referrerBlacklist[referrer]
 	return found
 }
 

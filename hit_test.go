@@ -222,10 +222,17 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 
 func TestIgnoreHitReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("Referer", "2your.site")
+	req.Header.Set("User-Agent", "ua")
+	req.Header.Set("Referer", "2your.site")
 
 	if !IgnoreHit(req) {
 		t.Fatal("Request must have been ignored")
+	}
+
+	req.Header.Set("Referer", "subdomain.2your.site")
+
+	if !IgnoreHit(req) {
+		t.Fatal("Request for subdomain must have been ignored")
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/?ref=2your.site", nil)

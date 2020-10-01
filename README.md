@@ -151,6 +151,10 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.7.1
+
+* fixed filtering referrer spam subdomains
+
 ### 1.7.0
 
 * `Tracker.Hit` does no longer spawn its own goroutine, so you should do that yourself
