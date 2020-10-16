@@ -8,7 +8,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: pirsch
-    working_directory: /go/src/github.com/emvi/pirsch
+    working_directory: /go/src/github.com/pirsch-analytics/pirsch
     steps:
       - checkout
       - run:
@@ -26,7 +26,7 @@ jobs:
             echo Failed waiting for Postgres && exit 1
       - run:
           name: Migrate schema
-          command: psql -h localhost -p 5432 -U postgres -d pirsch < /go/src/github.com/emvi/pirsch/schema/postgres/test.sql
+          command: psql -h localhost -p 5432 -U postgres -d pirsch < /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/test.sql
       - run:
           name: Run tests
           command: sleep 5 && go test -cover .
