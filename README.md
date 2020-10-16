@@ -4,9 +4,9 @@
 
 # Pirsch
 
-[![GoDoc](https://godoc.org/github.com/emvi/pirsch?status.svg)](https://godoc.org/github.com/emvi/pirsch)
-[![Go Report Card](https://goreportcard.com/badge/github.com/emvi/pirsch)](https://goreportcard.com/report/github.com/emvi/pirsch)
-[![CircleCI](https://circleci.com/gh/emvi/pirsch.svg?style=svg)](https://circleci.com/gh/emvi/pirsch)
+[![GoDoc](https://godoc.org/github.com/pirsch-analytics/pirsch?status.svg)](https://godoc.org/github.com/pirsch-analytics/pirsch)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pirsch-analytics/pirsch)](https://goreportcard.com/report/github.com/pirsch-analytics/pirsch)
+[![CircleCI](https://circleci.com/gh/pirsch-analytics/pirsch.svg?style=svg)](https://circleci.com/gh/pirsch-analytics/pirsch)
 <a href="https://discord.gg/fAYm4Cz"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
 
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data (dashboard) is not part of this project.
@@ -145,7 +145,7 @@ The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeo
 
 ## Documentation
 
-Read the [full documentation](https://godoc.org/github.com/emvi/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/how-i-built-my-website-using-emvi-as-a-headless-cms-RGaqOqK18w.
+Read the [full documentation](https://godoc.org/github.com/pirsch-analytics/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl.
 
 ## Build pirsch.js
 
