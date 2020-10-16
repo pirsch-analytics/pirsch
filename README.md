@@ -296,4 +296,4 @@ To run the tests you'll need a Postgres database and a schema called `pirsch`. T
 
 ## License
 
-MIT
+GNU AGPLv3
