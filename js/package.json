@@ -1,5 +1,5 @@
 {
-  "name": "@emvi/pirsch",
+  "name": "@pirsch-analytics/pirsch",
   "version": "1.6.0",
   "description": "Pirsch Analytics.",
   "main": "pirsch.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/emvi/pirsch.git"
+    "url": "git+https://github.com/pirsch-analytics/pirsch.git"
   },
   "keywords": [
     "pirsch",
@@ -18,9 +18,9 @@
   "author": "Emvi Software GmbH",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/emvi/pirsch/issues"
+    "url": "https://github.com/pirsch-analytics/pirsch/issues"
   },
-  "homepage": "https://github.com/emvi/pirsch#readme",
+  "homepage": "https://github.com/pirsch-analytics/pirsch#readme",
   "devDependencies": {
     "uglify-js": "^3.10.4"
   }

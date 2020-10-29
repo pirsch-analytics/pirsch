@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"github.com/emvi/pirsch"
 	_ "github.com/lib/pq"
+	"github.com/pirsch-analytics/pirsch"
 	"log"
 	"net/http"
 )
