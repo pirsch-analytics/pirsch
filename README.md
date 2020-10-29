@@ -13,7 +13,7 @@ Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solutio
 
 The name is in German and refers to a special kind of hunt: *the hunter carefully and quietly enters the area to be hunted, he stalks against the wind in order to get as close as possible to the prey without being noticed.*
 
-**If you're looking for a managed solution with an easy API or JavaScript integration, checkout https://pirsch.io/.**
+**If you're looking for a managed solution with an easy API or JavaScript integration, check out https://pirsch.io/.**
 
 ## How does it work?
 
