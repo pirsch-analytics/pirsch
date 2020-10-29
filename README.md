@@ -153,6 +153,12 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.7.2
+
+* changed license to GNU AGPLv3
+* renamed package from emvi/pirsch to pirsch-analytics/pirsch
+* updated dependencies
+
 ### 1.7.1
 
 * fixed filtering referrer spam subdomains

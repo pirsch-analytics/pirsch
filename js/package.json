@@ -1,6 +1,6 @@
 {
-  "name": "@pirsch-analytics/pirsch",
-  "version": "1.6.0",
+  "name": "pirsch",
+  "version": "1.7.2",
   "description": "Pirsch Analytics.",
   "main": "pirsch.js",
   "scripts": {
@@ -16,12 +16,12 @@
     "analytics"
   ],
   "author": "Emvi Software GmbH",
-  "license": "MIT",
+  "license": "GNU AGPLv3",
   "bugs": {
     "url": "https://github.com/pirsch-analytics/pirsch/issues"
   },
   "homepage": "https://github.com/pirsch-analytics/pirsch#readme",
   "devDependencies": {
-    "uglify-js": "^3.10.4"
+    "uglify-js": "^3.11.4"
   }
 }
