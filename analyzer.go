@@ -7,14 +7,14 @@ import (
 
 // PathVisitors represents visitor statistics per day for a path.
 type PathVisitors struct {
-	Path  string
-	Stats []Stats
+	Path  string  `json:"path"`
+	Stats []Stats `json:"stats"`
 }
 
 // TimeOfDayVisitors represents the visitor count per day and hour for a path.
 type TimeOfDayVisitors struct {
-	Day   time.Time
-	Stats []VisitorTimeStats
+	Day   time.Time          `json:"day"`
+	Stats []VisitorTimeStats `json:"stats"`
 }
 
 // Analyzer provides an interface to analyze processed data and hits.
