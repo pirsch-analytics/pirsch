@@ -111,6 +111,7 @@ func TestTrackerCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
+	time.Sleep(time.Millisecond * 200)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
@@ -145,6 +146,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
+	time.Sleep(time.Millisecond * 200)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
