@@ -153,6 +153,10 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.7.3
+
+* added json to Analyzer structs, so that they can be added to an API
+
 ### 1.7.2
 
 * changed license to GNU AGPLv3
