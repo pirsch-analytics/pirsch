@@ -353,9 +353,13 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 	}
 
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
-	stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
-	stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
-	stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+
+	if sum != 0 {
+		stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
+		stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
+		stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+	}
+
 	return stats
 }
 
@@ -669,9 +673,13 @@ func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 	}
 
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
-	stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
-	stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
-	stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+
+	if sum != 0 {
+		stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
+		stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
+		stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+	}
+
 	return stats
 }
 

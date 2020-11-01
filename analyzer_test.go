@@ -355,6 +355,28 @@ func TestAnalyzer_Platform(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_PlatformNoData(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			analyzer := NewAnalyzer(store, nil)
+			visitors := analyzer.Platform(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if visitors.PlatformDesktop != 0 || !inRange(visitors.RelativePlatformDesktop, 0.001) ||
+				visitors.PlatformMobile != 0 || !inRange(visitors.RelativePlatformMobile, 0.001) ||
+				visitors.PlatformUnknown != 0 || !inRange(visitors.RelativePlatformUnknown, 0.001) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
 func TestAnalyzer_Screen(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 
@@ -845,6 +867,29 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 			if visitors.PlatformDesktop != 43 || !inRange(visitors.RelativePlatformDesktop, 0.325) ||
 				visitors.PlatformMobile != 44 || !inRange(visitors.RelativePlatformMobile, 0.33) ||
 				visitors.PlatformUnknown != 45 || !inRange(visitors.RelativePlatformUnknown, 0.34) {
+				t.Fatalf("Visitors not as expected: %v", visitors)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_PagePlatformNoData(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			analyzer := NewAnalyzer(store, nil)
+			visitors := analyzer.PagePlatform(&Filter{
+				TenantID: NewTenantID(tenantID),
+				Path:     "/path",
+				From:     pastDay(3),
+				To:       today(),
+			})
+
+			if visitors.PlatformDesktop != 0 || !inRange(visitors.RelativePlatformDesktop, 0.001) ||
+				visitors.PlatformMobile != 0 || !inRange(visitors.RelativePlatformMobile, 0.001) ||
+				visitors.PlatformUnknown != 0 || !inRange(visitors.RelativePlatformUnknown, 0.001) {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
