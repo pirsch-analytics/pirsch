@@ -474,7 +474,7 @@ func (analyzer *Analyzer) TimeOfDay(filter *Filter) ([]TimeOfDayVisitors, error)
 	stats := make([]TimeOfDayVisitors, 0)
 
 	for !from.After(filter.To) {
-		s, err := analyzer.VisitorHours(&Filter{From: from, To: from})
+		s, err := analyzer.VisitorHours(&Filter{TenantID: filter.TenantID, From: from, To: from})
 
 		if err != nil {
 			return nil, err

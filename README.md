@@ -153,6 +153,10 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.7.5
+
+* fixed filtering visitors by time of day by tenant ID
+
 ### 1.7.4
 
 * fixed 0 sum in Analyzer for platform statistics
