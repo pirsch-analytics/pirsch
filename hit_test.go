@@ -26,7 +26,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.Session.Valid || hit.Session.Time.IsZero() ||
 		hit.Path.String != "/test/path" ||
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
-		hit.Language.String != "de-de" ||
+		hit.Language.String != "de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Referrer.String != "http://ref/" ||
 		hit.OS.String != OSWindows ||
