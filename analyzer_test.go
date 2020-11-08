@@ -1028,6 +1028,39 @@ func TestAnalyzer_Growth(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_GrowthNoData(t *testing.T) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		analyzer := NewAnalyzer(store, nil)
+		growth, err := analyzer.Growth(&Filter{
+			From: pastDay(3),
+			To:   pastDay(1),
+		})
+
+		if err != nil {
+			t.Fatalf("Growth must be returned, but was: %v", err)
+		}
+
+		if growth.Current.Visitors != 0 ||
+			growth.Current.Sessions != 0 ||
+			growth.Current.Bounces != 0 {
+			t.Fatalf("Current sums not as expected: %v", growth.Current)
+		}
+
+		if growth.Previous.Visitors != 0 ||
+			growth.Previous.Sessions != 0 ||
+			growth.Previous.Bounces != 0 {
+			t.Fatalf("Previous sums not as expected: %v", growth.Current)
+		}
+
+		if !inRange(growth.VisitorsGrowth, 0) ||
+			!inRange(growth.SessionsGrowth, 0) ||
+			!inRange(growth.BouncesGrowth, 0) {
+			t.Fatalf("Growth not as expected: %v %v %v", growth.VisitorsGrowth, growth.SessionsGrowth, growth.BouncesGrowth)
+		}
+	}
+}
+
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	analyzer := NewAnalyzer(newTestStore(), nil)
 
