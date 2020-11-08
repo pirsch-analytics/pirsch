@@ -1228,9 +1228,9 @@ func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, fro
 
 // PagePlatform implements the Store interface.
 func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, from time.Time, to time.Time) *VisitorStats {
-	query := `SELECT SUM("platform_desktop") "platform_desktop",
-		SUM("platform_mobile") "platform_mobile",
-		SUM("platform_unknown") "platform_unknown"
+	query := `SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
+		COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
+		COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
 		FROM (
 			SELECT (
 				SELECT COUNT(DISTINCT "fingerprint") FROM "hit"
@@ -1285,7 +1285,9 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	args = append(args, tenantID)
 	args = append(args, from)
 	args = append(args, to)
-	query := `SELECT SUM("visitors") "visitors", SUM("sessions") "sessions", SUM("bounces") "bounces"
+	query := `SELECT COALESCE(SUM("visitors"), 0) "visitors",
+        COALESCE(SUM("sessions"), 0) "sessions",
+        COALESCE(SUM("bounces"), 0) "bounces"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
