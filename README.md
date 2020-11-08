@@ -157,6 +157,7 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 * group languages (en-us, en-gb, ... all become en) and check for valid ISO codes
 * filter limits the time range for up until today, as it doesn't make any sense to go beyond that
+* added growth calculation to Analyzer
 
 ### 1.7.5
 

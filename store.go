@@ -161,4 +161,8 @@ type Store interface {
 
 	// PagePlatform returns the visitors for given path and time frame grouped by platform.
 	PagePlatform(sql.NullInt64, string, time.Time, time.Time) *VisitorStats
+
+	// VisitorsSum returns the sum of the visitors, sessions, and bounces for given time frame and path.
+	// The path is optional.
+	VisitorsSum(sql.NullInt64, time.Time, time.Time, string) (*Stats, error)
 }

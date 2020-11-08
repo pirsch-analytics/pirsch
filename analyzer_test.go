@@ -924,6 +924,134 @@ func TestAnalyzer_TimeOfDayTimezone(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_Growth(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		for _, store := range testStorageBackends() {
+			cleanupDB(t)
+			stats := []VisitorStats{
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(2),
+						Path:       "/home",
+						Visitors:   5,
+						Sessions:   6,
+						Bounces:    3,
+					},
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(3),
+						Path:       "/about",
+						Visitors:   6,
+						Sessions:   7,
+						Bounces:    4,
+					},
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(4),
+						Path:       "/home",
+						Visitors:   2,
+						Sessions:   3,
+						Bounces:    1,
+					},
+				},
+				{
+					Stats: Stats{
+						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+						Day:        pastDay(5),
+						Path:       "/about",
+						Visitors:   8,
+						Sessions:   9,
+						Bounces:    6,
+					},
+				},
+			}
+
+			for _, s := range stats {
+				if err := store.SaveVisitorStats(nil, &s); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			analyzer := NewAnalyzer(store, nil)
+			growth, err := analyzer.Growth(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(3),
+				To:       pastDay(1),
+			})
+
+			if err != nil {
+				t.Fatalf("Growth must be returned, but was: %v", err)
+			}
+
+			if growth.Current.Visitors != 11 ||
+				growth.Current.Sessions != 13 ||
+				growth.Current.Bounces != 7 {
+				t.Fatalf("Current sums not as expected: %v", growth.Current)
+			}
+
+			if growth.Previous.Visitors != 10 ||
+				growth.Previous.Sessions != 12 ||
+				growth.Previous.Bounces != 7 {
+				t.Fatalf("Previous sums not as expected: %v", growth.Current)
+			}
+
+			if !inRange(growth.VisitorsGrowth, 0.1) ||
+				!inRange(growth.SessionsGrowth, 0.08333) ||
+				!inRange(growth.BouncesGrowth, 0) {
+				t.Fatalf("Growth not as expected: %v %v %v", growth.VisitorsGrowth, growth.SessionsGrowth, growth.BouncesGrowth)
+			}
+
+			growth, err = analyzer.Growth(&Filter{
+				TenantID: NewTenantID(tenantID),
+				From:     pastDay(3),
+				To:       pastDay(1),
+				Path:     "/home",
+			})
+
+			if err != nil {
+				t.Fatalf("Growth for path must be returned, but was: %v", err)
+			}
+
+			if !inRange(growth.VisitorsGrowth, 1.5) ||
+				!inRange(growth.SessionsGrowth, 1) ||
+				!inRange(growth.BouncesGrowth, 2) {
+				t.Fatalf("Growth for path not as expected: %v %v %v", growth.VisitorsGrowth, growth.SessionsGrowth, growth.BouncesGrowth)
+			}
+		}
+	}
+}
+
+func TestAnalyzer_CalculateGrowth(t *testing.T) {
+	analyzer := NewAnalyzer(newTestStore(), nil)
+
+	if growth := analyzer.calculateGrowth(0, 0); !inRange(growth, 0) {
+		t.Fatalf("Growth must be zero, but was: %v", growth)
+	}
+
+	if growth := analyzer.calculateGrowth(1000, 0); !inRange(growth, 1) {
+		t.Fatalf("Growth must be 1, but was: %v", growth)
+	}
+
+	if growth := analyzer.calculateGrowth(0, 1000); !inRange(growth, -1) {
+		t.Fatalf("Growth must be -1, but was: %v", growth)
+	}
+
+	if growth := analyzer.calculateGrowth(100, 50); !inRange(growth, 1) {
+		t.Fatalf("Growth must be 1, but was: %v", growth)
+	}
+
+	if growth := analyzer.calculateGrowth(50, 100); !inRange(growth, -0.5) {
+		t.Fatalf("Growth must be -0.5, but was: %v", growth)
+	}
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
