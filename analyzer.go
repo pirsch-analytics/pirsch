@@ -17,6 +17,15 @@ type TimeOfDayVisitors struct {
 	Stats []VisitorTimeStats `json:"stats"`
 }
 
+// Growth represents the visitors, sessions, and bounces growth between two time periods.
+type Growth struct {
+	Current        *Stats  `json:"current"`
+	Previous       *Stats  `json:"previous"`
+	VisitorsGrowth float64 `json:"visitors_growth"`
+	SessionsGrowth float64 `json:"sessions_growth"`
+	BouncesGrowth  float64 `json:"bounces_growth"`
+}
+
 // Analyzer provides an interface to analyze processed data and hits.
 type Analyzer struct {
 	store    Store
@@ -683,6 +692,35 @@ func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 	return stats
 }
 
+// Growth returns the total number of visitors, sessions, and bounces for given time frame and path
+// and calculates the growth of each metric relative to the previous time frame. The path is optional.
+// It does not include today, as that won't be accurate (the day needs to be over to be comparable).
+func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
+	filter = analyzer.getFilter(filter)
+	current, err := analyzer.store.VisitorsSum(filter.TenantID, filter.From, filter.To, filter.Path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	days := filter.To.Sub(filter.From)
+	filter.To = filter.From.Add(-time.Hour * 24)
+	filter.From = filter.To.Add(-days)
+	previous, err := analyzer.store.VisitorsSum(filter.TenantID, filter.From, filter.To, filter.Path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Growth{
+		Current:        current,
+		Previous:       previous,
+		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
+		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
+		BouncesGrowth:  analyzer.calculateGrowth(current.Bounces, previous.Bounces),
+	}, nil
+}
+
 // getFilter validates and returns the given filter or a default filter if it is nil.
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
@@ -707,4 +745,16 @@ func (analyzer *Analyzer) getPaths(filter *Filter) []string {
 	}
 
 	return paths
+}
+
+func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := float64(current)
+	p := float64(previous)
+	return (c - p) / p
 }

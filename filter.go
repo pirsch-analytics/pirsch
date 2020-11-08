@@ -51,4 +51,8 @@ func (filter *Filter) validate() {
 	if filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From
 	}
+
+	if filter.To.After(today) {
+		filter.To = today
+	}
 }

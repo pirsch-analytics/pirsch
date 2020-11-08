@@ -26,7 +26,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.Session.Valid || hit.Session.Time.IsZero() ||
 		hit.Path.String != "/test/path" ||
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
-		hit.Language.String != "de-de" ||
+		hit.Language.String != "de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Referrer.String != "http://ref/" ||
 		hit.OS.String != OSWindows ||
@@ -356,6 +356,34 @@ func TestStripSubdomain(t *testing.T) {
 	for i, in := range input {
 		if hostname := stripSubdomain(in); hostname != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], hostname)
+		}
+	}
+}
+
+func TestGetLanguage(t *testing.T) {
+	input := []string{
+		"",
+		"  \t ",
+		"fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",
+		"en-us, en",
+		"en-gb, en",
+		"invalid",
+	}
+	expected := []string{
+		"",
+		"",
+		"fr",
+		"en",
+		"en",
+		"",
+	}
+
+	for i, in := range input {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("Accept-Language", in)
+
+		if lang := getLanguage(req); lang != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], lang)
 		}
 	}
 }

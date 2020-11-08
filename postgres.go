@@ -1279,6 +1279,32 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 	return visitors
 }
 
+// VisitorsSum implements the Store interface.
+func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Time, path string) (*Stats, error) {
+	args := make([]interface{}, 0, 4)
+	args = append(args, tenantID)
+	args = append(args, from)
+	args = append(args, to)
+	query := `SELECT SUM("visitors") "visitors", SUM("sessions") "sessions", SUM("bounces") "bounces"
+		FROM "visitor_stats"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND "day" >= $2::date
+		AND "day" <= $3::date `
+
+	if path != "" {
+		args = append(args, path)
+		query += `AND LOWER("path") = LOWER($4) `
+	}
+
+	visitors := new(Stats)
+
+	if err := store.DB.Get(visitors, query, args...); err != nil {
+		return nil, err
+	}
+
+	return visitors, nil
+}
+
 func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing statsEntity, found bool, insertQuery, updateQuery string) error {
 	if found {
 		visitors := existing.GetVisitors() + entity.GetVisitors()
