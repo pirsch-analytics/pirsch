@@ -1,6 +1,9 @@
 package pirsch
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestFilter_Days(t *testing.T) {
 	filter := NewFilter(NullTenant)
@@ -31,6 +34,13 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 
 	if !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
+		t.Fatalf("Filter not as expected: %v", filter)
+	}
+
+	filter = &Filter{From: pastDay(2), To: today().Add(time.Hour * 24 * 5)}
+	filter.validate()
+
+	if !filter.From.Equal(pastDay(2)) || !filter.To.Equal(today()) {
 		t.Fatalf("Filter not as expected: %v", filter)
 	}
 }
