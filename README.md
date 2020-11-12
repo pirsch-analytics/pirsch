@@ -153,6 +153,10 @@ To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run mi
 
 ## Changelog
 
+### 1.8.1
+
+* fixed calculating bounce rate growth
+
 ### 1.8.0
 
 * group languages (en-us, en-gb, ... all become en) and check for valid ISO codes

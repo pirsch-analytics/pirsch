@@ -712,12 +712,23 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
+	var currentBounceRate float64
+	var previousBounceRate float64
+
+	if current.Visitors > 0 {
+		currentBounceRate = float64(current.Bounces) / float64(current.Visitors)
+	}
+
+	if previous.Visitors > 0 {
+		previousBounceRate = float64(previous.Bounces) / float64(previous.Visitors)
+	}
+
 	return &Growth{
 		Current:        current,
 		Previous:       previous,
 		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
 		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:  analyzer.calculateGrowth(current.Bounces, previous.Bounces),
+		BouncesGrowth:  currentBounceRate - previousBounceRate,
 	}, nil
 }
 
@@ -747,6 +758,7 @@ func (analyzer *Analyzer) getPaths(filter *Filter) []string {
 	return paths
 }
 
+// calculateGrowth calculates the relative growth between two numbers.
 func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 	if current == 0 && previous == 0 {
 		return 0
