@@ -248,8 +248,12 @@ func (tracker *Tracker) flushHits() {
 
 func (tracker *Tracker) aggregate(ctx context.Context) {
 	hits := make([]Hit, 0, tracker.workerBufferSize)
+	timer := time.NewTimer(tracker.workerTimeout)
+	defer timer.Stop()
 
 	for {
+		timer.Reset(tracker.workerTimeout)
+
 		select {
 		case hit := <-tracker.hits:
 			hits = append(hits, hit)
@@ -261,7 +265,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 
 				hits = hits[:0]
 			}
-		case <-time.After(tracker.workerTimeout):
+		case <-timer.C:
 			if len(hits) > 0 {
 				if err := tracker.store.SaveHits(hits); err != nil {
 					tracker.logger.Printf("error saving hits: %s", err)

@@ -12,13 +12,17 @@ func RunAtMidnight(f func()) context.CancelFunc {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	go func() {
+		timer := time.NewTimer(0)
+		defer timer.Stop()
+
 		for {
 			now := time.Now().UTC()
 			midnight := time.Date(now.Year(), now.Month(), now.Day(), 24, 0, 0, 0, time.UTC)
 			timeToMidnight := midnight.Sub(now)
+			timer.Reset(timeToMidnight)
 
 			select {
-			case <-time.After(timeToMidnight):
+			case <-timer.C:
 				f()
 			case <-ctx.Done():
 				return // stop loop

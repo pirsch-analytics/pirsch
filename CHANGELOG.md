@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.3
+
+* use time.NewTimer instead of time.After for more efficency and better garbage collection
+
 ## 1.8.2
 
 * updated dependencies

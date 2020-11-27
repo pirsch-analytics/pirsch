@@ -72,9 +72,14 @@ func (cache *sessionCache) stop() {
 }
 
 func (cache *sessionCache) cleanup(ctx context.Context, interval time.Duration) {
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+
 	for {
+		timer.Reset(interval)
+
 		select {
-		case <-time.After(interval):
+		case <-timer.C:
 			cache.swap()
 		case <-ctx.Done():
 			break
