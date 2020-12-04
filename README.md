@@ -1,7 +1,3 @@
-<p align="center">
-    <img src="gopher.svg" width="200px" />
-</p>
-
 # Pirsch
 
 [![GoDoc](https://godoc.org/github.com/pirsch-analytics/pirsch?status.svg)](https://godoc.org/github.com/pirsch-analytics/pirsch)
@@ -166,3 +162,7 @@ Note that we only accept pull requests if you transfer the ownership of your con
 ## License
 
 GNU AGPLv3
+
+<p align="center">
+    <img src="gopher.svg" width="200px" />
+</p>
