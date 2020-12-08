@@ -22,14 +22,14 @@
 
     function hit() {
         var nocache = new Date().getTime();
-        var location = location;
+        var hostname = location.hostname;
         var referrer = document.referrer;
         var width = screen.width;
         var height = screen.height;
         var url = endpoint+
             "?nocache="+ nocache+
             "&tenantid="+tenantID+
-            "&location="+location+
+            "&location="+hostname+
             "&referrer="+referrer+
             "&width="+width+
             "&height="+height+
