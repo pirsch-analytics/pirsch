@@ -337,7 +337,7 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
 		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
-		Path:           sql.NullString{String: path, Valid: path != ""},
+		Path:           path,
 		Language:       sql.NullString{String: lang, Valid: path != ""},
 		UserAgent:      sql.NullString{String: userAgent, Valid: path != ""},
 		Referrer:       sql.NullString{String: ref, Valid: path != ""},

@@ -1,8 +1,20 @@
 # Changelog
 
+## 1.9.0
+
+**You need to update the schema by running the `v1.9.0.sql` migration script!**
+
+* hit path is no longer optional and will be set to "/" if empty
+* improved Chrome vs Safari detection
+* updated referrer spam list
+* ignore hits made by browser versions before 2018
+* fixed and shorten URL in js integration script
+* fixed relative growth calculation for bounce rate
+* fixed null paths
+
 ## 1.8.3
 
-* use time.NewTimer instead of time.After for more efficency and better garbage collection
+* use time.NewTimer instead of time.After for more efficiency and better garbage collection
 
 ## 1.8.2
 

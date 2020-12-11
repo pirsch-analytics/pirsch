@@ -22,17 +22,17 @@
 
     function hit() {
         var nocache = new Date().getTime();
-        var hostname = location.hostname;
+        var href = location.href.substr(0, 1800);
         var referrer = document.referrer;
         var width = screen.width;
         var height = screen.height;
         var url = endpoint+
-            "?nocache="+ nocache+
+            "?nc="+ nocache+
             "&tenantid="+tenantID+
-            "&location="+hostname+
-            "&referrer="+referrer+
-            "&width="+width+
-            "&height="+height+
+            "&url="+href+
+            "&ref="+referrer+
+            "&w="+width+
+            "&h="+height+
             params;
 
         var req = new XMLHttpRequest();

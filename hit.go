@@ -11,6 +11,16 @@ import (
 	"time"
 )
 
+const (
+	// version number from early 2018
+	minChromeVersion  = 64
+	minFirefoxVersion = 58
+	minSafariVersion  = 11
+	minOperaVersion   = 50
+	minEdgeVersion    = 80
+	minIEVersion      = 11
+)
+
 var referrerQueryParams = []string{
 	"ref",
 	"referer",
@@ -23,7 +33,7 @@ type Hit struct {
 
 	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
 	Session        sql.NullTime   `db:"session" json:"session"`
-	Path           sql.NullString `db:"path" json:"path,omitempty"`
+	Path           string         `db:"path" json:"path"`
 	URL            sql.NullString `db:"url" json:"url,omitempty"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
 	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
@@ -125,11 +135,15 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		options.ScreenHeight = 0
 	}
 
+	if path == "" {
+		path = "/"
+	}
+
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
 		Fingerprint:    fingerprint,
 		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
-		Path:           sql.NullString{String: path, Valid: path != ""},
+		Path:           path,
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
 		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},
@@ -174,6 +188,12 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
+	ua := ParseUserAgent(r.UserAgent())
+
+	if ignoreBrowserVersion(ua.Browser, ua.BrowserVersion) {
+		return true
+	}
+
 	// filter for bot keywords (most expensive operation last)
 	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
@@ -191,10 +211,10 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
 		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
-		URL:          getURLQueryParam(query.Get("location")),
-		Referrer:     getURLQueryParam(query.Get("referrer")),
-		ScreenWidth:  getIntQueryParam(query.Get("width")),
-		ScreenHeight: getIntQueryParam(query.Get("height")),
+		URL:          getURLQueryParam(query.Get("url")),
+		Referrer:     getURLQueryParam(query.Get("ref")),
+		ScreenWidth:  getIntQueryParam(query.Get("w")),
+		ScreenHeight: getIntQueryParam(query.Get("h")),
 	}
 }
 
@@ -214,6 +234,32 @@ func ignoreReferrer(r *http.Request) bool {
 	referrer = stripSubdomain(referrer)
 	_, found := referrerBlacklist[referrer]
 	return found
+}
+
+func ignoreBrowserVersion(browser, version string) bool {
+	return version != "" &&
+		browser == BrowserChrome && browserVersionBefore(version, minChromeVersion) ||
+		browser == BrowserFirefox && browserVersionBefore(version, minFirefoxVersion) ||
+		browser == BrowserSafari && browserVersionBefore(version, minSafariVersion) ||
+		browser == BrowserOpera && browserVersionBefore(version, minOperaVersion) ||
+		browser == BrowserEdge && browserVersionBefore(version, minEdgeVersion) ||
+		browser == BrowserIE && browserVersionBefore(version, minIEVersion)
+}
+
+func browserVersionBefore(version string, min int) bool {
+	i := strings.Index(version, ".")
+
+	if i >= 0 {
+		version = version[:i]
+	}
+
+	v, err := strconv.Atoi(version)
+
+	if err != nil {
+		return false
+	}
+
+	return v < min
 }
 
 func getRequestURI(r *http.Request, options *HitOptions) {

@@ -24,7 +24,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.TenantID.Valid ||
 		hit.Fingerprint == "" ||
 		!hit.Session.Valid || hit.Session.Time.IsZero() ||
-		hit.Path.String != "/test/path" ||
+		hit.Path != "/test/path" ||
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
@@ -48,7 +48,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if hit.Path.String != "/new/custom/path" ||
+	if hit.Path != "/new/custom/path" ||
 		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
@@ -62,7 +62,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 		Referrer: "http://custom.ref/",
 	})
 
-	if hit.Path.String != "/new/custom/path" ||
+	if hit.Path != "/new/custom/path" ||
 		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
 		hit.Referrer.String != "http://custom.ref/" {
 		t.Fatalf("Hit not as expected: %v", hit)
@@ -242,6 +242,22 @@ func TestIgnoreHitReferrer(t *testing.T) {
 	}
 }
 
+func TestIgnoreHitBrowserVersion(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.4147.135 Safari/537.36")
+
+	if !IgnoreHit(req) {
+		t.Fatal("Request must have been ignored")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+
+	if IgnoreHit(req) {
+		t.Fatal("Request must not have been ignored")
+	}
+}
+
 func TestHitOptionsFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
 	options := HitOptionsFromRequest(req)
@@ -254,7 +270,7 @@ func TestHitOptionsFromRequest(t *testing.T) {
 		t.Fatalf("Options not as expected: %v", options)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&location=http://foo.bar/test&referrer=http://ref/&width=640&height=1024", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
 	options = HitOptionsFromRequest(req)
 
 	if options.TenantID.Int64 != 42 ||

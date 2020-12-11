@@ -341,13 +341,6 @@ var userAgentsChrome = []testUserAgent{
 
 var userAgentsSafari = []testUserAgent{
 	{
-		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36",
-		browser:        BrowserSafari,
-		browserVersion: "6.0",
-		os:             OSMac,
-		osVersion:      "10.15.6",
-	},
-	{
 		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1",
 		browser:        BrowserSafari,
 		browserVersion: "10.0",

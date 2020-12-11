@@ -39,6 +39,24 @@ func TestGetBrowser(t *testing.T) {
 	}
 }
 
+func TestGetBrowserChromeSafari(t *testing.T) {
+	chrome := "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+	system, products := parseUserAgent(chrome)
+	browser, version := getBrowser(products, system, OSMac)
+
+	if browser != BrowserChrome || version != "87.0" {
+		t.Fatalf("UA must have been detected as Chrome, but was: %v %v", browser, version)
+	}
+
+	safari := "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15"
+	system, products = parseUserAgent(safari)
+	browser, version = getBrowser(products, system, OSMac)
+
+	if browser != BrowserSafari || version != "14.0" {
+		t.Fatalf("UA must have been detected as Safari, but was: %v %v", browser, version)
+	}
+}
+
 func TestGetOS(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		system, _ := parseUserAgent(ua.ua)

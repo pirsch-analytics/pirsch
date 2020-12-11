@@ -391,7 +391,11 @@ func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error)
 
 // HitPaths implements the Store interface.
 func (store *PostgresStore) HitPaths(tenantID sql.NullInt64, day time.Time) ([]string, error) {
-	query := `SELECT DISTINCT "path" FROM "hit" WHERE ($1::bigint IS NULL OR tenant_id = $1) AND date("time") = $2 ORDER BY "path" ASC`
+	query := `SELECT DISTINCT "path"
+		FROM "hit"
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2
+		ORDER BY "path" ASC`
 	var paths []string
 
 	if err := store.DB.Select(&paths, query, tenantID, day); err != nil {

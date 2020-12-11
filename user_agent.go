@@ -158,7 +158,7 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 
 	// When we made it to this point, it's gone get ugly and inaccurate, as Safari and Chrome send almost identical
 	// user agents most of the time. But anything coming from Mac or iOS is most likely Safari, I guess...
-	if (os == OSMac || os == OSiOS) && productSafari != "" {
+	if (os == OSMac || os == OSiOS) && productSafari != "" && productChrome == "" {
 		browser = BrowserSafari
 		version = getSafariVersion(products, productSafari)
 	} else if productChrome != "" {
