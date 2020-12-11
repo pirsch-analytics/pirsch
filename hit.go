@@ -11,6 +11,16 @@ import (
 	"time"
 )
 
+const (
+	// version number from early 2018
+	minChromeVersion  = 64
+	minFirefoxVersion = 58
+	minSafariVersion  = 11
+	minOperaVersion   = 50
+	minEdgeVersion    = 80
+	minIEVersion      = 11
+)
+
 var referrerQueryParams = []string{
 	"ref",
 	"referer",
@@ -178,6 +188,12 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
+	ua := ParseUserAgent(r.UserAgent())
+
+	if ignoreBrowserVersion(ua.Browser, ua.BrowserVersion) {
+		return true
+	}
+
 	// filter for bot keywords (most expensive operation last)
 	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
@@ -218,6 +234,32 @@ func ignoreReferrer(r *http.Request) bool {
 	referrer = stripSubdomain(referrer)
 	_, found := referrerBlacklist[referrer]
 	return found
+}
+
+func ignoreBrowserVersion(browser, version string) bool {
+	return version != "" &&
+		browser == BrowserChrome && browserVersionBefore(version, minChromeVersion) ||
+		browser == BrowserFirefox && browserVersionBefore(version, minFirefoxVersion) ||
+		browser == BrowserSafari && browserVersionBefore(version, minSafariVersion) ||
+		browser == BrowserOpera && browserVersionBefore(version, minOperaVersion) ||
+		browser == BrowserEdge && browserVersionBefore(version, minEdgeVersion) ||
+		browser == BrowserIE && browserVersionBefore(version, minIEVersion)
+}
+
+func browserVersionBefore(version string, min int) bool {
+	i := strings.Index(version, ".")
+
+	if i >= 0 {
+		version = version[:i]
+	}
+
+	v, err := strconv.Atoi(version)
+
+	if err != nil {
+		return false
+	}
+
+	return v < min
 }
 
 func getRequestURI(r *http.Request, options *HitOptions) {

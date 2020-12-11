@@ -7,6 +7,7 @@
 * hit path is no longer optional and will be set to "/" if empty
 * improved Chrome vs Safari detection
 * updated referrer spam list
+* ignore hits made by browser versions before 2018
 * fixed and shorten URL in js integration script
 * fixed relative growth calculation for bounce rate
 * fixed null paths
