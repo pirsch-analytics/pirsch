@@ -191,10 +191,10 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
 		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
-		URL:          getURLQueryParam(query.Get("location")),
-		Referrer:     getURLQueryParam(query.Get("referrer")),
-		ScreenWidth:  getIntQueryParam(query.Get("width")),
-		ScreenHeight: getIntQueryParam(query.Get("height")),
+		URL:          getURLQueryParam(query.Get("url")),
+		Referrer:     getURLQueryParam(query.Get("ref")),
+		ScreenWidth:  getIntQueryParam(query.Get("w")),
+		ScreenHeight: getIntQueryParam(query.Get("h")),
 	}
 }
 
