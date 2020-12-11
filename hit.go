@@ -23,7 +23,7 @@ type Hit struct {
 
 	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
 	Session        sql.NullTime   `db:"session" json:"session"`
-	Path           sql.NullString `db:"path" json:"path,omitempty"`
+	Path           string         `db:"path" json:"path"`
 	URL            sql.NullString `db:"url" json:"url,omitempty"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
 	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
@@ -125,11 +125,15 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		options.ScreenHeight = 0
 	}
 
+	if path == "" {
+		path = "/"
+	}
+
 	return Hit{
 		BaseEntity:     BaseEntity{TenantID: options.TenantID},
 		Fingerprint:    fingerprint,
 		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
-		Path:           sql.NullString{String: path, Valid: path != ""},
+		Path:           path,
 		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
 		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},

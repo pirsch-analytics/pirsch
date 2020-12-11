@@ -2,8 +2,12 @@
 
 ## 1.9.0
 
+**You need to update the schema by running the `v1.9.0.sql` migration script!**
+
+* hit path is no longer optional and will be set to "/" if empty
 * fixed and shorten URL in js integration script
 * fixed relative growth calculation for bounce rate
+* fixed null paths
 
 ## 1.8.3
 

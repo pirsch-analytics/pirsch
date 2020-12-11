@@ -24,7 +24,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.TenantID.Valid ||
 		hit.Fingerprint == "" ||
 		!hit.Session.Valid || hit.Session.Time.IsZero() ||
-		hit.Path.String != "/test/path" ||
+		hit.Path != "/test/path" ||
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de" ||
 		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
@@ -48,7 +48,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if hit.Path.String != "/new/custom/path" ||
+	if hit.Path != "/new/custom/path" ||
 		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
@@ -62,7 +62,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 		Referrer: "http://custom.ref/",
 	})
 
-	if hit.Path.String != "/new/custom/path" ||
+	if hit.Path != "/new/custom/path" ||
 		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
 		hit.Referrer.String != "http://custom.ref/" {
 		t.Fatalf("Hit not as expected: %v", hit)
