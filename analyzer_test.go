@@ -1004,7 +1004,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 
 			if !inRange(growth.VisitorsGrowth, 0.1) ||
 				!inRange(growth.SessionsGrowth, 0.08333) ||
-				!inRange(growth.BouncesGrowth, -0.0636) {
+				!inRange(growth.BouncesGrowth, -0.0909) {
 				t.Fatalf("Growth not as expected: %v %v %v", growth.VisitorsGrowth, growth.SessionsGrowth, growth.BouncesGrowth)
 			}
 
@@ -1021,7 +1021,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 
 			if !inRange(growth.VisitorsGrowth, 1.5) ||
 				!inRange(growth.SessionsGrowth, 1) ||
-				!inRange(growth.BouncesGrowth, 0.09999) {
+				!inRange(growth.BouncesGrowth, 0.1999) {
 				t.Fatalf("Growth for path not as expected: %v %v %v", growth.VisitorsGrowth, growth.SessionsGrowth, growth.BouncesGrowth)
 			}
 		}

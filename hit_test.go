@@ -254,7 +254,7 @@ func TestHitOptionsFromRequest(t *testing.T) {
 		t.Fatalf("Options not as expected: %v", options)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&location=http://foo.bar/test&referrer=http://ref/&width=640&height=1024", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
 	options = HitOptionsFromRequest(req)
 
 	if options.TenantID.Int64 != 42 ||

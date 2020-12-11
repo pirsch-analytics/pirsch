@@ -712,23 +712,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
-	var currentBounceRate float64
-	var previousBounceRate float64
-
-	if current.Visitors > 0 {
-		currentBounceRate = float64(current.Bounces) / float64(current.Visitors)
-	}
-
-	if previous.Visitors > 0 {
-		previousBounceRate = float64(previous.Bounces) / float64(previous.Visitors)
-	}
-
 	return &Growth{
 		Current:        current,
 		Previous:       previous,
 		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
 		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:  currentBounceRate - previousBounceRate,
+		BouncesGrowth:  analyzer.calculateBouncesGrowth(current, previous),
 	}, nil
 }
 
@@ -769,4 +758,26 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 	c := float64(current)
 	p := float64(previous)
 	return (c - p) / p
+}
+
+func (analyzer *Analyzer) calculateBouncesGrowth(current, previous *Stats) float64 {
+	var currentBounceRate float64
+	var previousBounceRate float64
+
+	if current.Visitors > 0 {
+		currentBounceRate = float64(current.Bounces) / float64(current.Visitors)
+	}
+
+	if previous.Visitors > 0 {
+		previousBounceRate = float64(previous.Bounces) / float64(previous.Visitors)
+	}
+
+	var bounceGrowth float64
+
+	// use visitors instead of previousBounceRate, as that's an integer and more reliable for this type of comparison
+	if previous.Visitors > 0 {
+		bounceGrowth = (currentBounceRate - previousBounceRate) / previousBounceRate
+	}
+
+	return bounceGrowth
 }

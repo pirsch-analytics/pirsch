@@ -3,10 +3,11 @@
 ## 1.9.0
 
 * fixed and shorten URL in js integration script
+* fixed relative growth calculation for bounce rate
 
 ## 1.8.3
 
-* use time.NewTimer instead of time.After for more efficency and better garbage collection
+* use time.NewTimer instead of time.After for more efficiency and better garbage collection
 
 ## 1.8.2
 
