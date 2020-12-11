@@ -5,6 +5,8 @@
 **You need to update the schema by running the `v1.9.0.sql` migration script!**
 
 * hit path is no longer optional and will be set to "/" if empty
+* improved Chrome vs Safari detection
+* updated referrer spam list
 * fixed and shorten URL in js integration script
 * fixed relative growth calculation for bounce rate
 * fixed null paths
