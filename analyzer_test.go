@@ -101,7 +101,6 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 					Day:        pastDay(2),
 					Path:       "/path",
 					Visitors:   42,
-					Sessions:   67,
 				},
 				Hour: 5,
 			}
@@ -125,8 +124,8 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 				t.Fatalf("24 visitors must have been returned, but was: %v", len(visitors))
 			}
 
-			if visitors[5].Hour != 5 || visitors[5].Visitors != 43 || visitors[5].Sessions != 68 ||
-				visitors[12].Hour != 12 || visitors[12].Visitors != 1 || visitors[12].Sessions != 1 {
+			if visitors[5].Hour != 5 || visitors[5].Visitors != 43 ||
+				visitors[12].Hour != 12 || visitors[12].Visitors != 1 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
@@ -568,18 +567,15 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 				t.Fatalf("Days not as expected: %v", days)
 			}
 
-			if days[0].Stats[9].Visitors != 7 || days[0].Stats[10].Visitors != 1 || days[0].Stats[18].Visitors != 11 ||
-				days[0].Stats[9].Sessions != 8 || days[0].Stats[10].Sessions != 1 || days[0].Stats[18].Sessions != 12 {
+			if days[0].Stats[9].Visitors != 7 || days[0].Stats[10].Visitors != 1 || days[0].Stats[18].Visitors != 11 {
 				t.Fatalf("First day not as expected: %v", days[0])
 			}
 
-			if days[1].Stats[9].Visitors != 7 || days[1].Stats[18].Visitors != 9 ||
-				days[1].Stats[9].Sessions != 8 || days[1].Stats[18].Sessions != 10 {
+			if days[1].Stats[9].Visitors != 7 || days[1].Stats[18].Visitors != 9 {
 				t.Fatalf("Second day not as expected: %v", days[1])
 			}
 
-			if days[2].Stats[9].Visitors != 10 || days[2].Stats[17].Visitors != 1 || days[2].Stats[18].Visitors != 15 ||
-				days[2].Stats[9].Sessions != 11 || days[2].Stats[17].Sessions != 1 || days[2].Stats[18].Sessions != 16 {
+			if days[2].Stats[9].Visitors != 10 || days[2].Stats[17].Visitors != 1 || days[2].Stats[18].Visitors != 15 {
 				t.Fatalf("Third day not as expected: %v", days[2])
 			}
 		}

@@ -69,7 +69,6 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 			Day:      day(2020, 9, 3, 0),
 			Path:     "/",
 			Visitors: 42,
-			Sessions: 59,
 		},
 		Hour: 5,
 	})
@@ -85,7 +84,6 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 	}
 
 	stats.Visitors = 11
-	stats.Sessions = 17
 	err = store.SaveVisitorTimeStats(nil, stats)
 
 	if err != nil {
@@ -96,8 +94,7 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stats.Visitors != 42+11 ||
-		stats.Sessions != 59+17 {
+	if stats.Visitors != 42+11 {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
 }

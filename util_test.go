@@ -10,6 +10,7 @@ func TestRunAtMidnight(t *testing.T) {
 		t.Fatal("Function must not be called")
 	})
 	cancel()
+	time.Sleep(time.Millisecond * 100)
 }
 
 func TestNewTenantID(t *testing.T) {

@@ -2,7 +2,10 @@
 
 ## 1.9.1
 
-* normalized empty path for referrers
+**You need to update the schema by running the `v1.9.1.sql` migration script!**
+
+* normalized empty paths for referrers
+* removed sessions from visitor stats by hours as that does not make sense
 * updated dependencies
 
 ## 1.9.0

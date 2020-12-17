@@ -57,9 +57,8 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 			t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
 		}
 
-		if timeStats[4].Visitors != 1 || timeStats[4].Sessions != 1 ||
-			timeStats[5].Visitors != 1 || timeStats[5].Sessions != 2 {
-			t.Fatalf("Visitor time stats must have two visitors and three sessions, but was: %v", timeStats)
+		if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
+			t.Fatalf("Visitor time stats must have two visitors, but was: %v", timeStats)
 		}
 	}
 }

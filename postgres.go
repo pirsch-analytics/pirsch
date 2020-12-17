@@ -189,7 +189,7 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 	}
 
 	existing := new(VisitorTimeStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions FROM "visitor_time_stats"
+	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_time_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND LOWER("path") = LOWER($3)
@@ -197,16 +197,14 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
-		existing.Sessions += entity.Sessions
 
-		if _, err := tx.Exec(`UPDATE "visitor_time_stats" SET "visitors" = $1, sessions = $2 WHERE id = $3`,
+		if _, err := tx.Exec(`UPDATE "visitor_time_stats" SET "visitors" = $1 WHERE id = $2`,
 			existing.Visitors,
-			existing.Sessions,
 			existing.ID); err != nil {
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors", "sessions") VALUES (:tenant_id, :day, :path, :hour, :visitors, :sessions)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors") VALUES (:tenant_id, :day, :path, :hour, :visitors)`, entity)
 
 		if err != nil {
 			return err
@@ -917,20 +915,17 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 // VisitorHours implements the Store interface.
 func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
 	query := `SELECT "day_and_hour" "hour",
-        COALESCE(sum("visitors"), 0) "visitors",
-		COALESCE(sum("sessions"), 0) "sessions"
+        COALESCE(sum("visitors"), 0) "visitors"
 		FROM generate_series(0, 23, 1) "day_and_hour"
 		LEFT JOIN (
-			SELECT "hour", sum("visitors") "visitors", sum("sessions") "sessions"
+			SELECT "hour", sum("visitors") "visitors"
 			FROM "visitor_time_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "day" >= date($2::timestamp)
 			AND "day" <= date($3::timestamp)
 			GROUP BY "hour"
 			UNION
-			SELECT EXTRACT(HOUR FROM "time") "hour",
-			count(DISTINCT "fingerprint") "visitors",
-			count(DISTINCT("fingerprint", "session")) "sessions"
+			SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT "fingerprint") "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND date("time") >= date($2::timestamp)

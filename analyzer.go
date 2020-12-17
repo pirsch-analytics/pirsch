@@ -112,7 +112,8 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	return stats, nil
 }
 
-// VisitorHours returns the visitor and session count grouped by hour of day for given time frame.
+// VisitorHours returns the visitor count grouped by hour of day for given time frame.
+// Note that the sum of them is not the number of unique visitors for the day, as visitors can re-appear at different times on the same day!
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorTimeStats, error) {
 	filter = analyzer.getFilter(filter)
 	stats, err := analyzer.store.VisitorHours(filter.TenantID, filter.From, filter.To)
