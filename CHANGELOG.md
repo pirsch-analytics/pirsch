@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1
+
+* normalized empty path for referrers
+* updated dependencies
+
 ## 1.9.0
 
 **You need to update the schema by running the `v1.9.0.sql` migration script!**
