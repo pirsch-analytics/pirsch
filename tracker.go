@@ -181,9 +181,11 @@ func (tracker *Tracker) Flush() {
 
 // Stop flushes and stops all workers.
 func (tracker *Tracker) Stop() {
-	atomic.StoreInt32(&tracker.stopped, 1)
-	tracker.stopWorker()
-	tracker.flushHits()
+	if atomic.LoadInt32(&tracker.stopped) == 0 {
+		atomic.StoreInt32(&tracker.stopped, 1)
+		tracker.stopWorker()
+		tracker.flushHits()
+	}
 }
 
 // SetGeoDB sets the GeoDB for the Tracker.
@@ -224,10 +226,7 @@ func (tracker *Tracker) flushHits() {
 			hits = append(hits, hit)
 
 			if len(hits) == tracker.workerBufferSize {
-				if err := tracker.store.SaveHits(hits); err != nil {
-					tracker.logger.Printf("error saving hits: %s", err)
-				}
-
+				tracker.saveHits(hits)
 				hits = hits[:0]
 			}
 		default:
@@ -239,11 +238,7 @@ func (tracker *Tracker) flushHits() {
 		}
 	}
 
-	if len(hits) > 0 {
-		if err := tracker.store.SaveHits(hits); err != nil {
-			tracker.logger.Printf("error saving hits: %s", err)
-		}
-	}
+	tracker.saveHits(hits)
 }
 
 func (tracker *Tracker) aggregate(ctx context.Context) {
@@ -257,31 +252,23 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 		select {
 		case hit := <-tracker.hits:
 			hits = append(hits, hit)
-
-			if len(hits) == tracker.workerBufferSize {
-				if err := tracker.store.SaveHits(hits); err != nil {
-					tracker.logger.Printf("error saving hits: %s", err)
-				}
-
-				hits = hits[:0]
-			}
+			tracker.saveHits(hits)
+			hits = hits[:0]
 		case <-timer.C:
-			if len(hits) > 0 {
-				if err := tracker.store.SaveHits(hits); err != nil {
-					tracker.logger.Printf("error saving hits: %s", err)
-				}
-
-				hits = hits[:0]
-			}
+			tracker.saveHits(hits)
+			hits = hits[:0]
 		case <-ctx.Done():
-			if len(hits) > 0 {
-				if err := tracker.store.SaveHits(hits); err != nil {
-					tracker.logger.Printf("error saving hits: %s", err)
-				}
-			}
-
+			tracker.saveHits(hits)
 			tracker.workerDone <- true
 			return
+		}
+	}
+}
+
+func (tracker *Tracker) saveHits(hits []Hit) {
+	if len(hits) > 0 {
+		if err := tracker.store.SaveHits(hits); err != nil {
+			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}
 }

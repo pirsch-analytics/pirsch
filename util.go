@@ -12,20 +12,25 @@ func RunAtMidnight(f func()) context.CancelFunc {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	go func() {
-		timer := time.NewTimer(0)
-		defer timer.Stop()
+		timer := time.NewTimer(time.Second * 1)
+		defer func() {
+			if timer.Stop() {
+				<-timer.C
+			}
+		}()
 
 		for {
-			now := time.Now().UTC()
-			midnight := time.Date(now.Year(), now.Month(), now.Day(), 24, 0, 0, 0, time.UTC)
-			timeToMidnight := midnight.Sub(now)
-			timer.Reset(timeToMidnight)
+			if timer.Stop() {
+				<-timer.C
+			}
+
+			timer.Reset(getTimeToMidnightUTC())
 
 			select {
 			case <-timer.C:
 				f()
 			case <-ctx.Done():
-				return // stop loop
+				return
 			}
 		}
 	}()
@@ -37,6 +42,12 @@ func RunAtMidnight(f func()) context.CancelFunc {
 // The ID is considered valid if greater than 0.
 func NewTenantID(id int64) sql.NullInt64 {
 	return sql.NullInt64{Int64: id, Valid: id > 0}
+}
+
+func getTimeToMidnightUTC() time.Duration {
+	now := time.Now().UTC()
+	midnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+	return midnight.Sub(now)
 }
 
 func containsString(list []string, str string) bool {

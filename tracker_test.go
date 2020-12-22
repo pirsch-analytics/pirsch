@@ -52,11 +52,10 @@ func TestTrackerHitTimeout(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "valid")
 	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Second * 2})
+	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
-	tracker.Stop()
-	time.Sleep(time.Millisecond * 200)
+	time.Sleep(time.Millisecond * 210)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
@@ -89,6 +88,28 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 }
 
+func TestTrackerHitDiscard(t *testing.T) {
+	store := newTestStore()
+	tracker := NewTracker(store, "salt", &TrackerConfig{
+		Worker:           1,
+		WorkerBufferSize: 5,
+	})
+
+	for i := 0; i < 10; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Add("User-Agent", "valid")
+		tracker.Hit(req, nil)
+
+		if i > 3 {
+			tracker.Stop()
+		}
+	}
+
+	if len(store.hits) != 5 {
+		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
+	}
+}
+
 func TestTrackerCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
 
@@ -111,7 +132,6 @@ func TestTrackerCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	time.Sleep(time.Millisecond * 200)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
@@ -146,7 +166,6 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	time.Sleep(time.Millisecond * 200)
 
 	if len(store.hits) != 2 {
 		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))

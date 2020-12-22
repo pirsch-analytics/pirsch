@@ -3,6 +3,7 @@ package pirsch
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type storeMock struct {
 	PostgresStore
 
 	hits []Hit
+	m    sync.Mutex
 }
 
 func newTestStore() *storeMock {
@@ -43,6 +45,8 @@ func (store *storeMock) Rollback(tx *sqlx.Tx) {
 }
 
 func (store *storeMock) SaveHits(hits []Hit) error {
+	store.m.Lock()
+	defer store.m.Unlock()
 	store.hits = append(store.hits, hits...)
 	return nil
 }

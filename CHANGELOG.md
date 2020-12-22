@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.2
+
+* fixed timer running immediately in `RunAtMidnight`
+* fixed running `tracker.Stop` more than once
+* fixed flushing hits in tracker correctly (more reliable tests)
+
 ## 1.9.1
 
 **You need to update the schema by running the `v1.9.1.sql` migration script!**
