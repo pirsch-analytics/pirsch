@@ -192,8 +192,7 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 	err := tx.Get(existing, `SELECT id, visitors FROM "visitor_time_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)
-		AND "hour" = $4`, entity.TenantID, entity.Day, entity.Path, entity.Hour)
+		AND "hour" = $3`, entity.TenantID, entity.Day, entity.Hour)
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
@@ -204,7 +203,7 @@ func (store *PostgresStore) SaveVisitorTimeStats(tx *sqlx.Tx, entity *VisitorTim
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "path", "hour", "visitors") VALUES (:tenant_id, :day, :path, :hour, :visitors)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_time_stats" ("tenant_id", "day", "hour", "visitors") VALUES (:tenant_id, :day, :hour, :visitors)`, entity)
 
 		if err != nil {
 			return err
@@ -513,7 +512,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 }
 
 // CountVisitorsByPathAndHour implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) ([]VisitorTimeStats, error) {
+func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]VisitorTimeStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
@@ -521,21 +520,18 @@ func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql
 
 	query := `SELECT $1::bigint AS "tenant_id",
 		$2::date AS "day",
-		$3::varchar AS "path",
 		EXTRACT(HOUR FROM "day_and_hour") "hour",
 		(
 			SELECT count(DISTINCT "fingerprint") FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= "day_and_hour"
 			AND "time" < "day_and_hour" + INTERVAL '1 hour'
-			AND LOWER("path") = LOWER($3)
 		) "visitors",
        (
 			SELECT count(DISTINCT("fingerprint", "session")) FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= "day_and_hour"
 			AND "time" < "day_and_hour" + INTERVAL '1 hour'
-			AND LOWER("path") = LOWER($3)
 		) "sessions"
 		FROM (
 			SELECT * FROM generate_series(
@@ -546,7 +542,7 @@ func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql
 		) AS hours`
 	var visitors []VisitorTimeStats
 
-	if err := tx.Select(&visitors, query, tenantID, day, path); err != nil {
+	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
 		return nil, err
 	}
 

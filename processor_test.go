@@ -40,7 +40,7 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "path"`); err != nil {
+		if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day"`); err != nil {
 			t.Fatal(err)
 		}
 
@@ -59,6 +59,53 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 
 		if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
 			t.Fatalf("Visitor time stats must have two visitors, but was: %v", timeStats)
+		}
+	}
+}
+
+func TestProcessor_ProcessPaths(t *testing.T) {
+	for _, store := range testStorageBackends() {
+		cleanupDB(t)
+		now := time.Now()
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+		processor := NewProcessor(store)
+
+		if err := processor.Process(); err != nil {
+			t.Fatalf("Data must have been processed, but was: %v", err)
+		}
+
+		analyzer := NewAnalyzer(store, nil)
+		pageVisitors, err := analyzer.PageVisitors(nil)
+
+		if err != nil {
+			t.Fatalf("Page visitors must have been returned, but was: %v", err)
+		}
+
+		if len(pageVisitors) != 2 ||
+			pageVisitors[0].Path != "/" ||
+			sumUpVisitors(pageVisitors[0].Stats) != 1 ||
+			pageVisitors[1].Path != "/path" ||
+			sumUpVisitors(pageVisitors[1].Stats) != 2 {
+			t.Fatalf("Page visitor statistics not as expected: %v", pageVisitors)
+		}
+
+		visitors, err := analyzer.Visitors(nil)
+
+		if err != nil {
+			t.Fatalf("Visitors must have been returned, but was: %v", err)
+		}
+
+		if sumUpVisitors(visitors) != 2 {
+			t.Fatalf("Visitor statistics not as expected: %v", visitors)
 		}
 	}
 }
@@ -140,11 +187,11 @@ func checkVisitorTimeStats(t *testing.T, tenantID int64) {
 	var stats []VisitorTimeStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "hour"`, tenantID); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" WHERE tenant_id = $1 ORDER BY "day", "hour"`, tenantID); err != nil {
 			t.Fatal(err)
 		}
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "path", "hour"`); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -359,4 +406,14 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 
 func day(year, month, day, hour int) time.Time {
 	return time.Date(year, time.Month(month), day, hour, 0, 0, 0, time.UTC)
+}
+
+func sumUpVisitors(stats []Stats) int {
+	sum := 0
+
+	for _, s := range stats {
+		sum += s.Visitors
+	}
+
+	return sum
 }

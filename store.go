@@ -72,7 +72,7 @@ type Store interface {
 	CountVisitorsByPath(*sqlx.Tx, sql.NullInt64, time.Time, string, bool) ([]VisitorStats, error)
 
 	// CountVisitorsByPathAndHour returns the visitor count for given day and path grouped by hour of day.
-	CountVisitorsByPathAndHour(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]VisitorTimeStats, error)
+	CountVisitorsByPathAndHour(*sqlx.Tx, sql.NullInt64, time.Time) ([]VisitorTimeStats, error)
 
 	// CountVisitorsByPathAndLanguage returns the visitor count for given day and path grouped by language.
 	CountVisitorsByPathAndLanguage(*sqlx.Tx, sql.NullInt64, time.Time, string) ([]LanguageStats, error)

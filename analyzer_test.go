@@ -99,7 +99,6 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				Hour: 5,

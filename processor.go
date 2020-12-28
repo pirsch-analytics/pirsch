@@ -59,6 +59,11 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		}
 	}
 
+	if err := processor.visitorHours(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
 	if err := processor.screen(tx, tenantID, day); err != nil {
 		processor.store.Rollback(tx)
 		return err
@@ -80,10 +85,6 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 
 func (processor *Processor) processPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	if err := processor.visitors(tx, tenantID, day, path); err != nil {
-		return err
-	}
-
-	if err := processor.visitorHours(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
@@ -126,8 +127,8 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	return nil
 }
 
-func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	visitors, err := processor.store.CountVisitorsByPathAndHour(tx, tenantID, day, path)
+func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByPathAndHour(tx, tenantID, day)
 
 	if err != nil {
 		return err
