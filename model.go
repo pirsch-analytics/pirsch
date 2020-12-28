@@ -15,13 +15,13 @@ type BaseEntity struct {
 type Stats struct {
 	BaseEntity
 
-	Day              time.Time `db:"day" json:"day"`
-	Path             string    `db:"path" json:"path"`
-	Visitors         int       `db:"visitors" json:"visitors"`
-	Sessions         int       `db:"sessions" json:"sessions"`
-	Bounces          int       `db:"bounces" json:"bounces"`
-	RelativeVisitors float64   `db:"-" json:"relative_visitors"`
-	BounceRate       float64   `db:"-" json:"bounce_rate"`
+	Day              time.Time      `db:"day" json:"day"`
+	Path             sql.NullString `db:"path" json:"path"`
+	Visitors         int            `db:"visitors" json:"visitors"`
+	Sessions         int            `db:"sessions" json:"sessions"`
+	Bounces          int            `db:"bounces" json:"bounces"`
+	RelativeVisitors float64        `db:"-" json:"relative_visitors"`
+	BounceRate       float64        `db:"-" json:"bounce_rate"`
 }
 
 // GetID returns the ID.

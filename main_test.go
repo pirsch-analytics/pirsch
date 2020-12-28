@@ -19,20 +19,6 @@ func TestMain(m *testing.M) {
 
 // open test database connections
 func connectDB() {
-	connectPostgresDB()
-}
-
-// close test database connections
-func closeDB() {
-	closePostgresDB()
-}
-
-// clean up all test databases
-func cleanupDB(t *testing.T) {
-	cleanupPostgresDB(t)
-}
-
-func connectPostgresDB() {
 	var err error
 	postgresDB, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch search_path=public sslmode=disable timezone=UTC")
 
@@ -47,13 +33,15 @@ func connectPostgresDB() {
 	postgresDB.SetMaxOpenConns(1)
 }
 
-func closePostgresDB() {
+// close test database connections
+func closeDB() {
 	if err := postgresDB.Close(); err != nil {
 		panic(err)
 	}
 }
 
-func cleanupPostgresDB(t *testing.T) {
+// clean up all test databases
+func cleanupDB(t *testing.T) {
 	if _, err := postgresDB.Exec(`DELETE FROM "hit"`); err != nil {
 		t.Fatal(err)
 	}

@@ -9,3 +9,6 @@ SET search_path TO public;
 \i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.4.3.sql
 \i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.5.0.sql
 \i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.6.0.sql
+\i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.9.0.sql
+\i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.9.1.sql
+\i /go/src/github.com/pirsch-analytics/pirsch/schema/postgres/v1.9.3.sql

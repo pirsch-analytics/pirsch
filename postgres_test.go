@@ -14,7 +14,6 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	err := store.SaveVisitorStats(nil, &VisitorStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 			Sessions: 59,
 			Bounces:  11,
@@ -58,6 +57,23 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 		stats.PlatformUnknown != 52+1 {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
+
+	stats.Path = sql.NullString{String: "/path", Valid: true}
+	err = store.SaveVisitorStats(nil, stats)
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	var entries []VisitorStats
+
+	if err := db.Select(&entries, `SELECT * FROM "visitor_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("New entry must have been created for path")
+	}
 }
 
 func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
@@ -67,7 +83,6 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 	err := store.SaveVisitorTimeStats(nil, &VisitorTimeStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 		},
 		Hour: 5,
@@ -106,7 +121,6 @@ func TestPostgresStore_SaveLanguageStats(t *testing.T) {
 	err := store.SaveLanguageStats(nil, &LanguageStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 		},
 		Language: sql.NullString{String: "en", Valid: true},
@@ -137,6 +151,23 @@ func TestPostgresStore_SaveLanguageStats(t *testing.T) {
 		stats.Language.String != "en" {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
+
+	stats.Path = sql.NullString{String: "/path", Valid: true}
+	err = store.SaveLanguageStats(nil, stats)
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	var entries []LanguageStats
+
+	if err := db.Select(&entries, `SELECT * FROM "language_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("New entry must have been created for path")
+	}
 }
 
 func TestPostgresStore_SaveReferrerStats(t *testing.T) {
@@ -146,7 +177,6 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 	err := store.SaveReferrerStats(nil, &ReferrerStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 		},
 		Referrer: sql.NullString{String: "ref", Valid: true},
@@ -177,6 +207,23 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 		stats.Referrer.String != "ref" {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
+
+	stats.Path = sql.NullString{String: "/path", Valid: true}
+	err = store.SaveReferrerStats(nil, stats)
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	var entries []ReferrerStats
+
+	if err := db.Select(&entries, `SELECT * FROM "referrer_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("New entry must have been created for path")
+	}
 }
 
 func TestPostgresStore_SaveOSStats(t *testing.T) {
@@ -186,7 +233,6 @@ func TestPostgresStore_SaveOSStats(t *testing.T) {
 	err := store.SaveOSStats(nil, &OSStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 		},
 		OS:        sql.NullString{String: OSWindows, Valid: true},
@@ -219,6 +265,23 @@ func TestPostgresStore_SaveOSStats(t *testing.T) {
 		stats.OSVersion.String != "10" {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
+
+	stats.Path = sql.NullString{String: "/path", Valid: true}
+	err = store.SaveOSStats(nil, stats)
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	var entries []OSStats
+
+	if err := db.Select(&entries, `SELECT * FROM "os_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("New entry must have been created for path")
+	}
 }
 
 func TestPostgresStore_SaveBrowserStats(t *testing.T) {
@@ -228,7 +291,6 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 	err := store.SaveBrowserStats(nil, &BrowserStats{
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
-			Path:     "/",
 			Visitors: 42,
 		},
 		Browser:        sql.NullString{String: BrowserChrome, Valid: true},
@@ -260,6 +322,23 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 		stats.Browser.String != BrowserChrome ||
 		stats.BrowserVersion.String != "84.0" {
 		t.Fatalf("Entity not as expected: %v", stats)
+	}
+
+	stats.Path = sql.NullString{String: "/path", Valid: true}
+	err = store.SaveBrowserStats(nil, stats)
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	var entries []BrowserStats
+
+	if err := db.Select(&entries, `SELECT * FROM "browser_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("New entry must have been created for path")
 	}
 }
 
@@ -419,7 +498,7 @@ func TestPostgresStore_Paths(t *testing.T) {
 	stats := &VisitorStats{
 		Stats: Stats{
 			Day:  day(2020, 6, 20, 7),
-			Path: "/stats",
+			Path: sql.NullString{String: "/stats", Valid: true},
 		},
 	}
 
@@ -534,8 +613,8 @@ func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 		t.Fatalf("Two active page visitors must have been returned, but was: %v", len(stats))
 	}
 
-	if stats[0].Path != "/page" || stats[0].Visitors != 2 ||
-		stats[1].Path != "/" || stats[1].Visitors != 1 {
+	if stats[0].Path.String != "/page" || stats[0].Visitors != 2 ||
+		stats[1].Path.String != "/" || stats[1].Visitors != 1 {
 		t.Fatalf("Visitor count not as expected: %v", stats)
 	}
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.3
+
+**You need to update the schema by running the `v1.9.3.sql` migration script!**
+
+* removed path from time of day statistics
+* fixed visitors being counted multiple times in statistics for paths
+
 ## 1.9.2
 
 * fixed timer running immediately in `RunAtMidnight`
