@@ -914,47 +914,55 @@ func TestAnalyzer_Growth(t *testing.T) {
 			stats := []VisitorStats{
 				{
 					Stats: Stats{
-						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-						Day:        pastDay(2),
-						Path:       sql.NullString{String: "/home", Valid: true},
-						Visitors:   5,
-						Sessions:   6,
-						Bounces:    3,
+						Day:      pastDay(2),
+						Path:     sql.NullString{String: "/home", Valid: true},
+						Visitors: 5,
+						Sessions: 6,
+						Bounces:  3,
 					},
 				},
 				{
 					Stats: Stats{
-						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-						Day:        pastDay(3),
-						Path:       sql.NullString{String: "/about", Valid: true},
-						Visitors:   6,
-						Sessions:   7,
-						Bounces:    4,
+						Day:      pastDay(3),
+						Path:     sql.NullString{String: "/about", Valid: true},
+						Visitors: 6,
+						Sessions: 7,
+						Bounces:  4,
 					},
 				},
 				{
 					Stats: Stats{
-						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-						Day:        pastDay(4),
-						Path:       sql.NullString{String: "/home", Valid: true},
-						Visitors:   2,
-						Sessions:   3,
-						Bounces:    1,
+						Day:      pastDay(4),
+						Path:     sql.NullString{String: "/home", Valid: true},
+						Visitors: 2,
+						Sessions: 3,
+						Bounces:  1,
 					},
 				},
 				{
 					Stats: Stats{
-						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-						Day:        pastDay(5),
-						Path:       sql.NullString{String: "/about", Valid: true},
-						Visitors:   8,
-						Sessions:   9,
-						Bounces:    6,
+						Day:      pastDay(5),
+						Path:     sql.NullString{String: "/about", Valid: true},
+						Visitors: 8,
+						Sessions: 9,
+						Bounces:  6,
 					},
 				},
 			}
 
 			for _, s := range stats {
+				s.BaseEntity.TenantID = NewTenantID(tenantID)
+
+				if err := store.SaveVisitorStats(nil, &s); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// save again without paths for processed statistics
+			for _, s := range stats {
+				s.BaseEntity.TenantID = NewTenantID(tenantID)
+				s.Path.Valid = false
+
 				if err := store.SaveVisitorStats(nil, &s); err != nil {
 					t.Fatal(err)
 				}
