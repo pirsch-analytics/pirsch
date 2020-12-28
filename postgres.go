@@ -512,7 +512,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 }
 
 // CountVisitorsByPathAndHour implements the Store interface.
-func (store *PostgresStore) CountVisitorsByPathAndHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]VisitorTimeStats, error) {
+func (store *PostgresStore) CountVisitorsByHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]VisitorTimeStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)

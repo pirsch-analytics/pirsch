@@ -64,6 +64,31 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		return err
 	}
 
+	if err := processor.visitors(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
+	if err := processor.languages(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
+	if err := processor.referrer(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
+	if err := processor.os(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
+	if err := processor.browser(tx, tenantID, day); err != nil {
+		processor.store.Rollback(tx)
+		return err
+	}
+
 	if err := processor.screen(tx, tenantID, day); err != nil {
 		processor.store.Rollback(tx)
 		return err
@@ -84,30 +109,30 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 }
 
 func (processor *Processor) processPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	if err := processor.visitors(tx, tenantID, day, path); err != nil {
+	if err := processor.pathVisitors(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
-	if err := processor.languages(tx, tenantID, day, path); err != nil {
+	if err := processor.pathLanguages(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
-	if err := processor.referrer(tx, tenantID, day, path); err != nil {
+	if err := processor.pathReferrer(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
-	if err := processor.os(tx, tenantID, day, path); err != nil {
+	if err := processor.pathOS(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
-	if err := processor.browser(tx, tenantID, day, path); err != nil {
+	if err := processor.pathBrowser(tx, tenantID, day, path); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
+func (processor *Processor) pathVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	visitors, err := processor.store.CountVisitorsByPath(tx, tenantID, day, path, true)
 
 	if err != nil {
@@ -127,23 +152,7 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	return nil
 }
 
-func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
-	visitors, err := processor.store.CountVisitorsByPathAndHour(tx, tenantID, day)
-
-	if err != nil {
-		return err
-	}
-
-	for _, v := range visitors {
-		if err := processor.store.SaveVisitorTimeStats(tx, &v); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
+func (processor *Processor) pathLanguages(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	visitors, err := processor.store.CountVisitorsByPathAndLanguage(tx, tenantID, day, path)
 
 	if err != nil {
@@ -159,7 +168,7 @@ func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day t
 	return nil
 }
 
-func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
+func (processor *Processor) pathReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	visitors, err := processor.store.CountVisitorsByPathAndReferrer(tx, tenantID, day, path)
 
 	if err != nil {
@@ -175,7 +184,7 @@ func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	return nil
 }
 
-func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
+func (processor *Processor) pathOS(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	visitors, err := processor.store.CountVisitorsByPathAndOS(tx, tenantID, day, path)
 
 	if err != nil {
@@ -191,8 +200,110 @@ func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Tim
 	return nil
 }
 
-func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
+func (processor *Processor) pathBrowser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
 	visitors, err := processor.store.CountVisitorsByPathAndBrowser(tx, tenantID, day, path)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveBrowserStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByHour(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveVisitorTimeStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors := processor.store.CountVisitors(tx, tenantID, day)
+	visitors.Bounces = processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, "")
+	platforms := processor.store.CountVisitorsByPlatform(tx, tenantID, day)
+	platformSum := float64(platforms.PlatformDesktop + platforms.PlatformMobile + platforms.PlatformUnknown)
+	v := &VisitorStats{
+		Stats:                   *visitors,
+		PlatformDesktop:         platforms.PlatformDesktop,
+		PlatformMobile:          platforms.PlatformMobile,
+		PlatformUnknown:         platforms.PlatformUnknown,
+		RelativePlatformDesktop: float64(platforms.PlatformDesktop) / platformSum,
+		RelativePlatformMobile:  float64(platforms.PlatformMobile) / platformSum,
+		RelativePlatformUnknown: float64(platforms.PlatformUnknown) / platformSum,
+	}
+
+	if err := processor.store.SaveVisitorStats(tx, v); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByLanguage(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveLanguageStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByReferrer(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveReferrerStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByOS(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveOSStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
+	visitors, err := processor.store.CountVisitorsByBrowser(tx, tenantID, day)
 
 	if err != nil {
 		return err
