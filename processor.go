@@ -234,6 +234,7 @@ func (processor *Processor) visitorHours(tx *sqlx.Tx, tenantID sql.NullInt64, da
 
 func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) error {
 	visitors := processor.store.CountVisitors(tx, tenantID, day)
+	visitors.TenantID = tenantID
 	visitors.Bounces = processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, "")
 	platforms := processor.store.CountVisitorsByPlatform(tx, tenantID, day)
 	platformSum := float64(platforms.PlatformDesktop + platforms.PlatformMobile + platforms.PlatformUnknown)
@@ -262,6 +263,8 @@ func (processor *Processor) languages(tx *sqlx.Tx, tenantID sql.NullInt64, day t
 	}
 
 	for _, v := range visitors {
+		v.TenantID = tenantID
+
 		if err := processor.store.SaveLanguageStats(tx, &v); err != nil {
 			return err
 		}
@@ -278,6 +281,8 @@ func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	}
 
 	for _, v := range visitors {
+		v.TenantID = tenantID
+
 		if err := processor.store.SaveReferrerStats(tx, &v); err != nil {
 			return err
 		}
@@ -294,6 +299,8 @@ func (processor *Processor) os(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Tim
 	}
 
 	for _, v := range visitors {
+		v.TenantID = tenantID
+
 		if err := processor.store.SaveOSStats(tx, &v); err != nil {
 			return err
 		}
@@ -310,6 +317,8 @@ func (processor *Processor) browser(tx *sqlx.Tx, tenantID sql.NullInt64, day tim
 	}
 
 	for _, v := range visitors {
+		v.TenantID = tenantID
+
 		if err := processor.store.SaveBrowserStats(tx, &v); err != nil {
 			return err
 		}

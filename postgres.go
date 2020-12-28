@@ -417,6 +417,7 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "day" >= $2::date
 			AND "day" <= $3::date
+    		AND "path" IS NOT NULL
 		) AS results
 		ORDER BY "path" ASC`
 	var paths []string
@@ -658,7 +659,7 @@ func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.Nu
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "language", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT "language", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date
@@ -679,7 +680,7 @@ func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.Nu
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "referrer", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT "referrer", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date
@@ -700,7 +701,7 @@ func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, tenantID sql.NullInt6
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "os", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT "os", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date
@@ -721,7 +722,7 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "browser", count(DISTINCT fingerprint) "visitors"
+	query := `SELECT "browser", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND date("time") = $2::date

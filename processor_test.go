@@ -44,8 +44,8 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(visitorStats) != 1 {
-			t.Fatalf("One visitor stats must have been created, but was: %v", len(visitorStats))
+		if len(visitorStats) != 2 {
+			t.Fatalf("Two visitor stats must have been created, but was: %v", len(visitorStats))
 		}
 
 		if len(timeStats) != 24 {
@@ -84,7 +84,10 @@ func TestProcessor_ProcessPaths(t *testing.T) {
 		}
 
 		analyzer := NewAnalyzer(store, nil)
-		pageVisitors, err := analyzer.PageVisitors(nil)
+		pageVisitors, err := analyzer.PageVisitors(&Filter{
+			From: day(2020, 12, 25, 0),
+			To:   day(2020, 12, 28, 0),
+		})
 
 		if err != nil {
 			t.Fatalf("Page visitors must have been returned, but was: %v", err)
@@ -161,11 +164,11 @@ func checkVisitorStats(t *testing.T, tenantID int64) {
 	var stats []VisitorStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE tenant_id = $1 ORDER BY "day", "path"`, tenantID); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE tenant_id = $1 AND "path" IS NOT NULL ORDER BY "day", "path"`, tenantID); err != nil {
 			t.Fatal(err)
 		}
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE "path" IS NOT NULL ORDER BY "day", "path"`); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -196,14 +199,14 @@ func checkVisitorTimeStats(t *testing.T, tenantID int64) {
 		}
 	}
 
-	if len(stats) != 96 {
-		t.Fatalf("96 stats must have been created, but was: %v", len(stats))
+	if len(stats) != 48 {
+		t.Fatalf("48 stats must have been created, but was: %v", len(stats))
 	}
 
-	if stats[7].Path.String != "/" || stats[7].Visitors != 2 || stats[7].Hour != 7 ||
-		stats[32].Path.String != "/page" || stats[32].Visitors != 1 || stats[32].Hour != 8 ||
-		stats[57].Path.String != "/" || stats[57].Visitors != 2 || stats[57].Hour != 9 ||
-		stats[82].Path.String != "/different-page" || stats[82].Visitors != 1 || stats[82].Hour != 10 {
+	if stats[7].Visitors != 2 || stats[7].Hour != 7 ||
+		stats[8].Visitors != 1 || stats[8].Hour != 8 ||
+		stats[24+9].Visitors != 2 || stats[24+9].Hour != 9 ||
+		stats[24+10].Visitors != 1 || stats[24+10].Hour != 10 {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
@@ -222,14 +225,18 @@ func checkLanguageStats(t *testing.T, tenantID int64) {
 		}
 	}
 
-	if len(stats) != 4 {
+	if len(stats) != 8 {
 		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
 	}
 
 	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Language.String != "en" ||
 		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Language.String != "de" ||
-		stats[2].Path.String != "/" || stats[2].Visitors != 2 || stats[2].Language.String != "en" ||
-		stats[3].Path.String != "/different-page" || stats[3].Visitors != 1 || stats[3].Language.String != "jp" {
+		stats[2].Path.Valid || stats[2].Visitors != 1 || stats[2].Language.String != "de" ||
+		stats[3].Path.Valid || stats[3].Visitors != 2 || stats[3].Language.String != "en" ||
+		stats[4].Path.String != "/" || stats[4].Visitors != 2 || stats[4].Language.String != "en" ||
+		stats[5].Path.String != "/different-page" || stats[5].Visitors != 1 || stats[5].Language.String != "jp" ||
+		stats[6].Path.Valid || stats[6].Visitors != 2 || stats[6].Language.String != "en" ||
+		stats[7].Path.Valid || stats[7].Visitors != 1 || stats[7].Language.String != "jp" {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
@@ -248,14 +255,17 @@ func checkReferrerStats(t *testing.T, tenantID int64) {
 		}
 	}
 
-	if len(stats) != 4 {
-		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
+	if len(stats) != 7 {
+		t.Fatalf("Seven stats must have been created, but was: %v", len(stats))
 	}
 
 	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Referrer.String != "ref1" ||
 		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Referrer.String != "ref1" ||
-		stats[2].Path.String != "/" || stats[2].Visitors != 2 || stats[2].Referrer.String != "ref2" ||
-		stats[3].Path.String != "/different-page" || stats[3].Visitors != 1 || stats[3].Referrer.String != "ref3" {
+		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Referrer.String != "ref1" ||
+		stats[3].Path.String != "/" || stats[3].Visitors != 2 || stats[3].Referrer.String != "ref2" ||
+		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].Referrer.String != "ref3" ||
+		stats[5].Path.Valid || stats[5].Visitors != 2 || stats[5].Referrer.String != "ref2" ||
+		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Referrer.String != "ref3" {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
@@ -274,15 +284,20 @@ func checkOSStats(t *testing.T, tenantID int64) {
 		}
 	}
 
-	if len(stats) != 5 {
-		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
+	if len(stats) != 10 {
+		t.Fatalf("Ten stats must have been created, but was: %v", len(stats))
 	}
 
 	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].OS.String != OSWindows || stats[0].OSVersion.String != "10" ||
 		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].OS.String != OSMac || stats[1].OSVersion.String != "10.15.3" ||
-		stats[2].Path.String != "/" || stats[2].Visitors != 1 || stats[2].OS.String != OSLinux || stats[2].OSVersion.String != "" ||
-		stats[3].Path.String != "/" || stats[3].Visitors != 1 || stats[3].OS.String != OSWindows || stats[3].OSVersion.String != "10" ||
-		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].OS.String != OSAndroid || stats[4].OSVersion.String != "8.0" {
+		stats[2].Path.Valid || stats[2].Visitors != 1 || stats[2].OS.String != OSMac || stats[2].OSVersion.Valid ||
+		stats[3].Path.Valid || stats[3].Visitors != 2 || stats[3].OS.String != OSWindows || stats[3].OSVersion.Valid ||
+		stats[4].Path.String != "/" || stats[4].Visitors != 1 || stats[4].OS.String != OSLinux || stats[4].OSVersion.String != "" ||
+		stats[5].Path.String != "/" || stats[5].Visitors != 1 || stats[5].OS.String != OSWindows || stats[5].OSVersion.String != "10" ||
+		stats[6].Path.String != "/different-page" || stats[6].Visitors != 1 || stats[6].OS.String != OSAndroid || stats[6].OSVersion.String != "8.0" ||
+		stats[7].Path.Valid || stats[7].Visitors != 1 || stats[7].OS.String != OSAndroid || stats[7].OSVersion.Valid ||
+		stats[8].Path.Valid || stats[8].Visitors != 1 || stats[8].OS.String != OSLinux || stats[8].OSVersion.Valid ||
+		stats[9].Path.Valid || stats[9].Visitors != 1 || stats[9].OS.String != OSWindows || stats[9].OSVersion.Valid {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
@@ -301,15 +316,18 @@ func checkBrowserStats(t *testing.T, tenantID int64) {
 		}
 	}
 
-	if len(stats) != 5 {
-		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
+	if len(stats) != 8 {
+		t.Fatalf("Eight stats must have been created, but was: %v", len(stats))
 	}
 
 	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Browser.String != BrowserChrome || stats[0].BrowserVersion.String != "84.0" ||
 		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Browser.String != BrowserChrome || stats[1].BrowserVersion.String != "84.0" ||
-		stats[2].Path.String != "/" || stats[2].Visitors != 1 || stats[2].Browser.String != BrowserFirefox || stats[2].BrowserVersion.String != "53.0" ||
-		stats[3].Path.String != "/" || stats[3].Visitors != 1 || stats[3].Browser.String != BrowserFirefox || stats[3].BrowserVersion.String != "54.0" ||
-		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].Browser.String != BrowserChrome || stats[4].BrowserVersion.String != "84.0" {
+		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Browser.String != BrowserChrome || stats[2].BrowserVersion.Valid ||
+		stats[3].Path.String != "/" || stats[3].Visitors != 1 || stats[3].Browser.String != BrowserFirefox || stats[3].BrowserVersion.String != "53.0" ||
+		stats[4].Path.String != "/" || stats[4].Visitors != 1 || stats[4].Browser.String != BrowserFirefox || stats[4].BrowserVersion.String != "54.0" ||
+		stats[5].Path.String != "/different-page" || stats[5].Visitors != 1 || stats[5].Browser.String != BrowserChrome || stats[5].BrowserVersion.String != "84.0" ||
+		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Browser.String != BrowserChrome || stats[6].BrowserVersion.Valid ||
+		stats[7].Path.Valid || stats[7].Visitors != 2 || stats[7].Browser.String != BrowserFirefox || stats[7].BrowserVersion.Valid {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
