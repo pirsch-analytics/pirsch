@@ -40,7 +40,7 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day"`); err != nil {
+	if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,13 +52,12 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 		t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
 	}
 
-	if visitorStats[0].Visitors != 2 ||
-		visitorStats[0].Sessions != 3 {
+	if visitorStats[0].Visitors != 2 || visitorStats[0].Sessions != 3 {
 		t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
 	}
 
 	if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
-		t.Fatalf("Visitor time stats must have two visitors, but was: %v", timeStats)
+		t.Fatalf("Visitor time stats must have two visitors, but was: %v %v", timeStats[4].Visitors, timeStats[5].Visitors)
 	}
 }
 
