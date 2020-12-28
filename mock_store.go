@@ -7,14 +7,6 @@ import (
 	"time"
 )
 
-// This is a list of all storage backends to be used in tests.
-// We test against real databases. To test all storage solutions, they must be installed an configured.
-func testStorageBackends() []Store {
-	return []Store{
-		NewPostgresStore(postgresDB, nil),
-	}
-}
-
 // storeMock is a Store implementation for testing purposes.
 // It overwrites all functions required for testing using PostgresStore as a base implementation.
 type storeMock struct {

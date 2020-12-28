@@ -16,128 +16,125 @@ func TestProcessor_ProcessTenant(t *testing.T) {
 }
 
 func TestProcessor_ProcessSessions(t *testing.T) {
-	for _, store := range testStorageBackends() {
-		cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	cleanupDB(t)
 
-		// create hits for two visitors and three sessions
-		now := time.Now()
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now.Add(time.Second*1), OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		processor := NewProcessor(store)
+	// create hits for two visitors and three sessions
+	now := time.Now()
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 9, 7, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now.Add(time.Second*1), OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	processor := NewProcessor(store)
 
-		if err := processor.Process(); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
-		}
+	if err := processor.Process(); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
 
-		checkHits(t, 0)
-		db := sqlx.NewDb(postgresDB, "postgres")
-		var visitorStats []VisitorStats
-		var timeStats []VisitorTimeStats
+	checkHits(t, 0)
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var visitorStats []VisitorStats
+	var timeStats []VisitorTimeStats
 
-		if err := db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
-			t.Fatal(err)
-		}
+	if err := db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
+		t.Fatal(err)
+	}
 
-		if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day"`); err != nil {
-			t.Fatal(err)
-		}
+	if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day"`); err != nil {
+		t.Fatal(err)
+	}
 
-		if len(visitorStats) != 2 {
-			t.Fatalf("Two visitor stats must have been created, but was: %v", len(visitorStats))
-		}
+	if len(visitorStats) != 2 {
+		t.Fatalf("Two visitor stats must have been created, but was: %v", len(visitorStats))
+	}
 
-		if len(timeStats) != 24 {
-			t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
-		}
+	if len(timeStats) != 24 {
+		t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
+	}
 
-		if visitorStats[0].Visitors != 2 ||
-			visitorStats[0].Sessions != 3 {
-			t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
-		}
+	if visitorStats[0].Visitors != 2 ||
+		visitorStats[0].Sessions != 3 {
+		t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
+	}
 
-		if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
-			t.Fatalf("Visitor time stats must have two visitors, but was: %v", timeStats)
-		}
+	if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
+		t.Fatalf("Visitor time stats must have two visitors, but was: %v", timeStats)
 	}
 }
 
 func TestProcessor_ProcessPaths(t *testing.T) {
-	for _, store := range testStorageBackends() {
-		cleanupDB(t)
-		now := time.Now()
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
-		processor := NewProcessor(store)
+	store := NewPostgresStore(postgresDB, nil)
+	cleanupDB(t)
+	now := time.Now()
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/path", "en", "", "", day(2020, 12, 27, 4), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
+	processor := NewProcessor(store)
 
-		if err := processor.Process(); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
-		}
+	if err := processor.Process(); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
 
-		analyzer := NewAnalyzer(store, nil)
-		pageVisitors, err := analyzer.PageVisitors(&Filter{
-			From: day(2020, 12, 25, 0),
-			To:   day(2020, 12, 28, 0),
-		})
+	analyzer := NewAnalyzer(store, nil)
+	pageVisitors, err := analyzer.PageVisitors(&Filter{
+		From: day(2020, 12, 25, 0),
+		To:   day(2020, 12, 28, 0),
+	})
 
-		if err != nil {
-			t.Fatalf("Page visitors must have been returned, but was: %v", err)
-		}
+	if err != nil {
+		t.Fatalf("Page visitors must have been returned, but was: %v", err)
+	}
 
-		if len(pageVisitors) != 2 ||
-			pageVisitors[0].Path != "/" ||
-			sumUpVisitors(pageVisitors[0].Stats) != 1 ||
-			pageVisitors[1].Path != "/path" ||
-			sumUpVisitors(pageVisitors[1].Stats) != 2 {
-			t.Fatalf("Page visitor statistics not as expected: %v", pageVisitors)
-		}
+	if len(pageVisitors) != 2 ||
+		pageVisitors[0].Path != "/" ||
+		sumUpVisitors(pageVisitors[0].Stats) != 1 ||
+		pageVisitors[1].Path != "/path" ||
+		sumUpVisitors(pageVisitors[1].Stats) != 2 {
+		t.Fatalf("Page visitor statistics not as expected: %v", pageVisitors)
+	}
 
-		visitors, err := analyzer.Visitors(nil)
+	visitors, err := analyzer.Visitors(nil)
 
-		if err != nil {
-			t.Fatalf("Visitors must have been returned, but was: %v", err)
-		}
+	if err != nil {
+		t.Fatalf("Visitors must have been returned, but was: %v", err)
+	}
 
-		if sumUpVisitors(visitors) != 2 {
-			t.Fatalf("Visitor statistics not as expected: %v", visitors)
-		}
+	if sumUpVisitors(visitors) != 2 {
+		t.Fatalf("Visitor statistics not as expected: %v", visitors)
 	}
 }
 
 func testProcess(t *testing.T, tenantID int64) {
-	for _, store := range testStorageBackends() {
-		createTestdata(t, store, tenantID)
-		processor := NewProcessor(store)
+	store := NewPostgresStore(postgresDB, nil)
+	createTestdata(t, store, tenantID)
+	processor := NewProcessor(store)
 
-		if tenantID == 0 {
-			if err := processor.Process(); err != nil {
-				t.Fatalf("Data must have been processed, but was: %v", err)
-			}
-		} else {
-			if err := processor.ProcessTenant(NewTenantID(tenantID)); err != nil {
-				t.Fatalf("Data must have been processed, but was: %v", err)
-			}
+	if tenantID == 0 {
+		if err := processor.Process(); err != nil {
+			t.Fatalf("Data must have been processed, but was: %v", err)
 		}
-
-		checkHits(t, tenantID)
-		checkVisitorStats(t, tenantID)
-		checkVisitorTimeStats(t, tenantID)
-		checkLanguageStats(t, tenantID)
-		checkReferrerStats(t, tenantID)
-		checkOSStats(t, tenantID)
-		checkBrowserStats(t, tenantID)
-		checkScreenStats(t, tenantID)
-		checkCountryStats(t, tenantID)
+	} else {
+		if err := processor.ProcessTenant(NewTenantID(tenantID)); err != nil {
+			t.Fatalf("Data must have been processed, but was: %v", err)
+		}
 	}
+
+	checkHits(t, tenantID)
+	checkVisitorStats(t, tenantID)
+	checkVisitorTimeStats(t, tenantID)
+	checkLanguageStats(t, tenantID)
+	checkReferrerStats(t, tenantID)
+	checkOSStats(t, tenantID)
+	checkBrowserStats(t, tenantID)
+	checkScreenStats(t, tenantID)
+	checkCountryStats(t, tenantID)
 }
 
 func checkHits(t *testing.T, tenantID int64) {
