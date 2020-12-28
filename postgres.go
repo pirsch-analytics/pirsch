@@ -145,10 +145,11 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, platform_desktop, platform_mobile, platform_unknown FROM "visitor_stats"
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, platform_desktop, platform_mobile, platform_unknown
+		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)`, entity.TenantID, entity.Day, entity.Path)
+		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)`, entity.TenantID, entity.Day, entity.Path)
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
@@ -226,7 +227,7 @@ func (store *PostgresStore) SaveLanguageStats(tx *sqlx.Tx, entity *LanguageStats
 	err := tx.Get(existing, `SELECT id, visitors FROM "language_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)
+		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
 		AND LOWER("language") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Language)
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
@@ -249,7 +250,7 @@ func (store *PostgresStore) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats
 	err := tx.Get(existing, `SELECT id, visitors FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)
+		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
 		AND LOWER("referrer") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Referrer)
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
@@ -272,7 +273,7 @@ func (store *PostgresStore) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
 	err := tx.Get(existing, `SELECT id, visitors FROM "os_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)
+		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
 		AND "os" = $4
 		AND "os_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.OS, entity.OSVersion)
 
@@ -296,7 +297,7 @@ func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) 
 	err := tx.Get(existing, `SELECT id, visitors FROM "browser_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND LOWER("path") = LOWER($3)
+		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
 		AND "browser" = $4
 		AND "browser_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.Browser, entity.BrowserVersion)
 
@@ -896,7 +897,7 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 				INTERVAL '1 day'
 			) "d"
 		) AS date_series
-		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "visitor_stats"."day" = "d"
+		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1) AND "visitor_stats"."day" = "d" AND "visitor_stats"."path" IS NULL
 		GROUP BY "d"
 		ORDER BY "d" ASC`
 	var visitors []Stats
@@ -946,6 +947,7 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
+		AND "path" IS NULL
 		GROUP BY "language"
 		ORDER BY "visitors" DESC`
 	var visitors []LanguageStats
@@ -964,6 +966,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to tim
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
+		AND "path" IS NULL
 		GROUP BY "referrer"
 		ORDER BY "visitors" DESC`
 	var visitors []ReferrerStats
@@ -982,6 +985,7 @@ func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
+		AND "path" IS NULL
 		GROUP BY "os"
 		ORDER BY "visitors" DESC`
 	var visitors []OSStats
@@ -1000,6 +1004,7 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
+		AND "path" IS NULL
 		GROUP BY "browser"
 		ORDER BY "visitors" DESC`
 	var visitors []BrowserStats
@@ -1019,7 +1024,8 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
-		AND "day" <= $3::date`
+		AND "day" <= $3::date
+		AND "path" IS NULL`
 	visitors := new(VisitorStats)
 
 	if err := store.DB.Get(visitors, query, tenantID, from, to); err != nil && err != sql.ErrNoRows {
@@ -1291,6 +1297,8 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	if path != "" {
 		args = append(args, path)
 		query += `AND LOWER("path") = LOWER($4) `
+	} else {
+		query += `AND "path" IS NULL `
 	}
 
 	visitors := new(Stats)

@@ -31,8 +31,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 			}
 
 			if len(visitors) != 2 ||
-				visitors[0].Path != "/" || visitors[0].Visitors != 2 ||
-				visitors[1].Path != "/path" || visitors[1].Visitors != 1 {
+				visitors[0].Path.String != "/" || visitors[0].Visitors != 2 ||
+				visitors[1].Path.String != "/path" || visitors[1].Visitors != 1 {
 				t.Fatalf("Visitors not as expected: %v", visitors)
 			}
 		}
@@ -51,7 +51,6 @@ func TestAnalyzer_Visitors(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 					Sessions:   67,
 					Bounces:    30,
@@ -143,7 +142,6 @@ func TestAnalyzer_Languages(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				Language: sql.NullString{String: "de", Valid: true},
@@ -188,7 +186,6 @@ func TestAnalyzer_Referrer(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				Referrer: sql.NullString{String: "ref2", Valid: true},
@@ -233,7 +230,6 @@ func TestAnalyzer_OS(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				OS:        sql.NullString{String: OSMac, Valid: true},
@@ -279,7 +275,6 @@ func TestAnalyzer_Browser(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				Browser:        sql.NullString{String: BrowserChrome, Valid: true},
@@ -326,7 +321,6 @@ func TestAnalyzer_Platform(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 				},
 				PlatformDesktop: 42,
 				PlatformMobile:  43,
@@ -387,7 +381,6 @@ func TestAnalyzer_Screen(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				Width:  1920,
@@ -433,7 +426,6 @@ func TestAnalyzer_Country(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
 					Visitors:   42,
 				},
 				CountryCode: sql.NullString{String: "gb", Valid: true},
@@ -481,7 +473,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(2),
-						Path:       "/",
 						Visitors:   7,
 						Sessions:   8,
 					},
@@ -491,7 +482,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(2),
-						Path:       "/",
 						Visitors:   11,
 						Sessions:   12,
 					},
@@ -501,7 +491,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(1),
-						Path:       "/",
 						Visitors:   6,
 						Sessions:   7,
 					},
@@ -511,7 +500,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(1),
-						Path:       "/",
 						Visitors:   9,
 						Sessions:   10,
 					},
@@ -521,7 +509,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        today(),
-						Path:       "/",
 						Visitors:   10,
 						Sessions:   11,
 					},
@@ -531,7 +518,6 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        today(),
-						Path:       "/",
 						Visitors:   14,
 						Sessions:   15,
 					},
@@ -593,7 +579,7 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 					Visitors:   42,
 					Sessions:   67,
 					Bounces:    30,
@@ -651,7 +637,7 @@ func TestAnalyzer_PageLanguages(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 					Visitors:   42,
 				},
 				Language: sql.NullString{String: "de", Valid: true},
@@ -698,7 +684,7 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 					Visitors:   42,
 				},
 				Referrer: sql.NullString{String: "ref2", Valid: true},
@@ -745,7 +731,7 @@ func TestAnalyzer_PageOS(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 					Visitors:   42,
 				},
 				OS: sql.NullString{String: OSWindows, Valid: true},
@@ -792,7 +778,7 @@ func TestAnalyzer_PageBrowser(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 					Visitors:   42,
 				},
 				Browser: sql.NullString{String: BrowserChrome, Valid: true},
@@ -840,7 +826,7 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 				Stats: Stats{
 					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 					Day:        pastDay(2),
-					Path:       "/path",
+					Path:       sql.NullString{String: "/path", Valid: true},
 				},
 				PlatformDesktop: 42,
 				PlatformMobile:  43,
@@ -930,7 +916,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(2),
-						Path:       "/home",
+						Path:       sql.NullString{String: "/home", Valid: true},
 						Visitors:   5,
 						Sessions:   6,
 						Bounces:    3,
@@ -940,7 +926,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(3),
-						Path:       "/about",
+						Path:       sql.NullString{String: "/about", Valid: true},
 						Visitors:   6,
 						Sessions:   7,
 						Bounces:    4,
@@ -950,7 +936,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(4),
-						Path:       "/home",
+						Path:       sql.NullString{String: "/home", Valid: true},
 						Visitors:   2,
 						Sessions:   3,
 						Bounces:    1,
@@ -960,7 +946,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 					Stats: Stats{
 						BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 						Day:        pastDay(5),
-						Path:       "/about",
+						Path:       sql.NullString{String: "/about", Valid: true},
 						Visitors:   8,
 						Sessions:   9,
 						Bounces:    6,
