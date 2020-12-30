@@ -111,7 +111,9 @@ func TestTrackerHitDiscard(t *testing.T) {
 }
 
 func TestTrackerCountryCode(t *testing.T) {
-	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+	geoDB, err := NewGeoDB(GeoDBConfig{
+		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+	})
 
 	if err != nil {
 		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
@@ -179,7 +181,9 @@ func TestTrackerHitSession(t *testing.T) {
 }
 
 func BenchmarkTracker(b *testing.B) {
-	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+	geoDB, err := NewGeoDB(GeoDBConfig{
+		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+	})
 
 	if err != nil {
 		b.Fatalf("Geo DB must have been loaded, but was: %v", err)

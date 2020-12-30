@@ -26,12 +26,6 @@ type Growth struct {
 	BouncesGrowth  float64 `json:"bounces_growth"`
 }
 
-// Analyzer provides an interface to analyze processed data and hits.
-type Analyzer struct {
-	store    Store
-	timezone *time.Location
-}
-
 // AnalyzerConfig is the (optional) configuration for the Analyzer.
 type AnalyzerConfig struct {
 	// Timezone sets the time zone for the result set.
@@ -43,6 +37,12 @@ func (config *AnalyzerConfig) validate() {
 	if config.Timezone == nil {
 		config.Timezone = time.UTC
 	}
+}
+
+// Analyzer provides an interface to analyze processed data and hits.
+type Analyzer struct {
+	store    Store
+	timezone *time.Location
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.

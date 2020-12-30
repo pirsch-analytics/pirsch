@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
@@ -41,7 +40,7 @@ type PostgresStore struct {
 func NewPostgresStore(db *sql.DB, config *PostgresConfig) *PostgresStore {
 	if config == nil {
 		config = &PostgresConfig{
-			Logger: log.New(os.Stdout, logPrefix, log.LstdFlags),
+			Logger: logger,
 		}
 	}
 

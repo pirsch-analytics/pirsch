@@ -6,6 +6,7 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -22,26 +23,38 @@ const (
 	GeoLite2Filename = "GeoLite2-Country.mmdb"
 )
 
+// GeoDBConfig is the configuration for the GeoDB.
+type GeoDBConfig struct {
+	// File is the path (including the filename) to the GeoLite2 country database file.
+	// See GeoLite2Filename for the required filename.
+	File string
+
+	// Logger is the log.Logger used for logging.
+	// Note that this will log the IP address and should therefore only be used for debugging.
+	// Set it to nil to disable logging for GeoDB.
+	Logger *log.Logger
+}
+
 // GeoDB maps IPs to their geo location based on MaxMinds GeoLite2 or GeoIP2 database.
 type GeoDB struct {
-	db *maxminddb.Reader
+	db     *maxminddb.Reader
+	logger *log.Logger
 }
 
 // NewGeoDB creates a new GeoDB for given database file.
 // Make sure you call GeoDB.Close to release the system resources!
-// If you use this in combination with GetGeoLite2, you should pass in the path to GeoLite2Filename (including the filename).
 // The database should be updated on a regular basis.
-func NewGeoDB(file string) (*GeoDB, error) {
-	db, err := maxminddb.Open(file)
+func NewGeoDB(config GeoDBConfig) (*GeoDB, error) {
+	db, err := maxminddb.Open(config.File)
 
 	if err != nil {
 		return nil, err
 	}
 
-	geoDB := &GeoDB{
-		db: db,
-	}
-	return geoDB, nil
+	return &GeoDB{
+		db:     db,
+		logger: config.Logger,
+	}, nil
 }
 
 // Close closes the database file handle and frees the system resources.
@@ -67,6 +80,10 @@ func (db *GeoDB) CountryCode(ip string) string {
 	}{}
 
 	if err := db.db.Lookup(parsedIP, &record); err != nil {
+		if db.logger != nil {
+			db.logger.Printf("error looking up country code for IP address %s", parsedIP)
+		}
+
 		return ""
 	}
 
@@ -125,14 +142,22 @@ func unpackGeoLite2(path string) error {
 		return err
 	}
 
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Printf("error closing GeoDB file")
+		}
+	}()
 	gzipFile, err := gzip.NewReader(file)
 
 	if err != nil {
 		return err
 	}
 
-	defer gzipFile.Close()
+	defer func() {
+		if err := gzipFile.Close(); err != nil {
+			logger.Printf("error closing GeoDB zip file")
+		}
+	}()
 	r := tar.NewReader(gzipFile)
 
 	for {
@@ -152,11 +177,17 @@ func unpackGeoLite2(path string) error {
 			}
 
 			if _, err := io.Copy(out, r); err != nil {
-				out.Close()
+				if err := out.Close(); err != nil {
+					logger.Printf("error closing GeoLite2 database file")
+				}
+
 				return err
 			}
 
-			out.Close()
+			if err := out.Close(); err != nil {
+				logger.Printf("error closing GeoLite2 database file")
+			}
+
 			break
 		}
 	}

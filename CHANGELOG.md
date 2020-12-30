@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.0
+
+* improved logging
+* `NewGeoDB` now takes a config as its parameter with optional logger for debugging
+
 ## 1.9.3
 
 **You need to update the schema by running the `v1.9.3.sql` migration script!**
