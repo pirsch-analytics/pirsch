@@ -420,7 +420,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 			},
 			Width:  1920,
 			Height: 1080,
-			Class:  sql.NullString{String: "Extra Extra Large", Valid: true},
+			Class:  sql.NullString{String: "XXL", Valid: true},
 		}
 
 		if err := store.SaveScreenStats(nil, stats); err != nil {
@@ -442,8 +442,8 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 			t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
 		}
 
-		if visitors[0].Class.String != "Extra Extra Large" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
-			visitors[1].Class.String != "Medium" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+		if visitors[0].Class.String != "XXL" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+			visitors[1].Class.String != "M" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
 			t.Fatalf("Visitors not as expected: %v", visitors)
 		}
 	}

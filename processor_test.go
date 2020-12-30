@@ -372,9 +372,9 @@ func checkScreenStatsClasses(t *testing.T, tenantID int64) {
 		t.Fatalf("Three stats must have been created, but was: %v", len(stats))
 	}
 
-	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Class.String != "Medium" || stats[0].Visitors != 2 ||
-		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Class.String != "Extra Extra Large" || stats[1].Visitors != 1 ||
-		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Class.String != "Medium" || stats[2].Visitors != 1 {
+	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Class.String != "M" || stats[0].Visitors != 2 ||
+		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Class.String != "M" || stats[1].Visitors != 1 ||
+		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Class.String != "XXL" || stats[2].Visitors != 1 {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }

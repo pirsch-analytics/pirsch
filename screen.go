@@ -6,13 +6,13 @@ type screenClass struct {
 }
 
 // ScreenClasses is a list of typical screen sizes used to group resolutions.
-// Everything below is considered "tiny".
+// Everything below is considered "XS" (tiny).
 var ScreenClasses = []screenClass{
-	{1440, "Extra Extra Large"},
-	{1024, "Extra Large"},
-	{800, "Large"},
-	{600, "Medium"},
-	{415, "Small"},
+	{1440, "XXL"},
+	{1024, "XL"},
+	{800, "L"},
+	{600, "M"},
+	{415, "S"},
 }
 
 // GetScreenClass returns the screen class for given width in pixels.
@@ -27,5 +27,5 @@ func GetScreenClass(width int) string {
 		}
 	}
 
-	return "Tiny"
+	return "XS"
 }

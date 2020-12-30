@@ -395,7 +395,7 @@ func TestPostgresStore_SaveScreenStatsClass(t *testing.T) {
 		},
 		Width:  1920,
 		Height: 1080,
-		Class:  sql.NullString{String: "Extra Extra Large", Valid: true},
+		Class:  sql.NullString{String: "XXL", Valid: true},
 	})
 
 	if err != nil {
@@ -408,7 +408,7 @@ func TestPostgresStore_SaveScreenStatsClass(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if stats.Class.String != "Extra Extra Large" {
+	if stats.Class.String != "XXL" {
 		t.Fatalf("Screen class must have been saved, but was: %v", stats)
 	}
 }

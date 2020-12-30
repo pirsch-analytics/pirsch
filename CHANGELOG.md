@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.1
+
+**You need to update the schema by running the `v1.10.1.sql` migration script!**
+
+* renamed screen classes
+
 ## 1.10.0
 
 **You need to update the schema by running the `v1.10.0.sql` migration script!**
