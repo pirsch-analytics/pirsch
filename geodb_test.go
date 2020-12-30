@@ -28,7 +28,9 @@ func TestGetGeoLite2(t *testing.T) {
 }
 
 func TestGeoDB_CountryCode(t *testing.T) {
-	db, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+	db, err := NewGeoDB(GeoDBConfig{
+		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+	})
 
 	if err != nil {
 		t.Fatalf("Geo DB must have been loaded, but was: %v", err)

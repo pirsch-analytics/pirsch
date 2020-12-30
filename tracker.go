@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -78,7 +77,7 @@ func (config *TrackerConfig) validate() {
 	}
 
 	if config.Logger == nil {
-		config.Logger = log.New(os.Stdout, logPrefix, log.LstdFlags)
+		config.Logger = logger
 	}
 }
 

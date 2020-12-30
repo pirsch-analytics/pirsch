@@ -340,6 +340,18 @@ func (processor *Processor) screen(tx *sqlx.Tx, tenantID sql.NullInt64, day time
 		}
 	}
 
+	visitors, err = processor.store.CountVisitorsByScreenClass(tx, tenantID, day)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := processor.store.SaveScreenStats(tx, &v); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

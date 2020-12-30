@@ -26,12 +26,6 @@ type Growth struct {
 	BouncesGrowth  float64 `json:"bounces_growth"`
 }
 
-// Analyzer provides an interface to analyze processed data and hits.
-type Analyzer struct {
-	store    Store
-	timezone *time.Location
-}
-
 // AnalyzerConfig is the (optional) configuration for the Analyzer.
 type AnalyzerConfig struct {
 	// Timezone sets the time zone for the result set.
@@ -43,6 +37,12 @@ func (config *AnalyzerConfig) validate() {
 	if config.Timezone == nil {
 		config.Timezone = time.UTC
 	}
+}
+
+// Analyzer provides an interface to analyze processed data and hits.
+type Analyzer struct {
+	store    Store
+	timezone *time.Location
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.
@@ -396,6 +396,58 @@ func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 
 			for i, s := range stats {
 				if s.Width == v.Width && s.Height == v.Height {
+					stats[i].Visitors += v.Visitors
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				stats = append(stats, v)
+			}
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
+
+	var sum float64
+
+	for i := range stats {
+		sum += float64(stats[i].Visitors)
+	}
+
+	for i := range stats {
+		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	}
+
+	return stats, nil
+}
+
+// ScreenClass returns the visitor count per screen class.
+func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenStats, error) {
+	filter = analyzer.getFilter(filter)
+	today := today()
+	addToday := today.Equal(filter.To)
+	stats, err := analyzer.store.VisitorScreenClass(filter.TenantID, filter.From, filter.To)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if addToday {
+		visitorsToday, err := analyzer.store.CountVisitorsByScreenClass(nil, filter.TenantID, today)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range visitorsToday {
+			found := false
+
+			for i, s := range stats {
+				if s.Class.String == v.Class.String {
 					stats[i].Visitors += v.Visitors
 					found = true
 					break

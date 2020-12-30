@@ -100,7 +100,9 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 }
 
 func TestHitFromRequestCountryCode(t *testing.T) {
-	geoDB, err := NewGeoDB(filepath.Join("geodb/GeoIP2-Country-Test.mmdb"))
+	geoDB, err := NewGeoDB(GeoDBConfig{
+		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+	})
 
 	if err != nil {
 		t.Fatalf("Geo DB must have been loaded, but was: %v", err)

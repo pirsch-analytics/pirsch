@@ -404,6 +404,51 @@ func TestAnalyzer_Screen(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_ScreenClass(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		store := NewPostgresStore(postgresDB, nil)
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 1920, 1080)
+		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 640, 1080)
+		stats := &ScreenStats{
+			Stats: Stats{
+				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
+				Day:        pastDay(2),
+				Visitors:   42,
+			},
+			Width:  1920,
+			Height: 1080,
+			Class:  sql.NullString{String: "Extra Extra Large", Valid: true},
+		}
+
+		if err := store.SaveScreenStats(nil, stats); err != nil {
+			t.Fatal(err)
+		}
+
+		analyzer := NewAnalyzer(store, nil)
+		visitors, err := analyzer.ScreenClass(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     pastDay(4),
+			To:       today(),
+		})
+
+		if err != nil {
+			t.Fatalf("Visitors must be returned, but was:  %v", err)
+		}
+
+		if len(visitors) != 2 {
+			t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
+		}
+
+		if visitors[0].Class.String != "Extra Extra Large" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
+			visitors[1].Class.String != "Medium" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+			t.Fatalf("Visitors not as expected: %v", visitors)
+		}
+	}
+}
+
 func TestAnalyzer_Country(t *testing.T) {
 	tenantIDs := []int64{0, 1}
 

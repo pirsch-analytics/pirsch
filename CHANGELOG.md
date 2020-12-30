@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.0
+
+**You need to update the schema by running the `v1.10.0.sql` migration script!**
+
+* improved logging
+* `NewGeoDB` now takes a config as its parameter with optional logger for debugging
+* added screen classes to hits and statistics
+* screen sizes with 0 width or height are no longer processed and stored
+
 ## 1.9.3
 
 **You need to update the schema by running the `v1.9.3.sql` migration script!**

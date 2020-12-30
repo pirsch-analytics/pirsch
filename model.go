@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type statistics interface {
+	visitors() int
+	setRelativeVisitors(float64)
+}
+
 // BaseEntity is the base entity for all other entities.
 type BaseEntity struct {
 	ID       int64         `db:"id" json:"id"`
@@ -22,6 +27,14 @@ type Stats struct {
 	Bounces          int            `db:"bounces" json:"bounces"`
 	RelativeVisitors float64        `db:"-" json:"relative_visitors"`
 	BounceRate       float64        `db:"-" json:"bounce_rate"`
+}
+
+func (stats *Stats) visitors() int {
+	return stats.Visitors
+}
+
+func (stats *Stats) setRelativeVisitors(relativeVisitors float64) {
+	stats.RelativeVisitors = relativeVisitors
 }
 
 // GetID returns the ID.
@@ -88,8 +101,9 @@ type BrowserStats struct {
 type ScreenStats struct {
 	Stats
 
-	Width  int `db:"width" json:"width"`
-	Height int `db:"height" json:"height"`
+	Width  int            `db:"width" json:"width"`
+	Height int            `db:"height" json:"height"`
+	Class  sql.NullString `db:"class" json:"class"`
 }
 
 // CountryStats is the visitor count for each country on each day.
