@@ -2,8 +2,11 @@
 
 ## 1.10.0
 
+**You need to update the schema by running the `v1.10.0.sql` migration script!**
+
 * improved logging
 * `NewGeoDB` now takes a config as its parameter with optional logger for debugging
+* added screen classes to hits
 
 ## 1.9.3
 

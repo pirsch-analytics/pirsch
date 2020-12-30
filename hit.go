@@ -47,6 +47,7 @@ type Hit struct {
 	Mobile         bool           `db:"mobile" json:"mobile"`
 	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
 	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
+	Screen         sql.NullString `db:"screen" json:"screen"`
 	Time           time.Time      `db:"time" json:"time"`
 }
 
@@ -118,6 +119,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
 	referrer := shortenString(getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	screen := GetScreenClass(options.ScreenWidth)
 	countryCode := ""
 
 	if options.geoDB != nil {
@@ -157,6 +159,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		Mobile:         uaInfo.IsMobile(),
 		ScreenWidth:    options.ScreenWidth,
 		ScreenHeight:   options.ScreenHeight,
+		Screen:         sql.NullString{String: screen, Valid: screen != ""},
 		Time:           now,
 	}
 }
