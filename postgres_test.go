@@ -378,8 +378,38 @@ func TestPostgresStore_SaveScreenStats(t *testing.T) {
 
 	if stats.Visitors != 42+11 ||
 		stats.Width != 1920 ||
-		stats.Height != 1080 {
+		stats.Height != 1080 ||
+		stats.Class.Valid {
 		t.Fatalf("Entity not as expected: %v", stats)
+	}
+}
+
+func TestPostgresStore_SaveScreenStatsClass(t *testing.T) {
+	cleanupDB(t)
+	db := sqlx.NewDb(postgresDB, "postgres")
+	store := NewPostgresStore(postgresDB, nil)
+	err := store.SaveScreenStats(nil, &ScreenStats{
+		Stats: Stats{
+			Day:      day(2020, 9, 3, 0),
+			Visitors: 42,
+		},
+		Width:  1920,
+		Height: 1080,
+		Class:  sql.NullString{String: "Extra Extra Large", Valid: true},
+	})
+
+	if err != nil {
+		t.Fatalf("Entity must have been saved, but was: %v", err)
+	}
+
+	stats := new(ScreenStats)
+
+	if err := db.Get(stats, `SELECT * FROM "screen_stats"`); err != nil {
+		t.Fatal(err)
+	}
+
+	if stats.Class.String != "Extra Extra Large" {
+		t.Fatalf("Screen class must have been saved, but was: %v", stats)
 	}
 }
 

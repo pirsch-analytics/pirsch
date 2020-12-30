@@ -47,7 +47,7 @@ type Hit struct {
 	Mobile         bool           `db:"mobile" json:"mobile"`
 	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
 	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
-	Screen         sql.NullString `db:"screen" json:"screen"`
+	ScreenClass    sql.NullString `db:"screen_class" json:"screen_class"`
 	Time           time.Time      `db:"time" json:"time"`
 }
 
@@ -159,7 +159,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		Mobile:         uaInfo.IsMobile(),
 		ScreenWidth:    options.ScreenWidth,
 		ScreenHeight:   options.ScreenHeight,
-		Screen:         sql.NullString{String: screen, Valid: screen != ""},
+		ScreenClass:    sql.NullString{String: screen, Valid: screen != ""},
 		Time:           now,
 	}
 }

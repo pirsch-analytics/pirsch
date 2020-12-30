@@ -88,8 +88,9 @@ type BrowserStats struct {
 type ScreenStats struct {
 	Stats
 
-	Width  int `db:"width" json:"width"`
-	Height int `db:"height" json:"height"`
+	Width  int            `db:"width" json:"width"`
+	Height int            `db:"height" json:"height"`
+	Class  sql.NullString `db:"class" json:"class"`
 }
 
 // CountryStats is the visitor count for each country on each day.

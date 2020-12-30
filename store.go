@@ -101,6 +101,9 @@ type Store interface {
 	// CountVisitorsByScreenSize returns the visitor count for given day grouped by screen size (width and height).
 	CountVisitorsByScreenSize(*sqlx.Tx, sql.NullInt64, time.Time) ([]ScreenStats, error)
 
+	// CountVisitorsByScreenClass returns the visitor count for given day grouped by screen class.
+	CountVisitorsByScreenClass(*sqlx.Tx, sql.NullInt64, time.Time) ([]ScreenStats, error)
+
 	// CountVisitorsByCountryCode returns the visitor count for given day grouped by country code.
 	CountVisitorsByCountryCode(*sqlx.Tx, sql.NullInt64, time.Time) ([]CountryStats, error)
 
@@ -140,6 +143,9 @@ type Store interface {
 
 	// VisitorScreenSize returns the visitor count for given time frame grouped by screen size (width and height).
 	VisitorScreenSize(sql.NullInt64, time.Time, time.Time) ([]ScreenStats, error)
+
+	// VisitorScreenClass returns the visitor count for given time frame grouped by screen class.
+	VisitorScreenClass(sql.NullInt64, time.Time, time.Time) ([]ScreenStats, error)
 
 	// VisitorCountry returns the visitor count for given time frame grouped by country code.
 	VisitorCountry(sql.NullInt64, time.Time, time.Time) ([]CountryStats, error)

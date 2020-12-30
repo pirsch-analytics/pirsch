@@ -133,6 +133,7 @@ func testProcess(t *testing.T, tenantID int64) {
 	checkOSStats(t, tenantID)
 	checkBrowserStats(t, tenantID)
 	checkScreenStats(t, tenantID)
+	checkScreenStatsClasses(t, tenantID)
 	checkCountryStats(t, tenantID)
 }
 
@@ -333,24 +334,47 @@ func checkScreenStats(t *testing.T, tenantID int64) {
 	var stats []ScreenStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 ORDER BY "day", "width", "height"`, tenantID); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NULL ORDER BY "day", "width", "height"`, tenantID); err != nil {
 			t.Fatal(err)
 		}
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" ORDER BY "day", "width", "height"`); err != nil {
+		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NULL ORDER BY "day", "width", "height"`); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	if len(stats) != 5 {
-		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
+	if len(stats) != 3 {
+		t.Fatalf("Three stats must have been created, but was: %v", len(stats))
 	}
 
-	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Width != 0 || stats[0].Height != 0 || stats[0].Visitors != 1 ||
-		!stats[1].Day.Equal(day(2020, 6, 21, 0)) || stats[1].Width != 640 || stats[1].Height != 1080 || stats[1].Visitors != 2 ||
-		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Width != 0 || stats[2].Height != 0 || stats[2].Visitors != 1 ||
-		!stats[3].Day.Equal(day(2020, 6, 22, 0)) || stats[3].Width != 640 || stats[3].Height != 1024 || stats[3].Visitors != 1 ||
-		!stats[4].Day.Equal(day(2020, 6, 22, 0)) || stats[4].Width != 1920 || stats[4].Height != 1080 || stats[4].Visitors != 1 {
+	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Width != 640 || stats[0].Height != 1080 || stats[0].Visitors != 2 ||
+		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Width != 640 || stats[1].Height != 1024 || stats[1].Visitors != 1 ||
+		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Width != 1920 || stats[2].Height != 1080 || stats[2].Visitors != 1 {
+		t.Fatalf("Stats not as expected: %v", stats)
+	}
+}
+
+func checkScreenStatsClasses(t *testing.T, tenantID int64) {
+	db := sqlx.NewDb(postgresDB, "postgres")
+	var stats []ScreenStats
+
+	if tenantID != 0 {
+		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NOT NULL ORDER BY "day", "class"`, tenantID); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NOT NULL ORDER BY "day", "class"`); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if len(stats) != 3 {
+		t.Fatalf("Three stats must have been created, but was: %v", len(stats))
+	}
+
+	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Class.String != "Medium" || stats[0].Visitors != 2 ||
+		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Class.String != "Extra Extra Large" || stats[1].Visitors != 1 ||
+		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Class.String != "Medium" || stats[2].Visitors != 1 {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
@@ -393,6 +417,7 @@ func createTestdata(t *testing.T, store Store, tenantID int64) {
 }
 
 func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time, session time.Time, os, osVersion, browser, browserVersion, countryCode string, desktop, mobile bool, w, h int) {
+	screenClass := GetScreenClass(w)
 	hit := Hit{
 		BaseEntity:     BaseEntity{TenantID: NewTenantID(tenantID)},
 		Fingerprint:    fingerprint,
@@ -410,6 +435,7 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		Mobile:         mobile,
 		ScreenWidth:    w,
 		ScreenHeight:   h,
+		ScreenClass:    sql.NullString{String: screenClass, Valid: screenClass != ""},
 		Time:           time,
 	}
 
