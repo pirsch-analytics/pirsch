@@ -70,6 +70,10 @@ func (db *GeoDB) CountryCode(ip string) string {
 	parsedIP := net.ParseIP(ip)
 
 	if parsedIP == nil {
+		if db.logger != nil {
+			db.logger.Printf("error parsing IP address %s to look up country code", ip)
+		}
+
 		return ""
 	}
 

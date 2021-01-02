@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.2
+
+* more logging for GeoDB
+* updated dependencies
+
 ## 1.10.1
 
 **You need to update the schema by running the `v1.10.1.sql` migration script!**

@@ -188,7 +188,8 @@ func (tracker *Tracker) Stop() {
 }
 
 // SetGeoDB sets the GeoDB for the Tracker.
-// The call to this function is thread safe to enable life updates of the database.
+// The call to this function is thread safe to enable live updates of the database.
+// Pass nil to disable the feature.
 func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
 	tracker.geoDBMutex.Lock()
 	defer tracker.geoDBMutex.Unlock()
