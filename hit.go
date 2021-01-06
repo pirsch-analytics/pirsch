@@ -167,6 +167,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
 func IgnoreHit(r *http.Request) bool {
+	// respect do not track header
+	if r.Header.Get("DNT") == "1" {
+		return true
+	}
+
 	// empty User-Agents are usually bots
 	userAgent := strings.TrimSpace(strings.ToLower(r.Header.Get("User-Agent")))
 

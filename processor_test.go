@@ -99,14 +99,17 @@ func TestProcessor_ProcessPaths(t *testing.T) {
 		t.Fatalf("Page visitor statistics not as expected: %v", pageVisitors)
 	}
 
-	visitors, err := analyzer.Visitors(nil)
+	visitors, err := analyzer.Visitors(&Filter{
+		From: day(2020, 12, 24, 0),
+		To:   day(2020, 21, 31, 0),
+	})
 
 	if err != nil {
 		t.Fatalf("Visitors must have been returned, but was: %v", err)
 	}
 
 	if sumUpVisitors(visitors) != 2 {
-		t.Fatalf("Visitor statistics not as expected: %v", visitors)
+		t.Fatalf("Visitor statistics not as expected: %v", sumUpVisitors(visitors))
 	}
 }
 

@@ -260,6 +260,21 @@ func TestIgnoreHitBrowserVersion(t *testing.T) {
 	}
 }
 
+func TestIgnoreHitDoNotTrack(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+
+	if IgnoreHit(req) {
+		t.Fatal("Request must not have been ignored")
+	}
+
+	req.Header.Set("DNT", "1")
+
+	if !IgnoreHit(req) {
+		t.Fatal("Request must have been ignored")
+	}
+}
+
 func TestHitOptionsFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
 	options := HitOptionsFromRequest(req)

@@ -1,6 +1,10 @@
 (function() {
     "use strict";
 
+    if(navigator.doNotTrack == "1") {
+        return;
+    }
+
     var script = document.querySelector("#pirschjs");
     var endpoint = script.getAttribute("data-endpoint") || "/pirsch";
     var tenantID = script.getAttribute("data-tenant-id") || 0;

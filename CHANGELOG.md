@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.3
+
+* respect the "do not track" header (backend and js)
+
 ## 1.10.2
 
 * more logging for GeoDB
