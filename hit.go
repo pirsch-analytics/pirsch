@@ -25,9 +25,11 @@ var referrerQueryParams = []string{
 	"ref",
 	"referer",
 	"referrer",
+	"source",
+	"utm_source",
 }
 
-// Hit represents a single data point/page visit and is the central entity of pirsch.
+// Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
 	BaseEntity
 

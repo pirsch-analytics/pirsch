@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.4
+
+* added *source* and *utm_source* as referrer URL parameters
+* updated referrer spam list
+* updated dependencies
+
 ## 1.10.3
 
 * respect the "do not track" header (backend and js)

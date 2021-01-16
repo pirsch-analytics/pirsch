@@ -346,6 +346,10 @@ func TestGetReferrerFromHeaderOrQuery(t *testing.T) {
 		{"referer", "domain"},
 		{"referrer", ""},
 		{"referrer", "domain"},
+		{"source", "domain"},
+		{"source", ""},
+		{"utm_source", "domain"},
+		{"utm_source", ""},
 	}
 	expected := []string{
 		"",
@@ -355,6 +359,10 @@ func TestGetReferrerFromHeaderOrQuery(t *testing.T) {
 		"domain",
 		"",
 		"domain",
+		"domain",
+		"",
+		"domain",
+		"",
 	}
 
 	for i, in := range input {
