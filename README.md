@@ -1,6 +1,6 @@
 # Pirsch
 
-[![GoDoc](https://godoc.org/github.com/pirsch-analytics/pirsch?status.svg)](https://godoc.org/github.com/pirsch-analytics/pirsch)
+[![Go Reference](https://pkg.go.dev/badge/github.com/pirsch-analytics/pirsch?status.svg)](https://pkg.go.dev/github.com/pirsch-analytics/pirsch?status)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pirsch-analytics/pirsch)](https://goreportcard.com/report/github.com/pirsch-analytics/pirsch)
 [![CircleCI](https://circleci.com/gh/pirsch-analytics/pirsch.svg?style=svg)](https://circleci.com/gh/pirsch-analytics/pirsch)
 <a href="https://discord.gg/fAYm4Cz"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
