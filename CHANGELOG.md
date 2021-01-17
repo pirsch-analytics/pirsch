@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.5
+
+* accept non-url referrers (like for utm_source)
+
 ## 1.10.4
 
 * added *source* and *utm_source* as referrer URL parameters

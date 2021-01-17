@@ -314,6 +314,8 @@ func TestGetReferrer(t *testing.T) {
 		{"https://sub.boring.old/domain", []string{"boring.old"}, true},
 		{"https://example.com/", nil, false},
 		{"https://example.com", nil, false},
+		{"ReferrerName", nil, false},
+		{"  ", nil, false},
 	}
 	expected := []string{
 		"http://boring.old/domain",
@@ -325,6 +327,8 @@ func TestGetReferrer(t *testing.T) {
 		"",
 		"https://example.com/",
 		"https://example.com/",
+		"ReferrerName",
+		"",
 	}
 
 	for i, in := range input {

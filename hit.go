@@ -323,7 +323,8 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	u, err := url.ParseRequestURI(referrer)
 
 	if err != nil {
-		return ""
+		// accept non-url referrers (from utm_source for example)
+		return strings.TrimSpace(referrer)
 	}
 
 	hostname := u.Hostname()
