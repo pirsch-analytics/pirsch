@@ -180,6 +180,40 @@ func TestTrackerHitSession(t *testing.T) {
 	}
 }
 
+func TestTrackerIgnoreSubdomain(t *testing.T) {
+	store := newTestStore()
+	tracker := NewTracker(store, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "valid")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.Hit(req, &HitOptions{
+		ReferrerDomainBlacklist: []string{"pirsch.io"},
+		Referrer:                "https://pirsch.io/",
+	})
+	tracker.Hit(req, &HitOptions{
+		ReferrerDomainBlacklist:                   []string{"pirsch.io"},
+		ReferrerDomainBlacklistIncludesSubdomains: true,
+		Referrer: "https://www.pirsch.io/",
+	})
+	tracker.Hit(req, &HitOptions{
+		ReferrerDomainBlacklist: []string{"pirsch.io", "www.pirsch.io"},
+		Referrer:                "https://www.pirsch.io/",
+	})
+	tracker.Stop()
+
+	if len(store.hits) != 3 {
+		t.Fatalf("Three hits must have been tracked, but was: %v", len(store.hits))
+	}
+
+	for _, hit := range store.hits {
+		if hit.Referrer.Valid {
+			t.Fatalf("No referrers must have been kept, but was: %v", hit.Referrer.String)
+		}
+	}
+}
+
 func BenchmarkTracker(b *testing.B) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
