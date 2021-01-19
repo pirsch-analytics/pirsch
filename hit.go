@@ -75,7 +75,7 @@ type HitOptions struct {
 	// Referrer can be set to manually overwrite the referrer from the request.
 	Referrer string
 
-	// ReferrerDomainBlacklist is used to filter out unwanted referrer from the Referrer header.
+	// ReferrerDomainBlacklist is used to filter out unwanted referrers from the Referrer header.
 	// This can be used to filter out traffic from your own site or subdomains.
 	// To filter your own domain and subdomains, add your domain to the list and set ReferrerDomainBlacklistIncludesSubdomains to true.
 	// This way the referrer for blog.mypage.com -> mypage.com won't be saved.
@@ -83,7 +83,7 @@ type HitOptions struct {
 
 	// ReferrerDomainBlacklistIncludesSubdomains set to true to include all subdomains in the ReferrerDomainBlacklist,
 	// or else subdomains must explicitly be included in the blacklist.
-	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equally.
+	// If the blacklist contains domain.com, sub.domain.com and domain.com will be treated as equals.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
 	// ScreenWidth sets the screen width to be stored with the hit.
