@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.6
+
+* fixed filtering referrers if the hostname cannot be parsed
+
 ## 1.10.5
 
 * accept non-url referrers (like for utm_source)

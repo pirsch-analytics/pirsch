@@ -324,7 +324,11 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 
 	if err != nil {
 		// accept non-url referrers (from utm_source for example)
-		return strings.TrimSpace(referrer)
+		if !containsString(domainBlacklist, referrer) {
+			return strings.TrimSpace(referrer)
+		}
+
+		return ""
 	}
 
 	hostname := u.Hostname()

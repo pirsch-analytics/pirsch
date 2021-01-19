@@ -201,10 +201,14 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 		ReferrerDomainBlacklist: []string{"pirsch.io", "www.pirsch.io"},
 		Referrer:                "https://www.pirsch.io/",
 	})
+	tracker.Hit(req, &HitOptions{
+		ReferrerDomainBlacklist: []string{"pirsch.io"},
+		Referrer:                "pirsch.io",
+	})
 	tracker.Stop()
 
-	if len(store.hits) != 3 {
-		t.Fatalf("Three hits must have been tracked, but was: %v", len(store.hits))
+	if len(store.hits) != 4 {
+		t.Fatalf("Four hits must have been tracked, but was: %v", len(store.hits))
 	}
 
 	for _, hit := range store.hits {
