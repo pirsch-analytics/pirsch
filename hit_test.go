@@ -316,6 +316,9 @@ func TestGetReferrer(t *testing.T) {
 		{"https://example.com", nil, false},
 		{"ReferrerName", nil, false},
 		{"  ", nil, false},
+		{"https://www.pirsch.io/", []string{"pirsch.io"}, false},
+		{"https://www.pirsch.io/", []string{"pirsch.io", "www.pirsch.io"}, false},
+		{"https://www.pirsch.io/", []string{"pirsch.io"}, true},
 	}
 	expected := []string{
 		"http://boring.old/domain",
@@ -328,6 +331,9 @@ func TestGetReferrer(t *testing.T) {
 		"https://example.com/",
 		"https://example.com/",
 		"ReferrerName",
+		"",
+		"https://www.pirsch.io/",
+		"",
 		"",
 	}
 
