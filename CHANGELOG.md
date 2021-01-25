@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.7
+
+* fixed `RunAtMidnight` not firing
+
 ## 1.10.6
 
 * fixed filtering referrers if the hostname cannot be parsed

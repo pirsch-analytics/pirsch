@@ -14,16 +14,12 @@ func RunAtMidnight(f func()) context.CancelFunc {
 	go func() {
 		timer := time.NewTimer(time.Second * 1)
 		defer func() {
-			if timer.Stop() {
+			if !timer.Stop() {
 				<-timer.C
 			}
 		}()
 
 		for {
-			if timer.Stop() {
-				<-timer.C
-			}
-
 			timer.Reset(getTimeToMidnightUTC())
 
 			select {
