@@ -21,14 +21,6 @@ const (
 	minIEVersion      = 11
 )
 
-var referrerQueryParams = []string{
-	"ref",
-	"referer",
-	"referrer",
-	"source",
-	"utm_source",
-}
-
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
 	BaseEntity
@@ -40,6 +32,8 @@ type Hit struct {
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
 	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
 	Referrer       sql.NullString `db:"referrer" json:"referrer,omitempty"`
+	ReferrerName   sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
+	ReferrerIcon   sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
 	OS             sql.NullString `db:"os" json:"os,omitempty"`
 	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
 	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
@@ -120,7 +114,10 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
 	ua = shortenString(ua, 200)
 	lang := shortenString(getLanguage(r), 10)
-	referrer := shortenString(getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains), 200)
+	referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
+	referrer = shortenString(referrer, 200)
+	referrerName = shortenString(referrerName, 200)
+	referrerIcon = shortenString(referrerIcon, 2000)
 	screen := GetScreenClass(options.ScreenWidth)
 	countryCode := ""
 
@@ -152,6 +149,8 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
 		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},
 		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
+		ReferrerName:   sql.NullString{String: referrerName, Valid: referrerName != ""},
+		ReferrerIcon:   sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
 		OS:             sql.NullString{String: uaInfo.OS, Valid: uaInfo.OS != ""},
 		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
 		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
@@ -228,24 +227,6 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	}
 }
 
-func ignoreReferrer(r *http.Request) bool {
-	referrer := getReferrerFromHeaderOrQuery(r)
-
-	if referrer == "" {
-		return false
-	}
-
-	u, err := url.ParseRequestURI(referrer)
-
-	if err == nil {
-		referrer = u.Hostname()
-	}
-
-	referrer = stripSubdomain(referrer)
-	_, found := referrerBlacklist[referrer]
-	return found
-}
-
 func ignoreBrowserVersion(browser, version string) bool {
 	return version != "" &&
 		browser == BrowserChrome && browserVersionBefore(version, minChromeVersion) ||
@@ -305,92 +286,6 @@ func getLanguage(r *http.Request) string {
 	}
 
 	return ""
-}
-
-func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSubdomain bool) string {
-	referrer := ""
-
-	if ref != "" {
-		referrer = ref
-	} else {
-		referrer = getReferrerFromHeaderOrQuery(r)
-	}
-
-	if referrer == "" {
-		return ""
-	}
-
-	u, err := url.ParseRequestURI(referrer)
-
-	if err != nil {
-		// accept non-url referrers (from utm_source for example)
-		if !containsString(domainBlacklist, referrer) {
-			return strings.TrimSpace(referrer)
-		}
-
-		return ""
-	}
-
-	hostname := u.Hostname()
-
-	if ignoreSubdomain {
-		hostname = stripSubdomain(hostname)
-	}
-
-	if containsString(domainBlacklist, hostname) {
-		return ""
-	}
-
-	// remove query parameters and anchor
-	u.RawQuery = ""
-	u.Fragment = ""
-
-	if u.Path == "" {
-		u.Path = "/"
-	}
-
-	return u.String()
-}
-
-func getReferrerFromHeaderOrQuery(r *http.Request) string {
-	referrer := r.Header.Get("Referer")
-
-	if referrer == "" {
-		for _, param := range referrerQueryParams {
-			referrer = r.URL.Query().Get(param)
-
-			if referrer != "" {
-				return referrer
-			}
-		}
-	}
-
-	return referrer
-}
-
-func stripSubdomain(hostname string) string {
-	if hostname == "" {
-		return ""
-	}
-
-	runes := []rune(hostname)
-	index := len(runes) - 1
-	dots := 0
-
-	for i := index; i > 0; i-- {
-		if runes[i] == '.' {
-			dots++
-
-			if dots == 2 {
-				index++
-				break
-			}
-		}
-
-		index--
-	}
-
-	return hostname[index:]
 }
 
 func shortenString(str string, n int) string {
