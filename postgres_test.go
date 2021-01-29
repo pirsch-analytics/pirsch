@@ -178,6 +178,7 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 		Stats: Stats{
 			Day:      day(2020, 9, 3, 0),
 			Visitors: 42,
+			Bounces:  31,
 		},
 		Referrer:     sql.NullString{String: "ref", Valid: true},
 		ReferrerName: sql.NullString{String: "Ref", Valid: true},
@@ -195,6 +196,7 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 	}
 
 	stats.Visitors = 11
+	stats.Bounces = 3
 	err = store.SaveReferrerStats(nil, stats)
 
 	if err != nil {
@@ -206,6 +208,7 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 	}
 
 	if stats.Visitors != 42+11 ||
+		stats.Bounces != 31+3 ||
 		stats.Referrer.String != "ref" ||
 		stats.ReferrerName.String != "Ref" ||
 		stats.ReferrerIcon.String != "icon" {
@@ -616,6 +619,31 @@ func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 
 	if visitors != 2 {
 		t.Fatalf("Two visitors must have bounced, but was: %v", visitors)
+	}
+}
+
+func TestPostgresStore_CountVisitorsByReferrer(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "ref1", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/", "en", "ua", "ref1", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/", "en", "ua", "ref2", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/page", "en", "ua", "ref2", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+	stats, err := store.CountVisitorsByReferrer(nil, NullTenant, pastDay(5))
+
+	if err != nil {
+		t.Fatalf("Visitor count for referrers must have been returned, but was: %v", err)
+	}
+
+	if len(stats) != 2 {
+		t.Fatalf("Stats must have been returned, but was: %v", stats)
+	}
+
+	if stats[0].Referrer.String == "ref1" && stats[0].Bounces != 1 ||
+		stats[0].Referrer.String == "ref2" && stats[0].Bounces != 0 ||
+		stats[1].Referrer.String == "ref1" && stats[1].Bounces != 1 ||
+		stats[1].Referrer.String == "ref2" && stats[1].Bounces != 0 {
+		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }
 

@@ -113,6 +113,79 @@ func TestProcessor_ProcessPaths(t *testing.T) {
 	}
 }
 
+func TestProcessor_ProcessReferrerBounces(t *testing.T) {
+	store := NewPostgresStore(postgresDB, nil)
+	cleanupDB(t)
+	createHit(t, store, 0, "fp1", "/", "en", "ua1", "ref1", day(2020, 12, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", "de", true, false, 0, 0)
+	createHit(t, store, 0, "fp1", "/second-page", "en", "ua1", "ref1", day(2020, 12, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", "de", true, false, 0, 0)
+	createHit(t, store, 0, "fp2", "/second-page", "en", "ua1", "ref1", day(2020, 12, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", "de", true, false, 0, 0)
+	processor := NewProcessor(store)
+
+	if err := processor.Process(); err != nil {
+		t.Fatalf("Data must have been processed, but was: %v", err)
+	}
+
+	analyzer := NewAnalyzer(store, nil)
+	pageVisitors, err := analyzer.PageVisitors(&Filter{
+		From: day(2020, 12, 21, 0),
+		To:   day(2020, 12, 21, 0),
+	})
+
+	if err != nil {
+		t.Fatalf("Page visitors must have been returned, but was: %v", err)
+	}
+
+	if len(pageVisitors) != 2 ||
+		pageVisitors[0].Path != "/" || pageVisitors[0].Stats[0].Visitors != 1 || pageVisitors[0].Stats[0].Bounces != 0 ||
+		pageVisitors[1].Path != "/second-page" || pageVisitors[1].Stats[0].Visitors != 2 || pageVisitors[1].Stats[0].Bounces != 1 {
+		t.Fatalf("Page visitors not as expected: %v", pageVisitors)
+	}
+
+	visitors, err := analyzer.Visitors(&Filter{
+		From: day(2020, 12, 21, 0),
+		To:   day(2020, 12, 21, 0),
+	})
+
+	if err != nil {
+		t.Fatalf("Visitors must have been returned, but was: %v", err)
+	}
+
+	if len(visitors) != 1 || visitors[0].Visitors != 2 || visitors[0].Bounces != 1 {
+		t.Fatalf("Visitors not as expected: %v", pageVisitors)
+	}
+
+	pageReferrer, err := analyzer.PageReferrer(&Filter{
+		From: day(2020, 12, 21, 0),
+		To:   day(2020, 12, 21, 0),
+		Path: "/second-page",
+	})
+
+	if err != nil {
+		t.Fatalf("Page referrer must have been returned, but was: %v", err)
+	}
+
+	if len(pageReferrer) != 1 ||
+		pageReferrer[0].Visitors != 2 ||
+		pageReferrer[0].Bounces != 1 {
+		t.Fatalf("Page referrer not as expected: %v", pageReferrer)
+	}
+
+	referrer, err := analyzer.Referrer(&Filter{
+		From: day(2020, 12, 21, 0),
+		To:   day(2020, 12, 21, 0),
+	})
+
+	if err != nil {
+		t.Fatalf("Referrer must have been returned, but was: %v", err)
+	}
+
+	if len(referrer) != 1 ||
+		referrer[0].Visitors != 2 ||
+		referrer[0].Bounces != 1 {
+		t.Fatalf("Referrer not as expected: %v", referrer)
+	}
+}
+
 func testProcess(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(postgresDB, nil)
 	createTestdata(t, store, tenantID)
@@ -259,13 +332,13 @@ func checkReferrerStats(t *testing.T, tenantID int64) {
 		t.Fatalf("Seven stats must have been created, but was: %v", len(stats))
 	}
 
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Referrer.String != "ref1" ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Referrer.String != "ref1" ||
-		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Referrer.String != "ref1" ||
-		stats[3].Path.String != "/" || stats[3].Visitors != 2 || stats[3].Referrer.String != "ref2" ||
-		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].Referrer.String != "ref3" ||
-		stats[5].Path.Valid || stats[5].Visitors != 2 || stats[5].Referrer.String != "ref2" ||
-		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Referrer.String != "ref3" {
+	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Bounces != 2 || stats[0].Referrer.String != "ref1" ||
+		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Bounces != 1 || stats[1].Referrer.String != "ref1" ||
+		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Bounces != 3 || stats[2].Referrer.String != "ref1" ||
+		stats[3].Path.String != "/" || stats[3].Visitors != 2 || stats[3].Bounces != 2 || stats[3].Referrer.String != "ref2" ||
+		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].Bounces != 1 || stats[4].Referrer.String != "ref3" ||
+		stats[5].Path.Valid || stats[5].Visitors != 2 || stats[5].Bounces != 2 || stats[5].Referrer.String != "ref2" ||
+		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Bounces != 1 || stats[6].Referrer.String != "ref3" {
 		t.Fatalf("Stats not as expected: %v", stats)
 	}
 }

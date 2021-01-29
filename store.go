@@ -114,6 +114,10 @@ type Store interface {
 	// This returns the absolut number of hits without further page calls and is used to calculate the bounce rate.
 	CountVisitorsByPathAndMaxOneHit(*sqlx.Tx, sql.NullInt64, time.Time, string) int
 
+	// CountVisitorsByReferrerAndMaxOneHit returns the visitor count for given day, optional path, and referrer with a maximum of one hit.
+	// This returns the absolut number of hits without further page calls and is used to calculate the bounce rate.
+	CountVisitorsByPathAndReferrerAndMaxOneHit(*sqlx.Tx, sql.NullInt64, time.Time, string, string) int
+
 	// ActiveVisitors returns the active visitor count for given duration.
 	ActiveVisitors(sql.NullInt64, time.Time) int
 
