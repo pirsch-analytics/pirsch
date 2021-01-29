@@ -4,6 +4,7 @@ package pirsch
 // Please add the reference in case you copy an existing list.
 // - https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt
 var referrerBlacklist = map[string]struct{}{
+	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
 	"03e.info":                             {},
@@ -221,6 +222,7 @@ var referrerBlacklist = map[string]struct{}{
 	"batietiket.com":                       {},
 	"batut-fun.ru":                         {},
 	"bavariagid.de":                        {},
+	"bavsac.com":                           {},
 	"bdf-tracker.top":                      {},
 	"beachtoday.ru":                        {},
 	"beauty-lesson.com":                    {},
@@ -1098,6 +1100,7 @@ var referrerBlacklist = map[string]struct{}{
 	"maltadailypost.com":                   {},
 	"mamylik.ru":                           {},
 	"manimpotence.com":                     {},
+	"maofengjx.com":                        {},
 	"marathonbet-in.ru":                    {},
 	"marblestyle.ru":                       {},
 	"maridan.com.ua":                       {},
@@ -1540,6 +1543,7 @@ var referrerBlacklist = map[string]struct{}{
 	"sell-fb-group-here.com":               {},
 	"semalt.com":                           {},
 	"semaltmedia.com":                      {},
+	"semxiu.com":                           {},
 	"seo-2-0.com":                          {},
 	"seo-platform.com":                     {},
 	"seo-services-b2b.com":                 {},
