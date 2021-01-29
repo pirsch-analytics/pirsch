@@ -179,7 +179,9 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 			Day:      day(2020, 9, 3, 0),
 			Visitors: 42,
 		},
-		Referrer: sql.NullString{String: "ref", Valid: true},
+		Referrer:     sql.NullString{String: "ref", Valid: true},
+		ReferrerName: sql.NullString{String: "Ref", Valid: true},
+		ReferrerIcon: sql.NullString{String: "icon", Valid: true},
 	})
 
 	if err != nil {
@@ -204,7 +206,9 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 	}
 
 	if stats.Visitors != 42+11 ||
-		stats.Referrer.String != "ref" {
+		stats.Referrer.String != "ref" ||
+		stats.ReferrerName.String != "Ref" ||
+		stats.ReferrerIcon.String != "icon" {
 		t.Fatalf("Entity not as expected: %v", stats)
 	}
 
