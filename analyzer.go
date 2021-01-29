@@ -232,6 +232,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 	for i := range stats {
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
 	}
 
 	return stats, nil
@@ -636,7 +637,7 @@ func (analyzer *Analyzer) PageLanguages(filter *Filter) ([]LanguageStats, error)
 }
 
 // PageReferrer returns the visitor count per referrer, day, path, and for the given time frame.
-// The path is mandatory.
+// The path is mandatory. Bounces for today are not included, as they cannot be calculated for path filtered results.
 func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 
@@ -658,6 +659,7 @@ func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) 
 
 	for i := range stats {
 		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
 	}
 
 	return stats, nil

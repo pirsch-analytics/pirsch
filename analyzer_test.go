@@ -183,6 +183,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 				Day:        pastDay(2),
 				Visitors:   42,
+				Bounces:    11,
 			},
 			Referrer: sql.NullString{String: "ref2", Valid: true},
 		}
@@ -206,8 +207,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 			t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
 		}
 
-		if visitors[0].Referrer.String != "ref2" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
-			visitors[1].Referrer.String != "ref1" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+		if visitors[0].Referrer.String != "ref2" || visitors[0].Visitors != 43 || visitors[0].Bounces != 11 || !inRange(visitors[0].RelativeVisitors, 0.977) || !inRange(visitors[0].BounceRate, 0.2619) ||
+			visitors[1].Referrer.String != "ref1" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) || !inRange(visitors[1].BounceRate, 0) {
 			t.Fatalf("Visitors not as expected: %v", visitors)
 		}
 	}
@@ -710,15 +711,33 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref2", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+		hit := Hit{
+			BaseEntity:   BaseEntity{TenantID: NewTenantID(tenantID)},
+			Fingerprint:  "fp1",
+			Path:         "/path",
+			Language:     sql.NullString{String: "en", Valid: true},
+			UserAgent:    sql.NullString{String: "ua1", Valid: true},
+			Referrer:     sql.NullString{String: "ref2", Valid: true},
+			ReferrerName: sql.NullString{String: "ref2Name", Valid: true},
+			ReferrerIcon: sql.NullString{String: "ref2Icon", Valid: true},
+			Time:         today(),
+		}
+
+		if err := store.SaveHits([]Hit{hit}); err != nil {
+			t.Fatal(err)
+		}
+
 		stats := &ReferrerStats{
 			Stats: Stats{
 				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
 				Day:        pastDay(2),
 				Path:       sql.NullString{String: "/path", Valid: true},
 				Visitors:   42,
+				Bounces:    11,
 			},
-			Referrer: sql.NullString{String: "ref2", Valid: true},
+			Referrer:     sql.NullString{String: "ref2", Valid: true},
+			ReferrerName: sql.NullString{String: "ref2Name", Valid: true},
+			ReferrerIcon: sql.NullString{String: "ref2Icon", Valid: true},
 		}
 
 		if err := store.SaveReferrerStats(nil, stats); err != nil {
@@ -741,8 +760,8 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 			t.Fatalf("Two visitors must have been returned, but was: %v", len(visitors))
 		}
 
-		if visitors[0].Referrer.String != "ref2" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) ||
-			visitors[1].Referrer.String != "ref1" || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) {
+		if visitors[0].Referrer.String != "ref2" || visitors[0].ReferrerName.String != "ref2Name" || visitors[0].ReferrerIcon.String != "ref2Icon" || visitors[0].Visitors != 43 || !inRange(visitors[0].RelativeVisitors, 0.977) || !inRange(visitors[0].BounceRate, 0.2619) ||
+			visitors[1].Referrer.String != "ref1" || visitors[1].ReferrerName.Valid || visitors[1].ReferrerIcon.Valid || visitors[1].Visitors != 1 || !inRange(visitors[1].RelativeVisitors, 0.022) || !inRange(visitors[1].BounceRate, 0) {
 			t.Fatalf("Visitors not as expected: %v", visitors)
 		}
 	}
@@ -1098,7 +1117,7 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 }
 
 func pastDay(n int) time.Time {
-	now := time.Now()
+	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
 }
 

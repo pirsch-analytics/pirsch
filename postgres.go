@@ -77,10 +77,10 @@ func (store *PostgresStore) Rollback(tx *sqlx.Tx) {
 
 // SaveHits implements the Store interface.
 func (store *PostgresStore) SaveHits(hits []Hit) error {
-	const hitParams = 19
+	const hitParams = 21
 	args := make([]interface{}, 0, len(hits)*hitParams)
 	var query strings.Builder
-	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, os, os_version, browser, browser_version, country_code, desktop, mobile, screen_width, screen_height, screen_class, time) VALUES `)
+	query.WriteString(`INSERT INTO "hit" (tenant_id, fingerprint, session, path, url, language, user_agent, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, country_code, desktop, mobile, screen_width, screen_height, screen_class, time) VALUES `)
 
 	for i, hit := range hits {
 		args = append(args, hit.TenantID)
@@ -91,6 +91,8 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.Language)
 		args = append(args, hit.UserAgent)
 		args = append(args, hit.Referrer)
+		args = append(args, hit.ReferrerName)
+		args = append(args, hit.ReferrerIcon)
 		args = append(args, hit.OS)
 		args = append(args, hit.OSVersion)
 		args = append(args, hit.Browser)
@@ -103,8 +105,8 @@ func (store *PostgresStore) SaveHits(hits []Hit) error {
 		args = append(args, hit.ScreenClass)
 		args = append(args, hit.Time)
 		index := i * hitParams
-		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
-			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15, index+16, index+17, index+18, index+19))
+		query.WriteString(fmt.Sprintf(`($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),`,
+			index+1, index+2, index+3, index+4, index+5, index+6, index+7, index+8, index+9, index+10, index+11, index+12, index+13, index+14, index+15, index+16, index+17, index+18, index+19, index+20, index+21))
 	}
 
 	queryStr := query.String()
@@ -248,16 +250,30 @@ func (store *PostgresStore) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats
 	}
 
 	existing := new(ReferrerStats)
-	err := tx.Get(existing, `SELECT id, visitors FROM "referrer_stats"
+	err := tx.Get(existing, `SELECT id, visitors, bounces FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
 		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
 		AND LOWER("referrer") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Referrer)
 
-	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
-		`INSERT INTO "referrer_stats" ("tenant_id", "day", "path", "referrer", "visitors") VALUES (:tenant_id, :day, :path, :referrer, :visitors)`,
-		`UPDATE "referrer_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
-		return err
+	if err == nil {
+		existing.Visitors += entity.Visitors
+		existing.Bounces += entity.Bounces
+
+		if _, err := tx.Exec(`UPDATE "referrer_stats" SET "visitors" = $1, "bounces" = $2 WHERE id = $3`,
+			existing.Visitors,
+			existing.Bounces,
+			existing.ID); err != nil {
+			return err
+		}
+	} else {
+		rows, err := tx.NamedQuery(`INSERT INTO "referrer_stats" ("tenant_id", "day", "path", "referrer", "referrer_name", "referrer_icon", "visitors", "bounces") VALUES (:tenant_id, :day, :path, :referrer, :referrer_name, :referrer_icon, :visitors, :bounces)`, entity)
+
+		if err != nil {
+			return err
+		}
+
+		store.closeRows(rows)
 	}
 
 	return nil
@@ -588,13 +604,13 @@ func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, tenantID
 	}
 
 	query := `SELECT * FROM (
-			SELECT "tenant_id", $2::date "day", $3::varchar "path", "referrer", count(DISTINCT fingerprint) "visitors"
+			SELECT "tenant_id", $2::date "day", $3::varchar "path", "referrer", "referrer_name", "referrer_icon", count(DISTINCT fingerprint) "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
 			AND LOWER("path") = LOWER($3)
-			GROUP BY tenant_id, "referrer"
+			GROUP BY tenant_id, "referrer", "referrer_name", "referrer_icon"
 		) AS results ORDER BY "day" ASC`
 	var visitors []ReferrerStats
 
@@ -683,11 +699,27 @@ func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.Nu
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT "referrer", count(DISTINCT fingerprint) "visitors", $2::date "day"
-		FROM "hit"
-		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND date("time") = $2::date
-		GROUP BY "referrer"`
+	query := `SELECT h1."referrer",
+       	h1."referrer_name",
+        h1."referrer_icon",
+        count(DISTINCT h1.fingerprint) "visitors",
+	    (
+			SELECT count(DISTINCT h2."fingerprint")
+			FROM "hit" h2
+			WHERE ($1::bigint IS NULL OR h2.tenant_id = $1)
+			AND date(h2."time") = $2::date
+			AND h2."referrer" = h1."referrer"
+			AND (
+				SELECT COUNT(DISTINCT h3."path")
+				FROM "hit" h3
+				WHERE h3."fingerprint" = h2."fingerprint"
+			) = 1
+	    ) "bounces",
+        $2::date "day"
+		FROM "hit" h1
+		WHERE ($1::bigint IS NULL OR h1.tenant_id = $1)
+		AND date(h1."time") = $2::date
+		GROUP BY h1."referrer", h1."referrer_name", h1."referrer_icon"`
 	var visitors []ReferrerStats
 
 	if err := tx.Select(&visitors, query, tenantID, day); err != nil {
@@ -871,7 +903,43 @@ func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantI
 	var visitors int
 
 	if err := tx.Get(&visitors, query, args...); err != nil {
-		store.logger.Printf("error counting visitor with a maximum of one hit: %s", err)
+		store.logger.Printf("error counting visitors for path with a maximum of one hit: %s", err)
+	}
+
+	return visitors
+}
+
+// CountVisitorsByReferrerAndMaxOneHit implements the Store interface.
+func (store *PostgresStore) CountVisitorsByPathAndReferrerAndMaxOneHit(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path, referrer string) int {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	args := make([]interface{}, 0, 4)
+	args = append(args, tenantID)
+	args = append(args, day)
+	args = append(args, referrer)
+	query := `SELECT count(DISTINCT "fingerprint")
+		FROM "hit" h
+		WHERE ($1::bigint IS NULL OR tenant_id = $1)
+		AND date("time") = $2::date
+		AND LOWER("referrer") = LOWER($3) `
+
+	if path != "" {
+		args = append(args, path)
+		query += `AND LOWER("path") = LOWER($4) `
+	}
+
+	query += `AND (
+			SELECT COUNT(DISTINCT "path")
+			FROM "hit"
+			WHERE "fingerprint" = h."fingerprint"
+		) = 1`
+	var visitors int
+
+	if err := tx.Get(&visitors, query, args...); err != nil {
+		store.logger.Printf("error counting visitors for referrer with a maximum of one hit: %s", err)
 	}
 
 	return visitors
@@ -989,13 +1057,17 @@ func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to ti
 
 // VisitorReferrer implements the Store interface.
 func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to time.Time) ([]ReferrerStats, error) {
-	query := `SELECT "referrer", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "referrer",
+       	"referrer_name",
+	    "referrer_icon",
+	    COALESCE(SUM("visitors"), 0) "visitors",
+        COALESCE(SUM("bounces"), 0) "bounces"
 		FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
 		AND "day" <= $3::date
 		AND "path" IS NULL
-		GROUP BY "referrer"
+		GROUP BY "referrer", "referrer_name", "referrer_icon"
 		ORDER BY "visitors" DESC`
 	var visitors []ReferrerStats
 
@@ -1182,24 +1254,33 @@ func (store *PostgresStore) PageLanguages(tenantID sql.NullInt64, path string, f
 // PageReferrer implements the Store interface.
 func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, from time.Time, to time.Time) ([]ReferrerStats, error) {
 	query := `SELECT * FROM (
-			SELECT "referrer", sum("visitors") "visitors" FROM (
-				SELECT "referrer", sum("visitors") "visitors"
+			SELECT "referrer", "referrer_name", "referrer_icon", sum("visitors") "visitors", sum("bounces") "bounces"
+			FROM (
+				SELECT "referrer",
+				       "referrer_name",
+				       "referrer_icon",
+				       sum("visitors") "visitors",
+				       sum("bounces") "bounces"
 				FROM "referrer_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "day" >= date($2::timestamp)
 				AND "day" <= date($3::timestamp)
 				AND LOWER("path") = LOWER($4)
-				GROUP BY "referrer"
+				GROUP BY "referrer", "referrer_name", "referrer_icon"
 				UNION
-				SELECT "referrer", count(DISTINCT fingerprint) "visitors"
+				SELECT "referrer",
+				       "referrer_name",
+				       "referrer_icon",
+				       count(DISTINCT fingerprint) "visitors",
+					   0 "bounces"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND date("time") >= date($2::timestamp)
 				AND date("time") <= date($3::timestamp)
 				AND LOWER("path") = LOWER($4)
-				GROUP BY "referrer"
+				GROUP BY "referrer", "referrer_name", "referrer_icon"
 			) AS results
-			GROUP BY "referrer"
+			GROUP BY "referrer", "referrer_name", "referrer_icon"
 		) AS referrer
 		ORDER BY "visitors" DESC`
 	var referrer []ReferrerStats

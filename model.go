@@ -78,7 +78,9 @@ type LanguageStats struct {
 type ReferrerStats struct {
 	Stats
 
-	Referrer sql.NullString `db:"referrer" json:"referrer"`
+	Referrer     sql.NullString `db:"referrer" json:"referrer"`
+	ReferrerName sql.NullString `db:"referrer_name" json:"referrer_name"`
+	ReferrerIcon sql.NullString `db:"referrer_icon" json:"referrer_icon"`
 }
 
 // OSStats is the visitor count for each path on each day and operating system.

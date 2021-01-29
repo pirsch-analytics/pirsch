@@ -19,6 +19,7 @@ func NewProcessor(store Store) *Processor {
 }
 
 // Process processes all hits in database and deletes them afterwards.
+// This does only apply the tenant ID is null, else ProcessTenant needs to be called for each tenant.
 func (processor *Processor) Process() error {
 	return processor.ProcessTenant(NullTenant)
 }
@@ -176,6 +177,8 @@ func (processor *Processor) pathReferrer(tx *sqlx.Tx, tenantID sql.NullInt64, da
 	}
 
 	for _, v := range visitors {
+		v.Bounces = processor.store.CountVisitorsByPathAndReferrerAndMaxOneHit(tx, tenantID, day, path, v.Referrer.String)
+
 		if err := processor.store.SaveReferrerStats(tx, &v); err != nil {
 			return err
 		}
@@ -282,6 +285,7 @@ func (processor *Processor) referrer(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 
 	for _, v := range visitors {
 		v.TenantID = tenantID
+		v.Bounces = processor.store.CountVisitorsByPathAndReferrerAndMaxOneHit(tx, tenantID, day, "", v.Referrer.String)
 
 		if err := processor.store.SaveReferrerStats(tx, &v); err != nil {
 			return err

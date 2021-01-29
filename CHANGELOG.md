@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0
+
+* updated dependencies
+* updated referrer blacklist
+* map Android referrers to app name and icon from the Google Play Store
+* added bounce rate per referrer
+
 ## 1.10.7
 
 * fixed `RunAtMidnight` not firing
