@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.1
+
+* added relative visitor count to `Analyer.PageVisitors`
+
 ## 1.11.0
 
 * updated dependencies

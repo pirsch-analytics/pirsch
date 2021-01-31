@@ -593,9 +593,19 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			}
 		}
 
+		var sum float64
+
 		for i := range visitors {
-			if visitors[i].Visitors > 0 {
-				visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
+			sum += float64(visitors[i].Visitors)
+		}
+
+		if sum > 0 {
+			for i := range visitors {
+				visitors[i].RelativeVisitors = float64(visitors[i].Visitors) / sum
+
+				if visitors[i].Visitors > 0 {
+					visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
+				}
 			}
 		}
 
@@ -738,7 +748,7 @@ func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
 
-	if sum != 0 {
+	if sum > 0 {
 		stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
 		stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
 		stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum

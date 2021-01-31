@@ -648,10 +648,10 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		}
 
 		if len(visitors[1].Stats) != 4 || visitors[1].Path != "/path" ||
-			!visitors[1].Stats[0].Day.Equal(pastDay(3)) || visitors[1].Stats[0].Visitors != 0 || visitors[1].Stats[0].Sessions != 0 || visitors[1].Stats[0].Bounces != 0 || !inRange(visitors[1].Stats[0].BounceRate, 0) ||
-			!visitors[1].Stats[1].Day.Equal(pastDay(2)) || visitors[1].Stats[1].Visitors != 42 || visitors[1].Stats[1].Sessions != 67 || visitors[1].Stats[1].Bounces != 30 || !inRange(visitors[1].Stats[1].BounceRate, 0.71) ||
-			!visitors[1].Stats[2].Day.Equal(pastDay(1)) || visitors[1].Stats[2].Visitors != 0 || visitors[1].Stats[2].Sessions != 0 || visitors[1].Stats[2].Bounces != 0 || !inRange(visitors[1].Stats[2].BounceRate, 0) ||
-			!visitors[1].Stats[3].Day.Equal(today()) || visitors[1].Stats[3].Visitors != 1 || visitors[1].Stats[3].Sessions != 1 || visitors[1].Stats[3].Bounces != 0 || !inRange(visitors[1].Stats[3].BounceRate, 0) {
+			!visitors[1].Stats[0].Day.Equal(pastDay(3)) || visitors[1].Stats[0].Visitors != 0 || visitors[1].Stats[0].Sessions != 0 || visitors[1].Stats[0].Bounces != 0 || !inRange(visitors[1].Stats[0].BounceRate, 0) || !inRange(visitors[1].Stats[0].RelativeVisitors, 0) ||
+			!visitors[1].Stats[1].Day.Equal(pastDay(2)) || visitors[1].Stats[1].Visitors != 42 || visitors[1].Stats[1].Sessions != 67 || visitors[1].Stats[1].Bounces != 30 || !inRange(visitors[1].Stats[1].BounceRate, 0.71) || !inRange(visitors[1].Stats[1].RelativeVisitors, 0.9767) ||
+			!visitors[1].Stats[2].Day.Equal(pastDay(1)) || visitors[1].Stats[2].Visitors != 0 || visitors[1].Stats[2].Sessions != 0 || visitors[1].Stats[2].Bounces != 0 || !inRange(visitors[1].Stats[2].BounceRate, 0) || !inRange(visitors[1].Stats[2].RelativeVisitors, 0) ||
+			!visitors[1].Stats[3].Day.Equal(today()) || visitors[1].Stats[3].Visitors != 1 || visitors[1].Stats[3].Sessions != 1 || visitors[1].Stats[3].Bounces != 0 || !inRange(visitors[1].Stats[3].BounceRate, 0) || !inRange(visitors[1].Stats[3].RelativeVisitors, 0.0232) {
 			t.Fatalf("Second path not as expected: %v", visitors)
 		}
 	}
