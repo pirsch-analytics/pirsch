@@ -6,6 +6,8 @@
 
 * database indices optimization
 * always save language and country codes in lowercase
+* test refactorings
+* updated dependencies
 
 ## 1.11.1
 
