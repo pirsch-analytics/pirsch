@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -19,11 +20,11 @@ func TestHitFromRequest(t *testing.T) {
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
+	assert.Equal(t, 42, int(hit.TenantID.Int64))
+	assert.True(t, hit.TenantID.Valid)
+	assert.NotEmpty(t, hit.Fingerprint)
 
-	if hit.TenantID.Int64 != 42 ||
-		!hit.TenantID.Valid ||
-		hit.Fingerprint == "" ||
-		!hit.Session.Valid || hit.Session.Time.IsZero() ||
+	if !hit.Session.Valid || hit.Session.Time.IsZero() ||
 		hit.Path != "/test/path" ||
 		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de" ||

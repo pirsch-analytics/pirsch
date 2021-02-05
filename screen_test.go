@@ -1,25 +1,14 @@
 package pirsch
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestGetScreenClass(t *testing.T) {
-	if out := GetScreenClass(0); out != "" {
-		t.Fatalf("No screen class must have been returned for 0 width, but was: %v", out)
-	}
-
-	if out := GetScreenClass(42); out != "XS" {
-		t.Fatalf("Tiny screen class must have been returned, but was: %v", out)
-	}
-
-	if out := GetScreenClass(1024); out != "XL" {
-		t.Fatalf("Large screen class must have been returned, but was: %v", out)
-	}
-
-	if out := GetScreenClass(1025); out != "XL" {
-		t.Fatalf("Large screen class must have been returned, but was: %v", out)
-	}
-
-	if out := GetScreenClass(1919); out != "XXL" {
-		t.Fatalf("Large screen class must have been returned, but was: %v", out)
-	}
+	assert.Equal(t, "", GetScreenClass(0))
+	assert.Equal(t, "XS", GetScreenClass(42))
+	assert.Equal(t, "XL", GetScreenClass(1024))
+	assert.Equal(t, "XL", GetScreenClass(1025))
+	assert.Equal(t, "XXL", GetScreenClass(1919))
 }
