@@ -1,10 +1,19 @@
 # Changelog
 
+## 1.12.0
+
+**You need to update the schema by running the `v1.12.0.sql` migration script!**
+
+* database indices optimization
+* always save language and country codes in lowercase
+
 ## 1.11.1
 
 * added relative visitor count to `Analyer.PageVisitors`
 
 ## 1.11.0
+
+**You need to update the schema by running the `v1.11.0.sql` migration script!**
 
 * updated dependencies
 * updated referrer blacklist
