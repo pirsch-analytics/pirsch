@@ -1,41 +1,25 @@
 package pirsch
 
-import "testing"
-
-// this can be used to manually test a User-Agent string
-func TestParseUserAgentManually(t *testing.T) {
-	ua := ParseUserAgent("Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US) AppleWebKit/533.17.8 (KHTML, like Gecko) Version/5.0.1 Safari/533.17.8")
-	t.Log(ua.OS)
-	t.Log(ua.OSVersion)
-	t.Log(ua.Browser)
-	t.Log(ua.BrowserVersion)
-}
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestParseUserAgent(t *testing.T) {
 	// just a simple test to check ParseUserAgent returns something for a clean User-Agent
 	ua := ParseUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0")
-
-	if ua.OS != OSMac || ua.OSVersion != "10.15" {
-		t.Fatalf("Operating system information not as expected: %v %v", ua.OS, ua.OSVersion)
-	}
-
-	if ua.Browser != BrowserFirefox || ua.BrowserVersion != "79.0" {
-		t.Fatalf("Browser information not as expected: %v %v", ua.Browser, ua.BrowserVersion)
-	}
+	assert.Equal(t, OSMac, ua.OS)
+	assert.Equal(t, "10.15", ua.OSVersion)
+	assert.Equal(t, BrowserFirefox, ua.Browser)
+	assert.Equal(t, "79.0", ua.BrowserVersion)
 }
 
 func TestGetBrowser(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		system, products := parseUserAgent(ua.ua)
 		browser, version := getBrowser(products, system, ua.os)
-
-		if browser != ua.browser {
-			t.Fatalf("Expected browser '%v' for user agent '%v', but was: %v", ua.browser, ua.ua, browser)
-		}
-
-		if version != ua.browserVersion {
-			t.Fatalf("Expected version '%v' for user agent '%v', but was: %v", ua.browserVersion, ua.ua, version)
-		}
+		assert.Equal(t, ua.browser, browser)
+		assert.Equal(t, ua.browserVersion, version)
 	}
 }
 
@@ -43,32 +27,21 @@ func TestGetBrowserChromeSafari(t *testing.T) {
 	chrome := "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
 	system, products := parseUserAgent(chrome)
 	browser, version := getBrowser(products, system, OSMac)
-
-	if browser != BrowserChrome || version != "87.0" {
-		t.Fatalf("UA must have been detected as Chrome, but was: %v %v", browser, version)
-	}
-
+	assert.Equal(t, BrowserChrome, browser)
+	assert.Equal(t, "87.0", version)
 	safari := "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15"
 	system, products = parseUserAgent(safari)
 	browser, version = getBrowser(products, system, OSMac)
-
-	if browser != BrowserSafari || version != "14.0" {
-		t.Fatalf("UA must have been detected as Safari, but was: %v %v", browser, version)
-	}
+	assert.Equal(t, BrowserSafari, browser)
+	assert.Equal(t, "14.0", version)
 }
 
 func TestGetOS(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		system, _ := parseUserAgent(ua.ua)
 		os, version := getOS(system)
-
-		if os != ua.os {
-			t.Fatalf("Expected OS '%v' for user agent '%v', but was: %v", ua.os, ua.ua, os)
-		}
-
-		if version != ua.osVersion {
-			t.Fatalf("Expected version '%v' for user agent '%v', but was: %v", ua.osVersion, ua.ua, version)
-		}
+		assert.Equal(t, ua.os, os)
+		assert.Equal(t, ua.osVersion, version)
 	}
 }
 
@@ -104,9 +77,7 @@ func TestGetProductVersion(t *testing.T) {
 	}
 
 	for i, in := range input {
-		if version := getProductVersion(in.product, in.n); version != expected[i] {
-			t.Fatalf("Expected version '%v' for string '%v' and n %v, but was: %v", expected[i], in.product, in.n, version)
-		}
+		assert.Equal(t, expected[i], getProductVersion(in.product, in.n))
 	}
 }
 
@@ -136,9 +107,7 @@ func TestGetOSVersion(t *testing.T) {
 	}
 
 	for i, in := range input {
-		if version := getOSVersion(in.version, in.n); version != expected[i] {
-			t.Fatalf("Expected version '%v' for string '%v' and n %v, but was: %v", expected[i], in.version, in.n, version)
-		}
+		assert.Equal(t, expected[i], getOSVersion(in.version, in.n))
 	}
 }
 
@@ -181,23 +150,7 @@ func TestParse(t *testing.T) {
 
 	for i, in := range input {
 		system, products := parseUserAgent(in)
-
-		if !testStringSlicesEqual(system, expected[i][0]) || !testStringSlicesEqual(products, expected[i][1]) {
-			t.Fatalf("%v, expected: %v %v, was: %v %v", in, expected[i][0], expected[i][1], system, products)
-		}
+		assert.ElementsMatch(t, expected[i][0], system)
+		assert.ElementsMatch(t, expected[i][1], products)
 	}
-}
-
-func testStringSlicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-
-	return true
 }

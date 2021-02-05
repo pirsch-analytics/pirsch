@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,10 +50,8 @@ func TestGetReferrer(t *testing.T) {
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Add("Referer", in.referrer)
-
-		if referrer, _, _ := getReferrer(r, "", in.blacklist, in.ignoreSubdomain); referrer != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], referrer)
-		}
+		referrer, _, _ := getReferrer(r, "", in.blacklist, in.ignoreSubdomain)
+		assert.Equal(t, expected[i], referrer)
 	}
 }
 
@@ -86,10 +85,7 @@ func TestGetReferrerFromHeaderOrQuery(t *testing.T) {
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
-
-		if out := getReferrerFromHeaderOrQuery(r); out != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
-		}
+		assert.Equal(t, expected[i], getReferrerFromHeaderOrQuery(r))
 	}
 }
 
@@ -118,9 +114,7 @@ func TestStripSubdomain(t *testing.T) {
 	}
 
 	for i, in := range input {
-		if hostname := stripSubdomain(in); hostname != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], hostname)
-		}
+		assert.Equal(t, expected[i], stripSubdomain(in))
 	}
 }
 
@@ -128,15 +122,11 @@ func TestGetReferrerAndroidApp(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
 	_, name, icon := getReferrer(r, "", nil, false)
-
-	if name != "Slack" || icon == "" {
-		t.Fatalf("Android app name and icon must have been returned, but was: %v %v", name, icon)
-	}
-
+	assert.Equal(t, "Slack", name)
+	assert.NotEmpty(t, icon)
 	r.Header.Set("Referer", androidAppPrefix+"does-not-exist")
 	ref, name, icon := getReferrer(r, "", nil, false)
-
-	if ref != androidAppPrefix+"does-not-exist" || name != "" || icon != "" {
-		t.Fatalf("Android app name and icon must not have been returned, but was: %v %v", name, icon)
-	}
+	assert.Equal(t, androidAppPrefix+"does-not-exist", ref)
+	assert.Empty(t, name)
+	assert.Empty(t, icon)
 }

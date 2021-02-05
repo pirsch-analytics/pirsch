@@ -3,6 +3,7 @@ package pirsch
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -26,39 +27,19 @@ func TestProcessor_ProcessSessions(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/", "en", "", "", day(2020, 9, 7, 5), now.Add(time.Second*1), OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
 	processor := NewProcessor(store)
-
-	if err := processor.Process(); err != nil {
-		t.Fatalf("Data must have been processed, but was: %v", err)
-	}
-
+	assert.NoError(t, processor.Process())
 	checkHits(t, 0)
 	db := sqlx.NewDb(postgresDB, "postgres")
 	var visitorStats []VisitorStats
 	var timeStats []VisitorTimeStats
-
-	if err := db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(visitorStats) != 2 {
-		t.Fatalf("Two visitor stats must have been created, but was: %v", len(visitorStats))
-	}
-
-	if len(timeStats) != 24 {
-		t.Fatalf("24 visitor time stats must have been created, but was: %v", len(visitorStats))
-	}
-
-	if visitorStats[0].Visitors != 2 || visitorStats[0].Sessions != 3 {
-		t.Fatalf("Visitor stats must have two visitors and three sessions, but was: %v %v", visitorStats[0].Visitors, visitorStats[0].Sessions)
-	}
-
-	if timeStats[4].Visitors != 1 || timeStats[5].Visitors != 1 {
-		t.Fatalf("Visitor time stats must have two visitors, but was: %v %v", timeStats[4].Visitors, timeStats[5].Visitors)
-	}
+	assert.NoError(t, db.Select(&visitorStats, `SELECT * FROM "visitor_stats" ORDER BY "day", "path"`))
+	assert.NoError(t, db.Select(&timeStats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`))
+	assert.Len(t, visitorStats, 2)
+	assert.Len(t, timeStats, 24)
+	assert.Equal(t, 2, visitorStats[0].Visitors)
+	assert.Equal(t, 3, visitorStats[0].Sessions)
+	assert.Equal(t, 1, timeStats[4].Visitors)
+	assert.Equal(t, 1, timeStats[5].Visitors)
 }
 
 func TestProcessor_ProcessPaths(t *testing.T) {
@@ -76,41 +57,24 @@ func TestProcessor_ProcessPaths(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/path", "en", "", "", day(2020, 12, 27, 5), now, OSWindows, "10", BrowserChrome, "84.0", "", true, false, 0, 0)
 	processor := NewProcessor(store)
-
-	if err := processor.Process(); err != nil {
-		t.Fatalf("Data must have been processed, but was: %v", err)
-	}
-
+	assert.NoError(t, processor.Process())
 	analyzer := NewAnalyzer(store, nil)
 	pageVisitors, err := analyzer.PageVisitors(&Filter{
 		From: day(2020, 12, 25, 0),
 		To:   day(2020, 12, 28, 0),
 	})
-
-	if err != nil {
-		t.Fatalf("Page visitors must have been returned, but was: %v", err)
-	}
-
-	if len(pageVisitors) != 2 ||
-		pageVisitors[0].Path != "/" ||
-		sumUpVisitors(pageVisitors[0].Stats) != 1 ||
-		pageVisitors[1].Path != "/path" ||
-		sumUpVisitors(pageVisitors[1].Stats) != 2 {
-		t.Fatalf("Page visitor statistics not as expected: %v", pageVisitors)
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 2)
+	assert.Equal(t, "/", pageVisitors[0].Path)
+	assert.Equal(t, 1, sumUpVisitors(pageVisitors[0].Stats))
+	assert.Equal(t, "/path", pageVisitors[1].Path)
+	assert.Equal(t, 2, sumUpVisitors(pageVisitors[1].Stats))
 	visitors, err := analyzer.Visitors(&Filter{
 		From: day(2020, 12, 24, 0),
 		To:   day(2020, 21, 31, 0),
 	})
-
-	if err != nil {
-		t.Fatalf("Visitors must have been returned, but was: %v", err)
-	}
-
-	if sumUpVisitors(visitors) != 2 {
-		t.Fatalf("Visitor statistics not as expected: %v", sumUpVisitors(visitors))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 2, sumUpVisitors(visitors))
 }
 
 func TestProcessor_ProcessReferrerBounces(t *testing.T) {
@@ -120,70 +84,45 @@ func TestProcessor_ProcessReferrerBounces(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/second-page", "en", "ua1", "ref1", day(2020, 12, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", "de", true, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/second-page", "en", "ua1", "ref1", day(2020, 12, 21, 7), time.Time{}, OSWindows, "10", BrowserChrome, "84.0", "de", true, false, 0, 0)
 	processor := NewProcessor(store)
-
-	if err := processor.Process(); err != nil {
-		t.Fatalf("Data must have been processed, but was: %v", err)
-	}
-
+	assert.NoError(t, processor.Process())
 	analyzer := NewAnalyzer(store, nil)
 	pageVisitors, err := analyzer.PageVisitors(&Filter{
 		From: day(2020, 12, 21, 0),
 		To:   day(2020, 12, 21, 0),
 	})
-
-	if err != nil {
-		t.Fatalf("Page visitors must have been returned, but was: %v", err)
-	}
-
-	if len(pageVisitors) != 2 ||
-		pageVisitors[0].Path != "/" || pageVisitors[0].Stats[0].Visitors != 1 || pageVisitors[0].Stats[0].Bounces != 0 ||
-		pageVisitors[1].Path != "/second-page" || pageVisitors[1].Stats[0].Visitors != 2 || pageVisitors[1].Stats[0].Bounces != 1 {
-		t.Fatalf("Page visitors not as expected: %v", pageVisitors)
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 2)
+	assert.Equal(t, "/", pageVisitors[0].Path)
+	assert.Equal(t, "/second-page", pageVisitors[1].Path)
+	assert.Equal(t, 1, pageVisitors[0].Stats[0].Visitors)
+	assert.Equal(t, 2, pageVisitors[1].Stats[0].Visitors)
+	assert.Equal(t, 0, pageVisitors[0].Stats[0].Bounces)
+	assert.Equal(t, 1, pageVisitors[1].Stats[0].Bounces)
 	visitors, err := analyzer.Visitors(&Filter{
 		From: day(2020, 12, 21, 0),
 		To:   day(2020, 12, 21, 0),
 	})
-
-	if err != nil {
-		t.Fatalf("Visitors must have been returned, but was: %v", err)
-	}
-
-	if len(visitors) != 1 || visitors[0].Visitors != 2 || visitors[0].Bounces != 1 {
-		t.Fatalf("Visitors not as expected: %v", pageVisitors)
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[0].Bounces)
 	pageReferrer, err := analyzer.PageReferrer(&Filter{
 		From: day(2020, 12, 21, 0),
 		To:   day(2020, 12, 21, 0),
 		Path: "/second-page",
 	})
-
-	if err != nil {
-		t.Fatalf("Page referrer must have been returned, but was: %v", err)
-	}
-
-	if len(pageReferrer) != 1 ||
-		pageReferrer[0].Visitors != 2 ||
-		pageReferrer[0].Bounces != 1 {
-		t.Fatalf("Page referrer not as expected: %v", pageReferrer)
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, pageReferrer, 1)
+	assert.Equal(t, 2, pageReferrer[0].Visitors)
+	assert.Equal(t, 1, pageReferrer[0].Bounces)
 	referrer, err := analyzer.Referrer(&Filter{
 		From: day(2020, 12, 21, 0),
 		To:   day(2020, 12, 21, 0),
 	})
-
-	if err != nil {
-		t.Fatalf("Referrer must have been returned, but was: %v", err)
-	}
-
-	if len(referrer) != 1 ||
-		referrer[0].Visitors != 2 ||
-		referrer[0].Bounces != 1 {
-		t.Fatalf("Referrer not as expected: %v", referrer)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, referrer, 1)
+	assert.Equal(t, 2, referrer[0].Visitors)
+	assert.Equal(t, 1, referrer[0].Bounces)
 }
 
 func testProcess(t *testing.T, tenantID int64) {
@@ -192,13 +131,9 @@ func testProcess(t *testing.T, tenantID int64) {
 	processor := NewProcessor(store)
 
 	if tenantID == 0 {
-		if err := processor.Process(); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
-		}
+		assert.NoError(t, processor.Process())
 	} else {
-		if err := processor.ProcessTenant(NewTenantID(tenantID)); err != nil {
-			t.Fatalf("Data must have been processed, but was: %v", err)
-		}
+		assert.NoError(t, processor.ProcessTenant(NewTenantID(tenantID)))
 	}
 
 	checkHits(t, tenantID)
@@ -218,18 +153,12 @@ func checkHits(t *testing.T, tenantID int64) {
 	count := 1
 
 	if tenantID != 0 {
-		if err := db.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE tenant_id = $1`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Get(&count, `SELECT COUNT(1) FROM "hit" WHERE tenant_id = $1`, tenantID))
 	} else {
-		if err := db.Get(&count, `SELECT COUNT(1) FROM "hit"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Get(&count, `SELECT COUNT(1) FROM "hit"`))
 	}
 
-	if count != 0 {
-		t.Fatalf("Hits must have been cleaned up, but was: %v", count)
-	}
+	assert.Equal(t, 0, count)
 }
 
 func checkVisitorStats(t *testing.T, tenantID int64) {
@@ -237,25 +166,36 @@ func checkVisitorStats(t *testing.T, tenantID int64) {
 	var stats []VisitorStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE tenant_id = $1 AND "path" IS NOT NULL ORDER BY "day", "path"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE tenant_id = $1 AND "path" IS NOT NULL ORDER BY "day", "path"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE "path" IS NOT NULL ORDER BY "day", "path"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "visitor_stats" WHERE "path" IS NOT NULL ORDER BY "day", "path"`))
 	}
 
-	if len(stats) != 4 {
-		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].PlatformDesktop != 2 || stats[0].PlatformMobile != 0 || stats[0].PlatformUnknown != 0 || stats[0].Bounces != 2 ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].PlatformDesktop != 1 || stats[1].PlatformMobile != 0 || stats[1].PlatformUnknown != 0 || stats[1].Bounces != 1 ||
-		stats[2].Path.String != "/" || stats[2].Visitors != 2 || stats[2].PlatformDesktop != 1 || stats[2].PlatformMobile != 0 || stats[2].PlatformUnknown != 1 || stats[2].Bounces != 2 ||
-		stats[3].Path.String != "/different-page" || stats[3].Visitors != 1 || stats[3].PlatformDesktop != 0 || stats[3].PlatformMobile != 1 || stats[3].PlatformUnknown != 0 || stats[3].Bounces != 1 {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 4)
+	assert.Equal(t, "/", stats[0].Path.String)
+	assert.Equal(t, "/page", stats[1].Path.String)
+	assert.Equal(t, "/", stats[2].Path.String)
+	assert.Equal(t, "/different-page", stats[3].Path.String)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[2].Visitors)
+	assert.Equal(t, 1, stats[3].Visitors)
+	assert.Equal(t, 2, stats[0].PlatformDesktop)
+	assert.Equal(t, 1, stats[1].PlatformDesktop)
+	assert.Equal(t, 1, stats[2].PlatformDesktop)
+	assert.Equal(t, 0, stats[3].PlatformDesktop)
+	assert.Equal(t, 0, stats[0].PlatformMobile)
+	assert.Equal(t, 0, stats[1].PlatformMobile)
+	assert.Equal(t, 0, stats[2].PlatformMobile)
+	assert.Equal(t, 1, stats[3].PlatformMobile)
+	assert.Equal(t, 0, stats[0].PlatformUnknown)
+	assert.Equal(t, 0, stats[1].PlatformUnknown)
+	assert.Equal(t, 1, stats[2].PlatformUnknown)
+	assert.Equal(t, 0, stats[3].PlatformUnknown)
+	assert.Equal(t, 2, stats[0].Bounces)
+	assert.Equal(t, 1, stats[1].Bounces)
+	assert.Equal(t, 2, stats[2].Bounces)
+	assert.Equal(t, 1, stats[3].Bounces)
 }
 
 func checkVisitorTimeStats(t *testing.T, tenantID int64) {
@@ -263,25 +203,20 @@ func checkVisitorTimeStats(t *testing.T, tenantID int64) {
 	var stats []VisitorTimeStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" WHERE tenant_id = $1 ORDER BY "day", "hour"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "visitor_time_stats" WHERE tenant_id = $1 ORDER BY "day", "hour"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "visitor_time_stats" ORDER BY "day", "hour"`))
 	}
 
-	if len(stats) != 48 {
-		t.Fatalf("48 stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[7].Visitors != 2 || stats[7].Hour != 7 ||
-		stats[8].Visitors != 1 || stats[8].Hour != 8 ||
-		stats[24+9].Visitors != 2 || stats[24+9].Hour != 9 ||
-		stats[24+10].Visitors != 1 || stats[24+10].Hour != 10 {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 48)
+	assert.Equal(t, 2, stats[7].Visitors)
+	assert.Equal(t, 1, stats[8].Visitors)
+	assert.Equal(t, 2, stats[24+9].Visitors)
+	assert.Equal(t, 1, stats[24+10].Visitors)
+	assert.Equal(t, 7, stats[7].Hour)
+	assert.Equal(t, 8, stats[8].Hour)
+	assert.Equal(t, 9, stats[24+9].Hour)
+	assert.Equal(t, 10, stats[24+10].Hour)
 }
 
 func checkLanguageStats(t *testing.T, tenantID int64) {
@@ -289,29 +224,36 @@ func checkLanguageStats(t *testing.T, tenantID int64) {
 	var stats []LanguageStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "language_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "language"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "language_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "language"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "language_stats" ORDER BY "day", "path", "language"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "language_stats" ORDER BY "day", "path", "language"`))
 	}
 
-	if len(stats) != 8 {
-		t.Fatalf("Four stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Language.String != "en" ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Language.String != "de" ||
-		stats[2].Path.Valid || stats[2].Visitors != 1 || stats[2].Language.String != "de" ||
-		stats[3].Path.Valid || stats[3].Visitors != 2 || stats[3].Language.String != "en" ||
-		stats[4].Path.String != "/" || stats[4].Visitors != 2 || stats[4].Language.String != "en" ||
-		stats[5].Path.String != "/different-page" || stats[5].Visitors != 1 || stats[5].Language.String != "jp" ||
-		stats[6].Path.Valid || stats[6].Visitors != 2 || stats[6].Language.String != "en" ||
-		stats[7].Path.Valid || stats[7].Visitors != 1 || stats[7].Language.String != "jp" {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 8)
+	assert.Equal(t, "/", stats[0].Path.String)
+	assert.Equal(t, "/page", stats[1].Path.String)
+	assert.False(t, stats[2].Path.Valid)
+	assert.False(t, stats[3].Path.Valid)
+	assert.Equal(t, "/", stats[4].Path.String)
+	assert.Equal(t, "/different-page", stats[5].Path.String)
+	assert.False(t, stats[6].Path.Valid)
+	assert.False(t, stats[7].Path.Valid)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
+	assert.Equal(t, 2, stats[3].Visitors)
+	assert.Equal(t, 2, stats[4].Visitors)
+	assert.Equal(t, 1, stats[5].Visitors)
+	assert.Equal(t, 2, stats[6].Visitors)
+	assert.Equal(t, 1, stats[7].Visitors)
+	assert.Equal(t, "en", stats[0].Language.String)
+	assert.Equal(t, "de", stats[1].Language.String)
+	assert.Equal(t, "de", stats[2].Language.String)
+	assert.Equal(t, "en", stats[3].Language.String)
+	assert.Equal(t, "en", stats[4].Language.String)
+	assert.Equal(t, "jp", stats[5].Language.String)
+	assert.Equal(t, "en", stats[6].Language.String)
+	assert.Equal(t, "jp", stats[7].Language.String)
 }
 
 func checkReferrerStats(t *testing.T, tenantID int64) {
@@ -319,28 +261,40 @@ func checkReferrerStats(t *testing.T, tenantID int64) {
 	var stats []ReferrerStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "referrer_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "referrer"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "referrer_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "referrer"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "referrer_stats" ORDER BY "day", "path", "referrer"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "referrer_stats" ORDER BY "day", "path", "referrer"`))
 	}
 
-	if len(stats) != 7 {
-		t.Fatalf("Seven stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Bounces != 2 || stats[0].Referrer.String != "ref1" ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Bounces != 1 || stats[1].Referrer.String != "ref1" ||
-		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Bounces != 3 || stats[2].Referrer.String != "ref1" ||
-		stats[3].Path.String != "/" || stats[3].Visitors != 2 || stats[3].Bounces != 2 || stats[3].Referrer.String != "ref2" ||
-		stats[4].Path.String != "/different-page" || stats[4].Visitors != 1 || stats[4].Bounces != 1 || stats[4].Referrer.String != "ref3" ||
-		stats[5].Path.Valid || stats[5].Visitors != 2 || stats[5].Bounces != 2 || stats[5].Referrer.String != "ref2" ||
-		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Bounces != 1 || stats[6].Referrer.String != "ref3" {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 7)
+	assert.Equal(t, "/", stats[0].Path.String)
+	assert.Equal(t, "/page", stats[1].Path.String)
+	assert.False(t, stats[2].Path.Valid)
+	assert.Equal(t, "/", stats[3].Path.String)
+	assert.Equal(t, "/different-page", stats[4].Path.String)
+	assert.False(t, stats[5].Path.Valid)
+	assert.False(t, stats[6].Path.Valid)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 3, stats[2].Visitors)
+	assert.Equal(t, 2, stats[3].Visitors)
+	assert.Equal(t, 1, stats[4].Visitors)
+	assert.Equal(t, 2, stats[5].Visitors)
+	assert.Equal(t, 1, stats[6].Visitors)
+	assert.Equal(t, 2, stats[0].Bounces)
+	assert.Equal(t, 1, stats[1].Bounces)
+	assert.Equal(t, 3, stats[2].Bounces)
+	assert.Equal(t, 2, stats[3].Bounces)
+	assert.Equal(t, 1, stats[4].Bounces)
+	assert.Equal(t, 2, stats[5].Bounces)
+	assert.Equal(t, 1, stats[6].Bounces)
+	assert.Equal(t, "ref1", stats[0].Referrer.String)
+	assert.Equal(t, "ref1", stats[1].Referrer.String)
+	assert.Equal(t, "ref1", stats[2].Referrer.String)
+	assert.Equal(t, "ref2", stats[3].Referrer.String)
+	assert.Equal(t, "ref3", stats[4].Referrer.String)
+	assert.Equal(t, "ref2", stats[5].Referrer.String)
+	assert.Equal(t, "ref3", stats[6].Referrer.String)
 }
 
 func checkOSStats(t *testing.T, tenantID int64) {
@@ -348,31 +302,52 @@ func checkOSStats(t *testing.T, tenantID int64) {
 	var stats []OSStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "os_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "os", "os_version"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "os_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "os", "os_version"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "os_stats" ORDER BY "day", "path", "os", "os_version"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "os_stats" ORDER BY "day", "path", "os", "os_version"`))
 	}
 
-	if len(stats) != 10 {
-		t.Fatalf("Ten stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].OS.String != OSWindows || stats[0].OSVersion.String != "10" ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].OS.String != OSMac || stats[1].OSVersion.String != "10.15.3" ||
-		stats[2].Path.Valid || stats[2].Visitors != 1 || stats[2].OS.String != OSMac || stats[2].OSVersion.Valid ||
-		stats[3].Path.Valid || stats[3].Visitors != 2 || stats[3].OS.String != OSWindows || stats[3].OSVersion.Valid ||
-		stats[4].Path.String != "/" || stats[4].Visitors != 1 || stats[4].OS.String != OSLinux || stats[4].OSVersion.String != "" ||
-		stats[5].Path.String != "/" || stats[5].Visitors != 1 || stats[5].OS.String != OSWindows || stats[5].OSVersion.String != "10" ||
-		stats[6].Path.String != "/different-page" || stats[6].Visitors != 1 || stats[6].OS.String != OSAndroid || stats[6].OSVersion.String != "8.0" ||
-		stats[7].Path.Valid || stats[7].Visitors != 1 || stats[7].OS.String != OSAndroid || stats[7].OSVersion.Valid ||
-		stats[8].Path.Valid || stats[8].Visitors != 1 || stats[8].OS.String != OSLinux || stats[8].OSVersion.Valid ||
-		stats[9].Path.Valid || stats[9].Visitors != 1 || stats[9].OS.String != OSWindows || stats[9].OSVersion.Valid {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 10)
+	assert.Equal(t, "/", stats[0].Path.String)
+	assert.Equal(t, "/page", stats[1].Path.String)
+	assert.False(t, stats[2].Path.Valid)
+	assert.False(t, stats[3].Path.Valid)
+	assert.Equal(t, "/", stats[4].Path.String)
+	assert.Equal(t, "/", stats[5].Path.String)
+	assert.Equal(t, "/different-page", stats[6].Path.String)
+	assert.False(t, stats[7].Path.Valid)
+	assert.False(t, stats[8].Path.Valid)
+	assert.False(t, stats[9].Path.Valid)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
+	assert.Equal(t, 2, stats[3].Visitors)
+	assert.Equal(t, 1, stats[4].Visitors)
+	assert.Equal(t, 1, stats[5].Visitors)
+	assert.Equal(t, 1, stats[6].Visitors)
+	assert.Equal(t, 1, stats[7].Visitors)
+	assert.Equal(t, 1, stats[8].Visitors)
+	assert.Equal(t, 1, stats[9].Visitors)
+	assert.Equal(t, OSWindows, stats[0].OS.String)
+	assert.Equal(t, OSMac, stats[1].OS.String)
+	assert.Equal(t, OSMac, stats[2].OS.String)
+	assert.Equal(t, OSWindows, stats[3].OS.String)
+	assert.Equal(t, OSLinux, stats[4].OS.String)
+	assert.Equal(t, OSWindows, stats[5].OS.String)
+	assert.Equal(t, OSAndroid, stats[6].OS.String)
+	assert.Equal(t, OSAndroid, stats[7].OS.String)
+	assert.Equal(t, OSLinux, stats[8].OS.String)
+	assert.Equal(t, OSWindows, stats[9].OS.String)
+	assert.Equal(t, "10", stats[0].OSVersion.String)
+	assert.Equal(t, "10.15.3", stats[1].OSVersion.String)
+	assert.False(t, stats[2].OSVersion.Valid)
+	assert.False(t, stats[3].OSVersion.Valid)
+	assert.False(t, stats[4].OSVersion.Valid)
+	assert.Equal(t, "10", stats[5].OSVersion.String)
+	assert.Equal(t, "8.0", stats[6].OSVersion.String)
+	assert.False(t, stats[7].OSVersion.Valid)
+	assert.False(t, stats[8].OSVersion.Valid)
+	assert.False(t, stats[9].OSVersion.Valid)
 }
 
 func checkBrowserStats(t *testing.T, tenantID int64) {
@@ -380,29 +355,44 @@ func checkBrowserStats(t *testing.T, tenantID int64) {
 	var stats []BrowserStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "browser_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "browser", "browser_version"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "browser_stats" WHERE tenant_id = $1 ORDER BY "day", "path", "browser", "browser_version"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "browser_stats" ORDER BY "day", "path", "browser", "browser_version"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "browser_stats" ORDER BY "day", "path", "browser", "browser_version"`))
 	}
 
-	if len(stats) != 8 {
-		t.Fatalf("Eight stats must have been created, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/" || stats[0].Visitors != 2 || stats[0].Browser.String != BrowserChrome || stats[0].BrowserVersion.String != "84.0" ||
-		stats[1].Path.String != "/page" || stats[1].Visitors != 1 || stats[1].Browser.String != BrowserChrome || stats[1].BrowserVersion.String != "84.0" ||
-		stats[2].Path.Valid || stats[2].Visitors != 3 || stats[2].Browser.String != BrowserChrome || stats[2].BrowserVersion.Valid ||
-		stats[3].Path.String != "/" || stats[3].Visitors != 1 || stats[3].Browser.String != BrowserFirefox || stats[3].BrowserVersion.String != "53.0" ||
-		stats[4].Path.String != "/" || stats[4].Visitors != 1 || stats[4].Browser.String != BrowserFirefox || stats[4].BrowserVersion.String != "54.0" ||
-		stats[5].Path.String != "/different-page" || stats[5].Visitors != 1 || stats[5].Browser.String != BrowserChrome || stats[5].BrowserVersion.String != "84.0" ||
-		stats[6].Path.Valid || stats[6].Visitors != 1 || stats[6].Browser.String != BrowserChrome || stats[6].BrowserVersion.Valid ||
-		stats[7].Path.Valid || stats[7].Visitors != 2 || stats[7].Browser.String != BrowserFirefox || stats[7].BrowserVersion.Valid {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 8)
+	assert.Equal(t, "/", stats[0].Path.String)
+	assert.Equal(t, "/page", stats[1].Path.String)
+	assert.False(t, stats[2].Path.Valid)
+	assert.Equal(t, "/", stats[3].Path.String)
+	assert.Equal(t, "/", stats[4].Path.String)
+	assert.Equal(t, "/different-page", stats[5].Path.String)
+	assert.False(t, stats[6].Path.Valid)
+	assert.False(t, stats[7].Path.Valid)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 3, stats[2].Visitors)
+	assert.Equal(t, 1, stats[3].Visitors)
+	assert.Equal(t, 1, stats[4].Visitors)
+	assert.Equal(t, 1, stats[5].Visitors)
+	assert.Equal(t, 1, stats[6].Visitors)
+	assert.Equal(t, 2, stats[7].Visitors)
+	assert.Equal(t, BrowserChrome, stats[0].Browser.String)
+	assert.Equal(t, BrowserChrome, stats[1].Browser.String)
+	assert.Equal(t, BrowserChrome, stats[2].Browser.String)
+	assert.Equal(t, BrowserFirefox, stats[3].Browser.String)
+	assert.Equal(t, BrowserFirefox, stats[4].Browser.String)
+	assert.Equal(t, BrowserChrome, stats[5].Browser.String)
+	assert.Equal(t, BrowserChrome, stats[6].Browser.String)
+	assert.Equal(t, BrowserFirefox, stats[7].Browser.String)
+	assert.Equal(t, "84.0", stats[0].BrowserVersion.String)
+	assert.Equal(t, "84.0", stats[1].BrowserVersion.String)
+	assert.False(t, stats[2].BrowserVersion.Valid)
+	assert.Equal(t, "53.0", stats[3].BrowserVersion.String)
+	assert.Equal(t, "54.0", stats[4].BrowserVersion.String)
+	assert.Equal(t, "84.0", stats[5].BrowserVersion.String)
+	assert.False(t, stats[6].BrowserVersion.Valid)
+	assert.False(t, stats[7].BrowserVersion.Valid)
 }
 
 func checkScreenStats(t *testing.T, tenantID int64) {
@@ -410,24 +400,24 @@ func checkScreenStats(t *testing.T, tenantID int64) {
 	var stats []ScreenStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NULL ORDER BY "day", "width", "height"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NULL ORDER BY "day", "width", "height"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NULL ORDER BY "day", "width", "height"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NULL ORDER BY "day", "width", "height"`))
 	}
 
-	if len(stats) != 3 {
-		t.Fatalf("Three stats must have been created, but was: %v", len(stats))
-	}
-
-	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Width != 640 || stats[0].Height != 1080 || stats[0].Visitors != 2 ||
-		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Width != 640 || stats[1].Height != 1024 || stats[1].Visitors != 1 ||
-		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Width != 1920 || stats[2].Height != 1080 || stats[2].Visitors != 1 {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 3)
+	assert.Equal(t, day(2020, 6, 21, 0), stats[0].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[1].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[2].Day.UTC())
+	assert.Equal(t, 640, stats[0].Width)
+	assert.Equal(t, 640, stats[1].Width)
+	assert.Equal(t, 1920, stats[2].Width)
+	assert.Equal(t, 1080, stats[0].Height)
+	assert.Equal(t, 1024, stats[1].Height)
+	assert.Equal(t, 1080, stats[2].Height)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
 }
 
 func checkScreenStatsClasses(t *testing.T, tenantID int64) {
@@ -435,24 +425,21 @@ func checkScreenStatsClasses(t *testing.T, tenantID int64) {
 	var stats []ScreenStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NOT NULL ORDER BY "day", "class"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "screen_stats" WHERE tenant_id = $1 AND "class" IS NOT NULL ORDER BY "day", "class"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NOT NULL ORDER BY "day", "class"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "screen_stats" WHERE "class" IS NOT NULL ORDER BY "day", "class"`))
 	}
 
-	if len(stats) != 3 {
-		t.Fatalf("Three stats must have been created, but was: %v", len(stats))
-	}
-
-	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].Class.String != "M" || stats[0].Visitors != 2 ||
-		!stats[1].Day.Equal(day(2020, 6, 22, 0)) || stats[1].Class.String != "M" || stats[1].Visitors != 1 ||
-		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].Class.String != "XXL" || stats[2].Visitors != 1 {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 3)
+	assert.Equal(t, day(2020, 6, 21, 0), stats[0].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[1].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[2].Day.UTC())
+	assert.Equal(t, "M", stats[0].Class.String)
+	assert.Equal(t, "M", stats[1].Class.String)
+	assert.Equal(t, "XXL", stats[2].Class.String)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
 }
 
 func checkCountryStats(t *testing.T, tenantID int64) {
@@ -460,26 +447,27 @@ func checkCountryStats(t *testing.T, tenantID int64) {
 	var stats []CountryStats
 
 	if tenantID != 0 {
-		if err := db.Select(&stats, `SELECT * FROM "country_stats" WHERE tenant_id = $1 ORDER BY "day", "country_code"`, tenantID); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "country_stats" WHERE tenant_id = $1 ORDER BY "day", "country_code"`, tenantID))
 	} else {
-		if err := db.Select(&stats, `SELECT * FROM "country_stats" ORDER BY "day", "country_code"`); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, db.Select(&stats, `SELECT * FROM "country_stats" ORDER BY "day", "country_code"`))
 	}
 
-	if len(stats) != 5 {
-		t.Fatalf("Five stats must have been created, but was: %v", len(stats))
-	}
-
-	if !stats[0].Day.Equal(day(2020, 6, 21, 0)) || stats[0].CountryCode.String != "de" || stats[0].Visitors != 1 ||
-		!stats[1].Day.Equal(day(2020, 6, 21, 0)) || stats[1].CountryCode.String != "gb" || stats[1].Visitors != 2 ||
-		!stats[2].Day.Equal(day(2020, 6, 22, 0)) || stats[2].CountryCode.String != "de" || stats[2].Visitors != 1 ||
-		!stats[3].Day.Equal(day(2020, 6, 22, 0)) || stats[3].CountryCode.String != "gb" || stats[3].Visitors != 1 ||
-		!stats[4].Day.Equal(day(2020, 6, 22, 0)) || stats[4].CountryCode.String != "jp" || stats[4].Visitors != 1 {
-		t.Fatalf("Stats not as expected: %v", stats)
-	}
+	assert.Len(t, stats, 5)
+	assert.Equal(t, day(2020, 6, 21, 0), stats[0].Day.UTC())
+	assert.Equal(t, day(2020, 6, 21, 0), stats[1].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[2].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[3].Day.UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), stats[4].Day.UTC())
+	assert.Equal(t, "de", stats[0].CountryCode.String)
+	assert.Equal(t, "gb", stats[1].CountryCode.String)
+	assert.Equal(t, "de", stats[2].CountryCode.String)
+	assert.Equal(t, "gb", stats[3].CountryCode.String)
+	assert.Equal(t, "jp", stats[4].CountryCode.String)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
+	assert.Equal(t, 1, stats[3].Visitors)
+	assert.Equal(t, 1, stats[4].Visitors)
 }
 
 func createTestdata(t *testing.T, store Store, tenantID int64) {
@@ -515,9 +503,7 @@ func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lan
 		Time:           time,
 	}
 
-	if err := store.SaveHits([]Hit{hit}); err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, store.SaveHits([]Hit{hit}))
 }
 
 func day(year, month, day, hour int) time.Time {

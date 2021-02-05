@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"testing"
 )
@@ -24,9 +25,7 @@ func TestParseForwardedHeader(t *testing.T) {
 	}
 
 	for i, head := range header {
-		if ip := parseForwardedHeader(head); ip != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], ip)
-		}
+		assert.Equal(t, expected[i], parseForwardedHeader(head))
 	}
 }
 
@@ -47,9 +46,7 @@ func TestParseXForwardedForHeader(t *testing.T) {
 	}
 
 	for i, head := range header {
-		if ip := parseXForwardedForHeader(head); ip != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], ip)
-		}
+		assert.Equal(t, expected[i], parseXForwardedForHeader(head))
 	}
 }
 
@@ -58,35 +55,21 @@ func TestGetIP(t *testing.T) {
 	r.RemoteAddr = "123.456.789.012:29302"
 
 	// no header, default
-	if ip := getIP(r); ip != "123.456.789.012" {
-		t.Fatalf("Expected '123.456.789.012', but was: %v", ip)
-	}
+	assert.Equal(t, "123.456.789.012", getIP(r))
 
 	// X-Real-IP
 	r.Header.Set("X-Real-IP", "103.0.53.43")
-
-	if ip := getIP(r); ip != "103.0.53.43" {
-		t.Fatalf("Expected '103.0.53.43', but was: %v", ip)
-	}
+	assert.Equal(t, "103.0.53.43", getIP(r))
 
 	// Forwarded
 	r.Header.Set("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43")
-
-	if ip := getIP(r); ip != "192.0.2.60" {
-		t.Fatalf("Expected '192.0.2.60', but was: %v", ip)
-	}
+	assert.Equal(t, "192.0.2.60", getIP(r))
 
 	// X-Forwarded-For
 	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67")
-
-	if ip := getIP(r); ip != "127.0.0.1" {
-		t.Fatalf("Expected '127.0.0.1', but was: %v", ip)
-	}
+	assert.Equal(t, "127.0.0.1", getIP(r))
 
 	// CF-Connecting-IP
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67")
-
-	if ip := getIP(r); ip != "127.0.0.1" {
-		t.Fatalf("Expected '127.0.0.1', but was: %v", ip)
-	}
+	assert.Equal(t, "127.0.0.1", getIP(r))
 }

@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -12,15 +13,11 @@ import (
 func TestTrackerConfigValidate(t *testing.T) {
 	cfg := &TrackerConfig{}
 	cfg.validate()
-
-	if cfg.Worker != runtime.NumCPU() ||
-		cfg.WorkerBufferSize != defaultWorkerBufferSize ||
-		cfg.WorkerTimeout != defaultWorkerTimeout ||
-		len(cfg.ReferrerDomainBlacklist) != 0 ||
-		cfg.ReferrerDomainBlacklistIncludesSubdomains {
-		t.Fatal("TrackerConfig must have default values")
-	}
-
+	assert.Equal(t, runtime.NumCPU(), cfg.Worker)
+	assert.Equal(t, defaultWorkerBufferSize, cfg.WorkerBufferSize)
+	assert.Equal(t, defaultWorkerTimeout, cfg.WorkerTimeout)
+	assert.Len(t, cfg.ReferrerDomainBlacklist, 0)
+	assert.False(t, cfg.ReferrerDomainBlacklistIncludesSubdomains)
 	cfg = &TrackerConfig{
 		Worker:                  123,
 		WorkerBufferSize:        42,
@@ -29,21 +26,14 @@ func TestTrackerConfigValidate(t *testing.T) {
 		ReferrerDomainBlacklistIncludesSubdomains: true,
 	}
 	cfg.validate()
-
-	if cfg.Worker != 123 ||
-		cfg.WorkerBufferSize != 42 ||
-		cfg.WorkerTimeout != time.Second*57 ||
-		len(cfg.ReferrerDomainBlacklist) != 1 ||
-		!cfg.ReferrerDomainBlacklistIncludesSubdomains {
-		t.Fatal("TrackerConfig must have set values")
-	}
-
+	assert.Equal(t, 123, cfg.Worker)
+	assert.Equal(t, 42, cfg.WorkerBufferSize)
+	assert.Equal(t, time.Second*57, cfg.WorkerTimeout)
+	assert.Len(t, cfg.ReferrerDomainBlacklist, 1)
+	assert.True(t, cfg.ReferrerDomainBlacklistIncludesSubdomains)
 	cfg = &TrackerConfig{WorkerTimeout: time.Second * 142}
 	cfg.validate()
-
-	if cfg.WorkerTimeout != maxWorkerTimeout {
-		t.Fatalf("WorkerTimout must have been limited, but was: %v", cfg.WorkerTimeout)
-	}
+	assert.Equal(t, maxWorkerTimeout, cfg.WorkerTimeout)
 }
 
 func TestTrackerHitTimeout(t *testing.T) {
@@ -56,10 +46,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
-
-	if len(store.hits) != 2 {
-		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
-	}
+	assert.Len(t, store.hits, 2)
 
 	// ignore order...
 	if store.hits[0].Path != "/" && store.hits[0].Path != "/hello-world" ||
@@ -82,10 +69,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
-
-	if len(store.hits) != 7 {
-		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
-	}
+	assert.Len(t, store.hits, 7)
 }
 
 func TestTrackerHitDiscard(t *testing.T) {
@@ -105,20 +89,14 @@ func TestTrackerHitDiscard(t *testing.T) {
 		}
 	}
 
-	if len(store.hits) != 5 {
-		t.Fatalf("All requests must have been tracked, but was: %v", len(store.hits))
-	}
+	assert.Len(t, store.hits, 5)
 }
 
 func TestTrackerCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
-
-	if err != nil {
-		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	defer geoDB.Close()
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "valid")
@@ -134,11 +112,7 @@ func TestTrackerCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-
-	if len(store.hits) != 2 {
-		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
-	}
-
+	assert.Len(t, store.hits, 2)
 	foundGB := false
 	foundEmpty := false
 
@@ -150,9 +124,8 @@ func TestTrackerCountryCode(t *testing.T) {
 		}
 	}
 
-	if !foundGB || !foundEmpty {
-		t.Fatalf("Hits not as expected: %v", store.hits)
-	}
+	assert.True(t, foundGB)
+	assert.True(t, foundEmpty)
 }
 
 func TestTrackerHitSession(t *testing.T) {
@@ -168,10 +141,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-
-	if len(store.hits) != 2 {
-		t.Fatalf("Two requests must have been tracked, but was: %v", len(store.hits))
-	}
+	assert.Len(t, store.hits, 2)
 
 	// ignore order...
 	if !store.hits[0].Session.Valid || !store.hits[1].Session.Valid ||
@@ -206,15 +176,10 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-
-	if len(store.hits) != 4 {
-		t.Fatalf("Four hits must have been tracked, but was: %v", len(store.hits))
-	}
+	assert.Len(t, store.hits, 4)
 
 	for _, hit := range store.hits {
-		if hit.Referrer.Valid {
-			t.Fatalf("No referrers must have been kept, but was: %v", hit.Referrer.String)
-		}
+		assert.False(t, hit.Referrer.Valid)
 	}
 }
 
@@ -222,11 +187,7 @@ func BenchmarkTracker(b *testing.B) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
-
-	if err != nil {
-		b.Fatalf("Geo DB must have been loaded, but was: %v", err)
-	}
-
+	assert.NoError(b, err)
 	defer geoDB.Close()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")

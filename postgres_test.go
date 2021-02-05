@@ -3,6 +3,7 @@ package pirsch
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -22,58 +23,28 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 		PlatformMobile:  89,
 		PlatformUnknown: 52,
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(VisitorStats)
-
-	if err := db.Get(stats, `SELECT * FROM "visitor_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_stats"`))
 	stats.Visitors = 11
 	stats.Sessions = 17
 	stats.Bounces = 1
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
-	err = store.SaveVisitorStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "visitor_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.Sessions != 59+17 ||
-		stats.Bounces != 11+1 ||
-		stats.PlatformDesktop != 123+5 ||
-		stats.PlatformMobile != 89+3 ||
-		stats.PlatformUnknown != 52+1 {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
-
+	assert.NoError(t, store.SaveVisitorStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, 59+17, stats.Sessions)
+	assert.Equal(t, 11+1, stats.Bounces)
+	assert.Equal(t, 123+5, stats.PlatformDesktop)
+	assert.Equal(t, 89+3, stats.PlatformMobile)
+	assert.Equal(t, 52+1, stats.PlatformUnknown)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
-	err = store.SaveVisitorStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	var entries []VisitorStats
-
-	if err := db.Select(&entries, `SELECT * FROM "visitor_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(entries) != 2 {
-		t.Fatal("New entry must have been created for path")
-	}
+	assert.NoError(t, db.Select(&entries, `SELECT * FROM "visitor_stats"`))
+	assert.Len(t, entries, 2)
 }
 
 func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
@@ -87,31 +58,13 @@ func TestPostgresStore_SaveVisitorTimeStats(t *testing.T) {
 		},
 		Hour: 5,
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(VisitorTimeStats)
-
-	if err := db.Get(stats, `SELECT * FROM "visitor_time_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_time_stats"`))
 	stats.Visitors = 11
-	err = store.SaveVisitorTimeStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "visitor_time_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
+	assert.NoError(t, store.SaveVisitorTimeStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_time_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
 }
 
 func TestPostgresStore_SaveLanguageStats(t *testing.T) {
@@ -125,49 +78,19 @@ func TestPostgresStore_SaveLanguageStats(t *testing.T) {
 		},
 		Language: sql.NullString{String: "en", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(LanguageStats)
-
-	if err := db.Get(stats, `SELECT * FROM "language_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "language_stats"`))
 	stats.Visitors = 11
-	err = store.SaveLanguageStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "language_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.Language.String != "en" {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
-
+	assert.NoError(t, store.SaveLanguageStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "language_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, "en", stats.Language.String)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
-	err = store.SaveLanguageStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, store.SaveLanguageStats(nil, stats))
 	var entries []LanguageStats
-
-	if err := db.Select(&entries, `SELECT * FROM "language_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(entries) != 2 {
-		t.Fatal("New entry must have been created for path")
-	}
+	assert.NoError(t, db.Select(&entries, `SELECT * FROM "language_stats"`))
+	assert.Len(t, entries, 2)
 }
 
 func TestPostgresStore_SaveReferrerStats(t *testing.T) {
@@ -184,53 +107,23 @@ func TestPostgresStore_SaveReferrerStats(t *testing.T) {
 		ReferrerName: sql.NullString{String: "Ref", Valid: true},
 		ReferrerIcon: sql.NullString{String: "icon", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(ReferrerStats)
-
-	if err := db.Get(stats, `SELECT * FROM "referrer_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "referrer_stats"`))
 	stats.Visitors = 11
 	stats.Bounces = 3
-	err = store.SaveReferrerStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "referrer_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.Bounces != 31+3 ||
-		stats.Referrer.String != "ref" ||
-		stats.ReferrerName.String != "Ref" ||
-		stats.ReferrerIcon.String != "icon" {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
-
+	assert.NoError(t, store.SaveReferrerStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "referrer_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, 31+3, stats.Bounces)
+	assert.Equal(t, "ref", stats.Referrer.String)
+	assert.Equal(t, "Ref", stats.ReferrerName.String)
+	assert.Equal(t, "icon", stats.ReferrerIcon.String)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
-	err = store.SaveReferrerStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, store.SaveReferrerStats(nil, stats))
 	var entries []ReferrerStats
-
-	if err := db.Select(&entries, `SELECT * FROM "referrer_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(entries) != 2 {
-		t.Fatal("New entry must have been created for path")
-	}
+	assert.NoError(t, db.Select(&entries, `SELECT * FROM "referrer_stats"`))
+	assert.Len(t, entries, 2)
 }
 
 func TestPostgresStore_SaveOSStats(t *testing.T) {
@@ -245,50 +138,20 @@ func TestPostgresStore_SaveOSStats(t *testing.T) {
 		OS:        sql.NullString{String: OSWindows, Valid: true},
 		OSVersion: sql.NullString{String: "10", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(OSStats)
-
-	if err := db.Get(stats, `SELECT * FROM "os_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "os_stats"`))
 	stats.Visitors = 11
-	err = store.SaveOSStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "os_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.OS.String != OSWindows ||
-		stats.OSVersion.String != "10" {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
-
+	assert.NoError(t, store.SaveOSStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "os_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, OSWindows, stats.OS.String)
+	assert.Equal(t, "10", stats.OSVersion.String)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
-	err = store.SaveOSStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, store.SaveOSStats(nil, stats))
 	var entries []OSStats
-
-	if err := db.Select(&entries, `SELECT * FROM "os_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(entries) != 2 {
-		t.Fatal("New entry must have been created for path")
-	}
+	assert.NoError(t, db.Select(&entries, `SELECT * FROM "os_stats"`))
+	assert.Len(t, entries, 2)
 }
 
 func TestPostgresStore_SaveBrowserStats(t *testing.T) {
@@ -303,50 +166,20 @@ func TestPostgresStore_SaveBrowserStats(t *testing.T) {
 		Browser:        sql.NullString{String: BrowserChrome, Valid: true},
 		BrowserVersion: sql.NullString{String: "84.0", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(BrowserStats)
-
-	if err := db.Get(stats, `SELECT * FROM "browser_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "browser_stats"`))
 	stats.Visitors = 11
-	err = store.SaveBrowserStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "browser_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.Browser.String != BrowserChrome ||
-		stats.BrowserVersion.String != "84.0" {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
-
+	assert.NoError(t, store.SaveBrowserStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "browser_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, BrowserChrome, stats.Browser.String)
+	assert.Equal(t, "84.0", stats.BrowserVersion.String)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
-	err = store.SaveBrowserStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, store.SaveBrowserStats(nil, stats))
 	var entries []BrowserStats
-
-	if err := db.Select(&entries, `SELECT * FROM "browser_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if len(entries) != 2 {
-		t.Fatal("New entry must have been created for path")
-	}
+	assert.NoError(t, db.Select(&entries, `SELECT * FROM "browser_stats"`))
+	assert.Len(t, entries, 2)
 }
 
 func TestPostgresStore_SaveScreenStats(t *testing.T) {
@@ -361,34 +194,16 @@ func TestPostgresStore_SaveScreenStats(t *testing.T) {
 		Width:  1920,
 		Height: 1080,
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(ScreenStats)
-
-	if err := db.Get(stats, `SELECT * FROM "screen_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "screen_stats"`))
 	stats.Visitors = 11
-	err = store.SaveScreenStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "screen_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.Width != 1920 ||
-		stats.Height != 1080 ||
-		stats.Class.Valid {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
+	assert.NoError(t, store.SaveScreenStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "screen_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, 1920, stats.Width)
+	assert.Equal(t, 1080, stats.Height)
+	assert.False(t, stats.Class.Valid)
 }
 
 func TestPostgresStore_SaveScreenStatsClass(t *testing.T) {
@@ -404,20 +219,10 @@ func TestPostgresStore_SaveScreenStatsClass(t *testing.T) {
 		Height: 1080,
 		Class:  sql.NullString{String: "XXL", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(ScreenStats)
-
-	if err := db.Get(stats, `SELECT * FROM "screen_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Class.String != "XXL" {
-		t.Fatalf("Screen class must have been saved, but was: %v", stats)
-	}
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "screen_stats"`))
+	assert.Equal(t, "XXL", stats.Class.String)
 }
 
 func TestPostgresStore_SaveCountryStats(t *testing.T) {
@@ -431,32 +236,14 @@ func TestPostgresStore_SaveCountryStats(t *testing.T) {
 		},
 		CountryCode: sql.NullString{String: "gb", Valid: true},
 	})
-
-	if err != nil {
-		t.Fatalf("Entity must have been saved, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	stats := new(CountryStats)
-
-	if err := db.Get(stats, `SELECT * FROM "country_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "country_stats"`))
 	stats.Visitors = 11
-	err = store.SaveCountryStats(nil, stats)
-
-	if err != nil {
-		t.Fatalf("Entity must have been updated, but was: %v", err)
-	}
-
-	if err := db.Get(stats, `SELECT * FROM "country_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if stats.Visitors != 42+11 ||
-		stats.CountryCode.String != "gb" {
-		t.Fatalf("Entity not as expected: %v", stats)
-	}
+	assert.NoError(t, store.SaveCountryStats(nil, stats))
+	assert.NoError(t, db.Get(stats, `SELECT * FROM "country_stats"`))
+	assert.Equal(t, 42+11, stats.Visitors)
+	assert.Equal(t, "gb", stats.CountryCode.String)
 }
 
 func TestPostgresStore_Session(t *testing.T) {
@@ -464,16 +251,9 @@ func TestPostgresStore_Session(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", pastDay(2), time.Now(), "", "", "", "", "", false, false, 0, 0)
 	session := store.Session(NullTenant, "fp", pastDay(1))
-
-	if !session.IsZero() {
-		t.Fatal("No session timestamp must have been found")
-	}
-
+	assert.True(t, session.IsZero())
 	session = store.Session(NullTenant, "fp", pastDay(3))
-
-	if session.IsZero() {
-		t.Fatal("Session timestamp must have been found")
-	}
+	assert.False(t, session.IsZero())
 }
 
 func TestPostgresStore_HitDays(t *testing.T) {
@@ -483,16 +263,10 @@ func TestPostgresStore_HitDays(t *testing.T) {
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 11), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 22, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	days, err := store.HitDays(NullTenant)
-
-	if err != nil {
-		t.Fatalf("Days must have been returned, but was: %v", err)
-	}
-
-	if len(days) != 2 ||
-		!equalDay(days[0], day(2020, 6, 21, 0)) ||
-		!equalDay(days[1], day(2020, 6, 22, 0)) {
-		t.Fatalf("Days not as expected: %v", days)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, days, 2)
+	assert.Equal(t, day(2020, 6, 21, 0), days[0].UTC())
+	assert.Equal(t, day(2020, 6, 22, 0), days[1].UTC())
 }
 
 func TestPostgresStore_HitPaths(t *testing.T) {
@@ -502,28 +276,13 @@ func TestPostgresStore_HitPaths(t *testing.T) {
 	createHit(t, store, 0, "fp", "/", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/path", "en", "ua", "", day(2020, 6, 21, 7), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	paths, err := store.HitPaths(NullTenant, day(2020, 6, 20, 0))
-
-	if err != nil {
-		t.Fatalf("Paths must have been returned, but was: %v", err)
-	}
-
-	if len(paths) != 0 {
-		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, paths, 0)
 	paths, err = store.HitPaths(NullTenant, day(2020, 6, 21, 0))
-
-	if err != nil {
-		t.Fatalf("Paths must have been returned, but was: %v", err)
-	}
-
-	if len(paths) != 2 {
-		t.Fatalf("Two paths must have been returned, but was: %v", len(paths))
-	}
-
-	if paths[0] != "/" || paths[1] != "/path" {
-		t.Fatalf("Paths not as expected: %v", paths)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, paths, 2)
+	assert.Equal(t, "/", paths[0])
+	assert.Equal(t, "/path", paths[1])
 }
 
 func TestPostgresStore_Paths(t *testing.T) {
@@ -538,34 +297,16 @@ func TestPostgresStore_Paths(t *testing.T) {
 			Path: sql.NullString{String: "/stats", Valid: true},
 		},
 	}
-
-	if err := store.SaveVisitorStats(nil, stats); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	paths, err := store.Paths(NullTenant, day(2020, 6, 15, 0), day(2020, 6, 19, 0))
-
-	if err != nil {
-		t.Fatalf("Paths must have been returned, but was: %v", err)
-	}
-
-	if len(paths) != 0 {
-		t.Fatalf("No paths must have been returned, but was: %v", len(paths))
-	}
-
+	assert.NoError(t, err)
+	assert.Len(t, paths, 0)
 	paths, err = store.Paths(NullTenant, day(2020, 6, 20, 0), day(2020, 6, 25, 0))
-
-	if err != nil {
-		t.Fatalf("Paths must have been returned, but was: %v", err)
-	}
-
-	if len(paths) != 3 {
-		t.Fatalf("Three paths must have been returned, but was: %v", len(paths))
-	}
-
-	if paths[0] != "/" || paths[1] != "/path" || paths[2] != "/stats" {
-		t.Fatalf("Paths not as expected: %v", paths)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, paths, 3)
+	assert.Equal(t, "/", paths[0])
+	assert.Equal(t, "/path", paths[1])
+	assert.Equal(t, "/stats", paths[2])
 }
 
 func TestPostgresStore_CountVisitorsByPath(t *testing.T) {
@@ -575,18 +316,12 @@ func TestPostgresStore_CountVisitorsByPath(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
 	visitors, err := store.CountVisitorsByPath(nil, NullTenant, today(), "/", true)
-
-	if err != nil {
-		t.Fatalf("Visitors must have been returned, but was: %v", err)
-	}
-
-	if len(visitors) != 1 ||
-		visitors[0].Visitors != 1 ||
-		visitors[0].PlatformDesktop != 1 ||
-		visitors[0].PlatformMobile != 0 ||
-		visitors[0].PlatformUnknown != 0 {
-		t.Fatalf("Visitors not as expected: %v", visitors)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[0].PlatformDesktop)
+	assert.Equal(t, 0, visitors[0].PlatformMobile)
+	assert.Equal(t, 0, visitors[0].PlatformUnknown)
 }
 
 func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
@@ -599,12 +334,9 @@ func TestPostgresStore_CountVisitorsByPlatform(t *testing.T) {
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(1), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	platforms := store.CountVisitorsByPlatform(nil, NullTenant, pastDay(1))
-
-	if platforms.PlatformDesktop != 1 ||
-		platforms.PlatformMobile != 1 ||
-		platforms.PlatformUnknown != 1 {
-		t.Fatalf("Platforms not as expected: %v", platforms)
-	}
+	assert.Equal(t, 1, platforms.PlatformDesktop)
+	assert.Equal(t, 1, platforms.PlatformMobile)
+	assert.Equal(t, 1, platforms.PlatformUnknown)
 }
 
 func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
@@ -616,10 +348,7 @@ func TestPostgresStore_CountVisitorsByPathAndMaxOneHit(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/", "en", "ua", "", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	visitors := store.CountVisitorsByPathAndMaxOneHit(nil, NullTenant, pastDay(5), "/")
-
-	if visitors != 2 {
-		t.Fatalf("Two visitors must have bounced, but was: %v", visitors)
-	}
+	assert.Equal(t, 2, visitors)
 }
 
 func TestPostgresStore_CountVisitorsByReferrer(t *testing.T) {
@@ -630,15 +359,10 @@ func TestPostgresStore_CountVisitorsByReferrer(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/", "en", "ua", "ref2", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/page", "en", "ua", "ref2", pastDay(5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	stats, err := store.CountVisitorsByReferrer(nil, NullTenant, pastDay(5))
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
 
-	if err != nil {
-		t.Fatalf("Visitor count for referrers must have been returned, but was: %v", err)
-	}
-
-	if len(stats) != 2 {
-		t.Fatalf("Stats must have been returned, but was: %v", stats)
-	}
-
+	// ignore order...
 	if stats[0].Referrer.String == "ref1" && stats[0].Bounces != 1 ||
 		stats[0].Referrer.String == "ref2" && stats[0].Bounces != 0 ||
 		stats[1].Referrer.String == "ref1" && stats[1].Bounces != 1 ||
@@ -653,10 +377,7 @@ func TestPostgresStore_ActiveVisitors(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/", "en", "ua", "", time.Now().Add(-time.Second*2), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	total := store.ActiveVisitors(NullTenant, time.Now().Add(-time.Second*10))
-
-	if total != 1 {
-		t.Fatalf("One active visitor must have been returned, but was: %v", total)
-	}
+	assert.Equal(t, 1, total)
 }
 
 func TestPostgresStore_ActivePageVisitors(t *testing.T) {
@@ -666,17 +387,10 @@ func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 	createHit(t, store, 0, "fp1", "/page", "en", "ua", "", time.Now().Add(-time.Second*3), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp2", "/page", "en", "ua", "", time.Now().Add(-time.Second*4), time.Time{}, "", "", "", "", "", false, false, 0, 0)
 	stats, err := store.ActivePageVisitors(NullTenant, time.Now().Add(-time.Second*10))
-
-	if err != nil {
-		t.Fatalf("Active page visitors must have been returned, but was: %v", err)
-	}
-
-	if len(stats) != 2 {
-		t.Fatalf("Two active page visitors must have been returned, but was: %v", len(stats))
-	}
-
-	if stats[0].Path.String != "/page" || stats[0].Visitors != 2 ||
-		stats[1].Path.String != "/" || stats[1].Visitors != 1 {
-		t.Fatalf("Visitor count not as expected: %v", stats)
-	}
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "/page", stats[0].Path.String)
+	assert.Equal(t, "/", stats[1].Path.String)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
 }

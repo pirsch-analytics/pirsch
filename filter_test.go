@@ -1,46 +1,32 @@
 package pirsch
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestFilter_Days(t *testing.T) {
 	filter := NewFilter(NullTenant)
-
-	// the default filter covers the past week NOT including today
-	if days := filter.Days(); days != 6 {
-		t.Fatalf("Filter must cover 6 days, but was: %v", days)
-	}
-
+	assert.Equal(t, 6, filter.Days()) // the default filter covers the past week NOT including today
 	filter.From = pastDay(20)
 	filter.To = today()
 	filter.validate()
-
-	if days := filter.Days(); days != 20 {
-		t.Fatalf("Filter must cover 20 days, but was: %v", days)
-	}
+	assert.Equal(t, 20, filter.Days())
 }
 
 func TestFilter_Validate(t *testing.T) {
 	filter := NewFilter(NullTenant)
 	filter.validate()
-
-	if filter == nil || !filter.From.Equal(pastDay(6)) || !filter.To.Equal(pastDay(0)) {
-		t.Fatalf("Filter not as expected: %v", filter)
-	}
-
+	assert.NotNil(t, filter)
+	assert.Equal(t, pastDay(6), filter.From)
+	assert.Equal(t, pastDay(0), filter.To)
 	filter = &Filter{From: pastDay(2), To: pastDay(5)}
 	filter.validate()
-
-	if !filter.From.Equal(pastDay(5)) || !filter.To.Equal(pastDay(2)) {
-		t.Fatalf("Filter not as expected: %v", filter)
-	}
-
+	assert.Equal(t, pastDay(5), filter.From)
+	assert.Equal(t, pastDay(2), filter.To)
 	filter = &Filter{From: pastDay(2), To: today().Add(time.Hour * 24 * 5)}
 	filter.validate()
-
-	if !filter.From.Equal(pastDay(2)) || !filter.To.Equal(today()) {
-		t.Fatalf("Filter not as expected: %v", filter)
-	}
+	assert.Equal(t, pastDay(2), filter.From)
+	assert.Equal(t, today(), filter.To)
 }
