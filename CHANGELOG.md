@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.1
+
+* added total visitor count, relative visitors, and bounce rate to page visitor statistics
+* fixed sorting page visitor statistics
+
 ## 1.12.0
 
 **You need to update the schema by running the `v1.12.0.sql` migration script!**

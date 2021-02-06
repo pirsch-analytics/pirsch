@@ -65,10 +65,10 @@ func TestProcessor_ProcessPaths(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 2)
-	assert.Equal(t, "/", pageVisitors[0].Path)
-	assert.Equal(t, 1, sumUpVisitors(pageVisitors[0].Stats))
-	assert.Equal(t, "/path", pageVisitors[1].Path)
-	assert.Equal(t, 2, sumUpVisitors(pageVisitors[1].Stats))
+	assert.Equal(t, "/path", pageVisitors[0].Path)
+	assert.Equal(t, 2, pageVisitors[0].Visitors)
+	assert.Equal(t, "/", pageVisitors[1].Path)
+	assert.Equal(t, 1, pageVisitors[1].Visitors)
 	visitors, err := analyzer.Visitors(&Filter{
 		From: day(2020, 12, 24, 0),
 		To:   day(2020, 21, 31, 0),
@@ -92,12 +92,12 @@ func TestProcessor_ProcessReferrerBounces(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 2)
-	assert.Equal(t, "/", pageVisitors[0].Path)
-	assert.Equal(t, "/second-page", pageVisitors[1].Path)
-	assert.Equal(t, 1, pageVisitors[0].Stats[0].Visitors)
-	assert.Equal(t, 2, pageVisitors[1].Stats[0].Visitors)
-	assert.Equal(t, 0, pageVisitors[0].Stats[0].Bounces)
-	assert.Equal(t, 1, pageVisitors[1].Stats[0].Bounces)
+	assert.Equal(t, "/second-page", pageVisitors[0].Path)
+	assert.Equal(t, "/", pageVisitors[1].Path)
+	assert.Equal(t, 2, pageVisitors[0].Stats[0].Visitors)
+	assert.Equal(t, 1, pageVisitors[1].Stats[0].Visitors)
+	assert.Equal(t, 1, pageVisitors[0].Stats[0].Bounces)
+	assert.Equal(t, 0, pageVisitors[1].Stats[0].Bounces)
 	visitors, err := analyzer.Visitors(&Filter{
 		From: day(2020, 12, 21, 0),
 		To:   day(2020, 12, 21, 0),

@@ -5,10 +5,13 @@ import (
 	"time"
 )
 
-// PathVisitors represents visitor statistics per day for a path.
+// PathVisitors represents visitor statistics per day for a path, including the total visitor count, relative visitor count and bounce rate.
 type PathVisitors struct {
-	Path  string  `json:"path"`
-	Stats []Stats `json:"stats"`
+	Path             string  `json:"path"`
+	Stats            []Stats `json:"stats"`
+	Visitors         int     `json:"visitors"`
+	RelativeVisitors float64 `json:"relative_visitors"`
+	BounceRate       float64 `json:"bounce_rate"`
 }
 
 // TimeOfDayVisitors represents the visitor count per day and hour for a path.
@@ -561,6 +564,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	today := today()
 	addToday := today.Equal(filter.To)
 	stats := make([]PathVisitors, 0, len(paths))
+	var totalVisitors int
 
 	for _, path := range paths {
 		visitors, err := analyzer.store.PageVisitors(filter.TenantID, path, filter.From, filter.To)
@@ -593,27 +597,44 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			}
 		}
 
-		var sum float64
+		var visitorSum, bouncesSum int
+		var bounceRate float64
 
 		for i := range visitors {
-			sum += float64(visitors[i].Visitors)
+			visitorSum += visitors[i].Visitors
+			bouncesSum += visitors[i].Bounces
 		}
 
-		if sum > 0 {
+		if visitorSum > 0 {
 			for i := range visitors {
-				visitors[i].RelativeVisitors = float64(visitors[i].Visitors) / sum
+				visitors[i].RelativeVisitors = float64(visitors[i].Visitors) / float64(visitorSum)
 
 				if visitors[i].Visitors > 0 {
 					visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
 				}
 			}
+
+			bounceRate = float64(bouncesSum) / float64(visitorSum)
 		}
 
 		stats = append(stats, PathVisitors{
-			Path:  path,
-			Stats: visitors,
+			Path:       path,
+			Stats:      visitors,
+			Visitors:   visitorSum,
+			BounceRate: bounceRate,
 		})
+		totalVisitors += visitorSum
 	}
+
+	if totalVisitors > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / float64(totalVisitors)
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Visitors > stats[j].Visitors
+	})
 
 	return stats, nil
 }
