@@ -3,6 +3,7 @@
 ## 1.12.2
 
 * added absolute number of bounces to page visitor statistics
+* updated dependencies
 
 ## 1.12.1
 
