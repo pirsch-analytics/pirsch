@@ -543,6 +543,8 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		assert.Equal(t, "/", visitors[1].Path)
 		assert.Equal(t, 43, visitors[0].Visitors)
 		assert.Equal(t, 1, visitors[1].Visitors)
+		assert.Equal(t, 30, visitors[0].Bounces)
+		assert.Equal(t, 0, visitors[1].Bounces)
 		assert.InDelta(t, 0.9772, visitors[0].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.0227, visitors[1].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.6976, visitors[0].BounceRate, 0.01)

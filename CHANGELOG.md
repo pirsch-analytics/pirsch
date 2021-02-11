@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.2
+
+* added absolute number of bounces to page visitor statistics
+
 ## 1.12.1
 
 * added total visitor count, relative visitors, and bounce rate to page visitor statistics

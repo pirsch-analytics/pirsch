@@ -10,6 +10,7 @@ type PathVisitors struct {
 	Path             string  `json:"path"`
 	Stats            []Stats `json:"stats"`
 	Visitors         int     `json:"visitors"`
+	Bounces          int     `json:"bounces"`
 	RelativeVisitors float64 `json:"relative_visitors"`
 	BounceRate       float64 `json:"bounce_rate"`
 }
@@ -621,6 +622,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			Path:       path,
 			Stats:      visitors,
 			Visitors:   visitorSum,
+			Bounces:    bouncesSum,
 			BounceRate: bounceRate,
 		})
 		totalVisitors += visitorSum
