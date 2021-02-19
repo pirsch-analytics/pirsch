@@ -43,7 +43,7 @@ type TrackerConfig struct {
 	Sessions bool
 
 	// SessionMaxAge is used to define how long a session runs at maximum.
-	// Set to two hours by default.
+	// Set to 15 minutes by default.
 	SessionMaxAge time.Duration
 
 	// SessionCleanupInterval sets the session cache lifetime.
