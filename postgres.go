@@ -148,7 +148,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, platform_desktop, platform_mobile, platform_unknown
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, views, platform_desktop, platform_mobile, platform_unknown
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
@@ -158,14 +158,16 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 		existing.Visitors += entity.Visitors
 		existing.Sessions += entity.Sessions
 		existing.Bounces += entity.Bounces
+		existing.Views += entity.Views
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "platform_desktop" = $4, "platform_mobile" = $5, "platform_unknown" = $6 WHERE id = $7`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "views" = $4, "platform_desktop" = $5, "platform_mobile" = $6, "platform_unknown" = $7 WHERE id = $8`,
 			existing.Visitors,
 			existing.Sessions,
 			existing.Bounces,
+			existing.Views,
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
@@ -173,7 +175,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "views", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :views, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
 
 		if err != nil {
 			return err
@@ -458,7 +460,8 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 
 	query := `SELECT DATE("time") "day",
         count(DISTINCT "fingerprint") "visitors",
-        count(DISTINCT("fingerprint", "session")) "sessions"
+        count(DISTINCT("fingerprint", "session")) "sessions",
+        count(1) "views"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND DATE("time") = $2::date
@@ -485,7 +488,8 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 		$2::date "day",
 	    $3::varchar "path",
 	    count(DISTINCT "fingerprint") "visitors",
-		count(DISTINCT("fingerprint", "session")) "sessions" `
+		count(DISTINCT("fingerprint", "session")) "sessions",
+		count(1) "views" `
 
 	if includePlatform {
 		query += `, (
@@ -989,7 +993,8 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 	query := `SELECT "d" AS "day",
 		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
         COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
-        COALESCE(SUM("visitor_stats".bounces), 0) "bounces"
+        COALESCE(SUM("visitor_stats".bounces), 0) "bounces",
+        COALESCE(SUM("visitor_stats".views), 0) "views"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1204,7 +1209,8 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 		COALESCE("path", '') "path",
 		COALESCE("visitor_stats".visitors, 0) "visitors",
 		COALESCE("visitor_stats".sessions, 0) "sessions",
-        COALESCE("visitor_stats".bounces, 0) "bounces"
+        COALESCE("visitor_stats".bounces, 0) "bounces",
+        COALESCE("visitor_stats".views, 0) "views"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1426,7 +1432,8 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	args = append(args, to)
 	query := `SELECT COALESCE(SUM("visitors"), 0) "visitors",
         COALESCE(SUM("sessions"), 0) "sessions",
-        COALESCE(SUM("bounces"), 0) "bounces"
+        COALESCE(SUM("bounces"), 0) "bounces",
+        COALESCE(SUM("views"), 0) "views"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date

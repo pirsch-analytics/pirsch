@@ -2,7 +2,10 @@
 
 ## 1.13.0
 
+**You need to update the schema by running the `v1.13.0.sql` migration script!**
+
 * changed the default session max age from two hours to 15 minutes (you can keep two hours by setting the `TrackerConfig.SessionMaxAge` option)
+* added page views to statistics (including relative views and growth)
 * updated dependencies
 
 ## 1.12.2

@@ -18,6 +18,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 			Visitors: 42,
 			Sessions: 59,
 			Bounces:  11,
+			Views:    103,
 		},
 		PlatformDesktop: 123,
 		PlatformMobile:  89,
@@ -29,6 +30,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	stats.Visitors = 11
 	stats.Sessions = 17
 	stats.Bounces = 1
+	stats.Views = 2
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
@@ -37,6 +39,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	assert.Equal(t, 42+11, stats.Visitors)
 	assert.Equal(t, 59+17, stats.Sessions)
 	assert.Equal(t, 11+1, stats.Bounces)
+	assert.Equal(t, 103+2, stats.Views)
 	assert.Equal(t, 123+5, stats.PlatformDesktop)
 	assert.Equal(t, 89+3, stats.PlatformMobile)
 	assert.Equal(t, 52+1, stats.PlatformUnknown)

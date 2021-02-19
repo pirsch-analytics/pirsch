@@ -196,6 +196,10 @@ func checkVisitorStats(t *testing.T, tenantID int64) {
 	assert.Equal(t, 1, stats[1].Bounces)
 	assert.Equal(t, 2, stats[2].Bounces)
 	assert.Equal(t, 1, stats[3].Bounces)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.Equal(t, 2, stats[2].Views)
+	assert.Equal(t, 1, stats[3].Views)
 }
 
 func checkVisitorTimeStats(t *testing.T, tenantID int64) {

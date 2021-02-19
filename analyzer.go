@@ -11,8 +11,10 @@ type PathVisitors struct {
 	Stats            []Stats `json:"stats"`
 	Visitors         int     `json:"visitors"`
 	Bounces          int     `json:"bounces"`
+	Views            int     `json:"views"`
 	RelativeVisitors float64 `json:"relative_visitors"`
 	BounceRate       float64 `json:"bounce_rate"`
+	RelativeViews    float64 `json:"relative_views"`
 }
 
 // TimeOfDayVisitors represents the visitor count per day and hour for a path.
@@ -28,6 +30,7 @@ type Growth struct {
 	VisitorsGrowth float64 `json:"visitors_growth"`
 	SessionsGrowth float64 `json:"sessions_growth"`
 	BouncesGrowth  float64 `json:"bounces_growth"`
+	ViewsGrowth    float64 `json:"views_growth"`
 }
 
 // AnalyzerConfig is the (optional) configuration for the Analyzer.
@@ -77,7 +80,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return stats, analyzer.store.ActiveVisitors(filter.TenantID, from), nil
 }
 
-// Visitors returns the visitor count, session count, and bounce rate per day.
+// Visitors returns the visitor count, session count, bounce rate, and views per day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
@@ -97,12 +100,14 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 				stats[len(stats)-1].Visitors += visitorsToday.Visitors
 				stats[len(stats)-1].Sessions += visitorsToday.Sessions
 				stats[len(stats)-1].Bounces += bouncesToday
+				stats[len(stats)-1].Views += visitorsToday.Views
 			}
 		} else {
 			stats = append(stats, Stats{
 				Visitors: visitorsToday.Visitors,
 				Sessions: visitorsToday.Sessions,
 				Bounces:  visitorsToday.Bounces,
+				Views:    visitorsToday.Views,
 			})
 		}
 	}
@@ -558,14 +563,14 @@ func (analyzer *Analyzer) TimeOfDay(filter *Filter) ([]TimeOfDayVisitors, error)
 	return stats, nil
 }
 
-// PageVisitors returns the visitor count, session count, and bounce rate per day for the given time frame grouped by path.
+// PageVisitors returns the visitor count, session count, bounce rate, and views per day for the given time frame grouped by path.
 func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	filter = analyzer.getFilter(filter)
 	paths := analyzer.getPaths(filter)
 	today := today()
 	addToday := today.Equal(filter.To)
 	stats := make([]PathVisitors, 0, len(paths))
-	var totalVisitors int
+	var totalVisitors, totalViews int
 
 	for _, path := range paths {
 		visitors, err := analyzer.store.PageVisitors(filter.TenantID, path, filter.From, filter.To)
@@ -588,30 +593,38 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 					visitors[len(visitors)-1].Visitors += visitorsToday[0].Visitors
 					visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
 					visitors[len(visitors)-1].Bounces += bouncesToday
+					visitors[len(visitors)-1].Views += visitorsToday[0].Views
 				} else {
 					visitors = append(visitors, Stats{
 						Visitors: visitorsToday[0].Visitors,
 						Sessions: visitorsToday[0].Sessions,
 						Bounces:  bouncesToday,
+						Views:    visitorsToday[0].Views,
 					})
 				}
 			}
 		}
 
-		var visitorSum, bouncesSum int
+		var visitorSum, bouncesSum, viewsSum int
 		var bounceRate float64
 
 		for i := range visitors {
 			visitorSum += visitors[i].Visitors
 			bouncesSum += visitors[i].Bounces
+			viewsSum += visitors[i].Views
 		}
 
+		// we don't need to check for viewsSum, as it will be > 0 if there are unique visitors
 		if visitorSum > 0 {
 			for i := range visitors {
 				visitors[i].RelativeVisitors = float64(visitors[i].Visitors) / float64(visitorSum)
 
 				if visitors[i].Visitors > 0 {
 					visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
+				}
+
+				if visitorSum > 0 {
+					visitors[i].RelativeViews = float64(visitors[i].Views) / float64(viewsSum)
 				}
 			}
 
@@ -623,14 +636,18 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			Stats:      visitors,
 			Visitors:   visitorSum,
 			Bounces:    bouncesSum,
+			Views:      viewsSum,
 			BounceRate: bounceRate,
 		})
 		totalVisitors += visitorSum
+		totalViews += viewsSum
 	}
 
+	// same as above, don't need to check totalViews
 	if totalVisitors > 0 {
 		for i := range stats {
 			stats[i].RelativeVisitors = float64(stats[i].Visitors) / float64(totalVisitors)
+			stats[i].RelativeViews = float64(stats[i].Views) / float64(totalViews)
 		}
 	}
 
@@ -806,6 +823,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
 		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
 		BouncesGrowth:  analyzer.calculateBouncesGrowth(current, previous),
+		ViewsGrowth:    analyzer.calculateGrowth(current.Views, previous.Views),
 	}, nil
 }
 
