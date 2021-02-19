@@ -968,6 +968,61 @@ func TestAnalyzer_Growth(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_GrowthToday(t *testing.T) {
+	tenantIDs := []int64{0, 1}
+
+	for _, tenantID := range tenantIDs {
+		store := NewPostgresStore(postgresDB, nil)
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
+		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
+		stats := []VisitorStats{
+			{
+				Stats: Stats{
+					Day:      pastDay(1),
+					Path:     sql.NullString{String: "/home", Valid: true},
+					Visitors: 3,
+					Sessions: 6,
+					Bounces:  1,
+					Views:    10,
+				},
+			},
+		}
+
+		for _, s := range stats {
+			s.BaseEntity.TenantID = NewTenantID(tenantID)
+			assert.NoError(t, store.SaveVisitorStats(nil, &s))
+		}
+
+		// save again without paths for processed statistics
+		for _, s := range stats {
+			s.BaseEntity.TenantID = NewTenantID(tenantID)
+			s.Path.Valid = false
+			assert.NoError(t, store.SaveVisitorStats(nil, &s))
+		}
+
+		analyzer := NewAnalyzer(store, nil)
+		growth, err := analyzer.Growth(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     today(),
+			To:       today(),
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, growth.Current.Visitors)
+		assert.Equal(t, 2, growth.Current.Sessions)
+		assert.Equal(t, 2, growth.Current.Bounces)
+		assert.Equal(t, 2, growth.Current.Views)
+		assert.Equal(t, 3, growth.Previous.Visitors)
+		assert.Equal(t, 6, growth.Previous.Sessions)
+		assert.Equal(t, 1, growth.Previous.Bounces)
+		assert.Equal(t, 10, growth.Previous.Views)
+		assert.InDelta(t, -0.3333, growth.VisitorsGrowth, 0.01)
+		assert.InDelta(t, -0.6666, growth.SessionsGrowth, 0.01)
+		assert.InDelta(t, 2, growth.BouncesGrowth, 0.01)
+		assert.InDelta(t, -0.8, growth.ViewsGrowth, 0.01)
+	}
+}
+
 func TestAnalyzer_GrowthNoData(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	cleanupDB(t)

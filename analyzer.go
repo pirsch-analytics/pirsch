@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"errors"
 	"sort"
 	"time"
 )
@@ -806,6 +807,21 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	today := today()
+
+	if today.Equal(filter.To) {
+		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
+
+		if visitorsToday == nil {
+			return nil, errors.New("error counting visitors for today")
+		}
+
+		current.Visitors += visitorsToday.Visitors
+		current.Sessions += visitorsToday.Sessions
+		current.Bounces += analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+		current.Views += visitorsToday.Views
 	}
 
 	days := filter.To.Sub(filter.From)
