@@ -533,7 +533,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 	return visitors, nil
 }
 
-// CountVisitorsByPathAndHour implements the Store interface.
+// CountVisitorsByHour implements the Store interface.
 func (store *PostgresStore) CountVisitorsByHour(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) ([]VisitorTimeStats, error) {
 	if tx == nil {
 		tx = store.NewTx()
@@ -913,7 +913,7 @@ func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantI
 	return visitors
 }
 
-// CountVisitorsByReferrerAndMaxOneHit implements the Store interface.
+// CountVisitorsByPathAndReferrerAndMaxOneHit implements the Store interface.
 func (store *PostgresStore) CountVisitorsByPathAndReferrerAndMaxOneHit(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path, referrer string) int {
 	if tx == nil {
 		tx = store.NewTx()

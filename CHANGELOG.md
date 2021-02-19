@@ -3,6 +3,7 @@
 ## 1.13.0
 
 * changed the default session max age from two hours to 15 minutes (you can keep two hours by setting the `TrackerConfig.SessionMaxAge` option)
+* updated dependencies
 
 ## 1.12.2
 
