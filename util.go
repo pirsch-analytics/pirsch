@@ -64,3 +64,11 @@ func today() time.Time {
 func hourInTimezone(hour int, timezone *time.Location) int {
 	return time.Date(2020, 1, 1, hour, 0, 0, 0, time.UTC).In(timezone).Hour()
 }
+
+func addAverage(oldAverage, newAverage, newSize int) int {
+	if newSize == 0 {
+		return 0
+	}
+
+	return oldAverage + (newAverage-oldAverage)/newSize
+}

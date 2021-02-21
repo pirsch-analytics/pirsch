@@ -39,15 +39,17 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+		createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour-time.Second*50), today(), "", "", "", "", "", false, false, 0, 0)
+		createHit(t, store, tenantID, "fp2", "/different-path", "en", "ua1", "", today().Add(time.Hour-time.Second*5), today(), "", "", "", "", "", false, false, 0, 0)
 		stats := &VisitorStats{
 			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-				Sessions:   67,
-				Bounces:    30,
-				Views:      71,
+				BaseEntity:                    BaseEntity{TenantID: NewTenantID(tenantID)},
+				Day:                           pastDay(2),
+				Visitors:                      42,
+				Sessions:                      67,
+				Bounces:                       30,
+				Views:                         71,
+				AverageSessionDurationSeconds: 11,
 			},
 		}
 		assert.NoError(t, store.SaveVisitorStats(nil, stats))
@@ -74,15 +76,19 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		assert.Equal(t, 0, visitors[0].Bounces)
 		assert.Equal(t, 30, visitors[1].Bounces)
 		assert.Equal(t, 0, visitors[2].Bounces)
-		assert.Equal(t, 2, visitors[3].Bounces)
+		assert.Equal(t, 1, visitors[3].Bounces)
 		assert.Equal(t, 0, visitors[0].Views)
 		assert.Equal(t, 71, visitors[1].Views)
 		assert.Equal(t, 0, visitors[2].Views)
-		assert.Equal(t, 2, visitors[3].Views)
+		assert.Equal(t, 3, visitors[3].Views)
 		assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
 		assert.InDelta(t, 0.71, visitors[1].BounceRate, 0.01)
 		assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
-		assert.InDelta(t, 1, visitors[3].BounceRate, 0.01)
+		assert.InDelta(t, 0.5, visitors[3].BounceRate, 0.01)
+		assert.Equal(t, 0, visitors[0].AverageSessionDurationSeconds)
+		assert.Equal(t, 11, visitors[1].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[2].AverageSessionDurationSeconds)
+		assert.Equal(t, 45, visitors[3].AverageSessionDurationSeconds)
 	}
 }
 
