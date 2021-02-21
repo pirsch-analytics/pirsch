@@ -14,11 +14,12 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	err := store.SaveVisitorStats(nil, &VisitorStats{
 		Stats: Stats{
-			Day:      day(2020, 9, 3, 0),
-			Visitors: 42,
-			Sessions: 59,
-			Bounces:  11,
-			Views:    103,
+			Day:                           day(2020, 9, 3, 0),
+			Visitors:                      42,
+			Sessions:                      59,
+			Bounces:                       11,
+			Views:                         103,
+			AverageSessionDurationSeconds: 59,
 		},
 		PlatformDesktop: 123,
 		PlatformMobile:  89,
@@ -34,6 +35,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
+	stats.AverageSessionDurationSeconds = 226
 	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_stats"`))
 	assert.Equal(t, 42+11, stats.Visitors)
@@ -43,6 +45,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	assert.Equal(t, 123+5, stats.PlatformDesktop)
 	assert.Equal(t, 89+3, stats.PlatformMobile)
 	assert.Equal(t, 52+1, stats.PlatformUnknown)
+	assert.Equal(t, 61, stats.AverageSessionDurationSeconds)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
 	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	var entries []VisitorStats
@@ -396,4 +399,16 @@ func TestPostgresStore_ActivePageVisitors(t *testing.T) {
 	assert.Equal(t, "/", stats[1].Path.String)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+}
+
+func TestPostgresStore_SessionDurationSum(t *testing.T) {
+	cleanupDB(t)
+	store := NewPostgresStore(postgresDB, nil)
+	day := pastDay(3)
+	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*100), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*95), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p3", "en", "ua", "", day.Add(time.Hour-time.Second*90), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*10), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	assert.Equal(t, 15, store.SessionDurationSum(nil, NullTenant, day))
 }

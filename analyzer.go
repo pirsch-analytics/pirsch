@@ -81,7 +81,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return stats, analyzer.store.ActiveVisitors(filter.TenantID, from), nil
 }
 
-// Visitors returns the visitor count, session count, bounce rate, and views per day.
+// Visitors returns the visitor count, session count, bounce rate, views, and average session duration per day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	today := today()
@@ -95,6 +95,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	if addToday {
 		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
 		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+		averageSessionDurationToday := analyzer.store.SessionDurationSum(nil, filter.TenantID, today)
 
 		if len(stats) > 0 {
 			if visitorsToday != nil {
@@ -102,13 +103,15 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 				stats[len(stats)-1].Sessions += visitorsToday.Sessions
 				stats[len(stats)-1].Bounces += bouncesToday
 				stats[len(stats)-1].Views += visitorsToday.Views
+				stats[len(stats)-1].AverageSessionDurationSeconds = averageSessionDurationToday
 			}
 		} else {
 			stats = append(stats, Stats{
-				Visitors: visitorsToday.Visitors,
-				Sessions: visitorsToday.Sessions,
-				Bounces:  visitorsToday.Bounces,
-				Views:    visitorsToday.Views,
+				Visitors:                      visitorsToday.Visitors,
+				Sessions:                      visitorsToday.Sessions,
+				Bounces:                       visitorsToday.Bounces,
+				Views:                         visitorsToday.Views,
+				AverageSessionDurationSeconds: averageSessionDurationToday,
 			})
 		}
 	}
@@ -772,7 +775,7 @@ func (analyzer *Analyzer) PageBrowser(filter *Filter) ([]BrowserStats, error) {
 	return stats, nil
 }
 
-// PagePlatform returns the visitor count per platform, day, path, and for the given time frame.
+// PagePlatform returns the visitor count by platform for the given time frame and path.
 // The path is mandatory.
 func (analyzer *Analyzer) PagePlatform(filter *Filter) *VisitorStats {
 	filter = analyzer.getFilter(filter)

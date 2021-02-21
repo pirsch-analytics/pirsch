@@ -148,7 +148,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, views, platform_desktop, platform_mobile, platform_unknown
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, views, platform_desktop, platform_mobile, platform_unknown, average_session_duration_seconds
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
@@ -162,8 +162,9 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
+		existing.AverageSessionDurationSeconds = addAverage(existing.AverageSessionDurationSeconds, entity.AverageSessionDurationSeconds, existing.Sessions)
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "views" = $4, "platform_desktop" = $5, "platform_mobile" = $6, "platform_unknown" = $7 WHERE id = $8`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "views" = $4, "platform_desktop" = $5, "platform_mobile" = $6, "platform_unknown" = $7, "average_session_duration_seconds" = $8 WHERE id = $9`,
 			existing.Visitors,
 			existing.Sessions,
 			existing.Bounces,
@@ -171,11 +172,12 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
+			existing.AverageSessionDurationSeconds,
 			existing.ID); err != nil {
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "views", "platform_desktop", "platform_mobile", "platform_unknown") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :views, :platform_desktop, :platform_mobile, :platform_unknown)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "views", "platform_desktop", "platform_mobile", "platform_unknown", "average_session_duration_seconds") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :views, :platform_desktop, :platform_mobile, :platform_unknown, :average_session_duration_seconds)`, entity)
 
 		if err != nil {
 			return err
@@ -994,7 +996,8 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
         COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
         COALESCE(SUM("visitor_stats".bounces), 0) "bounces",
-        COALESCE(SUM("visitor_stats".views), 0) "views"
+        COALESCE(SUM("visitor_stats".views), 0) "views",
+        COALESCE(SUM("visitor_stats".average_session_duration_seconds), 0) "average_session_duration_seconds"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1453,6 +1456,30 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	}
 
 	return visitors, nil
+}
+
+// SessionDurationSum implements the Store interface.
+func (store *PostgresStore) SessionDurationSum(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) int {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT EXTRACT(SECONDS FROM sum("duration"))::integer FROM (
+			SELECT max("time")-min("time") "duration" 
+			FROM "hit"
+			WHERE ($1::bigint IS NULL OR tenant_id = $1)
+			AND DATE("time") = $2::date
+			GROUP BY fingerprint, "session"
+		) AS results`
+	var duration int
+
+	if err := tx.Get(&duration, query, tenantID, day); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error calculating session duration: %s", err)
+		return 0
+	}
+
+	return duration
 }
 
 func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing statsEntity, found bool, insertQuery, updateQuery string) error {

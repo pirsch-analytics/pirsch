@@ -125,6 +125,27 @@ func TestProcessor_ProcessReferrerBounces(t *testing.T) {
 	assert.Equal(t, 1, referrer[0].Bounces)
 }
 
+func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
+	store := NewPostgresStore(postgresDB, nil)
+	cleanupDB(t)
+	day := pastDay(3)
+	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*100), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*95), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p3", "en", "ua", "", day.Add(time.Hour-time.Second*90), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*10), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	processor := NewProcessor(store)
+	assert.NoError(t, processor.Process())
+	analyzer := NewAnalyzer(store, nil)
+	visitors, err := analyzer.Visitors(&Filter{
+		From: day,
+		To:   day,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, 15, visitors[0].AverageSessionDurationSeconds)
+}
+
 func testProcess(t *testing.T, tenantID int64) {
 	store := NewPostgresStore(postgresDB, nil)
 	createTestdata(t, store, tenantID)

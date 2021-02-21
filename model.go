@@ -15,15 +15,16 @@ type BaseEntity struct {
 type Stats struct {
 	BaseEntity
 
-	Day              time.Time      `db:"day" json:"day"`
-	Path             sql.NullString `db:"path" json:"path"`
-	Visitors         int            `db:"visitors" json:"visitors"`
-	Sessions         int            `db:"sessions" json:"sessions"`
-	Bounces          int            `db:"bounces" json:"bounces"`
-	Views            int            `db:"views" json:"views"`
-	RelativeVisitors float64        `db:"-" json:"relative_visitors"`
-	BounceRate       float64        `db:"-" json:"bounce_rate"`
-	RelativeViews    float64        `db:"-" json:"relative_views"`
+	Day                           time.Time      `db:"day" json:"day"`
+	Path                          sql.NullString `db:"path" json:"path"`
+	Visitors                      int            `db:"visitors" json:"visitors"`
+	Sessions                      int            `db:"sessions" json:"sessions"`
+	Bounces                       int            `db:"bounces" json:"bounces"`
+	Views                         int            `db:"views" json:"views"`
+	RelativeVisitors              float64        `db:"-" json:"relative_visitors"`
+	BounceRate                    float64        `db:"-" json:"bounce_rate"`
+	RelativeViews                 float64        `db:"-" json:"relative_views"`
+	AverageSessionDurationSeconds int            `db:"average_session_duration_seconds" json:"average_session_duration_seconds"`
 }
 
 func (stats *Stats) visitors() int {
