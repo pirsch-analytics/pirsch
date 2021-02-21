@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type statistics interface {
-	visitors() int
-	setRelativeVisitors(float64)
-}
-
 // BaseEntity is the base entity for all other entities.
 type BaseEntity struct {
 	ID       int64         `db:"id" json:"id"`
