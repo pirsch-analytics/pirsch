@@ -129,11 +129,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	cleanupDB(t)
 	day := pastDay(3)
-	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*100), day, "", "", "", "", "", false, false, 0, 0)
-	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*95), day, "", "", "", "", "", false, false, 0, 0)
-	createHit(t, store, 0, "fp", "/p3", "en", "ua", "", day.Add(time.Hour-time.Second*90), day, "", "", "", "", "", false, false, 0, 0)
-	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*10), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
-	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	createSessions(t, store, 0, day)
 	processor := NewProcessor(store)
 	assert.NoError(t, processor.Process())
 	analyzer := NewAnalyzer(store, nil)
@@ -143,7 +139,16 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
-	assert.Equal(t, 15, visitors[0].AverageSessionDurationSeconds)
+	assert.Equal(t, (10+5)/2, visitors[0].AverageSessionDurationSeconds)
+	createSessions(t, store, 0, day)
+	assert.NoError(t, processor.Process())
+	visitors, err = analyzer.Visitors(&Filter{
+		From: day,
+		To:   day,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, addAverage((10+5)/2, (10+5)/2, 4), visitors[0].AverageSessionDurationSeconds)
 }
 
 func testProcess(t *testing.T, tenantID int64) {
@@ -503,6 +508,14 @@ func createTestdata(t *testing.T, store Store, tenantID int64) {
 	createHit(t, store, tenantID, "fp4", "/", "en", "ua4", "ref2", day(2020, 6, 22, 9), time.Time{}, OSWindows, "10", BrowserFirefox, "53.0", "gb", true, false, 640, 1024)
 	createHit(t, store, tenantID, "fp5", "/", "en", "ua5", "ref2", day(2020, 6, 22, 9), time.Time{}, OSLinux, "", BrowserFirefox, "54.0", "de", false, false, 1920, 1080)
 	createHit(t, store, tenantID, "fp6", "/different-page", "jp", "ua6", "ref3", day(2020, 6, 22, 10), time.Time{}, OSAndroid, "8.0", BrowserChrome, "84.0", "jp", false, true, 0, 0)
+}
+
+func createSessions(t *testing.T, store Store, tenantID int64, day time.Time) {
+	createHit(t, store, tenantID, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*100), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, tenantID, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*95), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, tenantID, "fp", "/p3", "en", "ua", "", day.Add(time.Hour-time.Second*90), day, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, tenantID, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*10), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
+	createHit(t, store, tenantID, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
 }
 
 func createHit(t *testing.T, store Store, tenantID int64, fingerprint, path, lang, userAgent, ref string, time, session time.Time, os, osVersion, browser, browserVersion, countryCode string, desktop, mobile bool, w, h int) {

@@ -992,6 +992,7 @@ func (store *PostgresStore) ActivePageVisitors(tenantID sql.NullInt64, from time
 
 // Visitors implements the Store interface.
 func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
+	// summing up the average session duration isn't an issue here, since there should be only one row per day
 	query := `SELECT "d" AS "day",
 		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
         COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
@@ -1465,7 +1466,7 @@ func (store *PostgresStore) SessionDurationSum(tx *sqlx.Tx, tenantID sql.NullInt
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT EXTRACT(SECONDS FROM sum("duration"))::integer FROM (
+	query := `SELECT EXTRACT(EPOCH FROM sum("duration"))::integer FROM (
 			SELECT max("time")-min("time") "duration" 
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
