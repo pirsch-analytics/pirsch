@@ -11,6 +11,8 @@
 * added session duration growth to analyzer
 * added time spent on page statistics
 * updated dependencies
+* updated referrer blacklist
+* updated Safari User-Agent versions
 
 ## 1.12.2
 
