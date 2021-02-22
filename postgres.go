@@ -1491,6 +1491,38 @@ func (store *PostgresStore) AverageSessionDuration(tx *sqlx.Tx, tenantID sql.Nul
 	return duration
 }
 
+func (store *PostgresStore) AverageSessionDurationByPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
+	if tx == nil {
+		tx = store.NewTx()
+		defer store.Commit(tx)
+	}
+
+	query := `SELECT coalesce(extract(EPOCH FROM avg("duration"))::integer, 0) FROM (
+			SELECT next_hit-"time" "duration"
+			FROM (
+				SELECT "time",
+				lead("time", 1) OVER (
+					PARTITION BY fingerprint, "session"
+					ORDER BY "time"
+				) next_hit,
+				"path"
+				FROM hit
+				WHERE ($1::bigint IS NULL OR tenant_id = $1)
+				AND date("time") = $2::date
+			) AS hits
+			WHERE "path" = $3
+			AND next_hit IS NOT NULL
+		) AS results`
+	var duration int
+
+	if err := tx.Get(&duration, query, tenantID, day, path); err != nil && err != sql.ErrNoRows {
+		store.logger.Printf("error calculating session duration by path: %s", err)
+		return 0
+	}
+
+	return duration
+}
+
 func (store *PostgresStore) createUpdateEntity(tx *sqlx.Tx, entity, existing statsEntity, found bool, insertQuery, updateQuery string) error {
 	if found {
 		visitors := existing.GetVisitors() + entity.GetVisitors()

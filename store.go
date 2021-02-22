@@ -178,4 +178,7 @@ type Store interface {
 
 	// AverageSessionDuration returns the average session durations for given day.
 	AverageSessionDuration(*sqlx.Tx, sql.NullInt64, time.Time) int
+
+	// AverageSessionDurationByPath returns the average session durations for given day and path.
+	AverageSessionDurationByPath(*sqlx.Tx, sql.NullInt64, time.Time, string) int
 }
