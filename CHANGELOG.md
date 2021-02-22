@@ -8,6 +8,7 @@
 * added page views to statistics (including relative views and growth)
 * added "today" to growth rates, if it's within period (visitors, sessions, bounces, views)
 * added average session duration per day
+* added session duration growth to analyzer
 * updated dependencies
 
 ## 1.12.2

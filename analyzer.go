@@ -26,12 +26,13 @@ type TimeOfDayVisitors struct {
 
 // Growth represents the visitors, sessions, and bounces growth between two time periods.
 type Growth struct {
-	Current        *Stats  `json:"current"`
-	Previous       *Stats  `json:"previous"`
-	VisitorsGrowth float64 `json:"visitors_growth"`
-	SessionsGrowth float64 `json:"sessions_growth"`
-	BouncesGrowth  float64 `json:"bounces_growth"`
-	ViewsGrowth    float64 `json:"views_growth"`
+	Current               *Stats  `json:"current"`
+	Previous              *Stats  `json:"previous"`
+	VisitorsGrowth        float64 `json:"visitors_growth"`
+	SessionsGrowth        float64 `json:"sessions_growth"`
+	BouncesGrowth         float64 `json:"bounces_growth"`
+	ViewsGrowth           float64 `json:"views_growth"`
+	SessionDurationGrowth float64 `json:"session_duration_growth"`
 }
 
 // AnalyzerConfig is the (optional) configuration for the Analyzer.
@@ -812,6 +813,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
+	filterDays := filter.Days()
+
+	if filterDays > 0 {
+		current.AverageSessionDurationSeconds /= filterDays
+	}
+
 	today := today()
 
 	if today.Equal(filter.To) {
@@ -825,6 +832,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		current.Sessions += visitorsToday.Sessions
 		current.Bounces += analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
 		current.Views += visitorsToday.Views
+
+		if current.Sessions > 0 {
+			current.AverageSessionDurationSeconds = addAverage(current.AverageSessionDurationSeconds, analyzer.store.SessionDurationSum(nil, filter.TenantID, today), current.Sessions)
+		}
 	}
 
 	days := filter.To.Sub(filter.From)
@@ -836,13 +847,18 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
+	if filterDays > 0 {
+		previous.AverageSessionDurationSeconds /= filterDays
+	}
+
 	return &Growth{
-		Current:        current,
-		Previous:       previous,
-		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
-		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:  analyzer.calculateBouncesGrowth(current, previous),
-		ViewsGrowth:    analyzer.calculateGrowth(current.Views, previous.Views),
+		Current:               current,
+		Previous:              previous,
+		VisitorsGrowth:        analyzer.calculateGrowth(current.Visitors, previous.Visitors),
+		SessionsGrowth:        analyzer.calculateGrowth(current.Sessions, previous.Sessions),
+		BouncesGrowth:         analyzer.calculateBouncesGrowth(current, previous),
+		ViewsGrowth:           analyzer.calculateGrowth(current.Views, previous.Views),
+		SessionDurationGrowth: analyzer.calculateGrowth(current.AverageSessionDurationSeconds, previous.AverageSessionDurationSeconds),
 	}, nil
 }
 

@@ -1437,7 +1437,8 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	query := `SELECT COALESCE(SUM("visitors"), 0) "visitors",
         COALESCE(SUM("sessions"), 0) "sessions",
         COALESCE(SUM("bounces"), 0) "bounces",
-        COALESCE(SUM("views"), 0) "views"
+        COALESCE(SUM("views"), 0) "views",
+		COALESCE(SUM("average_session_duration_seconds"), 0) "average_session_duration_seconds"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
