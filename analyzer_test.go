@@ -43,13 +43,13 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		createHit(t, store, tenantID, "fp2", "/different-path", "en", "ua1", "", today().Add(time.Hour-time.Second*5), today(), "", "", "", "", "", false, false, 0, 0)
 		stats := &VisitorStats{
 			Stats: Stats{
-				BaseEntity:                    BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:                           pastDay(2),
-				Visitors:                      42,
-				Sessions:                      67,
-				Bounces:                       30,
-				Views:                         71,
-				AverageSessionDurationSeconds: 11,
+				BaseEntity:              BaseEntity{TenantID: NewTenantID(tenantID)},
+				Day:                     pastDay(2),
+				Visitors:                42,
+				Sessions:                67,
+				Bounces:                 30,
+				Views:                   71,
+				AverageTimeSpendSeconds: 11,
 			},
 		}
 		assert.NoError(t, store.SaveVisitorStats(nil, stats))
@@ -85,10 +85,10 @@ func TestAnalyzer_Visitors(t *testing.T) {
 		assert.InDelta(t, 0.71, visitors[1].BounceRate, 0.01)
 		assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
 		assert.InDelta(t, 0.5, visitors[3].BounceRate, 0.01)
-		assert.Equal(t, 0, visitors[0].AverageSessionDurationSeconds)
-		assert.Equal(t, 11, visitors[1].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[2].AverageSessionDurationSeconds)
-		assert.Equal(t, 45, visitors[3].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[0].AverageTimeSpendSeconds)
+		assert.Equal(t, 11, visitors[1].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[2].AverageTimeSpendSeconds)
+		assert.Equal(t, 45, visitors[3].AverageTimeSpendSeconds)
 	}
 }
 
@@ -531,14 +531,14 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today().Add(time.Minute*2), today(), "", "", "", "", "", false, false, 0, 0)
 		stats := &VisitorStats{
 			Stats: Stats{
-				BaseEntity:                    BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:                           pastDay(2),
-				Path:                          sql.NullString{String: "/path", Valid: true},
-				Visitors:                      42,
-				Sessions:                      67,
-				Bounces:                       30,
-				Views:                         71,
-				AverageSessionDurationSeconds: 60,
+				BaseEntity:              BaseEntity{TenantID: NewTenantID(tenantID)},
+				Day:                     pastDay(2),
+				Path:                    sql.NullString{String: "/path", Valid: true},
+				Visitors:                42,
+				Sessions:                67,
+				Bounces:                 30,
+				Views:                   71,
+				AverageTimeSpendSeconds: 60,
 			},
 		}
 		assert.NoError(t, store.SaveVisitorStats(nil, stats))
@@ -608,13 +608,13 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		assert.Equal(t, 0, visitors[1].Stats[1].Views)
 		assert.Equal(t, 0, visitors[1].Stats[2].Views)
 		assert.Equal(t, 1, visitors[1].Stats[3].Views)
-		assert.Equal(t, 60, visitors[0].Stats[1].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[0].Stats[2].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[0].Stats[3].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[0].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[1].AverageSessionDurationSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[2].AverageSessionDurationSeconds)
-		assert.Equal(t, 120, visitors[1].Stats[3].AverageSessionDurationSeconds)
+		assert.Equal(t, 60, visitors[0].Stats[1].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[0].Stats[2].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[0].Stats[3].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[0].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[1].AverageTimeSpendSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[2].AverageTimeSpendSeconds)
+		assert.Equal(t, 120, visitors[1].Stats[3].AverageTimeSpendSeconds)
 		assert.InDelta(t, 0, visitors[0].Stats[0].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.9767, visitors[0].Stats[1].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0, visitors[0].Stats[2].RelativeVisitors, 0.01)
@@ -899,46 +899,46 @@ func TestAnalyzer_Growth(t *testing.T) {
 		stats := []VisitorStats{
 			{
 				Stats: Stats{
-					Day:                           pastDay(2),
-					Path:                          sql.NullString{String: "/home", Valid: true},
-					Visitors:                      5,
-					Sessions:                      6,
-					Bounces:                       3,
-					Views:                         21,
-					AverageSessionDurationSeconds: 56,
+					Day:                     pastDay(2),
+					Path:                    sql.NullString{String: "/home", Valid: true},
+					Visitors:                5,
+					Sessions:                6,
+					Bounces:                 3,
+					Views:                   21,
+					AverageTimeSpendSeconds: 56,
 				},
 			},
 			{
 				Stats: Stats{
-					Day:                           pastDay(3),
-					Path:                          sql.NullString{String: "/about", Valid: true},
-					Visitors:                      6,
-					Sessions:                      7,
-					Bounces:                       4,
-					Views:                         22,
-					AverageSessionDurationSeconds: 123,
+					Day:                     pastDay(3),
+					Path:                    sql.NullString{String: "/about", Valid: true},
+					Visitors:                6,
+					Sessions:                7,
+					Bounces:                 4,
+					Views:                   22,
+					AverageTimeSpendSeconds: 123,
 				},
 			},
 			{
 				Stats: Stats{
-					Day:                           pastDay(4),
-					Path:                          sql.NullString{String: "/home", Valid: true},
-					Visitors:                      2,
-					Sessions:                      3,
-					Bounces:                       1,
-					Views:                         23,
-					AverageSessionDurationSeconds: 98,
+					Day:                     pastDay(4),
+					Path:                    sql.NullString{String: "/home", Valid: true},
+					Visitors:                2,
+					Sessions:                3,
+					Bounces:                 1,
+					Views:                   23,
+					AverageTimeSpendSeconds: 98,
 				},
 			},
 			{
 				Stats: Stats{
-					Day:                           pastDay(5),
-					Path:                          sql.NullString{String: "/about", Valid: true},
-					Visitors:                      8,
-					Sessions:                      9,
-					Bounces:                       6,
-					Views:                         24,
-					AverageSessionDurationSeconds: 241,
+					Day:                     pastDay(5),
+					Path:                    sql.NullString{String: "/about", Valid: true},
+					Visitors:                8,
+					Sessions:                9,
+					Bounces:                 6,
+					Views:                   24,
+					AverageTimeSpendSeconds: 241,
 				},
 			},
 		}
@@ -966,12 +966,12 @@ func TestAnalyzer_Growth(t *testing.T) {
 		assert.Equal(t, 13, growth.Current.Sessions)
 		assert.Equal(t, 7, growth.Current.Bounces)
 		assert.Equal(t, 43, growth.Current.Views)
-		assert.Equal(t, 90, growth.Current.AverageSessionDurationSeconds)
+		assert.Equal(t, 90, growth.Current.AverageTimeSpendSeconds)
 		assert.Equal(t, 10, growth.Previous.Visitors)
 		assert.Equal(t, 12, growth.Previous.Sessions)
 		assert.Equal(t, 7, growth.Previous.Bounces)
 		assert.Equal(t, 47, growth.Previous.Views)
-		assert.Equal(t, 170, growth.Previous.AverageSessionDurationSeconds)
+		assert.Equal(t, 170, growth.Previous.AverageTimeSpendSeconds)
 		assert.InDelta(t, 0.1, growth.VisitorsGrowth, 0.01)
 		assert.InDelta(t, 0.08333, growth.SessionsGrowth, 0.01)
 		assert.InDelta(t, -0.0909, growth.BouncesGrowth, 0.01)
@@ -988,12 +988,12 @@ func TestAnalyzer_Growth(t *testing.T) {
 		assert.Equal(t, 6, growth.Current.Sessions)
 		assert.Equal(t, 3, growth.Current.Bounces)
 		assert.Equal(t, 21, growth.Current.Views)
-		assert.Equal(t, 56, growth.Current.AverageSessionDurationSeconds)
+		assert.Equal(t, 56, growth.Current.AverageTimeSpendSeconds)
 		assert.Equal(t, 2, growth.Previous.Visitors)
 		assert.Equal(t, 3, growth.Previous.Sessions)
 		assert.Equal(t, 1, growth.Previous.Bounces)
 		assert.Equal(t, 23, growth.Previous.Views)
-		assert.Equal(t, 98, growth.Previous.AverageSessionDurationSeconds)
+		assert.Equal(t, 98, growth.Previous.AverageTimeSpendSeconds)
 		assert.InDelta(t, 1.5, growth.VisitorsGrowth, 0.01)
 		assert.InDelta(t, 1, growth.SessionsGrowth, 0.01)
 		assert.InDelta(t, 0.1999, growth.BouncesGrowth, 0.01)
@@ -1014,13 +1014,13 @@ func TestAnalyzer_GrowthToday(t *testing.T) {
 		stats := []VisitorStats{
 			{
 				Stats: Stats{
-					Day:                           pastDay(1),
-					Path:                          sql.NullString{String: "/home", Valid: true},
-					Visitors:                      3,
-					Sessions:                      6,
-					Bounces:                       1,
-					Views:                         10,
-					AverageSessionDurationSeconds: 60,
+					Day:                     pastDay(1),
+					Path:                    sql.NullString{String: "/home", Valid: true},
+					Visitors:                3,
+					Sessions:                6,
+					Bounces:                 1,
+					Views:                   10,
+					AverageTimeSpendSeconds: 60,
 				},
 			},
 		}
@@ -1048,12 +1048,12 @@ func TestAnalyzer_GrowthToday(t *testing.T) {
 		assert.Equal(t, 2, growth.Current.Sessions)
 		assert.Equal(t, 1, growth.Current.Bounces)
 		assert.Equal(t, 3, growth.Current.Views)
-		assert.Equal(t, 300/2, growth.Current.AverageSessionDurationSeconds)
+		assert.Equal(t, 300/2, growth.Current.AverageTimeSpendSeconds)
 		assert.Equal(t, 3, growth.Previous.Visitors)
 		assert.Equal(t, 6, growth.Previous.Sessions)
 		assert.Equal(t, 1, growth.Previous.Bounces)
 		assert.Equal(t, 10, growth.Previous.Views)
-		assert.Equal(t, 60, growth.Previous.AverageSessionDurationSeconds)
+		assert.Equal(t, 60, growth.Previous.AverageTimeSpendSeconds)
 		assert.InDelta(t, -0.3333, growth.VisitorsGrowth, 0.01)
 		assert.InDelta(t, -0.6666, growth.SessionsGrowth, 0.01)
 		assert.InDelta(t, 0.5, growth.BouncesGrowth, 0.01)
@@ -1075,12 +1075,12 @@ func TestAnalyzer_GrowthNoData(t *testing.T) {
 	assert.Equal(t, 0, growth.Current.Sessions)
 	assert.Equal(t, 0, growth.Current.Bounces)
 	assert.Equal(t, 0, growth.Current.Views)
-	assert.Equal(t, 0, growth.Current.AverageSessionDurationSeconds)
+	assert.Equal(t, 0, growth.Current.AverageTimeSpendSeconds)
 	assert.Equal(t, 0, growth.Previous.Visitors)
 	assert.Equal(t, 0, growth.Previous.Sessions)
 	assert.Equal(t, 0, growth.Previous.Bounces)
 	assert.Equal(t, 0, growth.Previous.Views)
-	assert.Equal(t, 0, growth.Previous.AverageSessionDurationSeconds)
+	assert.Equal(t, 0, growth.Previous.AverageTimeSpendSeconds)
 	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.01)
 	assert.InDelta(t, 0, growth.SessionsGrowth, 0.01)
 	assert.InDelta(t, 0, growth.BouncesGrowth, 0.01)

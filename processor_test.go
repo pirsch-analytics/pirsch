@@ -139,7 +139,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
-	assert.Equal(t, 8, visitors[0].AverageSessionDurationSeconds)
+	assert.Equal(t, 8, visitors[0].AverageTimeSpendSeconds)
 	pageVisitors, err := analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,
@@ -174,7 +174,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
-	assert.Equal(t, addAverage(8, (10+5)/2, 4), visitors[0].AverageSessionDurationSeconds)
+	assert.Equal(t, addAverage(8, (10+5)/2, 4), visitors[0].AverageTimeSpendSeconds)
 	pageVisitors, err = analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,

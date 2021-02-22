@@ -14,12 +14,12 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	store := NewPostgresStore(postgresDB, nil)
 	err := store.SaveVisitorStats(nil, &VisitorStats{
 		Stats: Stats{
-			Day:                           day(2020, 9, 3, 0),
-			Visitors:                      42,
-			Sessions:                      59,
-			Bounces:                       11,
-			Views:                         103,
-			AverageSessionDurationSeconds: 59,
+			Day:                     day(2020, 9, 3, 0),
+			Visitors:                42,
+			Sessions:                59,
+			Bounces:                 11,
+			Views:                   103,
+			AverageTimeSpendSeconds: 59,
 		},
 		PlatformDesktop: 123,
 		PlatformMobile:  89,
@@ -35,7 +35,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	stats.PlatformDesktop = 5
 	stats.PlatformMobile = 3
 	stats.PlatformUnknown = 1
-	stats.AverageSessionDurationSeconds = 226
+	stats.AverageTimeSpendSeconds = 226
 	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	assert.NoError(t, db.Get(stats, `SELECT * FROM "visitor_stats"`))
 	assert.Equal(t, 42+11, stats.Visitors)
@@ -45,7 +45,7 @@ func TestPostgresStore_SaveVisitorStats(t *testing.T) {
 	assert.Equal(t, 123+5, stats.PlatformDesktop)
 	assert.Equal(t, 89+3, stats.PlatformMobile)
 	assert.Equal(t, 52+1, stats.PlatformUnknown)
-	assert.Equal(t, 61, stats.AverageSessionDurationSeconds)
+	assert.Equal(t, 61, stats.AverageTimeSpendSeconds)
 	stats.Path = sql.NullString{String: "/path", Valid: true}
 	assert.NoError(t, store.SaveVisitorStats(nil, stats))
 	var entries []VisitorStats

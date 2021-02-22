@@ -105,15 +105,15 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 				stats[len(stats)-1].Sessions += visitorsToday.Sessions
 				stats[len(stats)-1].Bounces += bouncesToday
 				stats[len(stats)-1].Views += visitorsToday.Views
-				stats[len(stats)-1].AverageSessionDurationSeconds = averageSessionDurationToday
+				stats[len(stats)-1].AverageTimeSpendSeconds = averageSessionDurationToday
 			}
 		} else {
 			stats = append(stats, Stats{
-				Visitors:                      visitorsToday.Visitors,
-				Sessions:                      visitorsToday.Sessions,
-				Bounces:                       visitorsToday.Bounces,
-				Views:                         visitorsToday.Views,
-				AverageSessionDurationSeconds: averageSessionDurationToday,
+				Visitors:                visitorsToday.Visitors,
+				Sessions:                visitorsToday.Sessions,
+				Bounces:                 visitorsToday.Bounces,
+				Views:                   visitorsToday.Views,
+				AverageTimeSpendSeconds: averageSessionDurationToday,
 			})
 		}
 	}
@@ -601,14 +601,14 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 					visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
 					visitors[len(visitors)-1].Bounces += bouncesToday
 					visitors[len(visitors)-1].Views += visitorsToday[0].Views
-					visitors[len(visitors)-1].AverageSessionDurationSeconds = addAverage(visitors[len(visitors)-1].AverageSessionDurationSeconds, averageTimeOnPageToday, visitors[len(visitors)-1].Sessions)
+					visitors[len(visitors)-1].AverageTimeSpendSeconds = addAverage(visitors[len(visitors)-1].AverageTimeSpendSeconds, averageTimeOnPageToday, visitors[len(visitors)-1].Sessions)
 				} else {
 					visitors = append(visitors, Stats{
-						Visitors:                      visitorsToday[0].Visitors,
-						Sessions:                      visitorsToday[0].Sessions,
-						Bounces:                       bouncesToday,
-						Views:                         visitorsToday[0].Views,
-						AverageSessionDurationSeconds: averageTimeOnPageToday,
+						Visitors:                visitorsToday[0].Visitors,
+						Sessions:                visitorsToday[0].Sessions,
+						Bounces:                 bouncesToday,
+						Views:                   visitorsToday[0].Views,
+						AverageTimeSpendSeconds: averageTimeOnPageToday,
 					})
 				}
 			}
@@ -623,8 +623,8 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			viewsSum += v.Views
 
 			// only count session durations that are > 0 to make sure only days with actual data are considered
-			if v.AverageSessionDurationSeconds > 0 {
-				averageTimeOnPageSum += v.AverageSessionDurationSeconds
+			if v.AverageTimeSpendSeconds > 0 {
+				averageTimeOnPageSum += v.AverageTimeSpendSeconds
 				averageTimeOnPageCount++
 			}
 		}
@@ -843,7 +843,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		current.Views += visitorsToday.Views
 
 		if current.Sessions > 0 {
-			current.AverageSessionDurationSeconds = addAverage(current.AverageSessionDurationSeconds, analyzer.store.AverageSessionDuration(nil, filter.TenantID, today), current.Sessions)
+			current.AverageTimeSpendSeconds = addAverage(current.AverageTimeSpendSeconds, analyzer.store.AverageSessionDuration(nil, filter.TenantID, today), current.Sessions)
 		}
 	}
 
@@ -863,7 +863,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		SessionsGrowth:        analyzer.calculateGrowth(current.Sessions, previous.Sessions),
 		BouncesGrowth:         analyzer.calculateBouncesGrowth(current, previous),
 		ViewsGrowth:           analyzer.calculateGrowth(current.Views, previous.Views),
-		SessionDurationGrowth: analyzer.calculateGrowth(current.AverageSessionDurationSeconds, previous.AverageSessionDurationSeconds),
+		SessionDurationGrowth: analyzer.calculateGrowth(current.AverageTimeSpendSeconds, previous.AverageTimeSpendSeconds),
 	}, nil
 }
 

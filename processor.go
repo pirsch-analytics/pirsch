@@ -116,7 +116,7 @@ func (processor *Processor) pathVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, da
 
 	for _, v := range visitors {
 		v.Bounces = bounces
-		v.AverageSessionDurationSeconds = averageTimeOnPage
+		v.AverageTimeSpendSeconds = averageTimeOnPage
 
 		if err := processor.store.SaveVisitorStats(tx, &v); err != nil {
 			return err
@@ -214,7 +214,7 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	visitors.Bounces = processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, "")
 
 	if visitors.Sessions > 0 {
-		visitors.AverageSessionDurationSeconds = processor.store.AverageSessionDuration(tx, tenantID, day)
+		visitors.AverageTimeSpendSeconds = processor.store.AverageSessionDuration(tx, tenantID, day)
 	}
 
 	platforms := processor.store.CountVisitorsByPlatform(tx, tenantID, day)

@@ -148,7 +148,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 	}
 
 	existing := new(VisitorStats)
-	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, views, platform_desktop, platform_mobile, platform_unknown, average_session_duration_seconds
+	err := tx.Get(existing, `SELECT id, visitors, sessions, bounces, views, platform_desktop, platform_mobile, platform_unknown, average_time_spend_seconds
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
@@ -162,9 +162,9 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 		existing.PlatformDesktop += entity.PlatformDesktop
 		existing.PlatformMobile += entity.PlatformMobile
 		existing.PlatformUnknown += entity.PlatformUnknown
-		existing.AverageSessionDurationSeconds = addAverage(existing.AverageSessionDurationSeconds, entity.AverageSessionDurationSeconds, existing.Sessions)
+		existing.AverageTimeSpendSeconds = addAverage(existing.AverageTimeSpendSeconds, entity.AverageTimeSpendSeconds, existing.Sessions)
 
-		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "views" = $4, "platform_desktop" = $5, "platform_mobile" = $6, "platform_unknown" = $7, "average_session_duration_seconds" = $8 WHERE id = $9`,
+		if _, err := tx.Exec(`UPDATE "visitor_stats" SET "visitors" = $1, "sessions" = $2, "bounces" = $3, "views" = $4, "platform_desktop" = $5, "platform_mobile" = $6, "platform_unknown" = $7, "average_time_spend_seconds" = $8 WHERE id = $9`,
 			existing.Visitors,
 			existing.Sessions,
 			existing.Bounces,
@@ -172,12 +172,12 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 			existing.PlatformDesktop,
 			existing.PlatformMobile,
 			existing.PlatformUnknown,
-			existing.AverageSessionDurationSeconds,
+			existing.AverageTimeSpendSeconds,
 			existing.ID); err != nil {
 			return err
 		}
 	} else {
-		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "views", "platform_desktop", "platform_mobile", "platform_unknown", "average_session_duration_seconds") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :views, :platform_desktop, :platform_mobile, :platform_unknown, :average_session_duration_seconds)`, entity)
+		rows, err := tx.NamedQuery(`INSERT INTO "visitor_stats" ("tenant_id", "day", "path", "visitors", "sessions", "bounces", "views", "platform_desktop", "platform_mobile", "platform_unknown", "average_time_spend_seconds") VALUES (:tenant_id, :day, :path, :visitors, :sessions, :bounces, :views, :platform_desktop, :platform_mobile, :platform_unknown, :average_time_spend_seconds)`, entity)
 
 		if err != nil {
 			return err
@@ -998,7 +998,7 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
         coalesce(sum("visitor_stats".sessions), 0) "sessions",
         coalesce(sum("visitor_stats".bounces), 0) "bounces",
         coalesce(sum("visitor_stats".views), 0) "views",
-        coalesce(avg("visitor_stats".average_session_duration_seconds)::integer, 0) "average_session_duration_seconds"
+        coalesce(avg("visitor_stats".average_time_spend_seconds)::integer, 0) "average_time_spend_seconds"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1216,7 +1216,7 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 		coalesce("visitor_stats".sessions, 0) "sessions",
         coalesce("visitor_stats".bounces, 0) "bounces",
         coalesce("visitor_stats".views, 0) "views",
-        coalesce("visitor_stats".average_session_duration_seconds, 0) "average_session_duration_seconds"
+        coalesce("visitor_stats".average_time_spend_seconds, 0) "average_time_spend_seconds"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1440,7 +1440,7 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
         coalesce(sum("sessions"), 0) "sessions",
         coalesce(sum("bounces"), 0) "bounces",
         coalesce(sum("views"), 0) "views",
-		coalesce(avg("average_session_duration_seconds")::integer, 0) "average_session_duration_seconds"
+		coalesce(avg("average_time_spend_seconds")::integer, 0) "average_time_spend_seconds"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
