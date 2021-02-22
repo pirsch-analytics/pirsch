@@ -527,17 +527,18 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 	for _, tenantID := range tenantIDs {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", false, false, 0, 0)
+		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today().Add(time.Minute*2), today(), "", "", "", "", "", false, false, 0, 0)
 		stats := &VisitorStats{
 			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-				Visitors:   42,
-				Sessions:   67,
-				Bounces:    30,
-				Views:      71,
+				BaseEntity:                    BaseEntity{TenantID: NewTenantID(tenantID)},
+				Day:                           pastDay(2),
+				Path:                          sql.NullString{String: "/path", Valid: true},
+				Visitors:                      42,
+				Sessions:                      67,
+				Bounces:                       30,
+				Views:                         71,
+				AverageSessionDurationSeconds: 60,
 			},
 		}
 		assert.NoError(t, store.SaveVisitorStats(nil, stats))
@@ -559,6 +560,8 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		assert.Equal(t, 0, visitors[1].Bounces)
 		assert.Equal(t, 72, visitors[0].Views)
 		assert.Equal(t, 1, visitors[1].Views)
+		assert.Equal(t, 60, visitors[0].AverageTimeOnPage)
+		assert.Equal(t, 120, visitors[1].AverageTimeOnPage)
 		assert.InDelta(t, 0.9772, visitors[0].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.0227, visitors[1].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.6976, visitors[0].BounceRate, 0.01)
@@ -605,6 +608,13 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 		assert.Equal(t, 0, visitors[1].Stats[1].Views)
 		assert.Equal(t, 0, visitors[1].Stats[2].Views)
 		assert.Equal(t, 1, visitors[1].Stats[3].Views)
+		assert.Equal(t, 60, visitors[0].Stats[1].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[0].Stats[2].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[0].Stats[3].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[0].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[1].AverageSessionDurationSeconds)
+		assert.Equal(t, 0, visitors[1].Stats[2].AverageSessionDurationSeconds)
+		assert.Equal(t, 120, visitors[1].Stats[3].AverageSessionDurationSeconds)
 		assert.InDelta(t, 0, visitors[0].Stats[0].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0.9767, visitors[0].Stats[1].RelativeVisitors, 0.01)
 		assert.InDelta(t, 0, visitors[0].Stats[2].RelativeVisitors, 0.01)

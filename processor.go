@@ -112,9 +112,11 @@ func (processor *Processor) pathVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, da
 	}
 
 	bounces := processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, path)
+	averageTimeOnPage := processor.store.AverageTimeOnPage(tx, tenantID, day, path)
 
 	for _, v := range visitors {
 		v.Bounces = bounces
+		v.AverageSessionDurationSeconds = averageTimeOnPage
 
 		if err := processor.store.SaveVisitorStats(tx, &v); err != nil {
 			return err

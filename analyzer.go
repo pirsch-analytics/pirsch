@@ -8,14 +8,15 @@ import (
 
 // PathVisitors represents visitor statistics per day for a path, including the total visitor count, relative visitor count and bounce rate.
 type PathVisitors struct {
-	Path             string  `json:"path"`
-	Stats            []Stats `json:"stats"`
-	Visitors         int     `json:"visitors"`
-	Bounces          int     `json:"bounces"`
-	Views            int     `json:"views"`
-	RelativeVisitors float64 `json:"relative_visitors"`
-	BounceRate       float64 `json:"bounce_rate"`
-	RelativeViews    float64 `json:"relative_views"`
+	Path              string  `json:"path"`
+	Stats             []Stats `json:"stats"`
+	Visitors          int     `json:"visitors"`
+	Bounces           int     `json:"bounces"`
+	Views             int     `json:"views"`
+	RelativeVisitors  float64 `json:"relative_visitors"`
+	BounceRate        float64 `json:"bounce_rate"`
+	RelativeViews     float64 `json:"relative_views"`
+	AverageTimeOnPage int     `json:"average_time_on_page"`
 }
 
 // TimeOfDayVisitors represents the visitor count per day and hour for a path.
@@ -592,6 +593,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 			}
 
 			bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, path)
+			averageTimeOnPageToday := analyzer.store.AverageTimeOnPage(nil, filter.TenantID, today, path)
 
 			if len(visitorsToday) > 0 {
 				if len(visitors) > 0 {
@@ -599,24 +601,36 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 					visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
 					visitors[len(visitors)-1].Bounces += bouncesToday
 					visitors[len(visitors)-1].Views += visitorsToday[0].Views
+					visitors[len(visitors)-1].AverageSessionDurationSeconds = addAverage(visitors[len(visitors)-1].AverageSessionDurationSeconds, averageTimeOnPageToday, visitors[len(visitors)-1].Sessions)
 				} else {
 					visitors = append(visitors, Stats{
-						Visitors: visitorsToday[0].Visitors,
-						Sessions: visitorsToday[0].Sessions,
-						Bounces:  bouncesToday,
-						Views:    visitorsToday[0].Views,
+						Visitors:                      visitorsToday[0].Visitors,
+						Sessions:                      visitorsToday[0].Sessions,
+						Bounces:                       bouncesToday,
+						Views:                         visitorsToday[0].Views,
+						AverageSessionDurationSeconds: averageTimeOnPageToday,
 					})
 				}
 			}
 		}
 
-		var visitorSum, bouncesSum, viewsSum int
+		var visitorSum, bouncesSum, viewsSum, averageTimeOnPageSum, averageTimeOnPageCount int
 		var bounceRate float64
 
-		for i := range visitors {
-			visitorSum += visitors[i].Visitors
-			bouncesSum += visitors[i].Bounces
-			viewsSum += visitors[i].Views
+		for _, v := range visitors {
+			visitorSum += v.Visitors
+			bouncesSum += v.Bounces
+			viewsSum += v.Views
+
+			// only count session durations that are > 0 to make sure only days with actual data are considered
+			if v.AverageSessionDurationSeconds > 0 {
+				averageTimeOnPageSum += v.AverageSessionDurationSeconds
+				averageTimeOnPageCount++
+			}
+		}
+
+		if averageTimeOnPageCount > 0 {
+			averageTimeOnPageSum /= averageTimeOnPageCount
 		}
 
 		// we don't need to check for viewsSum, as it will be > 0 if there are unique visitors
@@ -637,12 +651,13 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 		}
 
 		stats = append(stats, PathVisitors{
-			Path:       path,
-			Stats:      visitors,
-			Visitors:   visitorSum,
-			Bounces:    bouncesSum,
-			Views:      viewsSum,
-			BounceRate: bounceRate,
+			Path:              path,
+			Stats:             visitors,
+			Visitors:          visitorSum,
+			Bounces:           bouncesSum,
+			Views:             viewsSum,
+			BounceRate:        bounceRate,
+			AverageTimeOnPage: averageTimeOnPageSum,
 		})
 		totalVisitors += visitorSum
 		totalViews += viewsSum

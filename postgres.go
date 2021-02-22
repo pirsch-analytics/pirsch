@@ -1209,12 +1209,14 @@ func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time
 
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
+	// summing up the average session duration isn't an issue here, since there should be only one row per day and path
 	query := `SELECT "d" AS "day",
 		coalesce("path", '') "path",
 		coalesce("visitor_stats".visitors, 0) "visitors",
 		coalesce("visitor_stats".sessions, 0) "sessions",
         coalesce("visitor_stats".bounces, 0) "bounces",
-        coalesce("visitor_stats".views, 0) "views"
+        coalesce("visitor_stats".views, 0) "views",
+        coalesce("visitor_stats".average_session_duration_seconds, 0) "average_session_duration_seconds"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1491,7 +1493,8 @@ func (store *PostgresStore) AverageSessionDuration(tx *sqlx.Tx, tenantID sql.Nul
 	return duration
 }
 
-func (store *PostgresStore) AverageSessionDurationByPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
+// AverageTimeOnPage implements the Store interface.
+func (store *PostgresStore) AverageTimeOnPage(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) int {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)

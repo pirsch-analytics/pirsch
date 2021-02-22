@@ -413,7 +413,7 @@ func TestPostgresStore_AverageSessionDuration(t *testing.T) {
 	assert.Equal(t, 8, store.AverageSessionDuration(nil, NullTenant, day))
 }
 
-func TestPostgresStore_AverageSessionDurationByPath(t *testing.T) {
+func TestPostgresStore_AverageTimeOnPage(t *testing.T) {
 	cleanupDB(t)
 	store := NewPostgresStore(postgresDB, nil)
 	day := pastDay(3)
@@ -426,7 +426,7 @@ func TestPostgresStore_AverageSessionDurationByPath(t *testing.T) {
 	createHit(t, store, 0, "fp2", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*20), day.Add(time.Second*2), "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp3", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second*2), "", "", "", "", "", false, false, 0, 0)
-	assert.Equal(t, 8, store.AverageSessionDurationByPath(nil, NullTenant, day, "/p1"))
-	assert.Equal(t, 5, store.AverageSessionDurationByPath(nil, NullTenant, day, "/p2"))
-	assert.Equal(t, 0, store.AverageSessionDurationByPath(nil, NullTenant, day, "/p3"))
+	assert.Equal(t, 8, store.AverageTimeOnPage(nil, NullTenant, day, "/p1"))
+	assert.Equal(t, 5, store.AverageTimeOnPage(nil, NullTenant, day, "/p2"))
+	assert.Equal(t, 0, store.AverageTimeOnPage(nil, NullTenant, day, "/p3"))
 }

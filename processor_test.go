@@ -140,6 +140,32 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, 8, visitors[0].AverageSessionDurationSeconds)
+	pageVisitors, err := analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p1",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	pageVisitors, err = analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p2",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	pageVisitors, err = analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p3",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPage)
+
+	// test again for updated statistics for the same day
 	createSessions(t, store, 0, day)
 	assert.NoError(t, processor.Process())
 	visitors, err = analyzer.Visitors(&Filter{
@@ -149,6 +175,30 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, addAverage(8, (10+5)/2, 4), visitors[0].AverageSessionDurationSeconds)
+	pageVisitors, err = analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p1",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	pageVisitors, err = analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p2",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	pageVisitors, err = analyzer.PageVisitors(&Filter{
+		From: day,
+		To:   day,
+		Path: "/p3",
+	})
+	assert.NoError(t, err)
+	assert.Len(t, pageVisitors, 1)
+	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPage)
 }
 
 func testProcess(t *testing.T, tenantID int64) {
