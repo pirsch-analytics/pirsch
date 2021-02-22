@@ -53,7 +53,7 @@ type Store interface {
 	// SaveCountryStats saves CountryStats.
 	SaveCountryStats(*sqlx.Tx, *CountryStats) error
 
-	// Session returns the hits session timestamp for given fingerprint and max age.
+	// Session returns the session timestamp of a hit for given fingerprint and max age.
 	Session(sql.NullInt64, string, time.Time) time.Time
 
 	// HitDays returns the distinct days with at least one hit.
@@ -65,7 +65,7 @@ type Store interface {
 	// Paths returns the distinct paths for given time frame.
 	Paths(sql.NullInt64, time.Time, time.Time) ([]string, error)
 
-	// CountVisitors returns the visitor count for given day.
+	// CountVisitors returns the visitor, sessions, and view count for given day.
 	CountVisitors(*sqlx.Tx, sql.NullInt64, time.Time) *Stats
 
 	// CountVisitorsByPath returns the visitor count for given day, path, and if the platform should be included or not.
@@ -175,4 +175,10 @@ type Store interface {
 	// VisitorsSum returns the sum of the visitors, sessions, and bounces for given time frame and path.
 	// The path is optional.
 	VisitorsSum(sql.NullInt64, time.Time, time.Time, string) (*Stats, error)
+
+	// AverageSessionDuration returns the average session durations for given day.
+	AverageSessionDuration(*sqlx.Tx, sql.NullInt64, time.Time) int
+
+	// AverageTimeOnPage returns the average session durations for given day and path.
+	AverageTimeOnPage(*sqlx.Tx, sql.NullInt64, time.Time, string) int
 }

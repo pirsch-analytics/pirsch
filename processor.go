@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+type processFunc func(*sqlx.Tx, sql.NullInt64, time.Time) error
+type processPathFunc func(*sqlx.Tx, sql.NullInt64, time.Time, string) error
+
 // Processor processes hits to reduce them into meaningful statistics.
 type Processor struct {
 	store Store
@@ -60,49 +63,23 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 		}
 	}
 
-	if err := processor.visitorHours(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
+	processFuncs := []processFunc{
+		processor.visitorHours,
+		processor.visitors,
+		processor.languages,
+		processor.referrer,
+		processor.os,
+		processor.browser,
+		processor.screen,
+		processor.country,
+		processor.store.DeleteHitsByDay,
 	}
 
-	if err := processor.visitors(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.languages(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.referrer(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.os(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.browser(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.screen(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.country(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
-	}
-
-	if err := processor.store.DeleteHitsByDay(tx, tenantID, day); err != nil {
-		processor.store.Rollback(tx)
-		return err
+	for _, f := range processFuncs {
+		if err := f(tx, tenantID, day); err != nil {
+			processor.store.Rollback(tx)
+			return err
+		}
 	}
 
 	processor.store.Commit(tx)
@@ -110,24 +87,18 @@ func (processor *Processor) processDay(tenantID sql.NullInt64, day time.Time) er
 }
 
 func (processor *Processor) processPath(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time, path string) error {
-	if err := processor.pathVisitors(tx, tenantID, day, path); err != nil {
-		return err
+	processFuncs := []processPathFunc{
+		processor.pathVisitors,
+		processor.pathLanguages,
+		processor.pathReferrer,
+		processor.pathOS,
+		processor.pathBrowser,
 	}
 
-	if err := processor.pathLanguages(tx, tenantID, day, path); err != nil {
-		return err
-	}
-
-	if err := processor.pathReferrer(tx, tenantID, day, path); err != nil {
-		return err
-	}
-
-	if err := processor.pathOS(tx, tenantID, day, path); err != nil {
-		return err
-	}
-
-	if err := processor.pathBrowser(tx, tenantID, day, path); err != nil {
-		return err
+	for _, f := range processFuncs {
+		if err := f(tx, tenantID, day, path); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -141,9 +112,11 @@ func (processor *Processor) pathVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, da
 	}
 
 	bounces := processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, path)
+	averageTimeOnPage := processor.store.AverageTimeOnPage(tx, tenantID, day, path)
 
 	for _, v := range visitors {
 		v.Bounces = bounces
+		v.AverageTimeSpendSeconds = averageTimeOnPage
 
 		if err := processor.store.SaveVisitorStats(tx, &v); err != nil {
 			return err
@@ -239,6 +212,11 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	visitors := processor.store.CountVisitors(tx, tenantID, day)
 	visitors.TenantID = tenantID
 	visitors.Bounces = processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, "")
+
+	if visitors.Sessions > 0 {
+		visitors.AverageTimeSpendSeconds = processor.store.AverageSessionDuration(tx, tenantID, day)
+	}
+
 	platforms := processor.store.CountVisitorsByPlatform(tx, tenantID, day)
 	platformSum := float64(platforms.PlatformDesktop + platforms.PlatformMobile + platforms.PlatformUnknown)
 	v := &VisitorStats{

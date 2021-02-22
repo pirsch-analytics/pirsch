@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultMaxAge      = time.Hour * 2
+	defaultMaxAge      = time.Minute * 15
 	maxMaxAge          = time.Hour * 24
 	minCleanupInterval = maxWorkerTimeout * 2
 	maxCleanupInterval = minCleanupInterval + time.Hour

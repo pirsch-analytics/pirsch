@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type statistics interface {
-	visitors() int
-	setRelativeVisitors(float64)
-}
-
 // BaseEntity is the base entity for all other entities.
 type BaseEntity struct {
 	ID       int64         `db:"id" json:"id"`
@@ -20,13 +15,16 @@ type BaseEntity struct {
 type Stats struct {
 	BaseEntity
 
-	Day              time.Time      `db:"day" json:"day"`
-	Path             sql.NullString `db:"path" json:"path"`
-	Visitors         int            `db:"visitors" json:"visitors"`
-	Sessions         int            `db:"sessions" json:"sessions"`
-	Bounces          int            `db:"bounces" json:"bounces"`
-	RelativeVisitors float64        `db:"-" json:"relative_visitors"`
-	BounceRate       float64        `db:"-" json:"bounce_rate"`
+	Day                     time.Time      `db:"day" json:"day"`
+	Path                    sql.NullString `db:"path" json:"path"`
+	Visitors                int            `db:"visitors" json:"visitors"`
+	Sessions                int            `db:"sessions" json:"sessions"`
+	Bounces                 int            `db:"bounces" json:"bounces"`
+	Views                   int            `db:"views" json:"views"`
+	RelativeVisitors        float64        `db:"-" json:"relative_visitors"`
+	BounceRate              float64        `db:"-" json:"bounce_rate"`
+	RelativeViews           float64        `db:"-" json:"relative_views"`
+	AverageTimeSpendSeconds int            `db:"average_time_spend_seconds" json:"average_time_spend_seconds"`
 }
 
 func (stats *Stats) visitors() int {

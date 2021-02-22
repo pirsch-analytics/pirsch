@@ -23,14 +23,21 @@ The tracking works without invading the visitor's privacy as no cookies are used
 
 Pirsch tracks the following data:
 
-* visitors per day, path, and hour
+* unique visitor count per day, path, and hour
+* session count
+* bounce rate
+* view count
+* growth (unique visitors, sessions, bounces, views, average session duration)
+* average time on page
+* average session duration
 * languages
 * operating system and browser (including versions)
 * referrers
-* session count
-* bounces
+* countries
+* platform
+* screen size
 
-All timestamps are stored as UTC. Each data point belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
+All timestamps are stored as UTC. All data points belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
 
 ## Usage
 
@@ -111,7 +118,7 @@ The parameters are configured through HTML attributes. All of them are optional,
 | Option | Description | Default |
 | - | - | - |
 | data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
-| data-tenant-id | The tenant ID to use, in case you plan to track multiple websites using the same backend or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
+| data-tenant-id | The tenant ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
 | data-track-localhost | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
@@ -126,7 +133,7 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 }))
 ```
 
-`HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were send by the user.
+`HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were sent by the user.
 
 ## Mapping IPs to countries
 
@@ -155,9 +162,9 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 Contributions are welcome! Please open a pull requests for your changes and tickets in case you would like to discuss something or have a question.
 
-To run the tests you'll need a Postgres database and a schema called `pirsch`. The user and password are set to `postgres`.
+To run the tests you'll need a Postgres database, and a schema called `pirsch`. The user and password are set to `postgres`.
 
-Note that we only accept pull requests if you transfer the ownership of your contribution to us. As we also offer a managed commercial solution with this library at its core, we want to make sure we can keep controll over the source code.
+Note that we only accept pull requests if you transfer the ownership of your contribution to us. As we also offer a managed commercial solution with this library at its core, we want to make sure we can keep control over the source code.
 
 ## License
 
