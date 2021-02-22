@@ -96,7 +96,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	if addToday {
 		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
 		bouncesToday := analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
-		averageSessionDurationToday := analyzer.store.SessionDurationSum(nil, filter.TenantID, today)
+		averageSessionDurationToday := analyzer.store.AverageSessionDuration(nil, filter.TenantID, today)
 
 		if len(stats) > 0 {
 			if visitorsToday != nil {
@@ -813,12 +813,6 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
-	filterDays := filter.Days()
-
-	if filterDays > 0 {
-		current.AverageSessionDurationSeconds /= filterDays
-	}
-
 	today := today()
 
 	if today.Equal(filter.To) {
@@ -834,7 +828,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		current.Views += visitorsToday.Views
 
 		if current.Sessions > 0 {
-			current.AverageSessionDurationSeconds = addAverage(current.AverageSessionDurationSeconds, analyzer.store.SessionDurationSum(nil, filter.TenantID, today), current.Sessions)
+			current.AverageSessionDurationSeconds = addAverage(current.AverageSessionDurationSeconds, analyzer.store.AverageSessionDuration(nil, filter.TenantID, today), current.Sessions)
 		}
 	}
 
@@ -845,10 +839,6 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if err != nil {
 		return nil, err
-	}
-
-	if filterDays > 0 {
-		previous.AverageSessionDurationSeconds /= filterDays
 	}
 
 	return &Growth{

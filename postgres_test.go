@@ -410,5 +410,5 @@ func TestPostgresStore_SessionDurationSum(t *testing.T) {
 	createHit(t, store, 0, "fp", "/p3", "en", "ua", "", day.Add(time.Hour-time.Second*90), day, "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/p1", "en", "ua", "", day.Add(time.Hour-time.Second*10), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
 	createHit(t, store, 0, "fp", "/p2", "en", "ua", "", day.Add(time.Hour-time.Second*5), day.Add(time.Second), "", "", "", "", "", false, false, 0, 0)
-	assert.Equal(t, 15, store.SessionDurationSum(nil, NullTenant, day))
+	assert.Equal(t, 8, store.AverageSessionDuration(nil, NullTenant, day))
 }

@@ -212,7 +212,7 @@ func (processor *Processor) visitors(tx *sqlx.Tx, tenantID sql.NullInt64, day ti
 	visitors.Bounces = processor.store.CountVisitorsByPathAndMaxOneHit(tx, tenantID, day, "")
 
 	if visitors.Sessions > 0 {
-		visitors.AverageSessionDurationSeconds = processor.store.SessionDurationSum(tx, tenantID, day) / visitors.Sessions
+		visitors.AverageSessionDurationSeconds = processor.store.AverageSessionDuration(tx, tenantID, day)
 	}
 
 	platforms := processor.store.CountVisitorsByPlatform(tx, tenantID, day)

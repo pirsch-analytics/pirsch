@@ -176,6 +176,6 @@ type Store interface {
 	// The path is optional.
 	VisitorsSum(sql.NullInt64, time.Time, time.Time, string) (*Stats, error)
 
-	// SessionDurationSum returns the sum of all session durations for given day.
-	SessionDurationSum(*sqlx.Tx, sql.NullInt64, time.Time) int
+	// AverageSessionDuration returns the average session durations for given day.
+	AverageSessionDuration(*sqlx.Tx, sql.NullInt64, time.Time) int
 }

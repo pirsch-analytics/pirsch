@@ -152,7 +152,7 @@ func (store *PostgresStore) SaveVisitorStats(tx *sqlx.Tx, entity *VisitorStats) 
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)`, entity.TenantID, entity.Day, entity.Path)
+		AND (lower("path") = lower($3) OR $3 IS NULL AND "path" IS NULL)`, entity.TenantID, entity.Day, entity.Path)
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
@@ -234,11 +234,11 @@ func (store *PostgresStore) SaveLanguageStats(tx *sqlx.Tx, entity *LanguageStats
 	err := tx.Get(existing, `SELECT id, visitors FROM "language_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
-		AND "language" = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Language)
+		AND (lower("path") = lower($3) OR $3 IS NULL AND "path" IS NULL)
+		AND "language" = lower($4)`, entity.TenantID, entity.Day, entity.Path, entity.Language)
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
-		`INSERT INTO "language_stats" ("tenant_id", "day", "path", "language", "visitors") VALUES (:tenant_id, :day, :path, LOWER(:language), :visitors)`,
+		`INSERT INTO "language_stats" ("tenant_id", "day", "path", "language", "visitors") VALUES (:tenant_id, :day, :path, lower(:language), :visitors)`,
 		`UPDATE "language_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
@@ -257,8 +257,8 @@ func (store *PostgresStore) SaveReferrerStats(tx *sqlx.Tx, entity *ReferrerStats
 	err := tx.Get(existing, `SELECT id, visitors, bounces FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
-		AND LOWER("referrer") = LOWER($4)`, entity.TenantID, entity.Day, entity.Path, entity.Referrer)
+		AND (lower("path") = lower($3) OR $3 IS NULL AND "path" IS NULL)
+		AND lower("referrer") = lower($4)`, entity.TenantID, entity.Day, entity.Path, entity.Referrer)
 
 	if err == nil {
 		existing.Visitors += entity.Visitors
@@ -294,7 +294,7 @@ func (store *PostgresStore) SaveOSStats(tx *sqlx.Tx, entity *OSStats) error {
 	err := tx.Get(existing, `SELECT id, visitors FROM "os_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
+		AND (lower("path") = lower($3) OR $3 IS NULL AND "path" IS NULL)
 		AND "os" = $4
 		AND "os_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.OS, entity.OSVersion)
 
@@ -318,7 +318,7 @@ func (store *PostgresStore) SaveBrowserStats(tx *sqlx.Tx, entity *BrowserStats) 
 	err := tx.Get(existing, `SELECT id, visitors FROM "browser_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" = $2
-		AND (LOWER("path") = LOWER($3) OR $3 IS NULL AND "path" IS NULL)
+		AND (lower("path") = lower($3) OR $3 IS NULL AND "path" IS NULL)
 		AND "browser" = $4
 		AND "browser_version" = $5`, entity.TenantID, entity.Day, entity.Path, entity.Browser, entity.BrowserVersion)
 
@@ -370,7 +370,7 @@ func (store *PostgresStore) SaveCountryStats(tx *sqlx.Tx, entity *CountryStats) 
 		AND "country_code" = $3`, entity.TenantID, entity.Day, entity.CountryCode)
 
 	if err := store.createUpdateEntity(tx, entity, existing, err == nil,
-		`INSERT INTO "country_stats" ("tenant_id", "day", "country_code", "visitors") VALUES (:tenant_id, :day, LOWER(:country_code), :visitors)`,
+		`INSERT INTO "country_stats" ("tenant_id", "day", "country_code", "visitors") VALUES (:tenant_id, :day, lower(:country_code), :visitors)`,
 		`UPDATE "country_stats" SET "visitors" = $1 WHERE id = $2`); err != nil {
 		return err
 	}
@@ -397,10 +397,10 @@ func (store *PostgresStore) Session(tenantID sql.NullInt64, fingerprint string, 
 
 // HitDays implements the Store interface.
 func (store *PostgresStore) HitDays(tenantID sql.NullInt64) ([]time.Time, error) {
-	query := `SELECT DISTINCT DATE("time") AS "day"
+	query := `SELECT DISTINCT date("time") AS "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") < current_date AT TIME ZONE 'UTC'
+		AND date("time") < current_date AT TIME ZONE 'UTC'
 		ORDER BY "day" ASC`
 	var days []time.Time
 
@@ -416,7 +416,7 @@ func (store *PostgresStore) HitPaths(tenantID sql.NullInt64, day time.Time) ([]s
 	query := `SELECT DISTINCT "path"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2
+		AND date("time") = $2
 		ORDER BY "path" ASC`
 	var paths []string
 
@@ -433,8 +433,8 @@ func (store *PostgresStore) Paths(tenantID sql.NullInt64, from, to time.Time) ([
 			SELECT "path"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND DATE("time") >= $2::date
-			AND DATE("time") <= $3::date
+			AND date("time") >= $2::date
+			AND date("time") <= $3::date
 			UNION
 			SELECT "path"
 			FROM "visitor_stats"
@@ -460,13 +460,13 @@ func (store *PostgresStore) CountVisitors(tx *sqlx.Tx, tenantID sql.NullInt64, d
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT DATE("time") "day",
+	query := `SELECT date("time") "day",
         count(DISTINCT "fingerprint") "visitors",
         count(DISTINCT("fingerprint", "session")) "sessions",
         count(1) "views"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		GROUP BY "day"`
 	visitors := new(Stats)
 
@@ -499,7 +499,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND lower("path") = lower($3)
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
@@ -508,7 +508,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND lower("path") = lower($3)
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
@@ -517,7 +517,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
 				AND "time" >= $2::date
 				AND "time" < $2::date + INTERVAL '1 day'
-				AND LOWER("path") = LOWER($3)
+				AND lower("path") = lower($3)
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown" `
@@ -527,7 +527,7 @@ func (store *PostgresStore) CountVisitorsByPath(tx *sqlx.Tx, tenantID sql.NullIn
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND lower("path") = lower($3)
 			GROUP BY tenant_id, "path"
 		) AS results ORDER BY "day" ASC`
 	var visitors []VisitorStats
@@ -548,7 +548,7 @@ func (store *PostgresStore) CountVisitorsByHour(tx *sqlx.Tx, tenantID sql.NullIn
 
 	query := `SELECT $1::bigint AS "tenant_id",
 		$2::date AS "day",
-		EXTRACT(HOUR FROM "day_and_hour") "hour",
+		extract(HOUR FROM "day_and_hour") "hour",
 		(
 			SELECT count(DISTINCT "fingerprint") FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
@@ -590,7 +590,7 @@ func (store *PostgresStore) CountVisitorsByPathAndLanguage(tx *sqlx.Tx, tenantID
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND lower("path") = lower($3)
 			GROUP BY tenant_id, "language"
 		) AS results
 		ORDER BY "day" ASC`
@@ -616,7 +616,7 @@ func (store *PostgresStore) CountVisitorsByPathAndReferrer(tx *sqlx.Tx, tenantID
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND lower("path") = lower($3)
 			GROUP BY tenant_id, "referrer", "referrer_name", "referrer_icon"
 		) AS results ORDER BY "day" ASC`
 	var visitors []ReferrerStats
@@ -641,7 +641,7 @@ func (store *PostgresStore) CountVisitorsByPathAndOS(tx *sqlx.Tx, tenantID sql.N
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND lower("path") = lower($3)
 			GROUP BY tenant_id, "os", "os_version"
 		) AS results ORDER BY "day" ASC`
 	var visitors []OSStats
@@ -666,7 +666,7 @@ func (store *PostgresStore) CountVisitorsByPathAndBrowser(tx *sqlx.Tx, tenantID 
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "time" >= $2::date
 			AND "time" < $2::date + INTERVAL '1 day'
-			AND LOWER("path") = LOWER($3)
+			AND lower("path") = lower($3)
 			GROUP BY tenant_id, "browser", "browser_version"
 		) AS results ORDER BY "day" ASC`
 	var visitors []BrowserStats
@@ -688,7 +688,7 @@ func (store *PostgresStore) CountVisitorsByLanguage(tx *sqlx.Tx, tenantID sql.Nu
 	query := `SELECT "language", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		GROUP BY "language"`
 	var visitors []LanguageStats
 
@@ -714,7 +714,7 @@ func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.Nu
 			SELECT count(DISTINCT h2."fingerprint")
 			FROM "hit" h2
 			WHERE ($1::bigint IS NULL OR h2.tenant_id = $1)
-			AND DATE(h2."time") = $2::date
+			AND date(h2."time") = $2::date
 			AND h2."referrer" = h1."referrer"
 			AND (
 				SELECT COUNT(DISTINCT h3."path")
@@ -725,7 +725,7 @@ func (store *PostgresStore) CountVisitorsByReferrer(tx *sqlx.Tx, tenantID sql.Nu
         $2::date "day"
 		FROM "hit" h1
 		WHERE ($1::bigint IS NULL OR h1.tenant_id = $1)
-		AND DATE(h1."time") = $2::date
+		AND date(h1."time") = $2::date
 		GROUP BY h1."referrer", h1."referrer_name", h1."referrer_icon"`
 	var visitors []ReferrerStats
 
@@ -746,7 +746,7 @@ func (store *PostgresStore) CountVisitorsByOS(tx *sqlx.Tx, tenantID sql.NullInt6
 	query := `SELECT "os", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		GROUP BY "os"`
 	var visitors []OSStats
 
@@ -767,7 +767,7 @@ func (store *PostgresStore) CountVisitorsByBrowser(tx *sqlx.Tx, tenantID sql.Nul
 	query := `SELECT "browser", count(DISTINCT fingerprint) "visitors", $2::date "day"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		GROUP BY "browser"`
 	var visitors []BrowserStats
 
@@ -788,7 +788,7 @@ func (store *PostgresStore) CountVisitorsByScreenSize(tx *sqlx.Tx, tenantID sql.
 	query := `SELECT "tenant_id", $2::date "day", "screen_width" "width", "screen_height" "height", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		AND "screen_width" != 0
 		AND "screen_height" != 0
 		GROUP BY "tenant_id", "width", "height"`
@@ -811,7 +811,7 @@ func (store *PostgresStore) CountVisitorsByScreenClass(tx *sqlx.Tx, tenantID sql
 	query := `SELECT "tenant_id", $2::date "day", "screen_class" "class", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		AND "screen_class" IS NOT NULL
 		GROUP BY "tenant_id", "screen_class"`
 	var visitors []ScreenStats
@@ -833,7 +833,7 @@ func (store *PostgresStore) CountVisitorsByCountryCode(tx *sqlx.Tx, tenantID sql
 	query := `SELECT "tenant_id", $2::date "day", "country_code", count(DISTINCT fingerprint) "visitors"
 		FROM "hit"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
+		AND date("time") = $2::date
 		GROUP BY "tenant_id", "country_code"`
 	var visitors []CountryStats
 
@@ -855,7 +855,7 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") = $2::date
+				AND date("time") = $2::date
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
@@ -863,7 +863,7 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") = $2::date
+				AND date("time") = $2::date
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
@@ -871,7 +871,7 @@ func (store *PostgresStore) CountVisitorsByPlatform(tx *sqlx.Tx, tenantID sql.Nu
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") = $2::date
+				AND date("time") = $2::date
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown"`
@@ -898,11 +898,11 @@ func (store *PostgresStore) CountVisitorsByPathAndMaxOneHit(tx *sqlx.Tx, tenantI
 	query := `SELECT count(DISTINCT "fingerprint")
 		FROM "hit" h
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date `
+		AND date("time") = $2::date `
 
 	if path != "" {
 		args = append(args, path)
-		query += `AND LOWER("path") = LOWER($3) `
+		query += `AND lower("path") = lower($3) `
 	}
 
 	query += `AND (
@@ -933,12 +933,12 @@ func (store *PostgresStore) CountVisitorsByPathAndReferrerAndMaxOneHit(tx *sqlx.
 	query := `SELECT count(DISTINCT "fingerprint")
 		FROM "hit" h
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
-		AND DATE("time") = $2::date
-		AND LOWER("referrer") = LOWER($3) `
+		AND date("time") = $2::date
+		AND lower("referrer") = lower($3) `
 
 	if path != "" {
 		args = append(args, path)
-		query += `AND LOWER("path") = LOWER($4) `
+		query += `AND lower("path") = lower($4) `
 	}
 
 	query += `AND (
@@ -994,11 +994,11 @@ func (store *PostgresStore) ActivePageVisitors(tenantID sql.NullInt64, from time
 func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time) ([]Stats, error) {
 	// summing up the average session duration isn't an issue here, since there should be only one row per day
 	query := `SELECT "d" AS "day",
-		COALESCE(SUM("visitor_stats".visitors), 0) "visitors",
-        COALESCE(SUM("visitor_stats".sessions), 0) "sessions",
-        COALESCE(SUM("visitor_stats".bounces), 0) "bounces",
-        COALESCE(SUM("visitor_stats".views), 0) "views",
-        COALESCE(SUM("visitor_stats".average_session_duration_seconds), 0) "average_session_duration_seconds"
+		coalesce(sum("visitor_stats".visitors), 0) "visitors",
+        coalesce(sum("visitor_stats".sessions), 0) "sessions",
+        coalesce(sum("visitor_stats".bounces), 0) "bounces",
+        coalesce(sum("visitor_stats".views), 0) "views",
+        coalesce(avg("visitor_stats".average_session_duration_seconds)::integer, 0) "average_session_duration_seconds"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1023,21 +1023,21 @@ func (store *PostgresStore) Visitors(tenantID sql.NullInt64, from, to time.Time)
 // VisitorHours implements the Store interface.
 func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time, to time.Time) ([]VisitorTimeStats, error) {
 	query := `SELECT "day_and_hour" "hour",
-        COALESCE(sum("visitors"), 0) "visitors"
+        coalesce(sum("visitors"), 0) "visitors"
 		FROM generate_series(0, 23, 1) "day_and_hour"
 		LEFT JOIN (
 			SELECT "hour", sum("visitors") "visitors"
 			FROM "visitor_time_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND "day" >= DATE($2::timestamp)
-			AND "day" <= DATE($3::timestamp)
+			AND "day" >= date($2::timestamp)
+			AND "day" <= date($3::timestamp)
 			GROUP BY "hour"
 			UNION
-			SELECT EXTRACT(HOUR FROM "time") "hour", count(DISTINCT "fingerprint") "visitors"
+			SELECT extract(HOUR FROM "time") "hour", count(DISTINCT "fingerprint") "visitors"
 			FROM "hit"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND DATE("time") >= DATE($2::timestamp)
-			AND DATE("time") <= DATE($3::timestamp)
+			AND date("time") >= date($2::timestamp)
+			AND date("time") <= date($3::timestamp)
 			GROUP BY "hour"
 		) AS results ON "hour" = "day_and_hour"
 		GROUP BY "day_and_hour"
@@ -1053,7 +1053,7 @@ func (store *PostgresStore) VisitorHours(tenantID sql.NullInt64, from time.Time,
 
 // VisitorLanguages implements the Store interface.
 func (store *PostgresStore) VisitorLanguages(tenantID sql.NullInt64, from, to time.Time) ([]LanguageStats, error) {
-	query := `SELECT "language", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "language", coalesce(sum("visitors"), 0) "visitors"
 		FROM "language_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1075,8 +1075,8 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to tim
 	query := `SELECT "referrer",
        	"referrer_name",
 	    "referrer_icon",
-	    COALESCE(SUM("visitors"), 0) "visitors",
-        COALESCE(SUM("bounces"), 0) "bounces"
+	    coalesce(sum("visitors"), 0) "visitors",
+        coalesce(sum("bounces"), 0) "bounces"
 		FROM "referrer_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1095,7 +1095,7 @@ func (store *PostgresStore) VisitorReferrer(tenantID sql.NullInt64, from, to tim
 
 // VisitorOS implements the Store interface.
 func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time) ([]OSStats, error) {
-	query := `SELECT "os", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "os", coalesce(sum("visitors"), 0) "visitors"
 		FROM "os_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1114,7 +1114,7 @@ func (store *PostgresStore) VisitorOS(tenantID sql.NullInt64, from, to time.Time
 
 // VisitorBrowser implements the Store interface.
 func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time.Time) ([]BrowserStats, error) {
-	query := `SELECT "browser", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "browser", coalesce(sum("visitors"), 0) "visitors"
 		FROM "browser_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1133,9 +1133,9 @@ func (store *PostgresStore) VisitorBrowser(tenantID sql.NullInt64, from, to time
 
 // VisitorPlatform implements the Store interface.
 func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to time.Time) *VisitorStats {
-	query := `SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
-		COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
-		COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
+	query := `SELECT coalesce(sum("platform_desktop"), 0) "platform_desktop",
+		coalesce(sum("platform_mobile"), 0) "platform_mobile",
+		coalesce(sum("platform_unknown"), 0) "platform_unknown"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1153,7 +1153,7 @@ func (store *PostgresStore) VisitorPlatform(tenantID sql.NullInt64, from, to tim
 
 // VisitorScreenSize implements the Store interface.
 func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to time.Time) ([]ScreenStats, error) {
-	query := `SELECT "width", "height", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "width", "height", coalesce(sum("visitors"), 0) "visitors"
 		FROM "screen_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1172,7 +1172,7 @@ func (store *PostgresStore) VisitorScreenSize(tenantID sql.NullInt64, from, to t
 
 // VisitorScreenClass implements the Store interface.
 func (store *PostgresStore) VisitorScreenClass(tenantID sql.NullInt64, from, to time.Time) ([]ScreenStats, error) {
-	query := `SELECT "class", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "class", coalesce(sum("visitors"), 0) "visitors"
 		FROM "screen_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1191,7 +1191,7 @@ func (store *PostgresStore) VisitorScreenClass(tenantID sql.NullInt64, from, to 
 
 // VisitorCountry implements the Store interface.
 func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time.Time) ([]CountryStats, error) {
-	query := `SELECT "country_code", COALESCE(SUM("visitors"), 0) "visitors"
+	query := `SELECT "country_code", coalesce(sum("visitors"), 0) "visitors"
 		FROM "country_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1210,11 +1210,11 @@ func (store *PostgresStore) VisitorCountry(tenantID sql.NullInt64, from, to time
 // PageVisitors implements the Store interface.
 func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, from, to time.Time) ([]Stats, error) {
 	query := `SELECT "d" AS "day",
-		COALESCE("path", '') "path",
-		COALESCE("visitor_stats".visitors, 0) "visitors",
-		COALESCE("visitor_stats".sessions, 0) "sessions",
-        COALESCE("visitor_stats".bounces, 0) "bounces",
-        COALESCE("visitor_stats".views, 0) "views"
+		coalesce("path", '') "path",
+		coalesce("visitor_stats".visitors, 0) "visitors",
+		coalesce("visitor_stats".sessions, 0) "sessions",
+        coalesce("visitor_stats".bounces, 0) "bounces",
+        coalesce("visitor_stats".views, 0) "views"
 		FROM (
 			SELECT * FROM generate_series(
 				$2::date,
@@ -1224,7 +1224,7 @@ func (store *PostgresStore) PageVisitors(tenantID sql.NullInt64, path string, fr
 		) AS date_series
 		LEFT JOIN "visitor_stats" ON ($1::bigint IS NULL OR tenant_id = $1)
 		AND "visitor_stats"."day" = "d"
-		AND LOWER("path") = LOWER($4)
+		AND lower("path") = lower($4)
 		ORDER BY "d" ASC`
 	var visitors []Stats
 
@@ -1242,17 +1242,17 @@ func (store *PostgresStore) PageLanguages(tenantID sql.NullInt64, path string, f
 				SELECT "language", sum("visitors") "visitors"
 				FROM "language_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= DATE($2::timestamp)
-				AND "day" <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "language"
 				UNION
 				SELECT "language", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "language"
 			) AS results
 			GROUP BY "language"
@@ -1279,9 +1279,9 @@ func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, fr
 				       sum("bounces") "bounces"
 				FROM "referrer_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= DATE($2::timestamp)
-				AND "day" <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "referrer", "referrer_name", "referrer_icon"
 				UNION
 				SELECT "referrer",
@@ -1291,9 +1291,9 @@ func (store *PostgresStore) PageReferrer(tenantID sql.NullInt64, path string, fr
 					   0 "bounces"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "referrer", "referrer_name", "referrer_icon"
 			) AS results
 			GROUP BY "referrer", "referrer_name", "referrer_icon"
@@ -1315,17 +1315,17 @@ func (store *PostgresStore) PageOS(tenantID sql.NullInt64, path string, from tim
 				SELECT "os", sum("visitors") "visitors"
 				FROM "os_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= DATE($2::timestamp)
-				AND "day" <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "os"
 				UNION
 				SELECT "os", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "os"
 			) AS results
 			GROUP BY "os"
@@ -1347,17 +1347,17 @@ func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, fro
 				SELECT "browser", sum("visitors") "visitors"
 				FROM "browser_stats"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND "day" >= DATE($2::timestamp)
-				AND "day" <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND "day" >= date($2::timestamp)
+				AND "day" <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "browser"
 				UNION
 				SELECT "browser", count(DISTINCT fingerprint) "visitors"
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				GROUP BY "browser"
 			) AS results
 			GROUP BY "browser"
@@ -1374,17 +1374,17 @@ func (store *PostgresStore) PageBrowser(tenantID sql.NullInt64, path string, fro
 
 // PagePlatform implements the Store interface.
 func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, from time.Time, to time.Time) *VisitorStats {
-	query := `SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
-		COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
-		COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
+	query := `SELECT coalesce(sum("platform_desktop"), 0) "platform_desktop",
+		coalesce(sum("platform_mobile"), 0) "platform_mobile",
+		coalesce(sum("platform_unknown"), 0) "platform_unknown"
 		FROM (
 			SELECT (
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				AND desktop IS TRUE
 				AND mobile IS FALSE
 			) AS "platform_desktop",
@@ -1392,9 +1392,9 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				AND desktop IS FALSE
 				AND mobile IS TRUE
 			) AS "platform_mobile",
@@ -1402,21 +1402,21 @@ func (store *PostgresStore) PagePlatform(tenantID sql.NullInt64, path string, fr
 				SELECT COUNT(DISTINCT "fingerprint")
 				FROM "hit"
 				WHERE ($1::bigint IS NULL OR tenant_id = $1)
-				AND DATE("time") >= DATE($2::timestamp)
-				AND DATE("time") <= DATE($3::timestamp)
-				AND LOWER("path") = LOWER($4)
+				AND date("time") >= date($2::timestamp)
+				AND date("time") <= date($3::timestamp)
+				AND lower("path") = lower($4)
 				AND desktop IS FALSE
 				AND mobile IS FALSE
 			) AS "platform_unknown"
 			UNION
-			SELECT COALESCE(SUM("platform_desktop"), 0) "platform_desktop",
-			COALESCE(SUM("platform_mobile"), 0) "platform_mobile",
-			COALESCE(SUM("platform_unknown"), 0) "platform_unknown"
+			SELECT coalesce(sum("platform_desktop"), 0) "platform_desktop",
+			coalesce(sum("platform_mobile"), 0) "platform_mobile",
+			coalesce(sum("platform_unknown"), 0) "platform_unknown"
 			FROM "visitor_stats"
 			WHERE ($1::bigint IS NULL OR tenant_id = $1)
 			AND "day" >= $2::date
 			AND "day" <= $3::date
-			AND LOWER("path") = LOWER($4)
+			AND lower("path") = lower($4)
 		) AS platforms`
 	visitors := new(VisitorStats)
 
@@ -1434,11 +1434,11 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	args = append(args, tenantID)
 	args = append(args, from)
 	args = append(args, to)
-	query := `SELECT COALESCE(SUM("visitors"), 0) "visitors",
-        COALESCE(SUM("sessions"), 0) "sessions",
-        COALESCE(SUM("bounces"), 0) "bounces",
-        COALESCE(SUM("views"), 0) "views",
-		COALESCE(SUM("average_session_duration_seconds"), 0) "average_session_duration_seconds"
+	query := `SELECT coalesce(sum("visitors"), 0) "visitors",
+        coalesce(sum("sessions"), 0) "sessions",
+        coalesce(sum("bounces"), 0) "bounces",
+        coalesce(sum("views"), 0) "views",
+		coalesce(avg("average_session_duration_seconds")::integer, 0) "average_session_duration_seconds"
 		FROM "visitor_stats"
 		WHERE ($1::bigint IS NULL OR tenant_id = $1)
 		AND "day" >= $2::date
@@ -1446,7 +1446,7 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 
 	if path != "" {
 		args = append(args, path)
-		query += `AND LOWER("path") = LOWER($4) `
+		query += `AND lower("path") = lower($4) `
 	} else {
 		query += `AND "path" IS NULL `
 	}
@@ -1460,19 +1460,26 @@ func (store *PostgresStore) VisitorsSum(tenantID sql.NullInt64, from, to time.Ti
 	return visitors, nil
 }
 
-// SessionDurationSum implements the Store interface.
-func (store *PostgresStore) SessionDurationSum(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) int {
+// AverageSessionDuration implements the Store interface.
+func (store *PostgresStore) AverageSessionDuration(tx *sqlx.Tx, tenantID sql.NullInt64, day time.Time) int {
 	if tx == nil {
 		tx = store.NewTx()
 		defer store.Commit(tx)
 	}
 
-	query := `SELECT EXTRACT(EPOCH FROM sum("duration"))::integer FROM (
-			SELECT max("time")-min("time") "duration" 
-			FROM "hit"
-			WHERE ($1::bigint IS NULL OR tenant_id = $1)
-			AND DATE("time") = $2::date
-			GROUP BY fingerprint, "session"
+	query := `SELECT coalesce(extract(EPOCH FROM avg("duration"))::integer, 0) FROM (
+			SELECT max(h1."time")-min(h1."time") "duration" 
+			FROM "hit" h1
+			WHERE ($1::bigint IS NULL OR h1.tenant_id = $1)
+			AND date(h1."time") = $2::date
+			AND (
+			    SELECT count(1)
+			    FROM "hit" h2
+			    WHERE h2.fingerprint = h1.fingerprint
+			    AND h2."session" = h1."session"
+			    AND h2.id != h1.id
+			) > 0
+			GROUP BY h1.fingerprint, h1."session"
 		) AS results`
 	var duration int
 
