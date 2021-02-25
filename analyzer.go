@@ -193,8 +193,10 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -245,9 +247,14 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
-		stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+
+			if stats[i].Visitors > 0 {
+				stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
+			}
+		}
 	}
 
 	return stats, nil
@@ -298,8 +305,10 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -350,8 +359,10 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -380,10 +391,12 @@ func (analyzer *Analyzer) Platform(filter *Filter) *VisitorStats {
 
 	sum := float64(stats.PlatformDesktop + stats.PlatformMobile + stats.PlatformUnknown)
 
-	if sum != 0 {
-		stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
-		stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
-		stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+	if sum > 0 {
+		if sum != 0 {
+			stats.RelativePlatformDesktop = float64(stats.PlatformDesktop) / sum
+			stats.RelativePlatformMobile = float64(stats.PlatformMobile) / sum
+			stats.RelativePlatformUnknown = float64(stats.PlatformUnknown) / sum
+		}
 	}
 
 	return stats
@@ -434,8 +447,10 @@ func (analyzer *Analyzer) Screen(filter *Filter) ([]ScreenStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -486,8 +501,10 @@ func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -538,8 +555,10 @@ func (analyzer *Analyzer) Country(filter *Filter) ([]CountryStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -702,8 +721,10 @@ func (analyzer *Analyzer) PageLanguages(filter *Filter) ([]LanguageStats, error)
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -730,9 +751,14 @@ func (analyzer *Analyzer) PageReferrer(filter *Filter) ([]ReferrerStats, error) 
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
-		stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+
+			if stats[i].Visitors > 0 {
+				stats[i].BounceRate = float64(stats[i].Bounces) / float64(stats[i].Visitors)
+			}
+		}
 	}
 
 	return stats, nil
@@ -759,8 +785,10 @@ func (analyzer *Analyzer) PageOS(filter *Filter) ([]OSStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil
@@ -787,8 +815,10 @@ func (analyzer *Analyzer) PageBrowser(filter *Filter) ([]BrowserStats, error) {
 		sum += float64(stats[i].Visitors)
 	}
 
-	for i := range stats {
-		stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+	if sum > 0 {
+		for i := range stats {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / sum
+		}
 	}
 
 	return stats, nil

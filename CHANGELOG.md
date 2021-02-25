@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.4
+
+* fixed checking all values before calculating relative values by division
+
 ## 1.13.3
 
 * added unit (seconds) to `PathVisitors.AverageTimeOnPageSeconds`
