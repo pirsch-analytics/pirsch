@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.3
+
+* added unit (seconds) to `PathVisitors.AverageTimeOnPageSeconds`
+
 ## 1.13.2
 
 * fixed calculating relative page views per day

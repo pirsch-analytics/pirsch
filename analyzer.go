@@ -8,15 +8,15 @@ import (
 
 // PathVisitors represents visitor statistics per day for a path, including the total visitor count, relative visitor count and bounce rate.
 type PathVisitors struct {
-	Path              string  `json:"path"`
-	Stats             []Stats `json:"stats"`
-	Visitors          int     `json:"visitors"`
-	Bounces           int     `json:"bounces"`
-	Views             int     `json:"views"`
-	RelativeVisitors  float64 `json:"relative_visitors"`
-	BounceRate        float64 `json:"bounce_rate"`
-	RelativeViews     float64 `json:"relative_views"`
-	AverageTimeOnPage int     `json:"average_time_on_page"`
+	Path                     string  `json:"path"`
+	Stats                    []Stats `json:"stats"`
+	Visitors                 int     `json:"visitors"`
+	Bounces                  int     `json:"bounces"`
+	Views                    int     `json:"views"`
+	RelativeVisitors         float64 `json:"relative_visitors"`
+	BounceRate               float64 `json:"bounce_rate"`
+	RelativeViews            float64 `json:"relative_views"`
+	AverageTimeOnPageSeconds int     `json:"average_time_on_page_seconds"`
 }
 
 // TimeOfDayVisitors represents the visitor count per day and hour for a path.
@@ -651,13 +651,13 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 		}
 
 		stats = append(stats, PathVisitors{
-			Path:              path,
-			Stats:             visitors,
-			Visitors:          visitorSum,
-			Bounces:           bouncesSum,
-			Views:             viewsSum,
-			BounceRate:        bounceRate,
-			AverageTimeOnPage: averageTimeOnPageSum,
+			Path:                     path,
+			Stats:                    visitors,
+			Visitors:                 visitorSum,
+			Bounces:                  bouncesSum,
+			Views:                    viewsSum,
+			BounceRate:               bounceRate,
+			AverageTimeOnPageSeconds: averageTimeOnPageSum,
 		})
 		totalVisitors += visitorSum
 		totalViews += viewsSum

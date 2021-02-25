@@ -147,7 +147,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPageSeconds)
 	pageVisitors, err = analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,
@@ -155,7 +155,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPageSeconds)
 	pageVisitors, err = analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,
@@ -163,7 +163,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPageSeconds)
 
 	// test again for updated statistics for the same day
 	createSessions(t, store, 0, day)
@@ -182,7 +182,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPageSeconds)
 	pageVisitors, err = analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,
@@ -190,7 +190,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 5, pageVisitors[0].AverageTimeOnPageSeconds)
 	pageVisitors, err = analyzer.PageVisitors(&Filter{
 		From: day,
 		To:   day,
@@ -198,7 +198,7 @@ func TestProcessor_ProcessAverageSessionDuration(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, pageVisitors, 1)
-	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPage)
+	assert.Equal(t, 0, pageVisitors[0].AverageTimeOnPageSeconds)
 }
 
 func testProcess(t *testing.T, tenantID int64) {
