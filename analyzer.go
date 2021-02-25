@@ -642,7 +642,7 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 					visitors[i].BounceRate = float64(visitors[i].Bounces) / float64(visitors[i].Visitors)
 				}
 
-				if visitorSum > 0 {
+				if viewsSum > 0 {
 					visitors[i].RelativeViews = float64(visitors[i].Views) / float64(viewsSum)
 				}
 			}

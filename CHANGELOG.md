@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.2
+
+* fixed calculating relative page views per day
+
 ## 1.13.1
 
 * fixed calculating relative page views
