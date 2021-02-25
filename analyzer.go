@@ -667,7 +667,10 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 	if totalVisitors > 0 {
 		for i := range stats {
 			stats[i].RelativeVisitors = float64(stats[i].Visitors) / float64(totalVisitors)
-			stats[i].RelativeViews = float64(stats[i].Views) / float64(totalViews)
+
+			if totalViews > 0 {
+				stats[i].RelativeViews = float64(stats[i].Views) / float64(totalViews)
+			}
 		}
 	}
 

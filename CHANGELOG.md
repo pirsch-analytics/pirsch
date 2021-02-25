@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.1
+
+* fixed calculating relative page views
+
 ## 1.13.0
 
 **You need to update the schema by running the `v1.13.0.sql` migration script!**
