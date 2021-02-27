@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.14.0
+
+**This release requires Go version 1.16!**
+
+* removed deprecated package io/ioutil
+* updated dependencies
+
 ## 1.13.4
 
 * fixed checking all values before calculating relative values by division

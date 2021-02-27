@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/pirsch-analytics/pirsch"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 // For more details, take a look at the backend demo and documentation.
@@ -34,13 +34,13 @@ func main() {
 }
 
 func copyPirschJs() {
-	content, err := ioutil.ReadFile("../../js/pirsch.js")
+	content, err := os.ReadFile("../../js/pirsch.js")
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := ioutil.WriteFile("pirsch.js", content, 0755); err != nil {
+	if err := os.WriteFile("pirsch.js", content, 0755); err != nil {
 		panic(err)
 	}
 }

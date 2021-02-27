@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"github.com/oschwald/maxminddb-golang"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -126,13 +125,13 @@ func downloadGeoLite2(path, licenseKey string) error {
 		return err
 	}
 
-	tarGz, err := ioutil.ReadAll(resp.Body)
+	tarGz, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(path, geoLite2TarGzFilename), tarGz, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(path, geoLite2TarGzFilename), tarGz, 0755); err != nil {
 		return err
 	}
 
