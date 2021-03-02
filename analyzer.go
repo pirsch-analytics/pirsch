@@ -620,7 +620,12 @@ func (analyzer *Analyzer) PageVisitors(filter *Filter) ([]PathVisitors, error) {
 					visitors[len(visitors)-1].Sessions += visitorsToday[0].Sessions
 					visitors[len(visitors)-1].Bounces += bouncesToday
 					visitors[len(visitors)-1].Views += visitorsToday[0].Views
-					visitors[len(visitors)-1].AverageTimeSpendSeconds = addAverage(visitors[len(visitors)-1].AverageTimeSpendSeconds, averageTimeOnPageToday, visitors[len(visitors)-1].Sessions)
+
+					if visitors[len(visitors)-1].AverageTimeSpendSeconds > 0 {
+						visitors[len(visitors)-1].AverageTimeSpendSeconds = addAverage(visitors[len(visitors)-1].AverageTimeSpendSeconds, averageTimeOnPageToday, 2)
+					} else {
+						visitors[len(visitors)-1].AverageTimeSpendSeconds = averageTimeOnPageToday
+					}
 				} else {
 					visitors = append(visitors, Stats{
 						Visitors:                visitorsToday[0].Visitors,

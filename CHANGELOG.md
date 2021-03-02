@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.1
+
+* fixed average time on page calculation for today
+
 ## 1.14.0
 
 **This release requires Go version 1.16!**
