@@ -3,6 +3,7 @@ package pirsch
 import (
 	"fmt"
 	"golang.org/x/net/html"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -60,6 +61,10 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	u, err := url.ParseRequestURI(referrer)
 
 	if err != nil {
+		if isIP(referrer) {
+			return "", "", ""
+		}
+
 		// accept non-url referrers (from utm_source for example)
 		if !containsString(domainBlacklist, referrer) {
 			return strings.TrimSpace(referrer), "", ""
@@ -69,6 +74,10 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	}
 
 	hostname := u.Hostname()
+
+	if isIP(hostname) {
+		return "", "", ""
+	}
 
 	if ignoreSubdomain {
 		hostname = stripSubdomain(hostname)
@@ -103,6 +112,21 @@ func getReferrerFromHeaderOrQuery(r *http.Request) string {
 	}
 
 	return referrer
+}
+
+func isIP(referrer string) bool {
+	referrer = strings.Trim(referrer, "/")
+
+	if strings.Contains(referrer, ":") {
+		var err error
+		referrer, _, err = net.SplitHostPort(referrer)
+
+		if err != nil {
+			return false
+		}
+	}
+
+	return net.ParseIP(referrer) != nil
 }
 
 func stripSubdomain(hostname string) string {
