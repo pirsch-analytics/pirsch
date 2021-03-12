@@ -961,6 +961,12 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 }
 
 func (analyzer *Analyzer) calculateBouncesGrowth(current, previous *Stats) float64 {
+	if (previous.Visitors == 0 || previous.Bounces == 0) && current.Visitors > 0 {
+		return 1
+	} else if (previous.Visitors == 0 || previous.Bounces == 0) && current.Visitors == 0 {
+		return 0
+	}
+
 	var currentBounceRate float64
 	var previousBounceRate float64
 
@@ -972,12 +978,5 @@ func (analyzer *Analyzer) calculateBouncesGrowth(current, previous *Stats) float
 		previousBounceRate = float64(previous.Bounces) / float64(previous.Visitors)
 	}
 
-	var bounceGrowth float64
-
-	// use visitors instead of previousBounceRate, as that's an integer and more reliable for this type of comparison
-	if previous.Visitors > 0 {
-		bounceGrowth = (currentBounceRate - previousBounceRate) / previousBounceRate
-	}
-
-	return bounceGrowth
+	return (currentBounceRate - previousBounceRate) / previousBounceRate
 }

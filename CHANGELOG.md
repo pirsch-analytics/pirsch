@@ -5,6 +5,7 @@
 * removed `GeoDB.Close`, as it is no longer required to close the file resource
 * fixed filtering by path for growth statistics
 * fixed concurrent access to GeoDB, the database file is now loaded into memory
+* fixed dividing by 0 when calculating bounce rate growth
 
 ## 1.14.2
 

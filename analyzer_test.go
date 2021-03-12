@@ -1110,6 +1110,60 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	assert.InDelta(t, -0.5, growth, 0.001)
 }
 
+func TestAnalyzer_calculateBouncesGrowth(t *testing.T) {
+	analyzer := NewAnalyzer(newTestStore(), nil)
+	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{}, &Stats{}), 0.001)
+	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 10,
+		Bounces:  5,
+	}, &Stats{
+		Visitors: 0,
+		Bounces:  0,
+	}), 0.001)
+	assert.InDelta(t, -1, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 0,
+		Bounces:  0,
+	}, &Stats{
+		Visitors: 10,
+		Bounces:  5,
+	}), 0.001)
+	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 5,
+		Bounces:  0,
+	}, &Stats{
+		Visitors: 10,
+		Bounces:  0,
+	}), 0.001)
+	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 10,
+		Bounces:  0,
+	}, &Stats{
+		Visitors: 5,
+		Bounces:  0,
+	}), 0.001)
+	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 0,
+		Bounces:  10,
+	}, &Stats{
+		Visitors: 0,
+		Bounces:  5,
+	}), 0.001)
+	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 0,
+		Bounces:  5,
+	}, &Stats{
+		Visitors: 0,
+		Bounces:  10,
+	}), 0.001)
+	assert.InDelta(t, 0.1515, analyzer.calculateBouncesGrowth(&Stats{
+		Visitors: 42,
+		Bounces:  19,
+	}, &Stats{
+		Visitors: 56,
+		Bounces:  22,
+	}), 0.001)
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
