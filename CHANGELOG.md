@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.2
+
+* optimized Postgres transaction handling
+* ignore IP addresses as referrer
+
 ## 1.14.1
 
 * fixed average time on page calculation for today
