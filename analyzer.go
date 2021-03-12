@@ -869,7 +869,23 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	today := today()
 
 	if today.Equal(filter.To) {
-		visitorsToday := analyzer.store.CountVisitors(nil, filter.TenantID, today)
+		var visitorsToday *Stats
+
+		if filter.Path == "" {
+			visitorsToday = analyzer.store.CountVisitors(nil, filter.TenantID, today)
+		} else {
+			visitorsTodayPath, err := analyzer.store.CountVisitorsByPath(nil, filter.TenantID, today, filter.Path, false)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if len(visitorsTodayPath) == 1 {
+				visitorsToday = &visitorsTodayPath[0].Stats
+			} else {
+				visitorsToday = new(Stats)
+			}
+		}
 
 		if visitorsToday == nil {
 			return nil, errors.New("error counting visitors for today")
@@ -877,7 +893,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 		current.Visitors += visitorsToday.Visitors
 		current.Sessions += visitorsToday.Sessions
-		current.Bounces += analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, "")
+		current.Bounces += analyzer.store.CountVisitorsByPathAndMaxOneHit(nil, filter.TenantID, today, filter.Path)
 		current.Views += visitorsToday.Views
 
 		if current.Sessions > 0 {

@@ -41,10 +41,16 @@ type GeoDB struct {
 }
 
 // NewGeoDB creates a new GeoDB for given database file.
-// Make sure you call GeoDB.Close to release the system resources!
+// The file is loaded into memory, therefore it's not necessary to close the reader (see oschwald/maxminddb-golang documentatio).
 // The database should be updated on a regular basis.
 func NewGeoDB(config GeoDBConfig) (*GeoDB, error) {
-	db, err := maxminddb.Open(config.File)
+	data, err := os.ReadFile(config.File)
+
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := maxminddb.FromBytes(data)
 
 	if err != nil {
 		return nil, err
@@ -54,12 +60,6 @@ func NewGeoDB(config GeoDBConfig) (*GeoDB, error) {
 		db:     db,
 		logger: config.Logger,
 	}, nil
-}
-
-// Close closes the database file handle and frees the system resources.
-// It's important to call this when you don't need the GeoDB anymore!
-func (db *GeoDB) Close() error {
-	return db.db.Close()
 }
 
 // CountryCode looks up the country code for given IP.

@@ -97,7 +97,6 @@ func TestTrackerCountryCode(t *testing.T) {
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
 	assert.NoError(t, err)
-	defer geoDB.Close()
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "valid")
 	req1.RemoteAddr = "81.2.69.142"
@@ -188,7 +187,6 @@ func BenchmarkTracker(b *testing.B) {
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
 	assert.NoError(b, err)
-	defer geoDB.Close()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")
 	req.RemoteAddr = "81.2.69.142"

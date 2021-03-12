@@ -8,9 +8,7 @@ import (
 )
 
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -33,9 +31,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 }
 
 func TestAnalyzer_Visitors(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -93,9 +89,7 @@ func TestAnalyzer_Visitors(t *testing.T) {
 }
 
 func TestAnalyzer_VisitorHours(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -125,9 +119,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 }
 
 func TestAnalyzer_Languages(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -159,9 +151,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -197,9 +187,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 }
 
 func TestAnalyzer_OS(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSWindows, "10", "", "", "", false, false, 0, 0)
@@ -232,9 +220,7 @@ func TestAnalyzer_OS(t *testing.T) {
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserChrome, "84.0", "", false, false, 0, 0)
@@ -267,9 +253,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 }
 
 func TestAnalyzer_Platform(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
@@ -301,9 +285,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 }
 
 func TestAnalyzer_PlatformNoData(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		analyzer := NewAnalyzer(store, nil)
@@ -322,9 +304,7 @@ func TestAnalyzer_PlatformNoData(t *testing.T) {
 }
 
 func TestAnalyzer_Screen(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 1920, 1080)
@@ -359,9 +339,7 @@ func TestAnalyzer_Screen(t *testing.T) {
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 1920, 1080)
@@ -395,9 +373,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 }
 
 func TestAnalyzer_Country(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "de", false, false, 0, 0)
@@ -429,9 +405,7 @@ func TestAnalyzer_Country(t *testing.T) {
 }
 
 func TestAnalyzer_TimeOfDay(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", pastDay(1).Add(time.Hour*9), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -522,9 +496,7 @@ func TestAnalyzer_TimeOfDay(t *testing.T) {
 }
 
 func TestAnalyzer_PageVisitors(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", false, false, 0, 0)
@@ -643,9 +615,7 @@ func TestAnalyzer_PageVisitors(t *testing.T) {
 }
 
 func TestAnalyzer_PageLanguages(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -680,9 +650,7 @@ func TestAnalyzer_PageLanguages(t *testing.T) {
 }
 
 func TestAnalyzer_PageReferrer(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
@@ -737,9 +705,7 @@ func TestAnalyzer_PageReferrer(t *testing.T) {
 }
 
 func TestAnalyzer_PageOS(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSMac, "", "", "", "", false, false, 0, 0)
@@ -774,9 +740,7 @@ func TestAnalyzer_PageOS(t *testing.T) {
 }
 
 func TestAnalyzer_PageBrowser(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "", "", false, false, 0, 0)
@@ -811,9 +775,7 @@ func TestAnalyzer_PageBrowser(t *testing.T) {
 }
 
 func TestAnalyzer_PagePlatform(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
@@ -848,9 +810,7 @@ func TestAnalyzer_PagePlatform(t *testing.T) {
 }
 
 func TestAnalyzer_PagePlatformNoData(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		analyzer := NewAnalyzer(store, nil)
@@ -891,9 +851,7 @@ func TestAnalyzer_TimeOfDayTimezone(t *testing.T) {
 }
 
 func TestAnalyzer_Growth(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		stats := []VisitorStats{
@@ -1003,9 +961,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 }
 
 func TestAnalyzer_GrowthToday(t *testing.T) {
-	tenantIDs := []int64{0, 1}
-
-	for _, tenantID := range tenantIDs {
+	for _, tenantID := range []int64{0, 1} {
 		store := NewPostgresStore(postgresDB, nil)
 		cleanupDB(t)
 		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
@@ -1059,6 +1015,58 @@ func TestAnalyzer_GrowthToday(t *testing.T) {
 		assert.InDelta(t, 0.5, growth.BouncesGrowth, 0.01)
 		assert.InDelta(t, -0.7, growth.ViewsGrowth, 0.01)
 		assert.InDelta(t, 1.5, growth.SessionDurationGrowth, 0.01)
+	}
+}
+
+func TestAnalyzer_GrowthTodayPath(t *testing.T) {
+	for _, tenantID := range []int64{0, 1} {
+		store := NewPostgresStore(postgresDB, nil)
+		cleanupDB(t)
+		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
+		createHit(t, store, tenantID, "fp2", "/p2", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
+		createHit(t, store, tenantID, "fp3", "/p2", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
+		stats := []VisitorStats{
+			{
+				Stats: Stats{
+					Day:                     pastDay(1),
+					Path:                    sql.NullString{String: "/p2", Valid: true},
+					Visitors:                3,
+					Sessions:                5,
+					Bounces:                 2,
+					Views:                   10,
+					AverageTimeSpendSeconds: 60,
+				},
+			},
+		}
+
+		for _, s := range stats {
+			s.BaseEntity.TenantID = NewTenantID(tenantID)
+			assert.NoError(t, store.SaveVisitorStats(nil, &s))
+		}
+
+		analyzer := NewAnalyzer(store, nil)
+		growth, err := analyzer.Growth(&Filter{
+			TenantID: NewTenantID(tenantID),
+			From:     today(),
+			To:       today(),
+			Path:     "/p2",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, growth.Current.Visitors)
+		assert.Equal(t, 2, growth.Current.Sessions)
+		assert.Equal(t, 2, growth.Current.Bounces)
+		assert.Equal(t, 2, growth.Current.Views)
+		assert.Equal(t, 0, growth.Current.AverageTimeSpendSeconds)
+		assert.Equal(t, 3, growth.Previous.Visitors)
+		assert.Equal(t, 5, growth.Previous.Sessions)
+		assert.Equal(t, 2, growth.Previous.Bounces)
+		assert.Equal(t, 10, growth.Previous.Views)
+		assert.Equal(t, 60, growth.Previous.AverageTimeSpendSeconds)
+		assert.InDelta(t, -0.333, growth.VisitorsGrowth, 0.01)
+		assert.InDelta(t, -0.6, growth.SessionsGrowth, 0.01)
+		assert.InDelta(t, 0.5, growth.BouncesGrowth, 0.01)
+		assert.InDelta(t, -0.8, growth.ViewsGrowth, 0.01)
+		assert.InDelta(t, -1, growth.SessionDurationGrowth, 0.01)
 	}
 }
 

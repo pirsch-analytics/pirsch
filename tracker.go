@@ -159,8 +159,8 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 
 		if tracker.geoDB != nil {
 			tracker.geoDBMutex.RLock()
-			defer tracker.geoDBMutex.RUnlock()
 			options.geoDB = tracker.geoDB
+			tracker.geoDBMutex.RUnlock()
 		}
 
 		if tracker.sessionCache != nil {

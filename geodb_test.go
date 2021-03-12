@@ -27,6 +27,5 @@ func TestGeoDB_CountryCode(t *testing.T) {
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
 	assert.NoError(t, err)
-	defer db.Close()
 	assert.Equal(t, "gb", db.CountryCode("81.2.69.142"))
 }
