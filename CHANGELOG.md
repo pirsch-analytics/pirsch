@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.14.4
+
+* updated referrer blacklist
+* updated dependencies
+
 ## 1.14.3
 
 * removed `GeoDB.Close`, as it is no longer required to close the file resource

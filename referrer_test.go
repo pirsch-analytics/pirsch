@@ -35,6 +35,8 @@ func TestGetReferrer(t *testing.T) {
 		{"168.119.249.160:8080/signup", nil, false},
 		{"https://168.119.249.160:8080", nil, false},
 		{"https://168.119.249.160:8080/signup", nil, false},
+		{"https://example.com", nil, false},
+		{"https://example.com/", nil, false},
 	}
 	expected := []string{
 		"http://boring.old/domain",
@@ -59,6 +61,8 @@ func TestGetReferrer(t *testing.T) {
 		"",
 		"",
 		"",
+		"https://example.com/",
+		"https://example.com/",
 	}
 
 	for i, in := range input {
