@@ -11,7 +11,7 @@ import (
 
 const (
 	androidAppPrefix   = "android-app://"
-	googlePlayStoreURL = "https://play.google.com/store/apps/details?id=%s"
+	googlePlayStoreURL = "https://play.google.com/client/apps/details?id=%s"
 )
 
 var referrerQueryParams = []string{

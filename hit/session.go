@@ -1,6 +1,14 @@
 package hit
 
-/*const (
+import (
+	"context"
+	"database/sql"
+	"github.com/pirsch-analytics/pirsch/db"
+	"sync"
+	"time"
+)
+
+const (
 	defaultMaxAge      = time.Minute * 15
 	maxMaxAge          = time.Hour * 24
 	minCleanupInterval = maxWorkerTimeout * 2
@@ -10,7 +18,7 @@ package hit
 // sessionCache caches sessions in two maps and swaps them after some time to clean up unused/outdated sessions.
 // If a session is not found in cache, it will be looked up in database and added to the cache.
 type sessionCache struct {
-	store      Store
+	client     *db.Client
 	maxAge     time.Duration
 	active     map[string]time.Time // fingerprint -> session timestamp
 	inactive   map[string]time.Time
@@ -42,7 +50,7 @@ func (config *sessionCacheConfig) validate() {
 // If maxAge or cleanupInterval are set to 0, the default will be used.
 // maxAge is used to define how long a session runs at maximum. The session will be reset once a request is made within that time frame.
 // cleanupInterval has a minimum of two times the Tracker worker count and a maximum, to prevent running out of RAM.
-func newSessionCache(store Store, config *sessionCacheConfig) *sessionCache {
+func newSessionCache(client *db.Client, config *sessionCacheConfig) *sessionCache {
 	if config == nil {
 		config = new(sessionCacheConfig)
 	}
@@ -50,7 +58,7 @@ func newSessionCache(store Store, config *sessionCacheConfig) *sessionCache {
 	config.validate()
 	ctx, cancel := context.WithCancel(context.Background())
 	cache := &sessionCache{
-		store:      store,
+		client:     client,
 		maxAge:     config.maxAge,
 		active:     make(map[string]time.Time),
 		inactive:   make(map[string]time.Time),
@@ -99,7 +107,7 @@ func (cache *sessionCache) find(tenantID sql.NullInt64, fingerprint string) time
 		session = cache.inactive[fingerprint]
 
 		if session.IsZero() {
-			session = cache.store.Session(tenantID, fingerprint, now.Add(-cache.maxAge))
+			session = cache.client.Session(tenantID, fingerprint, now.Add(-cache.maxAge))
 
 			if session.IsZero() {
 				cache.m.RUnlock()
@@ -114,4 +122,3 @@ func (cache *sessionCache) find(tenantID sql.NullInt64, fingerprint string) time
 	cache.m.RUnlock()
 	return session
 }
-*/

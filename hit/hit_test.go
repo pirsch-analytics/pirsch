@@ -12,14 +12,14 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	//store := NewPostgresStore(postgresDB, nil)
+	//client := NewPostgresStore(postgresDB, nil)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
 	hit := FromRequest(req, "salt", &Options{
 		TenantID: analyze.NewTenantID(42),
-		//sessionCache: newSessionCache(store, nil),
+		//sessionCache: newSessionCache(client, nil),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})

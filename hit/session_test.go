@@ -1,6 +1,14 @@
 package hit
 
-/*
+import (
+	"database/sql"
+	"github.com/pirsch-analytics/pirsch/analyze"
+	"github.com/pirsch-analytics/pirsch/model"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
+)
+
 func TestSessionCacheConfig(t *testing.T) {
 	config := sessionCacheConfig{}
 	config.validate()
@@ -19,9 +27,8 @@ func TestSessionCacheConfig(t *testing.T) {
 }
 
 func TestSessionCache(t *testing.T) {
-	//cleanupDB(t)
-	//store := NewPostgresStore(postgresDB, nil)
-	cache := newSessionCache(nil, nil)
+	cleanupDB()
+	cache := newSessionCache(dbClient, nil)
 	defer cache.stop()
 
 	// cache miss -> create in active
@@ -43,13 +50,12 @@ func TestSessionCache(t *testing.T) {
 	cache.swap()
 	assert.Len(t, cache.active, 0)
 	assert.Len(t, cache.inactive, 0)
-	//createHit(t, store, 0, "fp", "/", "en", "ua1", "", today(), session, "", "", "", "", "", false, false, 0, 0)
+	createHit(t, 0, "fp", "/", "en", "ua1", "", today(), session, "", "", "", "", "", false, false, 0, 0)
 	existing = cache.find(analyze.NullTenant, "fp")
 	assert.False(t, existing.IsZero())
 }
 
 func TestSessionCacheRenewal(t *testing.T) {
-	//store := NewPostgresStore(postgresDB, nil)
 	session := time.Now().UTC()
 	times := []time.Time{
 		time.Now().UTC(),
@@ -63,9 +69,9 @@ func TestSessionCacheRenewal(t *testing.T) {
 	}
 
 	for i, created := range times {
-		cleanupDB(t)
-		createHit(t, store, 0, "fp", "/", "en", "ua1", "", created, session, "", "", "", "", "", false, false, 0, 0)
-		cache := newSessionCache(store, &sessionCacheConfig{
+		cleanupDB()
+		createHit(t, 0, "fp", "/", "en", "ua1", "", created, session, "", "", "", "", "", false, false, 0, 0)
+		cache := newSessionCache(dbClient, &sessionCacheConfig{
 			maxAge: time.Hour,
 		})
 		s := cache.find(analyze.NullTenant, "fp")
@@ -94,4 +100,33 @@ func today() time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 }
-*/
+
+func cleanupDB() {
+	dbClient.MustExec(`DELETE FROM "hit"`)
+}
+
+func createHit(t *testing.T, tenantID int64, fingerprint, path, lang, userAgent, ref string, time, session time.Time, os, osVersion, browser, browserVersion, countryCode string, desktop, mobile bool, w, h int) {
+	screenClass := GetScreenClass(w)
+	hit := model.Hit{
+		TenantID:       analyze.NewTenantID(tenantID),
+		Fingerprint:    fingerprint,
+		Time:           time,
+		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
+		UserAgent:      userAgent,
+		Path:           path,
+		Language:       sql.NullString{String: lang, Valid: lang != ""},
+		Referrer:       sql.NullString{String: ref, Valid: ref != ""},
+		OS:             sql.NullString{String: os, Valid: os != ""},
+		OSVersion:      sql.NullString{String: osVersion, Valid: osVersion != ""},
+		Browser:        sql.NullString{String: browser, Valid: browser != ""},
+		BrowserVersion: sql.NullString{String: browserVersion, Valid: browserVersion != ""},
+		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
+		Desktop:        desktop,
+		Mobile:         mobile,
+		ScreenWidth:    w,
+		ScreenHeight:   h,
+		ScreenClass:    sql.NullString{String: screenClass, Valid: screenClass != ""},
+	}
+
+	assert.NoError(t, dbClient.SaveHits([]model.Hit{hit}))
+}

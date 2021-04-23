@@ -1,8 +1,12 @@
 package db
 
 import (
+	"database/sql"
+	"github.com/pirsch-analytics/pirsch/analyze"
+	"github.com/pirsch-analytics/pirsch/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestNewClient(t *testing.T) {
@@ -10,4 +14,33 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 	assert.NoError(t, client.DB.Ping())
+}
+
+func TestClient_SaveHit(t *testing.T) {
+	client, err := NewClient("tcp://127.0.0.1:9000?debug=true")
+	assert.NoError(t, err)
+	assert.NoError(t, client.SaveHits([]model.Hit{
+		{
+			TenantID:       analyze.NewTenantID(1),
+			Fingerprint:    "fp",
+			Time:           time.Now(),
+			Session:        sql.NullTime{Time: time.Now(), Valid: true},
+			UserAgent:      "ua",
+			Path:           "/path",
+			Language:       sql.NullString{String: "en", Valid: true},
+			Referrer:       sql.NullString{String: "ref", Valid: true},
+			ReferrerName:   sql.NullString{String: "ref_name", Valid: true},
+			ReferrerIcon:   sql.NullString{String: "ref_icon", Valid: true},
+			OS:             sql.NullString{String: "os", Valid: true},
+			OSVersion:      sql.NullString{String: "10", Valid: true},
+			Browser:        sql.NullString{String: "browser", Valid: true},
+			BrowserVersion: sql.NullString{String: "89", Valid: true},
+			CountryCode:    sql.NullString{String: "en", Valid: true},
+			Desktop:        true,
+			Mobile:         false,
+			ScreenWidth:    1920,
+			ScreenHeight:   1080,
+			ScreenClass:    sql.NullString{String: "XL", Valid: true},
+		},
+	}))
 }

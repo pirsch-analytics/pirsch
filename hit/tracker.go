@@ -18,16 +18,16 @@ var logger = log.New(os.Stdout, "[pirsch] ", log.LstdFlags)
 
 // TrackerConfig is the optional configuration for the Tracker.
 type TrackerConfig struct {
-	// Worker sets the number of workers that are used to store hits.
+	// Worker sets the number of workers that are used to client hits.
 	// Must be greater or equal to 1.
 	Worker int
 
-	// WorkerBufferSize is the size of the buffer used to store hits.
+	// WorkerBufferSize is the size of the buffer used to client hits.
 	// Must be greater than 0. The hits are stored in batch when the buffer is full.
 	WorkerBufferSize int
 
-	// WorkerTimeout sets the timeout used to store hits.
-	// This is used to allow the workers to store hits even if the buffer is not full yet.
+	// WorkerTimeout sets the timeout used to client hits.
+	// This is used to allow the workers to client hits even if the buffer is not full yet.
 	// It's recommended to set this to a few seconds.
 	// If you leave it 0, the default timeout is used, else it is limted to 60 seconds.
 	WorkerTimeout time.Duration
@@ -82,10 +82,10 @@ func (config *TrackerConfig) validate() {
 }
 
 // Tracker is the main component of Pirsch.
-// It provides methods to track requests and store them in a data store.
+// It provides methods to track requests and client them in a data client.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 /*type Tracker struct {
-	store                                     Store
+	client                                     Store
 	salt                                      string
 	hits                                      chan Hit
 	stopped                                   int32
@@ -102,10 +102,10 @@ func (config *TrackerConfig) validate() {
 	logger                                    *log.Logger
 }
 
-// NewTracker creates a new tracker for given store, salt and config.
+// NewTracker creates a new tracker for given client, salt and config.
 // Pass nil for the config to use the defaults.
 // The salt is mandatory.
-func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
+func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	if config == nil {
 		// the other default values are set by validate
 		config = &TrackerConfig{
@@ -117,14 +117,14 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 	var sessionCache *sessionCache
 
 	if config.Sessions {
-		sessionCache = newSessionCache(store, &sessionCacheConfig{
+		sessionCache = newSessionCache(client, &sessionCacheConfig{
 			maxAge:          config.SessionMaxAge,
 			cleanupInterval: config.SessionCleanupInterval,
 		})
 	}
 
 	tracker := &Tracker{
-		store:                   store,
+		client:                   client,
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -171,7 +171,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *Options) {
 	}
 }
 
-// Flush flushes all hits to store that are currently buffered by the workers.
+// Flush flushes all hits to client that are currently buffered by the workers.
 // Call Tracker.Stop to also save hits that are in the queue.
 func (tracker *Tracker) Flush() {
 	tracker.stopWorker()
@@ -267,7 +267,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 
 func (tracker *Tracker) saveHits(hits []Hit) {
 	if len(hits) > 0 {
-		if err := tracker.store.SaveHits(hits); err != nil {
+		if err := tracker.client.SaveHits(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}
