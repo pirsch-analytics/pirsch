@@ -2,7 +2,6 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/pirsch-analytics/pirsch?status.svg)](https://pkg.go.dev/github.com/pirsch-analytics/pirsch?status)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pirsch-analytics/pirsch)](https://goreportcard.com/report/github.com/pirsch-analytics/pirsch)
-[![CircleCI](https://circleci.com/gh/pirsch-analytics/pirsch.svg?style=svg)](https://circleci.com/gh/pirsch-analytics/pirsch)
 <a href="https://discord.gg/fAYm4Cz"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
 
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data (dashboard) is not part of this project.

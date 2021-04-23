@@ -3,13 +3,12 @@ package main
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
-	"github.com/pirsch-analytics/pirsch"
 	"log"
-	"net/http"
 )
 
+// TODO v2
 func main() {
-	db := connectToDB()
+	/*db := connectToDB()
 
 	// Create a new Postgres store to save statistics and hits.
 	store := pirsch.NewPostgresStore(db, nil)
@@ -41,7 +40,7 @@ func main() {
 	// And finally, start the server.
 	// We don't flush hits on shutdown but you should add that in a real application by calling Tracker.Flush().
 	log.Println("Starting server on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", nil)*/
 }
 
 func connectToDB() *sql.DB {

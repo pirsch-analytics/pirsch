@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0
+
+*WIP*
+
 ## 1.14.4
 
 * updated referrer blacklist
