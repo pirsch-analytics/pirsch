@@ -4,21 +4,23 @@ import (
 	"database/sql"
 	"github.com/pirsch-analytics/pirsch/analyze"
 	"github.com/pirsch-analytics/pirsch/model"
+	"github.com/pirsch-analytics/pirsch/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestNewClient(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000?debug=true")
+	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 	assert.NoError(t, client.DB.Ping())
 }
 
 func TestClient_SaveHit(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000?debug=true")
+	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
 	assert.NoError(t, err)
+	cleanupDB(client)
 	assert.NoError(t, client.SaveHits([]model.Hit{
 		{
 			TenantID:       analyze.NewTenantID(1),
@@ -42,5 +44,33 @@ func TestClient_SaveHit(t *testing.T) {
 			ScreenHeight:   1080,
 			ScreenClass:    sql.NullString{String: "XL", Valid: true},
 		},
+		{
+			Fingerprint: "fp",
+			Time:        time.Now(),
+			UserAgent:   "ua",
+			Path:        "/path",
+		},
 	}))
+}
+
+func TestClient_Session(t *testing.T) {
+	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
+	assert.NoError(t, err)
+	cleanupDB(client)
+	tenant := analyze.NewTenantID(1)
+	fp := "session_fp"
+	session := util.Today()
+	assert.NoError(t, client.SaveHits([]model.Hit{
+		{
+			TenantID:    tenant,
+			Fingerprint: fp,
+			Time:        time.Now(),
+			Session:     sql.NullTime{Time: session, Valid: true},
+			UserAgent:   "ua",
+			Path:        "/path",
+		},
+	}))
+	s, err := client.Session(tenant, fp, time.Now().Add(-time.Second))
+	assert.NoError(t, err)
+	assert.Equal(t, session, s)
 }

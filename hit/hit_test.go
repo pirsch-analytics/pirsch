@@ -3,6 +3,7 @@ package hit
 import (
 	"github.com/pirsch-analytics/pirsch/analyze"
 	"github.com/pirsch-analytics/pirsch/geodb"
+	"github.com/pirsch-analytics/pirsch/model"
 	"github.com/pirsch-analytics/pirsch/ua"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -12,23 +13,23 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	//client := NewPostgresStore(postgresDB, nil)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
 	hit := FromRequest(req, "salt", &Options{
-		TenantID: analyze.NewTenantID(42),
-		//sessionCache: newSessionCache(client, nil),
+		Client:       dbClient,
+		TenantID:     analyze.NewTenantID(42),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
-	assert.Equal(t, 42, int(hit.TenantID.Int64))
 	assert.True(t, hit.TenantID.Valid)
+	assert.Equal(t, 42, int(hit.TenantID.Int64))
 	assert.NotEmpty(t, hit.Fingerprint)
+	assert.NoError(t, dbClient.SaveHits([]model.Hit{hit}))
 
 	if hit.Time.IsZero() ||
-		//!hit.Session.Valid || hit.Session.Time.IsZero() ||
+		!hit.Session.Valid || hit.Session.Time.IsZero() ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar#anchor" ||
@@ -44,6 +45,26 @@ func TestHitFromRequest(t *testing.T) {
 		hit.ScreenHeight != 1024 {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
+}
+
+func TestHitFromRequestSession(t *testing.T) {
+	cleanupDB()
+	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+	req.Header.Set("Referer", "http://ref/")
+	hit1 := FromRequest(req, "salt", &Options{
+		Client: dbClient,
+	})
+	assert.False(t, hit1.TenantID.Valid)
+	assert.NotEmpty(t, hit1.Fingerprint)
+	assert.NoError(t, dbClient.SaveHits([]model.Hit{hit1}))
+	hit2 := FromRequest(req, "salt", &Options{
+		Client: dbClient,
+	})
+	assert.False(t, hit2.TenantID.Valid)
+	assert.NotEmpty(t, hit2.Fingerprint)
+	assert.Equal(t, hit1.Session, hit2.Session)
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {

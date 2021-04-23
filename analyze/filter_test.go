@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"github.com/pirsch-analytics/pirsch/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -10,7 +11,7 @@ func TestFilter_Days(t *testing.T) {
 	filter := NewFilter(NullTenant)
 	assert.Equal(t, 6, filter.Days()) // the default filter covers the past week NOT including today
 	filter.From = pastDay(20)
-	filter.To = today()
+	filter.To = util.Today()
 	filter.validate()
 	assert.Equal(t, 20, filter.Days())
 }
@@ -25,10 +26,10 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 	assert.Equal(t, pastDay(5), filter.From)
 	assert.Equal(t, pastDay(2), filter.To)
-	filter = &Filter{From: pastDay(2), To: today().Add(time.Hour * 24 * 5)}
+	filter = &Filter{From: pastDay(2), To: util.Today().Add(time.Hour * 24 * 5)}
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
-	assert.Equal(t, today(), filter.To)
+	assert.Equal(t, util.Today(), filter.To)
 }
 
 func pastDay(n int) time.Time {

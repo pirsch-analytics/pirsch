@@ -12,3 +12,7 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
+
+func cleanupDB(client *Client) {
+	client.MustExec(`ALTER TABLE "hit" DELETE WHERE 1=1`)
+}

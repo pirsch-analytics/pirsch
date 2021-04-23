@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"database/sql"
+	"github.com/pirsch-analytics/pirsch/util"
 	"strings"
 	"time"
 )
@@ -23,7 +24,7 @@ type Filter struct {
 
 // NewFilter returns a new default filter for given tenant and the past week.
 func NewFilter(tenantID sql.NullInt64) *Filter {
-	today := today()
+	today := util.Today()
 	return &Filter{
 		TenantID: tenantID,
 		From:     today.Add(-time.Hour * 24 * 6), // 7 including today
@@ -38,7 +39,7 @@ func (filter *Filter) Days() int {
 
 func (filter *Filter) validate() {
 	filter.Path = strings.TrimSpace(filter.Path)
-	today := today()
+	today := util.Today()
 
 	if filter.From.IsZero() && filter.To.IsZero() {
 		filter.From = today.Add(-time.Hour * 24 * 6) // 7 including today
@@ -55,9 +56,4 @@ func (filter *Filter) validate() {
 	if filter.To.After(today) {
 		filter.To = today
 	}
-}
-
-func today() time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 }

@@ -13,7 +13,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	c, err := db.NewClient("tcp://127.0.0.1:9000?debug=true")
+	c, err := db.NewClient("tcp://127.0.0.1:9000?debug=true", nil)
 
 	if err != nil {
 		panic(err)
@@ -26,4 +26,8 @@ func TestMain(m *testing.M) {
 		}
 	}()
 	os.Exit(m.Run())
+}
+
+func cleanupDB() {
+	dbClient.MustExec(`ALTER TABLE "hit" DELETE WHERE 1=1`)
 }

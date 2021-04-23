@@ -3,6 +3,7 @@ package hit
 import (
 	"database/sql"
 	iso6391 "github.com/emvi/iso-639-1"
+	"github.com/pirsch-analytics/pirsch/db"
 	"github.com/pirsch-analytics/pirsch/geodb"
 	"github.com/pirsch-analytics/pirsch/model"
 	"github.com/pirsch-analytics/pirsch/ua"
@@ -21,12 +22,22 @@ const (
 	minOperaVersion   = 50
 	minEdgeVersion    = 80
 	minIEVersion      = 11
+
+	defaultSessionMaxAge = time.Minute * 15
 )
 
 // Options is used to manipulate the data saved on a hit.
 type Options struct {
+	// Client is the database client required to look up sessions.
+	Client *db.Client
+
 	// TenantID is optionally saved with a hit to split the data between multiple tenants.
 	TenantID sql.NullInt64
+
+	// SessionMaxAge defines the maximum time a session stays active.
+	// A session is kept active if requests are made within the time frame.
+	// Set to 15 minutes by default.
+	SessionMaxAge time.Duration
 
 	// URL can be set to manually overwrite the URL stored for this request.
 	// This will also affect the Path, except it is set too.
@@ -57,7 +68,6 @@ type Options struct {
 	ScreenHeight int
 
 	geoDB *geodb.GeoDB
-	//sessionCache *sessionCache
 }
 
 // FromRequest returns a new Hit for given request, salt and Options.
@@ -69,6 +79,10 @@ func FromRequest(r *http.Request, salt string, options *Options) model.Hit {
 	// set default options in case they're nil
 	if options == nil {
 		options = &Options{}
+	}
+
+	if options.SessionMaxAge.Seconds() == 0 {
+		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
@@ -95,11 +109,15 @@ func FromRequest(r *http.Request, salt string, options *Options) model.Hit {
 		countryCode = options.geoDB.CountryCode(getIP(r))
 	}
 
-	var session time.Time
+	session := time.Now().UTC()
 
-	/*if options.sessionCache != nil {
-		session = options.sessionCache.find(options.TenantID, fingerprint)
-	}*/
+	if options.Client != nil {
+		s, _ := options.Client.Session(options.TenantID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+
+		if !s.IsZero() {
+			session = s
+		}
+	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
 		options.ScreenWidth = 0
