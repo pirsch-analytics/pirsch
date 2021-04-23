@@ -1,13 +1,6 @@
 package hit
 
-import (
-	"context"
-	"database/sql"
-	"sync"
-	"time"
-)
-
-const (
+/*const (
 	defaultMaxAge      = time.Minute * 15
 	maxMaxAge          = time.Hour * 24
 	minCleanupInterval = maxWorkerTimeout * 2
@@ -121,3 +114,4 @@ func (cache *sessionCache) find(tenantID sql.NullInt64, fingerprint string) time
 	cache.m.RUnlock()
 	return session
 }
+*/

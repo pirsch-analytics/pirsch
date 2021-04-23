@@ -1,14 +1,10 @@
 package hit
 
 import (
-	"context"
 	"github.com/pirsch-analytics/pirsch/geodb"
 	"log"
-	"net/http"
 	"os"
 	"runtime"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -36,10 +32,10 @@ type TrackerConfig struct {
 	// If you leave it 0, the default timeout is used, else it is limted to 60 seconds.
 	WorkerTimeout time.Duration
 
-	// ReferrerDomainBlacklist see HitOptions.ReferrerDomainBlacklist.
+	// ReferrerDomainBlacklist see Options.ReferrerDomainBlacklist.
 	ReferrerDomainBlacklist []string
 
-	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
+	// ReferrerDomainBlacklistIncludesSubdomains see Options.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
 	// Sessions enables/disables session tracking.
@@ -88,7 +84,7 @@ func (config *TrackerConfig) validate() {
 // Tracker is the main component of Pirsch.
 // It provides methods to track requests and store them in a data store.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
-type Tracker struct {
+/*type Tracker struct {
 	store                                     Store
 	salt                                      string
 	hits                                      chan Hit
@@ -146,16 +142,16 @@ func NewTracker(store Store, salt string, config *TrackerConfig) *Tracker {
 }
 
 // Hit stores the given request.
-// The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
+// The request might be ignored if it meets certain conditions. The Options, if passed, will overwrite the Tracker configuration.
 // It's save (and recommended!) to call this function in its own goroutine.
-func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
+func (tracker *Tracker) Hit(r *http.Request, options *Options) {
 	if atomic.LoadInt32(&tracker.stopped) > 0 {
 		return
 	}
 
-	if !IgnoreHit(r) {
+	if !Ignore(r) {
 		if options == nil {
-			options = &HitOptions{
+			options = &Options{
 				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 			}
@@ -171,7 +167,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 			options.sessionCache = tracker.sessionCache
 		}
 
-		tracker.hits <- HitFromRequest(r, tracker.salt, options)
+		tracker.hits <- FromRequest(r, tracker.salt, options)
 	}
 }
 
@@ -276,3 +272,4 @@ func (tracker *Tracker) saveHits(hits []Hit) {
 		}
 	}
 }
+*/

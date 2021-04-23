@@ -12,14 +12,14 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	store := NewPostgresStore(postgresDB, nil)
+	//store := NewPostgresStore(postgresDB, nil)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
-	hit := HitFromRequest(req, "salt", &HitOptions{
-		TenantID:     analyze.NewTenantID(42),
-		sessionCache: newSessionCache(store, nil),
+	hit := FromRequest(req, "salt", &Options{
+		TenantID: analyze.NewTenantID(42),
+		//sessionCache: newSessionCache(store, nil),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -48,7 +48,7 @@ func TestHitFromRequest(t *testing.T) {
 
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit := FromRequest(req, "salt", &Options{
 		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
@@ -60,7 +60,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit := FromRequest(req, "salt", &Options{
 		URL:      "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:     "/new/custom/path",
 		Referrer: "http://custom.ref/",
@@ -75,7 +75,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit := FromRequest(req, "salt", &Options{
 		ScreenWidth:  -5,
 		ScreenHeight: 400,
 	})
@@ -84,7 +84,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit = FromRequest(req, "salt", &Options{
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
@@ -93,7 +93,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit = FromRequest(req, "salt", &Options{
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -114,7 +114,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit := FromRequest(req, "salt", &Options{
 		geoDB: geoDB,
 	})
 
@@ -124,7 +124,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit = FromRequest(req, "salt", &Options{
 		geoDB: geoDB,
 	})
 
@@ -138,39 +138,39 @@ func TestIgnoreHitPrefetch(t *testing.T) {
 	req.Header.Add("User-Agent", "valid")
 	req.Header.Set("X-Moz", "prefetch")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with X-Moz header must be ignored")
 	}
 
 	req.Header.Del("X-Moz")
 	req.Header.Set("X-Purpose", "prefetch")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with X-Purpose header must be ignored")
 	}
 
 	req.Header.Set("X-Purpose", "preview")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with X-Purpose header must be ignored")
 	}
 
 	req.Header.Del("X-Purpose")
 	req.Header.Set("Purpose", "prefetch")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with Purpose header must be ignored")
 	}
 
 	req.Header.Set("Purpose", "preview")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with Purpose header must be ignored")
 	}
 
 	req.Header.Del("Purpose")
 
-	if IgnoreHit(req) {
+	if Ignore(req) {
 		t.Fatal("Hit must not be ignored")
 	}
 }
@@ -179,37 +179,37 @@ func TestIgnoreHitUserAgent(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "This is a bot request")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "This is a crawler request")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "This is a spider request")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "Visit http://spam.com!")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with URL in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/123.0")
 
-	if IgnoreHit(req) {
+	if Ignore(req) {
 		t.Fatal("Hit with regular User-Agent must not be ignored")
 	}
 
 	req.Header.Set("User-Agent", "")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Hit with empty User-Agent must be ignored")
 	}
 }
@@ -219,7 +219,7 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
 
-		if !IgnoreHit(req) {
+		if !Ignore(req) {
 			t.Fatalf("Hit with user agent '%v' must have been ignored", botUserAgent)
 		}
 	}
@@ -230,19 +230,19 @@ func TestIgnoreHitReferrer(t *testing.T) {
 	req.Header.Set("User-Agent", "ua")
 	req.Header.Set("Referer", "2your.site")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Request must have been ignored")
 	}
 
 	req.Header.Set("Referer", "subdomain.2your.site")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Request for subdomain must have been ignored")
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/?ref=2your.site", nil)
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Request must have been ignored")
 	}
 }
@@ -251,14 +251,14 @@ func TestIgnoreHitBrowserVersion(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.4147.135 Safari/537.36")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Request must have been ignored")
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 
-	if IgnoreHit(req) {
+	if Ignore(req) {
 		t.Fatal("Request must not have been ignored")
 	}
 }
@@ -267,20 +267,20 @@ func TestIgnoreHitDoNotTrack(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 
-	if IgnoreHit(req) {
+	if Ignore(req) {
 		t.Fatal("Request must not have been ignored")
 	}
 
 	req.Header.Set("DNT", "1")
 
-	if !IgnoreHit(req) {
+	if !Ignore(req) {
 		t.Fatal("Request must have been ignored")
 	}
 }
 
 func TestHitOptionsFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
-	options := HitOptionsFromRequest(req)
+	options := OptionsFromRequest(req)
 
 	if options.TenantID.Int64 != 0 ||
 		options.URL != "" ||
@@ -291,7 +291,7 @@ func TestHitOptionsFromRequest(t *testing.T) {
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
-	options = HitOptionsFromRequest(req)
+	options = OptionsFromRequest(req)
 
 	if options.TenantID.Int64 != 42 ||
 		options.URL != "http://foo.bar/test" ||

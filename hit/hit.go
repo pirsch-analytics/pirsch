@@ -55,8 +55,8 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
-// HitOptions is used to manipulate the data saved on a hit.
-type HitOptions struct {
+// Options is used to manipulate the data saved on a hit.
+type Options struct {
 	// TenantID is optionally saved with a hit to split the data between multiple tenants.
 	TenantID sql.NullInt64
 
@@ -88,19 +88,19 @@ type HitOptions struct {
 	// ScreenHeight sets the screen height to be stored with the hit.
 	ScreenHeight int
 
-	geoDB        *geodb.GeoDB
-	sessionCache *sessionCache
+	geoDB *geodb.GeoDB
+	//sessionCache *sessionCache
 }
 
-// HitFromRequest returns a new Hit for given request, salt and HitOptions.
+// FromRequest returns a new Hit for given request, salt and Options.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
+func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	// set default options in case they're nil
 	if options == nil {
-		options = &HitOptions{}
+		options = &Options{}
 	}
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
@@ -129,9 +129,9 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 
 	var session time.Time
 
-	if options.sessionCache != nil {
+	/*if options.sessionCache != nil {
 		session = options.sessionCache.find(options.TenantID, fingerprint)
-	}
+	}*/
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
 		options.ScreenWidth = 0
@@ -167,9 +167,9 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	}
 }
 
-// IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
+// Ignore returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
-func IgnoreHit(r *http.Request) bool {
+func Ignore(r *http.Request) bool {
 	// respect do not track header
 	if r.Header.Get("DNT") == "1" {
 		return true
@@ -215,12 +215,12 @@ func IgnoreHit(r *http.Request) bool {
 	return false
 }
 
-// HitOptionsFromRequest returns the HitOptions for given client request.
+// OptionsFromRequest returns the Options for given client request.
 // This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
-// You might want to add additional checks before calling HitFromRequest afterwards (like for the HitOptions.TenantID).
-func HitOptionsFromRequest(r *http.Request) *HitOptions {
+// You might want to add additional checks before calling FromRequest afterwards (like for the Options.TenantID).
+func OptionsFromRequest(r *http.Request) *Options {
 	query := r.URL.Query()
-	return &HitOptions{
+	return &Options{
 		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
@@ -255,7 +255,7 @@ func browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func getRequestURI(r *http.Request, options *HitOptions) {
+func getRequestURI(r *http.Request, options *Options) {
 	if options.URL == "" {
 		options.URL = r.URL.String()
 	}
