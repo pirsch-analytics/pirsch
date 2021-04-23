@@ -39,7 +39,7 @@ func NewClient(connection string, logger *log.Logger) (*Client, error) {
 	}, nil
 }
 
-// SaveHits saves new hits.
+// SaveHits implements the Store interface.
 func (client *Client) SaveHits(hits []model.Hit) error {
 	tx, err := client.Beginx()
 
@@ -94,7 +94,7 @@ func (client *Client) SaveHits(hits []model.Hit) error {
 	return nil
 }
 
-// Session returns the last session timestamp for given tenant, fingerprint, and maximum age.
+// Session implements the Store interface.
 func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) (time.Time, error) {
 	args := make([]interface{}, 0, 3)
 

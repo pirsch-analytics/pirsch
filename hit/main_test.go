@@ -9,11 +9,11 @@ import (
 var dbClient *db.Client
 
 func TestMain(m *testing.M) {
-	if err := db.Migrate("clickhouse://127.0.0.1:9000?debug=true"); err != nil {
+	if err := db.Migrate("clickhouse://127.0.0.1:9000"); err != nil {
 		panic(err)
 	}
 
-	c, err := db.NewClient("tcp://127.0.0.1:9000?debug=true", nil)
+	c, err := db.NewClient("tcp://127.0.0.1:9000", nil)
 
 	if err != nil {
 		panic(err)

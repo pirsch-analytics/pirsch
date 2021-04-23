@@ -11,14 +11,14 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
+	client, err := NewClient("tcp://127.0.0.1:9000", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 	assert.NoError(t, client.DB.Ping())
 }
 
 func TestClient_SaveHit(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
+	client, err := NewClient("tcp://127.0.0.1:9000", nil)
 	assert.NoError(t, err)
 	cleanupDB(client)
 	assert.NoError(t, client.SaveHits([]model.Hit{
@@ -54,7 +54,7 @@ func TestClient_SaveHit(t *testing.T) {
 }
 
 func TestClient_Session(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000?debug=true", nil)
+	client, err := NewClient("tcp://127.0.0.1:9000", nil)
 	assert.NoError(t, err)
 	cleanupDB(client)
 	tenant := analyze.NewTenantID(1)

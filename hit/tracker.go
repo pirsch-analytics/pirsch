@@ -1,10 +1,16 @@
 package hit
 
 import (
+	"context"
+	"github.com/pirsch-analytics/pirsch/db"
 	"github.com/pirsch-analytics/pirsch/geodb"
+	"github.com/pirsch-analytics/pirsch/model"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,17 +44,8 @@ type TrackerConfig struct {
 	// ReferrerDomainBlacklistIncludesSubdomains see Options.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
-	// Sessions enables/disables session tracking.
-	// It's enabled by default.
-	Sessions bool
-
-	// SessionMaxAge is used to define how long a session runs at maximum.
-	// Set to 15 minutes by default.
+	// SessionMaxAge see Options.SessionMaxAge.
 	SessionMaxAge time.Duration
-
-	// SessionCleanupInterval sets the session cache lifetime.
-	// If not passed, the default will be used.
-	SessionCleanupInterval time.Duration
 
 	// GeoDB enables/disabled mapping IPs to country codes.
 	// Can be set/updated at runtime by calling Tracker.SetGeoDB.
@@ -81,13 +78,12 @@ func (config *TrackerConfig) validate() {
 	}
 }
 
-// Tracker is the main component of Pirsch.
-// It provides methods to track requests and client them in a data client.
+// Tracker provides methods to track requests.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
-/*type Tracker struct {
-	client                                     Store
+type Tracker struct {
+	client                                    db.Store
 	salt                                      string
-	hits                                      chan Hit
+	hits                                      chan model.Hit
 	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
@@ -98,44 +94,29 @@ func (config *TrackerConfig) validate() {
 	referrerDomainBlacklistIncludesSubdomains bool
 	geoDB                                     *geodb.GeoDB
 	geoDBMutex                                sync.RWMutex
-	sessionCache                              *sessionCache
 	logger                                    *log.Logger
 }
 
 // NewTracker creates a new tracker for given client, salt and config.
-// Pass nil for the config to use the defaults.
-// The salt is mandatory.
-func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
+// Pass nil for the config to use the defaults. The salt is mandatory.
+func NewTracker(client db.Store, salt string, config *TrackerConfig) *Tracker {
 	if config == nil {
-		// the other default values are set by validate
-		config = &TrackerConfig{
-			Sessions: true,
-		}
+		config = &TrackerConfig{}
 	}
 
 	config.validate()
-	var sessionCache *sessionCache
-
-	if config.Sessions {
-		sessionCache = newSessionCache(client, &sessionCacheConfig{
-			maxAge:          config.SessionMaxAge,
-			cleanupInterval: config.SessionCleanupInterval,
-		})
-	}
-
 	tracker := &Tracker{
-		client:                   client,
+		client:                  client,
 		salt:                    salt,
-		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
+		hits:                    make(chan model.Hit, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
 		workerBufferSize:        config.WorkerBufferSize,
 		workerTimeout:           config.WorkerTimeout,
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
-		sessionCache: sessionCache,
-		geoDB:        config.GeoDB,
-		logger:       config.Logger,
+		geoDB:  config.GeoDB,
+		logger: config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -163,10 +144,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *Options) {
 			tracker.geoDBMutex.RUnlock()
 		}
 
-		if tracker.sessionCache != nil {
-			options.sessionCache = tracker.sessionCache
-		}
-
+		options.Client = tracker.client
 		tracker.hits <- FromRequest(r, tracker.salt, options)
 	}
 }
@@ -216,7 +194,7 @@ func (tracker *Tracker) stopWorker() {
 func (tracker *Tracker) flushHits() {
 	// this function will make sure all dangling hits will be saved in database before shutdown
 	// hits are buffered before saving
-	hits := make([]Hit, 0, tracker.workerBufferSize)
+	hits := make([]model.Hit, 0, tracker.workerBufferSize)
 
 	for {
 		stop := false
@@ -242,7 +220,7 @@ func (tracker *Tracker) flushHits() {
 }
 
 func (tracker *Tracker) aggregate(ctx context.Context) {
-	hits := make([]Hit, 0, tracker.workerBufferSize)
+	hits := make([]model.Hit, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -265,11 +243,10 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 	}
 }
 
-func (tracker *Tracker) saveHits(hits []Hit) {
+func (tracker *Tracker) saveHits(hits []model.Hit) {
 	if len(hits) > 0 {
 		if err := tracker.client.SaveHits(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}
 }
-*/

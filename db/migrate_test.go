@@ -6,5 +6,5 @@ import (
 )
 
 func TestMigrate(t *testing.T) {
-	assert.NoError(t, Migrate("clickhouse://127.0.0.1:9000?debug=true"))
+	assert.NoError(t, Migrate("clickhouse://127.0.0.1:9000"))
 }

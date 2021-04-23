@@ -29,7 +29,7 @@ const (
 // Options is used to manipulate the data saved on a hit.
 type Options struct {
 	// Client is the database client required to look up sessions.
-	Client *db.Client
+	Client db.Store
 
 	// TenantID is optionally saved with a hit to split the data between multiple tenants.
 	TenantID sql.NullInt64
