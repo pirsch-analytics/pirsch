@@ -197,7 +197,7 @@ func BenchmarkTracker(b *testing.B) {
 		GeoDB:         geoDB,
 	})
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < b.N; i++ {
 		tracker.Hit(req, nil)
 	}
 
