@@ -27,11 +27,12 @@ func TestHitFromRequest(t *testing.T) {
 	assert.True(t, hit.TenantID.Valid)
 	assert.NotEmpty(t, hit.Fingerprint)
 
-	if !hit.Session.Valid || hit.Session.Time.IsZero() ||
+	if hit.Time.IsZero() ||
+		//!hit.Session.Valid || hit.Session.Time.IsZero() ||
+		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
-		hit.URL.String != "/test/path?query=param&foo=bar#anchor" ||
+		hit.URL != "/test/path?query=param&foo=bar#anchor" ||
 		hit.Language.String != "de" ||
-		hit.UserAgent.String != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Referrer.String != "http://ref/" ||
 		hit.OS.String != ua.OSWindows ||
 		hit.OSVersion.String != "10" ||
@@ -40,8 +41,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.Desktop ||
 		hit.Mobile ||
 		hit.ScreenWidth != 640 ||
-		hit.ScreenHeight != 1024 ||
-		hit.Time.IsZero() {
+		hit.ScreenHeight != 1024 {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
@@ -53,7 +53,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 	})
 
 	if hit.Path != "/new/custom/path" ||
-		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
+		hit.URL != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
@@ -67,7 +67,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	})
 
 	if hit.Path != "/new/custom/path" ||
-		hit.URL.String != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
+		hit.URL != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
 		hit.Referrer.String != "http://custom.ref/" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
@@ -105,7 +105,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 
 func TestHitFromRequestCountryCode(t *testing.T) {
 	geoDB, err := geodb.NewGeoDB(geodb.Config{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("../geodb/GeoIP2-Country-Test.mmdb"),
 	})
 
 	if err != nil {

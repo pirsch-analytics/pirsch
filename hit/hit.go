@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// version number from early 2018
+	// version numbers from early 2018
 	minChromeVersion  = 64
 	minFirefoxVersion = 58
 	minSafariVersion  = 11
@@ -25,14 +25,15 @@ const (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ID             int64          `db:"id" json:"id"`
-	TenantID       sql.NullInt64  `db:"tenant_id" json:"tenant_id"`
+	TenantID       sql.NullInt64  `db:"tenant_id" json:"tenant_id,omitempty"`
 	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
-	Session        sql.NullTime   `db:"session" json:"session"`
+	Time           time.Time      `db:"time" json:"time"`
+	Session        sql.NullTime   `db:"session" json:"session,omitempty"`
+	UserAgent      string         `db:"user_agent" json:"user_agent"`
 	Path           string         `db:"path" json:"path"`
-	URL            sql.NullString `db:"url" json:"url,omitempty"`
+	URL            string         `db:"url" json:"url"`
 	Language       sql.NullString `db:"language" json:"language,omitempty"`
-	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
+	CountryCode    sql.NullString `db:"country_code" json:"country_code,omitempty"`
 	Referrer       sql.NullString `db:"referrer" json:"referrer,omitempty"`
 	ReferrerName   sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
 	ReferrerIcon   sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
@@ -40,13 +41,11 @@ type Hit struct {
 	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
 	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
 	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
-	CountryCode    sql.NullString `db:"country_code" json:"country_code"`
 	Desktop        bool           `db:"desktop" json:"desktop"`
 	Mobile         bool           `db:"mobile" json:"mobile"`
 	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
 	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
-	ScreenClass    sql.NullString `db:"screen_class" json:"screen_class"`
-	Time           time.Time      `db:"time" json:"time"`
+	ScreenClass    sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
 }
 
 // String implements the Stringer interface.
@@ -106,9 +105,9 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
 	getRequestURI(r, options)
 	fingerprint := Fingerprint(r, salt)
+	userAgent := r.UserAgent()
 	path := shortenString(options.Path, 2000)
 	requestURL := shortenString(options.URL, 2000)
-	userAgent := r.UserAgent()
 	uaInfo := ua.ParseUserAgent(userAgent)
 	uaInfo.OS = shortenString(uaInfo.OS, 20)
 	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
@@ -145,11 +144,13 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	return Hit{
 		TenantID:       options.TenantID,
 		Fingerprint:    fingerprint,
+		Time:           now,
 		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
+		UserAgent:      userAgent,
 		Path:           path,
-		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
+		URL:            requestURL,
 		Language:       sql.NullString{String: lang, Valid: lang != ""},
-		UserAgent:      sql.NullString{String: userAgent, Valid: userAgent != ""},
+		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
 		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
 		ReferrerName:   sql.NullString{String: referrerName, Valid: referrerName != ""},
 		ReferrerIcon:   sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
@@ -157,13 +158,11 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
 		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
 		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
-		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
 		Desktop:        uaInfo.IsDesktop(),
 		Mobile:         uaInfo.IsMobile(),
 		ScreenWidth:    options.ScreenWidth,
 		ScreenHeight:   options.ScreenHeight,
 		ScreenClass:    sql.NullString{String: screen, Valid: screen != ""},
-		Time:           now,
 	}
 }
 
