@@ -15,6 +15,7 @@ var schema embed.FS
 
 // Migrate runs the database migration for given connection string.
 // This will use the embedded schema migration scripts.
+// You have to set the x-multi-statement to true, or else it will fail to run the queries.
 func Migrate(connection string) error {
 	source, err := httpfs.New(http.FS(schema), "schema")
 

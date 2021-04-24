@@ -29,6 +29,11 @@ type Hit struct {
 	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
 	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
 	ScreenClass    sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
+	UTMSource      sql.NullString `db:"utm_source" json:"utm_source,omitempty"`
+	UTMMedium      sql.NullString `db:"utm_medium" json:"utm_medium,omitempty"`
+	UTMCampaign    sql.NullString `db:"utm_campaign" json:"utm_campaign,omitempty"`
+	UTMContent     sql.NullString `db:"utm_content" json:"utm_content,omitempty"`
+	UTMTerm        sql.NullString `db:"utm_term" json:"utm_term,omitempty"`
 }
 
 // String implements the Stringer interface.

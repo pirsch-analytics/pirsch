@@ -2,7 +2,6 @@ package hit
 
 import (
 	"database/sql"
-	iso6391 "github.com/emvi/iso-639-1"
 	"github.com/pirsch-analytics/pirsch/db"
 	"github.com/pirsch-analytics/pirsch/geodb"
 	"github.com/pirsch-analytics/pirsch/model"
@@ -103,6 +102,7 @@ func FromRequest(r *http.Request, salt string, options *Options) model.Hit {
 	referrerName = shortenString(referrerName, 200)
 	referrerIcon = shortenString(referrerIcon, 2000)
 	screen := GetScreenClass(options.ScreenWidth)
+	utm := getUTMParams(r)
 	countryCode := ""
 
 	if options.geoDB != nil {
@@ -150,6 +150,11 @@ func FromRequest(r *http.Request, salt string, options *Options) model.Hit {
 		ScreenWidth:    options.ScreenWidth,
 		ScreenHeight:   options.ScreenHeight,
 		ScreenClass:    sql.NullString{String: screen, Valid: screen != ""},
+		UTMSource:      sql.NullString{String: utm.source, Valid: utm.source != ""},
+		UTMMedium:      sql.NullString{String: utm.medium, Valid: utm.medium != ""},
+		UTMCampaign:    sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
+		UTMContent:     sql.NullString{String: utm.content, Valid: utm.content != ""},
+		UTMTerm:        sql.NullString{String: utm.term, Valid: utm.term != ""},
 	}
 }
 
@@ -257,23 +262,6 @@ func getRequestURI(r *http.Request, options *Options) {
 			options.Path = u.Path
 		}
 	}
-}
-
-func getLanguage(r *http.Request) string {
-	lang := r.Header.Get("Accept-Language")
-
-	if lang != "" {
-		langs := strings.Split(lang, ";")
-		parts := strings.Split(langs[0], ",")
-		parts = strings.Split(parts[0], "-")
-		code := strings.ToLower(strings.TrimSpace(parts[0]))
-
-		if iso6391.ValidCode(code) {
-			return code
-		}
-	}
-
-	return ""
 }
 
 func shortenString(str string, n int) string {

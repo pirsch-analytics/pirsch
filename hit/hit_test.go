@@ -13,7 +13,7 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
@@ -32,7 +32,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.Session.Valid || hit.Session.Time.IsZero() ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
-		hit.URL != "/test/path?query=param&foo=bar#anchor" ||
+		hit.URL != "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
 		hit.Language.String != "de" ||
 		hit.Referrer.String != "http://ref/" ||
 		hit.OS.String != ua.OSWindows ||
@@ -42,7 +42,12 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.Desktop ||
 		hit.Mobile ||
 		hit.ScreenWidth != 640 ||
-		hit.ScreenHeight != 1024 {
+		hit.ScreenHeight != 1024 ||
+		hit.UTMSource.String != "test" ||
+		hit.UTMMedium.String != "email" ||
+		hit.UTMCampaign.String != "newsletter" ||
+		hit.UTMContent.String != "signup" ||
+		hit.UTMTerm.String != "keywords" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
@@ -320,34 +325,6 @@ func TestHitOptionsFromRequest(t *testing.T) {
 		options.ScreenWidth != 640 ||
 		options.ScreenHeight != 1024 {
 		t.Fatalf("Options not as expected: %v", options)
-	}
-}
-
-func TestGetLanguage(t *testing.T) {
-	input := []string{
-		"",
-		"  \t ",
-		"fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",
-		"en-us, en",
-		"en-gb, en",
-		"invalid",
-	}
-	expected := []string{
-		"",
-		"",
-		"fr",
-		"en",
-		"en",
-		"",
-	}
-
-	for i, in := range input {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("Accept-Language", in)
-
-		if lang := getLanguage(req); lang != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], lang)
-		}
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := Migrate("clickhouse://127.0.0.1:9000"); err != nil {
+	if err := Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true"); err != nil {
 		panic(err)
 	}
 

@@ -22,5 +22,4 @@ CREATE TABLE "hit" (
     screen_class FixedString(5) NULL
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMMDD(time)
-ORDER BY (time)
-;
+ORDER BY (time);
