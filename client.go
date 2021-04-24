@@ -6,7 +6,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -118,7 +117,7 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 }
 
 // CountActiveVisitors implements the Store interface.
-func (client *Client) CountActiveVisitors(filter *Filter) int {
+/*func (client *Client) CountActiveVisitors(filter *Run) int {
 	args, filterQuery := client.filter(filter)
 	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` + filterQuery
 	visitors := 0
@@ -132,7 +131,7 @@ func (client *Client) CountActiveVisitors(filter *Filter) int {
 }
 
 // ActiveVisitors implements the Store interface.
-func (client *Client) ActiveVisitors(filter *Filter) ([]Stats, error) {
+func (client *Client) ActiveVisitors(filter *Run) ([]Stats, error) {
 	args, filterQuery := client.filter(filter)
 	query := `SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
 		filterQuery +
@@ -149,7 +148,7 @@ func (client *Client) ActiveVisitors(filter *Filter) ([]Stats, error) {
 }
 
 // VisitorLanguages implements the Store interface.
-func (client *Client) VisitorLanguages(filter *Filter) ([]Stats, error) {
+func (client *Client) VisitorLanguages(filter *Run) ([]Stats, error) {
 	args, filterQuery := client.filter(filter)
 	query := `SELECT "language", count(DISTINCT fingerprint) "visitors", toDate("time") "day" FROM "hit" WHERE ` +
 		filterQuery +
@@ -163,40 +162,19 @@ func (client *Client) VisitorLanguages(filter *Filter) ([]Stats, error) {
 	}
 
 	return stats, nil
-}
+}*/
 
-func (client *Client) filter(filter *Filter) ([]interface{}, string) {
-	args := make([]interface{}, 0, 5)
-	var query strings.Builder
+// Run implements the Store interface.
+func (client *Client) Run(query *Query) ([]Stats, error) {
+	args, sqlQuery := query.build()
+	var stats []Stats
 
-	if filter.TenantID.Valid {
-		args = append(args, filter.TenantID)
-		query.WriteString("tenant_id = ? ")
-	} else {
-		query.WriteString("tenant_id IS NULL ")
+	if err := client.Select(&stats, sqlQuery, args...); err != nil {
+		client.logger.Printf("error reading visitor languages: %s", err)
+		return nil, err
 	}
 
-	if !filter.From.IsZero() {
-		args = append(args, filter.From)
-		query.WriteString("AND time >= ? ")
-	}
-
-	if !filter.To.IsZero() {
-		args = append(args, filter.To)
-		query.WriteString("AND time <= ? ")
-	}
-
-	if !filter.Day.IsZero() {
-		args = append(args, filter.Day)
-		query.WriteString("AND toDate(time) = ?")
-	}
-
-	if filter.Path != "" {
-		args = append(args, filter.Path)
-		query.WriteString("AND path = ? ")
-	}
-
-	return args, query.String()
+	return stats, nil
 }
 
 func (client *Client) tenant(tenantID sql.NullInt64) string {
