@@ -19,7 +19,12 @@ CREATE TABLE "hit" (
     mobile Boolean DEFAULT 0,
     screen_width UInt16 DEFAULT 0,
     screen_height UInt16 DEFAULT 0,
-    screen_class FixedString(5) NULL
+    screen_class FixedString(5) NULL,
+    utm_source String NULL,
+    utm_medium String NULL,
+    utm_campaign String NULL,
+    utm_content String NULL,
+    utm_term String NULL
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMMDD(time)
 ORDER BY (time);
