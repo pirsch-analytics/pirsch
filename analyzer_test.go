@@ -28,4 +28,9 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: "/bar"}, time.Minute*10)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
+	assert.Equal(t, "/bar", visitors[0].Path.String)
+	assert.Equal(t, 2, visitors[0].Visitors)
 }

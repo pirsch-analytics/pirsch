@@ -11,14 +11,14 @@ type Filter struct {
 	// TenantID is the optional tenant ID used to filter results.
 	TenantID sql.NullInt64
 
-	// Path is the optional path for the selection.
-	Path string
-
 	// From is the start of the selection.
 	From time.Time
 
 	// To is the end of the selection.
 	To time.Time
+
+	// Path is the optional path for the selection.
+	Path string
 }
 
 // NewFilter returns a new default filter for given tenant and the past week.

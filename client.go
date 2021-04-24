@@ -118,12 +118,9 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 }
 
 // ActiveVisitors implements the Store interface.
-func (client *Client) ActiveVisitors(filter *Filter, from time.Time) int {
+func (client *Client) ActiveVisitors(filter *Filter) int {
 	args, filterQuery := client.filter(filter)
-	args = append(args, from)
-	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
-		filterQuery +
-		`AND "time" > ?`
+	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` + filterQuery
 	visitors := 0
 
 	if err := client.Get(&visitors, query, args...); err != nil {
@@ -134,14 +131,12 @@ func (client *Client) ActiveVisitors(filter *Filter, from time.Time) int {
 	return visitors
 }
 
-// ActiveVisitorsByPage implements the Store interface.
-func (client *Client) ActiveVisitorsByPage(filter *Filter, from time.Time) ([]Stats, error) {
+// ActiveVisitorsByPath implements the Store interface.
+func (client *Client) ActiveVisitorsByPath(filter *Filter) ([]Stats, error) {
 	args, filterQuery := client.filter(filter)
-	args = append(args, from)
 	query := `SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
 		filterQuery +
-		`AND "time" > ?
-		GROUP BY "path"
+		`GROUP BY "path"
 		ORDER BY "visitors" DESC, "path" ASC`
 	var stats []Stats
 
@@ -154,7 +149,7 @@ func (client *Client) ActiveVisitorsByPage(filter *Filter, from time.Time) ([]St
 }
 
 func (client *Client) filter(filter *Filter) ([]interface{}, string) {
-	args := make([]interface{}, 0, 1)
+	args := make([]interface{}, 0, 2)
 	var query strings.Builder
 
 	if filter.TenantID.Valid {
@@ -162,6 +157,21 @@ func (client *Client) filter(filter *Filter) ([]interface{}, string) {
 		query.WriteString("tenant_id = ? ")
 	} else {
 		query.WriteString("tenant_id IS NULL ")
+	}
+
+	if !filter.From.IsZero() {
+		args = append(args, filter.From)
+		query.WriteString("AND time >= ? ")
+	}
+
+	if !filter.To.IsZero() {
+		args = append(args, filter.To)
+		query.WriteString("AND time <= ? ")
+	}
+
+	if filter.Path != "" {
+		args = append(args, filter.Path)
+		query.WriteString("AND path = ? ")
 	}
 
 	return args, query.String()

@@ -19,14 +19,15 @@ func NewAnalyzer(store Store) *Analyzer {
 // The correct date/time is not included.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
-	from := time.Now().UTC().Add(-duration)
-	visitors, err := analyzer.store.ActiveVisitorsByPage(filter, from)
+	filter.From = time.Now().UTC().Add(-duration)
+	filter.To = time.Time{}
+	visitors, err := analyzer.store.ActiveVisitorsByPath(filter)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return visitors, analyzer.store.ActiveVisitors(filter, from), nil
+	return visitors, analyzer.store.ActiveVisitors(filter), nil
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

@@ -14,8 +14,8 @@ type Store interface {
 	Session(sql.NullInt64, string, time.Time) (time.Time, error)
 
 	// ActiveVisitors returns the active visitor count for given duration.
-	ActiveVisitors(*Filter, time.Time) int
+	ActiveVisitors(*Filter) int
 
-	// ActiveVisitorsByPage returns the active visitors grouped by path for given duration.
-	ActiveVisitorsByPage(*Filter, time.Time) ([]Stats, error)
+	// ActiveVisitorsByPath returns the active visitors grouped by path for given duration.
+	ActiveVisitorsByPath(*Filter) ([]Stats, error)
 }
