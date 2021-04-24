@@ -78,7 +78,7 @@ func (config *TrackerConfig) validate() {
 // Tracker provides methods to track requests.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
-	client                                    Store
+	store                                     Store
 	salt                                      string
 	hits                                      chan Hit
 	stopped                                   int32
@@ -103,7 +103,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 
 	config.validate()
 	tracker := &Tracker{
-		client:                  client,
+		store:                   client,
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -141,7 +141,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *Options) {
 			tracker.geoDBMutex.RUnlock()
 		}
 
-		options.Client = tracker.client
+		options.Client = tracker.store
 		tracker.hits <- FromRequest(r, tracker.salt, options)
 	}
 }
@@ -242,7 +242,7 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 
 func (tracker *Tracker) saveHits(hits []Hit) {
 	if len(hits) > 0 {
-		if err := tracker.client.SaveHits(hits); err != nil {
+		if err := tracker.store.SaveHits(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}

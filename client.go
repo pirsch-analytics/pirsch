@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -103,15 +104,9 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 
 	args = append(args, fingerprint)
 	args = append(args, maxAge)
-	query := `SELECT "session" FROM "hit" WHERE `
-
-	if tenantID.Valid {
-		query += `tenant_id = ? `
-	} else {
-		query += `tenant_id IS NULL `
-	}
-
-	query += `AND fingerprint = ? AND "time" > ? LIMIT 1`
+	query := `SELECT "session" FROM "hit" WHERE ` +
+		client.tenant(tenantID) +
+		`AND fingerprint = ? AND "time" > ? LIMIT 1`
 	var session time.Time
 
 	if err := client.Get(&session, query, args...); err != nil && err != sql.ErrNoRows {
@@ -120,6 +115,64 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 	}
 
 	return session, nil
+}
+
+// ActiveVisitors implements the Store interface.
+func (client *Client) ActiveVisitors(filter *Filter, from time.Time) int {
+	args, filterQuery := client.filter(filter)
+	args = append(args, from)
+	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
+		filterQuery +
+		`AND "time" > ?`
+	visitors := 0
+
+	if err := client.Get(&visitors, query, args...); err != nil {
+		client.logger.Printf("error counting active visitors: %s", err)
+		return 0
+	}
+
+	return visitors
+}
+
+// ActiveVisitorsByPage implements the Store interface.
+func (client *Client) ActiveVisitorsByPage(filter *Filter, from time.Time) ([]Stats, error) {
+	args, filterQuery := client.filter(filter)
+	args = append(args, from)
+	query := `SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
+		filterQuery +
+		`AND "time" > ?
+		GROUP BY "path"
+		ORDER BY "visitors" DESC, "path" ASC`
+	var stats []Stats
+
+	if err := client.Select(&stats, query, args...); err != nil {
+		client.logger.Printf("error reading active visitors by path: %s", err)
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (client *Client) filter(filter *Filter) ([]interface{}, string) {
+	args := make([]interface{}, 0, 1)
+	var query strings.Builder
+
+	if filter.TenantID.Valid {
+		args = append(args, filter.TenantID)
+		query.WriteString("tenant_id = ? ")
+	} else {
+		query.WriteString("tenant_id IS NULL ")
+	}
+
+	return args, query.String()
+}
+
+func (client *Client) tenant(tenantID sql.NullInt64) string {
+	if tenantID.Valid {
+		return "tenant_id = ? "
+	}
+
+	return "tenant_id IS NULL "
 }
 
 func (client *Client) boolean(b bool) int8 {

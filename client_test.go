@@ -15,10 +15,8 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_SaveHit(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000", nil)
-	assert.NoError(t, err)
 	cleanupDB()
-	assert.NoError(t, client.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
 			TenantID:       NewTenantID(1),
 			Fingerprint:    "fp",
@@ -51,13 +49,11 @@ func TestClient_SaveHit(t *testing.T) {
 }
 
 func TestClient_Session(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000", nil)
-	assert.NoError(t, err)
 	cleanupDB()
 	tenant := NewTenantID(1)
 	fp := "session_fp"
 	session := Today()
-	assert.NoError(t, client.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
 			TenantID:    tenant,
 			Fingerprint: fp,
@@ -67,7 +63,7 @@ func TestClient_Session(t *testing.T) {
 			Path:        "/path",
 		},
 	}))
-	s, err := client.Session(tenant, fp, time.Now().Add(-time.Second))
+	s, err := dbClient.Session(tenant, fp, time.Now().Add(-time.Second))
 	assert.NoError(t, err)
 	assert.Equal(t, session, s)
 }

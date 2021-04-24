@@ -31,3 +31,13 @@ func (client *MockClient) SaveHits(hits []Hit) error {
 func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) (time.Time, error) {
 	return time.Now(), nil
 }
+
+// ActiveVisitors implements the Store interface.
+func (client *MockClient) ActiveVisitors(filter *Filter, from time.Time) int {
+	return 0
+}
+
+// ActiveVisitorsByPage implements the Store interface.
+func (client *MockClient) ActiveVisitorsByPage(filter *Filter, from time.Time) ([]Stats, error) {
+	return nil, nil
+}
