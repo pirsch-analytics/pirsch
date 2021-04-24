@@ -28,17 +28,15 @@ func NewAnalyzer(store Store) *Analyzer {
 }*/
 
 // Languages returns the visitor count per language.
-func (analyzer *Analyzer) Languages(filter *Query) ([]Stats, error) {
-	filter = analyzer.getFilter(filter)
-	filter.GroupBy = append(filter.GroupBy, Language)
-	filter.OrderBy = append(filter.OrderBy, FilterOrder{Field: Visitors, Direction: DESC})
-	filter.OrderBy = append(filter.OrderBy, FilterOrder{Field: Language, Direction: ASC})
-	return analyzer.store.Run(filter)
+func (analyzer *Analyzer) Languages(filter *Filter) ([]Stats, error) {
+	return analyzer.store.Run(NewQuery(analyzer.getFilter(filter)).
+		Group(FieldLanguage).
+		Order(QueryOrder{Field: FieldVisitors, Direction: DESC}, QueryOrder{Field: FieldLanguage, Direction: ASC}))
 }
 
-func (analyzer *Analyzer) getFilter(filter *Query) *Query {
+func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
-		return NewQuery(NullTenant)
+		return NewFilter(NullTenant)
 	}
 
 	filter.validate()

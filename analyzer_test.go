@@ -49,7 +49,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Language: sql.NullString{String: "en", Valid: true}},
 	}))
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Languages(&Query{Day: Today()})
+	visitors, err := analyzer.Languages(&Filter{Day: Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "en", visitors[0].Language.String)
@@ -58,7 +58,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	visitors, err = analyzer.Languages(&Query{Day: Today(), Path: "/bar"})
+	visitors, err = analyzer.Languages(&Filter{Day: Today(), Path: "/bar"})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "de", visitors[0].Language.String)

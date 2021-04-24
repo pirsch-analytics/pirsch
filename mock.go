@@ -32,21 +32,6 @@ func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, ma
 	return time.Now(), nil
 }
 
-// CountActiveVisitors implements the Store interface.
-/*func (client *MockClient) CountActiveVisitors(filter *Run) int {
-	return 0
-}
-
-// ActiveVisitors implements the Store interface.
-func (client *MockClient) ActiveVisitors(filter *Run) ([]Stats, error) {
-	return nil, nil
-}
-
-// VisitorLanguages implements the Store interface.
-func (client *MockClient) VisitorLanguages(filter *Run) ([]Stats, error) {
-	return nil, nil
-}*/
-
 // Run implements the Store interface.
 func (client *MockClient) Run(query *Query) ([]Stats, error) {
 	return nil, nil

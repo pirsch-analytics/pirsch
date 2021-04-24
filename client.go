@@ -166,7 +166,7 @@ func (client *Client) VisitorLanguages(filter *Run) ([]Stats, error) {
 
 // Run implements the Store interface.
 func (client *Client) Run(query *Query) ([]Stats, error) {
-	args, sqlQuery := query.build()
+	args, sqlQuery := query.Build()
 	var stats []Stats
 
 	if err := client.Select(&stats, sqlQuery, args...); err != nil {
