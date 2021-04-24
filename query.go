@@ -18,9 +18,14 @@ type QueryOrder struct {
 }
 
 var (
-	FieldVisitors = QueryField("visitors")
-	FieldPath     = QueryField("path")
-	FieldLanguage = QueryField("language")
+	FieldVisitors       = QueryField("visitors")
+	FieldPath           = QueryField("path")
+	FieldLanguage       = QueryField("language")
+	FieldCountryCode    = QueryField("country_code")
+	FieldBrowser        = QueryField("browser")
+	FieldBrowserVersion = QueryField("browser_version")
+	FieldOS             = QueryField("os")
+	FieldOSVersion      = QueryField("os_version")
 
 	ASC  = QueryDirection("ASC")
 	DESC = QueryDirection("DESC")
@@ -29,6 +34,7 @@ var (
 // Query is used to build SQL queries and the corresponding parameters.
 type Query struct {
 	Filter
+	fields  []string
 	groupBy []QueryField
 	orderBy []QueryOrder
 }
@@ -38,6 +44,12 @@ func NewQuery(filter *Filter) *Query {
 	return &Query{
 		Filter: *filter,
 	}
+}
+
+// Fields adds given fields to the result set (including functions, name changes, ...).
+func (query *Query) Fields(fields ...string) *Query {
+	query.fields = append(query.fields, fields...)
+	return query
 }
 
 // Group groups the result set by given fields.
@@ -56,7 +68,9 @@ func (query *Query) Order(fields ...QueryOrder) *Query {
 func (query *Query) Build() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	var sqlQuery strings.Builder
-	sqlQuery.WriteString(`SELECT count(DISTINCT fingerprint) "visitors", toDate("time") "day" `)
+	sqlQuery.WriteString("SELECT ")
+	sqlQuery.WriteString(strings.Join(query.fields, ","))
+	sqlQuery.WriteString(" ")
 	groupBy := make([]string, 0, len(query.groupBy))
 
 	if len(query.groupBy) > 0 {
@@ -98,10 +112,8 @@ func (query *Query) Build() ([]interface{}, string) {
 		sqlQuery.WriteString("AND path = ? ")
 	}
 
-	sqlQuery.WriteString(`GROUP BY "day" `)
-
 	if len(query.groupBy) > 0 {
-		sqlQuery.WriteString(",")
+		sqlQuery.WriteString(`GROUP BY `)
 		sqlQuery.WriteString(strings.Join(groupBy, ","))
 		sqlQuery.WriteString(" ")
 	}

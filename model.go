@@ -44,10 +44,14 @@ func (hit Hit) String() string {
 
 // Stats is the base entity for all statistics.
 type Stats struct {
-	Day      time.Time      `db:"day" json:"day,omitempty"`
-	Path     sql.NullString `db:"path" json:"path,omitempty"`
-	Language sql.NullString `db:"language" json:"language,omitempty"`
-	Visitors int            `db:"visitors" json:"visitors,omitempty"`
+	Day         time.Time      `db:"day" json:"day,omitempty"`
+	Path        sql.NullString `db:"path" json:"path,omitempty"`
+	Language    sql.NullString `db:"language" json:"language,omitempty"`
+	CountryCode sql.NullString `db:"country_code" json:"country_code,omitempty"`
+	Browser     sql.NullString `db:"browser" json:"browser,omitempty"`
+	OS          sql.NullString `db:"os" json:"os,omitempty"`
+	Visitors    int            `db:"visitors" json:"visitors,omitempty"`
+
 	//Sessions                int            `db:"sessions" json:"sessions"`
 	//Bounces                 int            `db:"bounces" json:"bounces"`
 	//Views                   int            `db:"views" json:"views"`

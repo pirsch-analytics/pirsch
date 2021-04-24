@@ -32,7 +32,12 @@ func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, ma
 	return time.Now(), nil
 }
 
-// Run implements the Store interface.
-func (client *MockClient) Run(query *Query) ([]Stats, error) {
+// Count implements the Store interface.
+func (client *MockClient) Count(query *Query) (int, error) {
+	return 0, nil
+}
+
+// Select implements the Store interface.
+func (client *MockClient) Select(query *Query) ([]Stats, error) {
 	return nil, nil
 }

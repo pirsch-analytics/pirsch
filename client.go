@@ -116,61 +116,26 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 	return session, nil
 }
 
-// CountActiveVisitors implements the Store interface.
-/*func (client *Client) CountActiveVisitors(filter *Run) int {
-	args, filterQuery := client.filter(filter)
-	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` + filterQuery
-	visitors := 0
+// Count implements the Store interface.
+func (client *Client) Count(query *Query) (int, error) {
+	args, sqlQuery := query.Build()
+	count := 0
 
-	if err := client.Get(&visitors, query, args...); err != nil {
-		client.logger.Printf("error counting active visitors: %s", err)
-		return 0
+	if err := client.Get(&count, sqlQuery, args...); err != nil {
+		client.logger.Printf("error counting results: %s", err)
+		return 0, err
 	}
 
-	return visitors
+	return count, nil
 }
 
-// ActiveVisitors implements the Store interface.
-func (client *Client) ActiveVisitors(filter *Run) ([]Stats, error) {
-	args, filterQuery := client.filter(filter)
-	query := `SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
-		filterQuery +
-		`GROUP BY "path"
-		ORDER BY "visitors" DESC, "path" ASC`
-	var stats []Stats
-
-	if err := client.Select(&stats, query, args...); err != nil {
-		client.logger.Printf("error reading active visitors: %s", err)
-		return nil, err
-	}
-
-	return stats, nil
-}
-
-// VisitorLanguages implements the Store interface.
-func (client *Client) VisitorLanguages(filter *Run) ([]Stats, error) {
-	args, filterQuery := client.filter(filter)
-	query := `SELECT "language", count(DISTINCT fingerprint) "visitors", toDate("time") "day" FROM "hit" WHERE ` +
-		filterQuery +
-		`GROUP BY "day", "language"
-		ORDER BY "visitors" DESC, "language" ASC`
-	var stats []Stats
-
-	if err := client.Select(&stats, query, args...); err != nil {
-		client.logger.Printf("error reading visitor languages: %s", err)
-		return nil, err
-	}
-
-	return stats, nil
-}*/
-
-// Run implements the Store interface.
-func (client *Client) Run(query *Query) ([]Stats, error) {
+// Select implements the Store interface.
+func (client *Client) Select(query *Query) ([]Stats, error) {
 	args, sqlQuery := query.Build()
 	var stats []Stats
 
-	if err := client.Select(&stats, sqlQuery, args...); err != nil {
-		client.logger.Printf("error reading visitor languages: %s", err)
+	if err := client.DB.Select(&stats, sqlQuery, args...); err != nil {
+		client.logger.Printf("error selecting results: %s", err)
 		return nil, err
 	}
 

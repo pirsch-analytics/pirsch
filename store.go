@@ -13,6 +13,9 @@ type Store interface {
 	// Session returns the last session timestamp for given tenant, fingerprint, and maximum age.
 	Session(sql.NullInt64, string, time.Time) (time.Time, error)
 
-	// Run returns the results for given query.
-	Run(*Query) ([]Stats, error)
+	// Count returns the number of results for given query.
+	Count(*Query) (int, error)
+
+	// Select returns the results for given query.
+	Select(*Query) ([]Stats, error)
 }
