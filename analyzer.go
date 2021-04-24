@@ -20,14 +20,19 @@ func NewAnalyzer(store Store) *Analyzer {
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
-	filter.To = time.Time{}
-	visitors, err := analyzer.store.ActiveVisitorsByPath(filter)
+	visitors, err := analyzer.store.ActiveVisitors(filter)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return visitors, analyzer.store.ActiveVisitors(filter), nil
+	return visitors, analyzer.store.CountActiveVisitors(filter), nil
+}
+
+// Languages returns the visitor count per language.
+func (analyzer *Analyzer) Languages(filter *Filter) ([]Stats, error) {
+	filter = analyzer.getFilter(filter)
+	return analyzer.store.VisitorLanguages(filter)
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

@@ -32,12 +32,17 @@ func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, ma
 	return time.Now(), nil
 }
 
-// ActiveVisitors implements the Store interface.
-func (client *MockClient) ActiveVisitors(filter *Filter) int {
+// CountActiveVisitors implements the Store interface.
+func (client *MockClient) CountActiveVisitors(filter *Filter) int {
 	return 0
 }
 
-// ActiveVisitorsByPath implements the Store interface.
-func (client *MockClient) ActiveVisitorsByPath(filter *Filter) ([]Stats, error) {
+// ActiveVisitors implements the Store interface.
+func (client *MockClient) ActiveVisitors(filter *Filter) ([]Stats, error) {
+	return nil, nil
+}
+
+// VisitorLanguages implements the Store interface.
+func (client *MockClient) VisitorLanguages(filter *Filter) ([]Stats, error) {
 	return nil, nil
 }

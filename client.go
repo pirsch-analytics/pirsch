@@ -117,8 +117,8 @@ func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge
 	return session, nil
 }
 
-// ActiveVisitors implements the Store interface.
-func (client *Client) ActiveVisitors(filter *Filter) int {
+// CountActiveVisitors implements the Store interface.
+func (client *Client) CountActiveVisitors(filter *Filter) int {
 	args, filterQuery := client.filter(filter)
 	query := `SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` + filterQuery
 	visitors := 0
@@ -131,8 +131,8 @@ func (client *Client) ActiveVisitors(filter *Filter) int {
 	return visitors
 }
 
-// ActiveVisitorsByPath implements the Store interface.
-func (client *Client) ActiveVisitorsByPath(filter *Filter) ([]Stats, error) {
+// ActiveVisitors implements the Store interface.
+func (client *Client) ActiveVisitors(filter *Filter) ([]Stats, error) {
 	args, filterQuery := client.filter(filter)
 	query := `SELECT "path", count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE ` +
 		filterQuery +
@@ -141,7 +141,24 @@ func (client *Client) ActiveVisitorsByPath(filter *Filter) ([]Stats, error) {
 	var stats []Stats
 
 	if err := client.Select(&stats, query, args...); err != nil {
-		client.logger.Printf("error reading active visitors by path: %s", err)
+		client.logger.Printf("error reading active visitors: %s", err)
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// VisitorLanguages implements the Store interface.
+func (client *Client) VisitorLanguages(filter *Filter) ([]Stats, error) {
+	args, filterQuery := client.filter(filter)
+	query := `SELECT "language", count(DISTINCT fingerprint) "visitors", toDate("time") "day" FROM "hit" WHERE ` +
+		filterQuery +
+		`GROUP BY "day", "language"
+		ORDER BY "visitors" DESC, "language" ASC`
+	var stats []Stats
+
+	if err := client.Select(&stats, query, args...); err != nil {
+		client.logger.Printf("error reading visitor languages: %s", err)
 		return nil, err
 	}
 
@@ -149,7 +166,7 @@ func (client *Client) ActiveVisitorsByPath(filter *Filter) ([]Stats, error) {
 }
 
 func (client *Client) filter(filter *Filter) ([]interface{}, string) {
-	args := make([]interface{}, 0, 2)
+	args := make([]interface{}, 0, 5)
 	var query strings.Builder
 
 	if filter.TenantID.Valid {
@@ -167,6 +184,11 @@ func (client *Client) filter(filter *Filter) ([]interface{}, string) {
 	if !filter.To.IsZero() {
 		args = append(args, filter.To)
 		query.WriteString("AND time <= ? ")
+	}
+
+	if !filter.Day.IsZero() {
+		args = append(args, filter.Day)
+		query.WriteString("AND toDate(time) = ?")
 	}
 
 	if filter.Path != "" {

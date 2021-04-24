@@ -29,6 +29,12 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
 	assert.Equal(t, Today(), filter.To)
+	filter = &Filter{Day: time.Now()}
+	filter.validate()
+	assert.Zero(t, filter.Day.Hour())
+	assert.Zero(t, filter.Day.Minute())
+	assert.Zero(t, filter.Day.Second())
+	assert.Zero(t, filter.Day.Nanosecond())
 }
 
 func pastDay(n int) time.Time {
