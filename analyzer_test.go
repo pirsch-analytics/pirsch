@@ -38,6 +38,39 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, 2, visitors[0].Visitors)
 }
 
+func TestAnalyzer_Referrer(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/foo", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/bar", Referrer: sql.NullString{String: "ref3", Valid: true}},
+		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Referrer(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "ref1", visitors[0].Referrer.String)
+	assert.Equal(t, "ref2", visitors[1].Referrer.String)
+	assert.Equal(t, "ref3", visitors[2].Referrer.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 2, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+}
+
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -51,7 +84,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Languages(&Filter{Day: Today()})
+	visitors, err := analyzer.Languages(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "en", visitors[0].Language.String)
@@ -60,6 +93,9 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Countries(t *testing.T) {
@@ -75,7 +111,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Countries(&Filter{Day: Today()})
+	visitors, err := analyzer.Countries(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "en", visitors[0].CountryCode.String)
@@ -84,6 +120,9 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
@@ -99,7 +138,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Browser(&Filter{Day: Today()})
+	visitors, err := analyzer.Browser(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, BrowserChrome, visitors[0].Browser.String)
@@ -108,6 +147,9 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_OS(t *testing.T) {
@@ -123,7 +165,7 @@ func TestAnalyzer_OS(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.OS(&Filter{Day: Today()})
+	visitors, err := analyzer.OS(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, OSWindows, visitors[0].OS.String)
@@ -132,6 +174,9 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Platform(t *testing.T) {
@@ -170,7 +215,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.ScreenClass(&Filter{Day: Today()})
+	visitors, err := analyzer.ScreenClass(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "XXL", visitors[0].ScreenClass.String)
@@ -179,4 +224,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 }

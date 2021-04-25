@@ -6,19 +6,18 @@ import (
 )
 
 const (
-	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) "visitors", "visitors" / (
-			SELECT sum(s)
-			FROM (
-				SELECT count(DISTINCT fingerprint) "s"
-				FROM "hit"
+	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / (
+			SELECT sum(s) FROM (
+				SELECT count(DISTINCT fingerprint) s
+				FROM hit
 				WHERE %s
 				GROUP BY "%s"
-			)	
-		) "relative_visitors"
-		FROM "hit"
+			)
+		) relative_visitors
+		FROM hit
 		WHERE %s
 		GROUP BY "%s"
-		ORDER BY "visitors" DESC, "%s" ASC`
+		ORDER BY visitors DESC, "%s" ASC`
 )
 
 // Analyzer provides an interface to analyze statistics.
@@ -40,18 +39,18 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT "path", count(DISTINCT fingerprint) "visitors"
-		FROM "hit"
+	query := fmt.Sprintf(`SELECT "path", count(DISTINCT fingerprint) visitors
+		FROM hit
 		WHERE %s
-		GROUP BY "path"
-		ORDER BY "visitors" DESC, "path" ASC`, filterQuery)
+		GROUP BY path
+		ORDER BY visitors DESC, path ASC`, filterQuery)
 	visitors, err := analyzer.store.Select(query, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) "visitors" FROM "hit" WHERE %s`, filterQuery)
+	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors FROM hit WHERE %s`, filterQuery)
 	count, err := analyzer.store.Count(query, args...)
 
 	if err != nil {
@@ -59,6 +58,42 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	}
 
 	return visitors, count, nil
+}
+
+// Referrer returns the visitor count and bounce rate per referrer.
+func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
+	filterArgs, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT referrer,
+		referrer_name,
+		referrer_icon,
+		count(DISTINCT fingerprint) visitors,
+		visitors / (
+			SELECT sum(s) FROM (
+				SELECT count(DISTINCT fingerprint) s
+				FROM hit
+				WHERE %s
+				GROUP BY fingerprint, referrer, referrer_name, referrer_icon
+			)
+		) relative_visitors,
+		countIf(bounce = 1) bounces,
+		bounces / IF(visitors = 0, 1, visitors) bounce_rate
+		FROM (
+			SELECT fingerprint,
+			referrer,
+			referrer_name,
+			referrer_icon,
+			length(groupArray(path)) = 1 bounce
+			FROM hit
+			WHERE %s
+			GROUP BY fingerprint, referrer, referrer_name, referrer_icon
+		)
+		GROUP BY referrer, referrer_name, referrer_icon
+		ORDER BY visitors DESC`, filterQuery, filterQuery)
+	args := make([]interface{}, 0, len(filterArgs)*3)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
+	return analyzer.store.Select(query, args...)
 }
 
 // Languages returns the visitor count per language.
