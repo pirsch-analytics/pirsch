@@ -184,7 +184,7 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 func BenchmarkTracker(b *testing.B) {
 	cleanupDB()
 	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("../geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
 	assert.NoError(b, err)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -194,6 +194,7 @@ func BenchmarkTracker(b *testing.B) {
 		WorkerTimeout: time.Second,
 		GeoDB:         geoDB,
 	})
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		tracker.Hit(req, nil)
