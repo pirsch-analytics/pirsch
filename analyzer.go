@@ -1,6 +1,9 @@
 package pirsch
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 // Analyzer provides an interface to analyze statistics.
 type Analyzer struct {
@@ -19,7 +22,7 @@ func NewAnalyzer(store Store) *Analyzer {
 // The correct date/time is not included.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
-	filter.From = time.Now().UTC().Add(-duration)
+	filter.Start = time.Now().UTC().Add(-duration)
 	visitors, err := analyzer.store.Select(NewQuery(filter).
 		Fields(`count(DISTINCT fingerprint) "visitors"`).
 		Group(FieldPath).
@@ -68,6 +71,68 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]Stats, error) {
 		Fields(`count(DISTINCT fingerprint) "visitors"`).
 		Group(FieldOS).
 		Order(QueryOrder{Field: FieldVisitors, Direction: DESC}, QueryOrder{Field: FieldOS, Direction: ASC}))
+}
+
+// Platform returns the visitor count per platform.
+func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
+	filter = analyzer.getFilter(filter)
+	filter.Desktop = sql.NullBool{Bool: true, Valid: true}
+	filter.Mobile = sql.NullBool{Bool: false, Valid: true}
+	desktop, err := analyzer.store.Count(NewQuery(analyzer.getFilter(filter)).
+		Fields(`count(DISTINCT fingerprint) "visitors"`))
+
+	if err != nil {
+		return nil, err
+	}
+
+	filter.Desktop = sql.NullBool{Bool: false, Valid: true}
+	filter.Mobile = sql.NullBool{Bool: true, Valid: true}
+	mobile, err := analyzer.store.Count(NewQuery(analyzer.getFilter(filter)).
+		Fields(`count(DISTINCT fingerprint) "visitors"`))
+
+	if err != nil {
+		return nil, err
+	}
+
+	filter.Desktop = sql.NullBool{Bool: false, Valid: true}
+	filter.Mobile = sql.NullBool{Bool: false, Valid: true}
+	unknown, err := analyzer.store.Count(NewQuery(analyzer.getFilter(filter)).
+		Fields(`count(DISTINCT fingerprint) "visitors"`))
+
+	if err != nil {
+		return nil, err
+	}
+
+	sum := desktop + mobile + unknown
+
+	if sum == 0 {
+		sum = 1
+	}
+
+	return &Stats{
+		PlatformDesktop:         desktop,
+		PlatformMobile:          mobile,
+		PlatformUnknown:         unknown,
+		RelativePlatformDesktop: float64(desktop) / float64(sum),
+		RelativePlatformMobile:  float64(mobile) / float64(sum),
+		RelativePlatformUnknown: float64(unknown) / float64(sum),
+	}, nil
+}
+
+// ScreenSize returns the visitor count per screen size (width and height).
+func (analyzer *Analyzer) ScreenSize(filter *Filter) ([]Stats, error) {
+	return analyzer.store.Select(NewQuery(analyzer.getFilter(filter)).
+		Fields(`count(DISTINCT fingerprint) "visitors"`).
+		Group(FieldScreenWidth, FieldScreenHeight).
+		Order(QueryOrder{Field: FieldVisitors, Direction: DESC}))
+}
+
+// ScreenClass returns the visitor count per screen class.
+func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
+	return analyzer.store.Select(NewQuery(analyzer.getFilter(filter)).
+		Fields(`count(DISTINCT fingerprint) "visitors"`).
+		Group(FieldScreenClass).
+		Order(QueryOrder{Field: FieldVisitors, Direction: DESC}))
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

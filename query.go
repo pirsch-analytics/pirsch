@@ -26,6 +26,9 @@ var (
 	FieldBrowserVersion = QueryField("browser_version")
 	FieldOS             = QueryField("os")
 	FieldOSVersion      = QueryField("os_version")
+	FieldScreenWidth    = QueryField("screen_width")
+	FieldScreenHeight   = QueryField("screen_height")
+	FieldScreenClass    = QueryField("screen_class")
 
 	ASC  = QueryDirection("ASC")
 	DESC = QueryDirection("DESC")
@@ -94,12 +97,12 @@ func (query *Query) Build() ([]interface{}, string) {
 
 	if !query.From.IsZero() {
 		args = append(args, query.From)
-		sqlQuery.WriteString("AND time >= ? ")
+		sqlQuery.WriteString("AND toDate(time) >= ? ")
 	}
 
 	if !query.To.IsZero() {
 		args = append(args, query.To)
-		sqlQuery.WriteString("AND time <= ? ")
+		sqlQuery.WriteString("AND toDate(time) <= ? ")
 	}
 
 	if !query.Day.IsZero() {
@@ -107,9 +110,24 @@ func (query *Query) Build() ([]interface{}, string) {
 		sqlQuery.WriteString("AND toDate(time) = ? ")
 	}
 
+	if !query.Start.IsZero() {
+		args = append(args, query.Start)
+		sqlQuery.WriteString("AND time >= ? ")
+	}
+
 	if query.Path != "" {
 		args = append(args, query.Path)
 		sqlQuery.WriteString("AND path = ? ")
+	}
+
+	if query.Desktop.Valid {
+		args = append(args, query.boolean(query.Desktop.Bool))
+		sqlQuery.WriteString("AND desktop = ? ")
+	}
+
+	if query.Mobile.Valid {
+		args = append(args, query.boolean(query.Mobile.Bool))
+		sqlQuery.WriteString("AND mobile = ? ")
 	}
 
 	if len(query.groupBy) > 0 {
@@ -130,4 +148,12 @@ func (query *Query) Build() ([]interface{}, string) {
 	}
 
 	return args, sqlQuery.String()
+}
+
+func (query *Query) boolean(b bool) int8 {
+	if b {
+		return 1
+	}
+
+	return 0
 }

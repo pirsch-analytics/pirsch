@@ -44,13 +44,22 @@ func (hit Hit) String() string {
 
 // Stats is the base entity for all statistics.
 type Stats struct {
-	Day         time.Time      `db:"day" json:"day,omitempty"`
-	Path        sql.NullString `db:"path" json:"path,omitempty"`
-	Language    sql.NullString `db:"language" json:"language,omitempty"`
-	CountryCode sql.NullString `db:"country_code" json:"country_code,omitempty"`
-	Browser     sql.NullString `db:"browser" json:"browser,omitempty"`
-	OS          sql.NullString `db:"os" json:"os,omitempty"`
-	Visitors    int            `db:"visitors" json:"visitors,omitempty"`
+	Day                     time.Time      `db:"day" json:"day,omitempty"`
+	Path                    sql.NullString `db:"path" json:"path,omitempty"`
+	Language                sql.NullString `db:"language" json:"language,omitempty"`
+	CountryCode             sql.NullString `db:"country_code" json:"country_code,omitempty"`
+	Browser                 sql.NullString `db:"browser" json:"browser,omitempty"`
+	OS                      sql.NullString `db:"os" json:"os,omitempty"`
+	Visitors                int            `db:"visitors" json:"visitors,omitempty"`
+	ScreenWidth             int            `db:"screen_width" json:"screen_width,omitempty"`
+	ScreenHeight            int            `db:"screen_height" json:"screen_height,omitempty"`
+	ScreenClass             sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
+	PlatformDesktop         int            `db:"platform_desktop" json:"platform_desktop,omitempty"`
+	PlatformMobile          int            `db:"platform_mobile" json:"platform_mobile,omitempty"`
+	PlatformUnknown         int            `db:"platform_unknown" json:"platform_unknown,omitempty"`
+	RelativePlatformDesktop float64        `db:"-" json:"relative_platform_desktop,omitempty"`
+	RelativePlatformMobile  float64        `db:"-" json:"relative_platform_mobile,omitempty"`
+	RelativePlatformUnknown float64        `db:"-" json:"relative_platform_unknown,omitempty"`
 
 	//Sessions                int            `db:"sessions" json:"sessions"`
 	//Bounces                 int            `db:"bounces" json:"bounces"`
