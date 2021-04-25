@@ -51,20 +51,20 @@ type Stats struct {
 	Browser                 sql.NullString `db:"browser" json:"browser,omitempty"`
 	OS                      sql.NullString `db:"os" json:"os,omitempty"`
 	Visitors                int            `db:"visitors" json:"visitors,omitempty"`
+	RelativeVisitors        float64        `db:"relative_visitors" json:"relative_visitors,omitempty"`
 	ScreenWidth             int            `db:"screen_width" json:"screen_width,omitempty"`
 	ScreenHeight            int            `db:"screen_height" json:"screen_height,omitempty"`
 	ScreenClass             sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
 	PlatformDesktop         int            `db:"platform_desktop" json:"platform_desktop,omitempty"`
 	PlatformMobile          int            `db:"platform_mobile" json:"platform_mobile,omitempty"`
 	PlatformUnknown         int            `db:"platform_unknown" json:"platform_unknown,omitempty"`
-	RelativePlatformDesktop float64        `db:"-" json:"relative_platform_desktop,omitempty"`
-	RelativePlatformMobile  float64        `db:"-" json:"relative_platform_mobile,omitempty"`
-	RelativePlatformUnknown float64        `db:"-" json:"relative_platform_unknown,omitempty"`
+	RelativePlatformDesktop float64        `db:"relative_platform_desktop" json:"relative_platform_desktop,omitempty"`
+	RelativePlatformMobile  float64        `db:"relative_platform_mobile" json:"relative_platform_mobile,omitempty"`
+	RelativePlatformUnknown float64        `db:"relative_platform_unknown" json:"relative_platform_unknown,omitempty"`
 
 	//Sessions                int            `db:"sessions" json:"sessions"`
 	//Bounces                 int            `db:"bounces" json:"bounces"`
 	//Views                   int            `db:"views" json:"views"`
-	//RelativeVisitors        float64        `db:"-" json:"relative_visitors"`
 	//BounceRate              float64        `db:"-" json:"bounce_rate"`
 	//RelativeViews           float64        `db:"-" json:"relative_views"`
 	//AverageTimeSpendSeconds int            `db:"average_time_spend_seconds" json:"average_time_spend_seconds"`

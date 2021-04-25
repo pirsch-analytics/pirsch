@@ -18,6 +18,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/"},
 		{Fingerprint: "fp4", Time: time.Now().Add(-time.Minute), Path: "/"},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, count, err := analyzer.ActiveVisitors(nil, time.Minute*10)
 	assert.NoError(t, err)
@@ -48,6 +49,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
 		{Fingerprint: "fp4", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Languages(&Filter{Day: Today()})
 	assert.NoError(t, err)
@@ -71,6 +73,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
 		{Fingerprint: "fp4", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Countries(&Filter{Day: Today()})
 	assert.NoError(t, err)
@@ -94,6 +97,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
 		{Fingerprint: "fp4", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Browser(&Filter{Day: Today()})
 	assert.NoError(t, err)
@@ -117,6 +121,7 @@ func TestAnalyzer_OS(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
 		{Fingerprint: "fp4", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.OS(&Filter{Day: Today()})
 	assert.NoError(t, err)
@@ -140,6 +145,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
 		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
 	assert.NoError(t, err)
@@ -149,32 +155,6 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-}
-
-func TestAnalyzer_ScreenSize(t *testing.T) {
-	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), ScreenWidth: 1920, ScreenHeight: 1080},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenWidth: 1920, ScreenHeight: 1080},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenWidth: 1280, ScreenHeight: 720},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenWidth: 1280, ScreenHeight: 720},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenWidth: 640, ScreenHeight: 720},
-		{Fingerprint: "fp3", Time: time.Now(), ScreenWidth: 1920, ScreenHeight: 1080},
-		{Fingerprint: "fp4", Time: time.Now(), ScreenWidth: 1920, ScreenHeight: 1080},
-	}))
-	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.ScreenSize(&Filter{Day: Today()})
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 3)
-	assert.Equal(t, 1920, visitors[0].ScreenWidth)
-	assert.Equal(t, 1080, visitors[0].ScreenHeight)
-	assert.Equal(t, 1280, visitors[1].ScreenWidth)
-	assert.Equal(t, 720, visitors[1].ScreenHeight)
-	assert.Equal(t, 640, visitors[2].ScreenWidth)
-	assert.Equal(t, 720, visitors[2].ScreenHeight)
-	assert.Equal(t, 3, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[1].Visitors)
-	assert.Equal(t, 1, visitors[2].Visitors)
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
@@ -188,6 +168,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
 		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
 	}))
+	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.ScreenClass(&Filter{Day: Today()})
 	assert.NoError(t, err)

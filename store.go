@@ -14,8 +14,11 @@ type Store interface {
 	Session(sql.NullInt64, string, time.Time) (time.Time, error)
 
 	// Count returns the number of results for given query.
-	Count(*Query) (int, error)
+	Count(string, ...interface{}) (int, error)
+
+	// Get returns a single result for given query.
+	Get(string, ...interface{}) (*Stats, error)
 
 	// Select returns the results for given query.
-	Select(*Query) ([]Stats, error)
+	Select(string, ...interface{}) ([]Stats, error)
 }

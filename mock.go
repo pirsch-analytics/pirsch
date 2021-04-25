@@ -33,11 +33,15 @@ func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, ma
 }
 
 // Count implements the Store interface.
-func (client *MockClient) Count(query *Query) (int, error) {
+func (client *MockClient) Count(query string, args ...interface{}) (int, error) {
 	return 0, nil
 }
 
+func (client *MockClient) Get(query string, args ...interface{}) (*Stats, error) {
+	return nil, nil
+}
+
 // Select implements the Store interface.
-func (client *MockClient) Select(query *Query) ([]Stats, error) {
+func (client *MockClient) Select(query string, args ...interface{}) ([]Stats, error) {
 	return nil, nil
 }
