@@ -60,7 +60,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return visitors, count, nil
 }
 
-// Visitors returns the visitor count, session count, bounce rate, views, and average session duration per day.
+// Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	args, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT day,
@@ -84,7 +84,31 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	return analyzer.store.Select(query, args...)
 }
 
-// Referrer returns the visitor count and bounce rate per referrer.
+// Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
+func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
+	args, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT path,
+		count(DISTINCT fingerprint) visitors,
+		sum(sessions) sessions,
+		sum(views) views,
+		countIf(bounce = 1) bounces,
+		bounces / IF(visitors = 0, 1, visitors) bounce_rate
+		FROM (
+			SELECT path,
+			fingerprint,
+			count(DISTINCT(fingerprint, session)) sessions,
+			count(*) views,
+			length(groupArray(path)) = 1 bounce
+			FROM hit
+			WHERE %s
+			GROUP BY path, fingerprint
+		)
+		GROUP BY path
+		ORDER BY visitors DESC, path ASC`, filterQuery)
+	return analyzer.store.Select(query, args...)
+}
+
+// Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT referrer,
@@ -120,27 +144,27 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 	return analyzer.store.Select(query, args...)
 }
 
-// Languages returns the visitor count per language.
+// Languages returns the visitor count grouped by language.
 func (analyzer *Analyzer) Languages(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "language")
 }
 
-// Countries returns the visitor count per country.
+// Countries returns the visitor count grouped by country.
 func (analyzer *Analyzer) Countries(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "country_code")
 }
 
-// Browser returns the visitor count per browser.
+// Browser returns the visitor count grouped by browser.
 func (analyzer *Analyzer) Browser(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "browser")
 }
 
-// OS returns the visitor count per operating system.
+// OS returns the visitor count grouped by operating system.
 func (analyzer *Analyzer) OS(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "os")
 }
 
-// Platform returns the visitor count per platform.
+// Platform returns the visitor count grouped by platform.
 func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT (
@@ -174,7 +198,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	return analyzer.store.Get(query, args...)
 }
 
-// ScreenClass returns the visitor count per screen class.
+// ScreenClass returns the visitor count pgrouped byer screen class.
 func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "screen_class")
 }
