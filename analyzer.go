@@ -60,6 +60,30 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return visitors, count, nil
 }
 
+// Visitors returns the visitor count, session count, bounce rate, views, and average session duration per day.
+func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
+	args, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT day,
+		count(DISTINCT fingerprint) visitors,
+		sum(sessions) sessions,
+		sum(views) views,
+		countIf(bounce = 1) bounces,
+		bounces / IF(visitors = 0, 1, visitors) bounce_rate
+		FROM (
+			SELECT toDate(time) day,
+			fingerprint,
+			count(DISTINCT(fingerprint, session)) sessions,
+			count(*) views,
+			length(groupArray(path)) = 1 bounce
+			FROM hit
+			WHERE %s
+			GROUP BY toDate(time), fingerprint
+		)
+		GROUP BY day
+		ORDER BY day ASC, visitors DESC`, filterQuery)
+	return analyzer.store.Select(query, args...)
+}
+
 // Referrer returns the visitor count and bounce rate per referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()
