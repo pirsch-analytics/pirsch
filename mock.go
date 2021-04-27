@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"sync"
 	"time"
 )
@@ -28,7 +27,7 @@ func (client *MockClient) SaveHits(hits []Hit) error {
 }
 
 // Session implements the Store interface.
-func (client *MockClient) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) (time.Time, error) {
+func (client *MockClient) Session(clientID int64, fingerprint string, maxAge time.Time) (time.Time, error) {
 	return time.Now(), nil
 }
 

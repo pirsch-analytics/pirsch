@@ -26,8 +26,8 @@ type Options struct {
 	// Client is the database client required to look up sessions.
 	Client Store
 
-	// TenantID is optionally saved with a hit to split the data between multiple tenants.
-	TenantID sql.NullInt64
+	// ClientID is optionally saved with a hit to split the data between multiple tenants.
+	ClientID int64
 
 	// SessionMaxAge defines the maximum time a session stays active.
 	// A session is kept active if requests are made within the time frame.
@@ -108,7 +108,7 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	session := time.Now().UTC()
 
 	if options.Client != nil {
-		s, _ := options.Client.Session(options.TenantID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+		s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 		if !s.IsZero() {
 			session = s
@@ -125,27 +125,27 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	}
 
 	return Hit{
-		TenantID:       options.TenantID,
+		ClientID:       options.ClientID,
 		Fingerprint:    fingerprint,
 		Time:           now,
 		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
 		UserAgent:      userAgent,
 		Path:           path,
 		URL:            requestURL,
-		Language:       sql.NullString{String: lang, Valid: lang != ""},
-		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
+		Language:       lang,
+		CountryCode:    countryCode,
 		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
 		ReferrerName:   sql.NullString{String: referrerName, Valid: referrerName != ""},
 		ReferrerIcon:   sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
-		OS:             sql.NullString{String: uaInfo.OS, Valid: uaInfo.OS != ""},
-		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
-		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
-		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
+		OS:             uaInfo.OS,
+		OSVersion:      uaInfo.OSVersion,
+		Browser:        uaInfo.Browser,
+		BrowserVersion: uaInfo.BrowserVersion,
 		Desktop:        uaInfo.IsDesktop(),
 		Mobile:         uaInfo.IsMobile(),
 		ScreenWidth:    options.ScreenWidth,
 		ScreenHeight:   options.ScreenHeight,
-		ScreenClass:    sql.NullString{String: screen, Valid: screen != ""},
+		ScreenClass:    screen,
 		UTMSource:      sql.NullString{String: utm.source, Valid: utm.source != ""},
 		UTMMedium:      sql.NullString{String: utm.medium, Valid: utm.medium != ""},
 		UTMCampaign:    sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
@@ -204,11 +204,11 @@ func Ignore(r *http.Request) bool {
 
 // OptionsFromRequest returns the Options for given client request.
 // This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
-// You might want to add additional checks before calling FromRequest afterwards (like for the Options.TenantID).
+// You might want to add additional checks before calling FromRequest afterwards (like for the Options.ClientID).
 func OptionsFromRequest(r *http.Request) *Options {
 	query := r.URL.Query()
 	return &Options{
-		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
+		ClientID:     getInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
 		ScreenWidth:  getIntQueryParam(query.Get("w")),
@@ -269,14 +269,14 @@ func shortenString(str string, n int) string {
 	return str
 }
 
-func getNullInt64QueryParam(param string) sql.NullInt64 {
-	i, err := strconv.Atoi(param)
-	return sql.NullInt64{Int64: int64(i), Valid: err == nil}
-}
-
 func getIntQueryParam(param string) int {
 	i, _ := strconv.Atoi(param)
 	return i
+}
+
+func getInt64QueryParam(param string) int64 {
+	i, _ := strconv.Atoi(param)
+	return int64(i)
 }
 
 func getURLQueryParam(param string) string {

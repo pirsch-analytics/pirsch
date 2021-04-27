@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -11,7 +10,7 @@ type Store interface {
 	SaveHits([]Hit) error
 
 	// Session returns the last session timestamp for given tenant, fingerprint, and maximum age.
-	Session(sql.NullInt64, string, time.Time) (time.Time, error)
+	Session(int64, string, time.Time) (time.Time, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)

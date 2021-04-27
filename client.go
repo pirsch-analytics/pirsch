@@ -46,7 +46,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (tenant_id, fingerprint, time, session, user_agent,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, user_agent,
 		path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
@@ -55,7 +55,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 	}
 
 	for _, hit := range hits {
-		_, err := query.Exec(hit.TenantID,
+		_, err := query.Exec(hit.ClientID,
 			hit.Fingerprint,
 			hit.Time,
 			hit.Session,
@@ -94,17 +94,17 @@ func (client *Client) SaveHits(hits []Hit) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(tenantID sql.NullInt64, fingerprint string, maxAge time.Time) (time.Time, error) {
+func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (time.Time, error) {
 	args := make([]interface{}, 0, 3)
 
-	if tenantID.Valid {
-		args = append(args, tenantID.Int64)
+	if clientID != 0 {
+		args = append(args, clientID)
 	}
 
 	args = append(args, fingerprint)
 	args = append(args, maxAge)
 	query := `SELECT "session" FROM "hit" WHERE ` +
-		client.tenant(tenantID) +
+		client.tenant(clientID) +
 		`AND fingerprint = ? AND "time" > ? LIMIT 1`
 	var session time.Time
 
@@ -152,12 +152,12 @@ func (client *Client) Select(query string, args ...interface{}) ([]Stats, error)
 	return stats, nil
 }
 
-func (client *Client) tenant(tenantID sql.NullInt64) string {
-	if tenantID.Valid {
-		return "tenant_id = ? "
+func (client *Client) tenant(clientID int64) string {
+	if clientID != 0 {
+		return "client_id = ? "
 	}
 
-	return "tenant_id IS NULL "
+	return "client_id IS NULL "
 }
 
 func (client *Client) boolean(b bool) int8 {

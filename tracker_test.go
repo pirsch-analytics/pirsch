@@ -116,9 +116,9 @@ func TestTrackerCountryCode(t *testing.T) {
 	foundEmpty := false
 
 	for _, hit := range client.Hits {
-		if hit.CountryCode.String == "gb" {
+		if hit.CountryCode == "gb" {
 			foundGB = true
-		} else if hit.CountryCode.String == "" {
+		} else if hit.CountryCode == "" {
 			foundEmpty = true
 		}
 	}

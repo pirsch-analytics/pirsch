@@ -172,13 +172,13 @@ func TestAnalyzer_Referrer(t *testing.T) {
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Language: sql.NullString{String: "de", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Language: sql.NullString{String: "de", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Language: sql.NullString{String: "jp", Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), Language: sql.NullString{String: "en", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), Language: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), Language: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), Language: "jp"},
+		{Fingerprint: "fp3", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp4", Time: time.Now(), Language: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -199,13 +199,13 @@ func TestAnalyzer_Languages(t *testing.T) {
 func TestAnalyzer_Countries(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: sql.NullString{String: "de", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), CountryCode: sql.NullString{String: "de", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), CountryCode: sql.NullString{String: "jp", Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), CountryCode: sql.NullString{String: "en", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "jp"},
+		{Fingerprint: "fp3", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp4", Time: time.Now(), CountryCode: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -226,13 +226,13 @@ func TestAnalyzer_Countries(t *testing.T) {
 func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Browser: sql.NullString{String: BrowserFirefox, Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: sql.NullString{String: BrowserFirefox, Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: sql.NullString{String: BrowserSafari, Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), Browser: sql.NullString{String: BrowserChrome, Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserFirefox},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserFirefox},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserSafari},
+		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserChrome},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -253,13 +253,13 @@ func TestAnalyzer_Browser(t *testing.T) {
 func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), OS: sql.NullString{String: OSMac, Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), OS: sql.NullString{String: OSMac, Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), OS: sql.NullString{String: OSLinux, Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), OS: sql.NullString{String: OSWindows, Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSMac},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSMac},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSLinux},
+		{Fingerprint: "fp3", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp4", Time: time.Now(), OS: OSWindows},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -303,13 +303,13 @@ func TestAnalyzer_Platform(t *testing.T) {
 func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: sql.NullString{String: "XL", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: sql.NullString{String: "XL", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: sql.NullString{String: "L", Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: sql.NullString{String: "XXL", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XL"},
+		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "XL"},
+		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "L"},
+		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: "XXL"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

@@ -130,7 +130,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
-	filterArgs, filterQuery := analyzer.getFilter(filter).query()
+	args, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
@@ -157,10 +157,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC`, filterQuery, filterQuery)
-	args := make([]interface{}, 0, len(filterArgs)*3)
-	args = append(args, filterArgs...)
-	args = append(args, filterArgs...)
-	args = append(args, filterArgs...)
+	args = append(args, args...)
 	return analyzer.store.Select(query, args...)
 }
 
@@ -232,7 +229,7 @@ func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stat
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
-		return NewFilter(NullTenant)
+		return NewFilter(NullClient)
 	}
 
 	filter.validate()

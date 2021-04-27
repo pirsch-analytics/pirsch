@@ -6,10 +6,13 @@ import (
 	"time"
 )
 
+// NullClient is a placeholder for no tenant (0).
+var NullClient = int64(0)
+
 // Filter are all fields that can be used to filter the result sets.
 type Filter struct {
-	// TenantID is the optional.
-	TenantID sql.NullInt64
+	// ClientID is the optional.
+	ClientID int64
 
 	// From is the start date of the selected period.
 	From time.Time
@@ -33,10 +36,10 @@ type Filter struct {
 	Mobile sql.NullBool
 }
 
-// NewFilter creates a new filter for given tenant ID.
-func NewFilter(tenantID sql.NullInt64) *Filter {
+// NewFilter creates a new filter for given client ID.
+func NewFilter(clientID int64) *Filter {
 	return &Filter{
-		TenantID: tenantID,
+		ClientID: clientID,
 	}
 }
 
@@ -74,14 +77,9 @@ func (filter *Filter) toUTCDate(date time.Time) time.Time {
 
 func (filter *Filter) query() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
+	args = append(args, filter.ClientID)
 	var sqlQuery strings.Builder
-
-	if filter.TenantID.Valid {
-		args = append(args, filter.TenantID)
-		sqlQuery.WriteString("tenant_id = ? ")
-	} else {
-		sqlQuery.WriteString("tenant_id IS NULL ")
-	}
+	sqlQuery.WriteString("client_id = ? ")
 
 	if !filter.From.IsZero() {
 		args = append(args, filter.From)

@@ -7,7 +7,7 @@
 
     var script = document.querySelector("#pirschjs");
     var endpoint = script.getAttribute("data-endpoint") || "/pirsch";
-    var tenantID = script.getAttribute("data-tenant-id") || 0;
+    var clientID = script.getAttribute("data-client-id") || 0;
     var trackLocalhost = script.hasAttribute("data-track-localhost");
 
     if(!trackLocalhost && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
@@ -32,7 +32,7 @@
         var height = screen.height;
         var url = endpoint+
             "?nc="+ nocache+
-            "&tenantid="+tenantID+
+            "&client_id="+clientID+
             "&url="+href+
             "&ref="+referrer+
             "&w="+width+

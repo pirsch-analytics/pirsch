@@ -15,12 +15,11 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Referer", "http://ref/")
 	hit := FromRequest(req, "salt", &Options{
 		Client:       dbClient,
-		TenantID:     NewTenantID(42),
+		ClientID:     42,
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
-	assert.True(t, hit.TenantID.Valid)
-	assert.Equal(t, 42, int(hit.TenantID.Int64))
+	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotEmpty(t, hit.Fingerprint)
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit}))
 
@@ -29,12 +28,12 @@ func TestHitFromRequest(t *testing.T) {
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
-		hit.Language.String != "de" ||
+		hit.Language != "de" ||
 		hit.Referrer.String != "http://ref/" ||
-		hit.OS.String != OSWindows ||
-		hit.OSVersion.String != "10" ||
-		hit.Browser.String != BrowserChrome ||
-		hit.BrowserVersion.String != "84.0" ||
+		hit.OS != OSWindows ||
+		hit.OSVersion != "10" ||
+		hit.Browser != BrowserChrome ||
+		hit.BrowserVersion != "84.0" ||
 		!hit.Desktop ||
 		hit.Mobile ||
 		hit.ScreenWidth != 640 ||
@@ -57,13 +56,13 @@ func TestHitFromRequestSession(t *testing.T) {
 	hit1 := FromRequest(req, "salt", &Options{
 		Client: dbClient,
 	})
-	assert.False(t, hit1.TenantID.Valid)
+	assert.Equal(t, int64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit1}))
 	hit2 := FromRequest(req, "salt", &Options{
 		Client: dbClient,
 	})
-	assert.False(t, hit2.TenantID.Valid)
+	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)
 	assert.Equal(t, hit1.Session.Time.Unix(), hit2.Session.Time.Unix())
 }
@@ -140,8 +139,8 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 		geoDB: geoDB,
 	})
 
-	if hit.CountryCode.String != "gb" {
-		t.Fatalf("Country code for hit must have been returned, but was: %v", hit.CountryCode.String)
+	if hit.CountryCode != "gb" {
+		t.Fatalf("Country code for hit must have been returned, but was: %v", hit.CountryCode)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
@@ -150,8 +149,8 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 		geoDB: geoDB,
 	})
 
-	if hit.CountryCode.String != "" {
-		t.Fatalf("Country code for hit must be empty, but was: %v", hit.CountryCode.String)
+	if hit.CountryCode != "" {
+		t.Fatalf("Country code for hit must be empty, but was: %v", hit.CountryCode)
 	}
 }
 
@@ -304,7 +303,7 @@ func TestHitOptionsFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
 	options := OptionsFromRequest(req)
 
-	if options.TenantID.Int64 != 0 ||
+	if options.ClientID != 0 ||
 		options.URL != "" ||
 		options.Referrer != "" ||
 		options.ScreenWidth != 0 ||
@@ -312,10 +311,10 @@ func TestHitOptionsFromRequest(t *testing.T) {
 		t.Fatalf("Options not as expected: %v", options)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?tenantid=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?client_id=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
 	options = OptionsFromRequest(req)
 
-	if options.TenantID.Int64 != 42 ||
+	if options.ClientID != 42 ||
 		options.URL != "http://foo.bar/test" ||
 		options.Referrer != "http://ref/" ||
 		options.ScreenWidth != 640 ||
@@ -335,29 +334,6 @@ func TestShortenString(t *testing.T) {
 
 	if out != "Hello World" {
 		t.Fatalf("String must not have been shortened, but was: %v", out)
-	}
-}
-
-func TestGetNullInt64QueryParam(t *testing.T) {
-	input := []string{
-		"",
-		"   ",
-		"asdf",
-		"32asdf",
-		"42",
-	}
-	expected := []int64{
-		0,
-		0,
-		0,
-		0,
-		42,
-	}
-
-	for i, in := range input {
-		if out := getNullInt64QueryParam(in); out.Int64 != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
-		}
 	}
 }
 

@@ -18,26 +18,26 @@ func TestClient_SaveHit(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
-			TenantID:       NewTenantID(1),
+			ClientID:       1,
 			Fingerprint:    "fp",
 			Time:           time.Now(),
 			Session:        sql.NullTime{Time: time.Now(), Valid: true},
 			UserAgent:      "ua",
 			Path:           "/path",
-			Language:       sql.NullString{String: "en", Valid: true},
+			Language:       "en",
 			Referrer:       sql.NullString{String: "ref", Valid: true},
 			ReferrerName:   sql.NullString{String: "ref_name", Valid: true},
 			ReferrerIcon:   sql.NullString{String: "ref_icon", Valid: true},
-			OS:             sql.NullString{String: "os", Valid: true},
-			OSVersion:      sql.NullString{String: "10", Valid: true},
-			Browser:        sql.NullString{String: "browser", Valid: true},
-			BrowserVersion: sql.NullString{String: "89", Valid: true},
-			CountryCode:    sql.NullString{String: "en", Valid: true},
+			OS:             "os",
+			OSVersion:      "10",
+			Browser:        "browser",
+			BrowserVersion: "89",
+			CountryCode:    "en",
 			Desktop:        true,
 			Mobile:         false,
 			ScreenWidth:    1920,
 			ScreenHeight:   1080,
-			ScreenClass:    sql.NullString{String: "XL", Valid: true},
+			ScreenClass:    "XL",
 		},
 		{
 			Fingerprint: "fp",
@@ -50,12 +50,11 @@ func TestClient_SaveHit(t *testing.T) {
 
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
-	tenant := NewTenantID(1)
 	fp := "session_fp"
 	session := Today()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
-			TenantID:    tenant,
+			ClientID:    1,
 			Fingerprint: fp,
 			Time:        time.Now(),
 			Session:     sql.NullTime{Time: session, Valid: true},
@@ -63,7 +62,7 @@ func TestClient_Session(t *testing.T) {
 			Path:        "/path",
 		},
 	}))
-	s, err := dbClient.Session(tenant, fp, time.Now().Add(-time.Second))
+	s, err := dbClient.Session(1, fp, time.Now().Add(-time.Second))
 	assert.NoError(t, err)
 	assert.Equal(t, session, s)
 }

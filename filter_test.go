@@ -7,7 +7,7 @@ import (
 )
 
 func TestFilter_Validate(t *testing.T) {
-	filter := NewFilter(NullTenant)
+	filter := NewFilter(NullClient)
 	filter.validate()
 	assert.NotNil(t, filter)
 	assert.Zero(t, filter.From)
