@@ -33,8 +33,7 @@ func NewAnalyzer(store Store) *Analyzer {
 }
 
 // ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
-// Use time.Minute*5 for example to see the active visitors for the past 5 minutes.
-// The correct date/time is not included.
+// Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
