@@ -86,11 +86,27 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filterArgs, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT path,
 		count(DISTINCT fingerprint) visitors,
+		visitors / (
+			SELECT sum(s) FROM (
+				SELECT count(DISTINCT fingerprint) s
+				FROM hit
+				WHERE %s
+				GROUP BY path, fingerprint
+			)
+		) relative_visitors,
 		sum(sessions) sessions,
 		sum(views) views,
+		views / (
+			SELECT sum(s) FROM (
+				SELECT count(*) s
+				FROM hit
+				WHERE %s
+				GROUP BY path, fingerprint
+			)
+		) relative_views,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
@@ -104,7 +120,11 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 			GROUP BY path, fingerprint
 		)
 		GROUP BY path
-		ORDER BY visitors DESC, path ASC`, filterQuery)
+		ORDER BY visitors DESC, path ASC`, filterQuery, filterQuery, filterQuery)
+	args := make([]interface{}, 0, len(filterArgs)*3)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
 	return analyzer.store.Select(query, args...)
 }
 
