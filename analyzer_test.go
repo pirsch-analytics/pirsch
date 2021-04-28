@@ -96,21 +96,25 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.Len(t, asd, 1)
 }
 
-func TestAnalyzer_Pages(t *testing.T) {
+func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/foo"},
 		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar"},
 		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/foo"},
 		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp8", Time: Today(), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp9", Time: Today(), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -120,32 +124,46 @@ func TestAnalyzer_Pages(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path.String)
 	assert.Equal(t, "/bar", visitors[1].Path.String)
 	assert.Equal(t, "/foo", visitors[2].Path.String)
-	assert.Equal(t, 8, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[1].Visitors)
-	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.7272, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.1818, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.0909, visitors[2].RelativeVisitors, 0.01)
-	assert.Equal(t, 9, visitors[0].Sessions)
-	assert.Equal(t, 2, visitors[1].Sessions)
-	assert.Equal(t, 1, visitors[2].Sessions)
-	assert.Equal(t, 9, visitors[0].Views)
-	assert.Equal(t, 2, visitors[1].Views)
-	assert.Equal(t, 1, visitors[2].Views)
-	assert.InDelta(t, 0.75, visitors[0].RelativeViews, 0.01)
-	assert.InDelta(t, 0.1666, visitors[1].RelativeViews, 0.01)
-	assert.InDelta(t, 0.0833, visitors[2].RelativeViews, 0.01)
-	assert.Equal(t, 7, visitors[0].Bounces)
+	assert.Equal(t, 9, visitors[0].Visitors)
+	assert.Equal(t, 3, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.InDelta(t, 0.6428, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2142, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.01)
+	assert.Equal(t, 10, visitors[0].Sessions)
+	assert.Equal(t, 4, visitors[1].Sessions)
+	assert.Equal(t, 2, visitors[2].Sessions)
+	assert.Equal(t, 10, visitors[0].Views)
+	assert.Equal(t, 4, visitors[1].Views)
+	assert.Equal(t, 2, visitors[2].Views)
+	assert.InDelta(t, 0.625, visitors[0].RelativeViews, 0.01)
+	assert.InDelta(t, 0.25, visitors[1].RelativeViews, 0.01)
+	assert.InDelta(t, 0.125, visitors[2].RelativeViews, 0.01)
+	assert.Equal(t, 8, visitors[0].Bounces)
 	assert.Equal(t, 2, visitors[1].Bounces)
-	assert.Equal(t, 1, visitors[2].Bounces)
-	assert.InDelta(t, 0.875, visitors[0].BounceRate, 0.01)
-	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
+	assert.Equal(t, 2, visitors[2].Bounces)
+	assert.InDelta(t, 0.8888, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.6666, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	atop, err := analyzer.AvgTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Len(t, atop, 2)
+	assert.Equal(t, "/", atop[0].Path.String)
+	assert.Equal(t, "/bar", atop[1].Path.String)
+	assert.Equal(t, 390, atop[0].AverageTimeSpendSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpendSeconds)
 	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
-	assert.Len(t, visitors, 2)
+	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path.String)
 	assert.Equal(t, "/bar", visitors[1].Path.String)
+	atop, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, atop, 2)
+	assert.Equal(t, "/", atop[0].Path.String)
+	assert.Equal(t, "/bar", atop[1].Path.String)
+	assert.Equal(t, 600, atop[0].AverageTimeSpendSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpendSeconds)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {

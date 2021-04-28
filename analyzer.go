@@ -214,7 +214,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	return analyzer.store.Get(query, args...)
 }
 
-// ScreenClass returns the visitor count pgrouped byer screen class.
+// ScreenClass returns the visitor count grouped byer screen class.
 func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "screen_class")
 }
@@ -233,6 +233,35 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 		WHERE duration != 0
 		GROUP BY day
 		ORDER BY day`, filterQuery)
+	return analyzer.store.Select(query, args...)
+}
+
+// AvgTimeOnPage returns the average time on page grouped by path.
+func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
+	args, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT path, avg(next_time-time) average_time_spend_seconds
+		FROM (
+			SELECT fingerprint,
+			neighbor(fingerprint, 1, fingerprint) next_fingerprint,
+			time,
+			neighbor(time, 1, time) next_time,
+			session,
+			neighbor(session, 1, session) next_session,
+			path,
+			neighbor(path, 1, path) next_path
+			FROM (
+				SELECT fingerprint, time, session, path
+				FROM hit
+				WHERE %s
+				AND session IS NOT NULL
+				ORDER BY fingerprint, time
+			)
+		)
+		WHERE fingerprint = next_fingerprint
+		AND session = next_session
+		AND path != next_path
+		GROUP BY path
+		ORDER BY path`, filterQuery)
 	return analyzer.store.Select(query, args...)
 }
 

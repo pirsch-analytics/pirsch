@@ -8,32 +8,32 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ClientID       int64          `db:"client_id" json:"client_id,omitempty"`
-	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
-	Time           time.Time      `db:"time" json:"time"`
-	Session        sql.NullTime   `db:"session" json:"session,omitempty"`
-	UserAgent      string         `db:"user_agent" json:"user_agent"`
-	Path           string         `db:"path" json:"path"`
-	URL            string         `db:"url" json:"url"`
-	Language       string         `db:"language" json:"language,omitempty"`
-	CountryCode    string         `db:"country_code" json:"country_code,omitempty"`
-	Referrer       sql.NullString `db:"referrer" json:"referrer,omitempty"`
-	ReferrerName   sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
-	ReferrerIcon   sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
-	OS             string         `db:"os" json:"os,omitempty"`
-	OSVersion      string         `db:"os_version" json:"os_version,omitempty"`
-	Browser        string         `db:"browser" json:"browser,omitempty"`
-	BrowserVersion string         `db:"browser_version" json:"browser_version,omitempty"`
-	Desktop        bool           `db:"desktop" json:"desktop"`
-	Mobile         bool           `db:"mobile" json:"mobile"`
-	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
-	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
-	ScreenClass    string         `db:"screen_class" json:"screen_class,omitempty"`
-	UTMSource      sql.NullString `db:"utm_source" json:"utm_source,omitempty"`
-	UTMMedium      sql.NullString `db:"utm_medium" json:"utm_medium,omitempty"`
-	UTMCampaign    sql.NullString `db:"utm_campaign" json:"utm_campaign,omitempty"`
-	UTMContent     sql.NullString `db:"utm_content" json:"utm_content,omitempty"`
-	UTMTerm        sql.NullString `db:"utm_term" json:"utm_term,omitempty"`
+	ClientID       int64          `db:"client_id"`
+	Fingerprint    string         `db:"fingerprint"`
+	Time           time.Time      `db:"time"`
+	Session        sql.NullTime   `db:"session"`
+	UserAgent      string         `db:"user_agent"`
+	Path           string         `db:"path"`
+	URL            string         `db:"url"`
+	Language       string         `db:"language"`
+	CountryCode    string         `db:"country_code"`
+	Referrer       sql.NullString `db:"referrer"`
+	ReferrerName   sql.NullString `db:"referrer_name"`
+	ReferrerIcon   sql.NullString `db:"referrer_icon"`
+	OS             string         `db:"os"`
+	OSVersion      string         `db:"os_version"`
+	Browser        string         `db:"browser"`
+	BrowserVersion string         `db:"browser_version"`
+	Desktop        bool           `db:"desktop"`
+	Mobile         bool           `db:"mobile"`
+	ScreenWidth    int            `db:"screen_width"`
+	ScreenHeight   int            `db:"screen_height"`
+	ScreenClass    string         `db:"screen_class"`
+	UTMSource      sql.NullString `db:"utm_source"`
+	UTMMedium      sql.NullString `db:"utm_medium"`
+	UTMCampaign    sql.NullString `db:"utm_campaign"`
+	UTMContent     sql.NullString `db:"utm_content"`
+	UTMTerm        sql.NullString `db:"utm_term"`
 }
 
 // String implements the Stringer interface.
