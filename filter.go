@@ -75,7 +75,7 @@ func (filter *Filter) toUTCDate(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (filter *Filter) query() ([]interface{}, string) {
+func (filter *Filter) queryTime() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
 	var sqlQuery strings.Builder
@@ -101,22 +101,41 @@ func (filter *Filter) query() ([]interface{}, string) {
 		sqlQuery.WriteString("AND time >= ? ")
 	}
 
+	return args, sqlQuery.String()
+}
+
+func (filter *Filter) queryFields() ([]interface{}, string) {
+	args := make([]interface{}, 0, 3)
+	fields := make([]string, 0, 3)
+
 	if filter.Path != "" {
 		args = append(args, filter.Path)
-		sqlQuery.WriteString("AND path = ? ")
+		fields = append(fields, "path = ? ")
 	}
 
 	if filter.Desktop.Valid {
 		args = append(args, filter.boolean(filter.Desktop.Bool))
-		sqlQuery.WriteString("AND desktop = ? ")
+		fields = append(fields, "desktop = ? ")
 	}
 
 	if filter.Mobile.Valid {
 		args = append(args, filter.boolean(filter.Mobile.Bool))
-		sqlQuery.WriteString("AND mobile = ? ")
+		fields = append(fields, "mobile = ? ")
 	}
 
-	return args, sqlQuery.String()
+	return args, strings.Join(fields, "AND ")
+}
+
+func (filter *Filter) query() ([]interface{}, string) {
+	args, query := filter.queryTime()
+	fieldArgs, queryFields := filter.queryFields()
+	args = append(args, fieldArgs...)
+
+	if len(fieldArgs) > 0 {
+		query += "AND " + queryFields
+	}
+
+	return args, query
 }
 
 func (filter *Filter) boolean(b bool) int8 {

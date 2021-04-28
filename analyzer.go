@@ -238,7 +238,14 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 
 // AvgTimeOnPage returns the average time on page grouped by path.
 func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery := filter.queryFields()
+
+	if len(fieldArgs) > 0 {
+		fieldQuery = "AND " + fieldQuery
+	}
+
 	query := fmt.Sprintf(`SELECT path, avg(next_time-time) average_time_spend_seconds
 		FROM (
 			SELECT fingerprint,
@@ -260,9 +267,11 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		WHERE fingerprint = next_fingerprint
 		AND session = next_session
 		AND path != next_path
+		%s
 		GROUP BY path
-		ORDER BY path`, filterQuery)
-	return analyzer.store.Select(query, args...)
+		ORDER BY path`, timeQuery, fieldQuery)
+	timeArgs = append(timeArgs, fieldArgs...)
+	return analyzer.store.Select(query, timeArgs...)
 }
 
 func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stats, error) {
