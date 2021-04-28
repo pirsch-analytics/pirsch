@@ -219,6 +219,23 @@ func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "screen_class")
 }
 
+// AvgSessionDuration returns the average session duration grouped by day.
+func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
+	args, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT day, avg(duration) average_time_spend_seconds
+			FROM (
+				SELECT toDate(time) day, max(time)-min(time) duration
+				FROM hit
+				WHERE %s
+				AND session IS NOT NULL
+				GROUP BY day, fingerprint, session
+			)
+		WHERE duration != 0
+		GROUP BY day
+		ORDER BY day`, filterQuery)
+	return analyzer.store.Select(query, args...)
+}
+
 func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stats, error) {
 	args, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr)
