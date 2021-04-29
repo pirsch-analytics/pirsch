@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestHitFromRequest(t *testing.T) {
@@ -24,7 +25,9 @@ func TestHitFromRequest(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit}))
 
 	if hit.Time.IsZero() ||
-		!hit.Session.Valid || hit.Session.Time.IsZero() ||
+		!hit.Session.Valid ||
+		hit.Session.Time.IsZero() ||
+		hit.PreviousTimeOnPageSeconds != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
@@ -58,12 +61,16 @@ func TestHitFromRequestSession(t *testing.T) {
 	})
 	assert.Equal(t, int64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
+	hit1.Path = "/different/path" // to count as page switch for time on page
+	hit1.Time = time.Now().UTC().Add(-time.Second * 5)
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit1}))
+	time.Sleep(time.Millisecond * 20)
 	hit2 := FromRequest(req, "salt", &Options{
 		Client: dbClient,
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)
+	assert.Equal(t, 5, hit2.PreviousTimeOnPageSeconds)
 	assert.Equal(t, hit1.Session.Time.Unix(), hit2.Session.Time.Unix())
 }
 

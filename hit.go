@@ -26,7 +26,7 @@ type Options struct {
 	// Client is the database client required to look up sessions.
 	Client Store
 
-	// ClientID is optionally saved with a hit to split the data between multiple tenants.
+	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID int64
 
 	// SessionMaxAge defines the maximum time a session stays active.
@@ -105,10 +105,15 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 		countryCode = options.geoDB.CountryCode(getIP(r))
 	}
 
-	session := time.Now().UTC()
+	lastHitSeconds := 0
+	session := now
 
 	if options.Client != nil {
-		s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+		p, t, s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+
+		if !t.IsZero() && p != path {
+			lastHitSeconds = int(now.Sub(t).Seconds())
+		}
 
 		if !s.IsZero() {
 			session = s
@@ -125,32 +130,33 @@ func FromRequest(r *http.Request, salt string, options *Options) Hit {
 	}
 
 	return Hit{
-		ClientID:       options.ClientID,
-		Fingerprint:    fingerprint,
-		Time:           now,
-		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
-		UserAgent:      userAgent,
-		Path:           path,
-		URL:            requestURL,
-		Language:       lang,
-		CountryCode:    countryCode,
-		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
-		ReferrerName:   sql.NullString{String: referrerName, Valid: referrerName != ""},
-		ReferrerIcon:   sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
-		OS:             uaInfo.OS,
-		OSVersion:      uaInfo.OSVersion,
-		Browser:        uaInfo.Browser,
-		BrowserVersion: uaInfo.BrowserVersion,
-		Desktop:        uaInfo.IsDesktop(),
-		Mobile:         uaInfo.IsMobile(),
-		ScreenWidth:    options.ScreenWidth,
-		ScreenHeight:   options.ScreenHeight,
-		ScreenClass:    screen,
-		UTMSource:      sql.NullString{String: utm.source, Valid: utm.source != ""},
-		UTMMedium:      sql.NullString{String: utm.medium, Valid: utm.medium != ""},
-		UTMCampaign:    sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
-		UTMContent:     sql.NullString{String: utm.content, Valid: utm.content != ""},
-		UTMTerm:        sql.NullString{String: utm.term, Valid: utm.term != ""},
+		ClientID:                  options.ClientID,
+		Fingerprint:               fingerprint,
+		Time:                      now,
+		Session:                   sql.NullTime{Time: session, Valid: !session.IsZero()},
+		PreviousTimeOnPageSeconds: lastHitSeconds,
+		UserAgent:                 userAgent,
+		Path:                      path,
+		URL:                       requestURL,
+		Language:                  lang,
+		CountryCode:               countryCode,
+		Referrer:                  sql.NullString{String: referrer, Valid: referrer != ""},
+		ReferrerName:              sql.NullString{String: referrerName, Valid: referrerName != ""},
+		ReferrerIcon:              sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
+		OS:                        uaInfo.OS,
+		OSVersion:                 uaInfo.OSVersion,
+		Browser:                   uaInfo.Browser,
+		BrowserVersion:            uaInfo.BrowserVersion,
+		Desktop:                   uaInfo.IsDesktop(),
+		Mobile:                    uaInfo.IsMobile(),
+		ScreenWidth:               options.ScreenWidth,
+		ScreenHeight:              options.ScreenHeight,
+		ScreenClass:               screen,
+		UTMSource:                 sql.NullString{String: utm.source, Valid: utm.source != ""},
+		UTMMedium:                 sql.NullString{String: utm.medium, Valid: utm.medium != ""},
+		UTMCampaign:               sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
+		UTMContent:                sql.NullString{String: utm.content, Valid: utm.content != ""},
+		UTMTerm:                   sql.NullString{String: utm.term, Valid: utm.term != ""},
 	}
 }
 

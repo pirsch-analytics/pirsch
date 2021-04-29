@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// NullClient is a placeholder for no tenant (0).
+// NullClient is a placeholder for no client (0).
 var NullClient = int64(0)
 
 // Filter are all fields that can be used to filter the result sets.

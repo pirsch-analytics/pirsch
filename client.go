@@ -94,26 +94,20 @@ func (client *Client) SaveHits(hits []Hit) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (time.Time, error) {
-	args := make([]interface{}, 0, 3)
+func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (string, time.Time, time.Time, error) {
+	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? LIMIT 1`
+	data := struct {
+		Path    string
+		Time    time.Time
+		Session time.Time
+	}{}
 
-	if clientID != 0 {
-		args = append(args, clientID)
-	}
-
-	args = append(args, fingerprint)
-	args = append(args, maxAge)
-	query := `SELECT "session" FROM "hit" WHERE ` +
-		client.tenant(clientID) +
-		`AND fingerprint = ? AND "time" > ? LIMIT 1`
-	var session time.Time
-
-	if err := client.DB.Get(&session, query, args...); err != nil && err != sql.ErrNoRows {
+	if err := client.DB.Get(&data, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error reading session timestamp: %s", err)
-		return session, err
+		return "", time.Time{}, time.Time{}, err
 	}
 
-	return session, nil
+	return data.Path, data.Time, data.Session, nil
 }
 
 // Count implements the Store interface.
@@ -150,14 +144,6 @@ func (client *Client) Select(query string, args ...interface{}) ([]Stats, error)
 	}
 
 	return stats, nil
-}
-
-func (client *Client) tenant(clientID int64) string {
-	if clientID != 0 {
-		return "client_id = ? "
-	}
-
-	return "client_id IS NULL "
 }
 
 func (client *Client) boolean(b bool) int8 {

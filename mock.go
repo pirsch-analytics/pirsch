@@ -27,8 +27,8 @@ func (client *MockClient) SaveHits(hits []Hit) error {
 }
 
 // Session implements the Store interface.
-func (client *MockClient) Session(clientID int64, fingerprint string, maxAge time.Time) (time.Time, error) {
-	return time.Now(), nil
+func (client *MockClient) Session(clientID int64, fingerprint string, maxAge time.Time) (string, time.Time, time.Time, error) {
+	return "", time.Now(), time.Now(), nil
 }
 
 // Count implements the Store interface.

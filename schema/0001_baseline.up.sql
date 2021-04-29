@@ -3,6 +3,7 @@ CREATE TABLE "hit" (
     fingerprint FixedString(32),
     time DateTime('UTC'),
     session DateTime('UTC') NULL,
+    previous_time_on_page_seconds UInt32 DEFAULT 0,
     user_agent String,
     path String,
     url String,

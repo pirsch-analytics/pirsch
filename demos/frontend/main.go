@@ -19,7 +19,7 @@ func main() {
 
 	// Create an endpoint to handle client tracking requests.
 	// HitOptionsFromRequest is a utility function to process the required parameters.
-	// You might want to additional checks, like for the tenant ID.
+	// You might want to additional checks, like for the client ID.
 	http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// We don't need to call Hit in a new goroutine, as this is the only call in the handler
 		// (running in its own goroutine already).

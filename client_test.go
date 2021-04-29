@@ -51,18 +51,20 @@ func TestClient_SaveHit(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	fp := "session_fp"
-	session := Today()
+	now := time.Now().UTC()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
 			ClientID:    1,
 			Fingerprint: fp,
-			Time:        time.Now(),
-			Session:     sql.NullTime{Time: session, Valid: true},
+			Time:        now,
+			Session:     sql.NullTime{Time: now, Valid: true},
 			UserAgent:   "ua",
 			Path:        "/path",
 		},
 	}))
-	s, err := dbClient.Session(1, fp, time.Now().Add(-time.Second))
+	path, lastHit, session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Second))
 	assert.NoError(t, err)
-	assert.Equal(t, session, s)
+	assert.Equal(t, "/path", path)
+	assert.Equal(t, now.Unix(), lastHit.Unix())
+	assert.Equal(t, now.Unix(), session.Unix())
 }
