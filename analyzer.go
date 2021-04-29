@@ -246,30 +246,20 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	query := fmt.Sprintf(`SELECT path, avg(next_time-time) average_time_spend_seconds
+	query := fmt.Sprintf(`SELECT "path", avg(time_on_page) average_time_spend_seconds
 		FROM (
-			SELECT fingerprint,
-			neighbor(fingerprint, 1, fingerprint) next_fingerprint,
-			time,
-			neighbor(time, 1, time) next_time,
-			session,
-			neighbor(session, 1, session) next_session,
-			path,
-			neighbor(path, 1, path) next_path
+			SELECT "path", neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
 			FROM (
-				SELECT fingerprint, time, session, path
+				SELECT *
 				FROM hit
 				WHERE %s
-				AND session IS NOT NULL
 				ORDER BY fingerprint, time
 			)
+			WHERE time_on_page > 0
+			%s
 		)
-		WHERE fingerprint = next_fingerprint
-		AND session = next_session
-		AND path != next_path
-		%s
-		GROUP BY path
-		ORDER BY path`, timeQuery, fieldQuery)
+		GROUP BY "path"
+		ORDER BY "path"`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	return analyzer.store.Select(query, timeArgs...)
 }

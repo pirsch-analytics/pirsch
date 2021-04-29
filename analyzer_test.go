@@ -100,7 +100,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: sql.NullTime{Time: pastDay(4), Valid: true}, PreviousTimeOnPageSeconds: 180, Path: "/foo"},
 		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar"},
@@ -109,9 +109,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
 		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
 		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/bar"},
 		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/foo"},
 		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp9", Time: Today(), Path: "/"},

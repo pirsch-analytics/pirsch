@@ -46,9 +46,9 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, user_agent,
-		path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
+		user_agent, path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -59,6 +59,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 			hit.Fingerprint,
 			hit.Time,
 			hit.Session,
+			hit.PreviousTimeOnPageSeconds,
 			hit.UserAgent,
 			hit.Path,
 			hit.URL,

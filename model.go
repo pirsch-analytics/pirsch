@@ -45,19 +45,19 @@ func (hit Hit) String() string {
 
 // Stats is the base entity for all statistics.
 type Stats struct {
-	Day                     time.Time      `db:"day" json:"day,omitempty"`
-	Path                    sql.NullString `db:"path" json:"path,omitempty"`
-	Referrer                sql.NullString `db:"referrer" json:"referrer,omitempty"`
+	Day                     time.Time      `json:"day,omitempty"`
+	Path                    sql.NullString `json:"path,omitempty"`
+	Referrer                sql.NullString `json:"referrer,omitempty"`
 	ReferrerName            sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
 	ReferrerIcon            sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
-	Language                sql.NullString `db:"language" json:"language,omitempty"`
+	Language                sql.NullString `json:"language,omitempty"`
 	CountryCode             sql.NullString `db:"country_code" json:"country_code,omitempty"`
-	Browser                 sql.NullString `db:"browser" json:"browser,omitempty"`
-	OS                      sql.NullString `db:"os" json:"os,omitempty"`
-	Views                   int            `db:"views" json:"views,omitempty"`
-	Visitors                int            `db:"visitors" json:"visitors,omitempty"`
-	Sessions                int            `db:"sessions" json:"sessions,omitempty"`
-	Bounces                 int            `db:"bounces" json:"bounces,omitempty"`
+	Browser                 sql.NullString `json:"browser,omitempty"`
+	OS                      sql.NullString `json:"os,omitempty"`
+	Views                   int            `json:"views,omitempty"`
+	Visitors                int            `json:"visitors,omitempty"`
+	Sessions                int            `json:"sessions,omitempty"`
+	Bounces                 int            `json:"bounces,omitempty"`
 	RelativeViews           float64        `db:"relative_views" json:"relative_views,omitempty"`
 	RelativeVisitors        float64        `db:"relative_visitors" json:"relative_visitors,omitempty"`
 	BounceRate              float64        `db:"bounce_rate" json:"bounce_rate,omitempty"`
