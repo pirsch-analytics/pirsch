@@ -84,8 +84,8 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.Len(t, asd, 2)
 	assert.Equal(t, pastDay(4), asd[0].Day)
 	assert.Equal(t, pastDay(2), asd[1].Day)
-	assert.Equal(t, 300, asd[0].AverageTimeSpendSeconds)
-	assert.Equal(t, 450, asd[1].AverageTimeSpendSeconds)
+	assert.Equal(t, 300, asd[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 450, asd[1].AverageTimeSpentSeconds)
 	visitors, err = analyzer.Visitors(&Filter{From: pastDay(4), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 2)
@@ -94,6 +94,47 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	asd, err = analyzer.AvgSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, asd, 1)
+}
+
+func TestAnalyzer_Growth(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp4", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(3).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp7", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp9", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp10", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp11", Time: Today(), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Growth(nil)
+	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
+	assert.Nil(t, growth)
+	growth, err = analyzer.Growth(&Filter{Day: pastDay(2)})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.BouncesGrowth, 0.001)
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2)})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1.75, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.BouncesGrowth, 0.001)
 }
 
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
@@ -150,8 +191,8 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Len(t, atop, 2)
 	assert.Equal(t, "/", atop[0].Path.String)
 	assert.Equal(t, "/bar", atop[1].Path.String)
-	assert.Equal(t, 390, atop[0].AverageTimeSpendSeconds)
-	assert.Equal(t, 600, atop[1].AverageTimeSpendSeconds)
+	assert.Equal(t, 390, atop[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
 	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -162,8 +203,8 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Len(t, atop, 2)
 	assert.Equal(t, "/", atop[0].Path.String)
 	assert.Equal(t, "/bar", atop[1].Path.String)
-	assert.Equal(t, 600, atop[0].AverageTimeSpendSeconds)
-	assert.Equal(t, 600, atop[1].AverageTimeSpendSeconds)
+	assert.Equal(t, 600, atop[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -355,4 +396,18 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+}
+
+func TestAnalyzer_CalculateGrowth(t *testing.T) {
+	analyzer := NewAnalyzer(dbClient)
+	growth := analyzer.calculateGrowth(0, 0)
+	assert.InDelta(t, 0, growth, 0.001)
+	growth = analyzer.calculateGrowth(1000, 0)
+	assert.InDelta(t, 1, growth, 0.001)
+	growth = analyzer.calculateGrowth(0, 1000)
+	assert.InDelta(t, -1, growth, 0.001)
+	growth = analyzer.calculateGrowth(100, 50)
+	assert.InDelta(t, 1, growth, 0.001)
+	growth = analyzer.calculateGrowth(50, 100)
+	assert.InDelta(t, -0.5, growth, 0.001)
 }

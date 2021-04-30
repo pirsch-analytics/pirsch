@@ -43,7 +43,7 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
-// Stats is the base entity for all statistics.
+// Stats combines statistical data.
 type Stats struct {
 	Day                     time.Time      `json:"day,omitempty"`
 	Path                    sql.NullString `json:"path,omitempty"`
@@ -70,5 +70,14 @@ type Stats struct {
 	RelativePlatformDesktop float64        `db:"relative_platform_desktop" json:"relative_platform_desktop,omitempty"`
 	RelativePlatformMobile  float64        `db:"relative_platform_mobile" json:"relative_platform_mobile,omitempty"`
 	RelativePlatformUnknown float64        `db:"relative_platform_unknown" json:"relative_platform_unknown,omitempty"`
-	AverageTimeSpendSeconds int            `db:"average_time_spend_seconds" json:"average_time_spend_seconds,omitempty"`
+	AverageTimeSpentSeconds int            `db:"average_time_spent_seconds" json:"average_time_spent_seconds,omitempty"`
+}
+
+// Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
+type Growth struct {
+	VisitorsGrowth  float64 `json:"visitors_growth"`
+	ViewsGrowth     float64 `json:"views_growth"`
+	SessionsGrowth  float64 `json:"sessions_growth"`
+	BouncesGrowth   float64 `json:"bounces_growth"`
+	TimeSpentGrowth float64 `json:"time_spent_growth"`
 }

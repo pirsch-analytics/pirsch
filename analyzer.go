@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -18,6 +19,10 @@ const (
 		WHERE %s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC`
+)
+
+var (
+	ErrNoPeriodOrDay = errors.New("no period or day specified")
 )
 
 // Analyzer provides an interface to analyze statistics.
@@ -63,14 +68,14 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 	args, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT day,
-		count(DISTINCT fingerprint) visitors,
+		sum(visitors) visitors,
 		sum(sessions) sessions,
 		sum(views) views,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
 			SELECT toDate(time) day,
-			fingerprint,
+			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
@@ -81,6 +86,63 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 		GROUP BY day
 		ORDER BY day ASC, visitors DESC`, filterQuery)
 	return analyzer.store.Select(query, args...)
+}
+
+// Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
+// The growth rate is relative to the previous time range or day.
+// The period or day for the filter must be set, else an error is returned.
+func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.Day.IsZero() && (filter.From.IsZero() || filter.To.IsZero()) {
+		return nil, ErrNoPeriodOrDay
+	}
+
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
+		sum(sessions) sessions,
+		sum(views) views,
+		countIf(bounce = 1) bounces
+		FROM (
+			SELECT count(DISTINCT fingerprint) visitors,
+			count(DISTINCT(fingerprint, session)) sessions,
+			count(*) views,
+			length(groupArray(path)) = 1 bounce
+			FROM hit
+			WHERE %s
+			GROUP BY toDate(time), fingerprint
+		)`, filterQuery)
+	current, err := analyzer.store.Get(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO currentTimeSpent
+
+	if filter.Day.IsZero() {
+		days := filter.To.Sub(filter.From)
+		filter.To = filter.From.Add(-time.Hour * 24)
+		filter.From = filter.To.Add(-days)
+	} else {
+		filter.Day = filter.Day.Add(-time.Hour * 24)
+	}
+
+	args, _ = filter.query()
+	previous, err := analyzer.store.Get(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO currentTimeSpent
+
+	return &Growth{
+		VisitorsGrowth: analyzer.calculateGrowth(current.Visitors, previous.Visitors),
+		ViewsGrowth:    analyzer.calculateGrowth(current.Views, previous.Views),
+		SessionsGrowth: analyzer.calculateGrowth(current.Sessions, previous.Sessions),
+		BouncesGrowth:  analyzer.calculateGrowth(current.Bounces, previous.Bounces),
+	}, nil
 }
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
@@ -222,7 +284,7 @@ func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 	args, filterQuery := analyzer.getFilter(filter).query()
-	query := fmt.Sprintf(`SELECT day, avg(duration) average_time_spend_seconds
+	query := fmt.Sprintf(`SELECT day, avg(duration) average_time_spent_seconds
 			FROM (
 				SELECT toDate(time) day, max(time)-min(time) duration
 				FROM hit
@@ -246,7 +308,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	query := fmt.Sprintf(`SELECT "path", avg(time_on_page) average_time_spend_seconds
+	query := fmt.Sprintf(`SELECT "path", avg(time_on_page) average_time_spent_seconds
 		FROM (
 			SELECT "path", neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
 			FROM (
@@ -262,6 +324,18 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		ORDER BY "path"`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	return analyzer.store.Select(query, timeArgs...)
+}
+
+func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := float64(current)
+	p := float64(previous)
+	return (c - p) / p
 }
 
 func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stats, error) {
