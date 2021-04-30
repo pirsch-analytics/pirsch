@@ -86,6 +86,9 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.Equal(t, pastDay(2), asd[1].Day)
 	assert.Equal(t, 300, asd[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 450, asd[1].AverageTimeSpentSeconds)
+	tsd, err := analyzer.TotalSessionDuration(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1200, tsd)
 	visitors, err = analyzer.Visitors(&Filter{From: pastDay(4), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 2)
@@ -94,24 +97,27 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	asd, err = analyzer.AvgSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, asd, 1)
+	tsd, err = analyzer.TotalSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Equal(t, 900, tsd)
 }
 
 func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 900},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp4", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/foo", PreviousTimeOnPageSeconds: 300},
 		{Fingerprint: "fp4", Time: pastDay(3), Path: "/"},
 		{Fingerprint: "fp5", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
 		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(3).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
 		{Fingerprint: "fp6", Time: pastDay(3), Path: "/"},
 		{Fingerprint: "fp7", Time: pastDay(3), Path: "/"},
 		{Fingerprint: "fp8", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 300},
 		{Fingerprint: "fp9", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp10", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp11", Time: Today(), Path: "/"},
@@ -128,6 +134,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -135,6 +142,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, 1.75, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 1, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
 }
 
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
@@ -193,6 +201,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/bar", atop[1].Path.String)
 	assert.Equal(t, 390, atop[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
+	ttop, err := analyzer.TotalTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1380, ttop)
 	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -205,6 +216,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/bar", atop[1].Path.String)
 	assert.Equal(t, 600, atop[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
+	ttop, err = analyzer.TotalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Equal(t, 1200, ttop)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
