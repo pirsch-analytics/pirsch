@@ -166,6 +166,17 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}, nil
 }
 
+// VisitorHours returns the visitor count grouped by time of day.
+func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]Stats, error) {
+	args, filterQuery := analyzer.getFilter(filter).query()
+	query := fmt.Sprintf(`SELECT toHour(time) hour, count(DISTINCT fingerprint) visitors
+		FROM hit
+		WHERE %s
+		GROUP BY hour
+		ORDER BY hour`, filterQuery)
+	return analyzer.store.Select(query, args...)
+}
+
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()

@@ -46,6 +46,7 @@ func (hit Hit) String() string {
 // Stats combines statistical data.
 type Stats struct {
 	Day                     time.Time      `json:"day,omitempty"`
+	Hour                    int            `json:"hour,omitempty"`
 	Path                    sql.NullString `json:"path,omitempty"`
 	Referrer                sql.NullString `json:"referrer,omitempty"`
 	ReferrerName            sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`

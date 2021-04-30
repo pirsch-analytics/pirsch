@@ -145,6 +145,53 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
 }
 
+func TestAnalyzer_VisitorHours(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
+		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 3), Path: "/"},
+		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp7", Time: Today().Add(time.Hour * 10), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.VisitorHours(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 6)
+	assert.Equal(t, 0, visitors[0].Hour)
+	assert.Equal(t, 3, visitors[1].Hour)
+	assert.Equal(t, 4, visitors[2].Hour)
+	assert.Equal(t, 5, visitors[3].Hour)
+	assert.Equal(t, 8, visitors[4].Hour)
+	assert.Equal(t, 10, visitors[5].Hour)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 3, visitors[3].Visitors)
+	assert.Equal(t, 2, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	visitors, err = analyzer.VisitorHours(&Filter{From: pastDay(1), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 3, visitors[0].Hour)
+	assert.Equal(t, 4, visitors[1].Hour)
+	assert.Equal(t, 5, visitors[2].Hour)
+	assert.Equal(t, 8, visitors[3].Hour)
+	assert.Equal(t, 10, visitors[4].Hour)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+}
+
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
