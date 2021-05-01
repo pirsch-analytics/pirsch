@@ -66,6 +66,20 @@ func TestFilter_QueryFields(t *testing.T) {
 	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND desktop = 1 AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? ", query)
 }
 
+func TestFilter_WithFill(t *testing.T) {
+	filter := NewFilter(NullClient)
+	args, query := filter.withFill()
+	assert.Len(t, args, 0)
+	assert.Empty(t, query)
+	filter.From = pastDay(10)
+	filter.To = pastDay(5)
+	args, query = filter.withFill()
+	assert.Len(t, args, 2)
+	assert.Equal(t, filter.From, args[0])
+	assert.Equal(t, filter.To, args[1])
+	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 ", query)
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)

@@ -233,6 +233,14 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	return args, strings.Join(fields, "AND ")
 }
 
+func (filter *Filter) withFill() ([]interface{}, string) {
+	if !filter.From.IsZero() && !filter.To.IsZero() {
+		return []interface{}{filter.From, filter.To}, "WITH FILL FROM toDate(?) TO toDate(?)+1 "
+	}
+
+	return nil, ""
+}
+
 func (filter *Filter) query() ([]interface{}, string) {
 	args, query := filter.queryTime()
 	fieldArgs, queryFields := filter.queryFields()

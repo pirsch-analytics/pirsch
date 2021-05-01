@@ -66,7 +66,10 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 // Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	withFillArgs, withFillQuery := filter.withFill()
+	args = append(args, withFillArgs...)
 	query := fmt.Sprintf(`SELECT day,
 		sum(visitors) visitors,
 		sum(sessions) sessions,
@@ -84,7 +87,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 			GROUP BY toDate(time), fingerprint
 		)
 		GROUP BY day
-		ORDER BY day ASC, visitors DESC`, filterQuery)
+		ORDER BY day ASC %s, visitors DESC`, filterQuery, withFillQuery)
 	return analyzer.store.Select(query, args...)
 }
 
@@ -173,7 +176,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]Stats, error) {
 		FROM hit
 		WHERE %s
 		GROUP BY hour
-		ORDER BY hour`, filterQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery)
 	return analyzer.store.Select(query, args...)
 }
 
@@ -315,7 +318,10 @@ func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	withFillArgs, withFillQuery := filter.withFill()
+	args = append(args, withFillArgs...)
 	query := fmt.Sprintf(`SELECT day, avg(duration) average_time_spent_seconds
 			FROM (
 				SELECT toDate(time) day, max(time)-min(time) duration
@@ -326,7 +332,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 			)
 		WHERE duration != 0
 		GROUP BY day
-		ORDER BY day`, filterQuery)
+		ORDER BY day %s`, filterQuery, withFillQuery)
 	return analyzer.store.Select(query, args...)
 }
 
