@@ -35,13 +35,13 @@ type TrackerConfig struct {
 	// If you leave it 0, the default timeout is used, else it is limted to 60 seconds.
 	WorkerTimeout time.Duration
 
-	// ReferrerDomainBlacklist see Options.ReferrerDomainBlacklist.
+	// ReferrerDomainBlacklist see HitOptions.ReferrerDomainBlacklist.
 	ReferrerDomainBlacklist []string
 
-	// ReferrerDomainBlacklistIncludesSubdomains see Options.ReferrerDomainBlacklistIncludesSubdomains.
+	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
-	// SessionMaxAge see Options.SessionMaxAge.
+	// SessionMaxAge see HitOptions.SessionMaxAge.
 	SessionMaxAge time.Duration
 
 	// GeoDB enables/disabled mapping IPs to country codes.
@@ -120,16 +120,16 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 }
 
 // Hit stores the given request.
-// The request might be ignored if it meets certain conditions. The Options, if passed, will overwrite the Tracker configuration.
+// The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // It's save (and recommended!) to call this function in its own goroutine.
-func (tracker *Tracker) Hit(r *http.Request, options *Options) {
+func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	if atomic.LoadInt32(&tracker.stopped) > 0 {
 		return
 	}
 
-	if !Ignore(r) {
+	if !IgnoreHit(r) {
 		if options == nil {
-			options = &Options{
+			options = &HitOptions{
 				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 			}

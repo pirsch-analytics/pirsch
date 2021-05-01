@@ -156,20 +156,20 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")
 	req.RemoteAddr = "81.2.69.142"
-	tracker.Hit(req, &Options{
+	tracker.Hit(req, &HitOptions{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
 		Referrer:                "https://pirsch.io/",
 	})
-	tracker.Hit(req, &Options{
+	tracker.Hit(req, &HitOptions{
 		ReferrerDomainBlacklist:                   []string{"pirsch.io"},
 		ReferrerDomainBlacklistIncludesSubdomains: true,
 		Referrer: "https://www.pirsch.io/",
 	})
-	tracker.Hit(req, &Options{
+	tracker.Hit(req, &HitOptions{
 		ReferrerDomainBlacklist: []string{"pirsch.io", "www.pirsch.io"},
 		Referrer:                "https://www.pirsch.io/",
 	})
-	tracker.Hit(req, &Options{
+	tracker.Hit(req, &HitOptions{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
 		Referrer:                "pirsch.io",
 	})
