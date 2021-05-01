@@ -1,9 +1,19 @@
 package pirsch
 
 import (
-	"database/sql"
 	"strings"
 	"time"
+)
+
+const (
+	// PlatformDesktop filters for everything on desktops.
+	PlatformDesktop = "desktop"
+
+	// PlatformMobile filters for everything on mobile devices.
+	PlatformMobile = "mobile"
+
+	// PlatformUnknown filters for everything where the platform is unspecified.
+	PlatformUnknown = "unknown"
 )
 
 // NullClient is a placeholder for no client (0).
@@ -29,11 +39,47 @@ type Filter struct {
 	// Path filters for the path.
 	Path string
 
-	// Desktop filters the platform.
-	Desktop sql.NullBool
+	// Language filters for the ISO language code.
+	Language string
 
-	// Mobile filters the platform.
-	Mobile sql.NullBool
+	// Country filters for the ISO country code.
+	Country string
+
+	// Referrer filters for the referrer.
+	Referrer string
+
+	// OS filters for the operating system.
+	OS string
+
+	// OSVersion filters for the operating system version.
+	OSVersion string
+
+	// Browser filters for the browser.
+	Browser string
+
+	// BrowserVersion filters for the browser version.
+	BrowserVersion string
+
+	// Platform filters for the platform (desktop, mobile, unknown).
+	Platform string
+
+	// ScreenClass filters for the screen class.
+	ScreenClass string
+
+	// UTMSource filters for the utm_source query parameter.
+	UTMSource string
+
+	// UTMMedium filters for the utm_medium query parameter.
+	UTMMedium string
+
+	// UTMCampaign filters for the utm_campaign query parameter.
+	UTMCampaign string
+
+	// UTMContent filters for the utm_content query parameter.
+	UTMContent string
+
+	// UTMTerm filters for the utm_term query parameter.
+	UTMTerm string
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -71,10 +117,6 @@ func (filter *Filter) validate() {
 	}
 }
 
-func (filter *Filter) toUTCDate(date time.Time) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-}
-
 func (filter *Filter) queryTime() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
@@ -105,22 +147,89 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 3)
-	fields := make([]string, 0, 3)
+	args := make([]interface{}, 0, 15)
+	fields := make([]string, 0, 15)
 
 	if filter.Path != "" {
 		args = append(args, filter.Path)
 		fields = append(fields, "path = ? ")
 	}
 
-	if filter.Desktop.Valid {
-		args = append(args, filter.boolean(filter.Desktop.Bool))
-		fields = append(fields, "desktop = ? ")
+	if filter.Language != "" {
+		args = append(args, filter.Language)
+		fields = append(fields, "language = ? ")
 	}
 
-	if filter.Mobile.Valid {
-		args = append(args, filter.boolean(filter.Mobile.Bool))
-		fields = append(fields, "mobile = ? ")
+	if filter.Country != "" {
+		args = append(args, filter.Country)
+		fields = append(fields, "country_code = ? ")
+	}
+
+	if filter.Referrer != "" {
+		args = append(args, filter.Referrer)
+		fields = append(fields, "referrer = ? ")
+	}
+
+	if filter.OS != "" {
+		args = append(args, filter.OS)
+		fields = append(fields, "os = ? ")
+	}
+
+	if filter.OSVersion != "" {
+		args = append(args, filter.OSVersion)
+		fields = append(fields, "os_version = ? ")
+	}
+
+	if filter.Browser != "" {
+		args = append(args, filter.Browser)
+		fields = append(fields, "browser = ? ")
+	}
+
+	if filter.BrowserVersion != "" {
+		args = append(args, filter.BrowserVersion)
+		fields = append(fields, "browser_version = ? ")
+	}
+
+	if filter.Platform != "" {
+		args = append(args, filter.Platform)
+
+		if filter.Platform == PlatformDesktop {
+			fields = append(fields, "desktop IS TRUE ")
+		} else if filter.Platform == PlatformMobile {
+			fields = append(fields, "mobile IS TRUE ")
+		} else {
+			fields = append(fields, "desktop IS FALSE AND mobile IS FALSE ")
+		}
+	}
+
+	if filter.ScreenClass != "" {
+		args = append(args, filter.ScreenClass)
+		fields = append(fields, "screen_class = ? ")
+	}
+
+	if filter.UTMSource != "" {
+		args = append(args, filter.UTMSource)
+		fields = append(fields, "utm_source = ? ")
+	}
+
+	if filter.UTMMedium != "" {
+		args = append(args, filter.UTMMedium)
+		fields = append(fields, "utm_medium = ? ")
+	}
+
+	if filter.UTMCampaign != "" {
+		args = append(args, filter.UTMCampaign)
+		fields = append(fields, "utm_campaign = ? ")
+	}
+
+	if filter.UTMContent != "" {
+		args = append(args, filter.UTMContent)
+		fields = append(fields, "utm_content = ? ")
+	}
+
+	if filter.UTMTerm != "" {
+		args = append(args, filter.UTMTerm)
+		fields = append(fields, "utm_term = ? ")
 	}
 
 	return args, strings.Join(fields, "AND ")
@@ -136,6 +245,10 @@ func (filter *Filter) query() ([]interface{}, string) {
 	}
 
 	return args, query
+}
+
+func (filter *Filter) toUTCDate(date time.Time) time.Time {
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (filter *Filter) boolean(b bool) int8 {
