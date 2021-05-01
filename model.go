@@ -17,7 +17,7 @@ type Hit struct {
 	Path                      string
 	URL                       string
 	Language                  string
-	CountryCode               string
+	CountryCode               string `db:"country_code"`
 	Referrer                  sql.NullString
 	ReferrerName              sql.NullString `db:"referrer_name"`
 	ReferrerIcon              sql.NullString `db:"referrer_icon"`
