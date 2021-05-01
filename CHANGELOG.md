@@ -2,7 +2,13 @@
 
 ## 2.0.0
 
-*WIP*
+Version 2 brings some fundamental changes and is incompatible with version 1.
+
+* switched to ClickHouse in favor of Postgres, as it far better fits the problem domain
+* removed data aggregation and the processor
+* tenant ID -> client ID
+* automatic schema migration (using the Go 1.16 embedding feature, x-multi-statement must be set to true)
+* added UTM query parameter tracking (for campaign tracking)
 
 ## 1.14.4
 

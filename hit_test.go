@@ -14,7 +14,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
-	hit := FromRequest(req, "salt", &Options{
+	hit := HitFromRequest(req, "salt", &Options{
 		Client:       dbClient,
 		ClientID:     42,
 		ScreenWidth:  640,
@@ -56,7 +56,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
-	hit1 := FromRequest(req, "salt", &Options{
+	hit1 := HitFromRequest(req, "salt", &Options{
 		Client: dbClient,
 	})
 	assert.Equal(t, int64(0), hit1.ClientID)
@@ -65,7 +65,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	hit1.Time = time.Now().UTC().Add(-time.Second * 5)
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit1}))
 	time.Sleep(time.Millisecond * 20)
-	hit2 := FromRequest(req, "salt", &Options{
+	hit2 := HitFromRequest(req, "salt", &Options{
 		Client: dbClient,
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
@@ -76,7 +76,7 @@ func TestHitFromRequestSession(t *testing.T) {
 
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := FromRequest(req, "salt", &Options{
+	hit := HitFromRequest(req, "salt", &Options{
 		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
@@ -88,7 +88,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := FromRequest(req, "salt", &Options{
+	hit := HitFromRequest(req, "salt", &Options{
 		URL:      "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:     "/new/custom/path",
 		Referrer: "http://custom.ref/",
@@ -103,7 +103,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := FromRequest(req, "salt", &Options{
+	hit := HitFromRequest(req, "salt", &Options{
 		ScreenWidth:  -5,
 		ScreenHeight: 400,
 	})
@@ -112,7 +112,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = FromRequest(req, "salt", &Options{
+	hit = HitFromRequest(req, "salt", &Options{
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
@@ -121,7 +121,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = FromRequest(req, "salt", &Options{
+	hit = HitFromRequest(req, "salt", &Options{
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -142,7 +142,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
-	hit := FromRequest(req, "salt", &Options{
+	hit := HitFromRequest(req, "salt", &Options{
 		geoDB: geoDB,
 	})
 
@@ -152,7 +152,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
-	hit = FromRequest(req, "salt", &Options{
+	hit = HitFromRequest(req, "salt", &Options{
 		geoDB: geoDB,
 	})
 
@@ -308,7 +308,7 @@ func TestIgnoreHitDoNotTrack(t *testing.T) {
 
 func TestHitOptionsFromRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://test.com/my/path", nil)
-	options := OptionsFromRequest(req)
+	options := HitOptionsFromRequest(req)
 
 	if options.ClientID != 0 ||
 		options.URL != "" ||
@@ -319,7 +319,7 @@ func TestHitOptionsFromRequest(t *testing.T) {
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?client_id=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
-	options = OptionsFromRequest(req)
+	options = HitOptionsFromRequest(req)
 
 	if options.ClientID != 42 ||
 		options.URL != "http://foo.bar/test" ||

@@ -142,7 +142,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *Options) {
 		}
 
 		options.Client = tracker.store
-		tracker.hits <- FromRequest(r, tracker.salt, options)
+		tracker.hits <- HitFromRequest(r, tracker.salt, options)
 	}
 }
 

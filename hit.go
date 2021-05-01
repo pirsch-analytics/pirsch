@@ -65,10 +65,10 @@ type Options struct {
 	geoDB *GeoDB
 }
 
-// FromRequest returns a new Hit for given request, salt and Options.
+// HitFromRequest returns a new Hit for given request, salt and Options.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func FromRequest(r *http.Request, salt string, options *Options) Hit {
+func HitFromRequest(r *http.Request, salt string, options *Options) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	// set default options in case they're nil
@@ -208,10 +208,10 @@ func Ignore(r *http.Request) bool {
 	return false
 }
 
-// OptionsFromRequest returns the Options for given client request.
+// HitOptionsFromRequest returns the Options for given client request.
 // This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
-// You might want to add additional checks before calling FromRequest afterwards (like for the Options.ClientID).
-func OptionsFromRequest(r *http.Request) *Options {
+// You might want to add additional checks before calling HitFromRequest afterwards (like for the Options.ClientID).
+func HitOptionsFromRequest(r *http.Request) *Options {
 	query := r.URL.Query()
 	return &Options{
 		ClientID:     getInt64QueryParam(query.Get("client_id")),
