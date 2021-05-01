@@ -14,7 +14,7 @@ The name is in German and refers to a special kind of hunt: *the hunter carefull
 
 Pirsch generates a unique fingerprint for each visitor. The fingerprint is a hash of the visitors IP, User-Agent, the date, and a salt. The date guarantees that the data is separated by day, so visitors can only be tracked for up to one day.
 
-Each time a visitor opens your page, Pirsch will store a hit. The hits are analyzed later to extract meaningful data and reduce storage usage by aggregation.
+Each time a visitor opens your page, Pirsch will store a hit. The hits are analyzed using the `Analyzer` to extract meaningful data.
 
 The tracking works without invading the visitor's privacy as no cookies are used nor required. Pirsch can track visitors using ad blockers that block trackers like Google Analytics.
 
@@ -35,33 +35,28 @@ Pirsch tracks the following data:
 * countries
 * platform
 * screen size
+* UTM query parameters for campaign tracking
 
-All timestamps are stored as UTC. All data points belongs to an (optional) tenant, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a tenant ID for all columns!**
+All timestamps are stored as UTC. All data points belongs to an (optional) client, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a client ID for all columns!**
 
 ## Usage
 
-To store hits and statistics, Pirsch uses a database. Right now only Postgres is supported, but new ones can easily be added by implementing the Store interface. The schema can be found within the schema directory. Changes will be added to migrations scripts, so that you can add them to your projects database migration or run them manually.
+To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be run manually be executing the migrations steps in `schema` or by using the automatic migration (make sure you set `x-multi-statement` to `true`).
 
 ### Server-side tracking
 
 Here is a quick demo on how to use the library:
 
 ```Go
-// Create a new Postgres store to save statistics and hits.
-store := pirsch.NewPostgresStore(db, nil)
+// Migrate the database.
+pirsch.Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true")
+
+// Create a new ClickHouse client to save hits.
+store, _ := pirsch.NewClient("tcp://127.0.0.1:9000", nil)
 
 // Set up a default tracker with a salt.
 // This will buffer and store hits and generate sessions by default.
 tracker := pirsch.NewTracker(store, "salt", nil)
-
-// Create a new process and run it each day on midnight (UTC) to process the stored hits.
-// The processor also cleans up the hits.
-processor := pirsch.NewProcessor(store)
-pirsch.RunAtMidnight(func() {
-    if err := processor.Process(); err != nil {
-        panic(err)
-    }
-})
 
 // Create a handler to serve traffic.
 // We prevent tracking resources by checking the path. So a file on /my-file.txt won't create a new hit
@@ -80,19 +75,18 @@ log.Println("Starting server on port 8080...")
 http.ListenAndServe(":8080", nil)
 ```
 
-To analyze hits and processed data you can use the analyzer, which provides convenience functions to extract useful information.
-
 The secret salt passed to `NewTracker` should not be known outside your organization as it can be used to generate fingerprints equal to yours.
 Note that while you can generate the salt at random, the fingerprints will change too. To get reliable data configure a fixed salt and treat it like a password.
 
+To analyze hits and processed data you can use the `Analyzer`, which provides convenience functions to extract useful information.
+
 ```Go
 // This also needs access to the store.
-// You can set a time zone through the configuration to display local times.
-analyzer := pirsch.NewAnalyzer(store, nil)
+analyzer := pirsch.NewAnalyzer(store)
 
 // As an example, lets extract the total number of visitors.
 // The filter is used to specify the time frame you're looking at (days) and is optional.
-// If you pass nil, the Analyzer returns data for the past week including today.
+// If you pass nil, the Analyzer returns statistics for all hits (be careful about that!).
 visitors, err := analyzer.Visitors(&pirsch.Filter{
     From: yesterday(),
     To: today()
@@ -107,7 +101,7 @@ You can also track visitors on the client side by adding `pirsch.js` to your web
 <!-- add the tracking script to the head area and configure it using attributes -->
 <script type="text/javascript" src="js/pirsch.js" id="pirschjs"
         data-endpoint="/count"
-        data-tenant-id="42"
+        data-client-id="42"
         data-track-localhost
         data-param-optional-param="test"></script>
 ```
@@ -117,7 +111,7 @@ The parameters are configured through HTML attributes. All of them are optional,
 | Option | Description | Default |
 | - | - | - |
 | data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
-| data-tenant-id | The tenant ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the tenant ID must be validated in the backend. | 0 (no tenant) |
+| data-client-id | The client ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the client ID must be validated in the backend. | 0 (no client) |
 | data-track-localhost | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
@@ -126,7 +120,7 @@ To track the hits you need to call `Hit` from the endpoint that you configured f
 ```Go
 // Create an endpoint to handle client tracking requests.
 // HitOptionsFromRequest is a utility function to process the required parameters.
-// You might want to additional checks, like for the tenant ID.
+// You might want to additional checks, like for the client ID.
 http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     tracker.Hit(r, pirsch.HitOptionsFromRequest(r))
 }))
