@@ -36,6 +36,7 @@ func (client *MockClient) Count(query string, args ...interface{}) (int, error) 
 	return 0, nil
 }
 
+// Get implements the Store interface.
 func (client *MockClient) Get(query string, args ...interface{}) (*Stats, error) {
 	return nil, nil
 }

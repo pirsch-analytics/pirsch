@@ -22,6 +22,7 @@ const (
 )
 
 var (
+	// ErrNoPeriodOrDay is returned in case no period or day was specified to calculate the growth rate.
 	ErrNoPeriodOrDay = errors.New("no period or day specified")
 )
 
