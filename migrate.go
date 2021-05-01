@@ -1,11 +1,17 @@
 package pirsch
 
 import (
-	"embed"
+	// ClickHouse is an essential part of Pirsch.
 	_ "github.com/ClickHouse/clickhouse-go"
-	"github.com/golang-migrate/migrate/v4"
+
+	// Required for the ClickHouse database migration.
 	_ "github.com/golang-migrate/migrate/v4/database/clickhouse"
+
+	// Required for the ClickHouse database migration.
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+
+	"embed"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"net/http"
 )
