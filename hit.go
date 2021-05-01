@@ -21,8 +21,8 @@ const (
 	defaultSessionMaxAge = time.Minute * 15
 )
 
-// Options is used to manipulate the data saved on a hit.
-type Options struct {
+// HitOptions is used to manipulate the data saved on a hit.
+type HitOptions struct {
 	// Client is the database client required to look up sessions.
 	Client Store
 
@@ -65,15 +65,15 @@ type Options struct {
 	geoDB *GeoDB
 }
 
-// HitFromRequest returns a new Hit for given request, salt and Options.
+// HitFromRequest returns a new Hit for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *Options) Hit {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	// set default options in case they're nil
 	if options == nil {
-		options = &Options{}
+		options = &HitOptions{}
 	}
 
 	if options.SessionMaxAge.Seconds() == 0 {
@@ -160,9 +160,9 @@ func HitFromRequest(r *http.Request, salt string, options *Options) Hit {
 	}
 }
 
-// Ignore returns true, if a hit should be ignored for given request, or false otherwise.
+// IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
-func Ignore(r *http.Request) bool {
+func IgnoreHit(r *http.Request) bool {
 	// respect do not track header
 	if r.Header.Get("DNT") == "1" {
 		return true
@@ -208,12 +208,12 @@ func Ignore(r *http.Request) bool {
 	return false
 }
 
-// HitOptionsFromRequest returns the Options for given client request.
+// HitOptionsFromRequest returns the HitOptions for given client request.
 // This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
-// You might want to add additional checks before calling HitFromRequest afterwards (like for the Options.ClientID).
-func HitOptionsFromRequest(r *http.Request) *Options {
+// You might want to add additional checks before calling HitFromRequest afterwards (like for the HitOptions.ClientID).
+func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
-	return &Options{
+	return &HitOptions{
 		ClientID:     getInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
@@ -248,7 +248,7 @@ func browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func getRequestURI(r *http.Request, options *Options) {
+func getRequestURI(r *http.Request, options *HitOptions) {
 	if options.URL == "" {
 		options.URL = r.URL.String()
 	}
