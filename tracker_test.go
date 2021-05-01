@@ -41,23 +41,23 @@ func TestTrackerHitTimeout(t *testing.T) {
 	req1.Header.Add("User-Agent", "valid")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "valid")
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
-	assert.Len(t, store.hits, 2)
+	assert.Len(t, client.Hits, 2)
 
 	// ignore order...
-	if store.hits[0].Path != "/" && store.hits[0].Path != "/hello-world" ||
-		store.hits[1].Path != "/" && store.hits[1].Path != "/hello-world" {
-		t.Fatalf("Hits not as expected: %v %v", store.hits[0], store.hits[1])
+	if client.Hits[0].Path != "/" && client.Hits[0].Path != "/hello-world" ||
+		client.Hits[1].Path != "/" && client.Hits[1].Path != "/hello-world" {
+		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
 	}
 }
 
 func TestTrackerHitLimit(t *testing.T) {
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
 		WorkerBufferSize: 10,
 	})
@@ -69,12 +69,12 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
-	assert.Len(t, store.hits, 7)
+	assert.Len(t, client.Hits, 7)
 }
 
 func TestTrackerHitDiscard(t *testing.T) {
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
 		WorkerBufferSize: 5,
 	})
@@ -89,7 +89,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, store.hits, 5)
+	assert.Len(t, client.Hits, 5)
 }
 
 func TestTrackerCountryCode(t *testing.T) {
@@ -103,22 +103,22 @@ func TestTrackerCountryCode(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "valid")
 	req2.RemoteAddr = "127.0.0.1"
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
 	})
 	tracker.SetGeoDB(geoDB)
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, store.hits, 2)
+	assert.Len(t, client.Hits, 2)
 	foundGB := false
 	foundEmpty := false
 
-	for _, hit := range store.hits {
-		if hit.CountryCode.String == "gb" {
+	for _, hit := range client.Hits {
+		if hit.CountryCode == "gb" {
 			foundGB = true
-		} else if hit.CountryCode.String == "" {
+		} else if hit.CountryCode == "" {
 			foundEmpty = true
 		}
 	}
@@ -132,57 +132,57 @@ func TestTrackerHitSession(t *testing.T) {
 	req1.Header.Add("User-Agent", "valid")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "valid")
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
-		Sessions:      true,
 	})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, store.hits, 2)
+	assert.Len(t, client.Hits, 2)
 
 	// ignore order...
-	if !store.hits[0].Session.Valid || !store.hits[1].Session.Valid ||
-		store.hits[0].Session.Time.IsZero() || store.hits[1].Session.Time.IsZero() {
-		t.Fatalf("Hits not as expected: %v %v", store.hits[0], store.hits[1])
+	if !client.Hits[0].Session.Valid || !client.Hits[1].Session.Valid ||
+		client.Hits[0].Session.Time.IsZero() || client.Hits[1].Session.Time.IsZero() {
+		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
 	}
 }
 
 func TestTrackerIgnoreSubdomain(t *testing.T) {
-	store := newTestStore()
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")
 	req.RemoteAddr = "81.2.69.142"
-	tracker.Hit(req, &HitOptions{
+	tracker.Hit(req, &Options{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
 		Referrer:                "https://pirsch.io/",
 	})
-	tracker.Hit(req, &HitOptions{
+	tracker.Hit(req, &Options{
 		ReferrerDomainBlacklist:                   []string{"pirsch.io"},
 		ReferrerDomainBlacklistIncludesSubdomains: true,
 		Referrer: "https://www.pirsch.io/",
 	})
-	tracker.Hit(req, &HitOptions{
+	tracker.Hit(req, &Options{
 		ReferrerDomainBlacklist: []string{"pirsch.io", "www.pirsch.io"},
 		Referrer:                "https://www.pirsch.io/",
 	})
-	tracker.Hit(req, &HitOptions{
+	tracker.Hit(req, &Options{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-	assert.Len(t, store.hits, 4)
+	assert.Len(t, client.Hits, 4)
 
-	for _, hit := range store.hits {
+	for _, hit := range client.Hits {
 		assert.False(t, hit.Referrer.Valid)
 	}
 }
 
 func BenchmarkTracker(b *testing.B) {
+	cleanupDB()
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
@@ -190,12 +190,11 @@ func BenchmarkTracker(b *testing.B) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "valid")
 	req.RemoteAddr = "81.2.69.142"
-	store := NewPostgresStore(postgresDB, nil)
-	tracker := NewTracker(store, "salt", &TrackerConfig{
+	tracker := NewTracker(dbClient, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
-		Sessions:      true,
 		GeoDB:         geoDB,
 	})
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		tracker.Hit(req, nil)

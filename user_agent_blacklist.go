@@ -1,6 +1,6 @@
 package pirsch
 
-// Contains all substrings (in lowercase) used to filter the User-Agent header.
+// userAgentBlacklist contains all substrings (in lowercase) used to filter the User-Agent header.
 // Please add the reference in case you copy an existing list.
 // - https://github.com/gorangajic/isbot/blob/master/list.json
 var userAgentBlacklist = []string{

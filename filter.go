@@ -1,58 +1,266 @@
 package pirsch
 
 import (
-	"database/sql"
 	"strings"
 	"time"
 )
 
-// Filter is used to specify the time frame, path and tenant for the Analyzer.
+const (
+	// PlatformDesktop filters for everything on desktops.
+	PlatformDesktop = "desktop"
+
+	// PlatformMobile filters for everything on mobile devices.
+	PlatformMobile = "mobile"
+
+	// PlatformUnknown filters for everything where the platform is unspecified.
+	PlatformUnknown = "unknown"
+)
+
+// NullClient is a placeholder for no client (0).
+var NullClient = int64(0)
+
+// Filter are all fields that can be used to filter the result sets.
 type Filter struct {
-	// TenantID is the optional tenant ID used to filter results.
-	TenantID sql.NullInt64
+	// ClientID is the optional.
+	ClientID int64
 
-	// Path is the optional path for the selection.
-	Path string
-
-	// From is the start of the selection.
+	// From is the start date of the selected period.
 	From time.Time
 
-	// To is the end of the selection.
+	// To is the end date of the selected period.
 	To time.Time
+
+	// Day is an exact match for the result set ("on this day").
+	Day time.Time
+
+	// Start is the start date and time of the selected period.
+	Start time.Time
+
+	// Path filters for the path.
+	Path string
+
+	// Language filters for the ISO language code.
+	Language string
+
+	// Country filters for the ISO country code.
+	Country string
+
+	// Referrer filters for the referrer.
+	Referrer string
+
+	// OS filters for the operating system.
+	OS string
+
+	// OSVersion filters for the operating system version.
+	OSVersion string
+
+	// Browser filters for the browser.
+	Browser string
+
+	// BrowserVersion filters for the browser version.
+	BrowserVersion string
+
+	// Platform filters for the platform (desktop, mobile, unknown).
+	Platform string
+
+	// ScreenClass filters for the screen class.
+	ScreenClass string
+
+	// UTMSource filters for the utm_source query parameter.
+	UTMSource string
+
+	// UTMMedium filters for the utm_medium query parameter.
+	UTMMedium string
+
+	// UTMCampaign filters for the utm_campaign query parameter.
+	UTMCampaign string
+
+	// UTMContent filters for the utm_content query parameter.
+	UTMContent string
+
+	// UTMTerm filters for the utm_term query parameter.
+	UTMTerm string
 }
 
-// NewFilter returns a new default filter for given tenant and the past week.
-func NewFilter(tenantID sql.NullInt64) *Filter {
-	today := today()
+// NewFilter creates a new filter for given client ID.
+func NewFilter(clientID int64) *Filter {
 	return &Filter{
-		TenantID: tenantID,
-		From:     today.Add(-time.Hour * 24 * 6), // 7 including today
-		To:       today,
+		ClientID: clientID,
 	}
-}
-
-// Days returns the number of days covered by the filter.
-func (filter *Filter) Days() int {
-	return int(filter.To.Sub(filter.From).Hours()) / 24
 }
 
 func (filter *Filter) validate() {
-	filter.Path = strings.TrimSpace(filter.Path)
-	today := today()
-
-	if filter.From.IsZero() && filter.To.IsZero() {
-		filter.From = today.Add(-time.Hour * 24 * 6) // 7 including today
-		filter.To = today
-	} else {
-		filter.From = time.Date(filter.From.Year(), filter.From.Month(), filter.From.Day(), 0, 0, 0, 0, time.UTC)
-		filter.To = time.Date(filter.To.Year(), filter.To.Month(), filter.To.Day(), 0, 0, 0, 0, time.UTC)
+	if !filter.From.IsZero() {
+		filter.From = filter.toUTCDate(filter.From)
 	}
 
-	if filter.From.After(filter.To) {
+	if !filter.To.IsZero() {
+		filter.To = filter.toUTCDate(filter.To)
+	}
+
+	if !filter.Day.IsZero() {
+		filter.Day = filter.toUTCDate(filter.Day)
+	}
+
+	if !filter.Start.IsZero() {
+		filter.Start = time.Date(filter.Start.Year(), filter.Start.Month(), filter.Start.Day(), filter.Start.Hour(), filter.Start.Minute(), filter.Start.Second(), 0, time.UTC)
+	}
+
+	if !filter.To.IsZero() && filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From
 	}
 
-	if filter.To.After(today) {
+	today := Today()
+
+	if !filter.To.IsZero() && filter.To.After(today) {
 		filter.To = today
 	}
+}
+
+func (filter *Filter) queryTime() ([]interface{}, string) {
+	args := make([]interface{}, 0, 5)
+	args = append(args, filter.ClientID)
+	var sqlQuery strings.Builder
+	sqlQuery.WriteString("client_id = ? ")
+
+	if !filter.From.IsZero() {
+		args = append(args, filter.From)
+		sqlQuery.WriteString("AND toDate(time) >= ? ")
+	}
+
+	if !filter.To.IsZero() {
+		args = append(args, filter.To)
+		sqlQuery.WriteString("AND toDate(time) <= ? ")
+	}
+
+	if !filter.Day.IsZero() {
+		args = append(args, filter.Day)
+		sqlQuery.WriteString("AND toDate(time) = ? ")
+	}
+
+	if !filter.Start.IsZero() {
+		args = append(args, filter.Start)
+		sqlQuery.WriteString("AND time >= ? ")
+	}
+
+	return args, sqlQuery.String()
+}
+
+func (filter *Filter) queryFields() ([]interface{}, string) {
+	args := make([]interface{}, 0, 14)
+	fields := make([]string, 0, 14)
+
+	if filter.Path != "" {
+		args = append(args, filter.Path)
+		fields = append(fields, "path = ? ")
+	}
+
+	if filter.Language != "" {
+		args = append(args, filter.Language)
+		fields = append(fields, "language = ? ")
+	}
+
+	if filter.Country != "" {
+		args = append(args, filter.Country)
+		fields = append(fields, "country_code = ? ")
+	}
+
+	if filter.Referrer != "" {
+		args = append(args, filter.Referrer)
+		fields = append(fields, "referrer = ? ")
+	}
+
+	if filter.OS != "" {
+		args = append(args, filter.OS)
+		fields = append(fields, "os = ? ")
+	}
+
+	if filter.OSVersion != "" {
+		args = append(args, filter.OSVersion)
+		fields = append(fields, "os_version = ? ")
+	}
+
+	if filter.Browser != "" {
+		args = append(args, filter.Browser)
+		fields = append(fields, "browser = ? ")
+	}
+
+	if filter.BrowserVersion != "" {
+		args = append(args, filter.BrowserVersion)
+		fields = append(fields, "browser_version = ? ")
+	}
+
+	if filter.Platform != "" {
+		if filter.Platform == PlatformDesktop {
+			fields = append(fields, "desktop = 1 ")
+		} else if filter.Platform == PlatformMobile {
+			fields = append(fields, "mobile = 1 ")
+		} else {
+			fields = append(fields, "desktop = 0 AND mobile = 0 ")
+		}
+	}
+
+	if filter.ScreenClass != "" {
+		args = append(args, filter.ScreenClass)
+		fields = append(fields, "screen_class = ? ")
+	}
+
+	if filter.UTMSource != "" {
+		args = append(args, filter.UTMSource)
+		fields = append(fields, "utm_source = ? ")
+	}
+
+	if filter.UTMMedium != "" {
+		args = append(args, filter.UTMMedium)
+		fields = append(fields, "utm_medium = ? ")
+	}
+
+	if filter.UTMCampaign != "" {
+		args = append(args, filter.UTMCampaign)
+		fields = append(fields, "utm_campaign = ? ")
+	}
+
+	if filter.UTMContent != "" {
+		args = append(args, filter.UTMContent)
+		fields = append(fields, "utm_content = ? ")
+	}
+
+	if filter.UTMTerm != "" {
+		args = append(args, filter.UTMTerm)
+		fields = append(fields, "utm_term = ? ")
+	}
+
+	return args, strings.Join(fields, "AND ")
+}
+
+func (filter *Filter) withFill() ([]interface{}, string) {
+	if !filter.From.IsZero() && !filter.To.IsZero() {
+		return []interface{}{filter.From, filter.To}, "WITH FILL FROM toDate(?) TO toDate(?)+1 "
+	}
+
+	return nil, ""
+}
+
+func (filter *Filter) query() ([]interface{}, string) {
+	args, query := filter.queryTime()
+	fieldArgs, queryFields := filter.queryFields()
+	args = append(args, fieldArgs...)
+
+	if len(fieldArgs) > 0 {
+		query += "AND " + queryFields
+	}
+
+	return args, query
+}
+
+func (filter *Filter) toUTCDate(date time.Time) time.Time {
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func (filter *Filter) boolean(b bool) int8 {
+	if b {
+		return 1
+	}
+
+	return 0
 }

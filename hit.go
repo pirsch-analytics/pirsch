@@ -2,8 +2,6 @@ package pirsch
 
 import (
 	"database/sql"
-	"encoding/json"
-	iso6391 "github.com/emvi/iso-639-1"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,51 +10,29 @@ import (
 )
 
 const (
-	// version number from early 2018
+	// version numbers from early 2018
 	minChromeVersion  = 64
 	minFirefoxVersion = 58
 	minSafariVersion  = 11
 	minOperaVersion   = 50
 	minEdgeVersion    = 80
 	minIEVersion      = 11
+
+	defaultSessionMaxAge = time.Minute * 15
 )
 
-// Hit represents a single data point/page visit and is the central entity of Pirsch.
-type Hit struct {
-	BaseEntity
+// Options is used to manipulate the data saved on a hit.
+type Options struct {
+	// Client is the database client required to look up sessions.
+	Client Store
 
-	Fingerprint    string         `db:"fingerprint" json:"fingerprint"`
-	Session        sql.NullTime   `db:"session" json:"session"`
-	Path           string         `db:"path" json:"path"`
-	URL            sql.NullString `db:"url" json:"url,omitempty"`
-	Language       sql.NullString `db:"language" json:"language,omitempty"`
-	UserAgent      sql.NullString `db:"user_agent" json:"user_agent,omitempty"`
-	Referrer       sql.NullString `db:"referrer" json:"referrer,omitempty"`
-	ReferrerName   sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
-	ReferrerIcon   sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
-	OS             sql.NullString `db:"os" json:"os,omitempty"`
-	OSVersion      sql.NullString `db:"os_version" json:"os_version,omitempty"`
-	Browser        sql.NullString `db:"browser" json:"browser,omitempty"`
-	BrowserVersion sql.NullString `db:"browser_version" json:"browser_version,omitempty"`
-	CountryCode    sql.NullString `db:"country_code" json:"country_code"`
-	Desktop        bool           `db:"desktop" json:"desktop"`
-	Mobile         bool           `db:"mobile" json:"mobile"`
-	ScreenWidth    int            `db:"screen_width" json:"screen_width"`
-	ScreenHeight   int            `db:"screen_height" json:"screen_height"`
-	ScreenClass    sql.NullString `db:"screen_class" json:"screen_class"`
-	Time           time.Time      `db:"time" json:"time"`
-}
+	// ClientID is optionally saved with a hit to split the data between multiple clients.
+	ClientID int64
 
-// String implements the Stringer interface.
-func (hit Hit) String() string {
-	out, _ := json.Marshal(hit)
-	return string(out)
-}
-
-// HitOptions is used to manipulate the data saved on a hit.
-type HitOptions struct {
-	// TenantID is optionally saved with a hit to split the data between multiple tenants.
-	TenantID sql.NullInt64
+	// SessionMaxAge defines the maximum time a session stays active.
+	// A session is kept active if requests are made within the time frame.
+	// Set to 15 minutes by default.
+	SessionMaxAge time.Duration
 
 	// URL can be set to manually overwrite the URL stored for this request.
 	// This will also affect the Path, except it is set too.
@@ -86,49 +62,62 @@ type HitOptions struct {
 	// ScreenHeight sets the screen height to be stored with the hit.
 	ScreenHeight int
 
-	geoDB        *GeoDB
-	sessionCache *sessionCache
+	geoDB *GeoDB
 }
 
-// HitFromRequest returns a new Hit for given request, salt and HitOptions.
+// HitFromRequest returns a new Hit for given request, salt and Options.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
+func HitFromRequest(r *http.Request, salt string, options *Options) Hit {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	// set default options in case they're nil
 	if options == nil {
-		options = &HitOptions{}
+		options = &Options{}
+	}
+
+	if options.SessionMaxAge.Seconds() == 0 {
+		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
 	getRequestURI(r, options)
 	fingerprint := Fingerprint(r, salt)
+	userAgent := r.UserAgent()
 	path := shortenString(options.Path, 2000)
 	requestURL := shortenString(options.URL, 2000)
-	ua := r.UserAgent()
-	uaInfo := ParseUserAgent(ua)
+	uaInfo := ParseUserAgent(userAgent)
 	uaInfo.OS = shortenString(uaInfo.OS, 20)
 	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
 	uaInfo.Browser = shortenString(uaInfo.Browser, 20)
 	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
-	ua = shortenString(ua, 200)
+	userAgent = shortenString(userAgent, 200)
 	lang := shortenString(getLanguage(r), 10)
 	referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
 	referrer = shortenString(referrer, 200)
 	referrerName = shortenString(referrerName, 200)
 	referrerIcon = shortenString(referrerIcon, 2000)
 	screen := GetScreenClass(options.ScreenWidth)
+	utm := getUTMParams(r)
 	countryCode := ""
 
 	if options.geoDB != nil {
 		countryCode = options.geoDB.CountryCode(getIP(r))
 	}
 
-	var session time.Time
+	lastHitSeconds := 0
+	session := now
 
-	if options.sessionCache != nil {
-		session = options.sessionCache.find(options.TenantID, fingerprint)
+	if options.Client != nil {
+		p, t, s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+
+		if !t.IsZero() && p != path {
+			lastHitSeconds = int(now.Sub(t).Seconds())
+		}
+
+		if !s.IsZero() {
+			session = s
+		}
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
@@ -141,33 +130,39 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	}
 
 	return Hit{
-		BaseEntity:     BaseEntity{TenantID: options.TenantID},
-		Fingerprint:    fingerprint,
-		Session:        sql.NullTime{Time: session, Valid: !session.IsZero()},
-		Path:           path,
-		URL:            sql.NullString{String: requestURL, Valid: requestURL != ""},
-		Language:       sql.NullString{String: lang, Valid: lang != ""},
-		UserAgent:      sql.NullString{String: ua, Valid: ua != ""},
-		Referrer:       sql.NullString{String: referrer, Valid: referrer != ""},
-		ReferrerName:   sql.NullString{String: referrerName, Valid: referrerName != ""},
-		ReferrerIcon:   sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
-		OS:             sql.NullString{String: uaInfo.OS, Valid: uaInfo.OS != ""},
-		OSVersion:      sql.NullString{String: uaInfo.OSVersion, Valid: uaInfo.OSVersion != ""},
-		Browser:        sql.NullString{String: uaInfo.Browser, Valid: uaInfo.Browser != ""},
-		BrowserVersion: sql.NullString{String: uaInfo.BrowserVersion, Valid: uaInfo.BrowserVersion != ""},
-		CountryCode:    sql.NullString{String: countryCode, Valid: countryCode != ""},
-		Desktop:        uaInfo.IsDesktop(),
-		Mobile:         uaInfo.IsMobile(),
-		ScreenWidth:    options.ScreenWidth,
-		ScreenHeight:   options.ScreenHeight,
-		ScreenClass:    sql.NullString{String: screen, Valid: screen != ""},
-		Time:           now,
+		ClientID:                  options.ClientID,
+		Fingerprint:               fingerprint,
+		Time:                      now,
+		Session:                   sql.NullTime{Time: session, Valid: !session.IsZero()},
+		PreviousTimeOnPageSeconds: lastHitSeconds,
+		UserAgent:                 userAgent,
+		Path:                      path,
+		URL:                       requestURL,
+		Language:                  lang,
+		CountryCode:               countryCode,
+		Referrer:                  sql.NullString{String: referrer, Valid: referrer != ""},
+		ReferrerName:              sql.NullString{String: referrerName, Valid: referrerName != ""},
+		ReferrerIcon:              sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
+		OS:                        uaInfo.OS,
+		OSVersion:                 uaInfo.OSVersion,
+		Browser:                   uaInfo.Browser,
+		BrowserVersion:            uaInfo.BrowserVersion,
+		Desktop:                   uaInfo.IsDesktop(),
+		Mobile:                    uaInfo.IsMobile(),
+		ScreenWidth:               options.ScreenWidth,
+		ScreenHeight:              options.ScreenHeight,
+		ScreenClass:               screen,
+		UTMSource:                 sql.NullString{String: utm.source, Valid: utm.source != ""},
+		UTMMedium:                 sql.NullString{String: utm.medium, Valid: utm.medium != ""},
+		UTMCampaign:               sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
+		UTMContent:                sql.NullString{String: utm.content, Valid: utm.content != ""},
+		UTMTerm:                   sql.NullString{String: utm.term, Valid: utm.term != ""},
 	}
 }
 
-// IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
+// Ignore returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
-func IgnoreHit(r *http.Request) bool {
+func Ignore(r *http.Request) bool {
 	// respect do not track header
 	if r.Header.Get("DNT") == "1" {
 		return true
@@ -197,9 +192,9 @@ func IgnoreHit(r *http.Request) bool {
 		return true
 	}
 
-	ua := ParseUserAgent(r.UserAgent())
+	userAgentResult := ParseUserAgent(r.UserAgent())
 
-	if ignoreBrowserVersion(ua.Browser, ua.BrowserVersion) {
+	if ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
 		return true
 	}
 
@@ -213,13 +208,13 @@ func IgnoreHit(r *http.Request) bool {
 	return false
 }
 
-// HitOptionsFromRequest returns the HitOptions for given client request.
+// HitOptionsFromRequest returns the Options for given client request.
 // This function can be used to accept hits from pirsch.js. Invalid parameters are ignored and left empty.
-// You might want to add additional checks before calling HitFromRequest afterwards (like for the HitOptions.TenantID).
-func HitOptionsFromRequest(r *http.Request) *HitOptions {
+// You might want to add additional checks before calling HitFromRequest afterwards (like for the Options.ClientID).
+func HitOptionsFromRequest(r *http.Request) *Options {
 	query := r.URL.Query()
-	return &HitOptions{
-		TenantID:     getNullInt64QueryParam(query.Get("tenantid")),
+	return &Options{
+		ClientID:     getInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
 		ScreenWidth:  getIntQueryParam(query.Get("w")),
@@ -253,7 +248,7 @@ func browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func getRequestURI(r *http.Request, options *HitOptions) {
+func getRequestURI(r *http.Request, options *Options) {
 	if options.URL == "" {
 		options.URL = r.URL.String()
 	}
@@ -271,23 +266,6 @@ func getRequestURI(r *http.Request, options *HitOptions) {
 	}
 }
 
-func getLanguage(r *http.Request) string {
-	lang := r.Header.Get("Accept-Language")
-
-	if lang != "" {
-		langs := strings.Split(lang, ";")
-		parts := strings.Split(langs[0], ",")
-		parts = strings.Split(parts[0], "-")
-		code := strings.ToLower(strings.TrimSpace(parts[0]))
-
-		if iso6391.ValidCode(code) {
-			return code
-		}
-	}
-
-	return ""
-}
-
 func shortenString(str string, n int) string {
 	// we intentionally use len instead of utf8.RuneCountInString here
 	if len(str) > n {
@@ -297,14 +275,14 @@ func shortenString(str string, n int) string {
 	return str
 }
 
-func getNullInt64QueryParam(param string) sql.NullInt64 {
-	i, err := strconv.Atoi(param)
-	return sql.NullInt64{Int64: int64(i), Valid: err == nil}
-}
-
 func getIntQueryParam(param string) int {
 	i, _ := strconv.Atoi(param)
 	return i
+}
+
+func getInt64QueryParam(param string) int64 {
+	i, _ := strconv.Atoi(param)
+	return int64(i)
 }
 
 func getURLQueryParam(param string) string {

@@ -8,1096 +8,503 @@ import (
 )
 
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*10), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", time.Now().UTC().Add(-time.Second*11), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua2", "", time.Now().UTC().Add(-time.Second*31), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp3", "/", "en", "ua3", "", time.Now().UTC().Add(-time.Second*20), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp3", "/path", "en", "ua3", "", time.Now().UTC().Add(-time.Second*28), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		analyzer := NewAnalyzer(store, nil)
-		visitors, total, err := analyzer.ActiveVisitors(&Filter{
-			TenantID: NewTenantID(tenantID),
-		}, time.Second*30)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, total)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "/", visitors[0].Path.String)
-		assert.Equal(t, "/path", visitors[1].Path.String)
-		assert.Equal(t, 2, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-	}
-}
-
-func TestAnalyzer_Visitors(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour-time.Second*50), today(), "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/different-path", "en", "ua1", "", today().Add(time.Hour-time.Second*5), today(), "", "", "", "", "", false, false, 0, 0)
-		stats := &VisitorStats{
-			Stats: Stats{
-				BaseEntity:              BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:                     pastDay(2),
-				Visitors:                42,
-				Sessions:                67,
-				Bounces:                 30,
-				Views:                   71,
-				AverageTimeSpendSeconds: 11,
-			},
-		}
-		assert.NoError(t, store.SaveVisitorStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Visitors(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 4)
-		assert.Equal(t, pastDay(3), visitors[0].Day)
-		assert.Equal(t, pastDay(2), visitors[1].Day)
-		assert.Equal(t, pastDay(1), visitors[2].Day)
-		assert.Equal(t, today(), visitors[3].Day)
-		assert.Equal(t, 0, visitors[0].Visitors)
-		assert.Equal(t, 42, visitors[1].Visitors)
-		assert.Equal(t, 0, visitors[2].Visitors)
-		assert.Equal(t, 2, visitors[3].Visitors)
-		assert.Equal(t, 0, visitors[0].Sessions)
-		assert.Equal(t, 67, visitors[1].Sessions)
-		assert.Equal(t, 0, visitors[2].Sessions)
-		assert.Equal(t, 2, visitors[3].Sessions)
-		assert.Equal(t, 0, visitors[0].Bounces)
-		assert.Equal(t, 30, visitors[1].Bounces)
-		assert.Equal(t, 0, visitors[2].Bounces)
-		assert.Equal(t, 1, visitors[3].Bounces)
-		assert.Equal(t, 0, visitors[0].Views)
-		assert.Equal(t, 71, visitors[1].Views)
-		assert.Equal(t, 0, visitors[2].Views)
-		assert.Equal(t, 3, visitors[3].Views)
-		assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
-		assert.InDelta(t, 0.71, visitors[1].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
-		assert.InDelta(t, 0.5, visitors[3].BounceRate, 0.01)
-		assert.Equal(t, 0, visitors[0].AverageTimeSpendSeconds)
-		assert.Equal(t, 11, visitors[1].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[2].AverageTimeSpendSeconds)
-		assert.Equal(t, 45, visitors[3].AverageTimeSpendSeconds)
-	}
-}
-
-func TestAnalyzer_VisitorHours(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*5), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/path", "en", "ua1", "", today().Add(time.Hour*12), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &VisitorTimeStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			Hour: 5,
-		}
-		assert.NoError(t, store.SaveVisitorTimeStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.VisitorHours(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 24)
-		assert.Equal(t, 5, visitors[5].Hour)
-		assert.Equal(t, 12, visitors[12].Hour)
-		assert.Equal(t, 43, visitors[5].Visitors)
-		assert.Equal(t, 1, visitors[12].Visitors)
-	}
-}
-
-func TestAnalyzer_Languages(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &LanguageStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			Language: sql.NullString{String: "de", Valid: true},
-		}
-		assert.NoError(t, store.SaveLanguageStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Languages(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "de", visitors[0].Language.String)
-		assert.Equal(t, "en", visitors[1].Language.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.001)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.001)
-	}
-}
-
-func TestAnalyzer_Referrer(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "ref2", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &ReferrerStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-				Bounces:    11,
-			},
-			Referrer: sql.NullString{String: "ref2", Valid: true},
-		}
-		assert.NoError(t, store.SaveReferrerStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Referrer(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "ref2", visitors[0].Referrer.String)
-		assert.Equal(t, "ref1", visitors[1].Referrer.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.Equal(t, 11, visitors[0].Bounces)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.2619, visitors[0].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
-	}
-}
-
-func TestAnalyzer_OS(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSWindows, "10", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, OSMac, "10.15.3", "", "", "", false, false, 0, 0)
-		stats := &OSStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			OS:        sql.NullString{String: OSMac, Valid: true},
-			OSVersion: sql.NullString{String: "10.14.1", Valid: true},
-		}
-		assert.NoError(t, store.SaveOSStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.OS(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, OSMac, visitors[0].OS.String)
-		assert.Equal(t, OSWindows, visitors[1].OS.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_Browser(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserChrome, "84.0", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "54.0", "", false, false, 0, 0)
-		stats := &BrowserStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			Browser:        sql.NullString{String: BrowserChrome, Valid: true},
-			BrowserVersion: sql.NullString{String: "83.1", Valid: true},
-		}
-		assert.NoError(t, store.SaveBrowserStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Browser(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, BrowserChrome, visitors[0].Browser.String)
-		assert.Equal(t, BrowserFirefox, visitors[1].Browser.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_Platform(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, true, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &VisitorStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-			},
-			PlatformDesktop: 42,
-			PlatformMobile:  43,
-			PlatformUnknown: 44,
-		}
-		assert.NoError(t, store.SaveVisitorStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors := analyzer.Platform(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.Equal(t, 43, visitors.PlatformDesktop)
-		assert.Equal(t, 44, visitors.PlatformMobile)
-		assert.Equal(t, 45, visitors.PlatformUnknown)
-		assert.InDelta(t, 0.325, visitors.RelativePlatformDesktop, 0.01)
-		assert.InDelta(t, 0.33, visitors.RelativePlatformMobile, 0.01)
-		assert.InDelta(t, 0.34, visitors.RelativePlatformUnknown, 0.01)
-	}
-}
-
-func TestAnalyzer_PlatformNoData(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		analyzer := NewAnalyzer(store, nil)
-		visitors := analyzer.Platform(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.Equal(t, 0, visitors.PlatformDesktop)
-		assert.Equal(t, 0, visitors.PlatformMobile)
-		assert.Equal(t, 0, visitors.PlatformUnknown)
-		assert.InDelta(t, 0, visitors.RelativePlatformDesktop, 0.01)
-		assert.InDelta(t, 0, visitors.RelativePlatformMobile, 0.01)
-		assert.InDelta(t, 0, visitors.RelativePlatformUnknown, 0.01)
-	}
-}
-
-func TestAnalyzer_Screen(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 1920, 1080)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 640, 1080)
-		stats := &ScreenStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			Width:  1920,
-			Height: 1080,
-		}
-		assert.NoError(t, store.SaveScreenStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Screen(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, 1920, visitors[0].Width)
-		assert.Equal(t, 640, visitors[1].Width)
-		assert.Equal(t, 1080, visitors[0].Height)
-		assert.Equal(t, 1080, visitors[1].Height)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_ScreenClass(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 1920, 1080)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 640, 1080)
-		stats := &ScreenStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			Width:  1920,
-			Height: 1080,
-			Class:  sql.NullString{String: "XXL", Valid: true},
-		}
-		assert.NoError(t, store.SaveScreenStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.ScreenClass(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "XXL", visitors[0].Class.String)
-		assert.Equal(t, "M", visitors[1].Class.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_Country(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "de", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "gb", false, false, 0, 0)
-		stats := &CountryStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Visitors:   42,
-			},
-			CountryCode: sql.NullString{String: "gb", Valid: true},
-		}
-		assert.NoError(t, store.SaveCountryStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.Country(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(4),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "gb", visitors[0].CountryCode.String)
-		assert.Equal(t, "de", visitors[1].CountryCode.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_TimeOfDay(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", pastDay(1).Add(time.Hour*9), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", pastDay(2).Add(time.Hour*10), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today().Add(time.Hour*17), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today().Add(time.Hour*18), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := []VisitorTimeStats{
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        pastDay(2),
-					Visitors:   7,
-					Sessions:   8,
-				},
-				Hour: 9,
-			},
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        pastDay(2),
-					Visitors:   11,
-					Sessions:   12,
-				},
-				Hour: 18,
-			},
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        pastDay(1),
-					Visitors:   6,
-					Sessions:   7,
-				},
-				Hour: 9,
-			},
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        pastDay(1),
-					Visitors:   9,
-					Sessions:   10,
-				},
-				Hour: 18,
-			},
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        today(),
-					Visitors:   10,
-					Sessions:   11,
-				},
-				Hour: 9,
-			},
-			{
-				Stats: Stats{
-					BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-					Day:        today(),
-					Visitors:   14,
-					Sessions:   15,
-				},
-				Hour: 18,
-			},
-		}
-
-		for _, s := range stats {
-			assert.NoError(t, store.SaveVisitorTimeStats(nil, &s))
-		}
-
-		analyzer := NewAnalyzer(store, nil)
-		days, err := analyzer.TimeOfDay(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(2),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, days, 3)
-		assert.Equal(t, pastDay(2), days[0].Day)
-		assert.Equal(t, pastDay(1), days[1].Day)
-		assert.Equal(t, today(), days[2].Day)
-		assert.Equal(t, 7, days[0].Stats[9].Visitors)
-		assert.Equal(t, 1, days[0].Stats[10].Visitors)
-		assert.Equal(t, 11, days[0].Stats[18].Visitors)
-		assert.Equal(t, 7, days[1].Stats[9].Visitors)
-		assert.Equal(t, 9, days[1].Stats[18].Visitors)
-		assert.Equal(t, 10, days[2].Stats[9].Visitors)
-		assert.Equal(t, 1, days[2].Stats[17].Visitors)
-		assert.Equal(t, 15, days[2].Stats[18].Visitors)
-	}
-}
-
-func TestAnalyzer_PageVisitors(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today().Add(time.Minute*2), today(), "", "", "", "", "", false, false, 0, 0)
-		stats := &VisitorStats{
-			Stats: Stats{
-				BaseEntity:              BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:                     pastDay(2),
-				Path:                    sql.NullString{String: "/path", Valid: true},
-				Visitors:                42,
-				Sessions:                67,
-				Bounces:                 30,
-				Views:                   71,
-				AverageTimeSpendSeconds: 60,
-			},
-		}
-		assert.NoError(t, store.SaveVisitorStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.PageVisitors(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Len(t, visitors[0].Stats, 4)
-		assert.Len(t, visitors[1].Stats, 4)
-		assert.Equal(t, "/path", visitors[0].Path)
-		assert.Equal(t, "/", visitors[1].Path)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.Equal(t, 30, visitors[0].Bounces)
-		assert.Equal(t, 0, visitors[1].Bounces)
-		assert.Equal(t, 72, visitors[0].Views)
-		assert.Equal(t, 1, visitors[1].Views)
-		assert.Equal(t, 60, visitors[0].AverageTimeOnPageSeconds)
-		assert.Equal(t, 120, visitors[1].AverageTimeOnPageSeconds)
-		assert.InDelta(t, 0.9772, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.0227, visitors[1].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.6976, visitors[0].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
-		assert.InDelta(t, 0.9863, visitors[0].RelativeViews, 0.01)
-		assert.InDelta(t, 0.0136, visitors[1].RelativeViews, 0.01)
-		assert.Equal(t, pastDay(3), visitors[0].Stats[0].Day)
-		assert.Equal(t, pastDay(2), visitors[0].Stats[1].Day)
-		assert.Equal(t, pastDay(1), visitors[0].Stats[2].Day)
-		assert.Equal(t, today(), visitors[0].Stats[3].Day)
-		assert.Equal(t, pastDay(3), visitors[1].Stats[0].Day)
-		assert.Equal(t, pastDay(2), visitors[1].Stats[1].Day)
-		assert.Equal(t, pastDay(1), visitors[1].Stats[2].Day)
-		assert.Equal(t, today(), visitors[1].Stats[3].Day)
-		assert.Equal(t, 0, visitors[0].Stats[0].Visitors)
-		assert.Equal(t, 42, visitors[0].Stats[1].Visitors)
-		assert.Equal(t, 0, visitors[0].Stats[2].Visitors)
-		assert.Equal(t, 1, visitors[0].Stats[3].Visitors)
-		assert.Equal(t, 0, visitors[1].Stats[0].Visitors)
-		assert.Equal(t, 0, visitors[1].Stats[1].Visitors)
-		assert.Equal(t, 0, visitors[1].Stats[2].Visitors)
-		assert.Equal(t, 1, visitors[1].Stats[3].Visitors)
-		assert.Equal(t, 0, visitors[0].Stats[0].Sessions)
-		assert.Equal(t, 67, visitors[0].Stats[1].Sessions)
-		assert.Equal(t, 0, visitors[0].Stats[2].Sessions)
-		assert.Equal(t, 1, visitors[0].Stats[3].Sessions)
-		assert.Equal(t, 0, visitors[1].Stats[0].Sessions)
-		assert.Equal(t, 0, visitors[1].Stats[1].Sessions)
-		assert.Equal(t, 0, visitors[1].Stats[2].Sessions)
-		assert.Equal(t, 1, visitors[1].Stats[3].Sessions)
-		assert.Equal(t, 0, visitors[0].Stats[0].Bounces)
-		assert.Equal(t, 30, visitors[0].Stats[1].Bounces)
-		assert.Equal(t, 0, visitors[0].Stats[2].Bounces)
-		assert.Equal(t, 0, visitors[0].Stats[3].Bounces)
-		assert.Equal(t, 0, visitors[1].Stats[0].Bounces)
-		assert.Equal(t, 0, visitors[1].Stats[1].Bounces)
-		assert.Equal(t, 0, visitors[1].Stats[2].Bounces)
-		assert.Equal(t, 0, visitors[1].Stats[3].Bounces)
-		assert.Equal(t, 0, visitors[0].Stats[0].Views)
-		assert.Equal(t, 71, visitors[0].Stats[1].Views)
-		assert.Equal(t, 0, visitors[0].Stats[2].Views)
-		assert.Equal(t, 1, visitors[0].Stats[3].Views)
-		assert.Equal(t, 0, visitors[1].Stats[0].Views)
-		assert.Equal(t, 0, visitors[1].Stats[1].Views)
-		assert.Equal(t, 0, visitors[1].Stats[2].Views)
-		assert.Equal(t, 1, visitors[1].Stats[3].Views)
-		assert.Equal(t, 60, visitors[0].Stats[1].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[0].Stats[2].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[0].Stats[3].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[0].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[1].AverageTimeSpendSeconds)
-		assert.Equal(t, 0, visitors[1].Stats[2].AverageTimeSpendSeconds)
-		assert.Equal(t, 120, visitors[1].Stats[3].AverageTimeSpendSeconds)
-		assert.InDelta(t, 0, visitors[0].Stats[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.9767, visitors[0].Stats[1].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[2].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.0232, visitors[0].Stats[3].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[1].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[2].RelativeVisitors, 0.01)
-		assert.InDelta(t, 1, visitors[1].Stats[3].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[0].BounceRate, 0.01)
-		assert.InDelta(t, 0.71, visitors[0].Stats[1].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[2].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[3].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[0].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[1].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[2].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[3].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[0].RelativeViews, 0.01)
-		assert.InDelta(t, 0.9861, visitors[0].Stats[1].RelativeViews, 0.01)
-		assert.InDelta(t, 0, visitors[0].Stats[2].RelativeViews, 0.01)
-		assert.InDelta(t, 0.0138, visitors[0].Stats[3].RelativeViews, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[0].RelativeViews, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[1].RelativeViews, 0.01)
-		assert.InDelta(t, 0, visitors[1].Stats[2].RelativeViews, 0.01)
-		assert.InDelta(t, 1, visitors[1].Stats[3].RelativeViews, 0.01)
-	}
-}
-
-func TestAnalyzer_PageLanguages(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "de", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &LanguageStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-				Visitors:   42,
-			},
-			Language: sql.NullString{String: "de", Valid: true},
-		}
-		assert.NoError(t, store.SaveLanguageStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.PageLanguages(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "de", visitors[0].Language.String)
-		assert.Equal(t, "en", visitors[1].Language.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_PageReferrer(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "ref1", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		hit := Hit{
-			BaseEntity:   BaseEntity{TenantID: NewTenantID(tenantID)},
-			Fingerprint:  "fp1",
-			Path:         "/path",
-			Language:     sql.NullString{String: "en", Valid: true},
-			UserAgent:    sql.NullString{String: "ua1", Valid: true},
-			Referrer:     sql.NullString{String: "ref2", Valid: true},
-			ReferrerName: sql.NullString{String: "ref2Name", Valid: true},
-			ReferrerIcon: sql.NullString{String: "ref2Icon", Valid: true},
-			Time:         today(),
-		}
-		assert.NoError(t, store.SaveHits([]Hit{hit}))
-		stats := &ReferrerStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-				Visitors:   42,
-				Bounces:    11,
-			},
-			Referrer:     sql.NullString{String: "ref2", Valid: true},
-			ReferrerName: sql.NullString{String: "ref2Name", Valid: true},
-			ReferrerIcon: sql.NullString{String: "ref2Icon", Valid: true},
-		}
-		assert.NoError(t, store.SaveReferrerStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.PageReferrer(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, "ref2", visitors[0].Referrer.String)
-		assert.Equal(t, "ref1", visitors[1].Referrer.String)
-		assert.Equal(t, "ref2Name", visitors[0].ReferrerName.String)
-		assert.Equal(t, "ref2Icon", visitors[0].ReferrerIcon.String)
-		assert.False(t, visitors[1].ReferrerName.Valid)
-		assert.False(t, visitors[1].ReferrerIcon.Valid)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.2619, visitors[0].BounceRate, 0.01)
-		assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
-	}
-}
-
-func TestAnalyzer_PageOS(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, OSMac, "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, OSMac, "", "", "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, OSWindows, "", "", "", "", false, false, 0, 0)
-		stats := &OSStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-				Visitors:   42,
-			},
-			OS: sql.NullString{String: OSWindows, Valid: true},
-		}
-		assert.NoError(t, store.SaveOSStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.PageOS(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, OSWindows, visitors[0].OS.String)
-		assert.Equal(t, OSMac, visitors[1].OS.String)
-		assert.Equal(t, 43, visitors[0].Visitors)
-		assert.Equal(t, 1, visitors[1].Visitors)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_PageBrowser(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", BrowserFirefox, "", "", false, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", BrowserChrome, "", "", false, false, 0, 0)
-		stats := &BrowserStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-				Visitors:   42,
-			},
-			Browser: sql.NullString{String: BrowserChrome, Valid: true},
-		}
-		assert.NoError(t, store.SaveBrowserStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors, err := analyzer.PageBrowser(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Len(t, visitors, 2)
-		assert.Equal(t, BrowserChrome, visitors[0].Browser.String)
-		assert.Equal(t, BrowserFirefox, visitors[1].Browser.String)
-		assert.Equal(t, 43, visitors[0].Visitors, 43)
-		assert.Equal(t, 1, visitors[1].Visitors, 1)
-		assert.InDelta(t, 0.977, visitors[0].RelativeVisitors, 0.01)
-		assert.InDelta(t, 0.022, visitors[1].RelativeVisitors, 0.01)
-	}
-}
-
-func TestAnalyzer_PagePlatform(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, true, 0, 0)
-		createHit(t, store, tenantID, "fp1", "/path", "en", "ua1", "", today(), time.Time{}, "", "", "", "", "", false, false, 0, 0)
-		stats := &VisitorStats{
-			Stats: Stats{
-				BaseEntity: BaseEntity{TenantID: NewTenantID(tenantID)},
-				Day:        pastDay(2),
-				Path:       sql.NullString{String: "/path", Valid: true},
-			},
-			PlatformDesktop: 42,
-			PlatformMobile:  43,
-			PlatformUnknown: 44,
-		}
-		assert.NoError(t, store.SaveVisitorStats(nil, stats))
-		analyzer := NewAnalyzer(store, nil)
-		visitors := analyzer.PagePlatform(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.Equal(t, 43, visitors.PlatformDesktop)
-		assert.Equal(t, 44, visitors.PlatformMobile)
-		assert.Equal(t, 45, visitors.PlatformUnknown)
-		assert.InDelta(t, 0.325, visitors.RelativePlatformDesktop, 0.01)
-		assert.InDelta(t, 0.33, visitors.RelativePlatformMobile, 0.01)
-		assert.InDelta(t, 0.34, visitors.RelativePlatformUnknown, 0.01)
-	}
-}
-
-func TestAnalyzer_PagePlatformNoData(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		analyzer := NewAnalyzer(store, nil)
-		visitors := analyzer.PagePlatform(&Filter{
-			TenantID: NewTenantID(tenantID),
-			Path:     "/path",
-			From:     pastDay(3),
-			To:       today(),
-		})
-		assert.Equal(t, 0, visitors.PlatformDesktop)
-		assert.Equal(t, 0, visitors.PlatformMobile)
-		assert.Equal(t, 0, visitors.PlatformUnknown)
-		assert.InDelta(t, 0, visitors.RelativePlatformDesktop, 0.01)
-		assert.InDelta(t, 0, visitors.RelativePlatformMobile, 0.01)
-		assert.InDelta(t, 0, visitors.RelativePlatformUnknown, 0.01)
-	}
-}
-
-func TestAnalyzer_TimeOfDayTimezone(t *testing.T) {
-	store := NewPostgresStore(postgresDB, nil)
-	cleanupDB(t)
-	d := day(2020, 9, 24, 15)
-	createHit(t, store, 0, "fp", "/", "en", "ua", "", d, time.Time{}, "", "", "", "", "", false, false, 0, 0)
-	tz := time.FixedZone("test", 3600*3)
-	targetDate := d.In(tz)
-	assert.Equal(t, 18, targetDate.Hour())
-	analyzer := NewAnalyzer(store, &AnalyzerConfig{
-		Timezone: tz,
-	})
-	visitors, _ := analyzer.TimeOfDay(&Filter{
-		From: day(2020, 9, 24, 0),
-		To:   day(2020, 9, 24, 0),
-	})
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 5), Path: "/bar"},
+		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 4), Path: "/bar"},
+		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 3), Path: "/foo"},
+		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/"},
+		{Fingerprint: "fp4", Time: time.Now().Add(-time.Minute), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, count, err := analyzer.ActiveVisitors(nil, time.Minute*10)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, count)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/", visitors[0].Path.String)
+	assert.Equal(t, "/bar", visitors[1].Path.String)
+	assert.Equal(t, "/foo", visitors[2].Path.String)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: "/bar"}, time.Minute*10)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
 	assert.Len(t, visitors, 1)
-	assert.Len(t, visitors[0].Stats, 24)
-	assert.Equal(t, day(2020, 9, 24, 0), visitors[0].Day)
-	assert.Equal(t, 1, visitors[0].Stats[18].Visitors)
+	assert.Equal(t, "/bar", visitors[0].Path.String)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	_, _, err = analyzer.ActiveVisitors(getMaxFilter(), time.Minute*10)
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(4).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(4).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp9", Time: Today(), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors(&Filter{From: pastDay(4), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, pastDay(4), visitors[0].Day)
+	assert.Equal(t, pastDay(3), visitors[1].Day)
+	assert.Equal(t, pastDay(2), visitors[2].Day)
+	assert.Equal(t, pastDay(1), visitors[3].Day)
+	assert.Equal(t, Today(), visitors[4].Day)
+	assert.Equal(t, 4, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 4, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 6, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 4, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 7, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 6, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 2, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	asd, err := analyzer.AvgSessionDuration(nil)
+	assert.NoError(t, err)
+	assert.Len(t, asd, 2)
+	assert.Equal(t, pastDay(4), asd[0].Day)
+	assert.Equal(t, pastDay(2), asd[1].Day)
+	assert.Equal(t, 300, asd[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 450, asd[1].AverageTimeSpentSeconds)
+	tsd, err := analyzer.TotalSessionDuration(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1200, tsd)
+	visitors, err = analyzer.Visitors(&Filter{From: pastDay(4), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	assert.Equal(t, pastDay(4), visitors[0].Day)
+	assert.Equal(t, pastDay(2), visitors[2].Day)
+	asd, err = analyzer.AvgSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, asd, 3)
+	tsd, err = analyzer.TotalSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Equal(t, 900, tsd)
+	_, err = analyzer.Visitors(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.AvgSessionDuration(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.TotalSessionDuration(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Growth(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		stats := []VisitorStats{
-			{
-				Stats: Stats{
-					Day:                     pastDay(2),
-					Path:                    sql.NullString{String: "/home", Valid: true},
-					Visitors:                5,
-					Sessions:                6,
-					Bounces:                 3,
-					Views:                   21,
-					AverageTimeSpendSeconds: 56,
-				},
-			},
-			{
-				Stats: Stats{
-					Day:                     pastDay(3),
-					Path:                    sql.NullString{String: "/about", Valid: true},
-					Visitors:                6,
-					Sessions:                7,
-					Bounces:                 4,
-					Views:                   22,
-					AverageTimeSpendSeconds: 123,
-				},
-			},
-			{
-				Stats: Stats{
-					Day:                     pastDay(4),
-					Path:                    sql.NullString{String: "/home", Valid: true},
-					Visitors:                2,
-					Sessions:                3,
-					Bounces:                 1,
-					Views:                   23,
-					AverageTimeSpendSeconds: 98,
-				},
-			},
-			{
-				Stats: Stats{
-					Day:                     pastDay(5),
-					Path:                    sql.NullString{String: "/about", Valid: true},
-					Visitors:                8,
-					Sessions:                9,
-					Bounces:                 6,
-					Views:                   24,
-					AverageTimeSpendSeconds: 241,
-				},
-			},
-		}
-
-		for _, s := range stats {
-			s.BaseEntity.TenantID = NewTenantID(tenantID)
-			assert.NoError(t, store.SaveVisitorStats(nil, &s))
-		}
-
-		// save again without paths for processed statistics
-		for _, s := range stats {
-			s.BaseEntity.TenantID = NewTenantID(tenantID)
-			s.Path.Valid = false
-			assert.NoError(t, store.SaveVisitorStats(nil, &s))
-		}
-
-		analyzer := NewAnalyzer(store, nil)
-		growth, err := analyzer.Growth(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       pastDay(1),
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 11, growth.Current.Visitors)
-		assert.Equal(t, 13, growth.Current.Sessions)
-		assert.Equal(t, 7, growth.Current.Bounces)
-		assert.Equal(t, 43, growth.Current.Views)
-		assert.Equal(t, 90, growth.Current.AverageTimeSpendSeconds)
-		assert.Equal(t, 10, growth.Previous.Visitors)
-		assert.Equal(t, 12, growth.Previous.Sessions)
-		assert.Equal(t, 7, growth.Previous.Bounces)
-		assert.Equal(t, 47, growth.Previous.Views)
-		assert.Equal(t, 170, growth.Previous.AverageTimeSpendSeconds)
-		assert.InDelta(t, 0.1, growth.VisitorsGrowth, 0.01)
-		assert.InDelta(t, 0.08333, growth.SessionsGrowth, 0.01)
-		assert.InDelta(t, -0.0909, growth.BouncesGrowth, 0.01)
-		assert.InDelta(t, -0.0851, growth.ViewsGrowth, 0.01)
-		assert.InDelta(t, -0.4733, growth.SessionDurationGrowth, 0.01)
-		growth, err = analyzer.Growth(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     pastDay(3),
-			To:       pastDay(1),
-			Path:     "/home",
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 5, growth.Current.Visitors)
-		assert.Equal(t, 6, growth.Current.Sessions)
-		assert.Equal(t, 3, growth.Current.Bounces)
-		assert.Equal(t, 21, growth.Current.Views)
-		assert.Equal(t, 56, growth.Current.AverageTimeSpendSeconds)
-		assert.Equal(t, 2, growth.Previous.Visitors)
-		assert.Equal(t, 3, growth.Previous.Sessions)
-		assert.Equal(t, 1, growth.Previous.Bounces)
-		assert.Equal(t, 23, growth.Previous.Views)
-		assert.Equal(t, 98, growth.Previous.AverageTimeSpendSeconds)
-		assert.InDelta(t, 1.5, growth.VisitorsGrowth, 0.01)
-		assert.InDelta(t, 1, growth.SessionsGrowth, 0.01)
-		assert.InDelta(t, 0.1999, growth.BouncesGrowth, 0.01)
-		assert.InDelta(t, -0.0869, growth.ViewsGrowth, 0.01)
-		assert.InDelta(t, -0.4285, growth.SessionDurationGrowth, 0.01)
-	}
-}
-
-func TestAnalyzer_GrowthToday(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/", "en", "ua1", "", today().Add(time.Hour-time.Minute*5), today(), "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/p2", "en", "ua1", "", today().Add(time.Hour), today(), "", "", "", "", "", true, false, 0, 0)
-		stats := []VisitorStats{
-			{
-				Stats: Stats{
-					Day:                     pastDay(1),
-					Path:                    sql.NullString{String: "/home", Valid: true},
-					Visitors:                3,
-					Sessions:                6,
-					Bounces:                 1,
-					Views:                   10,
-					AverageTimeSpendSeconds: 60,
-				},
-			},
-		}
-
-		for _, s := range stats {
-			s.BaseEntity.TenantID = NewTenantID(tenantID)
-			assert.NoError(t, store.SaveVisitorStats(nil, &s))
-		}
-
-		// save again without paths for processed statistics
-		for _, s := range stats {
-			s.BaseEntity.TenantID = NewTenantID(tenantID)
-			s.Path.Valid = false
-			assert.NoError(t, store.SaveVisitorStats(nil, &s))
-		}
-
-		analyzer := NewAnalyzer(store, nil)
-		growth, err := analyzer.Growth(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     today(),
-			To:       today(),
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, growth.Current.Visitors)
-		assert.Equal(t, 2, growth.Current.Sessions)
-		assert.Equal(t, 1, growth.Current.Bounces)
-		assert.Equal(t, 3, growth.Current.Views)
-		assert.Equal(t, 300/2, growth.Current.AverageTimeSpendSeconds)
-		assert.Equal(t, 3, growth.Previous.Visitors)
-		assert.Equal(t, 6, growth.Previous.Sessions)
-		assert.Equal(t, 1, growth.Previous.Bounces)
-		assert.Equal(t, 10, growth.Previous.Views)
-		assert.Equal(t, 60, growth.Previous.AverageTimeSpendSeconds)
-		assert.InDelta(t, -0.3333, growth.VisitorsGrowth, 0.01)
-		assert.InDelta(t, -0.6666, growth.SessionsGrowth, 0.01)
-		assert.InDelta(t, 0.5, growth.BouncesGrowth, 0.01)
-		assert.InDelta(t, -0.7, growth.ViewsGrowth, 0.01)
-		assert.InDelta(t, 1.5, growth.SessionDurationGrowth, 0.01)
-	}
-}
-
-func TestAnalyzer_GrowthTodayPath(t *testing.T) {
-	for _, tenantID := range []int64{0, 1} {
-		store := NewPostgresStore(postgresDB, nil)
-		cleanupDB(t)
-		createHit(t, store, tenantID, "fp1", "/", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp2", "/p2", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
-		createHit(t, store, tenantID, "fp3", "/p2", "en", "ua1", "", today(), today(), "", "", "", "", "", true, false, 0, 0)
-		stats := []VisitorStats{
-			{
-				Stats: Stats{
-					Day:                     pastDay(1),
-					Path:                    sql.NullString{String: "/p2", Valid: true},
-					Visitors:                3,
-					Sessions:                5,
-					Bounces:                 2,
-					Views:                   10,
-					AverageTimeSpendSeconds: 60,
-				},
-			},
-		}
-
-		for _, s := range stats {
-			s.BaseEntity.TenantID = NewTenantID(tenantID)
-			assert.NoError(t, store.SaveVisitorStats(nil, &s))
-		}
-
-		analyzer := NewAnalyzer(store, nil)
-		growth, err := analyzer.Growth(&Filter{
-			TenantID: NewTenantID(tenantID),
-			From:     today(),
-			To:       today(),
-			Path:     "/p2",
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, growth.Current.Visitors)
-		assert.Equal(t, 2, growth.Current.Sessions)
-		assert.Equal(t, 2, growth.Current.Bounces)
-		assert.Equal(t, 2, growth.Current.Views)
-		assert.Equal(t, 0, growth.Current.AverageTimeSpendSeconds)
-		assert.Equal(t, 3, growth.Previous.Visitors)
-		assert.Equal(t, 5, growth.Previous.Sessions)
-		assert.Equal(t, 2, growth.Previous.Bounces)
-		assert.Equal(t, 10, growth.Previous.Views)
-		assert.Equal(t, 60, growth.Previous.AverageTimeSpendSeconds)
-		assert.InDelta(t, -0.333, growth.VisitorsGrowth, 0.01)
-		assert.InDelta(t, -0.6, growth.SessionsGrowth, 0.01)
-		assert.InDelta(t, 0.5, growth.BouncesGrowth, 0.01)
-		assert.InDelta(t, -0.8, growth.ViewsGrowth, 0.01)
-		assert.InDelta(t, -1, growth.SessionDurationGrowth, 0.01)
-	}
-}
-
-func TestAnalyzer_GrowthNoData(t *testing.T) {
-	store := NewPostgresStore(postgresDB, nil)
-	cleanupDB(t)
-	analyzer := NewAnalyzer(store, nil)
-	growth, err := analyzer.Growth(&Filter{
-		From: pastDay(3),
-		To:   pastDay(1),
-	})
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 900},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/foo", PreviousTimeOnPageSeconds: 300},
+		{Fingerprint: "fp4", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(3).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp7", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 300},
+		{Fingerprint: "fp9", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp10", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp11", Time: Today(), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Growth(nil)
+	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
+	assert.Nil(t, growth)
+	growth, err = analyzer.Growth(&Filter{Day: pastDay(2)})
 	assert.NoError(t, err)
-	assert.Equal(t, 0, growth.Current.Visitors)
-	assert.Equal(t, 0, growth.Current.Sessions)
-	assert.Equal(t, 0, growth.Current.Bounces)
-	assert.Equal(t, 0, growth.Current.Views)
-	assert.Equal(t, 0, growth.Current.AverageTimeSpendSeconds)
-	assert.Equal(t, 0, growth.Previous.Visitors)
-	assert.Equal(t, 0, growth.Previous.Sessions)
-	assert.Equal(t, 0, growth.Previous.Bounces)
-	assert.Equal(t, 0, growth.Previous.Views)
-	assert.Equal(t, 0, growth.Previous.AverageTimeSpendSeconds)
-	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.01)
-	assert.InDelta(t, 0, growth.SessionsGrowth, 0.01)
-	assert.InDelta(t, 0, growth.BouncesGrowth, 0.01)
-	assert.InDelta(t, 0, growth.ViewsGrowth, 0.01)
-	assert.InDelta(t, 0, growth.SessionDurationGrowth, 0.01)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2)})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1.75, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	_, err = analyzer.Growth(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_VisitorHours(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
+		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 3), Path: "/"},
+		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 5), Path: "/"},
+		{Fingerprint: "fp7", Time: Today().Add(time.Hour * 10), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.VisitorHours(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 0, visitors[0].Hour)
+	assert.Equal(t, 3, visitors[3].Hour)
+	assert.Equal(t, 4, visitors[4].Hour)
+	assert.Equal(t, 5, visitors[5].Hour)
+	assert.Equal(t, 8, visitors[8].Hour)
+	assert.Equal(t, 10, visitors[10].Hour)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 3, visitors[5].Visitors)
+	assert.Equal(t, 2, visitors[8].Visitors)
+	assert.Equal(t, 1, visitors[10].Visitors)
+	visitors, err = analyzer.VisitorHours(&Filter{From: pastDay(1), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 3, visitors[3].Hour)
+	assert.Equal(t, 4, visitors[4].Hour)
+	assert.Equal(t, 5, visitors[5].Hour)
+	assert.Equal(t, 8, visitors[8].Hour)
+	assert.Equal(t, 10, visitors[10].Hour)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 2, visitors[5].Visitors)
+	assert.Equal(t, 1, visitors[8].Visitors)
+	assert.Equal(t, 1, visitors[10].Visitors)
+	_, err = analyzer.VisitorHours(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: sql.NullTime{Time: pastDay(4), Valid: true}, PreviousTimeOnPageSeconds: 180, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar"},
+		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/foo"},
+		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp9", Time: Today(), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/", visitors[0].Path.String)
+	assert.Equal(t, "/bar", visitors[1].Path.String)
+	assert.Equal(t, "/foo", visitors[2].Path.String)
+	assert.Equal(t, 9, visitors[0].Visitors)
+	assert.Equal(t, 3, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.InDelta(t, 0.6428, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2142, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.01)
+	assert.Equal(t, 10, visitors[0].Sessions)
+	assert.Equal(t, 4, visitors[1].Sessions)
+	assert.Equal(t, 2, visitors[2].Sessions)
+	assert.Equal(t, 10, visitors[0].Views)
+	assert.Equal(t, 4, visitors[1].Views)
+	assert.Equal(t, 2, visitors[2].Views)
+	assert.InDelta(t, 0.625, visitors[0].RelativeViews, 0.01)
+	assert.InDelta(t, 0.25, visitors[1].RelativeViews, 0.01)
+	assert.InDelta(t, 0.125, visitors[2].RelativeViews, 0.01)
+	assert.Equal(t, 8, visitors[0].Bounces)
+	assert.Equal(t, 2, visitors[1].Bounces)
+	assert.Equal(t, 2, visitors[2].Bounces)
+	assert.InDelta(t, 0.8888, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.6666, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	atop, err := analyzer.AvgTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Len(t, atop, 2)
+	assert.Equal(t, "/", atop[0].Path.String)
+	assert.Equal(t, "/bar", atop[1].Path.String)
+	assert.Equal(t, 390, atop[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
+	ttop, err := analyzer.TotalTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1380, ttop)
+	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/", visitors[0].Path.String)
+	assert.Equal(t, "/bar", visitors[1].Path.String)
+	atop, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, atop, 2)
+	assert.Equal(t, "/", atop[0].Path.String)
+	assert.Equal(t, "/bar", atop[1].Path.String)
+	assert.Equal(t, 600, atop[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
+	ttop, err = analyzer.TotalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Equal(t, 1200, ttop)
+	_, err = analyzer.Pages(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.AvgTimeOnPage(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.TotalTimeOnPage(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_Referrer(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/foo", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/bar", Referrer: sql.NullString{String: "ref3", Valid: true}},
+		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Referrer(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "ref1", visitors[0].Referrer.String)
+	assert.Equal(t, "ref2", visitors[1].Referrer.String)
+	assert.Equal(t, "ref3", visitors[2].Referrer.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 2, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	_, err = analyzer.Referrer(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_Languages(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), Language: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), Language: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), Language: "jp"},
+		{Fingerprint: "fp3", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp4", Time: time.Now(), Language: "en"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Languages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "en", visitors[0].Language.String)
+	assert.Equal(t, "de", visitors[1].Language.String)
+	assert.Equal(t, "jp", visitors[2].Language.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Languages(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_Countries(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "de"},
+		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "jp"},
+		{Fingerprint: "fp3", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp4", Time: time.Now(), CountryCode: "en"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Countries(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "en", visitors[0].CountryCode.String)
+	assert.Equal(t, "de", visitors[1].CountryCode.String)
+	assert.Equal(t, "jp", visitors[2].CountryCode.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Countries(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_Browser(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserFirefox},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserFirefox},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserSafari},
+		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserChrome},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Browser(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, BrowserChrome, visitors[0].Browser.String)
+	assert.Equal(t, BrowserFirefox, visitors[1].Browser.String)
+	assert.Equal(t, BrowserSafari, visitors[2].Browser.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Browser(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_OS(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSMac},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSMac},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSLinux},
+		{Fingerprint: "fp3", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp4", Time: time.Now(), OS: OSWindows},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.OS(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, OSWindows, visitors[0].OS.String)
+	assert.Equal(t, OSMac, visitors[1].OS.String)
+	assert.Equal(t, OSLinux, visitors[2].OS.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.OS(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_Platform(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now()},
+		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, platform.PlatformDesktop)
+	assert.Equal(t, 2, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
+	_, err = analyzer.Platform(getMaxFilter())
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_ScreenClass(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XL"},
+		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "XL"},
+		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "L"},
+		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: "XXL"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.ScreenClass(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "XXL", visitors[0].ScreenClass.String)
+	assert.Equal(t, "XL", visitors[1].ScreenClass.String)
+	assert.Equal(t, "L", visitors[2].ScreenClass.String)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.ScreenClass(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
-	analyzer := NewAnalyzer(newTestStore(), nil)
+	analyzer := NewAnalyzer(dbClient)
 	growth := analyzer.calculateGrowth(0, 0)
 	assert.InDelta(t, 0, growth, 0.001)
 	growth = analyzer.calculateGrowth(1000, 0)
@@ -1110,61 +517,27 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	assert.InDelta(t, -0.5, growth, 0.001)
 }
 
-func TestAnalyzer_calculateBouncesGrowth(t *testing.T) {
-	analyzer := NewAnalyzer(newTestStore(), nil)
-	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{}, &Stats{}), 0.001)
-	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 10,
-		Bounces:  5,
-	}, &Stats{
-		Visitors: 0,
-		Bounces:  0,
-	}), 0.001)
-	assert.InDelta(t, -1, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 0,
-		Bounces:  0,
-	}, &Stats{
-		Visitors: 10,
-		Bounces:  5,
-	}), 0.001)
-	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 5,
-		Bounces:  0,
-	}, &Stats{
-		Visitors: 10,
-		Bounces:  0,
-	}), 0.001)
-	assert.InDelta(t, 1, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 10,
-		Bounces:  0,
-	}, &Stats{
-		Visitors: 5,
-		Bounces:  0,
-	}), 0.001)
-	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 0,
-		Bounces:  10,
-	}, &Stats{
-		Visitors: 0,
-		Bounces:  5,
-	}), 0.001)
-	assert.InDelta(t, 0, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 0,
-		Bounces:  5,
-	}, &Stats{
-		Visitors: 0,
-		Bounces:  10,
-	}), 0.001)
-	assert.InDelta(t, 0.1515, analyzer.calculateBouncesGrowth(&Stats{
-		Visitors: 42,
-		Bounces:  19,
-	}, &Stats{
-		Visitors: 56,
-		Bounces:  22,
-	}), 0.001)
-}
-
-func pastDay(n int) time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
+func getMaxFilter() *Filter {
+	return &Filter{
+		ClientID:       42,
+		From:           pastDay(5),
+		To:             pastDay(2),
+		Day:            pastDay(1),
+		Start:          time.Now().UTC(),
+		Path:           "/path",
+		Language:       "en",
+		Country:        "en",
+		Referrer:       "ref",
+		OS:             OSWindows,
+		OSVersion:      "10",
+		Browser:        BrowserChrome,
+		BrowserVersion: "90",
+		Platform:       PlatformDesktop,
+		ScreenClass:    "XL",
+		UTMSource:      "source",
+		UTMMedium:      "medium",
+		UTMCampaign:    "campaign",
+		UTMContent:     "content",
+		UTMTerm:        "term",
+	}
 }

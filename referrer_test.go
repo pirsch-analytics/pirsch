@@ -148,3 +148,9 @@ func TestGetReferrerAndroidApp(t *testing.T) {
 	assert.Empty(t, name)
 	assert.Empty(t, icon)
 }
+
+func TestContainsString(t *testing.T) {
+	list := []string{"a", "b", "c", "d"}
+	assert.False(t, containsString(list, "e"))
+	assert.True(t, containsString(list, "c"))
+}

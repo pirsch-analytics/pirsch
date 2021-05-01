@@ -1,80 +1,34 @@
 package pirsch
 
 import (
-	"database/sql"
-	_ "github.com/lib/pq"
 	"os"
 	"testing"
+	"time"
 )
 
-var (
-	postgresDB *sql.DB
-)
+var dbClient *Client
 
 func TestMain(m *testing.M) {
-	connectDB()
-	defer closeDB()
-	os.Exit(m.Run())
-}
+	if err := Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true"); err != nil {
+		panic(err)
+	}
 
-// open test database connections
-func connectDB() {
-	var err error
-	postgresDB, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=postgres dbname=pirsch search_path=public sslmode=disable timezone=UTC")
+	c, err := NewClient("tcp://127.0.0.1:9000", nil)
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := postgresDB.Ping(); err != nil {
-		panic(err)
-	}
-
-	postgresDB.SetMaxOpenConns(1)
+	dbClient = c
+	defer func() {
+		if err := dbClient.DB.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	os.Exit(m.Run())
 }
 
-// close test database connections
-func closeDB() {
-	if err := postgresDB.Close(); err != nil {
-		panic(err)
-	}
-}
-
-// clean up all test databases
-func cleanupDB(t *testing.T) {
-	if _, err := postgresDB.Exec(`DELETE FROM "hit"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "visitor_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "visitor_time_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "language_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "referrer_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "os_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "browser_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "screen_stats"`); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := postgresDB.Exec(`DELETE FROM "country_stats"`); err != nil {
-		t.Fatal(err)
-	}
+func cleanupDB() {
+	dbClient.MustExec(`ALTER TABLE "hit" DELETE WHERE 1=1`)
+	time.Sleep(time.Millisecond * 20)
 }

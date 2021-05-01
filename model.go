@@ -2,113 +2,83 @@ package pirsch
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
-// BaseEntity is the base entity for all other entities.
-type BaseEntity struct {
-	ID       int64         `db:"id" json:"id"`
-	TenantID sql.NullInt64 `db:"tenant_id" json:"tenant_id"`
+// Hit represents a single data point/page visit and is the central entity of Pirsch.
+type Hit struct {
+	ClientID                  int64 `db:"client_id"`
+	Fingerprint               string
+	Time                      time.Time
+	Session                   sql.NullTime
+	PreviousTimeOnPageSeconds int    `db:"previous_time_on_page_seconds"`
+	UserAgent                 string `db:"user_agent"`
+	Path                      string
+	URL                       string
+	Language                  string
+	CountryCode               string
+	Referrer                  sql.NullString
+	ReferrerName              sql.NullString `db:"referrer_name"`
+	ReferrerIcon              sql.NullString `db:"referrer_icon"`
+	OS                        string
+	OSVersion                 string `db:"os_version"`
+	Browser                   string
+	BrowserVersion            string `db:"browser_version"`
+	Desktop                   bool
+	Mobile                    bool
+	ScreenWidth               int            `db:"screen_width"`
+	ScreenHeight              int            `db:"screen_height"`
+	ScreenClass               string         `db:"screen_class"`
+	UTMSource                 sql.NullString `db:"utm_source"`
+	UTMMedium                 sql.NullString `db:"utm_medium"`
+	UTMCampaign               sql.NullString `db:"utm_campaign"`
+	UTMContent                sql.NullString `db:"utm_content"`
+	UTMTerm                   sql.NullString `db:"utm_term"`
 }
 
-// Stats is the base entity for all statistics.
+// String implements the Stringer interface.
+func (hit Hit) String() string {
+	out, _ := json.Marshal(hit)
+	return string(out)
+}
+
+// Stats combines statistical data.
 type Stats struct {
-	BaseEntity
-
-	Day                     time.Time      `db:"day" json:"day"`
-	Path                    sql.NullString `db:"path" json:"path"`
-	Visitors                int            `db:"visitors" json:"visitors"`
-	Sessions                int            `db:"sessions" json:"sessions"`
-	Bounces                 int            `db:"bounces" json:"bounces"`
-	Views                   int            `db:"views" json:"views"`
-	RelativeVisitors        float64        `db:"-" json:"relative_visitors"`
-	BounceRate              float64        `db:"-" json:"bounce_rate"`
-	RelativeViews           float64        `db:"-" json:"relative_views"`
-	AverageTimeSpendSeconds int            `db:"average_time_spend_seconds" json:"average_time_spend_seconds"`
+	Day                     time.Time      `json:"day,omitempty"`
+	Hour                    int            `json:"hour,omitempty"`
+	Path                    sql.NullString `json:"path,omitempty"`
+	Referrer                sql.NullString `json:"referrer,omitempty"`
+	ReferrerName            sql.NullString `db:"referrer_name" json:"referrer_name,omitempty"`
+	ReferrerIcon            sql.NullString `db:"referrer_icon" json:"referrer_icon,omitempty"`
+	Language                sql.NullString `json:"language,omitempty"`
+	CountryCode             sql.NullString `db:"country_code" json:"country_code,omitempty"`
+	Browser                 sql.NullString `json:"browser,omitempty"`
+	OS                      sql.NullString `json:"os,omitempty"`
+	Views                   int            `json:"views,omitempty"`
+	Visitors                int            `json:"visitors,omitempty"`
+	Sessions                int            `json:"sessions,omitempty"`
+	Bounces                 int            `json:"bounces,omitempty"`
+	RelativeViews           float64        `db:"relative_views" json:"relative_views,omitempty"`
+	RelativeVisitors        float64        `db:"relative_visitors" json:"relative_visitors,omitempty"`
+	BounceRate              float64        `db:"bounce_rate" json:"bounce_rate,omitempty"`
+	ScreenWidth             int            `db:"screen_width" json:"screen_width,omitempty"`
+	ScreenHeight            int            `db:"screen_height" json:"screen_height,omitempty"`
+	ScreenClass             sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
+	PlatformDesktop         int            `db:"platform_desktop" json:"platform_desktop,omitempty"`
+	PlatformMobile          int            `db:"platform_mobile" json:"platform_mobile,omitempty"`
+	PlatformUnknown         int            `db:"platform_unknown" json:"platform_unknown,omitempty"`
+	RelativePlatformDesktop float64        `db:"relative_platform_desktop" json:"relative_platform_desktop,omitempty"`
+	RelativePlatformMobile  float64        `db:"relative_platform_mobile" json:"relative_platform_mobile,omitempty"`
+	RelativePlatformUnknown float64        `db:"relative_platform_unknown" json:"relative_platform_unknown,omitempty"`
+	AverageTimeSpentSeconds int            `db:"average_time_spent_seconds" json:"average_time_spent_seconds,omitempty"`
 }
 
-func (stats *Stats) visitors() int {
-	return stats.Visitors
-}
-
-func (stats *Stats) setRelativeVisitors(relativeVisitors float64) {
-	stats.RelativeVisitors = relativeVisitors
-}
-
-// GetID returns the ID.
-func (stats *Stats) GetID() int64 {
-	return stats.BaseEntity.ID
-}
-
-// GetVisitors returns the visitor count.
-func (stats *Stats) GetVisitors() int {
-	return stats.Visitors
-}
-
-// VisitorStats is the visitor count for each path on each day and platform
-// and it is used to calculate the total visitor count for each day.
-type VisitorStats struct {
-	Stats
-
-	PlatformDesktop         int     `db:"platform_desktop" json:"platform_desktop"`
-	PlatformMobile          int     `db:"platform_mobile" json:"platform_mobile"`
-	PlatformUnknown         int     `db:"platform_unknown" json:"platform_unknown"`
-	RelativePlatformDesktop float64 `db:"-" json:"relative_platform_desktop"`
-	RelativePlatformMobile  float64 `db:"-" json:"relative_platform_mobile"`
-	RelativePlatformUnknown float64 `db:"-" json:"relative_platform_unknown"`
-}
-
-// VisitorTimeStats is the visitor count for each path on each day and hour (ranging from 0 to 23).
-type VisitorTimeStats struct {
-	Stats
-
-	Hour int `db:"hour" json:"hour"`
-}
-
-// LanguageStats is the visitor count for each path on each day and language.
-type LanguageStats struct {
-	Stats
-
-	Language sql.NullString `db:"language" json:"language"`
-}
-
-// ReferrerStats is the visitor count for each path on each day and referrer.
-type ReferrerStats struct {
-	Stats
-
-	Referrer     sql.NullString `db:"referrer" json:"referrer"`
-	ReferrerName sql.NullString `db:"referrer_name" json:"referrer_name"`
-	ReferrerIcon sql.NullString `db:"referrer_icon" json:"referrer_icon"`
-}
-
-// OSStats is the visitor count for each path on each day and operating system.
-type OSStats struct {
-	Stats
-
-	OS        sql.NullString `db:"os" json:"os"`
-	OSVersion sql.NullString `db:"os_version" json:"version"`
-}
-
-// BrowserStats is the visitor count for each path on each day and browser.
-type BrowserStats struct {
-	Stats
-
-	Browser        sql.NullString `db:"browser" json:"browser"`
-	BrowserVersion sql.NullString `db:"browser_version" json:"version"`
-}
-
-// ScreenStats is the visitor count for each screen resolution on each day.
-type ScreenStats struct {
-	Stats
-
-	Width  int            `db:"width" json:"width"`
-	Height int            `db:"height" json:"height"`
-	Class  sql.NullString `db:"class" json:"class"`
-}
-
-// CountryStats is the visitor count for each country on each day.
-type CountryStats struct {
-	Stats
-
-	CountryCode sql.NullString `db:"country_code" json:"country_code"`
+// Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
+type Growth struct {
+	VisitorsGrowth  float64 `json:"visitors_growth"`
+	ViewsGrowth     float64 `json:"views_growth"`
+	SessionsGrowth  float64 `json:"sessions_growth"`
+	BouncesGrowth   float64 `json:"bounces_growth"`
+	TimeSpentGrowth float64 `json:"time_spent_growth"`
 }
