@@ -62,8 +62,8 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMContent = "content"
 	filter.UTMTerm = "term"
 	args, query := filter.queryFields()
-	assert.Len(t, args, 15)
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND desktop IS TRUE AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? ", query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND desktop = 1 AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? ", query)
 }
 
 func pastDay(n int) time.Time {

@@ -147,8 +147,8 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 15)
-	fields := make([]string, 0, 15)
+	args := make([]interface{}, 0, 14)
+	fields := make([]string, 0, 14)
 
 	if filter.Path != "" {
 		args = append(args, filter.Path)
@@ -191,14 +191,12 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	}
 
 	if filter.Platform != "" {
-		args = append(args, filter.Platform)
-
 		if filter.Platform == PlatformDesktop {
-			fields = append(fields, "desktop IS TRUE ")
+			fields = append(fields, "desktop = 1 ")
 		} else if filter.Platform == PlatformMobile {
-			fields = append(fields, "mobile IS TRUE ")
+			fields = append(fields, "mobile = 1 ")
 		} else {
-			fields = append(fields, "desktop IS FALSE AND mobile IS FALSE ")
+			fields = append(fields, "desktop = 0 AND mobile = 0 ")
 		}
 	}
 

@@ -36,6 +36,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "/bar", visitors[0].Path.String)
 	assert.Equal(t, 2, visitors[0].Visitors)
+	_, _, err = analyzer.ActiveVisitors(getMaxFilter(), time.Minute*10)
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
@@ -100,6 +102,12 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	tsd, err = analyzer.TotalSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 900, tsd)
+	_, err = analyzer.Visitors(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.AvgSessionDuration(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.TotalSessionDuration(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Growth(t *testing.T) {
@@ -143,6 +151,8 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 1, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	_, err = analyzer.Growth(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_VisitorHours(t *testing.T) {
@@ -190,6 +200,8 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[2].Visitors)
 	assert.Equal(t, 1, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
+	_, err = analyzer.VisitorHours(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
@@ -266,6 +278,12 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err = analyzer.TotalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 1200, ttop)
+	_, err = analyzer.Pages(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.AvgTimeOnPage(getMaxFilter())
+	assert.NoError(t, err)
+	_, err = analyzer.TotalTimeOnPage(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -299,6 +317,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	_, err = analyzer.Referrer(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Languages(t *testing.T) {
@@ -326,6 +346,8 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Languages(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Countries(t *testing.T) {
@@ -353,6 +375,8 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Countries(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
@@ -380,6 +404,8 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Browser(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_OS(t *testing.T) {
@@ -407,6 +433,8 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.OS(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Platform(t *testing.T) {
@@ -430,6 +458,8 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
+	_, err = analyzer.Platform(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
@@ -457,6 +487,8 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.ScreenClass(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
@@ -471,4 +503,29 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	assert.InDelta(t, 1, growth, 0.001)
 	growth = analyzer.calculateGrowth(50, 100)
 	assert.InDelta(t, -0.5, growth, 0.001)
+}
+
+func getMaxFilter() *Filter {
+	return &Filter{
+		ClientID:       42,
+		From:           pastDay(5),
+		To:             pastDay(2),
+		Day:            pastDay(1),
+		Start:          time.Now().UTC(),
+		Path:           "/path",
+		Language:       "en",
+		Country:        "en",
+		Referrer:       "ref",
+		OS:             OSWindows,
+		OSVersion:      "10",
+		Browser:        BrowserChrome,
+		BrowserVersion: "90",
+		Platform:       PlatformDesktop,
+		ScreenClass:    "XL",
+		UTMSource:      "source",
+		UTMMedium:      "medium",
+		UTMCampaign:    "campaign",
+		UTMContent:     "content",
+		UTMTerm:        "term",
+	}
 }
