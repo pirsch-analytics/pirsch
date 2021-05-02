@@ -65,6 +65,11 @@ type Stats struct {
 	ScreenWidth             int            `db:"screen_width" json:"screen_width,omitempty"`
 	ScreenHeight            int            `db:"screen_height" json:"screen_height,omitempty"`
 	ScreenClass             sql.NullString `db:"screen_class" json:"screen_class,omitempty"`
+	UTMSource               sql.NullString `db:"utm_source"`
+	UTMMedium               sql.NullString `db:"utm_medium"`
+	UTMCampaign             sql.NullString `db:"utm_campaign"`
+	UTMContent              sql.NullString `db:"utm_content"`
+	UTMTerm                 sql.NullString `db:"utm_term"`
 	PlatformDesktop         int            `db:"platform_desktop" json:"platform_desktop,omitempty"`
 	PlatformMobile          int            `db:"platform_mobile" json:"platform_mobile,omitempty"`
 	PlatformUnknown         int            `db:"platform_unknown" json:"platform_unknown,omitempty"`

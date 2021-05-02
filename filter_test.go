@@ -12,20 +12,22 @@ func TestFilter_Validate(t *testing.T) {
 	assert.NotNil(t, filter)
 	assert.Zero(t, filter.From)
 	assert.Zero(t, filter.To)
-	filter = &Filter{From: pastDay(2), To: pastDay(5)}
+	filter = &Filter{From: pastDay(2), To: pastDay(5), Limit: 42}
 	filter.validate()
 	assert.Equal(t, pastDay(5), filter.From)
 	assert.Equal(t, pastDay(2), filter.To)
+	assert.Equal(t, 42, filter.Limit)
 	filter = &Filter{From: pastDay(2), To: Today().Add(time.Hour * 24 * 5)}
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
 	assert.Equal(t, Today(), filter.To)
-	filter = &Filter{Day: time.Now()}
+	filter = &Filter{Day: time.Now(), Limit: -42}
 	filter.validate()
 	assert.Zero(t, filter.Day.Hour())
 	assert.Zero(t, filter.Day.Minute())
 	assert.Zero(t, filter.Day.Second())
 	assert.Zero(t, filter.Day.Nanosecond())
+	assert.Zero(t, filter.Limit)
 }
 
 func TestFilter_QueryTime(t *testing.T) {
@@ -63,7 +65,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMTerm = "term"
 	args, query := filter.queryFields()
 	assert.Len(t, args, 14)
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND desktop = 1 AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? ", query)
+	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 1 ", query)
 }
 
 func TestFilter_WithFill(t *testing.T) {
@@ -78,6 +80,13 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
 	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 ", query)
+}
+
+func TestFilter_WithLimit(t *testing.T) {
+	filter := NewFilter(NullClient)
+	assert.Empty(t, filter.withLimit())
+	filter.Limit = 42
+	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
 }
 
 func pastDay(n int) time.Time {

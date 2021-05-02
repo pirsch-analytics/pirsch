@@ -18,7 +18,8 @@ const (
 		FROM hit
 		WHERE %s
 		GROUP BY "%s"
-		ORDER BY visitors DESC, "%s" ASC`
+		ORDER BY visitors DESC, "%s" ASC
+		%s`
 )
 
 var (
@@ -183,7 +184,8 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]Stats, error) {
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
-	filterArgs, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT path,
 		count(DISTINCT fingerprint) visitors,
 		visitors / (
@@ -217,7 +219,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 			GROUP BY path, fingerprint
 		)
 		GROUP BY path
-		ORDER BY visitors DESC, path ASC`, filterQuery, filterQuery, filterQuery)
+		ORDER BY visitors DESC, path ASC
+		%s`, filterQuery, filterQuery, filterQuery, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*3)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
@@ -227,7 +230,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
@@ -253,7 +257,8 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 			GROUP BY fingerprint, referrer, referrer_name, referrer_icon
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
-		ORDER BY visitors DESC`, filterQuery, filterQuery)
+		ORDER BY visitors DESC
+		%s`, filterQuery, filterQuery, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(query, args...)
 }
@@ -312,9 +317,34 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	return analyzer.store.Get(query, args...)
 }
 
-// ScreenClass returns the visitor count grouped byer screen class.
+// ScreenClass returns the visitor count grouped by screen class.
 func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
 	return analyzer.selectByAttribute(filter, "screen_class")
+}
+
+// UTMSource returns the visitor count grouped by utm source.
+func (analyzer *Analyzer) UTMSource(filter *Filter) ([]Stats, error) {
+	return analyzer.selectByAttribute(filter, "utm_source")
+}
+
+// UTMMedium returns the visitor count grouped by utm medium.
+func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]Stats, error) {
+	return analyzer.selectByAttribute(filter, "utm_medium")
+}
+
+// UTMCampaign returns the visitor count grouped by utm source.
+func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]Stats, error) {
+	return analyzer.selectByAttribute(filter, "utm_campaign")
+}
+
+// UTMContent returns the visitor count grouped by utm source.
+func (analyzer *Analyzer) UTMContent(filter *Filter) ([]Stats, error) {
+	return analyzer.selectByAttribute(filter, "utm_content")
+}
+
+// UTMTerm returns the visitor count grouped by utm source.
+func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]Stats, error) {
+	return analyzer.selectByAttribute(filter, "utm_term")
 }
 
 // AvgSessionDuration returns the average session duration grouped by day.
@@ -429,8 +459,9 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 }
 
 func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
-	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr)
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(query, args...)
 }

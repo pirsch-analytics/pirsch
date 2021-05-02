@@ -9,6 +9,7 @@ Version 2 brings some fundamental changes and is incompatible with version 1.
 * tenant ID -> client ID
 * automatic schema migration (using the Go 1.16 embedding feature, x-multi-statement must be set to true)
 * added UTM query parameter tracking (for campaign tracking)
+* added option to limit result sets to filter
 
 ## 1.14.4
 

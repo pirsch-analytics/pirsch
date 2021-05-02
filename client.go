@@ -50,7 +50,8 @@ func (client *Client) SaveHits(hits []Hit) error {
 
 	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
 		user_agent, path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -78,7 +79,12 @@ func (client *Client) SaveHits(hits []Hit) error {
 			client.boolean(hit.Mobile),
 			hit.ScreenWidth,
 			hit.ScreenHeight,
-			hit.ScreenClass)
+			hit.ScreenClass,
+			hit.UTMSource,
+			hit.UTMMedium,
+			hit.UTMCampaign,
+			hit.UTMContent,
+			hit.UTMTerm)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
