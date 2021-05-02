@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -80,6 +81,9 @@ type Filter struct {
 
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm string
+
+	// Limit limits the number of results. Less or equal to zero means no limit.
+	Limit int
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -115,6 +119,10 @@ func (filter *Filter) validate() {
 	if !filter.To.IsZero() && filter.To.After(today) {
 		filter.To = today
 	}
+
+	if filter.Limit < 0 {
+		filter.Limit = 0
+	}
 }
 
 func (filter *Filter) queryTime() ([]interface{}, string) {
@@ -149,46 +157,20 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 func (filter *Filter) queryFields() ([]interface{}, string) {
 	args := make([]interface{}, 0, 14)
 	fields := make([]string, 0, 14)
-
-	if filter.Path != "" {
-		args = append(args, filter.Path)
-		fields = append(fields, "path = ? ")
-	}
-
-	if filter.Language != "" {
-		args = append(args, filter.Language)
-		fields = append(fields, "language = ? ")
-	}
-
-	if filter.Country != "" {
-		args = append(args, filter.Country)
-		fields = append(fields, "country_code = ? ")
-	}
-
-	if filter.Referrer != "" {
-		args = append(args, filter.Referrer)
-		fields = append(fields, "referrer = ? ")
-	}
-
-	if filter.OS != "" {
-		args = append(args, filter.OS)
-		fields = append(fields, "os = ? ")
-	}
-
-	if filter.OSVersion != "" {
-		args = append(args, filter.OSVersion)
-		fields = append(fields, "os_version = ? ")
-	}
-
-	if filter.Browser != "" {
-		args = append(args, filter.Browser)
-		fields = append(fields, "browser = ? ")
-	}
-
-	if filter.BrowserVersion != "" {
-		args = append(args, filter.BrowserVersion)
-		fields = append(fields, "browser_version = ? ")
-	}
+	filter.appendQuery(&fields, &args, "path", filter.Path)
+	filter.appendQuery(&fields, &args, "language", filter.Language)
+	filter.appendQuery(&fields, &args, "country_code", filter.Country)
+	filter.appendQuery(&fields, &args, "referrer", filter.Referrer)
+	filter.appendQuery(&fields, &args, "os", filter.OS)
+	filter.appendQuery(&fields, &args, "os_version", filter.OSVersion)
+	filter.appendQuery(&fields, &args, "browser", filter.Browser)
+	filter.appendQuery(&fields, &args, "browser_version", filter.BrowserVersion)
+	filter.appendQuery(&fields, &args, "screen_class", filter.ScreenClass)
+	filter.appendQuery(&fields, &args, "utm_source", filter.UTMSource)
+	filter.appendQuery(&fields, &args, "utm_medium", filter.UTMMedium)
+	filter.appendQuery(&fields, &args, "utm_campaign", filter.UTMCampaign)
+	filter.appendQuery(&fields, &args, "utm_content", filter.UTMContent)
+	filter.appendQuery(&fields, &args, "utm_term", filter.UTMTerm)
 
 	if filter.Platform != "" {
 		if filter.Platform == PlatformDesktop {
@@ -198,36 +180,6 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 		} else {
 			fields = append(fields, "desktop = 0 AND mobile = 0 ")
 		}
-	}
-
-	if filter.ScreenClass != "" {
-		args = append(args, filter.ScreenClass)
-		fields = append(fields, "screen_class = ? ")
-	}
-
-	if filter.UTMSource != "" {
-		args = append(args, filter.UTMSource)
-		fields = append(fields, "utm_source = ? ")
-	}
-
-	if filter.UTMMedium != "" {
-		args = append(args, filter.UTMMedium)
-		fields = append(fields, "utm_medium = ? ")
-	}
-
-	if filter.UTMCampaign != "" {
-		args = append(args, filter.UTMCampaign)
-		fields = append(fields, "utm_campaign = ? ")
-	}
-
-	if filter.UTMContent != "" {
-		args = append(args, filter.UTMContent)
-		fields = append(fields, "utm_content = ? ")
-	}
-
-	if filter.UTMTerm != "" {
-		args = append(args, filter.UTMTerm)
-		fields = append(fields, "utm_term = ? ")
 	}
 
 	return args, strings.Join(fields, "AND ")
@@ -241,6 +193,14 @@ func (filter *Filter) withFill() ([]interface{}, string) {
 	return nil, ""
 }
 
+func (filter *Filter) withLimit() string {
+	if filter.Limit > 0 {
+		return fmt.Sprintf("LIMIT %d ", filter.Limit)
+	}
+
+	return ""
+}
+
 func (filter *Filter) query() ([]interface{}, string) {
 	args, query := filter.queryTime()
 	fieldArgs, queryFields := filter.queryFields()
@@ -251,6 +211,13 @@ func (filter *Filter) query() ([]interface{}, string) {
 	}
 
 	return args, query
+}
+
+func (filter *Filter) appendQuery(fields *[]string, args *[]interface{}, field, value string) {
+	if value != "" {
+		*args = append(*args, value)
+		*fields = append(*fields, fmt.Sprintf("%s = ? ", field))
+	}
 }
 
 func (filter *Filter) toUTCDate(date time.Time) time.Time {

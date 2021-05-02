@@ -296,6 +296,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.TotalTimeOnPage(getMaxFilter())
 	assert.NoError(t, err)
+	visitors, err = analyzer.Pages(&Filter{Limit: 1})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -331,6 +334,9 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
 	_, err = analyzer.Referrer(getMaxFilter())
 	assert.NoError(t, err)
+	visitors, err = analyzer.Referrer(&Filter{Limit: 1})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
 }
 
 func TestAnalyzer_Languages(t *testing.T) {
@@ -503,6 +509,91 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_UTM(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source2", Valid: true}, UTMMedium: sql.NullString{String: "medium2", Valid: true}, UTMCampaign: sql.NullString{String: "campaign2", Valid: true}, UTMContent: sql.NullString{String: "content2", Valid: true}, UTMTerm: sql.NullString{String: "term2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), UTMSource: sql.NullString{String: "source2", Valid: true}, UTMMedium: sql.NullString{String: "medium2", Valid: true}, UTMCampaign: sql.NullString{String: "campaign2", Valid: true}, UTMContent: sql.NullString{String: "content2", Valid: true}, UTMTerm: sql.NullString{String: "term2", Valid: true}},
+		{Fingerprint: "fp2", Time: time.Now(), UTMSource: sql.NullString{String: "source3", Valid: true}, UTMMedium: sql.NullString{String: "medium3", Valid: true}, UTMCampaign: sql.NullString{String: "campaign3", Valid: true}, UTMContent: sql.NullString{String: "content3", Valid: true}, UTMTerm: sql.NullString{String: "term3", Valid: true}},
+		{Fingerprint: "fp3", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
+		{Fingerprint: "fp4", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	source, err := analyzer.UTMSource(nil)
+	assert.NoError(t, err)
+	assert.Len(t, source, 3)
+	assert.Equal(t, "source1", source[0].UTMSource.String)
+	assert.Equal(t, "source2", source[1].UTMSource.String)
+	assert.Equal(t, "source3", source[2].UTMSource.String)
+	assert.Equal(t, 3, source[0].Visitors)
+	assert.Equal(t, 2, source[1].Visitors)
+	assert.Equal(t, 1, source[2].Visitors)
+	assert.InDelta(t, 0.5, source[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, source[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, source[2].RelativeVisitors, 0.01)
+	_, err = analyzer.UTMSource(getMaxFilter())
+	assert.NoError(t, err)
+	medium, err := analyzer.UTMMedium(nil)
+	assert.NoError(t, err)
+	assert.Len(t, medium, 3)
+	assert.Equal(t, "medium1", medium[0].UTMMedium.String)
+	assert.Equal(t, "medium2", medium[1].UTMMedium.String)
+	assert.Equal(t, "medium3", medium[2].UTMMedium.String)
+	assert.Equal(t, 3, medium[0].Visitors)
+	assert.Equal(t, 2, medium[1].Visitors)
+	assert.Equal(t, 1, medium[2].Visitors)
+	assert.InDelta(t, 0.5, medium[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, medium[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, medium[2].RelativeVisitors, 0.01)
+	_, err = analyzer.UTMMedium(getMaxFilter())
+	assert.NoError(t, err)
+	campaign, err := analyzer.UTMCampaign(nil)
+	assert.NoError(t, err)
+	assert.Len(t, campaign, 3)
+	assert.Equal(t, "campaign1", campaign[0].UTMCampaign.String)
+	assert.Equal(t, "campaign2", campaign[1].UTMCampaign.String)
+	assert.Equal(t, "campaign3", campaign[2].UTMCampaign.String)
+	assert.Equal(t, 3, campaign[0].Visitors)
+	assert.Equal(t, 2, campaign[1].Visitors)
+	assert.Equal(t, 1, campaign[2].Visitors)
+	assert.InDelta(t, 0.5, campaign[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, campaign[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, campaign[2].RelativeVisitors, 0.01)
+	_, err = analyzer.UTMCampaign(getMaxFilter())
+	assert.NoError(t, err)
+	content, err := analyzer.UTMContent(nil)
+	assert.NoError(t, err)
+	assert.Len(t, content, 3)
+	assert.Equal(t, "content1", content[0].UTMContent.String)
+	assert.Equal(t, "content2", content[1].UTMContent.String)
+	assert.Equal(t, "content3", content[2].UTMContent.String)
+	assert.Equal(t, 3, content[0].Visitors)
+	assert.Equal(t, 2, content[1].Visitors)
+	assert.Equal(t, 1, content[2].Visitors)
+	assert.InDelta(t, 0.5, content[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, content[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, content[2].RelativeVisitors, 0.01)
+	_, err = analyzer.UTMContent(getMaxFilter())
+	assert.NoError(t, err)
+	term, err := analyzer.UTMTerm(nil)
+	assert.NoError(t, err)
+	assert.Len(t, term, 3)
+	assert.Equal(t, "term1", term[0].UTMTerm.String)
+	assert.Equal(t, "term2", term[1].UTMTerm.String)
+	assert.Equal(t, "term3", term[2].UTMTerm.String)
+	assert.Equal(t, 3, term[0].Visitors)
+	assert.Equal(t, 2, term[1].Visitors)
+	assert.Equal(t, 1, term[2].Visitors)
+	assert.InDelta(t, 0.5, term[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, term[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, term[2].RelativeVisitors, 0.01)
+	_, err = analyzer.UTMTerm(getMaxFilter())
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	analyzer := NewAnalyzer(dbClient)
 	growth := analyzer.calculateGrowth(0, 0)
@@ -539,5 +630,6 @@ func getMaxFilter() *Filter {
 		UTMCampaign:    "campaign",
 		UTMContent:     "content",
 		UTMTerm:        "term",
+		Limit:          42,
 	}
 }
