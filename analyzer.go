@@ -353,7 +353,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
 	args = append(args, withFillArgs...)
-	query := fmt.Sprintf(`SELECT day, avg(duration) average_time_spent_seconds
+	query := fmt.Sprintf(`SELECT day, toUInt64(avg(duration)) average_time_spent_seconds
 			FROM (
 				SELECT toDate(time) day, max(time)-min(time) duration
 				FROM hit
@@ -397,7 +397,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	query := fmt.Sprintf(`SELECT "path", avg(time_on_page) average_time_spent_seconds
+	query := fmt.Sprintf(`SELECT "path", toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT "path", neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
 			FROM (
