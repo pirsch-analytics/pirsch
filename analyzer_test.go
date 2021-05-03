@@ -616,6 +616,37 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 9},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 7},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 5},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 4},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 8},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 6},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	byPath, err := analyzer.AvgTimeOnPages(&Filter{Path: "/", From: pastDay(3), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, byPath, 1)
+	assert.Equal(t, 6, byPath[0].AverageTimeSpentSeconds)
+	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: "/", From: pastDay(3), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 4)
+	assert.Equal(t, 8, byDay[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+}
+
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	analyzer := NewAnalyzer(dbClient)
 	growth := analyzer.calculateGrowth(0, 0)
