@@ -37,11 +37,11 @@ func (client *MockClient) Count(query string, args ...interface{}) (int, error) 
 }
 
 // Get implements the Store interface.
-func (client *MockClient) Get(query string, args ...interface{}) (*Stats, error) {
-	return nil, nil
+func (client *MockClient) Get(result interface{}, query string, args ...interface{}) error {
+	return nil
 }
 
 // Select implements the Store interface.
-func (client *MockClient) Select(query string, args ...interface{}) ([]Stats, error) {
-	return nil, nil
+func (client *MockClient) Select(results interface{}, query string, args ...interface{}) error {
+	return nil
 }

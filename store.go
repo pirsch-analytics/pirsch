@@ -16,8 +16,10 @@ type Store interface {
 	Count(string, ...interface{}) (int, error)
 
 	// Get returns a single result for given query.
-	Get(string, ...interface{}) (*Stats, error)
+	// The result must be a pointer.
+	Get(interface{}, string, ...interface{}) error
 
 	// Select returns the results for given query.
-	Select(string, ...interface{}) ([]Stats, error)
+	// The results must be a pointer to a slice.
+	Select(interface{}, string, ...interface{}) error
 }

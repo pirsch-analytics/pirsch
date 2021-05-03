@@ -27,6 +27,13 @@ var (
 	ErrNoPeriodOrDay = errors.New("no period or day specified")
 )
 
+type growthStats struct {
+	Visitors int `json:"visitors"`
+	Views    int `json:"views"`
+	Sessions int `json:"sessions"`
+	Bounces  int `json:"bounces"`
+}
+
 // Analyzer provides an interface to analyze statistics.
 type Analyzer struct {
 	store Store
@@ -41,7 +48,7 @@ func NewAnalyzer(store Store) *Analyzer {
 
 // ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
-func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]Stats, int, error) {
+func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
 	args, filterQuery := filter.query()
@@ -50,9 +57,9 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		WHERE %s
 		GROUP BY path
 		ORDER BY visitors DESC, path ASC`, filterQuery)
-	visitors, err := analyzer.store.Select(query, args...)
+	var stats []ActiveVisitorStats
 
-	if err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, 0, err
 	}
 
@@ -63,11 +70,11 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		return nil, 0, err
 	}
 
-	return visitors, count, nil
+	return stats, count, nil
 }
 
 // Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
-func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
@@ -90,7 +97,13 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 		)
 		GROUP BY day
 		ORDER BY day ASC %s, visitors DESC`, filterQuery, withFillQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []VisitorStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
@@ -117,13 +130,14 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 			WHERE %s
 			GROUP BY toDate(time), fingerprint
 		)`, filterQuery)
-	current, err := analyzer.store.Get(query, args...)
+	current := new(growthStats)
 
-	if err != nil {
+	if err := analyzer.store.Get(current, query, args...); err != nil {
 		return nil, err
 	}
 
 	var currentTimeSpent int
+	var err error
 
 	if filter.Path == "" {
 		currentTimeSpent, err = analyzer.TotalSessionDuration(filter)
@@ -144,9 +158,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	args, _ = filter.query()
-	previous, err := analyzer.store.Get(query, args...)
+	previous := new(growthStats)
 
-	if err != nil {
+	if err := analyzer.store.Get(previous, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -172,18 +186,24 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 }
 
 // VisitorHours returns the visitor count grouped by time of day.
-func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	args, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT toHour(time) hour, count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
 		GROUP BY hour
 		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []VisitorHourStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
-func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT path,
@@ -225,9 +245,9 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
-	stats, err := analyzer.store.Select(query, args...)
+	var stats []PageStats
 
-	if err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -252,7 +272,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 }
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
-func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT referrer,
@@ -283,31 +303,17 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 		ORDER BY visitors DESC
 		%s`, filterQuery, filterQuery, filter.withLimit())
 	args = append(args, args...)
-	return analyzer.store.Select(query, args...)
-}
+	var stats []ReferrerStats
 
-// Languages returns the visitor count grouped by language.
-func (analyzer *Analyzer) Languages(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "language")
-}
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
 
-// Countries returns the visitor count grouped by country.
-func (analyzer *Analyzer) Countries(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "country_code")
-}
-
-// Browser returns the visitor count grouped by browser.
-func (analyzer *Analyzer) Browser(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "browser")
-}
-
-// OS returns the visitor count grouped by operating system.
-func (analyzer *Analyzer) OS(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "os")
+	return stats, nil
 }
 
 // Platform returns the visitor count grouped by platform.
-func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
+func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()
 	query := fmt.Sprintf(`SELECT (
 			SELECT count(DISTINCT fingerprint)
@@ -337,41 +343,127 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
-	return analyzer.store.Get(query, args...)
+	stats := new(PlatformStats)
+
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// Languages returns the visitor count grouped by language.
+func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
+	var stats []LanguageStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "language"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// Countries returns the visitor count grouped by country.
+func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
+	var stats []CountryStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "country_code"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// Browser returns the visitor count grouped by browser.
+func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
+	var stats []BrowserStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "browser"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// OS returns the visitor count grouped by operating system.
+func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
+	var stats []OSStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "os"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // ScreenClass returns the visitor count grouped by screen class.
-func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "screen_class")
+func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenClassStats, error) {
+	var stats []ScreenClassStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "screen_class"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UTMSource returns the visitor count grouped by utm source.
-func (analyzer *Analyzer) UTMSource(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "utm_source")
+func (analyzer *Analyzer) UTMSource(filter *Filter) ([]UTMSourceStats, error) {
+	var stats []UTMSourceStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "utm_source"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UTMMedium returns the visitor count grouped by utm medium.
-func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "utm_medium")
+func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]UTMMediumStats, error) {
+	var stats []UTMMediumStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "utm_medium"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UTMCampaign returns the visitor count grouped by utm source.
-func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "utm_campaign")
+func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]UTMCampaignStats, error) {
+	var stats []UTMCampaignStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "utm_campaign"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UTMContent returns the visitor count grouped by utm source.
-func (analyzer *Analyzer) UTMContent(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "utm_content")
+func (analyzer *Analyzer) UTMContent(filter *Filter) ([]UTMContentStats, error) {
+	var stats []UTMContentStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "utm_content"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // UTMTerm returns the visitor count grouped by utm source.
-func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]Stats, error) {
-	return analyzer.selectByAttribute(filter, "utm_term")
+func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
+	var stats []UTMTermStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "utm_term"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // AvgSessionDuration returns the average session duration grouped by day.
-func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
@@ -387,7 +479,13 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 		WHERE duration != 0
 		GROUP BY day
 		ORDER BY day %s`, filterQuery, withFillQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []TimeSpentStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // TotalSessionDuration returns the total session duration in seconds.
@@ -401,9 +499,11 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 			AND session IS NOT NULL
 			GROUP BY day, fingerprint, session
 		)`, filterQuery)
-	stats, err := analyzer.store.Get(query, args...)
+	stats := new(struct {
+		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	})
 
-	if err != nil {
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
 		return 0, err
 	}
 
@@ -411,7 +511,7 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 }
 
 // AvgTimeOnPages returns the average time on page grouped by path.
-func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery := filter.queryFields()
@@ -435,11 +535,17 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]Stats, error) {
 		GROUP BY path
 		ORDER BY path`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
-	return analyzer.store.Select(query, timeArgs...)
+	var stats []TimeSpentStats
+
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // AvgTimeOnPage returns the average time on page grouped by day.
-func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
+func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery := filter.queryFields()
@@ -465,7 +571,13 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		ORDER BY day %s`, timeQuery, fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
-	return analyzer.store.Select(query, timeArgs...)
+	var stats []TimeSpentStats
+
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // TotalTimeOnPage returns the total time on page in seconds.
@@ -490,9 +602,11 @@ func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
 			%s
 		)`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
-	stats, err := analyzer.store.Get(query, timeArgs...)
+	stats := new(struct {
+		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	})
 
-	if err != nil {
+	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
 		return 0, err
 	}
 
@@ -511,12 +625,12 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 	return (c - p) / p
 }
 
-func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stats, error) {
+func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
-	return analyzer.store.Select(query, args...)
+	return analyzer.store.Select(results, query, args...)
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

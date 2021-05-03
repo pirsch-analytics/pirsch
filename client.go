@@ -132,27 +132,23 @@ func (client *Client) Count(query string, args ...interface{}) (int, error) {
 }
 
 // Get implements the Store interface.
-func (client *Client) Get(query string, args ...interface{}) (*Stats, error) {
-	stats := new(Stats)
-
-	if err := client.DB.Get(stats, query, args...); err != nil {
+func (client *Client) Get(result interface{}, query string, args ...interface{}) error {
+	if err := client.DB.Get(result, query, args...); err != nil {
 		client.logger.Printf("error getting result: %s", err)
-		return nil, err
+		return err
 	}
 
-	return stats, nil
+	return nil
 }
 
 // Select implements the Store interface.
-func (client *Client) Select(query string, args ...interface{}) ([]Stats, error) {
-	var stats []Stats
-
-	if err := client.DB.Select(&stats, query, args...); err != nil {
+func (client *Client) Select(results interface{}, query string, args ...interface{}) error {
+	if err := client.DB.Select(results, query, args...); err != nil {
 		client.logger.Printf("error selecting results: %s", err)
-		return nil, err
+		return err
 	}
 
-	return stats, nil
+	return nil
 }
 
 func (client *Client) boolean(b bool) int8 {

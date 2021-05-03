@@ -361,6 +361,31 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 1)
 }
 
+func TestAnalyzer_Platform(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now()},
+		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, platform.PlatformDesktop)
+	assert.Equal(t, 2, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
+	_, err = analyzer.Platform(getMaxFilter())
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -477,31 +502,6 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_Platform(t *testing.T) {
-	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp2", Time: time.Now()},
-		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
-	}))
-	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient)
-	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
-	assert.NoError(t, err)
-	assert.Equal(t, 3, platform.PlatformDesktop)
-	assert.Equal(t, 2, platform.PlatformMobile)
-	assert.Equal(t, 1, platform.PlatformUnknown)
-	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
-	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
-	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-	_, err = analyzer.Platform(getMaxFilter())
-	assert.NoError(t, err)
-}
-
 func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -614,6 +614,37 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.1666, term[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMTerm(getMaxFilter())
 	assert.NoError(t, err)
+}
+
+func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 9},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 7},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 5},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 4},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 8},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 6},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	byPath, err := analyzer.AvgTimeOnPages(&Filter{Path: "/", From: pastDay(3), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, byPath, 1)
+	assert.Equal(t, 6, byPath[0].AverageTimeSpentSeconds)
+	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: "/", From: pastDay(3), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 4)
+	assert.Equal(t, 8, byDay[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
