@@ -56,7 +56,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.OSVersion = "10"
 	filter.Browser = BrowserEdge
 	filter.BrowserVersion = "89"
-	filter.Platform = PlatformDesktop
+	filter.Platform = PlatformUnknown
 	filter.ScreenClass = "XXL"
 	filter.UTMSource = "source"
 	filter.UTMMedium = "medium"
@@ -65,7 +65,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMTerm = "term"
 	args, query := filter.queryFields()
 	assert.Len(t, args, 14)
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 1 ", query)
+	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
 }
 
 func TestFilter_WithFill(t *testing.T) {

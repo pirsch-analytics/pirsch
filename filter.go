@@ -84,6 +84,9 @@ type Filter struct {
 
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
+
+	// IncludeAvgTimeOnPage indicates whether Analyzer.Pages should contain the average time on page or not.
+	IncludeAvgTimeOnPage bool
 }
 
 // NewFilter creates a new filter for given client ID.

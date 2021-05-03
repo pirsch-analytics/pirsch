@@ -225,7 +225,30 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
-	return analyzer.store.Select(query, args...)
+	stats, err := analyzer.store.Select(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if filter.IncludeAvgTimeOnPage {
+		timeOnPage, err := analyzer.AvgTimeOnPages(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range stats {
+			for j := range timeOnPage {
+				if stats[i].Path == timeOnPage[j].Path {
+					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
+					break
+				}
+			}
+		}
+	}
+
+	return stats, nil
 }
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
