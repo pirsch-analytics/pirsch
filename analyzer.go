@@ -50,9 +50,9 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		WHERE %s
 		GROUP BY path
 		ORDER BY visitors DESC, path ASC`, filterQuery)
-	visitors, err := analyzer.store.Select(query, args...)
+	var stats []Stats
 
-	if err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, 0, err
 	}
 
@@ -63,7 +63,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		return nil, 0, err
 	}
 
-	return visitors, count, nil
+	return stats, count, nil
 }
 
 // Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
@@ -90,7 +90,13 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]Stats, error) {
 		)
 		GROUP BY day
 		ORDER BY day ASC %s, visitors DESC`, filterQuery, withFillQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
@@ -117,13 +123,14 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 			WHERE %s
 			GROUP BY toDate(time), fingerprint
 		)`, filterQuery)
-	current, err := analyzer.store.Get(query, args...)
+	current := new(Stats)
 
-	if err != nil {
+	if err := analyzer.store.Get(current, query, args...); err != nil {
 		return nil, err
 	}
 
 	var currentTimeSpent int
+	var err error
 
 	if filter.Path == "" {
 		currentTimeSpent, err = analyzer.TotalSessionDuration(filter)
@@ -144,9 +151,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	args, _ = filter.query()
-	previous, err := analyzer.store.Get(query, args...)
+	previous := new(Stats)
 
-	if err != nil {
+	if err := analyzer.store.Get(previous, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -179,7 +186,13 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]Stats, error) {
 		WHERE %s
 		GROUP BY hour
 		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
@@ -225,9 +238,9 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]Stats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
-	stats, err := analyzer.store.Select(query, args...)
+	var stats []Stats
 
-	if err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -283,7 +296,13 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]Stats, error) {
 		ORDER BY visitors DESC
 		%s`, filterQuery, filterQuery, filter.withLimit())
 	args = append(args, args...)
-	return analyzer.store.Select(query, args...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // Languages returns the visitor count grouped by language.
@@ -337,7 +356,13 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*Stats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
-	return analyzer.store.Get(query, args...)
+	stats := new(Stats)
+
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // ScreenClass returns the visitor count grouped by screen class.
@@ -387,7 +412,13 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]Stats, error) {
 		WHERE duration != 0
 		GROUP BY day
 		ORDER BY day %s`, filterQuery, withFillQuery)
-	return analyzer.store.Select(query, args...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // TotalSessionDuration returns the total session duration in seconds.
@@ -401,9 +432,9 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 			AND session IS NOT NULL
 			GROUP BY day, fingerprint, session
 		)`, filterQuery)
-	stats, err := analyzer.store.Get(query, args...)
+	stats := new(Stats)
 
-	if err != nil {
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
 		return 0, err
 	}
 
@@ -435,7 +466,13 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]Stats, error) {
 		GROUP BY path
 		ORDER BY path`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
-	return analyzer.store.Select(query, timeArgs...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // AvgTimeOnPage returns the average time on page grouped by day.
@@ -465,7 +502,13 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		ORDER BY day %s`, timeQuery, fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
-	return analyzer.store.Select(query, timeArgs...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // TotalTimeOnPage returns the total time on page in seconds.
@@ -490,9 +533,9 @@ func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
 			%s
 		)`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
-	stats, err := analyzer.store.Get(query, timeArgs...)
+	stats := new(Stats)
 
-	if err != nil {
+	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
 		return 0, err
 	}
 
@@ -516,7 +559,13 @@ func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr string) ([]Stat
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
-	return analyzer.store.Select(query, args...)
+	var stats []Stats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
