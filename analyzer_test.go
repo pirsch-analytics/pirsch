@@ -361,6 +361,31 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 1)
 }
 
+func TestAnalyzer_Platform(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp2", Time: time.Now()},
+		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, platform.PlatformDesktop)
+	assert.Equal(t, 2, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
+	_, err = analyzer.Platform(getMaxFilter())
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -474,31 +499,6 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.OS(getMaxFilter())
-	assert.NoError(t, err)
-}
-
-func TestAnalyzer_Platform(t *testing.T) {
-	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp2", Time: time.Now()},
-		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
-	}))
-	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient)
-	platform, err := analyzer.Platform(&Filter{From: pastDay(5), To: Today()})
-	assert.NoError(t, err)
-	assert.Equal(t, 3, platform.PlatformDesktop)
-	assert.Equal(t, 2, platform.PlatformMobile)
-	assert.Equal(t, 1, platform.PlatformUnknown)
-	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
-	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
-	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-	_, err = analyzer.Platform(getMaxFilter())
 	assert.NoError(t, err)
 }
 
