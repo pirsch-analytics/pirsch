@@ -45,7 +45,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT "path", count(DISTINCT fingerprint) visitors
+	query := fmt.Sprintf(`SELECT path, count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
 		GROUP BY path
@@ -387,8 +387,8 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-// AvgTimeOnPage returns the average time on page grouped by path.
-func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
+// AvgTimeOnPages returns the average time on page grouped by path.
+func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]Stats, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery := filter.queryFields()
@@ -397,9 +397,9 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	query := fmt.Sprintf(`SELECT "path", toUInt64(avg(time_on_page)) average_time_spent_seconds
+	query := fmt.Sprintf(`SELECT path, toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT "path", neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			SELECT path, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -409,9 +409,39 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
 			WHERE time_on_page > 0
 			%s
 		)
-		GROUP BY "path"
-		ORDER BY "path"`, timeQuery, fieldQuery)
+		GROUP BY path
+		ORDER BY path`, timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
+	return analyzer.store.Select(query, timeArgs...)
+}
+
+// AvgTimeOnPage returns the average time on page grouped by day.
+func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]Stats, error) {
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery := filter.queryFields()
+
+	if len(fieldArgs) > 0 {
+		fieldQuery = "AND " + fieldQuery
+	}
+
+	withFillArgs, withFillQuery := filter.withFill()
+	query := fmt.Sprintf(`SELECT day, toUInt64(avg(time_on_page)) average_time_spent_seconds
+		FROM (
+			SELECT toDate(time) day, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			FROM (
+				SELECT *
+				FROM hit
+				WHERE %s
+				ORDER BY fingerprint, time
+			)
+			WHERE time_on_page > 0
+			%s
+		)
+		GROUP BY day
+		ORDER BY day %s`, timeQuery, fieldQuery, withFillQuery)
+	timeArgs = append(timeArgs, fieldArgs...)
+	timeArgs = append(timeArgs, withFillArgs...)
 	return analyzer.store.Select(query, timeArgs...)
 }
 
