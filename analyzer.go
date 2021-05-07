@@ -3,6 +3,7 @@ package pirsch
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -241,6 +242,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		GROUP BY path
 		ORDER BY visitors DESC, path ASC
 		%s`, filterQuery, filterQuery, filterQuery, filter.withLimit())
+	log.Println(query) // FIXME remove this
 	args := make([]interface{}, 0, len(filterArgs)*3)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
