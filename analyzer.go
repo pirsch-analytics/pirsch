@@ -3,7 +3,6 @@ package pirsch
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 )
 
