@@ -209,7 +209,7 @@ func (filter *Filter) query() ([]interface{}, string) {
 	fieldArgs, queryFields := filter.queryFields()
 	args = append(args, fieldArgs...)
 
-	if len(fieldArgs) > 0 {
+	if queryFields != "" {
 		query += "AND " + queryFields
 	}
 

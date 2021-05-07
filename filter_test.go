@@ -84,6 +84,8 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
+	_, query = filter.query()
+	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
 }
 
 func TestFilter_WithFill(t *testing.T) {
