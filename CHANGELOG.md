@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+
+* added SaaSHub to User-Agent blacklist
+
 ## 2.0.0
 
 Version 2 brings some fundamental changes and is incompatible with version 1.
