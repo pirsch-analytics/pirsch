@@ -45,8 +45,8 @@ func (hit Hit) String() string {
 
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
-	Path     sql.NullString `json:"path"`
-	Visitors int            `json:"visitors"`
+	Path     string `json:"path"`
+	Visitors int    `json:"visitors"`
 }
 
 // VisitorStats is the result type for visitor statistics.
@@ -76,15 +76,15 @@ type VisitorHourStats struct {
 
 // PageStats is the result type for page statistics.
 type PageStats struct {
-	Path                    sql.NullString `json:"path"`
-	Visitors                int            `json:"visitors"`
-	Views                   int            `json:"views"`
-	Sessions                int            `json:"sessions"`
-	Bounces                 int            `json:"bounces"`
-	RelativeVisitors        float64        `db:"relative_visitors" json:"relative_visitors"`
-	RelativeViews           float64        `db:"relative_views" json:"relative_views"`
-	BounceRate              float64        `db:"bounce_rate" json:"bounce_rate"`
-	AverageTimeSpentSeconds int            `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	Path                    string  `json:"path"`
+	Visitors                int     `json:"visitors"`
+	Views                   int     `json:"views"`
+	Sessions                int     `json:"sessions"`
+	Bounces                 int     `json:"bounces"`
+	RelativeVisitors        float64 `db:"relative_visitors" json:"relative_visitors"`
+	RelativeViews           float64 `db:"relative_views" json:"relative_views"`
+	BounceRate              float64 `db:"bounce_rate" json:"bounce_rate"`
+	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
 // ReferrerStats is the result type for referrer statistics.
@@ -110,9 +110,9 @@ type PlatformStats struct {
 
 // TimeSpentStats is the result type for average time spent statistics (sessions, time on page).
 type TimeSpentStats struct {
-	Day                     time.Time      `json:"day"`
-	Path                    sql.NullString `json:"path"`
-	AverageTimeSpentSeconds int            `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	Day                     time.Time `json:"day"`
+	Path                    string    `json:"path"`
+	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
 // MetaStats is the base for meta result types (languages, countries, ...).
@@ -124,31 +124,31 @@ type MetaStats struct {
 // LanguageStats is the result type for language statistics.
 type LanguageStats struct {
 	MetaStats
-	Language sql.NullString `json:"language"`
+	Language string `json:"language"`
 }
 
 // CountryStats is the result type for country statistics.
 type CountryStats struct {
 	MetaStats
-	CountryCode sql.NullString `db:"country_code" json:"country_code"`
+	CountryCode string `db:"country_code" json:"country_code"`
 }
 
 // BrowserStats is the result type for browser statistics.
 type BrowserStats struct {
 	MetaStats
-	Browser sql.NullString `json:"browser"`
+	Browser string `json:"browser"`
 }
 
 // OSStats is the result type for operating system statistics.
 type OSStats struct {
 	MetaStats
-	OS sql.NullString `json:"os"`
+	OS string `json:"os"`
 }
 
 // ScreenClassStats is the result type for screen class statistics.
 type ScreenClassStats struct {
 	MetaStats
-	ScreenClass sql.NullString `db:"screen_class" json:"screen_class"`
+	ScreenClass string `db:"screen_class" json:"screen_class"`
 }
 
 // UTMSourceStats is the result type for utm source statistics.

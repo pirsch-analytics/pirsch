@@ -3,6 +3,7 @@
 ## 2.0.1
 
 * added SaaSHub to User-Agent blacklist
+* fixed analyzer return types (some used sql.NullString for normal strings)
 
 ## 2.0.0
 
