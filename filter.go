@@ -125,7 +125,8 @@ func (filter *Filter) validate() {
 		filter.From, filter.To = filter.To, filter.From
 	}
 
-	today := Today()
+	now := time.Now().In(filter.Timezone)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, filter.Timezone)
 
 	if !filter.To.IsZero() && filter.To.After(today) {
 		filter.To = today
