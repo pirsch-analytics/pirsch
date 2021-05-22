@@ -79,6 +79,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
 	args = append(args, withFillArgs...)
+	timezone := filter.Timezone.String()
 	query := fmt.Sprintf(`SELECT day,
 		sum(visitors) visitors,
 		sum(sessions) sessions,
@@ -86,17 +87,17 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
-			SELECT toDate(time) day,
+			SELECT toDate(time, '%s') day,
 			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
 			FROM hit
 			WHERE %s
-			GROUP BY toDate(time), fingerprint
+			GROUP BY toDate(time, '%s'), fingerprint
 		)
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, filterQuery, withFillQuery)
+		ORDER BY day ASC %s, visitors DESC`, timezone, filterQuery, timezone, withFillQuery)
 	var stats []VisitorStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -128,8 +129,8 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 			length(groupArray(path)) = 1 bounce
 			FROM hit
 			WHERE %s
-			GROUP BY toDate(time), fingerprint
-		)`, filterQuery)
+			GROUP BY toDate(time, '%s'), fingerprint
+		)`, filterQuery, filter.Timezone.String())
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, args...); err != nil {
@@ -187,12 +188,13 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
-	query := fmt.Sprintf(`SELECT toHour(time) hour, count(DISTINCT fingerprint) visitors
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour, count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), filterQuery)
 	var stats []VisitorHourStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -470,7 +472,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args = append(args, withFillArgs...)
 	query := fmt.Sprintf(`SELECT day, toUInt64(avg(duration)) average_time_spent_seconds
 			FROM (
-				SELECT toDate(time) day, max(time)-min(time) duration
+				SELECT toDate(time, '%s') day, max(time)-min(time) duration
 				FROM hit
 				WHERE %s
 				AND session IS NOT NULL
@@ -478,7 +480,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 			)
 		WHERE duration != 0
 		GROUP BY day
-		ORDER BY day %s`, filterQuery, withFillQuery)
+		ORDER BY day %s`, filter.Timezone.String(), filterQuery, withFillQuery)
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -490,15 +492,16 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 
 // TotalSessionDuration returns the total session duration in seconds.
 func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(duration) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time) day, max(time)-min(time) duration
+			SELECT toDate(time, '%s') day, max(time)-min(time) duration
 			FROM hit
 			WHERE %s
 			AND session IS NOT NULL
 			GROUP BY day, fingerprint, session
-		)`, filterQuery)
+		)`, filter.Timezone.String(), filterQuery)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 	})
@@ -557,7 +560,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	withFillArgs, withFillQuery := filter.withFill()
 	query := fmt.Sprintf(`SELECT day, toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time) day, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			SELECT toDate(time, '%s') day, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -568,7 +571,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			%s
 		)
 		GROUP BY day
-		ORDER BY day %s`, timeQuery, fieldQuery, withFillQuery)
+		ORDER BY day %s`, filter.Timezone.String(), timeQuery, fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
 	var stats []TimeSpentStats
@@ -635,7 +638,7 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
-		return NewFilter(NullClient)
+		filter = NewFilter(NullClient)
 	}
 
 	filter.validate()

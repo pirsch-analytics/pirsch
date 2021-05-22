@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0
+
+* added timezone support (UTC by default)
+
 ## 2.0.1
 
 * added SaaSHub to User-Agent blacklist

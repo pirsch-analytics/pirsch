@@ -686,3 +686,38 @@ func getMaxFilter() *Filter {
 		Limit:          42,
 	}
 }
+
+func TestAnalyzer_Timezone(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
+		{Fingerprint: "fp2", Time: pastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
+		{Fingerprint: "fp3", Time: pastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	hours, err := analyzer.VisitorHours(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, hours[0].Visitors)
+	assert.Equal(t, 1, hours[18].Visitors)
+	assert.Equal(t, 1, hours[19].Visitors)
+	timezone, err := time.LoadLocation("Asia/Tokyo")
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors(&Filter{From: pastDay(3), To: pastDay(1), Timezone: timezone})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, 0, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[2].Visitors)
+	hours, err = analyzer.VisitorHours(&Filter{From: pastDay(3), To: pastDay(1), Timezone: timezone})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, hours[3].Visitors)
+	assert.Equal(t, 0, hours[4].Visitors) // pushed to the next day, so outside of filter range
+	assert.Equal(t, 1, hours[9].Visitors)
+}

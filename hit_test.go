@@ -10,7 +10,7 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
@@ -30,7 +30,7 @@ func TestHitFromRequest(t *testing.T) {
 		hit.PreviousTimeOnPageSeconds != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
-		hit.URL != "/test/path?query=param&foo=bar&utm_source=test&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
+		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
 		hit.Language != "de" ||
 		hit.Referrer.String != "http://ref/" ||
 		hit.OS != OSWindows ||
@@ -41,7 +41,7 @@ func TestHitFromRequest(t *testing.T) {
 		hit.Mobile ||
 		hit.ScreenWidth != 640 ||
 		hit.ScreenHeight != 1024 ||
-		hit.UTMSource.String != "test" ||
+		hit.UTMSource.String != "test source" ||
 		hit.UTMMedium.String != "email" ||
 		hit.UTMCampaign.String != "newsletter" ||
 		hit.UTMContent.String != "signup" ||
