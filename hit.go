@@ -26,6 +26,10 @@ type HitOptions struct {
 	// Client is the database client required to look up sessions.
 	Client Store
 
+	// Timezone is the the timezone used to create the fingerprint.
+	// It will be set to UTC by default.
+	Timezone *time.Location
+
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID int64
 
@@ -69,11 +73,15 @@ type HitOptions struct {
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
 func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
-	now := time.Now().UTC() // capture first to get as close as possible
+	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
 
 	// set default options in case they're nil
 	if options == nil {
 		options = &HitOptions{}
+	}
+
+	if options.Timezone == nil {
+		options.Timezone = time.UTC
 	}
 
 	if options.SessionMaxAge.Seconds() == 0 {
@@ -82,7 +90,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 
 	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
 	getRequestURI(r, options)
-	fingerprint := Fingerprint(r, salt)
+	fingerprint := Fingerprint(r, salt, options.Timezone)
 	userAgent := r.UserAgent()
 	path := shortenString(options.Path, 2000)
 	requestURL := shortenString(options.URL, 2000)
@@ -109,6 +117,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	session := now
 
 	if options.Client != nil {
+		// hits and sessions use UTC
 		p, t, s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 		if !t.IsZero() && p != path {

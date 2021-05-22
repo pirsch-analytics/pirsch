@@ -19,5 +19,5 @@ func TestFingerprint(t *testing.T) {
 	_, err := io.WriteString(hash, "test127.0.0.1"+time.Now().UTC().Format("20060102")+"salt")
 	assert.NoError(t, err)
 	fp := hex.EncodeToString(hash.Sum(nil))
-	assert.Equal(t, fp, Fingerprint(req, "salt"))
+	assert.Equal(t, fp, Fingerprint(req, "salt", time.UTC))
 }
