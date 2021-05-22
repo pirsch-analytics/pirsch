@@ -10,6 +10,8 @@ func TestFilter_Validate(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.validate()
 	assert.NotNil(t, filter)
+	assert.NotNil(t, filter.Timezone)
+	assert.Equal(t, time.UTC, filter.Timezone)
 	assert.Zero(t, filter.From)
 	assert.Zero(t, filter.To)
 	filter = &Filter{From: pastDay(2), To: pastDay(5), Limit: 42}
@@ -43,7 +45,7 @@ func TestFilter_QueryTime(t *testing.T) {
 	assert.Equal(t, filter.To, args[2])
 	assert.Equal(t, filter.Day, args[3])
 	assert.Equal(t, filter.Start, args[4])
-	assert.Equal(t, "client_id = ? AND toDate(time) >= ? AND toDate(time) <= ? AND toDate(time) = ? AND time >= ? ", query)
+	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= ? AND toDate(time, 'UTC') <= ? AND toDate(time, 'UTC') = ? AND toDateTime(time, 'UTC') >= ? ", query)
 }
 
 func TestFilter_QueryFields(t *testing.T) {
@@ -99,7 +101,7 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
-	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 ", query)
+	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {
