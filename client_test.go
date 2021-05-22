@@ -42,7 +42,7 @@ func TestClient_SaveHit(t *testing.T) {
 		},
 		{
 			Fingerprint: "fp",
-			Time:        time.Now(),
+			Time:        time.Now().UTC(),
 			UserAgent:   "ua",
 			Path:        "/path",
 		},

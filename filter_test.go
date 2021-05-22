@@ -23,7 +23,7 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
 	assert.Equal(t, Today(), filter.To)
-	filter = &Filter{Day: time.Now(), Limit: -42}
+	filter = &Filter{Day: time.Now().UTC(), Limit: -42}
 	filter.validate()
 	assert.Zero(t, filter.Day.Hour())
 	assert.Zero(t, filter.Day.Minute())
@@ -37,7 +37,7 @@ func TestFilter_QueryTime(t *testing.T) {
 	filter.From = pastDay(5)
 	filter.To = pastDay(2)
 	filter.Day = pastDay(1)
-	filter.Start = time.Now()
+	filter.Start = time.Now().UTC()
 	args, query := filter.queryTime()
 	assert.Len(t, args, 5)
 	assert.Equal(t, NullClient, args[0])
