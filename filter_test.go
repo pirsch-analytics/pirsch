@@ -45,7 +45,7 @@ func TestFilter_QueryTime(t *testing.T) {
 	assert.Equal(t, filter.To, args[2])
 	assert.Equal(t, filter.Day, args[3])
 	assert.Equal(t, filter.Start, args[4])
-	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= ? AND toDate(time, 'UTC') <= ? AND toDate(time, 'UTC') = ? AND toDateTime(time, 'UTC') >= ? ", query)
+	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?, 'UTC') AND toDate(time, 'UTC') <= toDate(?, 'UTC') AND toDate(time, 'UTC') = toDate(?, 'UTC') AND toDateTime(time, 'UTC') >= toDateTime(?, 'UTC') ", query)
 }
 
 func TestFilter_QueryFields(t *testing.T) {

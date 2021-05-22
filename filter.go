@@ -107,26 +107,32 @@ func (filter *Filter) validate() {
 
 	if !filter.From.IsZero() {
 		filter.From = filter.toDate(filter.From)
+	} else {
+		filter.From = filter.From.In(time.UTC)
 	}
 
 	if !filter.To.IsZero() {
 		filter.To = filter.toDate(filter.To)
+	} else {
+		filter.To = filter.To.In(time.UTC)
 	}
 
 	if !filter.Day.IsZero() {
 		filter.Day = filter.toDate(filter.Day)
+	} else {
+		filter.Day = filter.Day.In(time.UTC)
 	}
 
 	if !filter.Start.IsZero() {
-		filter.Start = time.Date(filter.Start.Year(), filter.Start.Month(), filter.Start.Day(), filter.Start.Hour(), filter.Start.Minute(), filter.Start.Second(), 0, filter.Timezone)
+		filter.Start = time.Date(filter.Start.Year(), filter.Start.Month(), filter.Start.Day(), filter.Start.Hour(), filter.Start.Minute(), filter.Start.Second(), 0, time.UTC)
 	}
 
 	if !filter.To.IsZero() && filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From
 	}
 
-	now := time.Now().In(filter.Timezone)
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, filter.Timezone)
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 	if !filter.To.IsZero() && filter.To.After(today) {
 		filter.To = today
@@ -146,22 +152,22 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 
 	if !filter.From.IsZero() {
 		args = append(args, filter.From)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= ? ", timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?, '%s') ", timezone, timezone))
 	}
 
 	if !filter.To.IsZero() {
 		args = append(args, filter.To)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= ? ", timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?, '%s') ", timezone, timezone))
 	}
 
 	if !filter.Day.IsZero() {
 		args = append(args, filter.Day)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = ? ", timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?, '%s') ", timezone, timezone))
 	}
 
 	if !filter.Start.IsZero() {
 		args = append(args, filter.Start)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= ? ", timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", timezone, timezone))
 	}
 
 	return args, sqlQuery.String()
@@ -235,7 +241,7 @@ func (filter *Filter) appendQuery(fields *[]string, args *[]interface{}, field, 
 }
 
 func (filter *Filter) toDate(date time.Time) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, filter.Timezone)
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (filter *Filter) boolean(b bool) int8 {

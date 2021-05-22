@@ -188,12 +188,13 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
-	args, filterQuery := analyzer.getFilter(filter).query()
-	query := fmt.Sprintf(`SELECT toHour(time) hour, count(DISTINCT fingerprint) visitors
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour, count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), filterQuery)
 	var stats []VisitorHourStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
