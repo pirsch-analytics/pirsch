@@ -2,8 +2,11 @@ package pirsch
 
 // Contains all blacklisted referrer hosts.
 // Please add the reference in case you copy an existing list.
-// - https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt
 var referrerBlacklist = map[string]struct{}{
+	// custom
+	"temp-mail.org": {},
+
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -84,7 +87,7 @@ var referrerBlacklist = map[string]struct{}{
 	"acads.net":                            {},
 	"acarreo.ru":                           {},
 	"account-my1.xyz":                      {},
-	"accs-client.ru":                       {},
+	"accs-store.ru":                        {},
 	"actualremont.ru":                      {},
 	"acunetix-referrer.com":                {},
 	"adanih.com":                           {},
@@ -836,7 +839,7 @@ var referrerBlacklist = map[string]struct{}{
 	"humanorightswatch.org":                {},
 	"hundejo.com":                          {},
 	"huntdown.info":                        {},
-	"hvd-client.com":                       {},
+	"hvd-store.com":                        {},
 	"hydra-2019.ru":                        {},
 	"hydra-2020.online":                    {},
 	"hydra-2020.ru":                        {},
@@ -1096,7 +1099,7 @@ var referrerBlacklist = map[string]struct{}{
 	"luton-invest.ru":                      {},
 	"luxup.ru":                             {},
 	"luxurybet.ru":                         {},
-	"magicart.client":                      {},
+	"magicart.store":                       {},
 	"magicdiet.gq":                         {},
 	"magnetic-bracelets.ru":                {},
 	"mainhunter.com":                       {},
@@ -1693,7 +1696,7 @@ var referrerBlacklist = map[string]struct{}{
 	"stomatologi.moscow":                   {},
 	"stop-nark.ru":                         {},
 	"stop-zavisimost.com":                  {},
-	"client-rx.com":                        {},
+	"store-rx.com":                         {},
 	"strady.org.ua":                        {},
 	"stream-tds.com":                       {},
 	"stroi-24.ru":                          {},
