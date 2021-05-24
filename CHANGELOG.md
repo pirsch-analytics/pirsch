@@ -3,6 +3,8 @@
 ## 2.1.0
 
 * added timezone support (UTC by default)
+* updated referrer spam list
+* updated dependencies
 
 ## 2.0.1
 
