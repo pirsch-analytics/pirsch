@@ -209,7 +209,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT path,
-		count(DISTINCT fingerprint) visitors,
+		sum(visitors) visitors,
 		visitors / (
 			SELECT sum(s) FROM (
 				SELECT count(DISTINCT fingerprint) s
@@ -232,7 +232,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
 			SELECT path,
-			fingerprint,
+			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
@@ -273,6 +273,61 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	return stats, nil
 }
 
+// EntryPages returns the visitor count and time on page grouped by path for the first page visited.
+func (analyzer *Analyzer) EntryPages(filter *Filter) ([]PageStats, error) {
+	return analyzer.entryExitPages(filter, "ASC")
+}
+
+// ExitPages returns the visitor count and time on page grouped by path for the last page visited.
+func (analyzer *Analyzer) ExitPages(filter *Filter) ([]PageStats, error) {
+	return analyzer.entryExitPages(filter, "DESC")
+}
+
+func (analyzer *Analyzer) entryExitPages(filter *Filter, order string) ([]PageStats, error) {
+	filter = analyzer.getFilter(filter)
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT path,
+		sum(visitors) visitors
+		FROM (
+			SELECT groupArray(path)[1] path,
+			count(DISTINCT fingerprint) visitors
+			FROM (
+				SELECT path, fingerprint
+				FROM hit
+				WHERE %s
+				ORDER BY time %s
+			)
+			GROUP BY fingerprint
+		)
+		GROUP BY path
+		ORDER BY visitors DESC, path ASC
+		%s`, filterQuery, order, filter.withLimit())
+	var stats []PageStats
+
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+		return nil, err
+	}
+
+	if filter.IncludeAvgTimeOnPage {
+		timeOnPage, err := analyzer.AvgTimeOnPages(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range stats {
+			for j := range timeOnPage {
+				if stats[i].Path == timeOnPage[j].Path {
+					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
+					break
+				}
+			}
+		}
+	}
+
+	return stats, nil
+}
+
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -280,7 +335,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
-		count(DISTINCT fingerprint) visitors,
+		sum(visitors) visitors,
 		visitors / (
 			SELECT sum(s) FROM (
 				SELECT count(DISTINCT fingerprint) s
@@ -292,7 +347,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
-			SELECT fingerprint,
+			SELECT count(DISTINCT fingerprint) visitors,
 			referrer,
 			referrer_name,
 			referrer_icon,

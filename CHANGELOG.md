@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+
+* added entry and exit pages
+
 ## 2.1.0
 
 * added timezone support (UTC by default)
