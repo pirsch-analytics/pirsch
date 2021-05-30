@@ -36,6 +36,7 @@ Pirsch tracks the following data:
 * platform
 * screen size
 * UTM query parameters for campaign tracking
+* entry and exit pages
 
 All timestamps are stored as UTC. Starting with version 2.1, the results can be transformed to the desired timezone. All data points belongs to an (optional) client, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a client ID for all columns!**
 

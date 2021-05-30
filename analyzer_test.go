@@ -323,6 +323,60 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Len(t, visitors, 1)
 }
 
+func TestAnalyzer_EntryExitPages(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), PreviousTimeOnPageSeconds: 10, Path: "/foo"},
+		{Fingerprint: "fp2", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), PreviousTimeOnPageSeconds: 20, Path: "/bar"},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), PreviousTimeOnPageSeconds: 40, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/bar"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.EntryPages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "/", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, 5, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
+	visitors, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "/", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 30, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
+	visitors, err = analyzer.ExitPages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/bar", visitors[0].Path)
+	assert.Equal(t, "/", visitors[1].Path)
+	assert.Equal(t, "/foo", visitors[2].Path)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
+	visitors, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "/bar", visitors[0].Path)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+}
+
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
