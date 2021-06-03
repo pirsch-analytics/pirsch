@@ -363,6 +363,13 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 2, entries[1].Entries)
 	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 3, entries[0].Visitors)
+	assert.Equal(t, 2, entries[0].Entries)
+	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	exits, err := analyzer.ExitPages(nil)
 	assert.NoError(t, err)
 	assert.Len(t, exits, 3)
@@ -389,6 +396,13 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 1, exits[1].Exits)
 	assert.InDelta(t, 0.75, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.33, exits[1].ExitRate, 0.01)
+	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 1)
+	assert.Equal(t, "/", exits[0].Path)
+	assert.Equal(t, 3, exits[0].Visitors)
+	assert.Equal(t, 1, exits[0].Exits)
+	assert.InDelta(t, 0.33, exits[0].ExitRate, 0.01)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {

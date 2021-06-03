@@ -276,7 +276,20 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 // EntryPages returns the visitor count and time on page grouped by path for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
+	var path, pathFilter string
+
+	if filter.Path != "" {
+		path = filter.Path
+		pathFilter = "AND path = ?"
+		filter.Path = ""
+	}
+
 	filterArgs, filterQuery := filter.query()
+
+	if path != "" {
+		filterArgs = append(filterArgs, path)
+	}
+
 	query := fmt.Sprintf(`SELECT *
 		FROM (
 			SELECT "path",
@@ -296,9 +309,9 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 			)
 			GROUP BY "path"
 		)
-		WHERE entries > 0
+		WHERE entries > 0 %s
 		ORDER BY entries DESC, "path" ASC
-		%s`, filterQuery, filter.withLimit())
+		%s`, filterQuery, pathFilter, filter.withLimit())
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -328,7 +341,20 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 // ExitPages returns the visitor count and time on page grouped by path for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
+	var path, pathFilter string
+
+	if filter.Path != "" {
+		path = filter.Path
+		pathFilter = "AND path = ?"
+		filter.Path = ""
+	}
+
 	filterArgs, filterQuery := filter.query()
+
+	if path != "" {
+		filterArgs = append(filterArgs, path)
+	}
+
 	query := fmt.Sprintf(`SELECT *
 		FROM (
 			SELECT "path",
@@ -349,9 +375,9 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 			)
 			GROUP BY "path"
 		)
-		WHERE exits > 0
+		WHERE exits > 0 %s
 		ORDER BY exits DESC, "path" ASC
-		%s`, filterQuery, filter.withLimit())
+		%s`, filterQuery, pathFilter, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
