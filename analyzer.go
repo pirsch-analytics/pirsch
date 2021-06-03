@@ -274,35 +274,32 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 }
 
 // EntryPages returns the visitor count and time on page grouped by path for the first page visited.
-func (analyzer *Analyzer) EntryPages(filter *Filter) ([]PageStats, error) {
-	return analyzer.entryExitPages(filter, "ASC")
-}
-
-// ExitPages returns the visitor count and time on page grouped by path for the last page visited.
-func (analyzer *Analyzer) ExitPages(filter *Filter) ([]PageStats, error) {
-	return analyzer.entryExitPages(filter, "DESC")
-}
-
-func (analyzer *Analyzer) entryExitPages(filter *Filter, order string) ([]PageStats, error) {
+func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT path,
-		sum(visitors) visitors
+	query := fmt.Sprintf(`SELECT *
 		FROM (
-			SELECT groupArray(path)[1] path,
-			count(DISTINCT fingerprint) visitors
+			SELECT "path",
+			count(DISTINCT fingerprint) visitors,
+			countIf(prev_fingerprint != fingerprint) entries
 			FROM (
-				SELECT path, fingerprint
-				FROM hit
-				WHERE %s
-				ORDER BY time %s
+				SELECT fingerprint,
+				"session",
+				"path",
+				neighbor("fingerprint", -1) prev_fingerprint
+				FROM (
+					SELECT fingerprint, "session", "path"
+					FROM hit
+					WHERE %s
+					ORDER BY fingerprint, "time"
+				)
 			)
-			GROUP BY fingerprint
+			GROUP BY "path"
 		)
-		GROUP BY path
-		ORDER BY visitors DESC, path ASC
-		%s`, filterQuery, order, filter.withLimit())
-	var stats []PageStats
+		WHERE entries > 0
+		ORDER BY entries DESC, "path" ASC
+		%s`, filterQuery, filter.withLimit())
+	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, err
@@ -323,6 +320,42 @@ func (analyzer *Analyzer) entryExitPages(filter *Filter, order string) ([]PageSt
 				}
 			}
 		}
+	}
+
+	return stats, nil
+}
+
+// ExitPages returns the visitor count and time on page grouped by path for the last page visited.
+func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
+	filter = analyzer.getFilter(filter)
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT *
+		FROM (
+			SELECT "path",
+			count(DISTINCT fingerprint) visitors,
+			countIf(next_fingerprint != fingerprint) exits,
+			exits/visitors exit_rate
+			FROM (
+				SELECT fingerprint,
+				"session",
+				"path",
+				neighbor("fingerprint", 1) next_fingerprint
+				FROM (
+					SELECT fingerprint, "session", "path"
+					FROM hit
+					WHERE %s
+					ORDER BY fingerprint, "time"
+				)
+			)
+			GROUP BY "path"
+		)
+		WHERE exits > 0
+		ORDER BY exits DESC, "path" ASC
+		%s`, filterQuery, filter.withLimit())
+	var stats []ExitStats
+
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+		return nil, err
 	}
 
 	return stats, nil

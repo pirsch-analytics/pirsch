@@ -87,6 +87,22 @@ type PageStats struct {
 	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
+// EntryStats is the result type for entry page statistics.
+type EntryStats struct {
+	Path                    string `json:"path"`
+	Visitors                int    `json:"visitors"`
+	Entries                 int    `json:"entries"`
+	AverageTimeSpentSeconds int    `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+}
+
+// ExitStats is the result type for exit page statistics.
+type ExitStats struct {
+	Path     string  `json:"path"`
+	Visitors int     `json:"visitors"`
+	Exits    int     `json:"exits"`
+	ExitRate float64 `db:"exit_rate" json:"exit_rate"`
+}
+
 // ReferrerStats is the result type for referrer statistics.
 type ReferrerStats struct {
 	Referrer         sql.NullString `json:"referrer"`
