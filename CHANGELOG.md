@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2
+
+* added missing os and browser version methods to analyzer
+
+## 2.2.1
+
+Just tagging a new version, no changes.
+
 ## 2.2.0
 
 * added entry and exit pages

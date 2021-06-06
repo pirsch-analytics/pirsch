@@ -155,10 +155,24 @@ type BrowserStats struct {
 	Browser string `json:"browser"`
 }
 
+// BrowserVersionStats is the result type for browser version statistics.
+type BrowserVersionStats struct {
+	MetaStats
+	Browser        string `json:"browser"`
+	BrowserVersion string `db:"browser_version" json:"browser_version"`
+}
+
 // OSStats is the result type for operating system statistics.
 type OSStats struct {
 	MetaStats
 	OS string `json:"os"`
+}
+
+// OSVersionStats is the result type for operating system version statistics.
+type OSVersionStats struct {
+	MetaStats
+	OS        string `json:"os"`
+	OSVersion string `db:"os_version" json:"os_version"`
 }
 
 // ScreenClassStats is the result type for screen class statistics.

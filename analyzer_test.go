@@ -555,6 +555,49 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_BrowserVersion(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
+		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
+		{Fingerprint: "fp5", Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
+		{Fingerprint: "fp6", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
+		{Fingerprint: "fp7", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.BrowserVersion(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 6)
+	assert.Equal(t, BrowserChrome, visitors[0].Browser)
+	assert.Equal(t, BrowserChrome, visitors[1].Browser)
+	assert.Equal(t, BrowserChrome, visitors[2].Browser)
+	assert.Equal(t, BrowserFirefox, visitors[3].Browser)
+	assert.Equal(t, BrowserFirefox, visitors[4].Browser)
+	assert.Equal(t, BrowserSafari, visitors[5].Browser)
+	assert.Equal(t, "85.1", visitors[0].BrowserVersion)
+	assert.Equal(t, "86.0", visitors[1].BrowserVersion)
+	assert.Equal(t, "87.2", visitors[2].BrowserVersion)
+	assert.Equal(t, "89.0.0", visitors[3].BrowserVersion)
+	assert.Equal(t, "89.0.1", visitors[4].BrowserVersion)
+	assert.Equal(t, "14.1.2", visitors[5].BrowserVersion)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.InDelta(t, 0.2857, visitors[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
+}
+
 func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -582,6 +625,49 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.OS(getMaxFilter())
 	assert.NoError(t, err)
+}
+
+func TestAnalyzer_OSVersion(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{Fingerprint: "fp2", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{Fingerprint: "fp3", Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
+		{Fingerprint: "fp4", Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
+		{Fingerprint: "fp5", Time: time.Now(), OS: OSLinux},
+		{Fingerprint: "fp6", Time: time.Now(), OS: OSWindows, OSVersion: "9"},
+		{Fingerprint: "fp7", Time: time.Now(), OS: OSWindows, OSVersion: "8"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.OSVersion(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 6)
+	assert.Equal(t, OSWindows, visitors[0].OS)
+	assert.Equal(t, OSLinux, visitors[1].OS)
+	assert.Equal(t, OSMac, visitors[2].OS)
+	assert.Equal(t, OSMac, visitors[3].OS)
+	assert.Equal(t, OSWindows, visitors[4].OS)
+	assert.Equal(t, OSWindows, visitors[5].OS)
+	assert.Equal(t, "10", visitors[0].OSVersion)
+	assert.Empty(t, visitors[1].OSVersion)
+	assert.Equal(t, "13.1.0", visitors[2].OSVersion)
+	assert.Equal(t, "14.0.0", visitors[3].OSVersion)
+	assert.Equal(t, "8", visitors[4].OSVersion)
+	assert.Equal(t, "9", visitors[5].OSVersion)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.InDelta(t, 0.2857, visitors[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {

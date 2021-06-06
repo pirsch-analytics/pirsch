@@ -578,6 +578,60 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 	return stats, nil
 }
 
+// OSVersion returns the visitor count grouped by operating systems and version.
+func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / (
+			SELECT sum(s) FROM (
+				SELECT count(DISTINCT fingerprint) s
+				FROM hit
+				WHERE %s
+				GROUP BY os, os_version
+			)
+		) relative_visitors
+		FROM hit
+		WHERE %s
+		GROUP BY os, os_version
+		ORDER BY visitors DESC, os, os_version
+		%s`, filterQuery, filterQuery, filter.withLimit())
+	args = append(args, args...)
+	var stats []OSVersionStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// BrowserVersion returns the visitor count grouped by browser and version.
+func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / (
+			SELECT sum(s) FROM (
+				SELECT count(DISTINCT fingerprint) s
+				FROM hit
+				WHERE %s
+				GROUP BY browser, browser_version
+			)
+		) relative_visitors
+		FROM hit
+		WHERE %s
+		GROUP BY browser, browser_version
+		ORDER BY visitors DESC, browser, browser_version
+		%s`, filterQuery, filterQuery, filter.withLimit())
+	args = append(args, args...)
+	var stats []BrowserVersionStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
