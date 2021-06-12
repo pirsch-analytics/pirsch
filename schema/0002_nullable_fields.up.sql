@@ -1,0 +1,9 @@
+ALTER TABLE "hit" MODIFY COLUMN "session" DateTime('UTC') DEFAULT 0;
+ALTER TABLE "hit" MODIFY COLUMN "referrer" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "referrer_name" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "referrer_icon" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "utm_source" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "utm_medium" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "utm_campaign" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "utm_content" String DEFAULT '';
+ALTER TABLE "hit" MODIFY COLUMN "utm_term" String DEFAULT '';

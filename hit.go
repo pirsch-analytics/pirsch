@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -142,16 +141,16 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		ClientID:                  options.ClientID,
 		Fingerprint:               fingerprint,
 		Time:                      now,
-		Session:                   sql.NullTime{Time: session, Valid: !session.IsZero()},
+		Session:                   session,
 		PreviousTimeOnPageSeconds: lastHitSeconds,
 		UserAgent:                 userAgent,
 		Path:                      path,
 		URL:                       requestURL,
 		Language:                  lang,
 		CountryCode:               countryCode,
-		Referrer:                  sql.NullString{String: referrer, Valid: referrer != ""},
-		ReferrerName:              sql.NullString{String: referrerName, Valid: referrerName != ""},
-		ReferrerIcon:              sql.NullString{String: referrerIcon, Valid: referrerIcon != ""},
+		Referrer:                  referrer,
+		ReferrerName:              referrerName,
+		ReferrerIcon:              referrerIcon,
 		OS:                        uaInfo.OS,
 		OSVersion:                 uaInfo.OSVersion,
 		Browser:                   uaInfo.Browser,
@@ -161,11 +160,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		ScreenWidth:               options.ScreenWidth,
 		ScreenHeight:              options.ScreenHeight,
 		ScreenClass:               screen,
-		UTMSource:                 sql.NullString{String: utm.source, Valid: utm.source != ""},
-		UTMMedium:                 sql.NullString{String: utm.medium, Valid: utm.medium != ""},
-		UTMCampaign:               sql.NullString{String: utm.campaign, Valid: utm.campaign != ""},
-		UTMContent:                sql.NullString{String: utm.content, Valid: utm.content != ""},
-		UTMTerm:                   sql.NullString{String: utm.term, Valid: utm.term != ""},
+		UTMSource:                 utm.source,
+		UTMMedium:                 utm.medium,
+		UTMCampaign:               utm.campaign,
+		UTMContent:                utm.content,
+		UTMTerm:                   utm.term,
 	}
 }
 

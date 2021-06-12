@@ -142,8 +142,7 @@ func TestTrackerHitSession(t *testing.T) {
 	assert.Len(t, client.Hits, 2)
 
 	// ignore order...
-	if !client.Hits[0].Session.Valid || !client.Hits[1].Session.Valid ||
-		client.Hits[0].Session.Time.IsZero() || client.Hits[1].Session.Time.IsZero() {
+	if client.Hits[0].Session.IsZero() || client.Hits[1].Session.IsZero() {
 		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
 	}
 }
@@ -177,7 +176,7 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 	assert.Len(t, client.Hits, 4)
 
 	for _, hit := range client.Hits {
-		assert.False(t, hit.Referrer.Valid)
+		assert.Empty(t, hit.Referrer)
 	}
 }
 

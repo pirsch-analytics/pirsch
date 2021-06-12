@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"encoding/json"
 	"time"
 )
@@ -11,30 +10,30 @@ type Hit struct {
 	ClientID                  int64 `db:"client_id"`
 	Fingerprint               string
 	Time                      time.Time
-	Session                   sql.NullTime
+	Session                   time.Time
 	PreviousTimeOnPageSeconds int    `db:"previous_time_on_page_seconds"`
 	UserAgent                 string `db:"user_agent"`
 	Path                      string
 	URL                       string
 	Language                  string
 	CountryCode               string `db:"country_code"`
-	Referrer                  sql.NullString
-	ReferrerName              sql.NullString `db:"referrer_name"`
-	ReferrerIcon              sql.NullString `db:"referrer_icon"`
+	Referrer                  string
+	ReferrerName              string `db:"referrer_name"`
+	ReferrerIcon              string `db:"referrer_icon"`
 	OS                        string
 	OSVersion                 string `db:"os_version"`
 	Browser                   string
 	BrowserVersion            string `db:"browser_version"`
 	Desktop                   bool
 	Mobile                    bool
-	ScreenWidth               int            `db:"screen_width"`
-	ScreenHeight              int            `db:"screen_height"`
-	ScreenClass               string         `db:"screen_class"`
-	UTMSource                 sql.NullString `db:"utm_source"`
-	UTMMedium                 sql.NullString `db:"utm_medium"`
-	UTMCampaign               sql.NullString `db:"utm_campaign"`
-	UTMContent                sql.NullString `db:"utm_content"`
-	UTMTerm                   sql.NullString `db:"utm_term"`
+	ScreenWidth               int    `db:"screen_width"`
+	ScreenHeight              int    `db:"screen_height"`
+	ScreenClass               string `db:"screen_class"`
+	UTMSource                 string `db:"utm_source"`
+	UTMMedium                 string `db:"utm_medium"`
+	UTMCampaign               string `db:"utm_campaign"`
+	UTMContent                string `db:"utm_content"`
+	UTMTerm                   string `db:"utm_term"`
 }
 
 // String implements the Stringer interface.
@@ -105,13 +104,13 @@ type ExitStats struct {
 
 // ReferrerStats is the result type for referrer statistics.
 type ReferrerStats struct {
-	Referrer         sql.NullString `json:"referrer"`
-	ReferrerName     sql.NullString `db:"referrer_name" json:"referrer_name"`
-	ReferrerIcon     sql.NullString `db:"referrer_icon" json:"referrer_icon"`
-	Visitors         int            `json:"visitors"`
-	RelativeVisitors float64        `db:"relative_visitors" json:"relative_visitors"`
-	Bounces          int            `json:"bounces"`
-	BounceRate       float64        `db:"bounce_rate" json:"bounce_rate"`
+	Referrer         string  `json:"referrer"`
+	ReferrerName     string  `db:"referrer_name" json:"referrer_name"`
+	ReferrerIcon     string  `db:"referrer_icon" json:"referrer_icon"`
+	Visitors         int     `json:"visitors"`
+	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
+	Bounces          int     `json:"bounces"`
+	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`
 }
 
 // PlatformStats is the result type for platform statistics.
@@ -184,29 +183,29 @@ type ScreenClassStats struct {
 // UTMSourceStats is the result type for utm source statistics.
 type UTMSourceStats struct {
 	MetaStats
-	UTMSource sql.NullString `db:"utm_source" json:"utm_source"`
+	UTMSource string `db:"utm_source" json:"utm_source"`
 }
 
 // UTMMediumStats is the result type for utm medium statistics.
 type UTMMediumStats struct {
 	MetaStats
-	UTMMedium sql.NullString `db:"utm_medium" json:"utm_medium"`
+	UTMMedium string `db:"utm_medium" json:"utm_medium"`
 }
 
 // UTMCampaignStats is the result type for utm campaign statistics.
 type UTMCampaignStats struct {
 	MetaStats
-	UTMCampaign sql.NullString `db:"utm_campaign" json:"utm_campaign"`
+	UTMCampaign string `db:"utm_campaign" json:"utm_campaign"`
 }
 
 // UTMContentStats is the result type for utm content statistics.
 type UTMContentStats struct {
 	MetaStats
-	UTMContent sql.NullString `db:"utm_content" json:"utm_content"`
+	UTMContent string `db:"utm_content" json:"utm_content"`
 }
 
 // UTMTermStats is the result type for utm term statistics.
 type UTMTermStats struct {
 	MetaStats
-	UTMTerm sql.NullString `db:"utm_term" json:"utm_term"`
+	UTMTerm string `db:"utm_term" json:"utm_term"`
 }

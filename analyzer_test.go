@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -43,17 +42,17 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4), Session: pastDay(4), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), Session: pastDay(4), Path: "/foo"},
 		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(4).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(4).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp2", Time: pastDay(4), Session: pastDay(4), Path: "/"},
+		{Fingerprint: "fp2", Time: pastDay(4).Add(time.Minute * 10), Session: pastDay(4).Add(time.Minute * 30), Path: "/bar"},
 		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp5", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: pastDay(2), Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: pastDay(2), Path: "/bar"},
 		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp9", Time: Today(), Path: "/"},
@@ -125,19 +124,19 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 900},
+		{Fingerprint: "fp1", Time: pastDay(4), Session: pastDay(4), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), Session: pastDay(4), Path: "/bar", PreviousTimeOnPageSeconds: 900},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/foo", PreviousTimeOnPageSeconds: 300},
+		{Fingerprint: "fp4", Time: pastDay(3), Session: pastDay(3), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), Session: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 300},
 		{Fingerprint: "fp4", Time: pastDay(3), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(3), Session: sql.NullTime{Time: pastDay(3), Valid: true}, Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(3).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
+		{Fingerprint: "fp5", Time: pastDay(3), Session: pastDay(3), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), Session: pastDay(3).Add(time.Minute * 30), Path: "/bar"},
 		{Fingerprint: "fp6", Time: pastDay(3), Path: "/"},
 		{Fingerprint: "fp7", Time: pastDay(3), Path: "/"},
-		{Fingerprint: "fp8", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/bar", PreviousTimeOnPageSeconds: 300},
+		{Fingerprint: "fp8", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), Session: pastDay(2), Path: "/bar", PreviousTimeOnPageSeconds: 300},
 		{Fingerprint: "fp9", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp10", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp11", Time: Today(), Path: "/"},
@@ -219,19 +218,19 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), Session: sql.NullTime{Time: pastDay(4), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: sql.NullTime{Time: pastDay(4), Valid: true}, PreviousTimeOnPageSeconds: 180, Path: "/foo"},
+		{Fingerprint: "fp1", Time: pastDay(4), Session: pastDay(4), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: pastDay(4), PreviousTimeOnPageSeconds: 180, Path: "/foo"},
 		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar"},
 		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
 		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: sql.NullTime{Time: pastDay(2).Add(time.Minute * 30), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: sql.NullTime{Time: pastDay(2).Add(time.Hour), Valid: true}, PreviousTimeOnPageSeconds: 600, Path: "/foo"},
+		{Fingerprint: "fp5", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: pastDay(2).Add(time.Minute * 30), Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 600, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: pastDay(2).Add(time.Hour), Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: pastDay(2).Add(time.Hour), PreviousTimeOnPageSeconds: 600, Path: "/foo"},
 		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
 		{Fingerprint: "fp9", Time: Today(), Path: "/"},
@@ -326,18 +325,18 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), Session: sql.NullTime{Time: pastDay(2), Valid: true}, PreviousTimeOnPageSeconds: 10, Path: "/foo"},
-		{Fingerprint: "fp2", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp3", Time: pastDay(2), Session: sql.NullTime{Time: pastDay(2), Valid: true}, Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1), Session: sql.NullTime{Time: pastDay(1), Valid: true}, Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), Session: sql.NullTime{Time: pastDay(1), Valid: true}, PreviousTimeOnPageSeconds: 20, Path: "/bar"},
-		{Fingerprint: "fp5", Time: pastDay(1), Session: sql.NullTime{Time: pastDay(1), Valid: true}, Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), Session: sql.NullTime{Time: pastDay(1), Valid: true}, PreviousTimeOnPageSeconds: 40, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(1), Session: sql.NullTime{Time: pastDay(1), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), Session: sql.NullTime{Time: pastDay(1), Valid: true}, Path: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), Session: sql.NullTime{Time: pastDay(1), Valid: true}, Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 10, Path: "/foo"},
+		{Fingerprint: "fp2", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp3", Time: pastDay(2), Session: pastDay(2), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1), Session: pastDay(1), Path: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), Session: pastDay(1), PreviousTimeOnPageSeconds: 20, Path: "/bar"},
+		{Fingerprint: "fp5", Time: pastDay(1), Session: pastDay(1), Path: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), Session: pastDay(1), PreviousTimeOnPageSeconds: 40, Path: "/bar"},
+		{Fingerprint: "fp6", Time: pastDay(1), Session: pastDay(1), Path: "/bar"},
+		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/bar"},
+		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -408,22 +407,22 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/foo", Referrer: sql.NullString{String: "ref1", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref2", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/bar", Referrer: sql.NullString{String: "ref3", Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: sql.NullString{String: "ref1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1"},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/foo", Referrer: "ref1"},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref2"},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: "ref2"},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/bar", Referrer: "ref3"},
+		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1"},
+		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Referrer(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
-	assert.Equal(t, "ref1", visitors[0].Referrer.String)
-	assert.Equal(t, "ref2", visitors[1].Referrer.String)
-	assert.Equal(t, "ref3", visitors[2].Referrer.String)
+	assert.Equal(t, "ref1", visitors[0].Referrer)
+	assert.Equal(t, "ref2", visitors[1].Referrer)
+	assert.Equal(t, "ref3", visitors[2].Referrer)
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
@@ -702,22 +701,22 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 func TestAnalyzer_UTM(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: sql.NullString{String: "source2", Valid: true}, UTMMedium: sql.NullString{String: "medium2", Valid: true}, UTMCampaign: sql.NullString{String: "campaign2", Valid: true}, UTMContent: sql.NullString{String: "content2", Valid: true}, UTMTerm: sql.NullString{String: "term2", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), UTMSource: sql.NullString{String: "source2", Valid: true}, UTMMedium: sql.NullString{String: "medium2", Valid: true}, UTMCampaign: sql.NullString{String: "campaign2", Valid: true}, UTMContent: sql.NullString{String: "content2", Valid: true}, UTMTerm: sql.NullString{String: "term2", Valid: true}},
-		{Fingerprint: "fp2", Time: time.Now(), UTMSource: sql.NullString{String: "source3", Valid: true}, UTMMedium: sql.NullString{String: "medium3", Valid: true}, UTMCampaign: sql.NullString{String: "campaign3", Valid: true}, UTMContent: sql.NullString{String: "content3", Valid: true}, UTMTerm: sql.NullString{String: "term3", Valid: true}},
-		{Fingerprint: "fp3", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
-		{Fingerprint: "fp4", Time: time.Now(), UTMSource: sql.NullString{String: "source1", Valid: true}, UTMMedium: sql.NullString{String: "medium1", Valid: true}, UTMCampaign: sql.NullString{String: "campaign1", Valid: true}, UTMContent: sql.NullString{String: "content1", Valid: true}, UTMTerm: sql.NullString{String: "term1", Valid: true}},
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{Fingerprint: "fp2", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{Fingerprint: "fp2", Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
+		{Fingerprint: "fp3", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Fingerprint: "fp4", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	source, err := analyzer.UTMSource(nil)
 	assert.NoError(t, err)
 	assert.Len(t, source, 3)
-	assert.Equal(t, "source1", source[0].UTMSource.String)
-	assert.Equal(t, "source2", source[1].UTMSource.String)
-	assert.Equal(t, "source3", source[2].UTMSource.String)
+	assert.Equal(t, "source1", source[0].UTMSource)
+	assert.Equal(t, "source2", source[1].UTMSource)
+	assert.Equal(t, "source3", source[2].UTMSource)
 	assert.Equal(t, 3, source[0].Visitors)
 	assert.Equal(t, 2, source[1].Visitors)
 	assert.Equal(t, 1, source[2].Visitors)
@@ -729,9 +728,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	medium, err := analyzer.UTMMedium(nil)
 	assert.NoError(t, err)
 	assert.Len(t, medium, 3)
-	assert.Equal(t, "medium1", medium[0].UTMMedium.String)
-	assert.Equal(t, "medium2", medium[1].UTMMedium.String)
-	assert.Equal(t, "medium3", medium[2].UTMMedium.String)
+	assert.Equal(t, "medium1", medium[0].UTMMedium)
+	assert.Equal(t, "medium2", medium[1].UTMMedium)
+	assert.Equal(t, "medium3", medium[2].UTMMedium)
 	assert.Equal(t, 3, medium[0].Visitors)
 	assert.Equal(t, 2, medium[1].Visitors)
 	assert.Equal(t, 1, medium[2].Visitors)
@@ -743,9 +742,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	campaign, err := analyzer.UTMCampaign(nil)
 	assert.NoError(t, err)
 	assert.Len(t, campaign, 3)
-	assert.Equal(t, "campaign1", campaign[0].UTMCampaign.String)
-	assert.Equal(t, "campaign2", campaign[1].UTMCampaign.String)
-	assert.Equal(t, "campaign3", campaign[2].UTMCampaign.String)
+	assert.Equal(t, "campaign1", campaign[0].UTMCampaign)
+	assert.Equal(t, "campaign2", campaign[1].UTMCampaign)
+	assert.Equal(t, "campaign3", campaign[2].UTMCampaign)
 	assert.Equal(t, 3, campaign[0].Visitors)
 	assert.Equal(t, 2, campaign[1].Visitors)
 	assert.Equal(t, 1, campaign[2].Visitors)
@@ -757,9 +756,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	content, err := analyzer.UTMContent(nil)
 	assert.NoError(t, err)
 	assert.Len(t, content, 3)
-	assert.Equal(t, "content1", content[0].UTMContent.String)
-	assert.Equal(t, "content2", content[1].UTMContent.String)
-	assert.Equal(t, "content3", content[2].UTMContent.String)
+	assert.Equal(t, "content1", content[0].UTMContent)
+	assert.Equal(t, "content2", content[1].UTMContent)
+	assert.Equal(t, "content3", content[2].UTMContent)
 	assert.Equal(t, 3, content[0].Visitors)
 	assert.Equal(t, 2, content[1].Visitors)
 	assert.Equal(t, 1, content[2].Visitors)
@@ -771,9 +770,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	term, err := analyzer.UTMTerm(nil)
 	assert.NoError(t, err)
 	assert.Len(t, term, 3)
-	assert.Equal(t, "term1", term[0].UTMTerm.String)
-	assert.Equal(t, "term2", term[1].UTMTerm.String)
-	assert.Equal(t, "term3", term[2].UTMTerm.String)
+	assert.Equal(t, "term1", term[0].UTMTerm)
+	assert.Equal(t, "term2", term[1].UTMTerm)
+	assert.Equal(t, "term3", term[2].UTMTerm)
 	assert.Equal(t, 3, term[0].Visitors)
 	assert.Equal(t, 2, term[1].Visitors)
 	assert.Equal(t, 1, term[2].Visitors)

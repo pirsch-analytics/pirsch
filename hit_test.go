@@ -25,14 +25,13 @@ func TestHitFromRequest(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit}))
 
 	if hit.Time.IsZero() ||
-		!hit.Session.Valid ||
-		hit.Session.Time.IsZero() ||
+		hit.Session.IsZero() ||
 		hit.PreviousTimeOnPageSeconds != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
 		hit.Language != "de" ||
-		hit.Referrer.String != "http://ref/" ||
+		hit.Referrer != "http://ref/" ||
 		hit.OS != OSWindows ||
 		hit.OSVersion != "10" ||
 		hit.Browser != BrowserChrome ||
@@ -41,11 +40,11 @@ func TestHitFromRequest(t *testing.T) {
 		hit.Mobile ||
 		hit.ScreenWidth != 640 ||
 		hit.ScreenHeight != 1024 ||
-		hit.UTMSource.String != "test source" ||
-		hit.UTMMedium.String != "email" ||
-		hit.UTMCampaign.String != "newsletter" ||
-		hit.UTMContent.String != "signup" ||
-		hit.UTMTerm.String != "keywords" {
+		hit.UTMSource != "test source" ||
+		hit.UTMMedium != "email" ||
+		hit.UTMCampaign != "newsletter" ||
+		hit.UTMContent != "signup" ||
+		hit.UTMTerm != "keywords" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
@@ -71,7 +70,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)
 	assert.Equal(t, 5, hit2.PreviousTimeOnPageSeconds)
-	assert.Equal(t, hit1.Session.Time.Unix(), hit2.Session.Time.Unix())
+	assert.Equal(t, hit1.Session.Unix(), hit2.Session.Unix())
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {
@@ -96,7 +95,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 
 	if hit.Path != "/new/custom/path" ||
 		hit.URL != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
-		hit.Referrer.String != "http://custom.ref/" {
+		hit.Referrer != "http://custom.ref/" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }

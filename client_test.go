@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -21,14 +20,14 @@ func TestClient_SaveHit(t *testing.T) {
 			ClientID:                  1,
 			Fingerprint:               "fp",
 			Time:                      time.Now(),
-			Session:                   sql.NullTime{Time: time.Now(), Valid: true},
+			Session:                   time.Now(),
 			PreviousTimeOnPageSeconds: 42,
 			UserAgent:                 "ua",
 			Path:                      "/path",
 			Language:                  "en",
-			Referrer:                  sql.NullString{String: "ref", Valid: true},
-			ReferrerName:              sql.NullString{String: "ref_name", Valid: true},
-			ReferrerIcon:              sql.NullString{String: "ref_icon", Valid: true},
+			Referrer:                  "ref",
+			ReferrerName:              "ref_name",
+			ReferrerIcon:              "ref_icon",
 			OS:                        "os",
 			OSVersion:                 "10",
 			Browser:                   "browser",
@@ -58,7 +57,7 @@ func TestClient_Session(t *testing.T) {
 			ClientID:    1,
 			Fingerprint: fp,
 			Time:        now,
-			Session:     sql.NullTime{Time: now, Valid: true},
+			Session:     now,
 			UserAgent:   "ua",
 			Path:        "/path",
 		},

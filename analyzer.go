@@ -643,7 +643,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 				SELECT toDate(time, '%s') day, max(time)-min(time) duration
 				FROM hit
 				WHERE %s
-				AND session IS NOT NULL
+				AND session != 0
 				GROUP BY day, fingerprint, session
 			)
 		WHERE duration != 0
@@ -667,7 +667,7 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 			SELECT toDate(time, '%s') day, max(time)-min(time) duration
 			FROM hit
 			WHERE %s
-			AND session IS NOT NULL
+			AND session != 0
 			GROUP BY day, fingerprint, session
 		)`, filter.Timezone.String(), filterQuery)
 	stats := new(struct {
