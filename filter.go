@@ -42,7 +42,12 @@ type Filter struct {
 	Start time.Time
 
 	// Path filters for the path.
+	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path string
+
+	// PathPattern filters for the path using a (ClickHouse supported) regex pattern.
+	// Note that if this and Path are both set, Path will be preferred.
+	PathPattern string
 
 	// Language filters for the ISO language code.
 	Language string
@@ -138,6 +143,10 @@ func (filter *Filter) validate() {
 		filter.To = today
 	}
 
+	if filter.Path != "" && filter.PathPattern != "" {
+		filter.PathPattern = ""
+	}
+
 	if filter.Limit < 0 {
 		filter.Limit = 0
 	}
@@ -174,8 +183,8 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 14)
-	fields := make([]string, 0, 14)
+	args := make([]interface{}, 0, 15)
+	fields := make([]string, 0, 15)
 	filter.appendQuery(&fields, &args, "path", filter.Path)
 	filter.appendQuery(&fields, &args, "language", filter.Language)
 	filter.appendQuery(&fields, &args, "country_code", filter.Country)
@@ -199,6 +208,11 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 		} else {
 			fields = append(fields, "desktop = 0 AND mobile = 0 ")
 		}
+	}
+
+	if filter.PathPattern != "" {
+		args = append(args, filter.PathPattern)
+		fields = append(fields, `match("path", ?) = 1`)
 	}
 
 	return args, strings.Join(fields, "AND ")

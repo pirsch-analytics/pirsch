@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.4
+
+* added `PathPattern` to filter and analyzer to query paths for a regex
+
 ## 2.2.3
 
 All `sql.Null...` fields have been changed to non-nullable fields!
