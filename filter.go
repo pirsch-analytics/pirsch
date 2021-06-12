@@ -47,6 +47,11 @@ type Filter struct {
 
 	// PathPattern filters for the path using a (ClickHouse supported) regex pattern.
 	// Note that if this and Path are both set, Path will be preferred.
+	// Examples for useful patterns (all case-insensitive, * is used for every character but slashes, ** is used for all characters including slashes):
+	//  (?i)^/path/[^/]+$ // matches /path/*
+	//  (?i)^/path/[^/]+/.* // matches /path/*/**
+	//  (?i)^/path/[^/]+/slashes$ // matches /path/*/slashes
+	//  (?i)^/path/.+/slashes$ // matches /path/**/slashes
 	PathPattern string
 
 	// Language filters for the ISO language code.
