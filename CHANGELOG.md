@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.3
+
+*All `sql.Null...` fields have been changed to non-nullable fields!*
+
+* removed nullable fields from schema and model for better ClickHouse performance
+* improved and fixed user agent blacklist
+* updated dependencies
+
 ## 2.2.2
 
 * added missing os and browser version methods to analyzer

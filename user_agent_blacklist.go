@@ -4,14 +4,14 @@ package pirsch
 // Please add the reference in case you copy an existing list.
 var userAgentBlacklist = []string{
 	// custom
-	"saashub",
-
-	// https://github.com/gorangajic/isbot/blob/master/list.json
 	"://", // urls
 	"bot",
 	"crawler",
 	"spider",
 	"go-http-client",
+	"saashub",
+
+	// https://github.com/gorangajic/isbot/blob/master/list.json
 	"twingly",
 	"evc-batch",
 	"mailto",
@@ -65,6 +65,7 @@ var userAgentBlacklist = []string{
 	"custom",
 	"dap",
 	"davclnt",
+	"deluge",
 	"digg",
 	"dispatch",
 	"disqus",
@@ -75,7 +76,7 @@ var userAgentBlacklist = []string{
 	"duckduckgo",
 	"ecatch",
 	"evernote clip resolver",
-	"facebook$",
+	"facebook",
 	"facebookexternalhit",
 	"facebookplatform",
 	"faraday",
@@ -88,6 +89,7 @@ var userAgentBlacklist = []string{
 	"gooblog",
 	"googal",
 	"goose",
+	"github.com",
 	"grammarly",
 	"greatnews",
 	"greenbrowser",
@@ -168,7 +170,7 @@ var userAgentBlacklist = []string{
 	"riddler",
 	"rssbandit",
 	"rssowl",
-	"ruby$",
+	"ruby",
 	"scrapy",
 	"selenium",
 	"sentry",
@@ -176,7 +178,7 @@ var userAgentBlacklist = []string{
 	"set:",
 	"shareaza",
 	"shortlinktranslate",
-	"snap$",
+	"snap",
 	"snapchat",
 	"space bison",
 	"spring",
@@ -215,7 +217,7 @@ var userAgentBlacklist = []string{
 	"zdm",
 	"zend_http_client",
 	"zjavascript",
-	"zmeu$",
+	"zmeu",
 	"abonti",
 	"adbeat",
 	"amiga-aweb",
@@ -339,7 +341,7 @@ var userAgentBlacklist = []string{
 	"webglance",
 	"webkit2png",
 	"winhttp",
-	"wmtips.com/\\d",
+	"wmtips.com",
 	"woorankreview",
 	"wordpress",
 	"ackerm",
@@ -361,7 +363,7 @@ var userAgentBlacklist = []string{
 	"Webglance",
 	"webkit2png",
 	"WinHTTP",
-	"wmtips.com/\\d",
+	"wmtips.com",
 	"woorankreview",
 	"WordPress",
 	"ackerm",
