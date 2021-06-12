@@ -888,3 +888,30 @@ func TestAnalyzer_Timezone(t *testing.T) {
 	assert.Equal(t, 0, hours[4].Visitors) // pushed to the next day, so outside of filter range
 	assert.Equal(t, 1, hours[9].Visitors)
 }
+
+func TestAnalyzer_PathPattern(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: Today(), Path: "/"},
+		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
+		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
+		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+$"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+/slashes$"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 0)
+	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/.+/slashes$"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+}

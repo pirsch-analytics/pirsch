@@ -23,13 +23,19 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
 	assert.Equal(t, Today(), filter.To)
-	filter = &Filter{Day: time.Now().UTC(), Limit: -42}
+	filter = &Filter{Day: time.Now().UTC(), Limit: -42, Path: "/path", PathPattern: "pattern"}
 	filter.validate()
 	assert.Zero(t, filter.Day.Hour())
 	assert.Zero(t, filter.Day.Minute())
 	assert.Zero(t, filter.Day.Second())
 	assert.Zero(t, filter.Day.Nanosecond())
 	assert.Zero(t, filter.Limit)
+	assert.Equal(t, "/path", filter.Path)
+	assert.Empty(t, filter.PathPattern)
+	filter = &Filter{Day: time.Now().UTC(), Limit: -42, PathPattern: "pattern"}
+	filter.validate()
+	assert.Empty(t, filter.Path)
+	assert.Equal(t, "pattern", filter.PathPattern)
 }
 
 func TestFilter_QueryTime(t *testing.T) {
@@ -51,6 +57,7 @@ func TestFilter_QueryTime(t *testing.T) {
 func TestFilter_QueryFields(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.Path = "/"
+	filter.PathPattern = "pattern"
 	filter.Language = "en"
 	filter.Country = "jp"
 	filter.Referrer = "ref"
@@ -65,6 +72,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMCampaign = "campaign"
 	filter.UTMContent = "content"
 	filter.UTMTerm = "term"
+	filter.validate()
 	args, query := filter.queryFields()
 	assert.Len(t, args, 14)
 	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
@@ -88,6 +96,15 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
 	_, query = filter.query()
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
+}
+
+func TestFilter_QueryFieldsPathPattern(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.PathPattern = "/some/pattern"
+	args, query := filter.queryFields()
+	assert.Len(t, args, 1)
+	assert.Equal(t, "/some/pattern", args[0])
+	assert.Equal(t, `match("path", ?) = 1`, query)
 }
 
 func TestFilter_WithFill(t *testing.T) {
