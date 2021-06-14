@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.5
+
+* added page conversion function to analyzer
+
 ## 2.2.4
 
 * added `PathPattern` to filter and analyzer to query paths for a regex

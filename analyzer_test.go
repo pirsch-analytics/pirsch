@@ -404,6 +404,28 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.33, exits[0].ExitRate, 0.01)
 }
 
+func TestAnalyzer_PageConversions(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: Today(), Path: "/"},
+		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
+		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
+		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.PageConversions(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, stats.Visitors)
+	assert.Equal(t, 4, stats.Views)
+	assert.InDelta(t, 1, stats.CR, 0.01)
+	stats, err = analyzer.PageConversions(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 4, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+}
+
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{

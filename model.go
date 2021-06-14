@@ -102,6 +102,13 @@ type ExitStats struct {
 	ExitRate float64 `db:"exit_rate" json:"exit_rate"`
 }
 
+// PageConversionsStats is the result type for page conversions.
+type PageConversionsStats struct {
+	Visitors int     `json:"visitors"`
+	Views    int     `json:"views"`
+	CR       float64 `json:"cr"`
+}
+
 // ReferrerStats is the result type for referrer statistics.
 type ReferrerStats struct {
 	Referrer         string  `json:"referrer"`

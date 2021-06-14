@@ -387,6 +387,38 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	return stats, nil
 }
 
+// PageConversions returns the visitor count, views, and conversion rate.
+// This function is supposed to be used with the Filter.PathPattern, to list page conversions.
+func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
+	filter = analyzer.getFilter(filter)
+	filterArgsPath, filterQueryPath := filter.query()
+	filter.PathPattern = ""
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
+		(
+			SELECT count(DISTINCT fingerprint) views
+			FROM hit
+			WHERE %s
+		) views,
+		visitors/views cr
+		FROM (
+			SELECT count(DISTINCT fingerprint) visitors,
+			count(*) views
+			FROM hit
+			WHERE %s
+		)`, filterQuery, filterQueryPath)
+	args := make([]interface{}, 0, len(filterArgs)+len(filterArgsPath))
+	args = append(args, filterArgs...)
+	args = append(args, filterArgsPath...)
+	stats := new(PageConversionsStats)
+
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
