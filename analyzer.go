@@ -395,12 +395,12 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	filter.PathPattern = ""
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
-		(
-			SELECT count(DISTINCT fingerprint) views
+		sum(views) views,
+		visitors / (
+			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) views,
-		visitors/views cr
+		) cr
 		FROM (
 			SELECT count(DISTINCT fingerprint) visitors,
 			count(*) views

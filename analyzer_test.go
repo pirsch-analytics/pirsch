@@ -409,6 +409,8 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: Today(), Path: "/"},
 		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
+		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
+		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
 		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
 		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes"},
 	}))
@@ -417,12 +419,12 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	stats, err := analyzer.PageConversions(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
-	assert.Equal(t, 4, stats.Views)
+	assert.Equal(t, 6, stats.Views)
 	assert.InDelta(t, 1, stats.CR, 0.01)
 	stats, err = analyzer.PageConversions(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 4, stats.Views)
+	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
 }
 
