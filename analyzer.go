@@ -8,12 +8,9 @@ import (
 
 const (
 	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / (
-			SELECT sum(s) FROM (
-				SELECT count(DISTINCT fingerprint) s
-				FROM hit
-				WHERE %s
-				GROUP BY "%s"
-			)
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
 		) relative_visitors
 		FROM hit
 		WHERE %s
@@ -211,22 +208,16 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	query := fmt.Sprintf(`SELECT path,
 		sum(visitors) visitors,
 		visitors / (
-			SELECT sum(s) FROM (
-				SELECT count(DISTINCT fingerprint) s
-				FROM hit
-				WHERE %s
-				GROUP BY path, fingerprint
-			)
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
 		) relative_visitors,
 		sum(sessions) sessions,
 		sum(views) views,
 		views / (
-			SELECT sum(s) FROM (
-				SELECT count(*) s
-				FROM hit
-				WHERE %s
-				GROUP BY path, fingerprint
-			)
+			SELECT count(*)
+			FROM hit
+			WHERE %s
 		) relative_views,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
@@ -428,12 +419,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		referrer_icon,
 		sum(visitors) visitors,
 		visitors / (
-			SELECT sum(s) FROM (
-				SELECT count(DISTINCT fingerprint) s
-				FROM hit
-				WHERE %s
-				GROUP BY fingerprint, referrer, referrer_name, referrer_icon
-			)
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
 		) relative_visitors,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
@@ -615,12 +603,9 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / (
-			SELECT sum(s) FROM (
-				SELECT count(DISTINCT fingerprint) s
-				FROM hit
-				WHERE %s
-				GROUP BY os, os_version
-			)
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
 		) relative_visitors
 		FROM hit
 		WHERE %s
@@ -642,12 +627,9 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / (
-			SELECT sum(s) FROM (
-				SELECT count(DISTINCT fingerprint) s
-				FROM hit
-				WHERE %s
-				GROUP BY browser, browser_version
-			)
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
 		) relative_visitors
 		FROM hit
 		WHERE %s
@@ -831,7 +813,7 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, attr, filterQuery, attr, attr, filter.withLimit())
+	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(results, query, args...)
 }

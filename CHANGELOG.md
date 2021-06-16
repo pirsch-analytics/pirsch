@@ -3,6 +3,7 @@
 ## 2.2.5
 
 * added page conversion function to analyzer
+* fixed calculating relative values (they were previously calculated using a GROUP BY clause, which didn't make sense)
 
 ## 2.2.4
 
