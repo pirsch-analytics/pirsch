@@ -156,7 +156,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 Contributions are welcome! Please open a pull requests for your changes and tickets in case you would like to discuss something or have a question.
 
-To run the tests you'll need a Postgres database, and a schema called `pirsch`. The user and password are set to `postgres`.
+To run the tests you'll need a ClickHouse database, and a schema called `pirschtest`. The user is set to `default` (no password).
 
 Note that we only accept pull requests if you transfer the ownership of your contribution to us. As we also offer a managed commercial solution with this library at its core, we want to make sure we can keep control over the source code.
 

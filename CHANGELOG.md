@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.6
+
+* fixed buffering hits in tracker
+
 ## 2.2.5
 
 * added page conversion function to analyzer

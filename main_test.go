@@ -9,11 +9,11 @@ import (
 var dbClient *Client
 
 func TestMain(m *testing.M) {
-	if err := Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true"); err != nil {
+	if err := Migrate("clickhouse://127.0.0.1:9000?database=pirschtest&x-multi-statement=true"); err != nil {
 		panic(err)
 	}
 
-	c, err := NewClient("tcp://127.0.0.1:9000", nil)
+	c, err := NewClient("tcp://127.0.0.1:9000?database=pirschtest", nil)
 
 	if err != nil {
 		panic(err)

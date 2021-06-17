@@ -227,8 +227,11 @@ func (tracker *Tracker) aggregate(ctx context.Context) {
 		select {
 		case hit := <-tracker.hits:
 			hits = append(hits, hit)
-			tracker.saveHits(hits)
-			hits = hits[:0]
+
+			if len(hits) == tracker.workerBufferSize {
+				tracker.saveHits(hits)
+				hits = hits[:0]
+			}
 		case <-timer.C:
 			tracker.saveHits(hits)
 			hits = hits[:0]
