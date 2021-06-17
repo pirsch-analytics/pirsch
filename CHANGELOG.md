@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.7
+
+* fixed schema migration for non-nullable fields
+
 ## 2.2.6
 
 * fixed buffering hits in tracker
