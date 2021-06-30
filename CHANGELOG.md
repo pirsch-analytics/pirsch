@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.8
+
+* updated dependencies
+
 ## 2.2.7
 
 * fixed schema migration for non-nullable fields

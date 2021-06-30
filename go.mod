@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b
-	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
