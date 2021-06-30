@@ -38,9 +38,9 @@ func TestTrackerConfigValidate(t *testing.T) {
 
 func TestTrackerHitTimeout(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
-	req1.Header.Add("User-Agent", "valid")
+	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
-	req2.Header.Add("User-Agent", "valid")
+	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
 	tracker.Hit(req1, nil)
@@ -64,7 +64,7 @@ func TestTrackerHitLimit(t *testing.T) {
 
 	for i := 0; i < 7; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Add("User-Agent", "valid")
+		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 		tracker.Hit(req, nil)
 	}
 
@@ -81,7 +81,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Add("User-Agent", "valid")
+		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 		tracker.Hit(req, nil)
 
 		if i > 3 {
@@ -98,10 +98,10 @@ func TestTrackerCountryCode(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
-	req1.Header.Add("User-Agent", "valid")
+	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req1.RemoteAddr = "81.2.69.142"
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
-	req2.Header.Add("User-Agent", "valid")
+	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2.RemoteAddr = "127.0.0.1"
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
@@ -129,9 +129,9 @@ func TestTrackerCountryCode(t *testing.T) {
 
 func TestTrackerHitSession(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
-	req1.Header.Add("User-Agent", "valid")
+	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
-	req2.Header.Add("User-Agent", "valid")
+	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
@@ -153,7 +153,7 @@ func TestTrackerIgnoreSubdomain(t *testing.T) {
 		WorkerTimeout: time.Second,
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "valid")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req.RemoteAddr = "81.2.69.142"
 	tracker.Hit(req, &HitOptions{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
@@ -187,7 +187,7 @@ func BenchmarkTracker(b *testing.B) {
 	})
 	assert.NoError(b, err)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "valid")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req.RemoteAddr = "81.2.69.142"
 	tracker := NewTracker(dbClient, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,

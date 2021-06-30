@@ -162,7 +162,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 func TestIgnoreHitPrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "valid")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req.Header.Set("X-Moz", "prefetch")
 
 	if !IgnoreHit(req) {

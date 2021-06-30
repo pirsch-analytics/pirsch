@@ -1,7 +1,9 @@
 # Changelog
 
-## 2.2.8
+## 2.3.0
 
+* removed date from fingerprint (this is a GDPR compliant change)
+* removed timezone from `HitOptions`
 * updated User-Agent blacklist
 * updated dependencies
 

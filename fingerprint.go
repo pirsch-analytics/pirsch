@@ -6,16 +6,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
-// Fingerprint returns a hash for given request, salt, and timezone.
+// Fingerprint returns a hash for given request and salt.
 // The hash is unique for the visitor.
-func Fingerprint(r *http.Request, salt string, timezone *time.Location) string {
+func Fingerprint(r *http.Request, salt string) string {
 	var sb strings.Builder
 	sb.WriteString(r.Header.Get("User-Agent"))
 	sb.WriteString(getIP(r))
-	sb.WriteString(time.Now().In(timezone).Format("20060102"))
 	sb.WriteString(salt)
 	hash := md5.New()
 

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestFingerprint(t *testing.T) {
@@ -16,8 +15,8 @@ func TestFingerprint(t *testing.T) {
 	req.Header.Set("User-Agent", "test")
 	req.RemoteAddr = "127.0.0.1:80"
 	hash := md5.New()
-	_, err := io.WriteString(hash, "test127.0.0.1"+time.Now().UTC().Format("20060102")+"salt")
+	_, err := io.WriteString(hash, "test127.0.0.1salt")
 	assert.NoError(t, err)
 	fp := hex.EncodeToString(hash.Sum(nil))
-	assert.Equal(t, fp, Fingerprint(req, "salt", time.UTC))
+	assert.Equal(t, fp, Fingerprint(req, "salt"))
 }
