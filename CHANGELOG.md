@@ -2,8 +2,9 @@
 
 ## 2.3.0
 
+* added `MaxTimeOnPageSeconds` option to filter
 * removed date from fingerprint (this is a GDPR compliant change)
-* removed timezone from `HitOptions`
+* removed timezone from `HitOptions` (no longer needed)
 * updated User-Agent blacklist
 * updated dependencies
 

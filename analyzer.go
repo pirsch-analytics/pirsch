@@ -707,7 +707,7 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 
 	query := fmt.Sprintf(`SELECT path, toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT path, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			SELECT path, %s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -718,7 +718,7 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 			%s
 		)
 		GROUP BY path
-		ORDER BY path`, timeQuery, fieldQuery)
+		ORDER BY path`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	var stats []TimeSpentStats
 
@@ -742,7 +742,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	withFillArgs, withFillQuery := filter.withFill()
 	query := fmt.Sprintf(`SELECT day, toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') day, neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			SELECT toDate(time, '%s') day, %s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -753,7 +753,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			%s
 		)
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), timeQuery, fieldQuery, withFillQuery)
+		ORDER BY day %s`, filter.Timezone.String(), analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
 	var stats []TimeSpentStats
@@ -777,7 +777,7 @@ func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
 
 	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
-			SELECT neighbor(previous_time_on_page_seconds, 1, 0) time_on_page
+			SELECT %s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -785,7 +785,7 @@ func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
 				ORDER BY fingerprint, time
 			)
 			%s
-		)`, timeQuery, fieldQuery)
+		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -808,6 +808,16 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 	c := float64(current)
 	p := float64(previous)
 	return (c - p) / p
+}
+
+func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
+	timeOnPage := "neighbor(previous_time_on_page_seconds, 1, 0)"
+
+	if filter.MaxTimeOnPageSeconds > 0 {
+		timeOnPage = fmt.Sprintf("least(neighbor(previous_time_on_page_seconds, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
+	}
+
+	return timeOnPage
 }
 
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {

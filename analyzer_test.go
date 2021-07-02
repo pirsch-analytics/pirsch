@@ -320,6 +320,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	visitors, err = analyzer.Pages(&Filter{Limit: 1})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
+	ttop, err = analyzer.TotalTimeOnPage(&Filter{MaxTimeOnPageSeconds: 200})
+	assert.NoError(t, err)
+	assert.Equal(t, 180+200+200, ttop)
 }
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
@@ -829,6 +832,10 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, byPath, 1)
 	assert.Equal(t, 6, byPath[0].AverageTimeSpentSeconds)
+	byPath, err = analyzer.AvgTimeOnPages(&Filter{MaxTimeOnPageSeconds: 4})
+	assert.NoError(t, err)
+	assert.Len(t, byPath, 1)
+	assert.Equal(t, 24/6, byPath[0].AverageTimeSpentSeconds)
 	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: "/", From: pastDay(3), To: Today()})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 4)
@@ -836,6 +843,12 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+	byDay, err = analyzer.AvgTimeOnPage(&Filter{MaxTimeOnPageSeconds: 5})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 3)
+	assert.Equal(t, 5, byDay[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 5, byDay[2].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {

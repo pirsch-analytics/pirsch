@@ -101,6 +101,11 @@ type Filter struct {
 
 	// IncludeAvgTimeOnPage indicates whether Analyzer.Pages should contain the average time on page or not.
 	IncludeAvgTimeOnPage bool
+
+	// MaxTimeOnPageSeconds is an optional maximum for the time spent on page.
+	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
+	// Set to 0 to disable this option (default).
+	MaxTimeOnPageSeconds int
 }
 
 // NewFilter creates a new filter for given client ID.
