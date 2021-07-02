@@ -2,6 +2,7 @@ package pirsch
 
 // userAgentBlacklist contains all substrings (in lowercase) used to filter the User-Agent header.
 // Please add the reference in case you copy an existing list.
+// Make sure it doesn't contain duplicates.
 var userAgentBlacklist = []string{
 	// custom
 	"://", // urls
@@ -10,6 +11,18 @@ var userAgentBlacklist = []string{
 	"spider",
 	"go-http-client",
 	"saashub",
+	"opengraph",
+	"anthill",
+	"l9tcpid",
+	"l9explore",
+	"curb",
+	"iubenda",
+	"pocketimagecache",
+	"scoop.it",
+	"dataminr.com",
+	"my user agent",
+	"request",
+	"bluefish",
 
 	// https://github.com/gorangajic/isbot/blob/master/list.json (modified)
 	"12345",
@@ -66,7 +79,6 @@ var userAgentBlacklist = []string{
 	"bluecoat drtr",
 	"bluecoatdrtr",
 	"bordermanager",
-	"bot",
 	"brandverity",
 	"browsershots",
 	"browsex",
@@ -362,7 +374,6 @@ var userAgentBlacklist = []string{
 	"spacebison",
 	"sparkler",
 	"speedmode",
-	"spider",
 	"splash",
 	"spotify",
 	"spring",

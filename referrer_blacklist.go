@@ -2,6 +2,7 @@ package pirsch
 
 // Contains all blacklisted referrer hosts.
 // Please add the reference in case you copy an existing list.
+// Make sure it doesn't contain duplicates.
 var referrerBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
