@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.0
+
+* added custom event tracking
+
 ## 2.3.0
 
 * added `MaxTimeOnPageSeconds` option to filter

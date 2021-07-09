@@ -1,12 +1,12 @@
-ALTER TABLE hit UPDATE "session" = 0 where "session" is null;
-ALTER TABLE hit UPDATE referrer = '' where referrer is null;
-ALTER TABLE hit UPDATE referrer_name = '' where referrer_name is null;
-ALTER TABLE hit UPDATE referrer_icon = '' where referrer_icon is null;
-ALTER TABLE hit UPDATE utm_source = '' where utm_source is null;
-ALTER TABLE hit UPDATE utm_medium = '' where utm_medium is null;
-ALTER TABLE hit UPDATE utm_campaign = '' where utm_campaign is null;
-ALTER TABLE hit UPDATE utm_content = '' where utm_content is null;
-ALTER TABLE hit UPDATE utm_term = '' where utm_term is null;
+ALTER TABLE hit UPDATE "session" = 0 WHERE "session" IS NULL;
+ALTER TABLE hit UPDATE referrer = '' WHERE referrer IS NULL;
+ALTER TABLE hit UPDATE referrer_name = '' WHERE referrer_name IS NULL;
+ALTER TABLE hit UPDATE referrer_icon = '' WHERE referrer_icon IS NULL;
+ALTER TABLE hit UPDATE utm_source = '' WHERE utm_source IS NULL;
+ALTER TABLE hit UPDATE utm_medium = '' WHERE utm_medium IS NULL;
+ALTER TABLE hit UPDATE utm_campaign = '' WHERE utm_campaign IS NULL;
+ALTER TABLE hit UPDATE utm_content = '' WHERE utm_content IS NULL;
+ALTER TABLE hit UPDATE utm_term = '' WHERE utm_term IS NULL;
 
 ALTER TABLE "hit" MODIFY COLUMN "session" DateTime('UTC') DEFAULT 0;
 ALTER TABLE "hit" MODIFY COLUMN "referrer" String DEFAULT '';
