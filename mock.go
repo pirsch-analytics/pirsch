@@ -7,8 +7,9 @@ import (
 
 // MockClient is a mock Store implementation.
 type MockClient struct {
-	Hits []Hit
-	m    sync.Mutex
+	Hits   []Hit
+	Events []Event
+	m      sync.Mutex
 }
 
 // NewMockClient returns a new mock client.
@@ -23,6 +24,14 @@ func (client *MockClient) SaveHits(hits []Hit) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.Hits = append(client.Hits, hits...)
+	return nil
+}
+
+// SaveEvents implements the Store interface.
+func (client *MockClient) SaveEvents(events []Event) error {
+	client.m.Lock()
+	defer client.m.Unlock()
+	client.Events = append(client.Events, events...)
 	return nil
 }
 

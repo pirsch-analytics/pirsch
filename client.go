@@ -102,6 +102,73 @@ func (client *Client) SaveHits(hits []Hit) error {
 	return nil
 }
 
+// SaveEvents implements the Store interface.
+func (client *Client) SaveEvents(events []Event) error {
+	tx, err := client.Beginx()
+
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
+		user_agent, path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		_, err := query.Exec(event.ClientID,
+			event.Fingerprint,
+			event.Time,
+			event.Session,
+			event.PreviousTimeOnPageSeconds,
+			event.UserAgent,
+			event.Path,
+			event.URL,
+			event.Language,
+			event.CountryCode,
+			event.Referrer,
+			event.ReferrerName,
+			event.ReferrerIcon,
+			event.OS,
+			event.OSVersion,
+			event.Browser,
+			event.BrowserVersion,
+			client.boolean(event.Desktop),
+			client.boolean(event.Mobile),
+			event.ScreenWidth,
+			event.ScreenHeight,
+			event.ScreenClass,
+			event.UTMSource,
+			event.UTMMedium,
+			event.UTMCampaign,
+			event.UTMContent,
+			event.UTMTerm,
+			event.Name,
+			event.DurationSeconds,
+			event.MetaKeys,
+			event.MetaValues)
+
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				client.logger.Printf("error rolling back transaction to save events: %s", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Session implements the Store interface.
 func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (string, time.Time, time.Time, error) {
 	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? LIMIT 1`
