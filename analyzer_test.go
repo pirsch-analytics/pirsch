@@ -470,6 +470,14 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
 	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
 	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+	stats, err = analyzer.Events(&Filter{EventName: "event2"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
 
 	// TODO test breakdown
 }

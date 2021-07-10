@@ -220,7 +220,7 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&fields, &args, "utm_campaign", filter.UTMCampaign)
 	filter.appendQuery(&fields, &args, "utm_content", filter.UTMContent)
 	filter.appendQuery(&fields, &args, "utm_term", filter.UTMTerm)
-	filter.appendQuery(&fields, &args, "event_name", filter.EventName) // FIXME does not work if used to filter hits in subqueries
+	filter.appendQuery(&fields, &args, "event_name", filter.EventName)
 
 	if filter.Platform != "" {
 		if filter.Platform == PlatformDesktop {

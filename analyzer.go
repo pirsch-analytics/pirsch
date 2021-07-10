@@ -205,6 +205,8 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
+	filter.EventName = ""
+	relativeFilterArgs, relativeFilterQuery := filter.query()
 	table := filter.table()
 	query := fmt.Sprintf(`SELECT path,
 		sum(visitors) visitors,
@@ -234,10 +236,10 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		)
 		GROUP BY path
 		ORDER BY visitors DESC, path ASC
-		%s`, table, filterQuery, table, filterQuery, table, filterQuery, filter.withLimit())
+		%s`, table, relativeFilterQuery, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*3)
-	args = append(args, filterArgs...)
-	args = append(args, filterArgs...)
+	args = append(args, relativeFilterArgs...)
+	args = append(args, relativeFilterArgs...)
 	args = append(args, filterArgs...)
 	var stats []PageStats
 
@@ -385,6 +387,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	filter = analyzer.getFilter(filter)
 	filterArgsPath, filterQueryPath := filter.query()
 	filter.PathPattern = ""
+	filter.EventName = ""
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
 		sum(views) views,
@@ -416,6 +419,8 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
+	filter.EventName = ""
+	crFilterArgs, crFilterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT event_name,
 		sum(visitors) visitors,
 		sum(views) views,
@@ -436,9 +441,9 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 		)
 		GROUP BY event_name
 		ORDER BY visitors DESC, event_name
-		%s`, filterQuery, filterQuery, filter.withLimit())
+		%s`, crFilterQuery, filterQuery, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*2)
-	args = append(args, filterArgs...)
+	args = append(args, crFilterArgs...)
 	args = append(args, filterArgs...)
 	var stats []EventStats
 
@@ -455,6 +460,8 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
+	filter.EventName = ""
+	relativeFilterArgs, relativeFilterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
@@ -478,11 +485,11 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
-	args = append(args, args...)
+		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []ReferrerStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, relativeFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -645,6 +652,8 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
+	filter.EventName = ""
+	relativeFilterArgs, relativeFilterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
@@ -654,11 +663,11 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		WHERE %s
 		GROUP BY os, os_version
 		ORDER BY visitors DESC, os, os_version
-		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
-	args = append(args, args...)
+		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []OSVersionStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, relativeFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -669,6 +678,8 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
+	filter.EventName = ""
+	relativeFilterArgs, relativeFilterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
@@ -678,11 +689,11 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		WHERE %s
 		GROUP BY browser, browser_version
 		ORDER BY visitors DESC, browser, browser_version
-		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
-	args = append(args, args...)
+		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []BrowserVersionStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, relativeFilterArgs...); err != nil {
 		return nil, err
 	}
 
