@@ -443,16 +443,16 @@ func TestAnalyzer_Events(t *testing.T) {
 	}
 
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
-		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"}},
 		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
 		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
-		{Name: "event1", DurationSeconds: 2, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
 		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
 		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
-		{Name: "event2", DurationSeconds: 7, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
-		{Name: "event2", DurationSeconds: 9, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
-		{Name: "event2", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
 		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today(), Path: "/"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
@@ -470,6 +470,8 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
 	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
 	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+	assert.Len(t, stats[0].MetaKeys, 3)
+	assert.Len(t, stats[1].MetaKeys, 2)
 	stats, err = analyzer.Events(&Filter{EventName: "event2"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
@@ -478,9 +480,10 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Equal(t, 6, stats[0].Views)
 	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
 	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
-
-	// TODO test breakdown
+	assert.Len(t, stats[0].MetaKeys, 3)
 }
+
+// TODO test breakdown
 
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()

@@ -127,11 +127,13 @@ type PageConversionsStats struct {
 
 // EventStats is the result type for custom events.
 type EventStats struct {
-	Name                   string  `db:"event_name" json:"name"`
-	Visitors               int     `json:"visitors"`
-	Views                  int     `json:"views"`
-	CR                     float64 `json:"cr"`
-	AverageDurationSeconds int     `db:"average_duration_seconds" json:"average_duration_seconds"`
+	Name                   string   `db:"event_name" json:"name"`
+	Visitors               int      `json:"visitors"`
+	Views                  int      `json:"views"`
+	CR                     float64  `json:"cr"`
+	AverageDurationSeconds int      `db:"average_duration_seconds" json:"average_duration_seconds"`
+	MetaKeys               []string `db:"meta_keys" json:"meta_keys"`
+	MetaValue              string   `db:"meta_value" json:"meta_value"`
 }
 
 // ReferrerStats is the result type for referrer statistics.

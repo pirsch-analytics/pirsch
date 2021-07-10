@@ -99,6 +99,10 @@ type Filter struct {
 	// EventName filters for an event by its name.
 	EventName string
 
+	// EventMetaKey filters for an event meta key.
+	// This must be used together with an EventName.
+	EventMetaKey string
+
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 

@@ -429,6 +429,54 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 			FROM hit
 			WHERE %s
 		), 1) cr,
+		toUInt64(avg(avg_duration)) average_duration_seconds,
+		groupUniqArrayArray(meta_keys) meta_keys
+		FROM (
+			SELECT event_name,
+			groupUniqArrayArray(event_meta_keys) meta_keys,
+			count(DISTINCT fingerprint) visitors,
+			count(*) views,
+			avg(event_duration_seconds) avg_duration
+			FROM event
+			WHERE %s
+			GROUP BY event_name
+		)
+		GROUP BY event_name
+		ORDER BY visitors DESC, event_name
+		%s`, crFilterQuery, filterQuery, filter.withLimit())
+	args := make([]interface{}, 0, len(filterArgs)*2)
+	args = append(args, crFilterArgs...)
+	args = append(args, filterArgs...)
+	var stats []EventStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// EventBreakdown returns the visitor count, views, and conversion rate for a custom event grouping them by a meta value for given key.
+// The Filter.EventName and Filter.EventMetaKey must be set, or otherwise the result set will be empty.
+func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.EventName == "" || filter.EventMetaKey == "" {
+		return []EventStats{}, nil
+	}
+
+	// TODO
+	filterArgs, filterQuery := filter.query()
+	filter.EventName = ""
+	crFilterArgs, crFilterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT event_name,
+		sum(visitors) visitors,
+		sum(views) views,
+		visitors / greatest((
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
+		), 1) cr,
 		toUInt64(avg(avg_duration)) average_duration_seconds
 		FROM (
 			SELECT event_name,
@@ -453,8 +501,6 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 
 	return stats, nil
 }
-
-// TODO break down events
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
