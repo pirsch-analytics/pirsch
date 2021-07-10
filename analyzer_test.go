@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -429,6 +430,48 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
+}
+
+func TestAnalyzer_Events(t *testing.T) {
+	cleanupDB()
+
+	// create hits for the conversion rate
+	for i := 0; i < 10; i++ {
+		assert.NoError(t, dbClient.SaveHits([]Hit{
+			{Fingerprint: fmt.Sprintf("fp%d", i), Time: Today(), Path: "/"},
+		}))
+	}
+
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 2, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 7, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 9, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event2", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today(), Path: "/"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.Events(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 4, stats[1].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.Equal(t, 5, stats[1].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+
+	// TODO test breakdown
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {

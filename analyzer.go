@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / (
+	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) relative_visitors
+		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY "%s"
@@ -208,18 +208,18 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	table := filter.table()
 	query := fmt.Sprintf(`SELECT path,
 		sum(visitors) visitors,
-		visitors / (
+		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM %s
 			WHERE %s
-		) relative_visitors,
+		), 1) relative_visitors,
 		sum(sessions) sessions,
 		sum(views) views,
-		views / (
+		views / greatest((
 			SELECT count(*)
 			FROM %s
 			WHERE %s
-		) relative_views,
+		), 1) relative_views,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
@@ -379,7 +379,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	return stats, nil
 }
 
-// PageConversions returns the visitor count, views, and conversion rate.
+// PageConversions returns the visitor count, views, and conversion rate for conversion goals.
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -388,17 +388,18 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
 		sum(views) views,
-		visitors / (
+		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) cr
+		), 1) cr
 		FROM (
 			SELECT count(DISTINCT fingerprint) visitors,
 			count(*) views
 			FROM hit
 			WHERE %s
-		)`, filterQuery, filterQueryPath)
+		)
+		ORDER BY visitors DESC`, filterQuery, filterQueryPath)
 	args := make([]interface{}, 0, len(filterArgs)+len(filterArgsPath))
 	args = append(args, filterArgs...)
 	args = append(args, filterArgsPath...)
@@ -411,6 +412,45 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	return stats, nil
 }
 
+// Events returns the visitor count, views, and conversion rate for custom events.
+func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
+	filter = analyzer.getFilter(filter)
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT event_name,
+		sum(visitors) visitors,
+		sum(views) views,
+		visitors / greatest((
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
+		), 1) cr,
+		toUInt64(avg(avg_duration)) average_duration_seconds
+		FROM (
+			SELECT event_name,
+			count(DISTINCT fingerprint) visitors,
+			count(*) views,
+			avg(event_duration_seconds) avg_duration
+			FROM event
+			WHERE %s
+			GROUP BY event_name
+		)
+		GROUP BY event_name
+		ORDER BY visitors DESC, event_name
+		%s`, filterQuery, filterQuery, filter.withLimit())
+	args := make([]interface{}, 0, len(filterArgs)*2)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
+	var stats []EventStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// TODO break down events
+
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -419,11 +459,11 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		referrer_name,
 		referrer_icon,
 		sum(visitors) visitors,
-		visitors / (
+		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) relative_visitors,
+		), 1) relative_visitors,
 		countIf(bounce = 1) bounces,
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
@@ -605,11 +645,11 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / (
+	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) relative_visitors
+		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY os, os_version
@@ -629,11 +669,11 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / (
+	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
-		) relative_visitors
+		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY browser, browser_version

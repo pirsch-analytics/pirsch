@@ -3,6 +3,8 @@
 ## 2.4.0
 
 * added custom event tracking
+* added order by unique visitors to conversion goals
+* fixed relative visitors/views and conversion rate if right side is zero
 
 ## 2.3.0
 
