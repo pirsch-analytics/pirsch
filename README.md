@@ -130,6 +130,31 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 
 `HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were sent by the user.
 
+## Custom Event Tracking
+
+Custom events are conceptually the same as hits, except that they have a name and hold additional metadata. To create an event, call the tracker and pass in the additional fields.
+
+```Go
+http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    if r.URL.Path == "/" {
+    	// The name in the options is required!
+		options := pirsch.EventOptions{
+            Name: "my-event",
+            Duration: 42, // optional field to save a duration, this will be used to calculate an average time when using the analyzer
+            Meta: map[string]string{ // optional metadata, the results can be filtered by them
+                "http_status": "200",
+                "product_id": "123",
+            },
+        }
+        go tracker.Event(r, options, nil)
+    }
+
+    w.Write([]byte("<h1>Hello World!</h1>"))
+}))
+```
+
+There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
+
 ## Mapping IPs to countries
 
 Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database **is not included**, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
