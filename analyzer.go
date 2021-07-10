@@ -12,7 +12,7 @@ const (
 			FROM hit
 			WHERE %s
 		) relative_visitors
-		FROM hit
+		FROM %s
 		WHERE %s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC
@@ -89,12 +89,12 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
-			FROM hit
+			FROM %s
 			WHERE %s
 			GROUP BY toDate(time, '%s'), fingerprint
 		)
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, timezone, filterQuery, timezone, withFillQuery)
+		ORDER BY day ASC %s, visitors DESC`, timezone, filter.table(), filterQuery, timezone, withFillQuery)
 	var stats []VisitorStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -124,10 +124,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
-			FROM hit
+			FROM %s
 			WHERE %s
 			GROUP BY toDate(time, '%s'), fingerprint
-		)`, filterQuery, filter.Timezone.String())
+		)`, filter.table(), filterQuery, filter.Timezone.String())
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, args...); err != nil {
@@ -188,10 +188,10 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour, count(DISTINCT fingerprint) visitors
-		FROM hit
+		FROM %s
 		WHERE %s
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), filterQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), filter.table(), filterQuery)
 	var stats []VisitorHourStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -205,18 +205,19 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	filterArgs, filterQuery := filter.query()
+	table := filter.table()
 	query := fmt.Sprintf(`SELECT path,
 		sum(visitors) visitors,
 		visitors / (
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM %s
 			WHERE %s
 		) relative_visitors,
 		sum(sessions) sessions,
 		sum(views) views,
 		views / (
 			SELECT count(*)
-			FROM hit
+			FROM %s
 			WHERE %s
 		) relative_views,
 		countIf(bounce = 1) bounces,
@@ -227,13 +228,13 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
-			FROM hit
+			FROM %s
 			WHERE %s
 			GROUP BY path, fingerprint
 		)
 		GROUP BY path
 		ORDER BY visitors DESC, path ASC
-		%s`, filterQuery, filterQuery, filterQuery, filter.withLimit())
+		%s`, table, filterQuery, table, filterQuery, table, filterQuery, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*3)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
@@ -293,7 +294,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 				neighbor("fingerprint", -1) prev_fingerprint
 				FROM (
 					SELECT fingerprint, "session", "path"
-					FROM hit
+					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
 				)
@@ -302,7 +303,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		)
 		WHERE entries > 0 %s
 		ORDER BY entries DESC, "path" ASC
-		%s`, filterQuery, pathFilter, filter.withLimit())
+		%s`, filter.table(), filterQuery, pathFilter, filter.withLimit())
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -359,7 +360,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 				neighbor("fingerprint", 1) next_fingerprint
 				FROM (
 					SELECT fingerprint, "session", "path"
-					FROM hit
+					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
 				)
@@ -368,7 +369,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		)
 		WHERE exits > 0 %s
 		ORDER BY exits DESC, "path" ASC
-		%s`, filterQuery, pathFilter, filter.withLimit())
+		%s`, filter.table(), filterQuery, pathFilter, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -431,13 +432,13 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 			referrer_name,
 			referrer_icon,
 			length(groupArray(path)) = 1 bounce
-			FROM hit
+			FROM %s
 			WHERE %s
 			GROUP BY fingerprint, referrer, referrer_name, referrer_icon
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, filterQuery, filterQuery, filter.withLimit())
+		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
 	args = append(args, args...)
 	var stats []ReferrerStats
 
@@ -451,30 +452,32 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 // Platform returns the visitor count grouped by platform.
 func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filterArgs, filterQuery := analyzer.getFilter(filter).query()
+	table := filter.table()
 	query := fmt.Sprintf(`SELECT (
 			SELECT count(DISTINCT fingerprint)
-			FROM "hit"
+			FROM %s
 			WHERE %s
 			AND desktop = 1
 			AND mobile = 0
 		) AS "platform_desktop",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM "hit"
+			FROM %s
 			WHERE %s
 			AND desktop = 0
 			AND mobile = 1
 		) AS "platform_mobile",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM "hit"
+			FROM %s
 			WHERE %s
 			AND desktop = 0
 			AND mobile = 0
 		) AS "platform_unknown",
 		"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 		"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
-		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`, filterQuery, filterQuery, filterQuery)
+		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`,
+		table, filterQuery, table, filterQuery, table, filterQuery)
 	args := make([]interface{}, 0, len(filterArgs)*3)
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
@@ -607,11 +610,11 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 			FROM hit
 			WHERE %s
 		) relative_visitors
-		FROM hit
+		FROM %s
 		WHERE %s
 		GROUP BY os, os_version
 		ORDER BY visitors DESC, os, os_version
-		%s`, filterQuery, filterQuery, filter.withLimit())
+		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
 	args = append(args, args...)
 	var stats []OSVersionStats
 
@@ -631,11 +634,11 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 			FROM hit
 			WHERE %s
 		) relative_visitors
-		FROM hit
+		FROM %s
 		WHERE %s
 		GROUP BY browser, browser_version
 		ORDER BY visitors DESC, browser, browser_version
-		%s`, filterQuery, filterQuery, filter.withLimit())
+		%s`, filterQuery, filter.table(), filterQuery, filter.withLimit())
 	args = append(args, args...)
 	var stats []BrowserVersionStats
 
@@ -823,7 +826,7 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, filterQuery, attr, attr, filter.withLimit())
+	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, filter.table(), filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(results, query, args...)
 }

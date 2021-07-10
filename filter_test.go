@@ -38,6 +38,13 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Equal(t, "pattern", filter.PathPattern)
 }
 
+func TestFilter_Table(t *testing.T) {
+	filter := NewFilter(NullClient)
+	assert.Equal(t, "hit", filter.table())
+	filter.EventName = "event"
+	assert.Equal(t, "event", filter.table())
+}
+
 func TestFilter_QueryTime(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.From = pastDay(5)
@@ -72,10 +79,11 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMCampaign = "campaign"
 	filter.UTMContent = "content"
 	filter.UTMTerm = "term"
+	filter.EventName = "event"
 	filter.validate()
 	args, query := filter.queryFields()
-	assert.Len(t, args, 14)
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Len(t, args, 15)
+	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
