@@ -465,7 +465,6 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 		return []EventStats{}, nil
 	}
 
-	// TODO
 	filterArgs, filterQuery := filter.query()
 	filter.EventName = ""
 	crFilterArgs, crFilterQuery := filter.query()
@@ -477,22 +476,27 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 			FROM hit
 			WHERE %s
 		), 1) cr,
-		toUInt64(avg(avg_duration)) average_duration_seconds
+		toUInt64(avg(avg_duration)) average_duration_seconds,
+		meta_value
 		FROM (
 			SELECT event_name,
 			count(DISTINCT fingerprint) visitors,
 			count(*) views,
-			avg(event_duration_seconds) avg_duration
+			avg(event_duration_seconds) avg_duration,
+			event_meta_values[indexOf(event_meta_keys, ?)] meta_value
 			FROM event
 			WHERE %s
-			GROUP BY event_name
+			AND has(event_meta_keys, ?)
+			GROUP BY event_name, meta_value
 		)
-		GROUP BY event_name
-		ORDER BY visitors DESC, event_name
+		GROUP BY event_name, meta_value
+		ORDER BY visitors DESC, meta_value
 		%s`, crFilterQuery, filterQuery, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*2)
 	args = append(args, crFilterArgs...)
+	args = append(args, filter.EventMetaKey)
 	args = append(args, filterArgs...)
+	args = append(args, filter.EventMetaKey)
 	var stats []EventStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
