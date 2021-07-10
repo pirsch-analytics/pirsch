@@ -3,9 +3,14 @@ package pirsch
 // EventOptions are the options to save a new event.
 // The name is required. All other fields are optional.
 type EventOptions struct {
-	Name     string
+	// Name is the name of the event (required).
+	Name string
+
+	// Duration is an optional duration that is used to calculate an average time on the dashboard.
 	Duration int
-	Meta     map[string]string
+
+	// Meta are optional fields used to break down the events that were send for a name.
+	Meta map[string]string
 }
 
 func (options *EventOptions) getMetaData() ([]string, []string) {
