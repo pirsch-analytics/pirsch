@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -75,12 +76,13 @@ func (config *TrackerConfig) validate() {
 	}
 }
 
-// Tracker provides methods to track requests.
+// Tracker provides methods to track requests (hits and events).
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
 	salt                                      string
 	hits                                      chan Hit
+	events                                    chan Event
 	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
@@ -96,6 +98,7 @@ type Tracker struct {
 
 // NewTracker creates a new tracker for given client, salt and config.
 // Pass nil for the config to use the defaults. The salt is mandatory.
+// It creates the same amount of workers for both, hits and events.
 func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	if config == nil {
 		config = &TrackerConfig{}
@@ -106,6 +109,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		store:                   client,
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
+		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
 		workerBufferSize:        config.WorkerBufferSize,
 		workerTimeout:           config.WorkerTimeout,
@@ -146,6 +150,40 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	}
 }
 
+// Event stores the given request as a new event. The event name in the options must be set, or otherwise the request will be ignored.
+// The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
+// It's save (and recommended!) to call this function in its own goroutine.
+func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, options *HitOptions) {
+	if atomic.LoadInt32(&tracker.stopped) > 0 {
+		return
+	}
+
+	if strings.TrimSpace(eventOptions.Name) != "" && !IgnoreHit(r) {
+		if options == nil {
+			options = &HitOptions{
+				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
+				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
+			}
+		}
+
+		if tracker.geoDB != nil {
+			tracker.geoDBMutex.RLock()
+			options.geoDB = tracker.geoDB
+			tracker.geoDBMutex.RUnlock()
+		}
+
+		options.Client = tracker.store
+		metaKeys, metaValues := eventOptions.getMetaData()
+		tracker.events <- Event{
+			Hit:             HitFromRequest(r, tracker.salt, options),
+			Name:            strings.TrimSpace(eventOptions.Name),
+			DurationSeconds: eventOptions.Duration,
+			MetaKeys:        metaKeys,
+			MetaValues:      metaValues,
+		}
+	}
+}
+
 // Flush flushes all hits to client that are currently buffered by the workers.
 // Call Tracker.Stop to also save hits that are in the queue.
 func (tracker *Tracker) Flush() {
@@ -159,6 +197,7 @@ func (tracker *Tracker) Stop() {
 		atomic.StoreInt32(&tracker.stopped, 1)
 		tracker.stopWorker()
 		tracker.flushHits()
+		tracker.flushEvents()
 	}
 }
 
@@ -176,14 +215,15 @@ func (tracker *Tracker) startWorker() {
 	tracker.workerCancel = cancelFunc
 
 	for i := 0; i < tracker.worker; i++ {
-		go tracker.aggregate(ctx)
+		go tracker.aggregateHits(ctx)
+		go tracker.aggregateEvents(ctx)
 	}
 }
 
 func (tracker *Tracker) stopWorker() {
 	tracker.workerCancel()
 
-	for i := 0; i < tracker.worker; i++ {
+	for i := 0; i < tracker.worker*2; i++ {
 		<-tracker.workerDone
 	}
 }
@@ -216,7 +256,7 @@ func (tracker *Tracker) flushHits() {
 	tracker.saveHits(hits)
 }
 
-func (tracker *Tracker) aggregate(ctx context.Context) {
+func (tracker *Tracker) aggregateHits(ctx context.Context) {
 	hits := make([]Hit, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
@@ -247,6 +287,69 @@ func (tracker *Tracker) saveHits(hits []Hit) {
 	if len(hits) > 0 {
 		if err := tracker.store.SaveHits(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
+		}
+	}
+}
+
+func (tracker *Tracker) flushEvents() {
+	// this function will make sure all dangling events will be saved in database before shutdown
+	// events are buffered before saving
+	events := make([]Event, 0, tracker.workerBufferSize)
+
+	for {
+		stop := false
+
+		select {
+		case event := <-tracker.events:
+			events = append(events, event)
+
+			if len(events) == tracker.workerBufferSize {
+				tracker.saveEvents(events)
+				events = events[:0]
+			}
+		default:
+			stop = true
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	tracker.saveEvents(events)
+}
+
+func (tracker *Tracker) aggregateEvents(ctx context.Context) {
+	events := make([]Event, 0, tracker.workerBufferSize)
+	timer := time.NewTimer(tracker.workerTimeout)
+	defer timer.Stop()
+
+	for {
+		timer.Reset(tracker.workerTimeout)
+
+		select {
+		case event := <-tracker.events:
+			events = append(events, event)
+
+			if len(events) == tracker.workerBufferSize {
+				tracker.saveEvents(events)
+				events = events[:0]
+			}
+		case <-timer.C:
+			tracker.saveEvents(events)
+			events = events[:0]
+		case <-ctx.Done():
+			tracker.saveEvents(events)
+			tracker.workerDone <- true
+			return
+		}
+	}
+}
+
+func (tracker *Tracker) saveEvents(events []Event) {
+	if len(events) > 0 {
+		if err := tracker.store.SaveEvents(events); err != nil {
+			tracker.logger.Printf("error saving events: %s", err)
 		}
 	}
 }

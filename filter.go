@@ -96,6 +96,13 @@ type Filter struct {
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm string
 
+	// EventName filters for an event by its name.
+	EventName string
+
+	// EventMetaKey filters for an event meta key.
+	// This must be used together with an EventName.
+	EventMetaKey string
+
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
@@ -162,6 +169,14 @@ func (filter *Filter) validate() {
 	}
 }
 
+func (filter *Filter) table() string {
+	if filter.EventName != "" {
+		return "event"
+	}
+
+	return "hit"
+}
+
 func (filter *Filter) queryTime() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
@@ -193,8 +208,8 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 15)
-	fields := make([]string, 0, 15)
+	args := make([]interface{}, 0, 16)
+	fields := make([]string, 0, 16)
 	filter.appendQuery(&fields, &args, "path", filter.Path)
 	filter.appendQuery(&fields, &args, "language", filter.Language)
 	filter.appendQuery(&fields, &args, "country_code", filter.Country)
@@ -209,6 +224,7 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&fields, &args, "utm_campaign", filter.UTMCampaign)
 	filter.appendQuery(&fields, &args, "utm_content", filter.UTMContent)
 	filter.appendQuery(&fields, &args, "utm_term", filter.UTMTerm)
+	filter.appendQuery(&fields, &args, "event_name", filter.EventName)
 
 	if filter.Platform != "" {
 		if filter.Platform == PlatformDesktop {

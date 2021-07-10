@@ -42,6 +42,22 @@ func (hit Hit) String() string {
 	return string(out)
 }
 
+// Event represents a single data point for custom events.
+// It's basically the same as Hit, but with some additional fields (event name, time, and meta fields).
+type Event struct {
+	Hit
+	Name            string   `db:"event_name" json:"name"`
+	DurationSeconds int      `db:"event_duration_seconds" json:"duration_seconds"`
+	MetaKeys        []string `db:"event_meta_keys" json:"meta_keys"`
+	MetaValues      []string `db:"event_meta_values" json:"meta_values"`
+}
+
+// String implements the Stringer interface.
+func (event Event) String() string {
+	out, _ := json.Marshal(event)
+	return string(out)
+}
+
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
 	Path     string `json:"path"`
@@ -107,6 +123,17 @@ type PageConversionsStats struct {
 	Visitors int     `json:"visitors"`
 	Views    int     `json:"views"`
 	CR       float64 `json:"cr"`
+}
+
+// EventStats is the result type for custom events.
+type EventStats struct {
+	Name                   string   `db:"event_name" json:"name"`
+	Visitors               int      `json:"visitors"`
+	Views                  int      `json:"views"`
+	CR                     float64  `json:"cr"`
+	AverageDurationSeconds int      `db:"average_duration_seconds" json:"average_duration_seconds"`
+	MetaKeys               []string `db:"meta_keys" json:"meta_keys"`
+	MetaValue              string   `db:"meta_value" json:"meta_value"`
 }
 
 // ReferrerStats is the result type for referrer statistics.

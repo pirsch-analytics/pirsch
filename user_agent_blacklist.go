@@ -19,10 +19,12 @@ var userAgentBlacklist = []string{
 	"iubenda",
 	"pocketimagecache",
 	"scoop.it",
-	"dataminr.com",
+	"dataminr",
 	"my user agent",
 	"request",
 	"bluefish",
+	"scamadviserexternalhit",
+	"notionembedder",
 
 	// https://github.com/gorangajic/isbot/blob/master/list.json (modified)
 	"12345",

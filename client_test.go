@@ -48,6 +48,50 @@ func TestClient_SaveHit(t *testing.T) {
 	}))
 }
 
+func TestClient_SaveEvent(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{
+			Hit: Hit{
+				ClientID:                  1,
+				Fingerprint:               "fp",
+				Time:                      time.Now(),
+				Session:                   time.Now(),
+				PreviousTimeOnPageSeconds: 42,
+				UserAgent:                 "ua",
+				Path:                      "/path",
+				Language:                  "en",
+				Referrer:                  "ref",
+				ReferrerName:              "ref_name",
+				ReferrerIcon:              "ref_icon",
+				OS:                        "os",
+				OSVersion:                 "10",
+				Browser:                   "browser",
+				BrowserVersion:            "89",
+				CountryCode:               "en",
+				Desktop:                   true,
+				Mobile:                    false,
+				ScreenWidth:               1920,
+				ScreenHeight:              1080,
+				ScreenClass:               "XL",
+			},
+			Name:            "event_name",
+			DurationSeconds: 21,
+			MetaKeys:        []string{"meta", "keys"},
+			MetaValues:      []string{"some", "values"},
+		},
+		{
+			Hit: Hit{
+				Fingerprint: "fp",
+				Time:        time.Now().UTC(),
+				UserAgent:   "ua",
+				Path:        "/path",
+			},
+			Name: "different_event",
+		},
+	}))
+}
+
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	fp := "session_fp"

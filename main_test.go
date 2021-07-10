@@ -30,5 +30,6 @@ func TestMain(m *testing.M) {
 
 func cleanupDB() {
 	dbClient.MustExec(`ALTER TABLE "hit" DELETE WHERE 1=1`)
+	dbClient.MustExec(`ALTER TABLE "event" DELETE WHERE 1=1`)
 	time.Sleep(time.Millisecond * 20)
 }

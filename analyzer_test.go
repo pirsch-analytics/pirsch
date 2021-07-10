@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -429,6 +430,114 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
+}
+
+func TestAnalyzer_Events(t *testing.T) {
+	cleanupDB()
+
+	// create hits for the conversion rate
+	for i := 0; i < 10; i++ {
+		assert.NoError(t, dbClient.SaveHits([]Hit{
+			{Fingerprint: fmt.Sprintf("fp%d", i), Time: Today(), Path: "/"},
+		}))
+	}
+
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Hit: Hit{Fingerprint: "fp3", Time: Today(), Path: "/simple/page"}},
+		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Hit: Hit{Fingerprint: "fp4", Time: Today(), Path: "/"}},
+		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today(), Path: "/"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.Events(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 4, stats[1].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.Equal(t, 5, stats[1].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+	assert.Len(t, stats[0].MetaKeys, 3)
+	assert.Len(t, stats[1].MetaKeys, 2)
+	stats, err = analyzer.Events(&Filter{EventName: "event2"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
+	assert.Len(t, stats[0].MetaKeys, 3)
+	stats, err = analyzer.Events(&Filter{EventName: "does-not-exist"})
+	assert.NoError(t, err)
+	assert.Empty(t, stats)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "status"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
+	assert.InDelta(t, 3, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 8, stats[1].AverageDurationSeconds, 0.001)
+	assert.Equal(t, "in", stats[0].MetaValue)
+	assert.Equal(t, "out", stats[1].MetaValue)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "status"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
+	assert.InDelta(t, 8, stats[0].AverageDurationSeconds, 0.001)
+	assert.Equal(t, "in", stats[0].MetaValue)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "price"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
+	assert.InDelta(t, 5, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 9, stats[1].AverageDurationSeconds, 0.001)
+	assert.Equal(t, "34.56", stats[0].MetaValue)
+	assert.Equal(t, "13.74", stats[1].MetaValue)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "third"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 1, stats[0].Views)
+	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
+	assert.InDelta(t, 9, stats[0].AverageDurationSeconds, 0.001)
+	assert.Equal(t, "param", stats[0].MetaValue)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "does-not-exist", EventMetaKey: "status"})
+	assert.NoError(t, err)
+	assert.Empty(t, stats)
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "does-not-exist"})
+	assert.NoError(t, err)
+	assert.Empty(t, stats)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {

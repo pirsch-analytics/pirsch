@@ -37,6 +37,7 @@ Pirsch tracks the following data:
 * screen size
 * UTM query parameters for campaign tracking
 * entry and exit pages
+* custom event tracking
 
 All timestamps are stored as UTC. Starting with version 2.1, the results can be transformed to the desired timezone. All data points belongs to an (optional) client, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a client ID for all columns!**
 
@@ -128,6 +129,31 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 ```
 
 `HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were sent by the user.
+
+## Custom Event Tracking
+
+Custom events are conceptually the same as hits, except that they have a name and hold additional metadata. To create an event, call the tracker and pass in the additional fields.
+
+```Go
+http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    if r.URL.Path == "/" {
+    	// The name in the options is required!
+		options := pirsch.EventOptions{
+            Name: "my-event",
+            Duration: 42, // optional field to save a duration, this will be used to calculate an average time when using the analyzer
+            Meta: map[string]string{ // optional metadata, the results can be filtered by them
+                "http_status": "200",
+                "product_id": "123",
+            },
+        }
+        go tracker.Event(r, options, nil)
+    }
+
+    w.Write([]byte("<h1>Hello World!</h1>"))
+}))
+```
+
+There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
 
 ## Mapping IPs to countries
 

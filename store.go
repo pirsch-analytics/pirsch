@@ -6,8 +6,11 @@ import (
 
 // Store is the database storage interface.
 type Store interface {
-	// SaveHits saves new hits.
+	// SaveHits saves given hits.
 	SaveHits([]Hit) error
+
+	// SaveEvents saves given events.
+	SaveEvents([]Event) error
 
 	// Session returns the last path, time, and session timestamp for given client, fingerprint, and maximum age.
 	Session(int64, string, time.Time) (string, time.Time, time.Time, error)
