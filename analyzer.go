@@ -247,7 +247,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		return nil, err
 	}
 
-	if filter.IncludeAvgTimeOnPage {
+	// select average time on page if set and we do not read results from the events table
+	if filter.IncludeAvgTimeOnPage && table == "hit" {
 		timeOnPage, err := analyzer.AvgTimeOnPages(filter)
 
 		if err != nil {
@@ -929,8 +930,10 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
+	filter.EventName = ""
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, filter.table(), filterQuery, attr, attr, filter.withLimit())
+	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(results, query, args...)
 }
