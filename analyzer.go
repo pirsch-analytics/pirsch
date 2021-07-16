@@ -204,10 +204,10 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
 	filterArgs, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
-	table := filter.table()
 	query := fmt.Sprintf(`SELECT path,
 		sum(visitors) visitors,
 		visitors / greatest((
@@ -509,6 +509,7 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
@@ -535,7 +536,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []ReferrerStats
 
@@ -701,6 +702,7 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 // OSVersion returns the visitor count grouped by operating systems and version.
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
@@ -713,7 +715,7 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		WHERE %s
 		GROUP BY os, os_version
 		ORDER BY visitors DESC, os, os_version
-		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []OSVersionStats
 
@@ -727,6 +729,7 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 // BrowserVersion returns the visitor count grouped by browser and version.
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
@@ -739,7 +742,7 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		WHERE %s
 		GROUP BY browser, browser_version
 		ORDER BY visitors DESC, browser, browser_version
-		%s`, relativeFilterQuery, filter.table(), filterQuery, filter.withLimit())
+		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []BrowserVersionStats
 
