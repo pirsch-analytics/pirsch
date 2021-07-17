@@ -114,20 +114,36 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, ErrNoPeriodOrDay
 	}
 
+	table := filter.table()
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
-		sum(sessions) sessions,
-		sum(views) views,
-		countIf(bounce = 1) bounces
-		FROM (
-			SELECT count(DISTINCT fingerprint) visitors,
-			count(DISTINCT(fingerprint, session)) sessions,
-			count(*) views,
-			length(groupArray(path)) = 1 bounce
-			FROM %s
-			WHERE %s
-			GROUP BY toDate(time, '%s'), fingerprint
-		)`, filter.table(), filterQuery, filter.Timezone.String())
+	var query string
+
+	if table == "hit" {
+		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
+			sum(sessions) sessions,
+			sum(views) views,
+			countIf(bounce = 1) bounces
+			FROM (
+				SELECT count(DISTINCT fingerprint) visitors,
+				count(DISTINCT(fingerprint, session)) sessions,
+				count(*) views,
+				length(groupArray(path)) = 1 bounce
+				FROM hit
+				WHERE %s
+				GROUP BY toDate(time, '%s'), fingerprint
+			)`, filterQuery, filter.Timezone.String())
+	} else {
+		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
+			sum(views) views
+			FROM (
+				SELECT count(DISTINCT fingerprint) visitors,
+				count(*) views
+				FROM event
+				WHERE %s
+				GROUP BY toDate(time, '%s'), fingerprint
+			)`, filterQuery, filter.Timezone.String())
+	}
+
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, args...); err != nil {
@@ -137,10 +153,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	var currentTimeSpent int
 	var err error
 
-	if filter.Path == "" {
-		currentTimeSpent, err = analyzer.TotalSessionDuration(filter)
-	} else {
-		currentTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+	if table == "hit" {
+		if filter.Path == "" {
+			currentTimeSpent, err = analyzer.TotalSessionDuration(filter)
+		} else {
+			currentTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+		}
 	}
 
 	if err != nil {
@@ -164,10 +182,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	var previousTimeSpent int
 
-	if filter.Path == "" {
-		previousTimeSpent, err = analyzer.TotalSessionDuration(filter)
-	} else {
-		previousTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+	if table == "hit" {
+		if filter.Path == "" {
+			previousTimeSpent, err = analyzer.TotalSessionDuration(filter)
+		} else {
+			previousTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+		}
 	}
 
 	if err != nil {
