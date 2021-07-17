@@ -406,9 +406,9 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.EventName = ""
 	filterArgsPath, filterQueryPath := filter.query()
 	filter.PathPattern = ""
-	filter.EventName = ""
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
 		sum(views) views,
