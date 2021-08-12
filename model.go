@@ -15,6 +15,7 @@ type Hit struct {
 	UserAgent                 string `db:"user_agent"`
 	Path                      string
 	URL                       string
+	Title                     string
 	Language                  string
 	CountryCode               string `db:"country_code"`
 	Referrer                  string

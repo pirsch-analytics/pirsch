@@ -49,9 +49,9 @@ func (client *Client) SaveHits(hits []Hit) error {
 	}
 
 	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -66,6 +66,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 			hit.UserAgent,
 			hit.Path,
 			hit.URL,
+			hit.Title,
 			hit.Language,
 			hit.CountryCode,
 			hit.Referrer,
@@ -111,7 +112,7 @@ func (client *Client) SaveEvents(events []Event) error {
 	}
 
 	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
 		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -129,6 +130,7 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.UserAgent,
 			event.Path,
 			event.URL,
+			event.Title,
 			event.Language,
 			event.CountryCode,
 			event.Referrer,

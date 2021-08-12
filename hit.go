@@ -41,6 +41,9 @@ type HitOptions struct {
 	// This will also affect the URL.
 	Path string
 
+	// Title is the page title.
+	Title string
+
 	// Referrer can be set to manually overwrite the referrer from the request.
 	Referrer string
 
@@ -85,6 +88,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	userAgent := r.UserAgent()
 	path := shortenString(options.Path, 2000)
 	requestURL := shortenString(options.URL, 2000)
+	title := shortenString(options.Title, 512)
 	uaInfo := ParseUserAgent(userAgent)
 	uaInfo.OS = shortenString(uaInfo.OS, 20)
 	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
@@ -138,6 +142,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		UserAgent:                 userAgent,
 		Path:                      path,
 		URL:                       requestURL,
+		Title:                     title,
 		Language:                  lang,
 		CountryCode:               countryCode,
 		Referrer:                  referrer,
@@ -216,6 +221,7 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	return &HitOptions{
 		ClientID:     getInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
+		Title:        strings.TrimSpace(query.Get("t")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
 		ScreenWidth:  getIntQueryParam(query.Get("w")),
 		ScreenHeight: getIntQueryParam(query.Get("h")),

@@ -2,6 +2,8 @@
 
 ## 2.5.0
 
+* added collection of page title
+* optimized pirsch.js
 * updated referrer blacklist
 * updated User-Agent blacklist
 * updated dependencies

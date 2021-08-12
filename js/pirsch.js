@@ -25,20 +25,15 @@
     }
 
     function hit() {
-        var nocache = new Date().getTime();
-        var href = location.href.substr(0, 1800);
-        var referrer = document.referrer;
-        var width = screen.width;
-        var height = screen.height;
         var url = endpoint+
-            "?nc="+ nocache+
+            "?nc="+ new Date().getTime()+
             "&client_id="+clientID+
-            "&url="+href+
-            "&ref="+referrer+
-            "&w="+width+
-            "&h="+height+
+            "&url="+location.href.substr(0, 1800)+
+            "&t="+document.title+
+            "&ref="+document.referrer+
+            "&w="+screen.width+
+            "&h="+screen.height+
             params;
-
         var req = new XMLHttpRequest();
         req.open("GET", url);
         req.send();

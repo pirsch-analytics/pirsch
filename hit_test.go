@@ -17,6 +17,7 @@ func TestHitFromRequest(t *testing.T) {
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		Client:       dbClient,
 		ClientID:     42,
+		Title:        "title",
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -30,6 +31,7 @@ func TestHitFromRequest(t *testing.T) {
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
+		hit.Title != "title" ||
 		hit.Language != "de" ||
 		hit.Referrer != "http://ref/" ||
 		hit.OS != OSWindows ||
@@ -311,17 +313,19 @@ func TestHitOptionsFromRequest(t *testing.T) {
 
 	if options.ClientID != 0 ||
 		options.URL != "" ||
+		options.Title != "" ||
 		options.Referrer != "" ||
 		options.ScreenWidth != 0 ||
 		options.ScreenHeight != 0 {
 		t.Fatalf("HitOptions not as expected: %v", options)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?client_id=42&url=http://foo.bar/test&ref=http://ref/&w=640&h=1024", nil)
+	req = httptest.NewRequest(http.MethodGet, "http://test.com/my/path?client_id=42&url=http://foo.bar/test&t=title&ref=http://ref/&w=640&h=1024", nil)
 	options = HitOptionsFromRequest(req)
 
 	if options.ClientID != 42 ||
 		options.URL != "http://foo.bar/test" ||
+		options.Title != "title" ||
 		options.Referrer != "http://ref/" ||
 		options.ScreenWidth != 640 ||
 		options.ScreenHeight != 1024 {
