@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.0
+
+* updated dependencies
+
 ## 2.4.0
 
 * added custom event tracking
