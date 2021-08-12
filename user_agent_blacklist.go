@@ -25,6 +25,13 @@ var userAgentBlacklist = []string{
 	"bluefish",
 	"scamadviserexternalhit",
 	"notionembedder",
+	"intelx",
+	"sleipnir",
+	"virustotal",
+	"sundance",
+	"shiretoko",
+	"rockmelt",
+	"ae/0.1",
 
 	// https://github.com/gorangajic/isbot/blob/master/list.json (modified)
 	"12345",
