@@ -3,6 +3,7 @@
 ## 2.5.0
 
 * added collection of page title
+* added grouping results by page title additionally to path
 * optimized pirsch.js
 * updated referrer blacklist
 * updated User-Agent blacklist

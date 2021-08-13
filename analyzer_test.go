@@ -313,6 +313,13 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/bar", atop[1].Path)
 	assert.Equal(t, 600, atop[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
+	atop, err = analyzer.AvgTimeOnPages(&Filter{IncludeTitle: true})
+	assert.NoError(t, err)
+	assert.Len(t, atop, 2)
+	assert.Equal(t, "/", atop[0].Path)
+	assert.Equal(t, "/bar", atop[1].Path)
+	assert.Equal(t, "Home", atop[0].Title)
+	assert.Equal(t, "Bar", atop[1].Title)
 	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, top, 3)
@@ -337,6 +344,26 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err = analyzer.TotalTimeOnPage(&Filter{MaxTimeOnPageSeconds: 200})
 	assert.NoError(t, err)
 	assert.Equal(t, 180+200+200, ttop)
+}
+
+func TestAnalyzer_PageTitleAndAvgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: pastDay(2), Path: "/", Title: "Home 1"},
+		{Fingerprint: "fp1", Time: pastDay(1), Path: "/", Title: "Home 2", PreviousTimeOnPageSeconds: 42},
+		{Fingerprint: "fp2", Time: Today(), Path: "/foo", Title: "Foo"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true, IncludeAvgTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "Foo", visitors[0].Title)
+	assert.Equal(t, "Home 1", visitors[1].Title)
+	assert.Equal(t, "Home 2", visitors[2].Title)
+	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
@@ -943,18 +970,18 @@ func TestAnalyzer_UTM(t *testing.T) {
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(3), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 9},
-		{Fingerprint: "fp2", Time: pastDay(3), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 7},
-		{Fingerprint: "fp3", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp3", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 5},
-		{Fingerprint: "fp4", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 4},
-		{Fingerprint: "fp5", Time: pastDay(1), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 8},
-		{Fingerprint: "fp6", Time: pastDay(1), Path: "/"},
-		{Fingerprint: "fp6", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 6},
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 9, Title: "Foo"},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/", Title: "Home"},
+		{Fingerprint: "fp2", Time: pastDay(3), Path: "/foo", PreviousTimeOnPageSeconds: 7, Title: "Foo"},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp3", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 5, Title: "Foo"},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp4", Time: pastDay(2), Path: "/foo", PreviousTimeOnPageSeconds: 4, Title: "Foo"},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/", Title: "Home"},
+		{Fingerprint: "fp5", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 8, Title: "Foo"},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/", Title: "Home"},
+		{Fingerprint: "fp6", Time: pastDay(1), Path: "/foo", PreviousTimeOnPageSeconds: 6, Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

@@ -166,6 +166,7 @@ type PlatformStats struct {
 type TimeSpentStats struct {
 	Day                     time.Time `json:"day"`
 	Path                    string    `json:"path"`
+	Title                   string    `json:"title"`
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 

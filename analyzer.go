@@ -294,7 +294,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 
 		for i := range stats {
 			for j := range timeOnPage {
-				if stats[i].Path == timeOnPage[j].Path {
+				if stats[i].Path == timeOnPage[j].Path && (!filter.IncludeTitle || stats[i].Title == timeOnPage[j].Title) {
 					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
 					break
 				}
@@ -369,7 +369,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 
 		for i := range stats {
 			for j := range timeOnPage {
-				if stats[i].Path == timeOnPage[j].Path {
+				if stats[i].Path == timeOnPage[j].Path && (!filter.IncludeTitle || stats[i].Title == timeOnPage[j].Title) {
 					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
 					break
 				}
@@ -861,7 +861,7 @@ func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-// AvgTimeOnPages returns the average time on page grouped by path.
+// AvgTimeOnPages returns the average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
@@ -871,9 +871,15 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	query := fmt.Sprintf(`SELECT path, toUInt64(avg(time_on_page)) average_time_spent_seconds
+	title := ""
+
+	if filter.IncludeTitle {
+		title = ",title"
+	}
+
+	query := fmt.Sprintf(`SELECT path %s, toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT path, %s time_on_page
+			SELECT path %s, %s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -883,8 +889,8 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 			WHERE time_on_page > 0
 			%s
 		)
-		GROUP BY path
-		ORDER BY path`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
+		GROUP BY path %s
+		ORDER BY path %s`, title, title, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, title, title)
 	timeArgs = append(timeArgs, fieldArgs...)
 	var stats []TimeSpentStats
 
