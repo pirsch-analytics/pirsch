@@ -221,14 +221,23 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 	return stats, nil
 }
 
-// Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path.
+// Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	filterArgs, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
+	title, titleGroupBy, titleOrderBy := "", "", ""
+
+	if filter.IncludeTitle {
+		title = "title,"
+		titleGroupBy = ",title"
+		titleOrderBy = "title ASC,"
+	}
+
 	query := fmt.Sprintf(`SELECT path,
+		%s
 		sum(visitors) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
@@ -246,17 +255,18 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		bounces / IF(visitors = 0, 1, visitors) bounce_rate
 		FROM (
 			SELECT path,
+			%s
 			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT(fingerprint, session)) sessions,
 			count(*) views,
 			length(groupArray(path)) = 1 bounce
 			FROM %s
 			WHERE %s
-			GROUP BY path, fingerprint
+			GROUP BY path, %s fingerprint
 		)
-		GROUP BY path
-		ORDER BY visitors DESC, path ASC
-		%s`, table, relativeFilterQuery, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
+		GROUP BY path %s
+		ORDER BY visitors DESC, %s path ASC
+		%s`, title, table, relativeFilterQuery, table, relativeFilterQuery, title, table, filterQuery, title, titleGroupBy, titleOrderBy, filter.withLimit())
 	args := make([]interface{}, 0, len(filterArgs)*3)
 	args = append(args, relativeFilterArgs...)
 	args = append(args, relativeFilterArgs...)
@@ -288,7 +298,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	return stats, nil
 }
 
-// EntryPages returns the visitor count and time on page grouped by path for the first page visited.
+// EntryPages returns the visitor count and time on page grouped by path and page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
 	var path, pathFilter string
@@ -305,28 +315,38 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		filterArgs = append(filterArgs, path)
 	}
 
+	title, titleInner, titleOrderBy := "", "", ""
+
+	if filter.IncludeTitle {
+		title = "title,"
+		titleInner = ",title"
+		titleOrderBy = "title ASC,"
+	}
+
 	query := fmt.Sprintf(`SELECT *
 		FROM (
-			SELECT "path",
+			SELECT path,
+			%s
 			count(DISTINCT fingerprint) visitors,
 			countIf(prev_fingerprint != fingerprint) entries
 			FROM (
 				SELECT fingerprint,
 				"session",
-				"path",
+				path,
+				%s
 				neighbor("fingerprint", -1) prev_fingerprint
 				FROM (
-					SELECT fingerprint, "session", "path"
+					SELECT fingerprint, "session", path %s
 					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
 				)
 			)
-			GROUP BY "path"
+			GROUP BY path %s
 		)
 		WHERE entries > 0 %s
-		ORDER BY entries DESC, "path" ASC
-		%s`, filter.table(), filterQuery, pathFilter, filter.withLimit())
+		ORDER BY entries DESC, %s path ASC
+		%s`, title, title, titleInner, filter.table(), filterQuery, titleInner, pathFilter, titleOrderBy, filter.withLimit())
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -353,7 +373,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	return stats, nil
 }
 
-// ExitPages returns the visitor count and time on page grouped by path for the last page visited.
+// ExitPages returns the visitor count and time on page grouped by path and page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
 	var path, pathFilter string
@@ -370,29 +390,39 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		filterArgs = append(filterArgs, path)
 	}
 
+	title, titleInner, titleOrderBy := "", "", ""
+
+	if filter.IncludeTitle {
+		title = "title,"
+		titleInner = ",title"
+		titleOrderBy = "title ASC,"
+	}
+
 	query := fmt.Sprintf(`SELECT *
 		FROM (
-			SELECT "path",
+			SELECT path,
+			%s
 			count(DISTINCT fingerprint) visitors,
 			countIf(next_fingerprint != fingerprint) exits,
 			exits/visitors exit_rate
 			FROM (
 				SELECT fingerprint,
 				"session",
-				"path",
+				path,
+				%s
 				neighbor("fingerprint", 1) next_fingerprint
 				FROM (
-					SELECT fingerprint, "session", "path"
+					SELECT fingerprint, "session", path %s
 					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
 				)
 			)
-			GROUP BY "path"
+			GROUP BY path %s
 		)
 		WHERE exits > 0 %s
-		ORDER BY exits DESC, "path" ASC
-		%s`, filter.table(), filterQuery, pathFilter, filter.withLimit())
+		ORDER BY exits DESC, %s path ASC
+		%s`, title, title, titleInner, filter.table(), filterQuery, titleInner, pathFilter, titleOrderBy, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {

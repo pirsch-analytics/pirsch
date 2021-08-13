@@ -219,22 +219,22 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), Session: pastDay(4), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: pastDay(4), PreviousTimeOnPageSeconds: 180, Path: "/foo"},
-		{Fingerprint: "fp1", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar"},
-		{Fingerprint: "fp3", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(4), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: pastDay(2).Add(time.Minute * 30), Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 600, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: pastDay(2).Add(time.Hour), Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: pastDay(2).Add(time.Hour), PreviousTimeOnPageSeconds: 600, Path: "/foo"},
-		{Fingerprint: "fp7", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp8", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp9", Time: Today(), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(4), Session: pastDay(4), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), Session: pastDay(4), PreviousTimeOnPageSeconds: 180, Path: "/foo", Title: "Foo"},
+		{Fingerprint: "fp1", Time: pastDay(4), Path: "/", Title: "Home"},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/", Title: "Home"},
+		{Fingerprint: "fp2", Time: pastDay(4), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp3", Time: pastDay(4), Path: "/", Title: "Home"},
+		{Fingerprint: "fp4", Time: pastDay(4), Path: "/", Title: "Home"},
+		{Fingerprint: "fp5", Time: pastDay(2), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), Session: pastDay(2).Add(time.Minute * 30), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp6", Time: pastDay(2), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 600, Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), Session: pastDay(2).Add(time.Hour), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), Session: pastDay(2).Add(time.Hour), PreviousTimeOnPageSeconds: 600, Path: "/foo", Title: "Foo"},
+		{Fingerprint: "fp7", Time: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp8", Time: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp9", Time: Today(), Path: "/", Title: "Home"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -244,6 +244,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, "/foo", visitors[2].Path)
+	assert.Empty(t, visitors[0].Title)
+	assert.Empty(t, visitors[1].Title)
+	assert.Empty(t, visitors[2].Title)
 	assert.Equal(t, 9, visitors[0].Visitors)
 	assert.Equal(t, 3, visitors[1].Visitors)
 	assert.Equal(t, 2, visitors[2].Visitors)
@@ -285,11 +288,13 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err := analyzer.TotalTimeOnPage(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 1380, ttop)
-	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeAvgTimeOnPage: true})
+	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true, IncludeAvgTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, "Home", visitors[0].Title)
+	assert.Equal(t, "Bar", visitors[1].Title)
 	assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
@@ -329,18 +334,18 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 10, Path: "/foo"},
-		{Fingerprint: "fp2", Time: pastDay(2), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp3", Time: pastDay(2), Session: pastDay(2), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1), Session: pastDay(1), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), Session: pastDay(1), PreviousTimeOnPageSeconds: 20, Path: "/bar"},
-		{Fingerprint: "fp5", Time: pastDay(1), Session: pastDay(1), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), Session: pastDay(1), PreviousTimeOnPageSeconds: 40, Path: "/bar"},
-		{Fingerprint: "fp6", Time: pastDay(1), Session: pastDay(1), Path: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), Session: pastDay(2), PreviousTimeOnPageSeconds: 10, Path: "/foo", Title: "Foo"},
+		{Fingerprint: "fp2", Time: pastDay(2), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp3", Time: pastDay(2), Session: pastDay(2), Path: "/", Title: "Home"},
+		{Fingerprint: "fp4", Time: pastDay(1), Session: pastDay(1), Path: "/", Title: "Home"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), Session: pastDay(1), PreviousTimeOnPageSeconds: 20, Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp5", Time: pastDay(1), Session: pastDay(1), Path: "/", Title: "Home"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), Session: pastDay(1), PreviousTimeOnPageSeconds: 40, Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp6", Time: pastDay(1), Session: pastDay(1), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp7", Time: pastDay(1), Session: pastDay(1), Path: "/", Title: "Home"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -349,23 +354,27 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, "/bar", entries[1].Path)
+	assert.Empty(t, entries[0].Title)
+	assert.Empty(t, entries[1].Title)
 	assert.Equal(t, 6, entries[0].Visitors)
 	assert.Equal(t, 4, entries[1].Visitors)
 	assert.Equal(t, 5, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
 	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true})
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true, IncludeAvgTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
-	assert.Equal(t, "/", entries[0].Path)
-	assert.Equal(t, "/bar", entries[1].Path)
-	assert.Equal(t, 3, entries[0].Visitors)
-	assert.Equal(t, 4, entries[1].Visitors)
+	assert.Equal(t, "/bar", entries[0].Path)
+	assert.Equal(t, "/", entries[1].Path)
+	assert.Equal(t, "Bar", entries[0].Title)
+	assert.Equal(t, "Home", entries[1].Title)
+	assert.Equal(t, 4, entries[0].Visitors)
+	assert.Equal(t, 3, entries[1].Visitors)
 	assert.Equal(t, 2, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
-	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)
 	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
@@ -379,6 +388,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/", exits[0].Path)
 	assert.Equal(t, "/bar", exits[1].Path)
 	assert.Equal(t, "/foo", exits[2].Path)
+	assert.Empty(t, exits[0].Title)
+	assert.Empty(t, exits[1].Title)
 	assert.Equal(t, 6, exits[0].Visitors)
 	assert.Equal(t, 4, exits[1].Visitors)
 	assert.Equal(t, 1, exits[2].Visitors)
@@ -388,11 +399,13 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.5, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.75, exits[1].ExitRate, 0.001)
 	assert.InDelta(t, 1, exits[2].ExitRate, 0.001)
-	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true})
+	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true, IncludeAvgTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
 	assert.Equal(t, "/bar", exits[0].Path)
 	assert.Equal(t, "/", exits[1].Path)
+	assert.Equal(t, "Bar", exits[0].Title)
+	assert.Equal(t, "Home", exits[1].Title)
 	assert.Equal(t, 4, exits[0].Visitors)
 	assert.Equal(t, 3, exits[1].Visitors)
 	assert.Equal(t, 3, exits[0].Exits)
