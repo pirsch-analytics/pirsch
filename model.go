@@ -62,6 +62,7 @@ func (event Event) String() string {
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
 	Path     string `json:"path"`
+	Title    string `json:"title"`
 	Visitors int    `json:"visitors"`
 }
 

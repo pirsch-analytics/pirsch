@@ -43,17 +43,24 @@ func NewAnalyzer(store Store) *Analyzer {
 	}
 }
 
-// ActiveVisitors returns the active visitors per path and the total number of active visitors for given duration.
+// ActiveVisitors returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT path, count(DISTINCT fingerprint) visitors
+	title, orderByTitle := "", ""
+
+	if filter.IncludeTitle {
+		title = ",title"
+		orderByTitle = ",title ASC"
+	}
+
+	query := fmt.Sprintf(`SELECT path %s, count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
-		GROUP BY path
-		ORDER BY visitors DESC, path ASC`, filterQuery)
+		GROUP BY path %s
+		ORDER BY visitors DESC, path ASC %s`, title, filterQuery, title, orderByTitle)
 	var stats []ActiveVisitorStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -221,7 +228,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 	return stats, nil
 }
 
-// Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and page title.
+// Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
@@ -298,7 +305,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	return stats, nil
 }
 
-// EntryPages returns the visitor count and time on page grouped by path and page title for the first page visited.
+// EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
 	var path, pathFilter string
@@ -373,7 +380,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	return stats, nil
 }
 
-// ExitPages returns the visitor count and time on page grouped by path and page title for the last page visited.
+// ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
 	var path, pathFilter string

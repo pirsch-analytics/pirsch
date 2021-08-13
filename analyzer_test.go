@@ -10,13 +10,13 @@ import (
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 5), Path: "/bar"},
-		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 4), Path: "/bar"},
-		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 3), Path: "/foo"},
-		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/"},
-		{Fingerprint: "fp4", Time: time.Now().Add(-time.Minute), Path: "/"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 5), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
+		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home"},
+		{Fingerprint: "fp4", Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -27,6 +27,9 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, "/foo", visitors[2].Path)
+	assert.Empty(t, visitors[0].Title)
+	assert.Empty(t, visitors[1].Title)
+	assert.Empty(t, visitors[2].Title)
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
@@ -38,6 +41,11 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, 2, visitors[0].Visitors)
 	_, _, err = analyzer.ActiveVisitors(getMaxFilter(), time.Minute*10)
 	assert.NoError(t, err)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{IncludeTitle: true}, time.Minute*10)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "Home", visitors[0].Title)
+	assert.Equal(t, "Bar", visitors[1].Title)
+	assert.Equal(t, "Foo", visitors[2].Title)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
