@@ -15,6 +15,7 @@ type Hit struct {
 	UserAgent                 string `db:"user_agent"`
 	Path                      string
 	URL                       string
+	Title                     string
 	Language                  string
 	CountryCode               string `db:"country_code"`
 	Referrer                  string
@@ -61,6 +62,7 @@ func (event Event) String() string {
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
 	Path     string `json:"path"`
+	Title    string `json:"title"`
 	Visitors int    `json:"visitors"`
 }
 
@@ -92,6 +94,7 @@ type VisitorHourStats struct {
 // PageStats is the result type for page statistics.
 type PageStats struct {
 	Path                    string  `json:"path"`
+	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
 	Views                   int     `json:"views"`
 	Sessions                int     `json:"sessions"`
@@ -105,6 +108,7 @@ type PageStats struct {
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
 	Path                    string `json:"path"`
+	Title                   string `json:"title"`
 	Visitors                int    `json:"visitors"`
 	Entries                 int    `json:"entries"`
 	AverageTimeSpentSeconds int    `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -113,6 +117,7 @@ type EntryStats struct {
 // ExitStats is the result type for exit page statistics.
 type ExitStats struct {
 	Path     string  `json:"path"`
+	Title    string  `json:"title"`
 	Visitors int     `json:"visitors"`
 	Exits    int     `json:"exits"`
 	ExitRate float64 `db:"exit_rate" json:"exit_rate"`
@@ -161,6 +166,7 @@ type PlatformStats struct {
 type TimeSpentStats struct {
 	Day                     time.Time `json:"day"`
 	Path                    string    `json:"path"`
+	Title                   string    `json:"title"`
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 

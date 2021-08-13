@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0
+
+* added collection of page title
+* added grouping results by page title additionally to path
+* optimized pirsch.js
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 2.4.0
 
 * added custom event tracking
@@ -56,7 +65,7 @@ Just tagging a new version, no changes.
 ## 2.1.0
 
 * added timezone support (UTC by default)
-* updated referrer spam list
+* updated referrer blacklist
 * updated dependencies
 
 ## 2.0.1
@@ -180,7 +189,7 @@ Version 2 brings some fundamental changes and is incompatible with version 1.
 ## 1.10.4
 
 * added *source* and *utm_source* as referrer URL parameters
-* updated referrer spam list
+* updated referrer blacklist
 * updated dependencies
 
 ## 1.10.3
@@ -234,7 +243,7 @@ Version 2 brings some fundamental changes and is incompatible with version 1.
 
 * hit path is no longer optional and will be set to "/" if empty
 * improved Chrome vs Safari detection
-* updated referrer spam list
+* updated referrer blacklist
 * ignore hits made by browser versions before 2018
 * fixed and shorten URL in js integration script
 * fixed relative growth calculation for bounce rate
@@ -247,7 +256,7 @@ Version 2 brings some fundamental changes and is incompatible with version 1.
 ## 1.8.2
 
 * updated dependencies
-* updated referrer spam list
+* updated referrer blacklist
 
 ## 1.8.1
 
