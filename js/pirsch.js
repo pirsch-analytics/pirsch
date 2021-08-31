@@ -28,9 +28,9 @@
         var url = endpoint+
             "?nc="+ new Date().getTime()+
             "&client_id="+clientID+
-            "&url="+location.href.substr(0, 1800)+
-            "&t="+document.title+
-            "&ref="+document.referrer+
+            "&url="+encodeURIComponent(location.href.substr(0, 1800))+
+            "&t="+encodeURIComponent(document.title)+
+            "&ref="+encodeURIComponent(document.referrer)+
             "&w="+screen.width+
             "&h="+screen.height+
             params;

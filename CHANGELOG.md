@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.1
+
+* fixed sending UTM parameters using pirsch.js
+* encoded all URL parameters in pirsch.js where it is required
+
 ## 2.5.0
 
 * added collection of page title
