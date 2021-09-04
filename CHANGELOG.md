@@ -2,8 +2,11 @@
 
 ## 2.5.1
 
-* fixed sending UTM parameters using pirsch.js
 * encoded all URL parameters in pirsch.js where it is required
+* modernized pirsch.js
+* added reference implementation for pirsch-events.js
+* fixed sending UTM parameters using pirsch.js
+* updated dependencies
 
 ## 2.5.0
 
