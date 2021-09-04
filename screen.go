@@ -8,7 +8,11 @@ type screenClass struct {
 // ScreenClasses is a list of typical screen sizes used to group resolutions.
 // Everything below is considered "XS" (tiny).
 var ScreenClasses = []screenClass{
-	{1440, "XXL"},
+	{5120, "UHD 5K"},
+	{3840, "UHD 4K"},
+	{2560, "WQHD"},
+	{1920, "Full HD"},
+	{1280, "HD"},
 	{1024, "XL"},
 	{800, "L"},
 	{600, "M"},
