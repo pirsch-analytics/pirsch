@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.2
+
+* fixed usage of TrackerConfig.SessionMaxAge
+
 ## 2.5.1
 
 * encoded all URL parameters in pirsch.js where it is required

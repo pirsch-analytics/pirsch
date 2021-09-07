@@ -71,6 +71,10 @@ func (config *TrackerConfig) validate() {
 		config.WorkerTimeout = maxWorkerTimeout
 	}
 
+	if config.SessionMaxAge < 0 {
+		config.SessionMaxAge = 0
+	}
+
 	if config.Logger == nil {
 		config.Logger = logger
 	}
@@ -91,6 +95,7 @@ type Tracker struct {
 	workerDone                                chan bool
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
+	sessionMaxAge                             time.Duration
 	geoDB                                     *GeoDB
 	geoDBMutex                                sync.RWMutex
 	logger                                    *log.Logger
@@ -116,8 +121,9 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
-		geoDB:  config.GeoDB,
-		logger: config.Logger,
+		sessionMaxAge: config.SessionMaxAge,
+		geoDB:         config.GeoDB,
+		logger:        config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -136,6 +142,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 			options = &HitOptions{
 				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
+				SessionMaxAge:                             tracker.sessionMaxAge,
 			}
 		}
 
