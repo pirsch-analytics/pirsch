@@ -15,7 +15,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
 	hit := HitFromRequest(req, "salt", &HitOptions{
-		Client:       dbClient,
+		SessionCache: NewSessionCache(dbClient, 100),
 		ClientID:     42,
 		Title:        "title",
 		ScreenWidth:  640,
@@ -53,12 +53,13 @@ func TestHitFromRequest(t *testing.T) {
 
 func TestHitFromRequestSession(t *testing.T) {
 	cleanupDB()
+	sessionCache := NewSessionCache(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	req.Header.Set("Referer", "http://ref/")
 	hit1 := HitFromRequest(req, "salt", &HitOptions{
-		Client: dbClient,
+		SessionCache: sessionCache,
 	})
 	assert.Equal(t, int64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
@@ -67,7 +68,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{hit1}))
 	time.Sleep(time.Millisecond * 20)
 	hit2 := HitFromRequest(req, "salt", &HitOptions{
-		Client: dbClient,
+		SessionCache: sessionCache,
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)

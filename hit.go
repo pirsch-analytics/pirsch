@@ -23,7 +23,10 @@ const (
 // HitOptions is used to manipulate the data saved on a hit.
 type HitOptions struct {
 	// Client is the database client required to look up sessions.
-	Client Store
+	//Client Store
+
+	// SessionCache is the cache to look up sessions.
+	SessionCache *SessionCache
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID int64
@@ -111,9 +114,9 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	lastHitSeconds := 0
 	session := now
 
-	if options.Client != nil {
+	if options.SessionCache != nil {
 		// hits and sessions use UTC
-		s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+		s := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 		if !s.Time.IsZero() && s.Path != path {
 			lastHitSeconds = int(now.Sub(s.Time).Seconds())
