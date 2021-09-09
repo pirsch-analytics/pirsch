@@ -83,7 +83,62 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.validate()
 	args, query := filter.queryFields()
 	assert.Len(t, args, 15)
+	assert.Equal(t, "/", args[0])
+	assert.Equal(t, "en", args[1])
+	assert.Equal(t, "jp", args[2])
+	assert.Equal(t, "ref", args[3])
+	assert.Equal(t, OSWindows, args[4])
+	assert.Equal(t, "10", args[5])
+	assert.Equal(t, BrowserEdge, args[6])
+	assert.Equal(t, "89", args[7])
+	assert.Equal(t, "XXL", args[8])
+	assert.Equal(t, "source", args[9])
+	assert.Equal(t, "medium", args[10])
+	assert.Equal(t, "campaign", args[11])
+	assert.Equal(t, "content", args[12])
+	assert.Equal(t, "term", args[13])
+	assert.Equal(t, "event", args[14])
 	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
+}
+
+func TestFilter_QueryFieldsInvert(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "!/"
+	filter.PathPattern = "!pattern"
+	filter.Language = "!en"
+	filter.Country = "!jp"
+	filter.Referrer = "!ref"
+	filter.OS = "!" + OSWindows
+	filter.OSVersion = "!10"
+	filter.Browser = "!" + BrowserEdge
+	filter.BrowserVersion = "!89"
+	filter.Platform = "!" + PlatformUnknown
+	filter.ScreenClass = "!XXL"
+	filter.UTMSource = "!source"
+	filter.UTMMedium = "!medium"
+	filter.UTMCampaign = "!campaign"
+	filter.UTMContent = "!content"
+	filter.UTMTerm = "!term"
+	filter.EventName = "!event"
+	filter.validate()
+	args, query := filter.queryFields()
+	assert.Len(t, args, 15)
+	assert.Equal(t, "/", args[0])
+	assert.Equal(t, "en", args[1])
+	assert.Equal(t, "jp", args[2])
+	assert.Equal(t, "ref", args[3])
+	assert.Equal(t, OSWindows, args[4])
+	assert.Equal(t, "10", args[5])
+	assert.Equal(t, BrowserEdge, args[6])
+	assert.Equal(t, "89", args[7])
+	assert.Equal(t, "XXL", args[8])
+	assert.Equal(t, "source", args[9])
+	assert.Equal(t, "medium", args[10])
+	assert.Equal(t, "campaign", args[11])
+	assert.Equal(t, "content", args[12])
+	assert.Equal(t, "term", args[13])
+	assert.Equal(t, "event", args[14])
+	assert.Equal(t, "path != ? AND language != ? AND country_code != ? AND referrer != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
@@ -106,6 +161,26 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
 }
 
+func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Platform = "!" + PlatformDesktop
+	args, query := filter.queryFields()
+	assert.Len(t, args, 0)
+	assert.Equal(t, "desktop != 1 ", query)
+	filter = NewFilter(NullClient)
+	filter.Platform = "!" + PlatformMobile
+	args, query = filter.queryFields()
+	assert.Len(t, args, 0)
+	assert.Equal(t, "mobile != 1 ", query)
+	filter = NewFilter(NullClient)
+	filter.Platform = "!" + PlatformUnknown
+	args, query = filter.queryFields()
+	assert.Len(t, args, 0)
+	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
+	_, query = filter.query()
+	assert.Contains(t, query, "(desktop = 1 OR mobile = 1)")
+}
+
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.PathPattern = "/some/pattern"
@@ -113,6 +188,15 @@ func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
 	assert.Equal(t, `match("path", ?) = 1`, query)
+}
+
+func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.PathPattern = "!/some/pattern"
+	args, query := filter.queryFields()
+	assert.Len(t, args, 1)
+	assert.Equal(t, "/some/pattern", args[0])
+	assert.Equal(t, `match("path", ?) = 0`, query)
 }
 
 func TestFilter_WithFill(t *testing.T) {

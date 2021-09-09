@@ -21,6 +21,7 @@ const (
 var NullClient = int64(0)
 
 // Filter are all fields that can be used to filter the result sets.
+// Fields can be inverted by adding a "!" in front of the string.
 type Filter struct {
 	// ClientID is the optional.
 	ClientID int64
@@ -230,18 +231,35 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&fields, &args, "event_name", filter.EventName)
 
 	if filter.Platform != "" {
-		if filter.Platform == PlatformDesktop {
-			fields = append(fields, "desktop = 1 ")
-		} else if filter.Platform == PlatformMobile {
-			fields = append(fields, "mobile = 1 ")
+		if strings.HasPrefix(filter.Platform, "!") {
+			platform := filter.Platform[1:]
+
+			if platform == PlatformDesktop {
+				fields = append(fields, "desktop != 1 ")
+			} else if platform == PlatformMobile {
+				fields = append(fields, "mobile != 1 ")
+			} else {
+				fields = append(fields, "(desktop = 1 OR mobile = 1) ")
+			}
 		} else {
-			fields = append(fields, "desktop = 0 AND mobile = 0 ")
+			if filter.Platform == PlatformDesktop {
+				fields = append(fields, "desktop = 1 ")
+			} else if filter.Platform == PlatformMobile {
+				fields = append(fields, "mobile = 1 ")
+			} else {
+				fields = append(fields, "desktop = 0 AND mobile = 0 ")
+			}
 		}
 	}
 
 	if filter.PathPattern != "" {
-		args = append(args, filter.PathPattern)
-		fields = append(fields, `match("path", ?) = 1`)
+		if strings.HasPrefix(filter.PathPattern, "!") {
+			args = append(args, filter.PathPattern[1:])
+			fields = append(fields, `match("path", ?) = 0`)
+		} else {
+			args = append(args, filter.PathPattern)
+			fields = append(fields, `match("path", ?) = 1`)
+		}
 	}
 
 	return args, strings.Join(fields, "AND ")
@@ -278,8 +296,13 @@ func (filter *Filter) query() ([]interface{}, string) {
 
 func (filter *Filter) appendQuery(fields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
-		*args = append(*args, value)
-		*fields = append(*fields, fmt.Sprintf("%s = ? ", field))
+		if strings.HasPrefix(value, "!") {
+			*args = append(*args, value[1:])
+			*fields = append(*fields, fmt.Sprintf("%s != ? ", field))
+		} else {
+			*args = append(*args, value)
+			*fields = append(*fields, fmt.Sprintf("%s = ? ", field))
+		}
 	}
 }
 
