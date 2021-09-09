@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0
+
+* added cache to read sessions
+* added filter inversion
+* updated dependencies
+
 ## 2.5.2
 
 * fixed usage of TrackerConfig.SessionMaxAge
