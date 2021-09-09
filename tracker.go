@@ -33,7 +33,7 @@ type TrackerConfig struct {
 	// WorkerTimeout sets the timeout used to client hits.
 	// This is used to allow the workers to client hits even if the buffer is not full yet.
 	// It's recommended to set this to a few seconds.
-	// If you leave it 0, the default timeout is used, else it is limted to 60 seconds.
+	// If you leave it 0, the default timeout is used, else it is limited to 60 seconds.
 	WorkerTimeout time.Duration
 
 	// ReferrerDomainBlacklist see HitOptions.ReferrerDomainBlacklist.
@@ -41,6 +41,10 @@ type TrackerConfig struct {
 
 	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
+
+	// MaxSessions sets the maximum size for the session cache.
+	// If you leave it 0, the default will be used.
+	MaxSessions int
 
 	// SessionMaxAge see HitOptions.SessionMaxAge.
 	SessionMaxAge time.Duration
@@ -84,6 +88,7 @@ func (config *TrackerConfig) validate() {
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
+	sessionCache                              *SessionCache
 	salt                                      string
 	hits                                      chan Hit
 	events                                    chan Event
@@ -112,6 +117,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	config.validate()
 	tracker := &Tracker{
 		store:                   client,
+		sessionCache:            NewSessionCache(client, config.MaxSessions),
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
@@ -152,7 +158,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 			tracker.geoDBMutex.RUnlock()
 		}
 
-		options.Client = tracker.store
+		options.SessionCache = tracker.sessionCache
 		tracker.hits <- HitFromRequest(r, tracker.salt, options)
 	}
 }
@@ -179,7 +185,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 			tracker.geoDBMutex.RUnlock()
 		}
 
-		options.Client = tracker.store
+		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
 		tracker.events <- Event{
 			Hit:             HitFromRequest(r, tracker.salt, options),

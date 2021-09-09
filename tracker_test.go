@@ -343,25 +343,3 @@ func TestTrackerEventIgnoreSubdomain(t *testing.T) {
 		assert.Empty(t, hit.Referrer)
 	}
 }
-
-func BenchmarkTracker(b *testing.B) {
-	cleanupDB()
-	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
-	})
-	assert.NoError(b, err)
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
-	req.RemoteAddr = "81.2.69.142"
-	tracker := NewTracker(dbClient, "salt", &TrackerConfig{
-		WorkerTimeout: time.Second,
-		GeoDB:         geoDB,
-	})
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		tracker.Hit(req, nil)
-	}
-
-	tracker.Stop()
-}
