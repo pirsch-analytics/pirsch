@@ -124,9 +124,9 @@ func TestClient_Session(t *testing.T) {
 			Path:        "/path3",
 		},
 	}))
-	path, lastHit, session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Minute))
+	session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Minute))
 	assert.NoError(t, err)
-	assert.Equal(t, "/path2", path)
-	assert.Equal(t, now.Unix(), lastHit.Unix())
-	assert.Equal(t, now.Unix(), session.Unix())
+	assert.Equal(t, "/path2", session.Path)
+	assert.Equal(t, now.Unix(), session.Time.Unix())
+	assert.Equal(t, now.Unix(), session.Session.Unix())
 }

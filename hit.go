@@ -113,14 +113,14 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 
 	if options.Client != nil {
 		// hits and sessions use UTC
-		p, t, s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+		s, _ := options.Client.Session(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
-		if !t.IsZero() && p != path {
-			lastHitSeconds = int(now.Sub(t).Seconds())
+		if !s.Time.IsZero() && s.Path != path {
+			lastHitSeconds = int(now.Sub(s.Time).Seconds())
 		}
 
-		if !s.IsZero() {
-			session = s
+		if !s.Session.IsZero() {
+			session = s.Session
 		}
 	}
 
