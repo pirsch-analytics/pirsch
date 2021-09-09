@@ -173,7 +173,7 @@ func (client *Client) SaveEvents(events []Event) error {
 
 // Session implements the Store interface.
 func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (string, time.Time, time.Time, error) {
-	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? LIMIT 1`
+	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
 	data := struct {
 		Path    string
 		Time    time.Time

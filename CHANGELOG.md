@@ -4,6 +4,7 @@
 
 * added cache to read sessions
 * added filter inversion
+* fixed session query order by
 * updated dependencies
 
 ## 2.5.2

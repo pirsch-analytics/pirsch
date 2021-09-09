@@ -97,20 +97,36 @@ func TestClient_SaveEvent(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	fp := "session_fp"
-	now := time.Now().UTC()
+	now := time.Now().UTC().Add(-time.Second * 20)
 	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{
+			ClientID:    1,
+			Fingerprint: fp,
+			Time:        now.Add(-time.Second * 20),
+			Session:     now.Add(-time.Second * 20),
+			UserAgent:   "ua",
+			Path:        "/path1",
+		},
 		{
 			ClientID:    1,
 			Fingerprint: fp,
 			Time:        now,
 			Session:     now,
 			UserAgent:   "ua",
-			Path:        "/path",
+			Path:        "/path2",
+		},
+		{
+			ClientID:    1,
+			Fingerprint: fp,
+			Time:        now.Add(-time.Second * 10),
+			Session:     now.Add(-time.Second * 10),
+			UserAgent:   "ua",
+			Path:        "/path3",
 		},
 	}))
-	path, lastHit, session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Second))
+	path, lastHit, session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Minute))
 	assert.NoError(t, err)
-	assert.Equal(t, "/path", path)
+	assert.Equal(t, "/path2", path)
 	assert.Equal(t, now.Unix(), lastHit.Unix())
 	assert.Equal(t, now.Unix(), session.Unix())
 }
