@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1
+
+* changed hashing algorithm to SHA256
+
 ## 2.6.0
 
 * added cache to read sessions

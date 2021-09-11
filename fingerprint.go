@@ -1,7 +1,7 @@
 package pirsch
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"net/http"
@@ -15,11 +15,11 @@ func Fingerprint(r *http.Request, salt string) string {
 	sb.WriteString(r.Header.Get("User-Agent"))
 	sb.WriteString(getIP(r))
 	sb.WriteString(salt)
-	hash := md5.New()
+	hash := sha256.New()
 
 	if _, err := io.WriteString(hash, sb.String()); err != nil {
 		return "" // this should never fail actually...
 	}
 
-	return hex.EncodeToString(hash.Sum(nil))
+	return hex.EncodeToString(hash.Sum(nil))[:32]
 }
