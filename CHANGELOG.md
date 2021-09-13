@@ -3,6 +3,7 @@
 ## 2.6.2
 
 * feed hash through MD5 again to shorten it instead of shortening the SHA256 string directly
+* updated dependencies
 
 ## 2.6.1
 
