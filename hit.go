@@ -125,6 +125,8 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		if !s.Session.IsZero() {
 			session = s.Session
 		}
+
+		options.SessionCache.put(options.ClientID, fingerprint, path, now, session)
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {

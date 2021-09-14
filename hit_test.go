@@ -63,10 +63,17 @@ func TestHitFromRequestSession(t *testing.T) {
 	})
 	assert.Equal(t, int64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
-	hit1.Path = "/different/path" // to count as page switch for time on page
-	hit1.Time = time.Now().UTC().Add(-time.Second * 5)
-	assert.NoError(t, dbClient.SaveHits([]Hit{hit1}))
-	time.Sleep(time.Millisecond * 20)
+
+	// to count as page switch for time on page
+	assert.False(t, sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Time.IsZero())
+	assert.False(t, sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Session.IsZero())
+	assert.Equal(t, "/test/path", sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Path)
+	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = Session{
+		Path:    "/different/path",
+		Time:    time.Now().UTC().Add(-time.Second * 5),
+		Session: sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Session,
+	}
+
 	hit2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
