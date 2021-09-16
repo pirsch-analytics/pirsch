@@ -1,6 +1,12 @@
 package pirsch
 
-/*const (
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+const (
 	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
@@ -977,10 +983,10 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 }
 
 func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
-	timeOnPage := "neighbor(duration, 1, 0)"
+	timeOnPage := "neighbor(duration_seconds, 1, 0)"
 
 	if filter.MaxTimeOnPageSeconds > 0 {
-		timeOnPage = fmt.Sprintf("least(neighbor(duration, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
+		timeOnPage = fmt.Sprintf("least(neighbor(duration_seconds, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
 	}
 
 	return timeOnPage
@@ -1003,4 +1009,4 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 
 	filter.validate()
 	return filter
-}*/
+}

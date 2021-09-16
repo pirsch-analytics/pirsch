@@ -1,6 +1,13 @@
 package pirsch
 
-/*func TestAnalyzer_ActiveVisitors(t *testing.T) {
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
+)
+
+func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
@@ -1101,4 +1108,4 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/.+/slashes$"})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
-}*/
+}
