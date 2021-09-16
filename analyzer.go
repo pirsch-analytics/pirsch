@@ -163,9 +163,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if table == "hit" {
 		if filter.Path == "" {
-			currentTimeSpent, err = analyzer.TotalSessionDuration(filter)
+			currentTimeSpent, err = analyzer.totalSessionDuration(filter)
 		} else {
-			currentTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+			currentTimeSpent, err = analyzer.totalTimeOnPage(filter)
 		}
 	}
 
@@ -192,9 +192,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if table == "hit" {
 		if filter.Path == "" {
-			previousTimeSpent, err = analyzer.TotalSessionDuration(filter)
+			previousTimeSpent, err = analyzer.totalSessionDuration(filter)
 		} else {
-			previousTimeSpent, err = analyzer.TotalTimeOnPage(filter)
+			previousTimeSpent, err = analyzer.totalTimeOnPage(filter)
 		}
 	}
 
@@ -209,6 +209,62 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		BouncesGrowth:   analyzer.calculateGrowth(current.Bounces, previous.Bounces),
 		TimeSpentGrowth: analyzer.calculateGrowth(currentTimeSpent, previousTimeSpent),
 	}, nil
+}
+
+// TODO embed in Growth?
+func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
+	filter = analyzer.getFilter(filter)
+	args, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT sum(duration) average_time_spent_seconds
+		FROM (
+			SELECT toDate(time, '%s') day, max(time)-min(time) duration
+			FROM hit
+			WHERE %s
+			AND session != 0
+			GROUP BY day, fingerprint, session
+		)`, filter.Timezone.String(), filterQuery)
+	stats := new(struct {
+		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	})
+
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
+		return 0, err
+	}
+
+	return stats.AverageTimeSpentSeconds, nil
+}
+
+// TODO embed in Growth?
+func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
+		FROM (
+			SELECT %s time_on_page
+			FROM (
+				SELECT *
+				FROM hit
+				WHERE %s
+				ORDER BY fingerprint, time
+			)
+			%s
+		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
+	timeArgs = append(timeArgs, fieldArgs...)
+	stats := new(struct {
+		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	})
+
+	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
+		return 0, err
+	}
+
+	return stats.AverageTimeSpentSeconds, nil
 }
 
 // VisitorHours returns the visitor count grouped by time of day.
@@ -244,34 +300,35 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		titleOrderBy = "title ASC,"
 	}
 
-	// TODO
-	query := fmt.Sprintf(`SELECT path,
+	query := fmt.Sprintf(`SELECT arrayJoin(paths) path,
 		%s
-		sum(visitors) visitors,
+		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT(fingerprint, session)) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM %s
 			WHERE %s
 		), 1) relative_visitors,
-		sum(sessions) sessions,
-		sum(views) views,
+		count(1) views,
 		views / greatest((
-			SELECT count(*)
-			FROM %s
-			WHERE %s
+			SELECT sum(views) FROM (
+				SELECT argMax(page_views, time) views
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session
+			)
 		), 1) relative_views,
-		countIf(bounce = 1) bounces,
-		bounces / IF(visitors = 0, 1, visitors) bounce_rate
+		countIf(is_bounce) bounces,
+		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT path,
+			SELECT groupArray(path) paths,
 			%s
-			count(DISTINCT fingerprint) visitors,
-			count(DISTINCT(fingerprint, session)) sessions,
-			count(*) views,
-			length(groupArray(path)) = 1 bounce
+			length(paths) = 1 is_bounce,
+			fingerprint,
+			session
 			FROM %s
 			WHERE %s
-			GROUP BY path, %s fingerprint
+			GROUP BY fingerprint, %s session
 		)
 		GROUP BY path %s
 		ORDER BY visitors DESC, %s path ASC
@@ -847,31 +904,6 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	return stats, nil
 }
 
-// TODO embed in Growth?
-// TotalSessionDuration returns the total session duration in seconds.
-func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
-	filter = analyzer.getFilter(filter)
-	args, filterQuery := filter.query()
-	// TODO
-	query := fmt.Sprintf(`SELECT sum(duration) average_time_spent_seconds
-		FROM (
-			SELECT toDate(time, '%s') day, max(time)-min(time) duration
-			FROM hit
-			WHERE %s
-			AND session != 0
-			GROUP BY day, fingerprint, session
-		)`, filter.Timezone.String(), filterQuery)
-	stats := new(struct {
-		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
-	})
-
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
-		return 0, err
-	}
-
-	return stats.AverageTimeSpentSeconds, nil
-}
-
 // AvgTimeOnPages returns the average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -948,41 +980,6 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	}
 
 	return stats, nil
-}
-
-// TODO embed in Growth?
-// TotalTimeOnPage returns the total time on page in seconds.
-func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
-	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	// TODO
-	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
-		FROM (
-			SELECT %s time_on_page
-			FROM (
-				SELECT *
-				FROM hit
-				WHERE %s
-				ORDER BY fingerprint, time
-			)
-			%s
-		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
-	timeArgs = append(timeArgs, fieldArgs...)
-	stats := new(struct {
-		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
-	})
-
-	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
-		return 0, err
-	}
-
-	return stats.AverageTimeSpentSeconds, nil
 }
 
 func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
