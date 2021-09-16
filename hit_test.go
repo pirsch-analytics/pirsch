@@ -27,7 +27,7 @@ func TestHitFromRequest(t *testing.T) {
 
 	if hit.Time.IsZero() ||
 		hit.Session.IsZero() ||
-		hit.PreviousTimeOnPageSeconds != 0 ||
+		hit.Duration != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
@@ -79,7 +79,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)
-	assert.Equal(t, 5, hit2.PreviousTimeOnPageSeconds)
+	assert.Equal(t, 5, hit2.Duration)
 	assert.Equal(t, hit1.Session.Unix(), hit2.Session.Unix())
 }
 

@@ -48,10 +48,10 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, duration,
+		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -62,9 +62,12 @@ func (client *Client) SaveHits(hits []Hit) error {
 			hit.Fingerprint,
 			hit.Time,
 			hit.Session,
-			hit.PreviousTimeOnPageSeconds,
+			hit.Duration,
 			hit.UserAgent,
 			hit.Path,
+			hit.EntryPath,
+			hit.PageViews,
+			hit.IsBounce,
 			hit.URL,
 			hit.Title,
 			hit.Language,
@@ -111,11 +114,11 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, duration,
+		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -126,9 +129,12 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.Fingerprint,
 			event.Time,
 			event.Session,
-			event.PreviousTimeOnPageSeconds,
+			event.Duration,
 			event.UserAgent,
 			event.Path,
+			event.EntryPath,
+			event.PageViews,
+			event.IsBounce,
 			event.URL,
 			event.Title,
 			event.Language,

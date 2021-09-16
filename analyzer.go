@@ -983,10 +983,10 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 }
 
 func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
-	timeOnPage := "neighbor(previous_time_on_page_seconds, 1, 0)"
+	timeOnPage := "neighbor(duration, 1, 0)"
 
 	if filter.MaxTimeOnPageSeconds > 0 {
-		timeOnPage = fmt.Sprintf("least(neighbor(previous_time_on_page_seconds, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
+		timeOnPage = fmt.Sprintf("least(neighbor(duration, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
 	}
 
 	return timeOnPage

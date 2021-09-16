@@ -7,34 +7,37 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ClientID                  int64 `db:"client_id"`
-	Fingerprint               string
-	Time                      time.Time
-	Session                   time.Time
-	PreviousTimeOnPageSeconds int    `db:"previous_time_on_page_seconds"`
-	UserAgent                 string `db:"user_agent"`
-	Path                      string
-	URL                       string
-	Title                     string
-	Language                  string
-	CountryCode               string `db:"country_code"`
-	Referrer                  string
-	ReferrerName              string `db:"referrer_name"`
-	ReferrerIcon              string `db:"referrer_icon"`
-	OS                        string
-	OSVersion                 string `db:"os_version"`
-	Browser                   string
-	BrowserVersion            string `db:"browser_version"`
-	Desktop                   bool
-	Mobile                    bool
-	ScreenWidth               int    `db:"screen_width"`
-	ScreenHeight              int    `db:"screen_height"`
-	ScreenClass               string `db:"screen_class"`
-	UTMSource                 string `db:"utm_source"`
-	UTMMedium                 string `db:"utm_medium"`
-	UTMCampaign               string `db:"utm_campaign"`
-	UTMContent                string `db:"utm_content"`
-	UTMTerm                   string `db:"utm_term"`
+	ClientID       int64 `db:"client_id"`
+	Fingerprint    string
+	Time           time.Time
+	Session        time.Time
+	Duration       int
+	UserAgent      string `db:"user_agent"`
+	Path           string
+	EntryPath      string `db:"entry_path"`
+	PageViews      int    `db:"page_views"`
+	IsBounce       bool   `db:"is_bounce"`
+	URL            string
+	Title          string
+	Language       string
+	CountryCode    string `db:"country_code"`
+	Referrer       string
+	ReferrerName   string `db:"referrer_name"`
+	ReferrerIcon   string `db:"referrer_icon"`
+	OS             string
+	OSVersion      string `db:"os_version"`
+	Browser        string
+	BrowserVersion string `db:"browser_version"`
+	Desktop        bool
+	Mobile         bool
+	ScreenWidth    int    `db:"screen_width"`
+	ScreenHeight   int    `db:"screen_height"`
+	ScreenClass    string `db:"screen_class"`
+	UTMSource      string `db:"utm_source"`
+	UTMMedium      string `db:"utm_medium"`
+	UTMCampaign    string `db:"utm_campaign"`
+	UTMContent     string `db:"utm_content"`
+	UTMTerm        string `db:"utm_term"`
 }
 
 // String implements the Stringer interface.
