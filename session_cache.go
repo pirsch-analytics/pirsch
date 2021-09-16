@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultMaxSessions = 100_000
+	defaultMaxSessions = 20_000
 )
 
 // SessionCache caches sessions.
@@ -31,21 +31,21 @@ func NewSessionCache(client Store, maxSessions int) *SessionCache {
 	}
 }
 
-func (cache *SessionCache) get(clientID int64, fingerprint string, maxAge time.Time) Session {
+func (cache *SessionCache) get(clientID int64, fingerprint string, maxAge time.Time) *Session {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.RLock()
 	session, ok := cache.sessions[key]
 	cache.m.RUnlock()
 
 	if ok && session.Time.After(maxAge) {
-		return session
+		return &session
 	}
 
 	s, _ := cache.client.Session(clientID, fingerprint, maxAge)
 	return s
 }
 
-func (cache *SessionCache) put(clientID int64, fingerprint, path string, now, session time.Time) {
+func (cache *SessionCache) put(clientID int64, fingerprint, path, entryPath string, pageViews int, now, session time.Time) {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
@@ -55,9 +55,11 @@ func (cache *SessionCache) put(clientID int64, fingerprint, path string, now, se
 	}
 
 	cache.sessions[key] = Session{
-		Path:    path,
-		Time:    now,
-		Session: session,
+		Time:      now,
+		Session:   session,
+		Path:      path,
+		EntryPath: entryPath,
+		PageViews: pageViews,
 	}
 }
 

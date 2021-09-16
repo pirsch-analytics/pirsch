@@ -7,37 +7,37 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ClientID       int64 `db:"client_id"`
-	Fingerprint    string
-	Time           time.Time
-	Session        time.Time
-	Duration       int
-	UserAgent      string `db:"user_agent"`
-	Path           string
-	EntryPath      string `db:"entry_path"`
-	PageViews      int    `db:"page_views"`
-	IsBounce       bool   `db:"is_bounce"`
-	URL            string
-	Title          string
-	Language       string
-	CountryCode    string `db:"country_code"`
-	Referrer       string
-	ReferrerName   string `db:"referrer_name"`
-	ReferrerIcon   string `db:"referrer_icon"`
-	OS             string
-	OSVersion      string `db:"os_version"`
-	Browser        string
-	BrowserVersion string `db:"browser_version"`
-	Desktop        bool
-	Mobile         bool
-	ScreenWidth    int    `db:"screen_width"`
-	ScreenHeight   int    `db:"screen_height"`
-	ScreenClass    string `db:"screen_class"`
-	UTMSource      string `db:"utm_source"`
-	UTMMedium      string `db:"utm_medium"`
-	UTMCampaign    string `db:"utm_campaign"`
-	UTMContent     string `db:"utm_content"`
-	UTMTerm        string `db:"utm_term"`
+	ClientID        int64 `db:"client_id"`
+	Fingerprint     string
+	Time            time.Time
+	Session         time.Time
+	DurationSeconds int    `db:"duration_seconds"`
+	UserAgent       string `db:"user_agent"`
+	Path            string
+	EntryPath       string `db:"entry_path"`
+	PageViews       int    `db:"page_views"`
+	IsBounce        bool   `db:"is_bounce"`
+	URL             string
+	Title           string
+	Language        string
+	CountryCode     string `db:"country_code"`
+	Referrer        string
+	ReferrerName    string `db:"referrer_name"`
+	ReferrerIcon    string `db:"referrer_icon"`
+	OS              string
+	OSVersion       string `db:"os_version"`
+	Browser         string
+	BrowserVersion  string `db:"browser_version"`
+	Desktop         bool
+	Mobile          bool
+	ScreenWidth     int    `db:"screen_width"`
+	ScreenHeight    int    `db:"screen_height"`
+	ScreenClass     string `db:"screen_class"`
+	UTMSource       string `db:"utm_source"`
+	UTMMedium       string `db:"utm_medium"`
+	UTMCampaign     string `db:"utm_campaign"`
+	UTMContent      string `db:"utm_content"`
+	UTMTerm         string `db:"utm_term"`
 }
 
 // String implements the Stringer interface.
@@ -65,9 +65,11 @@ func (event Event) String() string {
 // Session represents a visitor session as it is returned by the Client from the database.
 // This is not used for any actual statistic.
 type Session struct {
-	Path    string
-	Time    time.Time
-	Session time.Time
+	Time      time.Time
+	Session   time.Time
+	Path      string
+	EntryPath string `db:"entry_path"`
+	PageViews int    `db:"page_views"`
 }
 
 // ActiveVisitorStats is the result type for active visitor statistics.

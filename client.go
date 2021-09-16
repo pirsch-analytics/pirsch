@@ -48,7 +48,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, duration,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, duration_seconds,
 		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -62,7 +62,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 			hit.Fingerprint,
 			hit.Time,
 			hit.Session,
-			hit.Duration,
+			hit.DurationSeconds,
 			hit.UserAgent,
 			hit.Path,
 			hit.EntryPath,
@@ -114,7 +114,7 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, duration,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, duration_seconds,
 		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
@@ -129,7 +129,7 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.Fingerprint,
 			event.Time,
 			event.Session,
-			event.Duration,
+			event.DurationSeconds,
 			event.UserAgent,
 			event.Path,
 			event.EntryPath,
@@ -178,17 +178,15 @@ func (client *Client) SaveEvents(events []Event) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (Session, error) {
-	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
-	data := struct {
-		Path    string
-		Time    time.Time
-		Session time.Time
-	}{}
+func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (*Session, error) {
+	query := `SELECT time, session, path, entry_path, page_views FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
+	data := new(Session)
 
-	if err := client.DB.Get(&data, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+	if err := client.DB.Get(data, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error reading session: %s", err)
-		return Session{}, err
+		return nil, err
+	} else if err == sql.ErrNoRows {
+		return nil, nil
 	}
 
 	return data, nil

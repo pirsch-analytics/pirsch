@@ -111,22 +111,23 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 		countryCode = options.geoDB.CountryCode(getIP(r))
 	}
 
-	lastHitSeconds := 0
-	session := now
+	sessionTime := now
+	entryPath := path
+	pageViews := 1
+	isBounce := true
 
 	if options.SessionCache != nil {
 		// hits and sessions use UTC
-		s := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+		session := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
-		if !s.Time.IsZero() && s.Path != path {
-			lastHitSeconds = int(now.Sub(s.Time).Seconds())
+		if session != nil {
+			sessionTime = session.Session
+			entryPath = session.EntryPath
+			pageViews = session.PageViews + 1
+			isBounce = false
 		}
 
-		if !s.Session.IsZero() {
-			session = s.Session
-		}
-
-		options.SessionCache.put(options.ClientID, fingerprint, path, now, session)
+		options.SessionCache.put(options.ClientID, fingerprint, path, entryPath, pageViews, now, sessionTime)
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
@@ -139,34 +140,37 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
 	}
 
 	return Hit{
-		ClientID:       options.ClientID,
-		Fingerprint:    fingerprint,
-		Time:           now,
-		Session:        session,
-		Duration:       lastHitSeconds,
-		UserAgent:      userAgent,
-		Path:           path,
-		URL:            requestURL,
-		Title:          title,
-		Language:       lang,
-		CountryCode:    countryCode,
-		Referrer:       referrer,
-		ReferrerName:   referrerName,
-		ReferrerIcon:   referrerIcon,
-		OS:             uaInfo.OS,
-		OSVersion:      uaInfo.OSVersion,
-		Browser:        uaInfo.Browser,
-		BrowserVersion: uaInfo.BrowserVersion,
-		Desktop:        uaInfo.IsDesktop(),
-		Mobile:         uaInfo.IsMobile(),
-		ScreenWidth:    options.ScreenWidth,
-		ScreenHeight:   options.ScreenHeight,
-		ScreenClass:    screen,
-		UTMSource:      utm.source,
-		UTMMedium:      utm.medium,
-		UTMCampaign:    utm.campaign,
-		UTMContent:     utm.content,
-		UTMTerm:        utm.term,
+		ClientID:        options.ClientID,
+		Fingerprint:     fingerprint,
+		Time:            now,
+		Session:         sessionTime,
+		DurationSeconds: int(now.Unix() - sessionTime.Unix()),
+		UserAgent:       userAgent,
+		Path:            path,
+		EntryPath:       entryPath,
+		PageViews:       pageViews,
+		IsBounce:        isBounce,
+		URL:             requestURL,
+		Title:           title,
+		Language:        lang,
+		CountryCode:     countryCode,
+		Referrer:        referrer,
+		ReferrerName:    referrerName,
+		ReferrerIcon:    referrerIcon,
+		OS:              uaInfo.OS,
+		OSVersion:       uaInfo.OSVersion,
+		Browser:         uaInfo.Browser,
+		BrowserVersion:  uaInfo.BrowserVersion,
+		Desktop:         uaInfo.IsDesktop(),
+		Mobile:          uaInfo.IsMobile(),
+		ScreenWidth:     options.ScreenWidth,
+		ScreenHeight:    options.ScreenHeight,
+		ScreenClass:     screen,
+		UTMSource:       utm.source,
+		UTMMedium:       utm.medium,
+		UTMCampaign:     utm.campaign,
+		UTMContent:      utm.content,
+		UTMTerm:         utm.term,
 	}
 }
 

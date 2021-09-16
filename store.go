@@ -12,8 +12,8 @@ type Store interface {
 	// SaveEvents saves given events.
 	SaveEvents([]Event) error
 
-	// Session returns the last path, time, and session timestamp for given client, fingerprint, and maximum age.
-	Session(int64, string, time.Time) (Session, error)
+	// Session returns the last time, session timestamp, path, entry path, and page views for given client, fingerprint, and maximum age.
+	Session(int64, string, time.Time) (*Session, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)

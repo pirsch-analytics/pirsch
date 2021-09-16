@@ -10,6 +10,7 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
+	cleanupDB()
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
@@ -27,9 +28,12 @@ func TestHitFromRequest(t *testing.T) {
 
 	if hit.Time.IsZero() ||
 		hit.Session.IsZero() ||
-		hit.Duration != 0 ||
+		hit.DurationSeconds != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
+		hit.EntryPath != "/test/path" ||
+		hit.PageViews != 1 ||
+		!hit.IsBounce ||
 		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
 		hit.Title != "title" ||
 		hit.Language != "de" ||
@@ -63,15 +67,23 @@ func TestHitFromRequestSession(t *testing.T) {
 	})
 	assert.Equal(t, int64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
+	assert.Equal(t, "/test/path", hit1.Path)
+	assert.Equal(t, "/test/path", hit1.EntryPath)
+	assert.Equal(t, 0, hit1.DurationSeconds)
+	assert.True(t, hit1.IsBounce)
 
-	// to count as page switch for time on page
-	assert.False(t, sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Time.IsZero())
-	assert.False(t, sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Session.IsZero())
-	assert.Equal(t, "/test/path", sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Path)
+	session := sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)]
+	assert.False(t, session.Time.IsZero())
+	assert.False(t, session.Session.IsZero())
+	assert.Equal(t, "/test/path", session.Path)
+	assert.Equal(t, "/test/path", session.EntryPath)
+	assert.Equal(t, 1, session.PageViews)
 	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = Session{
-		Path:    "/different/path",
-		Time:    time.Now().UTC().Add(-time.Second * 5),
-		Session: sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)].Session,
+		Time:      session.Time,
+		Session:   session.Session.Add(-time.Second * 5), // manipulate the time the session was created
+		Path:      "/different/path",
+		EntryPath: session.EntryPath,
+		PageViews: session.PageViews,
 	}
 
 	hit2 := HitFromRequest(req, "salt", &HitOptions{
@@ -79,8 +91,10 @@ func TestHitFromRequestSession(t *testing.T) {
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
 	assert.NotEmpty(t, hit2.Fingerprint)
-	assert.Equal(t, 5, hit2.Duration)
-	assert.Equal(t, hit1.Session.Unix(), hit2.Session.Unix())
+	assert.Equal(t, "/test/path", hit2.Path)
+	assert.Equal(t, "/test/path", hit2.EntryPath)
+	assert.Equal(t, 5, hit2.DurationSeconds)
+	assert.False(t, hit2.IsBounce)
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {

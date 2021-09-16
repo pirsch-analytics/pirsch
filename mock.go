@@ -38,16 +38,12 @@ func (client *MockClient) SaveEvents(events []Event) error {
 }
 
 // Session implements the Store interface.
-func (client *MockClient) Session(clientID int64, fingerprint string, maxAge time.Time) (Session, error) {
+func (client *MockClient) Session(clientID int64, fingerprint string, maxAge time.Time) (*Session, error) {
 	if client.ReturnSession != nil {
-		return *client.ReturnSession, nil
+		return client.ReturnSession, nil
 	}
 
-	return Session{
-		Path:    "",
-		Time:    time.Now().UTC(),
-		Session: time.Now().UTC(),
-	}, nil
+	return nil, nil
 }
 
 // Count implements the Store interface.

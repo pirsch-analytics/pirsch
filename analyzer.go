@@ -1,12 +1,6 @@
 package pirsch
 
-import (
-	"errors"
-	"fmt"
-	"time"
-)
-
-const (
+/*const (
 	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
@@ -1009,4 +1003,4 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 
 	filter.validate()
 	return filter
-}
+}*/
