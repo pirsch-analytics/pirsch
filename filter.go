@@ -46,6 +46,8 @@ type Filter struct {
 	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path string
 
+	// TODO EntryPath, ExitPath
+
 	// PathPattern filters for the path using a (ClickHouse supported) regex pattern.
 	// Note that if this and Path are both set, Path will be preferred.
 	// Examples for useful patterns (all case-insensitive, * is used for every character but slashes, ** is used for all characters including slashes):
