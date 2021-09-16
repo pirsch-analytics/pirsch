@@ -24,7 +24,7 @@ func TestHitFromRequest(t *testing.T) {
 	})
 	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotEmpty(t, hit.Fingerprint)
-	assert.NoError(t, dbClient.SaveHits([]Hit{hit}))
+	assert.NoError(t, dbClient.SaveHits([]Hit{*hit}))
 
 	if hit.Time.IsZero() ||
 		hit.Session.IsZero() ||
@@ -78,19 +78,15 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, "/test/path", session.Path)
 	assert.Equal(t, "/test/path", session.EntryPath)
 	assert.Equal(t, 1, session.PageViews)
-	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = Session{
-		Time:      session.Time,
-		Session:   session.Session.Add(-time.Second * 5), // manipulate the time the session was created
-		Path:      "/different/path",
-		EntryPath: session.EntryPath,
-		PageViews: session.PageViews,
-	}
+	session.Time = session.Time.Add(-time.Second * 5) // manipulate the time the session was created
+	session.Path = "/different/path"
+	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = session
 
 	hit2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
 	assert.Equal(t, int64(0), hit2.ClientID)
-	assert.NotEmpty(t, hit2.Fingerprint)
+	assert.Equal(t, hit1.Fingerprint, hit2.Fingerprint)
 	assert.Equal(t, "/test/path", hit2.Path)
 	assert.Equal(t, "/test/path", hit2.EntryPath)
 	assert.Equal(t, 5, hit2.DurationSeconds)
@@ -100,7 +96,8 @@ func TestHitFromRequestSession(t *testing.T) {
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit := HitFromRequest(req, "salt", &HitOptions{
-		URL: "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
+		SessionCache: NewSessionCache(dbClient, 100),
+		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
 	if hit.Path != "/new/custom/path" ||
@@ -112,9 +109,10 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit := HitFromRequest(req, "salt", &HitOptions{
-		URL:      "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
-		Path:     "/new/custom/path",
-		Referrer: "http://custom.ref/",
+		SessionCache: NewSessionCache(dbClient, 100),
+		URL:          "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
+		Path:         "/new/custom/path",
+		Referrer:     "http://custom.ref/",
 	})
 
 	if hit.Path != "/new/custom/path" ||
@@ -127,6 +125,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit := HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  -5,
 		ScreenHeight: 400,
 	})
@@ -136,6 +135,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	}
 
 	hit = HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
@@ -145,6 +145,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	}
 
 	hit = HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -155,6 +156,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 }
 
 func TestHitFromRequestCountryCode(t *testing.T) {
+	sessionCache := NewSessionCache(dbClient, 100)
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
 	})
@@ -166,7 +168,8 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
 	hit := HitFromRequest(req, "salt", &HitOptions{
-		geoDB: geoDB,
+		SessionCache: sessionCache,
+		geoDB:        geoDB,
 	})
 
 	if hit.CountryCode != "gb" {
@@ -176,7 +179,8 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
 	hit = HitFromRequest(req, "salt", &HitOptions{
-		geoDB: geoDB,
+		SessionCache: sessionCache,
+		geoDB:        geoDB,
 	})
 
 	if hit.CountryCode != "" {

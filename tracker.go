@@ -159,7 +159,11 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		tracker.hits <- HitFromRequest(r, tracker.salt, options)
+		hit := HitFromRequest(r, tracker.salt, options)
+
+		if hit != nil {
+			tracker.hits <- *hit
+		}
 	}
 }
 
@@ -187,12 +191,16 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		tracker.events <- Event{
-			Hit:             HitFromRequest(r, tracker.salt, options),
-			Name:            strings.TrimSpace(eventOptions.Name),
-			DurationSeconds: eventOptions.Duration,
-			MetaKeys:        metaKeys,
-			MetaValues:      metaValues,
+		hit := HitFromRequest(r, tracker.salt, options)
+
+		if hit != nil {
+			tracker.events <- Event{
+				Hit:             *hit,
+				Name:            strings.TrimSpace(eventOptions.Name),
+				DurationSeconds: eventOptions.Duration,
+				MetaKeys:        metaKeys,
+				MetaValues:      metaValues,
+			}
 		}
 	}
 }

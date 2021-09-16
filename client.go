@@ -178,18 +178,18 @@ func (client *Client) SaveEvents(events []Event) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (*Session, error) {
-	query := `SELECT time, session, path, entry_path, page_views FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
-	data := new(Session)
+func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (*Hit, error) {
+	query := `SELECT * FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
+	hit := new(Hit)
 
-	if err := client.DB.Get(data, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+	if err := client.DB.Get(hit, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error reading session: %s", err)
 		return nil, err
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	}
 
-	return data, nil
+	return hit, nil
 }
 
 // Count implements the Store interface.

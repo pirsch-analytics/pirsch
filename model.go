@@ -62,16 +62,6 @@ func (event Event) String() string {
 	return string(out)
 }
 
-// Session represents a visitor session as it is returned by the Client from the database.
-// This is not used for any actual statistic.
-type Session struct {
-	Time      time.Time
-	Session   time.Time
-	Path      string
-	EntryPath string `db:"entry_path"`
-	PageViews int    `db:"page_views"`
-}
-
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
 	Path     string `json:"path"`

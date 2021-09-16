@@ -125,22 +125,22 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	args, filterQuery := filter.query()
 	var query string
 
-	// TODO
 	if table == "hit" {
-		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
-			sum(sessions) sessions,
+		query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
+			count(DISTINCT(fingerprint, session)) sessions,
 			sum(views) views,
-			countIf(bounce = 1) bounces
+			countIf(is_bounce) bounces
 			FROM (
-				SELECT count(DISTINCT fingerprint) visitors,
-				count(DISTINCT(fingerprint, session)) sessions,
-				count(*) views,
-				length(groupArray(path)) = 1 bounce
-				FROM hit
+				SELECT fingerprint,
+				session,
+				argMax(page_views, time) views,
+				argMax(is_bounce, time) is_bounce
+				FROM "hit"
 				WHERE %s
-				GROUP BY toDate(time, '%s'), fingerprint
+				GROUP BY toDate(time, '%s'), fingerprint, session
 			)`, filterQuery, filter.Timezone.String())
 	} else {
+		// TODO sessions for events?
 		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
 			sum(views) views
 			FROM (
@@ -847,6 +847,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	return stats, nil
 }
 
+// TODO embed in Growth?
 // TotalSessionDuration returns the total session duration in seconds.
 func (analyzer *Analyzer) TotalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
@@ -949,6 +950,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	return stats, nil
 }
 
+// TODO embed in Growth?
 // TotalTimeOnPage returns the total time on page in seconds.
 func (analyzer *Analyzer) TotalTimeOnPage(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
