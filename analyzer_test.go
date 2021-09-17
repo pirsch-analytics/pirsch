@@ -461,12 +461,12 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 func TestAnalyzer_PageConversions(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: Today(), Path: "/"},
-		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
-		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
-		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
-		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
-		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes"},
+		{Fingerprint: "fp1", Time: Today(), Path: "/", PageViews: 1},
+		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page", PageViews: 1},
+		{Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page", PageViews: 2},
+		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/", PageViews: 1},
+		{Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/siMple/page/", PageViews: 2},
+		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes", PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

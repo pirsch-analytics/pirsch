@@ -509,8 +509,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	filter.PathPattern = ""
 	filter.EventName = ""
 	filterArgs, filterQuery := filter.query()
-	// TODO
-	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
+	query := fmt.Sprintf(`SELECT sum(1) visitors,
 		sum(views) views,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
@@ -518,10 +517,10 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 			WHERE %s
 		), 1) cr
 		FROM (
-			SELECT count(DISTINCT fingerprint) visitors,
-			count(*) views
+			SELECT argMax(page_views, time) views
 			FROM %s
 			WHERE %s
+			GROUP BY fingerprint, session
 		)
 		ORDER BY visitors DESC`, filterQuery, table, filterQueryPath)
 	args := make([]interface{}, 0, len(filterArgs)+len(filterArgsPath))
