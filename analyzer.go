@@ -541,7 +541,6 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	filterArgs, filterQuery := filter.query()
 	filter.EventName = ""
 	crFilterArgs, crFilterQuery := filter.query()
-	// TODO
 	query := fmt.Sprintf(`SELECT event_name,
 		sum(visitors) visitors,
 		sum(views) views,
@@ -556,11 +555,11 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 			SELECT event_name,
 			groupUniqArrayArray(event_meta_keys) meta_keys,
 			count(DISTINCT fingerprint) visitors,
-			count(*) views,
+			argMax(page_views, time) views,
 			avg(event_duration_seconds) avg_duration
 			FROM event
 			WHERE %s
-			GROUP BY event_name
+			GROUP BY fingerprint, session, event_name
 		)
 		GROUP BY event_name
 		ORDER BY visitors DESC, event_name
@@ -589,7 +588,6 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 	filterArgs, filterQuery := filter.query()
 	filter.EventName = ""
 	crFilterArgs, crFilterQuery := filter.query()
-	// TODO
 	query := fmt.Sprintf(`SELECT event_name,
 		sum(visitors) visitors,
 		sum(views) views,
@@ -603,13 +601,13 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 		FROM (
 			SELECT event_name,
 			count(DISTINCT fingerprint) visitors,
-			count(*) views,
+			argMax(page_views, time) views,
 			avg(event_duration_seconds) avg_duration,
 			event_meta_values[indexOf(event_meta_keys, ?)] meta_value
 			FROM event
 			WHERE %s
 			AND has(event_meta_keys, ?)
-			GROUP BY event_name, meta_value
+			GROUP BY fingerprint, session, event_name, meta_value
 		)
 		GROUP BY event_name, meta_value
 		ORDER BY visitors DESC, meta_value
