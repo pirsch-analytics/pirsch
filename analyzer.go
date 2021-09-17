@@ -98,7 +98,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 			argMax(is_bounce, time) is_bounce
 			FROM %s
 			WHERE %s
-			GROUP BY day, fingerprint, session
+			GROUP BY fingerprint, session, day
 		)
 		GROUP BY day
 		ORDER BY day ASC %s, visitors DESC`, timezone, filter.table(), filterQuery, withFillQuery)
@@ -137,7 +137,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 				argMax(is_bounce, time) is_bounce
 				FROM "hit"
 				WHERE %s
-				GROUP BY toDate(time, '%s'), fingerprint, session
+				GROUP BY fingerprint, session, toDate(time, '%s')
 			)`, filterQuery, filter.Timezone.String())
 	} else {
 		// TODO sessions for events
@@ -148,7 +148,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 				count(*) views
 				FROM event
 				WHERE %s
-				GROUP BY toDate(time, '%s'), fingerprint
+				GROUP BY fingerprint, toDate(time, '%s')
 			)`, filterQuery, filter.Timezone.String())
 	}
 
@@ -221,7 +221,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 			FROM hit
 			WHERE %s
 			AND session != 0
-			GROUP BY day, fingerprint, session
+			GROUP BY fingerprint, session, day
 		)`, filter.Timezone.String(), filterQuery)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -251,7 +251,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time
+				ORDER BY fingerprint, time, session
 			)
 			%s
 		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
@@ -887,6 +887,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
 	args = append(args, withFillArgs...)
+	// TODO
 	query := fmt.Sprintf(`SELECT day,
 		toUInt64(avg(duration)) average_time_spent_seconds
 		FROM (
@@ -894,7 +895,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 			sum(duration_seconds) duration
 			FROM hit
 			WHERE %s
-			GROUP BY day, fingerprint, session
+			GROUP BY fingerprint, session, day
 		)
 		WHERE duration != 0
 		GROUP BY day
@@ -924,23 +925,24 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 		title = ",title"
 	}
 
-	// TODO
 	query := fmt.Sprintf(`SELECT path %s,
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT path %s,
+			SELECT *,
+			neighbor(session, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time
+				ORDER BY fingerprint, time, session
 			)
-			WHERE time_on_page > 0
-			%s
 		)
+		WHERE time_on_page != 0
+		AND session = s
+		%s
 		GROUP BY path %s
-		ORDER BY path %s`, title, title, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, title, title)
+		ORDER BY path %s`, title, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, title, title)
 	timeArgs = append(timeArgs, fieldArgs...)
 	var stats []TimeSpentStats
 
@@ -962,7 +964,6 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
-	// TODO
 	query := fmt.Sprintf(`SELECT day,
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
