@@ -86,19 +86,19 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	timezone := filter.Timezone.String()
 	query := fmt.Sprintf(`SELECT day,
 		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session)) sessions,
+		count(DISTINCT(fingerprint, session_id)) sessions,
 		sum(views) views,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
 			SELECT toDate(time, '%s') day,
 			fingerprint,
-			session,
+			session_id,
 			argMax(page_views, time) views,
 			argMax(is_bounce, time) is_bounce
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session, day
+			GROUP BY fingerprint, session_id, day
 		)
 		GROUP BY day
 		ORDER BY day ASC %s, visitors DESC`, timezone, filter.table(), filterQuery, withFillQuery)
@@ -127,17 +127,17 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if table == "hit" {
 		query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
-			count(DISTINCT(fingerprint, session)) sessions,
+			count(DISTINCT(fingerprint, session_id)) sessions,
 			sum(views) views,
 			countIf(is_bounce) bounces
 			FROM (
 				SELECT fingerprint,
-				session,
+				session_id,
 				argMax(page_views, time) views,
 				argMax(is_bounce, time) is_bounce
 				FROM "hit"
 				WHERE %s
-				GROUP BY fingerprint, session, toDate(time, '%s')
+				GROUP BY fingerprint, session_id, toDate(time, '%s')
 			)`, filterQuery, filter.Timezone.String())
 	} else {
 		// TODO sessions for events
@@ -221,7 +221,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 			FROM hit
 			WHERE %s
 			AND session != 0
-			GROUP BY fingerprint, session, day
+			GROUP BY fingerprint, session_id, day
 		)`, filter.Timezone.String(), filterQuery)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -251,7 +251,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session
+				ORDER BY fingerprint, time, session_id
 			)
 			%s
 		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
@@ -303,7 +303,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	query := fmt.Sprintf(`SELECT arrayJoin(paths) path,
 		%s
 		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session)) sessions,
+		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM %s
@@ -315,7 +315,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 				SELECT argMax(page_views, time) views
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session
+				GROUP BY fingerprint, session_id
 			)
 		), 1) relative_views,
 		countIf(is_bounce) bounces,
@@ -325,10 +325,10 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			%s
 			length(paths) = 1 is_bounce,
 			fingerprint,
-			session
+			session_id
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, %s session
+			GROUP BY fingerprint, %s session_id
 		)
 		GROUP BY path %s
 		ORDER BY visitors DESC, %s path ASC
@@ -398,12 +398,12 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 			countIf(prev_fingerprint != fingerprint) entries
 			FROM (
 				SELECT fingerprint,
-				"session",
+				session_id,
 				path,
 				%s
 				neighbor("fingerprint", -1) prev_fingerprint
 				FROM (
-					SELECT fingerprint, "session", path %s
+					SELECT fingerprint, session_id, path %s
 					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
@@ -475,12 +475,12 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 			exits/visitors exit_rate
 			FROM (
 				SELECT fingerprint,
-				"session",
+				session_id,
 				path,
 				%s
 				neighbor("fingerprint", 1) next_fingerprint
 				FROM (
-					SELECT fingerprint, "session", path %s
+					SELECT fingerprint, session_id, path %s
 					FROM %s
 					WHERE %s
 					ORDER BY fingerprint, "time"
@@ -520,7 +520,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 			SELECT argMax(page_views, time) views
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session
+			GROUP BY fingerprint, session_id
 		)
 		ORDER BY visitors DESC`, filterQuery, table, filterQueryPath)
 	args := make([]interface{}, 0, len(filterArgs)+len(filterArgsPath))
@@ -559,7 +559,7 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 			avg(event_duration_seconds) avg_duration
 			FROM event
 			WHERE %s
-			GROUP BY fingerprint, session, event_name
+			GROUP BY fingerprint, session_id, event_name
 		)
 		GROUP BY event_name
 		ORDER BY visitors DESC, event_name
@@ -607,7 +607,7 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 			FROM event
 			WHERE %s
 			AND has(event_meta_keys, ?)
-			GROUP BY fingerprint, session, event_name, meta_value
+			GROUP BY fingerprint, session_id, event_name, meta_value
 		)
 		GROUP BY event_name, meta_value
 		ORDER BY visitors DESC, meta_value
@@ -637,7 +637,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		referrer_name,
 		referrer_icon,
 		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session)) sessions,
+		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM %s
@@ -647,14 +647,14 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
 			SELECT fingerprint,
-			session,
+			session_id,
 			referrer,
 			referrer_name,
 			referrer_icon,
 			argMax(is_bounce, time) is_bounce
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session, referrer, referrer_name, referrer_icon
+			GROUP BY fingerprint, session_id, referrer, referrer_name, referrer_icon
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
@@ -895,7 +895,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 			sum(duration_seconds) duration
 			FROM hit
 			WHERE %s
-			GROUP BY fingerprint, session, day
+			GROUP BY fingerprint, session_id, day
 		)
 		WHERE duration != 0
 		GROUP BY day
@@ -929,17 +929,17 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT *,
-			neighbor(session, 1, null) s,
+			neighbor(session_id, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session
+				ORDER BY fingerprint, time, session_id
 			)
 		)
 		WHERE time_on_page > 0
-		AND session = s
+		AND session_id = s
 		%s
 		GROUP BY path %s
 		ORDER BY path %s`, title, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, title, title)
@@ -968,16 +968,16 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
-			neighbor(session, 1, null) s,
+			neighbor(session_id, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session
+				ORDER BY fingerprint, time, session_id
 			)
 			WHERE time_on_page > 0
-			AND session = s
+			AND session_id = s
 			%s
 		)
 		GROUP BY day
