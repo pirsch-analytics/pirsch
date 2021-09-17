@@ -140,7 +140,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 				GROUP BY toDate(time, '%s'), fingerprint, session
 			)`, filterQuery, filter.Timezone.String())
 	} else {
-		// TODO sessions for events?
+		// TODO sessions for events
 		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
 			sum(views) views
 			FROM (
@@ -887,15 +887,13 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args, filterQuery := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
 	args = append(args, withFillArgs...)
-	// TODO
 	query := fmt.Sprintf(`SELECT day,
 		toUInt64(avg(duration)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
-			max(time)-min(time) duration
+			sum(duration_seconds) duration
 			FROM hit
 			WHERE %s
-			AND session != 0
 			GROUP BY day, fingerprint, session
 		)
 		WHERE duration != 0
