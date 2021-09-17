@@ -48,7 +48,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session_id, duration_seconds,
 		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -61,7 +61,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		_, err := query.Exec(hit.ClientID,
 			hit.Fingerprint,
 			hit.Time,
-			hit.Session,
+			hit.SessionID,
 			hit.DurationSeconds,
 			hit.UserAgent,
 			hit.Path,
@@ -114,7 +114,7 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, duration_seconds,
 		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
@@ -128,7 +128,7 @@ func (client *Client) SaveEvents(events []Event) error {
 		_, err := query.Exec(event.ClientID,
 			event.Fingerprint,
 			event.Time,
-			event.Session,
+			event.SessionID,
 			event.DurationSeconds,
 			event.UserAgent,
 			event.Path,
@@ -178,7 +178,7 @@ func (client *Client) SaveEvents(events []Event) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (*Hit, error) {
+func (client *Client) Session(clientID uint64, fingerprint string, maxAge time.Time) (*Hit, error) {
 	query := `SELECT * FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
 	hit := new(Hit)
 

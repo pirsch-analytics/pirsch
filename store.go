@@ -13,7 +13,7 @@ type Store interface {
 	SaveEvents([]Event) error
 
 	// Session returns the last hit for given client, fingerprint, and maximum age.
-	Session(int64, string, time.Time) (*Hit, error)
+	Session(uint64, string, time.Time) (*Hit, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)

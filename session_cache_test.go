@@ -3,6 +3,7 @@ package pirsch
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -15,7 +16,7 @@ func TestSessionCache(t *testing.T) {
 	assert.Nil(t, session)
 	client.ReturnSession = &Hit{
 		Time:      time.Now().Add(-time.Second * 15),
-		Session:   time.Now().Add(-time.Second * 20),
+		SessionID: rand.Uint32(),
 		Path:      "/",
 		EntryPath: "/entry",
 		PageViews: 3,
@@ -24,26 +25,26 @@ func TestSessionCache(t *testing.T) {
 	assert.NotNil(t, session)
 	assert.Equal(t, "/", session.Path)
 	assert.Equal(t, "/entry", session.EntryPath)
-	assert.Equal(t, 3, session.PageViews)
+	assert.Equal(t, uint16(3), session.PageViews)
 	client.ReturnSession = nil
 	cache.put(1, "fp", &Hit{
 		Path:      session.Path,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
 		Time:      session.Time,
-		Session:   session.Session,
+		SessionID: session.SessionID,
 	})
 	session = cache.get(1, "fp", time.Now().Add(-time.Second*20))
 	assert.NotNil(t, session)
 	assert.Equal(t, "/", session.Path)
 	assert.Equal(t, "/entry", session.EntryPath)
-	assert.Equal(t, 3, session.PageViews)
+	assert.Equal(t, uint16(3), session.PageViews)
 	cache.put(1, "fp", &Hit{
 		Path:      session.Path,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
 		Time:      time.Now().Add(-time.Second * 21),
-		Session:   time.Now().Add(-time.Second * 21),
+		SessionID: rand.Uint32(),
 	})
 	session = cache.get(1, "fp", time.Now().Add(-time.Second*20))
 	assert.Nil(t, session)
@@ -54,7 +55,7 @@ func TestSessionCache(t *testing.T) {
 			EntryPath: "/bar",
 			PageViews: 42,
 			Time:      time.Now(),
-			Session:   time.Now(),
+			SessionID: rand.Uint32(),
 		})
 	}
 
@@ -67,7 +68,7 @@ func TestSessionCache(t *testing.T) {
 		EntryPath: "/bar",
 		PageViews: 42,
 		Time:      time.Now(),
-		Session:   time.Now(),
+		SessionID: rand.Uint32(),
 	})
 	assert.Len(t, cache.sessions, 1)
 	session = cache.get(1, "fp", time.Now().Add(-time.Minute))

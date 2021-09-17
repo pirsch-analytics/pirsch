@@ -140,11 +140,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req2, nil)
 	tracker.Stop()
 	assert.Len(t, client.Hits, 2)
-
-	// ignore order...
-	if client.Hits[0].Session.IsZero() || client.Hits[1].Session.IsZero() {
-		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
-	}
+	assert.Equal(t, client.Hits[0].SessionID, client.Hits[1].SessionID)
 }
 
 func TestTrackerHitIgnoreSubdomain(t *testing.T) {
@@ -304,11 +300,7 @@ func TestTrackerEventSession(t *testing.T) {
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
 	assert.Len(t, client.Events, 2)
-
-	// ignore order...
-	if client.Events[0].Session.IsZero() || client.Events[1].Session.IsZero() {
-		t.Fatalf("Hits not as expected: %v %v", client.Events[0], client.Events[1])
-	}
+	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
 }
 
 func TestTrackerEventIgnoreSubdomain(t *testing.T) {

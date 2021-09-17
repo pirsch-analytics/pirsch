@@ -27,7 +27,7 @@ func TestHitFromRequest(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{*hit}))
 
 	if hit.Time.IsZero() ||
-		hit.Session.IsZero() ||
+		hit.SessionID == 0 ||
 		hit.DurationSeconds != 0 ||
 		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
@@ -65,19 +65,19 @@ func TestHitFromRequestSession(t *testing.T) {
 	hit1 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Equal(t, int64(0), hit1.ClientID)
+	assert.Equal(t, uint64(0), hit1.ClientID)
 	assert.NotEmpty(t, hit1.Fingerprint)
 	assert.Equal(t, "/test/path", hit1.Path)
 	assert.Equal(t, "/test/path", hit1.EntryPath)
-	assert.Equal(t, 0, hit1.DurationSeconds)
+	assert.Equal(t, uint32(0), hit1.DurationSeconds)
 	assert.True(t, hit1.IsBounce)
 
 	session := sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)]
 	assert.False(t, session.Time.IsZero())
-	assert.False(t, session.Session.IsZero())
+	assert.NotEqual(t, uint32(0), session.SessionID)
 	assert.Equal(t, "/test/path", session.Path)
 	assert.Equal(t, "/test/path", session.EntryPath)
-	assert.Equal(t, 1, session.PageViews)
+	assert.Equal(t, uint16(1), session.PageViews)
 	session.Time = session.Time.Add(-time.Second * 5) // manipulate the time the session was created
 	session.Path = "/different/path"
 	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = session
@@ -85,11 +85,11 @@ func TestHitFromRequestSession(t *testing.T) {
 	hit2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Equal(t, int64(0), hit2.ClientID)
+	assert.Equal(t, uint64(0), hit2.ClientID)
 	assert.Equal(t, hit1.Fingerprint, hit2.Fingerprint)
 	assert.Equal(t, "/test/path", hit2.Path)
 	assert.Equal(t, "/test/path", hit2.EntryPath)
-	assert.Equal(t, 5, hit2.DurationSeconds)
+	assert.Equal(t, uint32(5), hit2.DurationSeconds)
 	assert.False(t, hit2.IsBounce)
 }
 
@@ -126,7 +126,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
-		ScreenWidth:  -5,
+		ScreenWidth:  0,
 		ScreenHeight: 400,
 	})
 
@@ -373,7 +373,7 @@ func TestShortenString(t *testing.T) {
 	}
 }
 
-func TestGetIntQueryParam(t *testing.T) {
+func TestGetUInt16QueryParam(t *testing.T) {
 	input := []string{
 		"",
 		"   ",
@@ -381,7 +381,7 @@ func TestGetIntQueryParam(t *testing.T) {
 		"32asdf",
 		"42",
 	}
-	expected := []int{
+	expected := []uint16{
 		0,
 		0,
 		0,
@@ -390,8 +390,36 @@ func TestGetIntQueryParam(t *testing.T) {
 	}
 
 	for i, in := range input {
-		if out := getIntQueryParam(in); out != expected[i] {
+		if out := getUInt16QueryParam(in); out != expected[i] {
 			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
 		}
 	}
+}
+
+func TestGetUInt64QueryParam(t *testing.T) {
+	input := []string{
+		"",
+		"   ",
+		"asdf",
+		"32asdf",
+		"42",
+	}
+	expected := []uint64{
+		0,
+		0,
+		0,
+		0,
+		42,
+	}
+
+	for i, in := range input {
+		if out := getUInt64QueryParam(in); out != expected[i] {
+			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
+		}
+	}
+}
+
+func TestGetURLQueryParam(t *testing.T) {
+	assert.Equal(t, "https://test.com/foo/bar?param=value#anchor", getURLQueryParam("https://test.com/foo/bar?param=value#anchor"))
+	assert.Empty(t, getURLQueryParam("test"))
 }

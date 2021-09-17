@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -28,7 +29,7 @@ type HitOptions struct {
 	SessionCache *SessionCache
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
-	ClientID int64
+	ClientID uint64
 
 	// SessionMaxAge defines the maximum time a session stays active.
 	// A session is kept active if requests are made within the time frame.
@@ -61,10 +62,10 @@ type HitOptions struct {
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
 	// ScreenWidth sets the screen width to be stored with the hit.
-	ScreenWidth int
+	ScreenWidth uint16
 
 	// ScreenHeight sets the screen height to be stored with the hit.
-	ScreenHeight int
+	ScreenHeight uint16
 
 	geoDB *GeoDB
 }
@@ -123,7 +124,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
 			ClientID:       options.ClientID,
 			Fingerprint:    fingerprint,
 			Time:           now,
-			Session:        now,
+			SessionID:      rand.Uint32(),
 			UserAgent:      userAgent,
 			Path:           path,
 			EntryPath:      path,
@@ -152,7 +153,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
 			UTMTerm:        utm.term,
 		}
 	} else {
-		hit.DurationSeconds = int(now.Unix() - hit.Time.Unix())
+		hit.DurationSeconds = uint32(now.Unix() - hit.Time.Unix())
 		hit.IsBounce = hit.IsBounce && path == hit.Path
 		hit.Time = now
 		hit.Path = path
@@ -219,12 +220,12 @@ func IgnoreHit(r *http.Request) bool {
 func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
-		ClientID:     getInt64QueryParam(query.Get("client_id")),
+		ClientID:     getUInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Title:        strings.TrimSpace(query.Get("t")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
-		ScreenWidth:  getIntQueryParam(query.Get("w")),
-		ScreenHeight: getIntQueryParam(query.Get("h")),
+		ScreenWidth:  getUInt16QueryParam(query.Get("w")),
+		ScreenHeight: getUInt16QueryParam(query.Get("h")),
 	}
 }
 
@@ -291,14 +292,14 @@ func shortenString(str string, n int) string {
 	return str
 }
 
-func getIntQueryParam(param string) int {
+func getUInt16QueryParam(param string) uint16 {
 	i, _ := strconv.Atoi(param)
-	return i
+	return uint16(i)
 }
 
-func getInt64QueryParam(param string) int64 {
+func getUInt64QueryParam(param string) uint64 {
 	i, _ := strconv.Atoi(param)
-	return int64(i)
+	return uint64(i)
 }
 
 func getURLQueryParam(param string) string {

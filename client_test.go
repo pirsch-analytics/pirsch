@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"github.com/stretchr/testify/assert"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -20,7 +21,7 @@ func TestClient_SaveHit(t *testing.T) {
 			ClientID:        1,
 			Fingerprint:     "fp",
 			Time:            time.Now(),
-			Session:         time.Now(),
+			SessionID:       rand.Uint32(),
 			DurationSeconds: 42,
 			UserAgent:       "ua",
 			Path:            "/path",
@@ -60,7 +61,7 @@ func TestClient_SaveEvent(t *testing.T) {
 				ClientID:        1,
 				Fingerprint:     "fp",
 				Time:            time.Now(),
-				Session:         time.Now(),
+				SessionID:       rand.Uint32(),
 				DurationSeconds: 42,
 				UserAgent:       "ua",
 				Path:            "/path",
@@ -109,7 +110,7 @@ func TestClient_Session(t *testing.T) {
 			ClientID:    1,
 			Fingerprint: fp,
 			Time:        now.Add(-time.Second * 20),
-			Session:     now.Add(-time.Second * 20),
+			SessionID:   rand.Uint32(),
 			UserAgent:   "ua",
 			Path:        "/path1",
 			EntryPath:   "/entry1",
@@ -119,7 +120,7 @@ func TestClient_Session(t *testing.T) {
 			ClientID:    1,
 			Fingerprint: fp,
 			Time:        now,
-			Session:     now,
+			SessionID:   123456,
 			UserAgent:   "ua",
 			Path:        "/path2",
 			EntryPath:   "/entry2",
@@ -129,7 +130,7 @@ func TestClient_Session(t *testing.T) {
 			ClientID:    1,
 			Fingerprint: fp,
 			Time:        now.Add(-time.Second * 10),
-			Session:     now.Add(-time.Second * 10),
+			SessionID:   rand.Uint32(),
 			UserAgent:   "ua",
 			Path:        "/path3",
 			EntryPath:   "/entry3",
@@ -139,8 +140,8 @@ func TestClient_Session(t *testing.T) {
 	session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Minute))
 	assert.NoError(t, err)
 	assert.Equal(t, now.Unix(), session.Time.Unix())
-	assert.Equal(t, now.Unix(), session.Session.Unix())
+	assert.Equal(t, uint32(123456), session.SessionID)
 	assert.Equal(t, "/path2", session.Path)
 	assert.Equal(t, "/entry2", session.EntryPath)
-	assert.Equal(t, 3, session.PageViews)
+	assert.Equal(t, uint16(3), session.PageViews)
 }

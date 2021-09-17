@@ -31,7 +31,7 @@ func NewSessionCache(client Store, maxSessions int) *SessionCache {
 	}
 }
 
-func (cache *SessionCache) get(clientID int64, fingerprint string, maxAge time.Time) *Hit {
+func (cache *SessionCache) get(clientID uint64, fingerprint string, maxAge time.Time) *Hit {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.RLock()
 	hit, ok := cache.sessions[key]
@@ -45,7 +45,7 @@ func (cache *SessionCache) get(clientID int64, fingerprint string, maxAge time.T
 	return s
 }
 
-func (cache *SessionCache) put(clientID int64, fingerprint string, hit *Hit) {
+func (cache *SessionCache) put(clientID uint64, fingerprint string, hit *Hit) {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
@@ -57,6 +57,6 @@ func (cache *SessionCache) put(clientID int64, fingerprint string, hit *Hit) {
 	cache.sessions[key] = *hit
 }
 
-func (cache *SessionCache) getKey(clientID int64, fingerprint string) string {
+func (cache *SessionCache) getKey(clientID uint64, fingerprint string) string {
 	return fmt.Sprintf("%d%s", clientID, fingerprint)
 }

@@ -7,15 +7,15 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ClientID        int64 `db:"client_id"`
+	ClientID        uint64 `db:"client_id"`
 	Fingerprint     string
 	Time            time.Time
-	Session         time.Time
-	DurationSeconds int    `db:"duration_seconds"`
+	SessionID       uint32 `db:"session_id"`
+	DurationSeconds uint32 `db:"duration_seconds"`
 	UserAgent       string `db:"user_agent"`
 	Path            string
 	EntryPath       string `db:"entry_path"`
-	PageViews       int    `db:"page_views"`
+	PageViews       uint16 `db:"page_views"`
 	IsBounce        bool   `db:"is_bounce"`
 	URL             string
 	Title           string
@@ -30,8 +30,8 @@ type Hit struct {
 	BrowserVersion  string `db:"browser_version"`
 	Desktop         bool
 	Mobile          bool
-	ScreenWidth     int    `db:"screen_width"`
-	ScreenHeight    int    `db:"screen_height"`
+	ScreenWidth     uint16 `db:"screen_width"`
+	ScreenHeight    uint16 `db:"screen_height"`
 	ScreenClass     string `db:"screen_class"`
 	UTMSource       string `db:"utm_source"`
 	UTMMedium       string `db:"utm_medium"`
