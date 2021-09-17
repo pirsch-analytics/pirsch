@@ -633,31 +633,32 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
-	// TODO
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
-		sum(visitors) visitors,
+		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT(fingerprint, session)) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM %s
 			WHERE %s
 		), 1) relative_visitors,
-		countIf(bounce = 1) bounces,
-		bounces / IF(visitors = 0, 1, visitors) bounce_rate
+		countIf(is_bounce) bounces,
+		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT count(DISTINCT fingerprint) visitors,
+			SELECT fingerprint,
+			session,
 			referrer,
 			referrer_name,
 			referrer_icon,
-			length(groupArray(path)) = 1 bounce
+			argMax(is_bounce, time) is_bounce
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, referrer, referrer_name, referrer_icon
+			GROUP BY fingerprint, session, referrer, referrer_name, referrer_icon
 		)
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
+		%s`, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []ReferrerStats
 

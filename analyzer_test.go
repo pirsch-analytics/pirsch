@@ -593,13 +593,13 @@ func TestAnalyzer_Events(t *testing.T) {
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1"},
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/foo", Referrer: "ref1"},
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref2"},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: "ref2"},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/bar", Referrer: "ref3"},
-		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1"},
-		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1"},
+		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2", PageViews: 3, IsBounce: false},
+		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: "ref2", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -616,11 +616,11 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
 	assert.Equal(t, 2, visitors[0].Bounces)
-	assert.Equal(t, 2, visitors[1].Bounces)
-	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
 	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
-	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
-	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
 	_, err = analyzer.Referrer(getMaxFilter())
 	assert.NoError(t, err)
 	visitors, err = analyzer.Referrer(&Filter{Limit: 1})

@@ -150,6 +150,7 @@ type ReferrerStats struct {
 	ReferrerName     string  `db:"referrer_name" json:"referrer_name"`
 	ReferrerIcon     string  `db:"referrer_icon" json:"referrer_icon"`
 	Visitors         int     `json:"visitors"`
+	Sessions         int     `json:"sessions"`
 	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
 	Bounces          int     `json:"bounces"`
 	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`
