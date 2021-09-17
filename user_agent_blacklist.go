@@ -32,6 +32,7 @@ var userAgentBlacklist = []string{
 	"shiretoko",
 	"rockmelt",
 	"ae/0.1",
+	"rocket/preload",
 
 	// https://github.com/gorangajic/isbot/blob/master/list.json (modified)
 	"12345",

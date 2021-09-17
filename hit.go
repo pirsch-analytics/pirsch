@@ -9,13 +9,12 @@ import (
 )
 
 const (
-	// version numbers from early 2018
-	minChromeVersion  = 64
-	minFirefoxVersion = 58
-	minSafariVersion  = 11
-	minOperaVersion   = 50
-	minEdgeVersion    = 80
-	minIEVersion      = 11
+	minChromeVersion  = 71 // late 2018
+	minFirefoxVersion = 63 // late 2018
+	minSafariVersion  = 12 // late 2018
+	minOperaVersion   = 57 // late 2018
+	minEdgeVersion    = 88 // late 2020
+	minIEVersion      = 11 // late 2013
 
 	defaultSessionMaxAge = time.Minute * 15
 )

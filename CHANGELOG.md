@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.0
+
+WIP
+
 ## 2.6.3
 
 * fixed session cache

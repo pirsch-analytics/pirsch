@@ -828,7 +828,10 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT os, os_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
+	query := fmt.Sprintf(`SELECT os,
+		os_version,
+		count(DISTINCT fingerprint) visitors,
+		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
@@ -855,7 +858,10 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	args, filterQuery := filter.query()
 	filter.EventName = ""
 	relativeFilterArgs, relativeFilterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT browser, browser_version, count(DISTINCT fingerprint) visitors, visitors / greatest((
+	query := fmt.Sprintf(`SELECT browser,
+		browser_version,
+		count(DISTINCT fingerprint) visitors,
+		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
 			FROM hit
 			WHERE %s
@@ -882,14 +888,16 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	withFillArgs, withFillQuery := filter.withFill()
 	args = append(args, withFillArgs...)
 	// TODO
-	query := fmt.Sprintf(`SELECT day, toUInt64(avg(duration)) average_time_spent_seconds
-			FROM (
-				SELECT toDate(time, '%s') day, max(time)-min(time) duration
-				FROM hit
-				WHERE %s
-				AND session != 0
-				GROUP BY day, fingerprint, session
-			)
+	query := fmt.Sprintf(`SELECT day,
+		toUInt64(avg(duration)) average_time_spent_seconds
+		FROM (
+			SELECT toDate(time, '%s') day,
+			max(time)-min(time) duration
+			FROM hit
+			WHERE %s
+			AND session != 0
+			GROUP BY day, fingerprint, session
+		)
 		WHERE duration != 0
 		GROUP BY day
 		ORDER BY day %s`, filter.Timezone.String(), filterQuery, withFillQuery)
@@ -919,9 +927,11 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 	}
 
 	// TODO
-	query := fmt.Sprintf(`SELECT path %s, toUInt64(avg(time_on_page)) average_time_spent_seconds
+	query := fmt.Sprintf(`SELECT path %s,
+		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT path %s, %s time_on_page
+			SELECT path %s,
+			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
@@ -955,9 +965,11 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 
 	withFillArgs, withFillQuery := filter.withFill()
 	// TODO
-	query := fmt.Sprintf(`SELECT day, toUInt64(avg(time_on_page)) average_time_spent_seconds
+	query := fmt.Sprintf(`SELECT day,
+		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') day, %s time_on_page
+			SELECT toDate(time, '%s') day,
+			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
