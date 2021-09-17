@@ -288,17 +288,17 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/bar", atop[1].Path)
 	assert.Equal(t, 300, atop[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, atop[1].AverageTimeSpentSeconds)
-	// TODO
-	/*top, err := analyzer.AvgTimeOnPage(nil)
+	top, err := analyzer.AvgTimeOnPage(nil)
 	assert.NoError(t, err)
 	assert.Len(t, top, 2)
 	assert.Equal(t, pastDay(4), top[0].Day)
 	assert.Equal(t, pastDay(2), top[1].Day)
-	assert.Equal(t, 180, top[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 150, top[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, top[1].AverageTimeSpentSeconds)
-	ttop, err := analyzer.totalTimeOnPage(nil)
+	// TODO
+	/*ttop, err := analyzer.totalTimeOnPage(nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 1380, ttop)*/
+	assert.Equal(t, 1500, ttop)*/
 	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true, IncludeAvgTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -323,8 +323,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/bar", atop[1].Path)
 	assert.Equal(t, "Home", atop[0].Title)
 	assert.Equal(t, "Bar", atop[1].Title)
-	// TODO
-	/*top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, top, 3)
 	assert.Equal(t, pastDay(3), top[0].Day)
@@ -333,7 +332,8 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 0, top[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, top[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, top[2].AverageTimeSpentSeconds)
-	ttop, err = analyzer.totalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	// TODO
+	/*ttop, err = analyzer.totalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 1200, ttop)*/
 	_, err = analyzer.Pages(getMaxFilter())

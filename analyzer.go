@@ -938,7 +938,7 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 				ORDER BY fingerprint, time, session
 			)
 		)
-		WHERE time_on_page != 0
+		WHERE time_on_page > 0
 		AND session = s
 		%s
 		GROUP BY path %s
@@ -968,14 +968,16 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
+			neighbor(session, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time
+				ORDER BY fingerprint, time, session
 			)
 			WHERE time_on_page > 0
+			AND session = s
 			%s
 		)
 		GROUP BY day
