@@ -6,8 +6,6 @@
 
 Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solution for Go. Integrated into a Go application it enables you to track HTTP traffic without invading the privacy of your visitors. The visualization of the data (dashboard) is not part of this project.
 
-The name is in German and refers to a special kind of hunt: *the hunter carefully and quietly enters the area to be hunted, he stalks against the wind in order to get as close as possible to the prey without being noticed.*
-
 **If you're looking for a managed solution with an easy-to-use API and JavaScript integration, check out https://pirsch.io/.**
 
 ## How does it work?
