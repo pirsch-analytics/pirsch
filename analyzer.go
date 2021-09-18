@@ -25,10 +25,10 @@ var (
 )
 
 type growthStats struct {
-	Visitors int `json:"visitors"`
-	Views    int `json:"views"`
-	Sessions int `json:"sessions"`
-	Bounces  int `json:"bounces"`
+	Visitors   int
+	Views      int
+	Sessions   int
+	BounceRate float64 `db:"bounce_rate"`
 }
 
 // Analyzer provides an interface to analyze statistics.
@@ -121,46 +121,31 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, ErrNoPeriodOrDay
 	}
 
-	table := filter.table()
 	args, filterQuery := filter.query()
-	var query string
-
-	if table == "hit" {
-		query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
-			count(DISTINCT(fingerprint, session_id)) sessions,
-			sum(views) views,
-			countIf(is_bounce) bounces
-			FROM (
-				SELECT fingerprint,
-				session_id,
-				argMax(page_views, time) views,
-				argMax(is_bounce, time) is_bounce
-				FROM "hit"
-				WHERE %s
-				GROUP BY fingerprint, session_id, toDate(time, '%s')
-			)`, filterQuery, filter.Timezone.String())
-	} else {
-		// TODO sessions for events
-		query = fmt.Sprintf(`SELECT sum(visitors) visitors,
-			sum(views) views
-			FROM (
-				SELECT count(DISTINCT fingerprint) visitors,
-				count(*) views
-				FROM event
-				WHERE %s
-				GROUP BY fingerprint, toDate(time, '%s')
-			)`, filterQuery, filter.Timezone.String())
-	}
-
+	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
+		count(DISTINCT(fingerprint, session_id)) sessions,
+		sum(views) views,
+		countIf(is_bounce) / IF(sessions = 0, 1, sessions) bounce_rate
+		FROM (
+			SELECT fingerprint,
+			session_id,
+			argMax(page_views, time) views,
+			argMax(is_bounce, time) is_bounce
+			FROM %s
+			WHERE %s
+			GROUP BY fingerprint, session_id
+		)`, filter.table(), filterQuery)
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, args...); err != nil {
 		return nil, err
 	}
 
+	table := filter.table()
 	var currentTimeSpent int
 	var err error
 
+	// TODO also for events?
 	if table == "hit" {
 		if filter.Path == "" {
 			currentTimeSpent, err = analyzer.totalSessionDuration(filter)
@@ -190,6 +175,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	var previousTimeSpent int
 
+	// TODO also for events?
 	if table == "hit" {
 		if filter.Path == "" {
 			previousTimeSpent, err = analyzer.totalSessionDuration(filter)
@@ -206,23 +192,15 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		VisitorsGrowth:  analyzer.calculateGrowth(current.Visitors, previous.Visitors),
 		ViewsGrowth:     analyzer.calculateGrowth(current.Views, previous.Views),
 		SessionsGrowth:  analyzer.calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:   analyzer.calculateGrowth(current.Bounces, previous.Bounces),
+		BouncesGrowth:   analyzer.calculateGrowthFloat64(current.BounceRate, previous.BounceRate),
 		TimeSpentGrowth: analyzer.calculateGrowth(currentTimeSpent, previousTimeSpent),
 	}, nil
 }
 
-// TODO embed in Growth?
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT sum(duration) average_time_spent_seconds
-		FROM (
-			SELECT toDate(time, '%s') day, max(time)-min(time) duration
-			FROM hit
-			WHERE %s
-			AND session != 0
-			GROUP BY fingerprint, session_id, day
-		)`, filter.Timezone.String(), filterQuery)
+	query := fmt.Sprintf(`SELECT sum(duration_seconds) average_time_spent_seconds FROM hit WHERE %s`, filterQuery)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 	})
@@ -234,14 +212,13 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-// TODO embed in Growth?
 func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
+		fieldQuery = "AND " + fieldQuery
 	}
 
 	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
@@ -251,8 +228,10 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session_id
+				ORDER BY fingerprint, session_id, time
 			)
+			WHERE time_on_page > 0
+			AND session_id = neighbor(session_id, 1, null)
 			%s
 		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
@@ -916,7 +895,7 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if len(fieldArgs) > 0 {
-		fieldQuery = "AND " + fieldQuery
+		fieldQuery = "WHERE " + fieldQuery
 	}
 
 	title := ""
@@ -929,17 +908,16 @@ func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, erro
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT *,
-			neighbor(session_id, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session_id
+				ORDER BY fingerprint, session_id, time
 			)
+			WHERE time_on_page > 0
+			AND session_id = neighbor(session_id, 1, null)
 		)
-		WHERE time_on_page > 0
-		AND session_id = s
 		%s
 		GROUP BY path %s
 		ORDER BY path %s`, title, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery, title, title)
@@ -968,16 +946,15 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
-			neighbor(session_id, 1, null) s,
 			%s time_on_page
 			FROM (
 				SELECT *
 				FROM hit
 				WHERE %s
-				ORDER BY fingerprint, time, session_id
+				ORDER BY fingerprint, session_id, time
 			)
 			WHERE time_on_page > 0
-			AND session_id = s
+			AND session_id = neighbor(session_id, 1, null)
 			%s
 		)
 		GROUP BY day
@@ -1002,6 +979,18 @@ func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 
 	c := float64(current)
 	p := float64(previous)
+	return (c - p) / p
+}
+
+func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := current
+	p := previous
 	return (c - p) / p
 }
 
