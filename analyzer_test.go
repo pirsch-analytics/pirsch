@@ -374,18 +374,18 @@ func TestAnalyzer_PageTitleAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo"},
-		{Fingerprint: "fp2", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp3", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp4", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
-		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp5", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp6", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo", EntryPath: "/"},
+		{Fingerprint: "fp2", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp3", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar", EntryPath: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
+		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar", EntryPath: "/"},
+		{Fingerprint: "fp6", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
+		{Fingerprint: "fp7", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
+		{Fingerprint: "fp7", Time: pastDay(1).Add(time.Minute), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/bar"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -400,6 +400,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 4, entries[1].Visitors)
 	assert.Equal(t, 5, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
+	assert.InDelta(t, 0.8333, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
 	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true, IncludeAvgTimeOnPage: true})
@@ -413,6 +415,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 3, entries[1].Visitors)
 	assert.Equal(t, 2, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
+	assert.InDelta(t, 0.5, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.6666, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)
 	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
@@ -421,6 +425,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, 3, entries[0].Visitors)
 	assert.Equal(t, 2, entries[0].Entries)
+	assert.InDelta(t, 0.6666, entries[0].EntryRate, 0.001)
 	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	exits, err := analyzer.ExitPages(nil)
 	assert.NoError(t, err)
@@ -459,6 +464,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 3, exits[0].Visitors)
 	assert.Equal(t, 1, exits[0].Exits)
 	assert.InDelta(t, 0.33, exits[0].ExitRate, 0.01)
+	_, err = analyzer.ExitPages(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_PageConversions(t *testing.T) {

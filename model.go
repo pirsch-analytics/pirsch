@@ -110,11 +110,12 @@ type PageStats struct {
 
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
-	Path                    string `json:"path"`
-	Title                   string `json:"title"`
-	Visitors                int    `json:"visitors"`
-	Entries                 int    `json:"entries"`
-	AverageTimeSpentSeconds int    `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	Path                    string  `json:"path"`
+	Title                   string  `json:"title"`
+	Visitors                int     `json:"visitors"`
+	Entries                 int     `json:"entries"`
+	EntryRate               float64 `db:"entry_rate" json:"entry_rate"`
+	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
 // ExitStats is the result type for exit page statistics.
