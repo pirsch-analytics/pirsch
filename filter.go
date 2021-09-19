@@ -242,49 +242,56 @@ func (filter *Filter) queryFields() ([]interface{}, string, string) {
 	filter.appendQuery(&fields, &queryFields, &args, "utm_content", filter.UTMContent)
 	filter.appendQuery(&fields, &queryFields, &args, "utm_term", filter.UTMTerm)
 	filter.appendQuery(&fields, &queryFields, &args, "event_name", filter.EventName)
+	filter.queryPlatform(&fields, &queryFields)
+	filter.queryPathPattern(&fields, &queryFields, &args)
+	return args, strings.Join(queryFields, "AND "), strings.Join(fields, ",")
+}
 
+func (filter *Filter) queryPlatform(fields, queryFields *[]string) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
 			if platform == PlatformDesktop {
-				queryFields = append(queryFields, "desktop != 1 ")
-				fields = append(fields, "desktop")
+				*queryFields = append(*queryFields, "desktop != 1 ")
+				*fields = append(*fields, "desktop")
 			} else if platform == PlatformMobile {
-				queryFields = append(queryFields, "mobile != 1 ")
-				fields = append(fields, "mobile")
+				*queryFields = append(*queryFields, "mobile != 1 ")
+				*fields = append(*fields, "mobile")
 			} else {
-				queryFields = append(queryFields, "(desktop = 1 OR mobile = 1) ")
-				fields = append(fields, "desktop")
-				fields = append(fields, "mobile")
+				*queryFields = append(*queryFields, "(desktop = 1 OR mobile = 1) ")
+				*fields = append(*fields, "desktop")
+				*fields = append(*fields, "mobile")
 			}
 		} else {
 			if filter.Platform == PlatformDesktop {
-				queryFields = append(queryFields, "desktop = 1 ")
-				fields = append(fields, "desktop")
+				*queryFields = append(*queryFields, "desktop = 1 ")
+				*fields = append(*fields, "desktop")
 			} else if filter.Platform == PlatformMobile {
-				queryFields = append(queryFields, "mobile = 1 ")
-				fields = append(fields, "mobile")
+				*queryFields = append(*queryFields, "mobile = 1 ")
+				*fields = append(*fields, "mobile")
 			} else {
-				queryFields = append(queryFields, "desktop = 0 AND mobile = 0 ")
-				fields = append(fields, "desktop")
-				fields = append(fields, "mobile")
+				*queryFields = append(*queryFields, "desktop = 0 AND mobile = 0 ")
+				*fields = append(*fields, "desktop")
+				*fields = append(*fields, "mobile")
 			}
 		}
 	}
+}
 
+func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]interface{}) {
 	if filter.PathPattern != "" {
 		if strings.HasPrefix(filter.PathPattern, "!") {
-			args = append(args, filter.PathPattern[1:])
-			queryFields = append(queryFields, `match("path", ?) = 0`)
+			*args = append(*args, filter.PathPattern[1:])
+			*queryFields = append(*queryFields, `match("path", ?) = 0`)
 		} else {
-			args = append(args, filter.PathPattern)
-			queryFields = append(queryFields, `match("path", ?) = 1`)
+			*args = append(*args, filter.PathPattern)
+			*queryFields = append(*queryFields, `match("path", ?) = 1`)
 		}
 
 		found := false
 
-		for _, f := range fields {
+		for _, f := range *fields {
 			if f == "path" {
 				found = true
 				break
@@ -292,11 +299,9 @@ func (filter *Filter) queryFields() ([]interface{}, string, string) {
 		}
 
 		if !found {
-			fields = append(fields, "path")
+			*fields = append(*fields, "path")
 		}
 	}
-
-	return args, strings.Join(queryFields, "AND "), strings.Join(fields, ",")
 }
 
 func (filter *Filter) withFill() ([]interface{}, string) {
