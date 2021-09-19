@@ -529,61 +529,66 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
-	var path, pathFilter string
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
 
-	if filter.Path != "" {
-		path = filter.Path
-		pathFilter = "AND path = ?"
-		filter.Path = ""
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	filterArgs, filterQuery, _ := filter.query()
-	filterArgs = append(filterArgs, filterArgs...)
-
-	if path != "" {
-		filterArgs = append(filterArgs, path)
+	if fields != "" {
+		fields = "," + fields
 	}
 
-	title, titleInner, titleMaxArg, titleOrderBy := "", "", "", ""
+	title, titleInner, titleInnerArgMax, titleOrderBy := "", "", "", ""
 
 	if filter.IncludeTitle {
 		title = "title,"
 		titleInner = ",title"
-		titleMaxArg = ",argMax(title, time) title"
+		titleInnerArgMax = ",argMax(title, time) title"
 		titleOrderBy = "title ASC,"
 	}
 
-	query := fmt.Sprintf(`SELECT *,
+	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)*2)
+	args = append(args, timeArgs...)
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
+	args = append(args, fieldArgs...)
+	query := fmt.Sprintf(`SELECT exit_path path,
+		%s
+		sum(visitors) visitors,
+		sum(exits) exits,
 		exits/IF(visitors = 0, 1, visitors) exit_rate
 		FROM (
-			SELECT path,
-			%s
+			SELECT path exit_path %s %s,
 			count(DISTINCT fingerprint) visitors
 			FROM %s
 			WHERE %s
-			GROUP BY path %s
+			GROUP BY exit_path %s %s
 		) AS visitors
 		ANY INNER JOIN (
-			SELECT path,
-			%s
+			SELECT exit_path %s %s,
 			count(1) exits
 			FROM (
-				SELECT argMax(path, time) path %s
+				SELECT argMax(path, time) exit_path %s %s
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id
+				GROUP BY fingerprint, session_id %s
 			)
-			GROUP BY path %s
+			%s
+			GROUP BY exit_path %s %s
 		) AS exits
-		USING path %s
-		WHERE exits > 0 %s
-		ORDER BY exits DESC, %s path ASC
-		%s`, title, table, filterQuery, titleInner,
-		title, titleMaxArg, table, filterQuery, titleInner,
-		titleInner, pathFilter, titleOrderBy, filter.withLimit())
+		USING exit_path %s
+		%s
+		GROUP by  %s exit_path
+		ORDER BY exits DESC, %s exit_path ASC
+		%s`, title,
+		fields, titleInner, table, timeQuery, fields, titleInner,
+		fields, titleInner, fields, titleInnerArgMax, table, timeQuery, fields, fieldQuery, fields, titleInner,
+		fields, fieldQuery, title, titleOrderBy, filter.withLimit())
 	var stats []ExitStats
 
-	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -1042,7 +1047,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 
 	if fieldQuery != "" {
 		fields = "," + fields
-		fieldQuery = " AND " + fieldQuery
+		fieldQuery = "AND " + fieldQuery
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
