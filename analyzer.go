@@ -158,23 +158,33 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, ErrNoPeriodOrDay
 	}
 
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+		fields = "," + fields
+	}
+
+	timeArgs = append(timeArgs, fieldArgs...)
 	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		sum(views) views,
 		countIf(is_bounce) / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT fingerprint,
+			SELECT fingerprint %s,
 			session_id,
 			argMax(page_views, time) views,
-			argMax(is_bounce, time) is_bounce
+			argMax(is_bounce, time) is_bounce,
+			argMax(path, time) exit_path
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session_id
-		)`, filter.table(), filterQuery)
+			GROUP BY fingerprint, session_id %s
+		)
+		%s`, fields, filter.table(), timeQuery, fields, fieldQuery)
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query, args...); err != nil {
+	if err := analyzer.store.Get(current, query, timeArgs...); err != nil {
 		return nil, err
 	}
 
@@ -199,10 +209,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	args, _, _ = filter.query()
+	timeArgs, _ = filter.queryTime()
+	fieldArgs, _, _ = filter.queryFields()
+	timeArgs = append(timeArgs, fieldArgs...)
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query, args...); err != nil {
+	if err := analyzer.store.Get(previous, query, timeArgs...); err != nil {
 		return nil, err
 	}
 
@@ -273,17 +285,18 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 		FROM (
 			SELECT %s time_on_page
 			FROM (
-				SELECT session_id,
-				duration_seconds
-				%s
+				SELECT session_id %s,
+				sum(duration_seconds) duration_seconds,
+				argMax(path, time) exit_path
 				FROM %s
 				WHERE %s
+				GROUP BY fingerprint, session_id, time %s
 				ORDER BY fingerprint, session_id, time
 			)
 			WHERE time_on_page > 0
 			AND session_id = neighbor(session_id, 1, null)
 			%s
-		)`, analyzer.timeOnPageQuery(filter), fields, filter.table(), timeQuery, fieldQuery)
+		)`, analyzer.timeOnPageQuery(filter), fields, filter.table(), timeQuery, fields, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
