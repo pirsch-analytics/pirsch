@@ -81,7 +81,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.UTMTerm = "term"
 	filter.EventName = "event"
 	filter.validate()
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 15)
 	assert.Equal(t, "/", args[0])
 	assert.Equal(t, "en", args[1])
@@ -99,6 +99,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	assert.Equal(t, "term", args[13])
 	assert.Equal(t, "event", args[14])
 	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Equal(t, "path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", fields)
 }
 
 func TestFilter_QueryFieldsInvert(t *testing.T) {
@@ -121,7 +122,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	filter.UTMTerm = "!term"
 	filter.EventName = "!event"
 	filter.validate()
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 15)
 	assert.Equal(t, "/", args[0])
 	assert.Equal(t, "en", args[1])
@@ -139,64 +140,73 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	assert.Equal(t, "term", args[13])
 	assert.Equal(t, "event", args[14])
 	assert.Equal(t, "path != ? AND language != ? AND country_code != ? AND referrer != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
+	assert.Equal(t, "path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", fields)
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.Platform = PlatformDesktop
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 1 ", query)
+	assert.Equal(t, "desktop", fields)
 	filter = NewFilter(NullClient)
 	filter.Platform = PlatformMobile
-	args, query = filter.queryFields()
+	args, query, fields = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "mobile = 1 ", query)
+	assert.Equal(t, "mobile", fields)
 	filter = NewFilter(NullClient)
 	filter.Platform = PlatformUnknown
-	args, query = filter.queryFields()
+	args, query, fields = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
-	_, query = filter.query()
+	_, query, fields = filter.query()
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
+	assert.Equal(t, "desktop,mobile", fields)
 }
 
 func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.Platform = "!" + PlatformDesktop
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop != 1 ", query)
+	assert.Equal(t, "desktop", fields)
 	filter = NewFilter(NullClient)
 	filter.Platform = "!" + PlatformMobile
-	args, query = filter.queryFields()
+	args, query, fields = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "mobile != 1 ", query)
+	assert.Equal(t, "mobile", fields)
 	filter = NewFilter(NullClient)
 	filter.Platform = "!" + PlatformUnknown
-	args, query = filter.queryFields()
+	args, query, fields = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
-	_, query = filter.query()
+	_, query, fields = filter.query()
 	assert.Contains(t, query, "(desktop = 1 OR mobile = 1)")
+	assert.Equal(t, "desktop,mobile", fields)
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.PathPattern = "/some/pattern"
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
 	assert.Equal(t, `match("path", ?) = 1`, query)
+	assert.Equal(t, "path", fields)
 }
 
 func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.PathPattern = "!/some/pattern"
-	args, query := filter.queryFields()
+	args, query, fields := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
 	assert.Equal(t, `match("path", ?) = 0`, query)
+	assert.Equal(t, "path", fields)
 }
 
 func TestFilter_WithFill(t *testing.T) {
