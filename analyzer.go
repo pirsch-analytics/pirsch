@@ -7,19 +7,6 @@ import (
 	"time"
 )
 
-const (
-	byAttributeQuery = `SELECT "%s", count(DISTINCT fingerprint) visitors, visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
-			FROM hit
-			WHERE %s
-		), 1) relative_visitors
-		FROM %s
-		WHERE %s
-		GROUP BY "%s"
-		ORDER BY visitors DESC, "%s" ASC
-		%s`
-)
-
 var (
 	// ErrNoPeriodOrDay is returned in case no period or day was specified to calculate the growth rate.
 	ErrNoPeriodOrDay = errors.New("no period or day specified")
@@ -62,7 +49,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		FROM hit
 		WHERE %s
 		GROUP BY path %s
-		ORDER BY visitors DESC, path ASC %s`, title, filterQuery, title, orderByTitle)
+		ORDER BY visitors DESC, path ASC %s
+		%s`, title, filterQuery, title, orderByTitle, filter.withLimit())
 	var stats []ActiveVisitorStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -1030,7 +1018,18 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 	table := filter.table()
 	filter.EventName = ""
 	args, filterQuery, _ := filter.query()
-	query := fmt.Sprintf(byAttributeQuery, attr, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
+	query := fmt.Sprintf(`SELECT "%s",
+		count(DISTINCT fingerprint) visitors,
+		visitors / greatest((
+			SELECT count(DISTINCT fingerprint)
+			FROM hit
+			WHERE %s
+		), 1) relative_visitors
+		FROM %s
+		WHERE %s
+		GROUP BY "%s"
+		ORDER BY visitors DESC, "%s" ASC
+		%s`, attr, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(results, query, args...)
 }

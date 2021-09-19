@@ -6,6 +6,7 @@
 * added filtering for entry and exit page
 * added filtering for "none"/"unknown" (empty strings) by setting a filter to "null"
 * added all statistics available for hits to events as well
+* added optional limit for active visitor statistics
 * optimized data layout
 * optimized statistics queries
 * optimized filter (non required fields are now longer selected)

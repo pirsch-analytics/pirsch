@@ -243,6 +243,7 @@ func (filter *Filter) queryFields() ([]interface{}, string, string) {
 	filter.appendQuery(&fields, &queryFields, &args, "utm_term", filter.UTMTerm)
 	filter.appendQuery(&fields, &queryFields, &args, "event_name", filter.EventName)
 	filter.queryPlatform(&fields, &queryFields)
+	//filter.queryExitPath(&fields, &queryFields, &args)
 	filter.queryPathPattern(&fields, &queryFields, &args)
 	return args, strings.Join(queryFields, "AND "), strings.Join(fields, ",")
 }
@@ -279,6 +280,20 @@ func (filter *Filter) queryPlatform(fields, queryFields *[]string) {
 	}
 }
 
+/*func (filter Filter) queryExitPath(fields, queryFields *[]string, args *[]interface{}) {
+	if filter.ExitPath != "" {
+		if strings.HasPrefix(filter.ExitPath, "!") {
+			*args = append(*args, filter.ExitPath[1:])
+			*queryFields = append(*queryFields, `exit_path != ?`)
+		} else {
+			*args = append(*args, filter.ExitPath)
+			*queryFields = append(*queryFields, `exit_path = ?`)
+		}
+
+		*fields = append(*fields, "argMax(path, time) exit_path")
+	}
+}*/
+
 func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]interface{}) {
 	if filter.PathPattern != "" {
 		if strings.HasPrefix(filter.PathPattern, "!") {
@@ -289,18 +304,22 @@ func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]int
 			*queryFields = append(*queryFields, `match("path", ?) = 1`)
 		}
 
-		found := false
+		filter.addPathFieldIfRequired(fields)
+	}
+}
 
-		for _, f := range *fields {
-			if f == "path" {
-				found = true
-				break
-			}
-		}
+func (filter *Filter) addPathFieldIfRequired(fields *[]string) {
+	found := false
 
-		if !found {
-			*fields = append(*fields, "path")
+	for _, f := range *fields {
+		if f == "path" {
+			found = true
+			break
 		}
+	}
+
+	if !found {
+		*fields = append(*fields, "path")
 	}
 }
 
