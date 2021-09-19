@@ -10,5 +10,6 @@ ALTER TABLE "event" ADD COLUMN "is_bounce" UInt8 DEFAULT 1;
 ALTER TABLE "event" ADD COLUMN "entry_path" String DEFAULT '';
 ALTER TABLE "event" ADD COLUMN "page_views" UInt16 DEFAULT 1;
 
-ALTER TABLE "hit" DROP COLUMN "session";
-ALTER TABLE "event" DROP COLUMN "session";
+-- run this manually after migration
+--ALTER TABLE "hit" DROP COLUMN "session";
+--ALTER TABLE "event" DROP COLUMN "session";

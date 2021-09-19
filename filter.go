@@ -15,6 +15,10 @@ const (
 
 	// PlatformUnknown filters for everything where the platform is unspecified.
 	PlatformUnknown = "unknown"
+
+	// Unknown filters for an unknown (empty) value.
+	// This is a synonym for "null".
+	Unknown = "null"
 )
 
 // NullClient is a placeholder for no client (0).
@@ -22,6 +26,7 @@ var NullClient = int64(0)
 
 // Filter are all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
+// To compare to none/unknown/empty, set the value to "null" (case-insensitive).
 type Filter struct {
 	// ClientID is the optional.
 	ClientID int64
@@ -321,15 +326,24 @@ func (filter *Filter) query() ([]interface{}, string, string) {
 func (filter *Filter) appendQuery(fields, queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
 		if strings.HasPrefix(value, "!") {
-			*args = append(*args, value[1:])
+			value = filter.nullValue(value[1:])
+			*args = append(*args, value)
 			*queryFields = append(*queryFields, fmt.Sprintf("%s != ? ", field))
 		} else {
-			*args = append(*args, value)
+			*args = append(*args, filter.nullValue(value))
 			*queryFields = append(*queryFields, fmt.Sprintf("%s = ? ", field))
 		}
 
 		*fields = append(*fields, field)
 	}
+}
+
+func (filter *Filter) nullValue(value string) string {
+	if strings.ToLower(value) == "null" {
+		return ""
+	}
+
+	return value
 }
 
 func (filter *Filter) toDate(date time.Time) time.Time {

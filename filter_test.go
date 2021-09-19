@@ -143,6 +143,47 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	assert.Equal(t, "path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", fields)
 }
 
+func TestFilter_QueryFieldsNull(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "null"
+	// not for path pattern
+	filter.Language = "Null"
+	filter.Country = "NULL"
+	filter.Referrer = "null"
+	filter.OS = "null"
+	filter.OSVersion = "null"
+	filter.Browser = "null"
+	filter.BrowserVersion = "null"
+	filter.Platform = "null"
+	filter.ScreenClass = "null"
+	filter.UTMSource = "null"
+	filter.UTMMedium = "null"
+	filter.UTMCampaign = "null"
+	filter.UTMContent = "null"
+	filter.UTMTerm = "null"
+	filter.EventName = "!null"
+	filter.validate()
+	args, query, fields := filter.queryFields()
+	assert.Len(t, args, 15)
+	assert.Empty(t, args[0])
+	assert.Empty(t, args[1])
+	assert.Empty(t, args[2])
+	assert.Empty(t, args[3])
+	assert.Empty(t, args[4])
+	assert.Empty(t, args[5])
+	assert.Empty(t, args[6])
+	assert.Empty(t, args[7])
+	assert.Empty(t, args[8])
+	assert.Empty(t, args[9])
+	assert.Empty(t, args[10])
+	assert.Empty(t, args[11])
+	assert.Empty(t, args[12])
+	assert.Empty(t, args[13])
+	assert.Empty(t, args[14])
+	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name != ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Equal(t, "path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", fields)
+}
+
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.Platform = PlatformDesktop
