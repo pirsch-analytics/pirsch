@@ -720,39 +720,65 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
 	filter.EventName = ""
-	relativeFilterArgs, relativeFilterQuery, _ := filter.query()
+	relativeTimeArgs, relativeTimeQuery := filter.queryTime()
+	relativeFieldArgs, relativeFieldQuery, _ := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+		fields = "," + fields
+	}
+
+	if relativeFieldQuery != "" {
+		relativeFieldQuery = "WHERE " + relativeFieldQuery
+	}
+
+	args := make([]interface{}, 0, len(relativeTimeArgs)+len(relativeFieldArgs)+len(timeArgs)+len(fieldArgs))
+	args = append(args, relativeTimeArgs...)
+	args = append(args, relativeFieldArgs...)
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
 	query := fmt.Sprintf(`SELECT referrer,
 		referrer_name,
 		referrer_icon,
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
-			FROM %s
-			WHERE %s
+			SELECT count(DISTINCT fingerprint) visitors
+			FROM (
+				SELECT fingerprint %s,
+				argMax(path, time) exit_path
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id %s
+			)
+			%s
 		), 1) relative_visitors,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT fingerprint,
+			SELECT fingerprint %s,
 			session_id,
 			referrer,
 			referrer_name,
 			referrer_icon,
-			argMax(is_bounce, time) is_bounce
+			argMax(is_bounce, time) is_bounce,
+			argMax(path, time) exit_path
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session_id, referrer, referrer_name, referrer_icon
+			GROUP BY fingerprint, session_id, referrer, referrer_name, referrer_icon %s
 		)
+		%s
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
-	relativeFilterArgs = append(relativeFilterArgs, args...)
+		%s`, fields, table, relativeTimeQuery, fields, relativeFieldQuery,
+		fields, table, timeQuery, fields, fieldQuery,
+		filter.withLimit())
 	var stats []ReferrerStats
 
-	if err := analyzer.store.Select(&stats, query, relativeFilterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -761,37 +787,74 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 // Platform returns the visitor count grouped by platform.
 func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
-	filterArgs, filterQuery, _ := analyzer.getFilter(filter).query()
+	filter = analyzer.getFilter(filter)
 	table := filter.table()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "AND " + fieldQuery
+		fields = "," + fields
+	}
+
+	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs)*3)
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
 	query := fmt.Sprintf(`SELECT (
 			SELECT count(DISTINCT fingerprint)
-			FROM %s
-			WHERE %s
-			AND desktop = 1
+			FROM (
+				SELECT fingerprint %s,
+				argMax(path, time) exit_path,
+				desktop,
+				mobile
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id, desktop, mobile %s
+			)
+			WHERE desktop = 1
 			AND mobile = 0
+			%s
 		) AS "platform_desktop",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM %s
-			WHERE %s
-			AND desktop = 0
+			FROM (
+				SELECT fingerprint %s,
+				argMax(path, time) exit_path,
+				desktop,
+				mobile
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id, desktop, mobile %s
+			)
+			WHERE desktop = 0
 			AND mobile = 1
+			%s
 		) AS "platform_mobile",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM %s
-			WHERE %s
-			AND desktop = 0
+			FROM (
+				SELECT fingerprint %s,
+				argMax(path, time) exit_path,
+				desktop,
+				mobile
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id, desktop, mobile %s
+			)
+			WHERE desktop = 0
 			AND mobile = 0
+			%s
 		) AS "platform_unknown",
 		"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 		"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`,
-		table, filterQuery, table, filterQuery, table, filterQuery)
-	args := make([]interface{}, 0, len(filterArgs)*3)
-	args = append(args, filterArgs...)
-	args = append(args, filterArgs...)
-	args = append(args, filterArgs...)
+		fields, table, timeQuery, fields, fieldQuery,
+		fields, table, timeQuery, fields, fieldQuery,
+		fields, table, timeQuery, fields, fieldQuery)
 	stats := new(PlatformStats)
 
 	if err := analyzer.store.Get(stats, query, args...); err != nil {
