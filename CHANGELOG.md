@@ -2,7 +2,14 @@
 
 ## 3.0.0
 
-WIP
+* added rolling forward page view information for deeper analysis of sessions
+* added filtering for entry and exit page
+* added filtering for "none"/"unknown" (empty strings) by setting a filter to "null"
+* added all statistics available for hits to events as well
+* optimized data layout
+* optimized statistics queries
+* optimized filter (non required fields are now longer selected)
+* updated dependencies
 
 ## 2.6.3
 
