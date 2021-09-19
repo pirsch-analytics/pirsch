@@ -141,17 +141,13 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
-	table := filter.table()
 	var currentTimeSpent int
 	var err error
 
-	// TODO also for events?
-	if table == "hit" {
-		if filter.Path == "" {
-			currentTimeSpent, err = analyzer.totalSessionDuration(filter)
-		} else {
-			currentTimeSpent, err = analyzer.totalTimeOnPage(filter)
-		}
+	if filter.Path == "" {
+		currentTimeSpent, err = analyzer.totalSessionDuration(filter)
+	} else {
+		currentTimeSpent, err = analyzer.totalTimeOnPage(filter)
 	}
 
 	if err != nil {
@@ -175,13 +171,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	var previousTimeSpent int
 
-	// TODO also for events?
-	if table == "hit" {
-		if filter.Path == "" {
-			previousTimeSpent, err = analyzer.totalSessionDuration(filter)
-		} else {
-			previousTimeSpent, err = analyzer.totalTimeOnPage(filter)
-		}
+	if filter.Path == "" {
+		previousTimeSpent, err = analyzer.totalSessionDuration(filter)
+	} else {
+		previousTimeSpent, err = analyzer.totalTimeOnPage(filter)
 	}
 
 	if err != nil {
@@ -200,7 +193,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	args, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT sum(duration_seconds) average_time_spent_seconds FROM hit WHERE %s`, filterQuery)
+	query := fmt.Sprintf(`SELECT sum(duration_seconds) average_time_spent_seconds FROM %s WHERE %s`, filter.table(), filterQuery)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 	})
@@ -226,14 +219,14 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 			SELECT %s time_on_page
 			FROM (
 				SELECT *
-				FROM hit
+				FROM %s
 				WHERE %s
 				ORDER BY fingerprint, session_id, time
 			)
 			WHERE time_on_page > 0
 			AND session_id = neighbor(session_id, 1, null)
 			%s
-		)`, analyzer.timeOnPageQuery(filter), timeQuery, fieldQuery)
+		)`, analyzer.timeOnPageQuery(filter), filter.table(), timeQuery, fieldQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	stats := new(struct {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`

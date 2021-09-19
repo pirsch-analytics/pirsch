@@ -176,6 +176,54 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_GrowthEvents(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", Hit: Hit{Fingerprint: "fp1", Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
+		{Name: "event1", DurationSeconds: 600, Hit: Hit{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp2", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp3", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp4", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp4", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp5", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp6", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp7", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp8", Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp9", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp10", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Hit: Hit{Fingerprint: "fp11", Time: Today(), Path: "/", PageViews: 1, IsBounce: true}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Growth(nil)
+	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
+	assert.Nil(t, growth)
+	growth, err = analyzer.Growth(&Filter{Day: pastDay(2), EventName: "event1"})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, -0.2, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1"})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0.1666, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	maxFilter := getMaxFilter()
+	maxFilter.EventName = "event1"
+	_, err = analyzer.Growth(maxFilter)
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
