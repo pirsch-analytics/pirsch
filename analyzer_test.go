@@ -1123,6 +1123,8 @@ func getMaxFilter() *Filter {
 		Day:            pastDay(1),
 		Start:          time.Now().UTC(),
 		Path:           "/path",
+		EntryPath:      "/entry",
+		ExitPath:       "/exit",
 		Language:       "en",
 		Country:        "en",
 		Referrer:       "ref",

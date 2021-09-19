@@ -57,7 +57,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		orderByTitle = ",title ASC"
 	}
 
-	query := fmt.Sprintf(`SELECT path %s, count(DISTINCT fingerprint) visitors
+	query := fmt.Sprintf(`SELECT path %s,
+		count(DISTINCT fingerprint) visitors
 		FROM hit
 		WHERE %s
 		GROUP BY path %s

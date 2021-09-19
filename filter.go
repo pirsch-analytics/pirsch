@@ -51,7 +51,11 @@ type Filter struct {
 	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path string
 
-	// TODO EntryPath, ExitPath
+	// EntryPath filters for the entry page.
+	EntryPath string
+
+	// ExitPath filters for the exit page.
+	ExitPath string
 
 	// PathPattern filters for the path using a (ClickHouse supported) regex pattern.
 	// Note that if this and Path are both set, Path will be preferred.
@@ -219,10 +223,11 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string, string) {
-	args := make([]interface{}, 0, 16)
-	queryFields := make([]string, 0, 16)
-	fields := make([]string, 0, 16)
+	args := make([]interface{}, 0, 17)
+	queryFields := make([]string, 0, 17)
+	fields := make([]string, 0, 17)
 	filter.appendQuery(&fields, &queryFields, &args, "path", filter.Path)
+	filter.appendQuery(&fields, &queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&fields, &queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&fields, &queryFields, &args, "country_code", filter.Country)
 	filter.appendQuery(&fields, &queryFields, &args, "referrer", filter.Referrer)
