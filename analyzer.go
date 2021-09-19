@@ -107,9 +107,17 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 // Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+		fields = "," + fields
+	}
+
 	withFillArgs, withFillQuery := filter.withFill()
-	args = append(args, withFillArgs...)
+	timeArgs = append(timeArgs, fieldArgs...)
+	timeArgs = append(timeArgs, withFillArgs...)
 	timezone := filter.Timezone.String()
 	query := fmt.Sprintf(`SELECT day,
 		count(DISTINCT fingerprint) visitors,
@@ -118,20 +126,22 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT toDate(time, '%s') day,
+			SELECT toDate(time, '%s') day %s,
 			fingerprint,
 			session_id,
 			argMax(page_views, time) views,
-			argMax(is_bounce, time) is_bounce
+			argMax(is_bounce, time) is_bounce,
+			argMax(path, time) exit_path
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session_id, day
+			GROUP BY fingerprint, session_id, day %s
 		)
+		%s
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, timezone, filter.table(), filterQuery, withFillQuery)
+		ORDER BY day ASC %s, visitors DESC`, timezone, fields, filter.table(), timeQuery, fields, fieldQuery, withFillQuery)
 	var stats []VisitorStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
 		return nil, err
 	}
 
@@ -219,17 +229,31 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
-	args, filterQuery, _ := filter.query()
-	query := fmt.Sprintf(`SELECT sum(duration_seconds) average_time_spent_seconds FROM %s WHERE %s`, filter.table(), filterQuery)
-	stats := new(struct {
-		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
-	})
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+		fields = "," + fields
+	}
+
+	timeArgs = append(timeArgs, fieldArgs...)
+	query := fmt.Sprintf(`SELECT sum(duration_seconds)
+		FROM (
+			SELECT sum(duration_seconds) duration_seconds %s,
+			argMax(path, time) exit_path
+			FROM %s
+			WHERE %s
+			GROUP BY fingerprint, session_id %s
+		)
+		%s`, fields, filter.table(), timeQuery, fields, fieldQuery)
+	var averageTimeSpentSeconds int
+
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, timeArgs...); err != nil {
 		return 0, err
 	}
 
-	return stats.AverageTimeSpentSeconds, nil
+	return averageTimeSpentSeconds, nil
 }
 
 func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
@@ -839,14 +863,14 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM %s
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY os, os_version
 		ORDER BY visitors DESC, os, os_version
-		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
+		%s`, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []OSVersionStats
 
@@ -869,14 +893,14 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM %s
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY browser, browser_version
 		ORDER BY visitors DESC, browser, browser_version
-		%s`, relativeFilterQuery, table, filterQuery, filter.withLimit())
+		%s`, table, relativeFilterQuery, table, filterQuery, filter.withLimit())
 	relativeFilterArgs = append(relativeFilterArgs, args...)
 	var stats []BrowserVersionStats
 
@@ -890,24 +914,33 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fields = "," + fields
+		fieldQuery = " AND " + fieldQuery
+	}
+
 	withFillArgs, withFillQuery := filter.withFill()
-	args = append(args, withFillArgs...)
+	timeArgs = append(timeArgs, fieldArgs...)
+	timeArgs = append(timeArgs, withFillArgs...)
 	query := fmt.Sprintf(`SELECT day,
 		toUInt64(avg(duration)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') day,
-			sum(duration_seconds) duration
+			SELECT toDate(time, '%s') day %s,
+			sum(duration_seconds) duration,
+			argMax(path, time) exit_path
 			FROM hit
 			WHERE %s
-			GROUP BY fingerprint, session_id, day
+			GROUP BY fingerprint, session_id, day %s
 		)
-		WHERE duration != 0
+		WHERE duration != 0 %s
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), filterQuery, withFillQuery)
+		ORDER BY day %s`, filter.Timezone.String(), fields, timeQuery, fields, fieldQuery, withFillQuery)
 	var stats []TimeSpentStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
 		return nil, err
 	}
 
