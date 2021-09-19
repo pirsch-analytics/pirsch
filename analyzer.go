@@ -36,29 +36,66 @@ func NewAnalyzer(store Store) *Analyzer {
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().UTC().Add(-duration)
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+	timeArgs = append(timeArgs, fieldArgs...)
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	if !strings.Contains(fields, "path") {
+		if fields == "" {
+			fields = "path"
+		} else {
+			fields += ",path"
+		}
+	}
+
 	title, orderByTitle := "", ""
 
 	if filter.IncludeTitle {
+		fields += ",title"
 		title = ",title"
 		orderByTitle = ",title ASC"
 	}
 
 	query := fmt.Sprintf(`SELECT path %s,
-		count(DISTINCT fingerprint) visitors
-		FROM hit
-		WHERE %s
+		sum(visitors) visitors
+		FROM (
+			SELECT path %s,
+			count(DISTINCT fingerprint) visitors
+			FROM (
+				SELECT %s,
+				fingerprint,
+				argMax(path, time) exit_path
+				FROM hit
+				WHERE %s
+				GROUP BY fingerprint, session_id, %s
+			)
+			%s
+			GROUP BY path %s
+		)
 		GROUP BY path %s
 		ORDER BY visitors DESC, path ASC %s
-		%s`, title, filterQuery, title, orderByTitle, filter.withLimit())
+		%s`, title, title, fields, timeQuery, fields, fieldQuery, title, title, orderByTitle, filter.withLimit())
 	var stats []ActiveVisitorStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
 		return nil, 0, err
 	}
 
-	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors FROM hit WHERE %s`, filterQuery)
-	count, err := analyzer.store.Count(query, args...)
+	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors
+		FROM (
+			SELECT %s,
+			fingerprint,
+			argMax(path, time) exit_path
+			FROM hit
+			WHERE %s
+			GROUP BY fingerprint, session_id, %s
+		)
+		%s`, fields, timeQuery, fields, fieldQuery)
+	count, err := analyzer.store.Count(query, timeArgs...)
 
 	if err != nil {
 		return nil, 0, err
