@@ -1017,21 +1017,52 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	filter.EventName = ""
-	args, filterQuery, _ := filter.query()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	if !strings.Contains(fields, attr) {
+		if fields == "" {
+			fields = attr
+		} else {
+			fields += "," + attr
+		}
+	}
+
+	timeArgs = append(timeArgs, fieldArgs...)
+	timeArgs = append(timeArgs, timeArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
 		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
+			FROM (
+				SELECT %s,
+				fingerprint,
+				argMax(path, time) exit_path
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id, %s
+			)
+			%s
+		), 1) relative_visitors
+		FROM (
+			SELECT %s,
+			fingerprint,
+			argMax(path, time) exit_path
 			FROM %s
 			WHERE %s
-		), 1) relative_visitors
-		FROM %s
-		WHERE %s
+			GROUP BY fingerprint, session_id, %s
+		)
+		%s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC
-		%s`, attr, table, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
-	args = append(args, args...)
-	return analyzer.store.Select(results, query, args...)
+		%s`, attr, fields, table, timeQuery, fields, fieldQuery,
+		fields, table, timeQuery, fields, fieldQuery,
+		attr, attr, filter.withLimit())
+	return analyzer.store.Select(results, query, timeArgs...)
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
