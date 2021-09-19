@@ -1022,14 +1022,14 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM %s
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
 		WHERE %s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC
-		%s`, attr, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
+		%s`, attr, table, filterQuery, table, filterQuery, attr, attr, filter.withLimit())
 	args = append(args, args...)
 	return analyzer.store.Select(results, query, args...)
 }
