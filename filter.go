@@ -222,7 +222,7 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 	return args, sqlQuery.String()
 }
 
-func (filter *Filter) queryFields() ([]interface{}, string, string) {
+func (filter *Filter) queryFields() ([]interface{}, string, []string) {
 	args := make([]interface{}, 0, 17)
 	queryFields := make([]string, 0, 17)
 	fields := make([]string, 0, 17)
@@ -245,7 +245,7 @@ func (filter *Filter) queryFields() ([]interface{}, string, string) {
 	filter.queryPlatform(&fields, &queryFields)
 	filter.queryExitPath(&queryFields, &args)
 	filter.queryPathPattern(&fields, &queryFields, &args)
-	return args, strings.Join(queryFields, "AND "), strings.Join(fields, ",")
+	return args, strings.Join(queryFields, "AND "), fields
 }
 
 func (filter *Filter) queryPlatform(fields, queryFields *[]string) {
@@ -333,7 +333,7 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-func (filter *Filter) query() ([]interface{}, string, string) {
+func (filter *Filter) query() ([]interface{}, string, []string) {
 	args, query := filter.queryTime()
 	fieldArgs, queryFields, fields := filter.queryFields()
 	args = append(args, fieldArgs...)

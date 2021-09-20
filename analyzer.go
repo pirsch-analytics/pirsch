@@ -44,22 +44,16 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	if !strings.Contains(fields, "path") {
-		if fields == "" {
-			fields = "path"
-		} else {
-			fields += ",path"
-		}
-	}
-
+	filter.addFieldIfRequired(&fields, "path")
 	title, orderByTitle := "", ""
 
 	if filter.IncludeTitle {
-		fields += ",title"
+		filter.addFieldIfRequired(&fields, "title")
 		title = ",title"
 		orderByTitle = ",title ASC"
 	}
 
+	fieldsQuery := strings.Join(fields, ",")
 	query := fmt.Sprintf(`SELECT path %s,
 		sum(visitors) visitors
 		FROM (
@@ -78,7 +72,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		)
 		GROUP BY path %s
 		ORDER BY visitors DESC, path ASC %s
-		%s`, title, title, fields, timeQuery, fields, fieldQuery, title, title, orderByTitle, filter.withLimit())
+		%s`, title, title, fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title, orderByTitle, filter.withLimit())
 	var stats []ActiveVisitorStats
 
 	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
@@ -94,7 +88,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 			WHERE %s
 			GROUP BY fingerprint, session_id, %s
 		)
-		%s`, fields, timeQuery, fields, fieldQuery)
+		%s`, fieldsQuery, timeQuery, fieldsQuery, fieldQuery)
 	count, err := analyzer.store.Count(query, timeArgs...)
 
 	if err != nil {
@@ -112,13 +106,18 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
 	timezone := filter.Timezone.String()
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
 	query := fmt.Sprintf(`SELECT day,
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
@@ -138,7 +137,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		)
 		%s
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, timezone, fields, filter.table(), timeQuery, fields, fieldQuery, withFillQuery)
+		ORDER BY day ASC %s, visitors DESC`, timezone, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery, withFillQuery)
 	var stats []VisitorStats
 
 	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
@@ -163,10 +162,15 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
 	}
 
 	timeArgs = append(timeArgs, fieldArgs...)
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
 	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		sum(views) views,
@@ -181,7 +185,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 			WHERE %s
 			GROUP BY fingerprint, session_id %s
 		)
-		%s`, fields, filter.table(), timeQuery, fields, fieldQuery)
+		%s`, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, timeArgs...); err != nil {
@@ -239,76 +243,6 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}, nil
 }
 
-func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
-	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
-	}
-
-	timeArgs = append(timeArgs, fieldArgs...)
-	query := fmt.Sprintf(`SELECT sum(duration_seconds)
-		FROM (
-			SELECT sum(duration_seconds) duration_seconds %s,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s`, fields, filter.table(), timeQuery, fields, fieldQuery)
-	var averageTimeSpentSeconds int
-
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, timeArgs...); err != nil {
-		return 0, err
-	}
-
-	return averageTimeSpentSeconds, nil
-}
-
-func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
-	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "AND " + fieldQuery
-	}
-
-	if fields != "" {
-		fields = "," + fields
-	}
-
-	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
-		FROM (
-			SELECT %s time_on_page
-			FROM (
-				SELECT session_id %s,
-				sum(duration_seconds) duration_seconds,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id, time %s
-				ORDER BY fingerprint, session_id, time
-			)
-			WHERE time_on_page > 0
-			AND session_id = neighbor(session_id, 1, null)
-			%s
-		)`, analyzer.timeOnPageQuery(filter), fields, filter.table(), timeQuery, fields, fieldQuery)
-	timeArgs = append(timeArgs, fieldArgs...)
-	stats := new(struct {
-		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
-	})
-
-	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
-		return 0, err
-	}
-
-	return stats.AverageTimeSpentSeconds, nil
-}
-
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -317,10 +251,15 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
 	}
 
 	timeArgs = append(timeArgs, fieldArgs...)
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
 	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour,
 		sum(visitors) visitors
 		FROM (
@@ -333,7 +272,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 		)
 		%s
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), fields, filter.table(), timeQuery, fields, fieldQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
 	var stats []VisitorHourStats
 
 	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
@@ -355,7 +294,6 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
 	}
 
 	if relativeFieldQuery != "" {
@@ -368,16 +306,31 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	args = append(args, relativeTimeArgs...)
 	args = append(args, relativeFieldArgs...)
 	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
 	title, titleGroupBy, titleOrderBy := "", "", ""
 
 	if filter.IncludeTitle {
 		title = "title,"
 		titleGroupBy = ",title"
 		titleOrderBy = "title ASC,"
-		fields += ",title"
+		filter.addFieldIfRequired(&fields, "title")
 	}
 
+	top, topQuery := "", ""
+
+	if filter.IncludeAvgTimeOnPage {
+		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
+		var topArgs []interface{}
+		topQuery, topArgs = analyzer.avgTimeOnPages(filter)
+		args = append(args, topArgs...)
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
+	args = append(args, fieldArgs...)
 	query := fmt.Sprintf(`SELECT arrayJoin(paths) path,
 		%s
 		count(DISTINCT fingerprint) visitors,
@@ -406,6 +359,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		), 1) relative_views,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
+		%s
 		FROM (
 			SELECT groupArray(path) paths %s,
 			argMax(is_bounce, time) is_bounce,
@@ -415,38 +369,20 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			FROM %s
 			WHERE %s
 			GROUP BY fingerprint, session_id %s
-		)
+		) AS visitors
+		%s
 		%s
 		GROUP BY path %s
 		ORDER BY visitors DESC, %s path ASC
 		%s`, title,
-		fields, table, relativeTimeQuery, fields, relativeFieldQuery,
-		fields, table, relativeTimeQuery, fields, relativeFieldQuery,
-		fields, table, timeQuery, fields, fieldQuery,
+		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		top, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery, topQuery,
 		titleGroupBy, titleOrderBy, filter.withLimit())
 	var stats []PageStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
-	}
-
-	// TODO optimize
-	// select average time on page if set and we do not read results from the events table
-	if filter.IncludeAvgTimeOnPage && table == "hit" {
-		timeOnPage, err := analyzer.AvgTimeOnPages(filter)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for i := range stats {
-			for j := range timeOnPage {
-				if stats[i].Path == timeOnPage[j].Path && (!filter.IncludeTitle || stats[i].Title == timeOnPage[j].Title) {
-					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
-					break
-				}
-			}
-		}
 	}
 
 	return stats, nil
@@ -455,71 +391,71 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
-	var path, pathFilter string
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+	timeArgs = append(timeArgs, fieldArgs...)
 
-	if filter.Path != "" {
-		path = filter.Path
-		pathFilter = "AND path = ?"
-		filter.Path = ""
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	filterArgs, filterQuery, _ := filter.query()
-
-	if path != "" {
-		filterArgs = append(filterArgs, path)
-	}
-
+	filter.addFieldIfRequired(&fields, "path")
+	filter.addFieldIfRequired(&fields, "entry_path")
 	title, titleInner, titleOrderBy := "", "", ""
 
 	if filter.IncludeTitle {
 		title = "title,"
 		titleInner = ",title"
 		titleOrderBy = "title ASC,"
+		filter.addFieldIfRequired(&fields, "title")
 	}
 
+	top, topQuery := "", ""
+
+	if filter.IncludeAvgTimeOnPage {
+		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
+		var topArgs []interface{}
+		topQuery, topArgs = analyzer.avgTimeOnPages(filter)
+		timeArgs = append(timeArgs, topArgs...)
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
 	query := fmt.Sprintf(`SELECT *
 		FROM (
 			SELECT path,
 			%s
-			sum(visits) visitors,
-			sumIf(visits, path = entry_path) entries,
+			sum(visitors) visitors,
+			sum(entries) entries,
 			entries/IF(visitors = 0, 1, visitors) entry_rate
+			%s
 			FROM (
-				SELECT entry_path,
-				path,
+				SELECT path,
 				%s
-				count(DISTINCT fingerprint) visits
-				FROM %s
-				WHERE %s
-				GROUP BY entry_path, path %s
-			)
+				sum(visits) visitors,
+				sumIf(visits, path = entry_path) entries
+				FROM (
+					SELECT %s,
+					count(DISTINCT fingerprint) visits,
+					argMax(path, time) exit_path
+					FROM %s
+					WHERE %s
+					GROUP BY fingerprint, session_id, %s
+				)
+				%s
+				GROUP BY path %s
+			) AS visitors
+			%s
 			GROUP BY path %s
 		)
-		WHERE entries > 0 %s
+		WHERE entries > 0
 		ORDER BY entries DESC, %s path ASC
-		%s`, title, title, filter.table(), filterQuery, titleInner, titleInner, pathFilter, titleOrderBy, filter.withLimit())
+		%s`, title, top, title,
+		fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery, titleInner,
+		topQuery, titleInner, titleOrderBy, filter.withLimit())
 	var stats []EntryStats
 
-	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
 		return nil, err
-	}
-
-	// TODO optimize
-	if filter.IncludeAvgTimeOnPage {
-		timeOnPage, err := analyzer.AvgTimeOnPages(filter)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for i := range stats {
-			for j := range timeOnPage {
-				if stats[i].Path == timeOnPage[j].Path && (!filter.IncludeTitle || stats[i].Title == timeOnPage[j].Title) {
-					stats[i].AverageTimeSpentSeconds = timeOnPage[j].AverageTimeSpentSeconds
-					break
-				}
-			}
-		}
 	}
 
 	return stats, nil
@@ -536,10 +472,6 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	if fields != "" {
-		fields = "," + fields
-	}
-
 	title, titleInner, titleInnerArgMax, titleOrderBy := "", "", "", ""
 
 	if filter.IncludeTitle {
@@ -547,6 +479,12 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		titleInner = ",title"
 		titleInnerArgMax = ",argMax(title, time) title"
 		titleOrderBy = "title ASC,"
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
 	}
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)*2)
@@ -583,9 +521,9 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		GROUP by  %s exit_path
 		ORDER BY exits DESC, %s exit_path ASC
 		%s`, title,
-		fields, titleInner, table, timeQuery, fields, titleInner,
-		fields, titleInner, fields, titleInnerArgMax, table, timeQuery, fields, fieldQuery, fields, titleInner,
-		fields, fieldQuery, title, titleOrderBy, filter.withLimit())
+		fieldsQuery, titleInner, table, timeQuery, fieldsQuery, titleInner,
+		fieldsQuery, titleInner, fieldsQuery, titleInnerArgMax, table, timeQuery, fieldsQuery, fieldQuery, fieldsQuery, titleInner,
+		fieldsQuery, fieldQuery, title, titleOrderBy, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -733,11 +671,16 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-		fields = "," + fields
 	}
 
 	if relativeFieldQuery != "" {
 		relativeFieldQuery = "WHERE " + relativeFieldQuery
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
 	}
 
 	args := make([]interface{}, 0, len(relativeTimeArgs)+len(relativeFieldArgs)+len(timeArgs)+len(fieldArgs))
@@ -778,8 +721,8 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		%s
 		GROUP BY referrer, referrer_name, referrer_icon
 		ORDER BY visitors DESC
-		%s`, fields, table, relativeTimeQuery, fields, relativeFieldQuery,
-		fields, table, timeQuery, fields, fieldQuery,
+		%s`, fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
 		filter.withLimit())
 	var stats []ReferrerStats
 
@@ -799,7 +742,12 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 
 	if fieldQuery != "" {
 		fieldQuery = "AND " + fieldQuery
-		fields = "," + fields
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
 	}
 
 	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs)*3)
@@ -857,9 +805,9 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 		"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`,
-		fields, table, timeQuery, fields, fieldQuery,
-		fields, table, timeQuery, fields, fieldQuery,
-		fields, table, timeQuery, fields, fieldQuery)
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery)
 	stats := new(PlatformStats)
 
 	if err := analyzer.store.Get(stats, query, args...); err != nil {
@@ -1046,8 +994,13 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	fieldArgs, fieldQuery, fields := filter.queryFields()
 
 	if fieldQuery != "" {
-		fields = "," + fields
 		fieldQuery = "AND " + fieldQuery
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
@@ -1065,65 +1018,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 		)
 		WHERE duration != 0 %s
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), fields, timeQuery, fields, fieldQuery, withFillQuery)
-	var stats []TimeSpentStats
-
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
-}
-
-// AvgTimeOnPages returns the average time on page grouped by path and (optional) page title.
-func (analyzer *Analyzer) AvgTimeOnPages(filter *Filter) ([]TimeSpentStats, error) {
-	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if len(fieldArgs) > 0 {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	if !strings.Contains(fields, "path") {
-		if fields == "" {
-			fields = "path"
-		} else {
-			fields += ",path"
-		}
-	}
-
-	fields = "," + fields
-	title := ""
-
-	if filter.IncludeTitle {
-		title = ",title"
-		fields += ",title"
-	}
-
-	query := fmt.Sprintf(`SELECT path %s,
-		toUInt64(avg(time_on_page)) average_time_spent_seconds
-		FROM (
-			SELECT *,
-			%s time_on_page
-			FROM (
-				SELECT session_id,
-				time,
-				sum(duration_seconds) duration_seconds,
-				argMax(path, time) exit_path
-				%s
-				FROM hit
-				WHERE %s
-				GROUP BY fingerprint, session_id, time %s
-				ORDER BY fingerprint, session_id, time
-			)
-			WHERE time_on_page > 0
-			AND session_id = neighbor(session_id, 1, null)
-		)
-		%s
-		GROUP BY path %s
-		ORDER BY path %s`, title, analyzer.timeOnPageQuery(filter), fields, timeQuery, fields, fieldQuery, title, title)
-	timeArgs = append(timeArgs, fieldArgs...)
+		ORDER BY day %s`, filter.Timezone.String(), fieldsQuery, timeQuery, fieldsQuery, fieldQuery, withFillQuery)
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
@@ -1143,8 +1038,10 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		fieldQuery = "AND " + fieldQuery
 	}
 
-	if fields != "" {
-		fields = "," + fields
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
@@ -1167,7 +1064,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			%s
 		)
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), analyzer.timeOnPageQuery(filter), fields, timeQuery, fieldQuery, withFillQuery)
+		ORDER BY day %s`, filter.Timezone.String(), analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
 	var stats []TimeSpentStats
@@ -1177,6 +1074,134 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	}
 
 	return stats, nil
+}
+
+func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
+	timeArgs = append(timeArgs, fieldArgs...)
+	query := fmt.Sprintf(`SELECT sum(duration_seconds)
+		FROM (
+			SELECT sum(duration_seconds) duration_seconds %s,
+			argMax(path, time) exit_path
+			FROM %s
+			WHERE %s
+			GROUP BY fingerprint, session_id %s
+		)
+		%s`, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
+	var averageTimeSpentSeconds int
+
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, timeArgs...); err != nil {
+		return 0, err
+	}
+
+	return averageTimeSpentSeconds, nil
+}
+
+func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "AND " + fieldQuery
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
+	query := fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
+		FROM (
+			SELECT %s time_on_page
+			FROM (
+				SELECT session_id %s,
+				sum(duration_seconds) duration_seconds,
+				argMax(path, time) exit_path
+				FROM %s
+				WHERE %s
+				GROUP BY fingerprint, session_id, time %s
+				ORDER BY fingerprint, session_id, time
+			)
+			WHERE time_on_page > 0
+			AND session_id = neighbor(session_id, 1, null)
+			%s
+		)`, analyzer.timeOnPageQuery(filter), fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
+	timeArgs = append(timeArgs, fieldArgs...)
+	stats := new(struct {
+		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	})
+
+	if err := analyzer.store.Get(stats, query, timeArgs...); err != nil {
+		return 0, err
+	}
+
+	return stats.AverageTimeSpentSeconds, nil
+}
+
+func (analyzer *Analyzer) avgTimeOnPages(filter *Filter) (string, []interface{}) {
+	filter = analyzer.getFilter(filter)
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery, fields := filter.queryFields()
+
+	if len(fieldArgs) > 0 {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	filter.addFieldIfRequired(&fields, "path")
+	title := ""
+
+	if filter.IncludeTitle {
+		title = ",title"
+		filter.addFieldIfRequired(&fields, "title")
+	}
+
+	fieldsQuery := strings.Join(fields, ",")
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
+	query := fmt.Sprintf(`ANY LEFT JOIN (
+			SELECT path %s,
+			toUInt64(avg(time_on_page)) average_time_spent_seconds
+			FROM (
+				SELECT *,
+				%s time_on_page
+				FROM (
+					SELECT session_id,
+					time,
+					sum(duration_seconds) duration_seconds,
+					argMax(path, time) exit_path
+					%s
+					FROM hit
+					WHERE %s
+					GROUP BY fingerprint, session_id, time %s
+					ORDER BY fingerprint, session_id, time
+				)
+				WHERE time_on_page > 0
+				AND session_id = neighbor(session_id, 1, null)
+			)
+			%s
+			GROUP BY path %s
+		) AS top
+		USING path %s`, title, analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title)
+	timeArgs = append(timeArgs, fieldArgs...)
+	return query, timeArgs
 }
 
 func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
@@ -1224,14 +1249,8 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	if !strings.Contains(fields, attr) {
-		if fields == "" {
-			fields = attr
-		} else {
-			fields += "," + attr
-		}
-	}
-
+	filter.addFieldIfRequired(&fields, attr)
+	fieldsQuery := strings.Join(fields, ",")
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, timeArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
@@ -1259,8 +1278,8 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		%s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC
-		%s`, attr, fields, table, timeQuery, fields, fieldQuery,
-		fields, table, timeQuery, fields, fieldQuery,
+		%s`, attr, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
 		attr, attr, filter.withLimit())
 	return analyzer.store.Select(results, query, timeArgs...)
 }
