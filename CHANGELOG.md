@@ -12,6 +12,7 @@
 * optimized filter (non required fields are now longer selected)
 * the User-Agent header is not stored in a separate table for later analysis (filtering bots)
 * removed unused UserAgent and full URL from hit and event table
+* remove trailing slashes from referrer URLs
 * updated dependencies
 
 ## 2.6.3

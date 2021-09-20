@@ -38,7 +38,7 @@ func TestHitFromRequest(t *testing.T) {
 		!hit.IsBounce ||
 		hit.Title != "title" ||
 		hit.Language != "de" ||
-		hit.Referrer != "http://ref/" ||
+		hit.Referrer != "http://ref" ||
 		hit.OS != OSWindows ||
 		hit.OSVersion != "10" ||
 		hit.Browser != BrowserChrome ||
@@ -119,7 +119,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 		Referrer:     "http://custom.ref/",
 	})
 
-	if hit.Path != "/new/custom/path" || hit.Referrer != "http://custom.ref/" {
+	if hit.Path != "/new/custom/path" || hit.Referrer != "http://custom.ref" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }

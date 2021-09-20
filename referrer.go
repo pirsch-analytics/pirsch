@@ -91,8 +91,8 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	if u.Path == "" {
-		u.Path = "/"
+	if u.Path == "/" {
+		u.Path = ""
 	}
 
 	return u.String(), "", ""
