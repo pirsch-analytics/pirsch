@@ -92,6 +92,7 @@ type Tracker struct {
 	salt                                      string
 	hits                                      chan Hit
 	events                                    chan Event
+	userAgents                                chan UserAgent
 	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
@@ -121,6 +122,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
+		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
 		workerBufferSize:        config.WorkerBufferSize,
 		workerTimeout:           config.WorkerTimeout,
@@ -159,7 +161,15 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		tracker.hits <- HitFromRequest(r, tracker.salt, options)
+		hit, ua := HitFromRequest(r, tracker.salt, options)
+
+		if hit != nil {
+			tracker.hits <- *hit
+		}
+
+		if ua != nil {
+			tracker.userAgents <- *ua
+		}
 	}
 }
 
@@ -187,12 +197,20 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		tracker.events <- Event{
-			Hit:             HitFromRequest(r, tracker.salt, options),
-			Name:            strings.TrimSpace(eventOptions.Name),
-			DurationSeconds: eventOptions.Duration,
-			MetaKeys:        metaKeys,
-			MetaValues:      metaValues,
+		hit, ua := HitFromRequest(r, tracker.salt, options)
+
+		if hit != nil {
+			tracker.events <- Event{
+				Hit:             *hit,
+				Name:            strings.TrimSpace(eventOptions.Name),
+				DurationSeconds: eventOptions.Duration,
+				MetaKeys:        metaKeys,
+				MetaValues:      metaValues,
+			}
+		}
+
+		if ua != nil {
+			tracker.userAgents <- *ua
 		}
 	}
 }
@@ -211,6 +229,7 @@ func (tracker *Tracker) Stop() {
 		tracker.stopWorker()
 		tracker.flushHits()
 		tracker.flushEvents()
+		tracker.flushUserAgents()
 	}
 }
 
@@ -230,20 +249,22 @@ func (tracker *Tracker) startWorker() {
 	for i := 0; i < tracker.worker; i++ {
 		go tracker.aggregateHits(ctx)
 		go tracker.aggregateEvents(ctx)
+		go tracker.aggregateUserAgents(ctx)
 	}
 }
 
 func (tracker *Tracker) stopWorker() {
 	tracker.workerCancel()
 
-	for i := 0; i < tracker.worker*2; i++ {
+	for i := 0; i < tracker.worker*3; i++ {
 		<-tracker.workerDone
 	}
 }
 
+// This function will make sure all dangling hits will be saved in database before shutdown.
+// Hits are buffered before saving.
+// The same method is used for events and user agents.
 func (tracker *Tracker) flushHits() {
-	// this function will make sure all dangling hits will be saved in database before shutdown
-	// hits are buffered before saving
 	hits := make([]Hit, 0, tracker.workerBufferSize)
 
 	for {
@@ -305,8 +326,6 @@ func (tracker *Tracker) saveHits(hits []Hit) {
 }
 
 func (tracker *Tracker) flushEvents() {
-	// this function will make sure all dangling events will be saved in database before shutdown
-	// events are buffered before saving
 	events := make([]Event, 0, tracker.workerBufferSize)
 
 	for {
@@ -363,6 +382,67 @@ func (tracker *Tracker) saveEvents(events []Event) {
 	if len(events) > 0 {
 		if err := tracker.store.SaveEvents(events); err != nil {
 			tracker.logger.Printf("error saving events: %s", err)
+		}
+	}
+}
+
+func (tracker *Tracker) flushUserAgents() {
+	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
+
+	for {
+		stop := false
+
+		select {
+		case ua := <-tracker.userAgents:
+			userAgents = append(userAgents, ua)
+
+			if len(userAgents) == tracker.workerBufferSize {
+				tracker.saveUserAgents(userAgents)
+				userAgents = userAgents[:0]
+			}
+		default:
+			stop = true
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	tracker.saveUserAgents(userAgents)
+}
+
+func (tracker *Tracker) aggregateUserAgents(ctx context.Context) {
+	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
+	timer := time.NewTimer(tracker.workerTimeout)
+	defer timer.Stop()
+
+	for {
+		timer.Reset(tracker.workerTimeout)
+
+		select {
+		case ua := <-tracker.userAgents:
+			userAgents = append(userAgents, ua)
+
+			if len(userAgents) == tracker.workerBufferSize {
+				tracker.saveUserAgents(userAgents)
+				userAgents = userAgents[:0]
+			}
+		case <-timer.C:
+			tracker.saveUserAgents(userAgents)
+			userAgents = userAgents[:0]
+		case <-ctx.Done():
+			tracker.saveUserAgents(userAgents)
+			tracker.workerDone <- true
+			return
+		}
+	}
+}
+
+func (tracker *Tracker) saveUserAgents(userAgents []UserAgent) {
+	if len(userAgents) > 0 {
+		if err := tracker.store.SaveUserAgents(userAgents); err != nil {
+			tracker.logger.Printf("error saving user agents: %s", err)
 		}
 	}
 }

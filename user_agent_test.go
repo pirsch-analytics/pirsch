@@ -3,11 +3,15 @@ package pirsch
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestParseUserAgent(t *testing.T) {
 	// just a simple test to check ParseUserAgent returns something for a clean User-Agent
-	ua := ParseUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0")
+	uaString := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0"
+	ua := ParseUserAgent(uaString)
+	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
+	assert.Equal(t, uaString, ua.UserAgent)
 	assert.Equal(t, OSMac, ua.OS)
 	assert.Equal(t, "10.15", ua.OSVersion)
 	assert.Equal(t, BrowserFirefox, ua.Browser)

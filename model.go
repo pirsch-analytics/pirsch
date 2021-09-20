@@ -7,34 +7,35 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
-	ClientID                  int64 `db:"client_id"`
-	Fingerprint               string
-	Time                      time.Time
-	Session                   time.Time
-	PreviousTimeOnPageSeconds int    `db:"previous_time_on_page_seconds"`
-	UserAgent                 string `db:"user_agent"`
-	Path                      string
-	URL                       string
-	Title                     string
-	Language                  string
-	CountryCode               string `db:"country_code"`
-	Referrer                  string
-	ReferrerName              string `db:"referrer_name"`
-	ReferrerIcon              string `db:"referrer_icon"`
-	OS                        string
-	OSVersion                 string `db:"os_version"`
-	Browser                   string
-	BrowserVersion            string `db:"browser_version"`
-	Desktop                   bool
-	Mobile                    bool
-	ScreenWidth               int    `db:"screen_width"`
-	ScreenHeight              int    `db:"screen_height"`
-	ScreenClass               string `db:"screen_class"`
-	UTMSource                 string `db:"utm_source"`
-	UTMMedium                 string `db:"utm_medium"`
-	UTMCampaign               string `db:"utm_campaign"`
-	UTMContent                string `db:"utm_content"`
-	UTMTerm                   string `db:"utm_term"`
+	ClientID        uint64 `db:"client_id"`
+	Fingerprint     string
+	Time            time.Time
+	SessionID       uint32 `db:"session_id"`
+	DurationSeconds uint32 `db:"duration_seconds"`
+	Path            string
+	EntryPath       string `db:"entry_path"`
+	PageViews       uint16 `db:"page_views"`
+	IsBounce        bool   `db:"is_bounce"`
+	Title           string
+	Language        string
+	CountryCode     string `db:"country_code"`
+	Referrer        string
+	ReferrerName    string `db:"referrer_name"`
+	ReferrerIcon    string `db:"referrer_icon"`
+	OS              string
+	OSVersion       string `db:"os_version"`
+	Browser         string
+	BrowserVersion  string `db:"browser_version"`
+	Desktop         bool
+	Mobile          bool
+	ScreenWidth     uint16 `db:"screen_width"`
+	ScreenHeight    uint16 `db:"screen_height"`
+	ScreenClass     string `db:"screen_class"`
+	UTMSource       string `db:"utm_source"`
+	UTMMedium       string `db:"utm_medium"`
+	UTMCampaign     string `db:"utm_campaign"`
+	UTMContent      string `db:"utm_content"`
+	UTMTerm         string `db:"utm_term"`
 }
 
 // String implements the Stringer interface.
@@ -57,14 +58,6 @@ type Event struct {
 func (event Event) String() string {
 	out, _ := json.Marshal(event)
 	return string(out)
-}
-
-// Session represents a visitor session as it is returned by the Client from the database.
-// This is not used for any actual statistic.
-type Session struct {
-	Path    string
-	Time    time.Time
-	Session time.Time
 }
 
 // ActiveVisitorStats is the result type for active visitor statistics.
@@ -115,11 +108,12 @@ type PageStats struct {
 
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
-	Path                    string `json:"path"`
-	Title                   string `json:"title"`
-	Visitors                int    `json:"visitors"`
-	Entries                 int    `json:"entries"`
-	AverageTimeSpentSeconds int    `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	Path                    string  `json:"path"`
+	Title                   string  `json:"title"`
+	Visitors                int     `json:"visitors"`
+	Entries                 int     `json:"entries"`
+	EntryRate               float64 `db:"entry_rate" json:"entry_rate"`
+	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
 // ExitStats is the result type for exit page statistics.
@@ -155,6 +149,7 @@ type ReferrerStats struct {
 	ReferrerName     string  `db:"referrer_name" json:"referrer_name"`
 	ReferrerIcon     string  `db:"referrer_icon" json:"referrer_icon"`
 	Visitors         int     `json:"visitors"`
+	Sessions         int     `json:"sessions"`
 	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
 	Bounces          int     `json:"bounces"`
 	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`

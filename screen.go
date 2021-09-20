@@ -1,7 +1,7 @@
 package pirsch
 
 type screenClass struct {
-	minWidth int
+	minWidth uint16
 	class    string
 }
 
@@ -20,7 +20,7 @@ var ScreenClasses = []screenClass{
 }
 
 // GetScreenClass returns the screen class for given width in pixels.
-func GetScreenClass(width int) string {
+func GetScreenClass(width uint16) string {
 	if width <= 0 {
 		return ""
 	}

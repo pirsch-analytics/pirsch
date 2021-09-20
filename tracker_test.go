@@ -37,21 +37,29 @@ func TestTrackerConfigValidate(t *testing.T) {
 }
 
 func TestTrackerHitTimeout(t *testing.T) {
+	uaString1 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0"
+	uaString2 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/88.0"
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
-	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	req1.Header.Add("User-Agent", uaString1)
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
-	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	req2.Header.Add("User-Agent", uaString2)
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
 	assert.Len(t, client.Hits, 2)
+	assert.Len(t, client.UserAgents, 2)
 
 	// ignore order...
 	if client.Hits[0].Path != "/" && client.Hits[0].Path != "/hello-world" ||
 		client.Hits[1].Path != "/" && client.Hits[1].Path != "/hello-world" {
 		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
+	}
+
+	if client.UserAgents[0].UserAgent != uaString1 && client.UserAgents[0].UserAgent != uaString2 ||
+		client.UserAgents[1].UserAgent != uaString1 && client.UserAgents[1].UserAgent != uaString2 {
+		t.Fatalf("UserAgents not as expected: %v %v", client.UserAgents[0], client.UserAgents[1])
 	}
 }
 
@@ -70,6 +78,7 @@ func TestTrackerHitLimit(t *testing.T) {
 
 	tracker.Stop()
 	assert.Len(t, client.Hits, 7)
+	assert.Len(t, client.UserAgents, 1)
 }
 
 func TestTrackerHitDiscard(t *testing.T) {
@@ -90,6 +99,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 	}
 
 	assert.Len(t, client.Hits, 5)
+	assert.Len(t, client.UserAgents, 1)
 }
 
 func TestTrackerHitCountryCode(t *testing.T) {
@@ -112,6 +122,7 @@ func TestTrackerHitCountryCode(t *testing.T) {
 	tracker.Hit(req2, nil)
 	tracker.Stop()
 	assert.Len(t, client.Hits, 2)
+	assert.Len(t, client.UserAgents, 2)
 	foundGB := false
 	foundEmpty := false
 
@@ -140,11 +151,8 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req2, nil)
 	tracker.Stop()
 	assert.Len(t, client.Hits, 2)
-
-	// ignore order...
-	if client.Hits[0].Session.IsZero() || client.Hits[1].Session.IsZero() {
-		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
-	}
+	assert.Len(t, client.UserAgents, 1)
+	assert.Equal(t, client.Hits[0].SessionID, client.Hits[1].SessionID)
 }
 
 func TestTrackerHitIgnoreSubdomain(t *testing.T) {
@@ -174,6 +182,7 @@ func TestTrackerHitIgnoreSubdomain(t *testing.T) {
 	})
 	tracker.Stop()
 	assert.Len(t, client.Hits, 4)
+	assert.Len(t, client.UserAgents, 1)
 
 	for _, hit := range client.Hits {
 		assert.Empty(t, hit.Referrer)
@@ -190,6 +199,7 @@ func TestTrackerEvent(t *testing.T) {
 	tracker.Event(req, EventOptions{Name: " event  ", Duration: 42, Meta: map[string]string{"hello": "world", "meta": "data"}}, nil) // store duration and meta data
 	tracker.Stop()
 	assert.Len(t, client.Events, 1)
+	assert.Len(t, client.UserAgents, 1)
 	assert.Equal(t, "event", client.Events[0].Name)
 	assert.Equal(t, 42, client.Events[0].DurationSeconds)
 	assert.Len(t, client.Events[0].MetaKeys, 2)
@@ -211,6 +221,7 @@ func TestTrackerEventTimeout(t *testing.T) {
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	time.Sleep(time.Millisecond * 210)
 	assert.Len(t, client.Events, 2)
+	assert.Len(t, client.UserAgents, 1)
 
 	// ignore order...
 	if client.Events[0].Path != "/" && client.Events[0].Path != "/hello-world" ||
@@ -234,6 +245,7 @@ func TestTrackerEventLimit(t *testing.T) {
 
 	tracker.Stop()
 	assert.Len(t, client.Events, 7)
+	assert.Len(t, client.UserAgents, 1)
 }
 
 func TestTrackerEventDiscard(t *testing.T) {
@@ -254,6 +266,7 @@ func TestTrackerEventDiscard(t *testing.T) {
 	}
 
 	assert.Len(t, client.Events, 5)
+	assert.Len(t, client.UserAgents, 1)
 }
 
 func TestTrackerEventCountryCode(t *testing.T) {
@@ -276,6 +289,7 @@ func TestTrackerEventCountryCode(t *testing.T) {
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
 	assert.Len(t, client.Events, 2)
+	assert.Len(t, client.UserAgents, 2)
 	foundGB := false
 	foundEmpty := false
 
@@ -304,11 +318,8 @@ func TestTrackerEventSession(t *testing.T) {
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
 	assert.Len(t, client.Events, 2)
-
-	// ignore order...
-	if client.Events[0].Session.IsZero() || client.Events[1].Session.IsZero() {
-		t.Fatalf("Hits not as expected: %v %v", client.Events[0], client.Events[1])
-	}
+	assert.Len(t, client.UserAgents, 1)
+	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
 }
 
 func TestTrackerEventIgnoreSubdomain(t *testing.T) {
@@ -338,6 +349,7 @@ func TestTrackerEventIgnoreSubdomain(t *testing.T) {
 	})
 	tracker.Stop()
 	assert.Len(t, client.Events, 4)
+	assert.Len(t, client.UserAgents, 1)
 
 	for _, hit := range client.Events {
 		assert.Empty(t, hit.Referrer)

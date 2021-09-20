@@ -48,10 +48,10 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session_id, duration_seconds,
+		path, entry_path, page_views, is_bounce, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -61,11 +61,12 @@ func (client *Client) SaveHits(hits []Hit) error {
 		_, err := query.Exec(hit.ClientID,
 			hit.Fingerprint,
 			hit.Time,
-			hit.Session,
-			hit.PreviousTimeOnPageSeconds,
-			hit.UserAgent,
+			hit.SessionID,
+			hit.DurationSeconds,
 			hit.Path,
-			hit.URL,
+			hit.EntryPath,
+			hit.PageViews,
+			hit.IsBounce,
 			hit.Title,
 			hit.Language,
 			hit.CountryCode,
@@ -111,11 +112,11 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session, previous_time_on_page_seconds,
-		user_agent, path, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, duration_seconds,
+		path, entry_path, page_views, is_bounce, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -125,11 +126,12 @@ func (client *Client) SaveEvents(events []Event) error {
 		_, err := query.Exec(event.ClientID,
 			event.Fingerprint,
 			event.Time,
-			event.Session,
-			event.PreviousTimeOnPageSeconds,
-			event.UserAgent,
+			event.SessionID,
+			event.DurationSeconds,
 			event.Path,
-			event.URL,
+			event.EntryPath,
+			event.PageViews,
+			event.IsBounce,
 			event.Title,
 			event.Language,
 			event.CountryCode,
@@ -171,21 +173,52 @@ func (client *Client) SaveEvents(events []Event) error {
 	return nil
 }
 
-// Session implements the Store interface.
-func (client *Client) Session(clientID int64, fingerprint string, maxAge time.Time) (Session, error) {
-	query := `SELECT path, time, session FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
-	data := struct {
-		Path    string
-		Time    time.Time
-		Session time.Time
-	}{}
+// SaveUserAgents implements the Store interface.
+func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
+	tx, err := client.Beginx()
 
-	if err := client.DB.Get(&data, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
-		client.logger.Printf("error reading session: %s", err)
-		return Session{}, err
+	if err != nil {
+		return err
 	}
 
-	return data, nil
+	query, err := tx.Prepare(`INSERT INTO "user_agent" (time, user_agent) VALUES (?,?)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, ua := range userAgents {
+		_, err := query.Exec(ua.Time, ua.UserAgent)
+
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				client.logger.Printf("error rolling back transaction to save user agents: %s", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Session implements the Store interface.
+func (client *Client) Session(clientID uint64, fingerprint string, maxAge time.Time) (*Hit, error) {
+	query := `SELECT * FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
+	hit := new(Hit)
+
+	if err := client.DB.Get(hit, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+		client.logger.Printf("error reading session: %s", err)
+		return nil, err
+	} else if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	return hit, nil
 }
 
 // Count implements the Store interface.

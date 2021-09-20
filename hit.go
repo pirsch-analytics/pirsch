@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -9,13 +10,12 @@ import (
 )
 
 const (
-	// version numbers from early 2018
-	minChromeVersion  = 64
-	minFirefoxVersion = 58
-	minSafariVersion  = 11
-	minOperaVersion   = 50
-	minEdgeVersion    = 80
-	minIEVersion      = 11
+	minChromeVersion  = 71 // late 2018
+	minFirefoxVersion = 63 // late 2018
+	minSafariVersion  = 12 // late 2018
+	minOperaVersion   = 57 // late 2018
+	minEdgeVersion    = 88 // late 2020
+	minIEVersion      = 11 // late 2013
 
 	defaultSessionMaxAge = time.Minute * 15
 )
@@ -29,7 +29,7 @@ type HitOptions struct {
 	SessionCache *SessionCache
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
-	ClientID int64
+	ClientID uint64
 
 	// SessionMaxAge defines the maximum time a session stays active.
 	// A session is kept active if requests are made within the time frame.
@@ -62,10 +62,10 @@ type HitOptions struct {
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
 	// ScreenWidth sets the screen width to be stored with the hit.
-	ScreenWidth int
+	ScreenWidth uint16
 
 	// ScreenHeight sets the screen height to be stored with the hit.
-	ScreenHeight int
+	ScreenHeight uint16
 
 	geoDB *GeoDB
 }
@@ -73,101 +73,95 @@ type HitOptions struct {
 // HitFromRequest returns a new Hit for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) Hit {
+// The options must be set!
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
 
-	// set default options in case they're nil
 	if options == nil {
-		options = &HitOptions{}
+		return nil, nil
 	}
 
+	// set default options in case they're nil
 	if options.SessionMaxAge.Seconds() == 0 {
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
-	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
-	getRequestURI(r, options)
 	fingerprint := Fingerprint(r, salt)
-	userAgent := r.UserAgent()
-	path := shortenString(options.Path, 2000)
-	requestURL := shortenString(options.URL, 2000)
+	getRequestURI(r, options)
+	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
-	uaInfo := ParseUserAgent(userAgent)
-	uaInfo.OS = shortenString(uaInfo.OS, 20)
-	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
-	uaInfo.Browser = shortenString(uaInfo.Browser, 20)
-	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
-	userAgent = shortenString(userAgent, 200)
-	lang := shortenString(getLanguage(r), 10)
-	referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
-	referrer = shortenString(referrer, 200)
-	referrerName = shortenString(referrerName, 200)
-	referrerIcon = shortenString(referrerIcon, 2000)
-	screen := GetScreenClass(options.ScreenWidth)
-	utm := getUTMParams(r)
-	countryCode := ""
+	hit := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	var ua *UserAgent
 
-	if options.geoDB != nil {
-		countryCode = options.geoDB.CountryCode(getIP(r))
-	}
+	if hit == nil {
+		// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+		userAgent := r.UserAgent()
+		uaInfo := ParseUserAgent(userAgent)
+		ua = &uaInfo
+		uaInfo.OS = shortenString(uaInfo.OS, 20)
+		uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
+		uaInfo.Browser = shortenString(uaInfo.Browser, 20)
+		uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
+		userAgent = shortenString(userAgent, 200)
+		lang := shortenString(getLanguage(r), 10)
+		referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
+		referrer = shortenString(referrer, 200)
+		referrerName = shortenString(referrerName, 200)
+		referrerIcon = shortenString(referrerIcon, 2000)
+		screen := GetScreenClass(options.ScreenWidth)
+		utm := getUTMParams(r)
+		countryCode := ""
 
-	lastHitSeconds := 0
-	session := now
-
-	if options.SessionCache != nil {
-		// hits and sessions use UTC
-		s := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-
-		if !s.Time.IsZero() && s.Path != path {
-			lastHitSeconds = int(now.Sub(s.Time).Seconds())
+		if options.geoDB != nil {
+			countryCode = options.geoDB.CountryCode(getIP(r))
 		}
 
-		if !s.Session.IsZero() {
-			session = s.Session
+		if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
+			options.ScreenWidth = 0
+			options.ScreenHeight = 0
 		}
 
-		options.SessionCache.put(options.ClientID, fingerprint, path, now, session)
+		hit = &Hit{
+			ClientID:       options.ClientID,
+			Fingerprint:    fingerprint,
+			Time:           now,
+			SessionID:      rand.Uint32(),
+			Path:           path,
+			EntryPath:      path,
+			PageViews:      1,
+			IsBounce:       true,
+			Title:          title,
+			Language:       lang,
+			CountryCode:    countryCode,
+			Referrer:       referrer,
+			ReferrerName:   referrerName,
+			ReferrerIcon:   referrerIcon,
+			OS:             uaInfo.OS,
+			OSVersion:      uaInfo.OSVersion,
+			Browser:        uaInfo.Browser,
+			BrowserVersion: uaInfo.BrowserVersion,
+			Desktop:        uaInfo.IsDesktop(),
+			Mobile:         uaInfo.IsMobile(),
+			ScreenWidth:    options.ScreenWidth,
+			ScreenHeight:   options.ScreenHeight,
+			ScreenClass:    screen,
+			UTMSource:      utm.source,
+			UTMMedium:      utm.medium,
+			UTMCampaign:    utm.campaign,
+			UTMContent:     utm.content,
+			UTMTerm:        utm.term,
+		}
+	} else {
+		hit.DurationSeconds = uint32(now.Unix() - hit.Time.Unix())
+		hit.IsBounce = hit.IsBounce && path == hit.Path
+		hit.Time = now
+		hit.Path = path
+		hit.PageViews++
+		hit.Title = title
 	}
 
-	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
-		options.ScreenWidth = 0
-		options.ScreenHeight = 0
-	}
-
-	if path == "" {
-		path = "/"
-	}
-
-	return Hit{
-		ClientID:                  options.ClientID,
-		Fingerprint:               fingerprint,
-		Time:                      now,
-		Session:                   session,
-		PreviousTimeOnPageSeconds: lastHitSeconds,
-		UserAgent:                 userAgent,
-		Path:                      path,
-		URL:                       requestURL,
-		Title:                     title,
-		Language:                  lang,
-		CountryCode:               countryCode,
-		Referrer:                  referrer,
-		ReferrerName:              referrerName,
-		ReferrerIcon:              referrerIcon,
-		OS:                        uaInfo.OS,
-		OSVersion:                 uaInfo.OSVersion,
-		Browser:                   uaInfo.Browser,
-		BrowserVersion:            uaInfo.BrowserVersion,
-		Desktop:                   uaInfo.IsDesktop(),
-		Mobile:                    uaInfo.IsMobile(),
-		ScreenWidth:               options.ScreenWidth,
-		ScreenHeight:              options.ScreenHeight,
-		ScreenClass:               screen,
-		UTMSource:                 utm.source,
-		UTMMedium:                 utm.medium,
-		UTMCampaign:               utm.campaign,
-		UTMContent:                utm.content,
-		UTMTerm:                   utm.term,
-	}
+	options.SessionCache.put(options.ClientID, fingerprint, hit)
+	return hit, ua
 }
 
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
@@ -224,13 +218,23 @@ func IgnoreHit(r *http.Request) bool {
 func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
-		ClientID:     getInt64QueryParam(query.Get("client_id")),
+		ClientID:     getUInt64QueryParam(query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Title:        strings.TrimSpace(query.Get("t")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
-		ScreenWidth:  getIntQueryParam(query.Get("w")),
-		ScreenHeight: getIntQueryParam(query.Get("h")),
+		ScreenWidth:  getUInt16QueryParam(query.Get("w")),
+		ScreenHeight: getUInt16QueryParam(query.Get("h")),
 	}
+}
+
+func getPath(path string) string {
+	path = shortenString(path, 2000)
+
+	if path == "" {
+		return "/"
+	}
+
+	return path
 }
 
 func ignoreBrowserVersion(browser, version string) bool {
@@ -286,14 +290,14 @@ func shortenString(str string, n int) string {
 	return str
 }
 
-func getIntQueryParam(param string) int {
+func getUInt16QueryParam(param string) uint16 {
 	i, _ := strconv.Atoi(param)
-	return i
+	return uint16(i)
 }
 
-func getInt64QueryParam(param string) int64 {
+func getUInt64QueryParam(param string) uint64 {
 	i, _ := strconv.Atoi(param)
-	return int64(i)
+	return uint64(i)
 }
 
 func getURLQueryParam(param string) string {

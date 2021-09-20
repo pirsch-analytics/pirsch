@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	defaultMaxSessions = 100_000
+	defaultMaxSessions = 10_000
 )
 
 // SessionCache caches sessions.
 type SessionCache struct {
-	sessions    map[string]Session
+	sessions    map[string]Hit
 	maxSessions int
 	client      Store
 	m           sync.RWMutex
@@ -25,42 +25,38 @@ func NewSessionCache(client Store, maxSessions int) *SessionCache {
 	}
 
 	return &SessionCache{
-		sessions:    make(map[string]Session),
+		sessions:    make(map[string]Hit),
 		maxSessions: maxSessions,
 		client:      client,
 	}
 }
 
-func (cache *SessionCache) get(clientID int64, fingerprint string, maxAge time.Time) Session {
+func (cache *SessionCache) get(clientID uint64, fingerprint string, maxAge time.Time) *Hit {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.RLock()
-	session, ok := cache.sessions[key]
+	hit, ok := cache.sessions[key]
 	cache.m.RUnlock()
 
-	if ok && session.Time.After(maxAge) {
-		return session
+	if ok && hit.Time.After(maxAge) {
+		return &hit
 	}
 
 	s, _ := cache.client.Session(clientID, fingerprint, maxAge)
 	return s
 }
 
-func (cache *SessionCache) put(clientID int64, fingerprint, path string, now, session time.Time) {
+func (cache *SessionCache) put(clientID uint64, fingerprint string, hit *Hit) {
 	key := cache.getKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
 
 	if len(cache.sessions) >= cache.maxSessions {
-		cache.sessions = make(map[string]Session)
+		cache.sessions = make(map[string]Hit)
 	}
 
-	cache.sessions[key] = Session{
-		Path:    path,
-		Time:    now,
-		Session: session,
-	}
+	cache.sessions[key] = *hit
 }
 
-func (cache *SessionCache) getKey(clientID int64, fingerprint string) string {
+func (cache *SessionCache) getKey(clientID uint64, fingerprint string) string {
 	return fmt.Sprintf("%d%s", clientID, fingerprint)
 }

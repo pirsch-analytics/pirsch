@@ -14,6 +14,7 @@ func TestGetReferrer(t *testing.T) {
 		ignoreSubdomain bool
 	}{
 		{"http://boring.old/domain", nil, false},
+		{"http://boring.old/domain/", nil, false},
 		{"https://with.subdomain.com/", nil, false},
 		{"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42#anchor", nil, false},
 		{"http://boring.old/domain", []string{"boring.old"}, false},
@@ -40,17 +41,18 @@ func TestGetReferrer(t *testing.T) {
 	}
 	expected := []string{
 		"http://boring.old/domain",
-		"https://with.subdomain.com/",
+		"http://boring.old/domain/", // trailing slashes only matter for non-root domain URLs
+		"https://with.subdomain.com",
 		"https://with.multiple.subdomains.com/and/a/path",
 		"",
-		"https://with.subdomain.com/",
+		"https://with.subdomain.com",
 		"https://sub.boring.old/domain",
 		"",
-		"https://example.com/",
-		"https://example.com/",
+		"https://example.com",
+		"https://example.com",
 		"ReferrerName",
 		"",
-		"https://www.pirsch.io/",
+		"https://www.pirsch.io",
 		"",
 		"",
 		"",
@@ -61,8 +63,8 @@ func TestGetReferrer(t *testing.T) {
 		"",
 		"",
 		"",
-		"https://example.com/",
-		"https://example.com/",
+		"https://example.com",
+		"https://example.com",
 	}
 
 	for i, in := range input {

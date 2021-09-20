@@ -2,7 +2,7 @@ package main
 
 import (
 	_ "github.com/lib/pq"
-	"github.com/pirsch-analytics/pirsch/v2"
+	"github.com/pirsch-analytics/pirsch/v3"
 	"log"
 	"net/http"
 	"os"

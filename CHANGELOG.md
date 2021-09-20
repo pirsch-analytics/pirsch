@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.0.0
+
+* added rolling forward page view information for deeper analysis of sessions
+* added filtering for entry and exit page
+* added filtering for "none"/"unknown" (empty strings) by setting a filter to "null"
+* added all statistics available for hits to events as well
+* added optional limit for active visitor statistics
+* optimized data layout
+* optimized statistics queries
+* optimized filter (non required fields are now longer selected)
+* the User-Agent header is not stored in a separate table for later analysis (filtering bots)
+* removed unused UserAgent and full URL from hit and event table
+* remove trailing slashes from referrer URLs
+* updated dependencies
+
 ## 2.6.3
 
 * fixed session cache

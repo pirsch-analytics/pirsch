@@ -12,8 +12,11 @@ type Store interface {
 	// SaveEvents saves given events.
 	SaveEvents([]Event) error
 
-	// Session returns the last path, time, and session timestamp for given client, fingerprint, and maximum age.
-	Session(int64, string, time.Time) (Session, error)
+	// SaveUserAgents saves given UserAgent headers.
+	SaveUserAgents([]UserAgent) error
+
+	// Session returns the last hit for given client, fingerprint, and maximum age.
+	Session(uint64, string, time.Time) (*Hit, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)
