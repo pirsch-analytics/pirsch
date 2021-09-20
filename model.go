@@ -12,12 +12,10 @@ type Hit struct {
 	Time            time.Time
 	SessionID       uint32 `db:"session_id"`
 	DurationSeconds uint32 `db:"duration_seconds"`
-	UserAgent       string `db:"user_agent"`
 	Path            string
 	EntryPath       string `db:"entry_path"`
 	PageViews       uint16 `db:"page_views"`
 	IsBounce        bool   `db:"is_bounce"`
-	URL             string
 	Title           string
 	Language        string
 	CountryCode     string `db:"country_code"`

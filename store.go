@@ -12,6 +12,9 @@ type Store interface {
 	// SaveEvents saves given events.
 	SaveEvents([]Event) error
 
+	// SaveUserAgents saves given UserAgent headers.
+	SaveUserAgents([]UserAgent) error
+
 	// Session returns the last hit for given client, fingerprint, and maximum age.
 	Session(uint64, string, time.Time) (*Hit, error)
 

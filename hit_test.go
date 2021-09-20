@@ -11,11 +11,12 @@ import (
 
 func TestHitFromRequest(t *testing.T) {
 	cleanupDB()
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit, ua := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		ClientID:     42,
 		Title:        "title",
@@ -25,16 +26,16 @@ func TestHitFromRequest(t *testing.T) {
 	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotEmpty(t, hit.Fingerprint)
 	assert.NoError(t, dbClient.SaveHits([]Hit{*hit}))
+	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
+	assert.Equal(t, uaString, ua.UserAgent)
 
 	if hit.Time.IsZero() ||
 		hit.SessionID == 0 ||
 		hit.DurationSeconds != 0 ||
-		hit.UserAgent != "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" ||
 		hit.Path != "/test/path" ||
 		hit.EntryPath != "/test/path" ||
 		hit.PageViews != 1 ||
 		!hit.IsBounce ||
-		hit.URL != "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords" ||
 		hit.Title != "title" ||
 		hit.Language != "de" ||
 		hit.Referrer != "http://ref/" ||
@@ -57,12 +58,13 @@ func TestHitFromRequest(t *testing.T) {
 
 func TestHitFromRequestSession(t *testing.T) {
 	cleanupDB()
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCache(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	hit1 := HitFromRequest(req, "salt", &HitOptions{
+	hit1, ua1 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
 	assert.Equal(t, uint64(0), hit1.ClientID)
@@ -71,6 +73,8 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, "/test/path", hit1.EntryPath)
 	assert.Equal(t, uint32(0), hit1.DurationSeconds)
 	assert.True(t, hit1.IsBounce)
+	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua1.Time.UnixMilli(), 10)
+	assert.Equal(t, uaString, ua1.UserAgent)
 
 	session := sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)]
 	assert.False(t, session.Time.IsZero())
@@ -82,7 +86,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	session.Path = "/different/path"
 	sessionCache.sessions[sessionCache.getKey(hit1.ClientID, hit1.Fingerprint)] = session
 
-	hit2 := HitFromRequest(req, "salt", &HitOptions{
+	hit2, ua2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
 	assert.Equal(t, uint64(0), hit2.ClientID)
@@ -91,40 +95,38 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, "/test/path", hit2.EntryPath)
 	assert.Equal(t, uint32(5), hit2.DurationSeconds)
 	assert.False(t, hit2.IsBounce)
+	assert.Nil(t, ua2)
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if hit.Path != "/new/custom/path" ||
-		hit.URL != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" {
+	if hit.Path != "/new/custom/path" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
 
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		URL:          "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:         "/new/custom/path",
 		Referrer:     "http://custom.ref/",
 	})
 
-	if hit.Path != "/new/custom/path" ||
-		hit.URL != "http://bar.foo/new/custom/path?query=param&foo=bar#anchor" ||
-		hit.Referrer != "http://custom.ref/" {
+	if hit.Path != "/new/custom/path" || hit.Referrer != "http://custom.ref/" {
 		t.Fatalf("Hit not as expected: %v", hit)
 	}
 }
 
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  0,
 		ScreenHeight: 400,
@@ -134,7 +136,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  400,
 		ScreenHeight: 0,
@@ -144,7 +146,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 		t.Fatalf("Screen size must be 0, but was: %v %v", hit.ScreenWidth, hit.ScreenHeight)
 	}
 
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCache(dbClient, 100),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
@@ -167,7 +169,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
-	hit := HitFromRequest(req, "salt", &HitOptions{
+	hit, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
@@ -178,7 +180,7 @@ func TestHitFromRequestCountryCode(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
-	hit = HitFromRequest(req, "salt", &HitOptions{
+	hit, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})

@@ -74,11 +74,11 @@ type HitOptions struct {
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
 // The options must be set!
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
 
 	if options == nil {
-		return nil
+		return nil, nil
 	}
 
 	// set default options in case they're nil
@@ -89,14 +89,15 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
 	fingerprint := Fingerprint(r, salt)
 	getRequestURI(r, options)
 	path := getPath(options.Path)
-	requestURL := shortenString(options.URL, 2000)
 	title := shortenString(options.Title, 512)
 	hit := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	var ua *UserAgent
 
 	if hit == nil {
 		// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
 		userAgent := r.UserAgent()
 		uaInfo := ParseUserAgent(userAgent)
+		ua = &uaInfo
 		uaInfo.OS = shortenString(uaInfo.OS, 20)
 		uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
 		uaInfo.Browser = shortenString(uaInfo.Browser, 20)
@@ -125,12 +126,10 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
 			Fingerprint:    fingerprint,
 			Time:           now,
 			SessionID:      rand.Uint32(),
-			UserAgent:      userAgent,
 			Path:           path,
 			EntryPath:      path,
 			PageViews:      1,
 			IsBounce:       true,
-			URL:            requestURL,
 			Title:          title,
 			Language:       lang,
 			CountryCode:    countryCode,
@@ -158,12 +157,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
 		hit.Time = now
 		hit.Path = path
 		hit.PageViews++
-		hit.URL = requestURL
 		hit.Title = title
 	}
 
 	options.SessionCache.put(options.ClientID, fingerprint, hit)
-	return hit
+	return hit, ua
 }
 
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.

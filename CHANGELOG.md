@@ -10,6 +10,8 @@
 * optimized data layout
 * optimized statistics queries
 * optimized filter (non required fields are now longer selected)
+* the User-Agent header is not stored in a separate table for later analysis (filtering bots)
+* removed unused UserAgent and full URL from hit and event table
 * updated dependencies
 
 ## 2.6.3

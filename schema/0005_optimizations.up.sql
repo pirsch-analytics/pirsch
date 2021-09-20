@@ -10,6 +10,20 @@ ALTER TABLE "event" ADD COLUMN "is_bounce" UInt8 DEFAULT 1;
 ALTER TABLE "event" ADD COLUMN "entry_path" String DEFAULT '';
 ALTER TABLE "event" ADD COLUMN "page_views" UInt16 DEFAULT 1;
 
+ALTER TABLE "hit" DROP COLUMN "user_agent";
+ALTER TABLE "hit" DROP COLUMN "url";
+ALTER TABLE "event" DROP COLUMN "user_agent";
+ALTER TABLE "event" DROP COLUMN "url";
+
+CREATE TABLE "user_agent" (
+    time DateTime('UTC'),
+    user_agent String
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(time)
+ORDER BY time
+TTL time + INTERVAL 3 MONTH
+;
+
 -- run this manually after migration
 --ALTER TABLE "hit" DROP COLUMN "session";
 --ALTER TABLE "event" DROP COLUMN "session";

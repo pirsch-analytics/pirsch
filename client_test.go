@@ -23,7 +23,6 @@ func TestClient_SaveHit(t *testing.T) {
 			Time:            time.Now(),
 			SessionID:       rand.Uint32(),
 			DurationSeconds: 42,
-			UserAgent:       "ua",
 			Path:            "/path",
 			EntryPath:       "/entry-path",
 			PageViews:       7,
@@ -47,7 +46,6 @@ func TestClient_SaveHit(t *testing.T) {
 		{
 			Fingerprint: "fp",
 			Time:        time.Now().UTC(),
-			UserAgent:   "ua",
 			Path:        "/path",
 		},
 	}))
@@ -63,7 +61,6 @@ func TestClient_SaveEvent(t *testing.T) {
 				Time:            time.Now(),
 				SessionID:       rand.Uint32(),
 				DurationSeconds: 42,
-				UserAgent:       "ua",
 				Path:            "/path",
 				EntryPath:       "/entry-path",
 				PageViews:       7,
@@ -93,10 +90,23 @@ func TestClient_SaveEvent(t *testing.T) {
 			Hit: Hit{
 				Fingerprint: "fp",
 				Time:        time.Now().UTC(),
-				UserAgent:   "ua",
 				Path:        "/path",
 			},
 			Name: "different_event",
+		},
+	}))
+}
+
+func TestClient_SaveUserAgents(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveUserAgents([]UserAgent{
+		{
+			Time:      time.Now(),
+			UserAgent: "ua1",
+		},
+		{
+			Time:      time.Now().Add(time.Second),
+			UserAgent: "ua2",
 		},
 	}))
 }
@@ -111,7 +121,6 @@ func TestClient_Session(t *testing.T) {
 			Fingerprint: fp,
 			Time:        now.Add(-time.Second * 20),
 			SessionID:   rand.Uint32(),
-			UserAgent:   "ua",
 			Path:        "/path1",
 			EntryPath:   "/entry1",
 			PageViews:   2,
@@ -121,7 +130,6 @@ func TestClient_Session(t *testing.T) {
 			Fingerprint: fp,
 			Time:        now,
 			SessionID:   123456,
-			UserAgent:   "ua",
 			Path:        "/path2",
 			EntryPath:   "/entry2",
 			PageViews:   3,
@@ -131,7 +139,6 @@ func TestClient_Session(t *testing.T) {
 			Fingerprint: fp,
 			Time:        now.Add(-time.Second * 10),
 			SessionID:   rand.Uint32(),
-			UserAgent:   "ua",
 			Path:        "/path3",
 			EntryPath:   "/entry3",
 			PageViews:   4,

@@ -49,7 +49,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 	}
 
 	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session_id, duration_seconds,
-		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		path, entry_path, page_views, is_bounce, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
@@ -63,12 +63,10 @@ func (client *Client) SaveHits(hits []Hit) error {
 			hit.Time,
 			hit.SessionID,
 			hit.DurationSeconds,
-			hit.UserAgent,
 			hit.Path,
 			hit.EntryPath,
 			hit.PageViews,
 			hit.IsBounce,
-			hit.URL,
 			hit.Title,
 			hit.Language,
 			hit.CountryCode,
@@ -115,7 +113,7 @@ func (client *Client) SaveEvents(events []Event) error {
 	}
 
 	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, duration_seconds,
-		user_agent, path, entry_path, page_views, is_bounce, url, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
+		path, entry_path, page_views, is_bounce, title, language, country_code, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
 		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -130,12 +128,10 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.Time,
 			event.SessionID,
 			event.DurationSeconds,
-			event.UserAgent,
 			event.Path,
 			event.EntryPath,
 			event.PageViews,
 			event.IsBounce,
-			event.URL,
 			event.Title,
 			event.Language,
 			event.CountryCode,
@@ -164,6 +160,39 @@ func (client *Client) SaveEvents(events []Event) error {
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
 				client.logger.Printf("error rolling back transaction to save events: %s", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveUserAgents implements the Store interface.
+func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
+	tx, err := client.Beginx()
+
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare(`INSERT INTO "user_agent" (time, user_agent) VALUES (?,?)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, ua := range userAgents {
+		_, err := query.Exec(ua.Time, ua.UserAgent)
+
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				client.logger.Printf("error rolling back transaction to save user agents: %s", err)
 			}
 
 			return err

@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -51,18 +52,25 @@ const (
 )
 
 // UserAgent contains information extracted from the User-Agent header.
+// The creation time and User-Agent string are stored in the database to find bots.
 type UserAgent struct {
+	// Time is the creation date for the database record.
+	Time time.Time
+
+	// UserAgent is the full User-Agent for the database record.
+	UserAgent string `db:"user_agent"`
+
 	// Browser is the browser name.
-	Browser string
+	Browser string `db:"-"`
 
 	// BrowserVersion is the browser (non technical) version number.
-	BrowserVersion string
+	BrowserVersion string `db:"-"`
 
 	// OS is the operating system.
-	OS string
+	OS string `db:"-"`
 
 	// OSVersion is the operating system version number.
-	OSVersion string
+	OSVersion string `db:"-"`
 }
 
 // IsDesktop returns true if the user agent is a desktop device.
@@ -80,7 +88,10 @@ func (ua *UserAgent) IsMobile() bool {
 // unless you prove us wrong.
 func ParseUserAgent(ua string) UserAgent {
 	system, products := parseUserAgent(ua)
-	userAgent := UserAgent{}
+	userAgent := UserAgent{
+		Time:      time.Now().UTC(),
+		UserAgent: ua,
+	}
 	userAgent.OS, userAgent.OSVersion = getOS(system)
 	userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
 	return userAgent
