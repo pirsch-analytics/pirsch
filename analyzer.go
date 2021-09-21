@@ -843,6 +843,17 @@ func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 	return stats, nil
 }
 
+// Cities returns the visitor count grouped by city.
+func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
+	var stats []CityStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "city"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // Browser returns the visitor count grouped by browser.
 func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 	var stats []BrowserStats

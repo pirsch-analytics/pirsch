@@ -72,6 +72,9 @@ type Filter struct {
 	// Country filters for the ISO country code.
 	Country string
 
+	// City filters for the city name.
+	City string
+
 	// Referrer filters for the full referrer.
 	Referrer string
 
@@ -226,13 +229,14 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string, []string) {
-	args := make([]interface{}, 0, 18)
-	queryFields := make([]string, 0, 18)
-	fields := make([]string, 0, 18)
+	args := make([]interface{}, 0, 21)
+	queryFields := make([]string, 0, 21)
+	fields := make([]string, 0, 21)
 	filter.appendQuery(&fields, &queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&fields, &queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&fields, &queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&fields, &queryFields, &args, "country_code", filter.Country)
+	filter.appendQuery(&fields, &queryFields, &args, "city", filter.City)
 	filter.appendQuery(&fields, &queryFields, &args, "referrer", filter.Referrer)
 	filter.appendQuery(&fields, &queryFields, &args, "referrer_name", filter.ReferrerName)
 	filter.appendQuery(&fields, &queryFields, &args, "os", filter.OS)

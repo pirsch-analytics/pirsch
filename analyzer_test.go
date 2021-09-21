@@ -809,6 +809,35 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_Cities(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
+		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
+		{Fingerprint: "fp1", Time: time.Now(), City: "Berlin"},
+		{Fingerprint: "fp2", Time: time.Now(), City: "Berlin"},
+		{Fingerprint: "fp2", Time: time.Now(), City: "Tokyo"},
+		{Fingerprint: "fp3", Time: time.Now(), City: "London"},
+		{Fingerprint: "fp4", Time: time.Now(), City: "London"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Cities(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "London", visitors[0].City)
+	assert.Equal(t, "Berlin", visitors[1].City)
+	assert.Equal(t, "Tokyo", visitors[2].City)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	_, err = analyzer.Cities(getMaxFilter())
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{

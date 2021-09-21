@@ -19,6 +19,7 @@ type Hit struct {
 	Title           string
 	Language        string
 	CountryCode     string `db:"country_code"`
+	City            string
 	Referrer        string
 	ReferrerName    string `db:"referrer_name"`
 	ReferrerIcon    string `db:"referrer_icon"`
@@ -189,6 +190,12 @@ type LanguageStats struct {
 type CountryStats struct {
 	MetaStats
 	CountryCode string `db:"country_code" json:"country_code"`
+}
+
+// CityStats is the result type for city statistics.
+type CityStats struct {
+	MetaStats
+	City string `json:"city"`
 }
 
 // BrowserStats is the result type for browser statistics.
