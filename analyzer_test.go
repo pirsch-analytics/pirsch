@@ -1157,35 +1157,6 @@ func TestAnalyzer_CalculateGrowthFloat64(t *testing.T) {
 	assert.InDelta(t, -0.5, growth, 0.001)
 }
 
-func getMaxFilter() *Filter {
-	return &Filter{
-		ClientID:       42,
-		From:           pastDay(5),
-		To:             pastDay(2),
-		Day:            pastDay(1),
-		Start:          time.Now().UTC(),
-		Path:           "/path",
-		EntryPath:      "/entry",
-		ExitPath:       "/exit",
-		Language:       "en",
-		Country:        "en",
-		Referrer:       "ref",
-		ReferrerName:   "refname",
-		OS:             OSWindows,
-		OSVersion:      "10",
-		Browser:        BrowserChrome,
-		BrowserVersion: "90",
-		Platform:       PlatformDesktop,
-		ScreenClass:    "XL",
-		UTMSource:      "source",
-		UTMMedium:      "medium",
-		UTMCampaign:    "campaign",
-		UTMContent:     "content",
-		UTMTerm:        "term",
-		Limit:          42,
-	}
-}
-
 func TestAnalyzer_Timezone(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
@@ -1246,4 +1217,34 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/.+/slashes$"})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
+}
+
+func getMaxFilter() *Filter {
+	return &Filter{
+		ClientID:       42,
+		From:           pastDay(5),
+		To:             pastDay(2),
+		Day:            pastDay(1),
+		Start:          time.Now().UTC(),
+		Path:           "/path",
+		EntryPath:      "/entry",
+		ExitPath:       "/exit",
+		Language:       "en",
+		Country:        "en",
+		City:           "London",
+		Referrer:       "ref",
+		ReferrerName:   "refname",
+		OS:             OSWindows,
+		OSVersion:      "10",
+		Browser:        BrowserChrome,
+		BrowserVersion: "90",
+		Platform:       PlatformDesktop,
+		ScreenClass:    "XL",
+		UTMSource:      "source",
+		UTMMedium:      "medium",
+		UTMCampaign:    "campaign",
+		UTMContent:     "content",
+		UTMTerm:        "term",
+		Limit:          42,
+	}
 }
