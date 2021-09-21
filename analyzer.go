@@ -677,6 +677,16 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		relativeFieldQuery = "WHERE " + relativeFieldQuery
 	}
 
+	selectReferrer, groupReferrer := "", ""
+
+	if filter.Referrer != "" || filter.ReferrerName != "" {
+		selectReferrer = ",referrer"
+		groupReferrer = ",referrer"
+	} else {
+		selectReferrer = ",any(referrer) referrer"
+	}
+
+	filter.addFieldIfRequired(&fields, "referrer_name")
 	fieldsQuery := strings.Join(fields, ",")
 
 	if fieldsQuery != "" {
@@ -688,9 +698,8 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	args = append(args, relativeFieldArgs...)
 	args = append(args, timeArgs...)
 	args = append(args, fieldArgs...)
-	query := fmt.Sprintf(`SELECT referrer,
-		referrer_name,
-		referrer_icon,
+	query := fmt.Sprintf(`SELECT referrer_name,
+		any(referrer_icon) referrer_icon %s,
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
@@ -707,23 +716,22 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
 		FROM (
-			SELECT fingerprint %s,
+			SELECT fingerprint %s %s,
+			any(referrer_icon) referrer_icon,
 			session_id,
-			referrer,
-			referrer_name,
-			referrer_icon,
 			argMax(is_bounce, time) is_bounce,
 			argMax(path, time) exit_path
 			FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session_id, referrer, referrer_name, referrer_icon %s
+			GROUP BY fingerprint, session_id %s %s
 		)
 		%s
-		GROUP BY referrer, referrer_name, referrer_icon
-		ORDER BY visitors DESC
-		%s`, fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
-		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
-		filter.withLimit())
+		GROUP BY referrer_name %s
+		ORDER BY visitors DESC, referrer_name ASC
+		%s`, selectReferrer,
+		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		selectReferrer, fieldsQuery, table, timeQuery, groupReferrer, fieldsQuery, fieldQuery,
+		groupReferrer, filter.withLimit())
 	var stats []ReferrerStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -744,6 +752,8 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		fieldQuery = "AND " + fieldQuery
 	}
 
+	filter.addFieldIfRequired(&fields, "desktop")
+	filter.addFieldIfRequired(&fields, "mobile")
 	fieldsQuery := strings.Join(fields, ",")
 
 	if fieldsQuery != "" {
@@ -761,12 +771,10 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT fingerprint)
 			FROM (
 				SELECT fingerprint %s,
-				argMax(path, time) exit_path,
-				desktop,
-				mobile
+				argMax(path, time) exit_path
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id, desktop, mobile %s
+				GROUP BY fingerprint, session_id %s
 			)
 			WHERE desktop = 1
 			AND mobile = 0
@@ -776,12 +784,10 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT fingerprint)
 			FROM (
 				SELECT fingerprint %s,
-				argMax(path, time) exit_path,
-				desktop,
-				mobile
+				argMax(path, time) exit_path
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id, desktop, mobile %s
+				GROUP BY fingerprint, session_id %s
 			)
 			WHERE desktop = 0
 			AND mobile = 1
@@ -791,12 +797,10 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT fingerprint)
 			FROM (
 				SELECT fingerprint %s,
-				argMax(path, time) exit_path,
-				desktop,
-				mobile
+				argMax(path, time) exit_path
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id, desktop, mobile %s
+				GROUP BY fingerprint, session_id %s
 			)
 			WHERE desktop = 0
 			AND mobile = 0
@@ -833,6 +837,17 @@ func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 	var stats []CountryStats
 
 	if err := analyzer.selectByAttribute(&stats, filter, "country_code"); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// Cities returns the visitor count grouped by city.
+func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
+	var stats []CityStats
+
+	if err := analyzer.selectByAttribute(&stats, filter, "city"); err != nil {
 		return nil, err
 	}
 

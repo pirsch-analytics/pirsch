@@ -7,6 +7,8 @@
 * added filtering for "none"/"unknown" (empty strings) by setting a filter to "null"
 * added all statistics available for hits to events as well
 * added optional limit for active visitor statistics
+* added merging referrers by hostname and detailed statistics by filtering for the referrer name
+* added city statistics
 * optimized data layout
 * optimized statistics queries
 * optimized filter (non required fields are now longer selected)

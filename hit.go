@@ -110,10 +110,10 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 		referrerIcon = shortenString(referrerIcon, 2000)
 		screen := GetScreenClass(options.ScreenWidth)
 		utm := getUTMParams(r)
-		countryCode := ""
+		countryCode, city := "", ""
 
 		if options.geoDB != nil {
-			countryCode = options.geoDB.CountryCode(getIP(r))
+			countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r))
 		}
 
 		if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
@@ -133,6 +133,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 			Title:          title,
 			Language:       lang,
 			CountryCode:    countryCode,
+			City:           city,
 			Referrer:       referrer,
 			ReferrerName:   referrerName,
 			ReferrerIcon:   referrerIcon,

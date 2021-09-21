@@ -24,8 +24,10 @@ func TestGetGeoLite2(t *testing.T) {
 
 func TestGeoDB_CountryCode(t *testing.T) {
 	db, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "gb", db.CountryCode("81.2.69.142"))
+	countryCode, city := db.CountryCodeAndCity("81.2.69.142")
+	assert.Equal(t, "gb", countryCode)
+	assert.Equal(t, "London", city)
 }

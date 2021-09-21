@@ -157,37 +157,28 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	}
 }
 
-func TestHitFromRequestCountryCode(t *testing.T) {
+func TestHitFromRequestCountryCodeCity(t *testing.T) {
 	sessionCache := NewSessionCache(dbClient, 100)
 	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
-
-	if err != nil {
-		t.Fatalf("Geo DB must have been loaded, but was: %v", err)
-	}
-
+	assert.NoError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
 	hit, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-
-	if hit.CountryCode != "gb" {
-		t.Fatalf("Country code for hit must have been returned, but was: %v", hit.CountryCode)
-	}
-
+	assert.Equal(t, "gb", hit.CountryCode)
+	assert.Equal(t, "London", hit.City)
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
 	hit, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-
-	if hit.CountryCode != "" {
-		t.Fatalf("Country code for hit must be empty, but was: %v", hit.CountryCode)
-	}
+	assert.Empty(t, hit.CountryCode)
+	assert.Empty(t, hit.City)
 }
 
 func TestIgnoreHitPrefetch(t *testing.T) {

@@ -72,8 +72,14 @@ type Filter struct {
 	// Country filters for the ISO country code.
 	Country string
 
-	// Referrer filters for the referrer.
+	// City filters for the city name.
+	City string
+
+	// Referrer filters for the full referrer.
 	Referrer string
+
+	// ReferrerName filters for the referrer name.
+	ReferrerName string
 
 	// OS filters for the operating system.
 	OS string
@@ -223,14 +229,16 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string, []string) {
-	args := make([]interface{}, 0, 17)
-	queryFields := make([]string, 0, 17)
-	fields := make([]string, 0, 17)
+	args := make([]interface{}, 0, 21)
+	queryFields := make([]string, 0, 21)
+	fields := make([]string, 0, 21)
 	filter.appendQuery(&fields, &queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&fields, &queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&fields, &queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&fields, &queryFields, &args, "country_code", filter.Country)
+	filter.appendQuery(&fields, &queryFields, &args, "city", filter.City)
 	filter.appendQuery(&fields, &queryFields, &args, "referrer", filter.Referrer)
+	filter.appendQuery(&fields, &queryFields, &args, "referrer_name", filter.ReferrerName)
 	filter.appendQuery(&fields, &queryFields, &args, "os", filter.OS)
 	filter.appendQuery(&fields, &queryFields, &args, "os_version", filter.OSVersion)
 	filter.appendQuery(&fields, &queryFields, &args, "browser", filter.Browser)

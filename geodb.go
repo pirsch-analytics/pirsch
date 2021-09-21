@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	geoLite2Permalink     = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=LICENSE_KEY&suffix=tar.gz"
+	geoLite2Permalink     = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=LICENSE_KEY&suffix=tar.gz"
 	geoLite2LicenseKey    = "LICENSE_KEY"
-	geoLite2TarGzFilename = "GeoLite2-Country.tar.gz"
+	geoLite2TarGzFilename = "GeoLite2-City.tar.gz"
 
 	// GeoLite2Filename is the default filename of the GeoLite2 database.
-	GeoLite2Filename = "GeoLite2-Country.mmdb"
+	GeoLite2Filename = "GeoLite2-City.mmdb"
 )
 
 // GeoDBConfig is the configuration for the GeoDB.
@@ -62,35 +62,40 @@ func NewGeoDB(config GeoDBConfig) (*GeoDB, error) {
 	}, nil
 }
 
-// CountryCode looks up the country code for given IP.
+// CountryCodeAndCity looks up the country code and city for given IP.
 // If the IP is invalid it will return an empty string.
 // The country code is returned in lowercase.
-func (db *GeoDB) CountryCode(ip string) string {
+func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
 	parsedIP := net.ParseIP(ip)
 
 	if parsedIP == nil {
 		if db.logger != nil {
-			db.logger.Printf("error parsing IP address %s to look up country code", ip)
+			db.logger.Printf("error parsing IP address %s", ip)
 		}
 
-		return ""
+		return "", ""
 	}
 
 	record := struct {
 		Country struct {
 			ISOCode string `maxminddb:"iso_code"`
 		} `maxminddb:"country"`
+		City struct {
+			Names struct {
+				En string `maxminddb:"en"`
+			} `maxminddb:"names"`
+		} `maxminddb:"city"`
 	}{}
 
 	if err := db.db.Lookup(parsedIP, &record); err != nil {
 		if db.logger != nil {
-			db.logger.Printf("error looking up country code for IP address %s", parsedIP)
+			db.logger.Printf("error looking up IP address %s", parsedIP)
 		}
 
-		return ""
+		return "", ""
 	}
 
-	return strings.ToLower(record.Country.ISOCode)
+	return strings.ToLower(record.Country.ISOCode), record.City.Names.En
 }
 
 // GetGeoLite2 downloads and unpacks the MaxMind GeoLite2 database.
