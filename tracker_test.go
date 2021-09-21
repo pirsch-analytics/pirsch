@@ -104,7 +104,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 
 func TestTrackerHitCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
 	assert.NoError(t, err)
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -271,7 +271,7 @@ func TestTrackerEventDiscard(t *testing.T) {
 
 func TestTrackerEventCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
 	assert.NoError(t, err)
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)

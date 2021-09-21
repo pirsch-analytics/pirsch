@@ -113,7 +113,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 		countryCode := ""
 
 		if options.geoDB != nil {
-			countryCode = options.geoDB.CountryCode(getIP(r))
+			countryCode, _ = options.geoDB.CountryCodeAndCity(getIP(r))
 		}
 
 		if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {

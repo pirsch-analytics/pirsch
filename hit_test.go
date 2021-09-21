@@ -160,7 +160,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 func TestHitFromRequestCountryCode(t *testing.T) {
 	sessionCache := NewSessionCache(dbClient, 100)
 	geoDB, err := NewGeoDB(GeoDBConfig{
-		File: filepath.Join("geodb/GeoIP2-Country-Test.mmdb"),
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
 
 	if err != nil {
