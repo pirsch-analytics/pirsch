@@ -39,39 +39,43 @@ func TestGetReferrer(t *testing.T) {
 		{"https://example.com", nil, false},
 		{"https://example.com/", nil, false},
 	}
-	expected := []string{
-		"http://boring.old/domain",
-		"http://boring.old/domain/", // trailing slashes only matter for non-root domain URLs
-		"https://with.subdomain.com",
-		"https://with.multiple.subdomains.com/and/a/path",
-		"",
-		"https://with.subdomain.com",
-		"https://sub.boring.old/domain",
-		"",
-		"https://example.com",
-		"https://example.com",
-		"ReferrerName",
-		"",
-		"https://www.pirsch.io",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"https://example.com",
-		"https://example.com",
+	expected := []struct {
+		referrer string
+		name     string
+	}{
+		{"http://boring.old/domain", "boring.old"},
+		{"http://boring.old/domain/", "boring.old"}, // trailing slashes only matter for non-root domain URLs
+		{"https://with.subdomain.com", "with.subdomain.com"},
+		{"https://with.multiple.subdomains.com/and/a/path", "with.multiple.subdomains.com"},
+		{"", ""},
+		{"https://with.subdomain.com", "with.subdomain.com"},
+		{"https://sub.boring.old/domain", "sub.boring.old"},
+		{"", ""},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
+		{"", "ReferrerName"},
+		{"", ""},
+		{"https://www.pirsch.io", "www.pirsch.io"},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
 	}
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Add("Referer", in.referrer)
-		referrer, _, _ := getReferrer(r, "", in.blacklist, in.ignoreSubdomain)
-		assert.Equal(t, expected[i], referrer)
+		referrer, referrerName, _ := getReferrer(r, "", in.blacklist, in.ignoreSubdomain)
+		assert.Equal(t, expected[i].referrer, referrer)
+		assert.Equal(t, expected[i].name, referrerName)
 	}
 }
 

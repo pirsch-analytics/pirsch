@@ -70,6 +70,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.Language = "en"
 	filter.Country = "jp"
 	filter.Referrer = "ref"
+	filter.ReferrerName = "refname"
 	filter.OS = OSWindows
 	filter.OSVersion = "10"
 	filter.Browser = BrowserEdge
@@ -84,25 +85,26 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.EventName = "event"
 	filter.validate()
 	args, query, fields := filter.queryFields()
-	assert.Len(t, args, 16)
+	assert.Len(t, args, 17)
 	assert.Equal(t, "/", args[0])
 	assert.Equal(t, "/entry", args[1])
 	assert.Equal(t, "en", args[2])
 	assert.Equal(t, "jp", args[3])
 	assert.Equal(t, "ref", args[4])
-	assert.Equal(t, OSWindows, args[5])
-	assert.Equal(t, "10", args[6])
-	assert.Equal(t, BrowserEdge, args[7])
-	assert.Equal(t, "89", args[8])
-	assert.Equal(t, "XXL", args[9])
-	assert.Equal(t, "source", args[10])
-	assert.Equal(t, "medium", args[11])
-	assert.Equal(t, "campaign", args[12])
-	assert.Equal(t, "content", args[13])
-	assert.Equal(t, "term", args[14])
-	assert.Equal(t, "event", args[15])
-	assert.Equal(t, "path = ? AND entry_path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
-	assert.Equal(t, "path,entry_path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
+	assert.Equal(t, "refname", args[5])
+	assert.Equal(t, OSWindows, args[6])
+	assert.Equal(t, "10", args[7])
+	assert.Equal(t, BrowserEdge, args[8])
+	assert.Equal(t, "89", args[9])
+	assert.Equal(t, "XXL", args[10])
+	assert.Equal(t, "source", args[11])
+	assert.Equal(t, "medium", args[12])
+	assert.Equal(t, "campaign", args[13])
+	assert.Equal(t, "content", args[14])
+	assert.Equal(t, "term", args[15])
+	assert.Equal(t, "event", args[16])
+	assert.Equal(t, "path = ? AND entry_path = ? AND language = ? AND country_code = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Equal(t, "path,entry_path,language,country_code,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
 }
 
 func TestFilter_QueryFieldsInvert(t *testing.T) {
@@ -113,6 +115,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	filter.Language = "!en"
 	filter.Country = "!jp"
 	filter.Referrer = "!ref"
+	filter.ReferrerName = "!refname"
 	filter.OS = "!" + OSWindows
 	filter.OSVersion = "!10"
 	filter.Browser = "!" + BrowserEdge
@@ -127,25 +130,26 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	filter.EventName = "!event"
 	filter.validate()
 	args, query, fields := filter.queryFields()
-	assert.Len(t, args, 16)
+	assert.Len(t, args, 17)
 	assert.Equal(t, "/", args[0])
 	assert.Equal(t, "/entry", args[1])
 	assert.Equal(t, "en", args[2])
 	assert.Equal(t, "jp", args[3])
 	assert.Equal(t, "ref", args[4])
-	assert.Equal(t, OSWindows, args[5])
-	assert.Equal(t, "10", args[6])
-	assert.Equal(t, BrowserEdge, args[7])
-	assert.Equal(t, "89", args[8])
-	assert.Equal(t, "XXL", args[9])
-	assert.Equal(t, "source", args[10])
-	assert.Equal(t, "medium", args[11])
-	assert.Equal(t, "campaign", args[12])
-	assert.Equal(t, "content", args[13])
-	assert.Equal(t, "term", args[14])
-	assert.Equal(t, "event", args[15])
-	assert.Equal(t, "path != ? AND entry_path != ? AND language != ? AND country_code != ? AND referrer != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
-	assert.Equal(t, "path,entry_path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
+	assert.Equal(t, "refname", args[5])
+	assert.Equal(t, OSWindows, args[6])
+	assert.Equal(t, "10", args[7])
+	assert.Equal(t, BrowserEdge, args[8])
+	assert.Equal(t, "89", args[9])
+	assert.Equal(t, "XXL", args[10])
+	assert.Equal(t, "source", args[11])
+	assert.Equal(t, "medium", args[12])
+	assert.Equal(t, "campaign", args[13])
+	assert.Equal(t, "content", args[14])
+	assert.Equal(t, "term", args[15])
+	assert.Equal(t, "event", args[16])
+	assert.Equal(t, "path != ? AND entry_path != ? AND language != ? AND country_code != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
+	assert.Equal(t, "path,entry_path,language,country_code,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
 }
 
 func TestFilter_QueryFieldsNull(t *testing.T) {
@@ -156,6 +160,7 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 	filter.Language = "Null"
 	filter.Country = "NULL"
 	filter.Referrer = "null"
+	filter.ReferrerName = "null"
 	filter.OS = "null"
 	filter.OSVersion = "null"
 	filter.Browser = "null"
@@ -170,14 +175,14 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 	filter.EventName = "!null"
 	filter.validate()
 	args, query, fields := filter.queryFields()
-	assert.Len(t, args, 16)
+	assert.Len(t, args, 17)
 
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 17; i++ {
 		assert.Empty(t, args[i])
 	}
 
-	assert.Equal(t, "path = ? AND entry_path = ? AND language = ? AND country_code = ? AND referrer = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name != ? AND desktop = 0 AND mobile = 0 ", query)
-	assert.Equal(t, "path,entry_path,language,country_code,referrer,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
+	assert.Equal(t, "path = ? AND entry_path = ? AND language = ? AND country_code = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name != ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Equal(t, "path,entry_path,language,country_code,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", strings.Join(fields, ","))
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {

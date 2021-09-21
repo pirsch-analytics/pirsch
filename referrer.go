@@ -67,7 +67,7 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 
 		// accept non-url referrers (from utm_source for example)
 		if !containsString(domainBlacklist, referrer) {
-			return strings.TrimSpace(referrer), "", ""
+			return "", strings.TrimSpace(referrer), ""
 		}
 
 		return "", "", ""
@@ -95,7 +95,7 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 		u.Path = ""
 	}
 
-	return u.String(), "", ""
+	return u.String(), hostname, ""
 }
 
 func getReferrerFromHeaderOrQuery(r *http.Request) string {
