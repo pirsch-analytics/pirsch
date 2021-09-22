@@ -57,6 +57,12 @@ func (cache *SessionCache) put(clientID uint64, fingerprint string, hit *Hit) {
 	cache.sessions[key] = *hit
 }
 
+func (cache *SessionCache) clear() {
+	cache.m.Lock()
+	defer cache.m.Unlock()
+	cache.sessions = make(map[string]Hit)
+}
+
 func (cache *SessionCache) getKey(clientID uint64, fingerprint string) string {
 	return fmt.Sprintf("%d%s", clientID, fingerprint)
 }

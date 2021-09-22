@@ -76,4 +76,6 @@ func TestSessionCache(t *testing.T) {
 	session = cache.get(1, "fp10", time.Now().Add(-time.Minute))
 	assert.NotNil(t, session)
 	assert.Equal(t, "/foo", session.Path)
+	cache.clear()
+	assert.Len(t, cache.sessions, 0)
 }

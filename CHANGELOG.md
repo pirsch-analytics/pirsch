@@ -9,6 +9,7 @@
 * added optional limit for active visitor statistics
 * added merging referrers by hostname and detailed statistics by filtering for the referrer name
 * added city statistics
+* added method to clear session cache to tracker
 * optimized data layout
 * optimized statistics queries
 * optimized filter (non required fields are now longer selected)

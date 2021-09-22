@@ -61,6 +61,9 @@ func TestTrackerHitTimeout(t *testing.T) {
 		client.UserAgents[1].UserAgent != uaString1 && client.UserAgents[1].UserAgent != uaString2 {
 		t.Fatalf("UserAgents not as expected: %v %v", client.UserAgents[0], client.UserAgents[1])
 	}
+
+	tracker.ClearSessionCache()
+	assert.Len(t, tracker.sessionCache.sessions, 0)
 }
 
 func TestTrackerHitLimit(t *testing.T) {

@@ -242,6 +242,11 @@ func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
 	tracker.geoDB = geoDB
 }
 
+// ClearSessionCache clears the session cache.
+func (tracker *Tracker) ClearSessionCache() {
+	tracker.sessionCache.clear()
+}
+
 func (tracker *Tracker) startWorker() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	tracker.workerCancel = cancelFunc
