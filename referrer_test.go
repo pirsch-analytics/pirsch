@@ -38,6 +38,8 @@ func TestGetReferrer(t *testing.T) {
 		{"https://168.119.249.160:8080/signup", nil, false},
 		{"https://example.com", nil, false},
 		{"https://example.com/", nil, false},
+		{"sub.example.com/with/path/", nil, false},
+		{"http://sub.example.com/with/path/", nil, false},
 	}
 	expected := []struct {
 		referrer string
@@ -68,6 +70,8 @@ func TestGetReferrer(t *testing.T) {
 		{"", ""},
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
+		{"", "sub.example.com/with/path/"},
+		{"http://sub.example.com/with/path/", "sub.example.com"},
 	}
 
 	for i, in := range input {
