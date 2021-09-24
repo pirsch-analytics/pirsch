@@ -727,7 +727,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Referrer)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	assert.InDelta(t, 1, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
 }

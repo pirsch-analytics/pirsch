@@ -288,23 +288,14 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
-	filter.EventName = ""
-	relativeTimeArgs, relativeTimeQuery := filter.queryTime()
-	relativeFieldArgs, relativeFieldQuery, _ := filter.queryFields()
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	if relativeFieldQuery != "" {
-		relativeFieldQuery = "WHERE " + relativeFieldQuery
-	}
-
-	args := make([]interface{}, 0, len(relativeTimeArgs)*2+len(relativeFieldArgs)*2+len(timeArgs)+len(fieldArgs))
-	args = append(args, relativeTimeArgs...)
-	args = append(args, relativeFieldArgs...)
-	args = append(args, relativeTimeArgs...)
-	args = append(args, relativeFieldArgs...)
+	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs))
+	args = append(args, timeArgs...)
+	args = append(args, timeArgs...)
 	args = append(args, timeArgs...)
 	title, titleGroupBy, titleOrderBy := "", "", ""
 
@@ -336,26 +327,18 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint) visitors
-			FROM (
-				SELECT fingerprint %s,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			%s
+			SELECT count(DISTINCT fingerprint)
+			FROM %s
+			WHERE %s
 		), 1) relative_visitors,
 		count(1) views,
 		views / greatest((
 			SELECT sum(views) FROM (
-				SELECT argMax(page_views, time) views %s,
-				argMax(path, time) exit_path
+				SELECT argMax(page_views, time) views
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id %s
+				GROUP BY fingerprint, session_id
 			)
-			%s
 		), 1) relative_views,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
@@ -375,8 +358,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		GROUP BY path %s
 		ORDER BY visitors DESC, %s path ASC
 		%s`, title,
-		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
-		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		table, timeQuery,
+		table, timeQuery,
 		top, fieldsQuery, table, timeQuery, fieldsQuery, topQuery, fieldQuery,
 		titleGroupBy, titleOrderBy, filter.withLimit())
 	var stats []PageStats
@@ -692,16 +675,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
-	filter.EventName = ""
-	relativeTimeArgs, relativeTimeQuery := filter.queryTime()
-	relativeFieldArgs, relativeFieldQuery, _ := filter.queryFields()
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	if relativeFieldQuery != "" {
-		relativeFieldQuery = "WHERE " + relativeFieldQuery
 	}
 
 	selectReferrer, groupReferrer := "", ""
@@ -720,9 +696,8 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	args := make([]interface{}, 0, len(relativeTimeArgs)+len(relativeFieldArgs)+len(timeArgs)+len(fieldArgs))
-	args = append(args, relativeTimeArgs...)
-	args = append(args, relativeFieldArgs...)
+	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
+	args = append(args, timeArgs...)
 	args = append(args, timeArgs...)
 	args = append(args, fieldArgs...)
 	query := fmt.Sprintf(`SELECT referrer_name,
@@ -730,15 +705,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint) visitors
-			FROM (
-				SELECT fingerprint %s,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			%s
+			SELECT count(DISTINCT fingerprint)
+			FROM %s
+			WHERE %s
 		), 1) relative_visitors,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
@@ -755,8 +724,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		%s
 		GROUP BY referrer_name %s
 		ORDER BY visitors DESC, referrer_name ASC
-		%s`, selectReferrer,
-		fieldsQuery, table, relativeTimeQuery, fieldsQuery, relativeFieldQuery,
+		%s`, selectReferrer, table, timeQuery,
 		selectReferrer, fieldsQuery, table, timeQuery, groupReferrer, fieldsQuery, fieldQuery,
 		groupReferrer, filter.withLimit())
 	var stats []ReferrerStats
@@ -1334,21 +1302,14 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 
 	filter.addFieldIfRequired(&fields, attr)
 	fieldsQuery := strings.Join(fields, ",")
-	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, timeArgs...)
+	timeArgs = append(timeArgs, fieldArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
 		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM (
-				SELECT %s,
-				fingerprint,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id, %s
-			)
-			%s
+			FROM %s
+			WHERE %s
 		), 1) relative_visitors
 		FROM (
 			SELECT %s,
@@ -1361,7 +1322,7 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		%s
 		GROUP BY "%s"
 		ORDER BY visitors DESC, "%s" ASC
-		%s`, attr, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
+		%s`, attr, table, timeQuery,
 		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
 		attr, attr, filter.withLimit())
 	return analyzer.store.Select(results, query, timeArgs...)
