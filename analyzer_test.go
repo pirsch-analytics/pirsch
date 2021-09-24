@@ -520,6 +520,8 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	_, err = analyzer.PageConversions(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Events(t *testing.T) {
@@ -574,6 +576,8 @@ func TestAnalyzer_Events(t *testing.T) {
 	stats, err = analyzer.Events(&Filter{EventName: "does-not-exist"})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
+	_, err = analyzer.Events(getMaxFilter())
+	assert.NoError(t, err)
 	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "status"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
@@ -628,6 +632,8 @@ func TestAnalyzer_Events(t *testing.T) {
 	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "does-not-exist"})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
+	_, err = analyzer.EventBreakdown(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -908,6 +914,8 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
+	_, err = analyzer.BrowserVersion(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_OS(t *testing.T) {
@@ -980,6 +988,8 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
+	_, err = analyzer.OSVersion(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
@@ -1221,30 +1231,31 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 
 func getMaxFilter() *Filter {
 	return &Filter{
-		ClientID:       42,
-		From:           pastDay(5),
-		To:             pastDay(2),
-		Day:            pastDay(1),
-		Start:          time.Now().UTC(),
-		Path:           "/path",
-		EntryPath:      "/entry",
-		ExitPath:       "/exit",
-		Language:       "en",
-		Country:        "en",
-		City:           "London",
-		Referrer:       "ref",
-		ReferrerName:   "refname",
-		OS:             OSWindows,
-		OSVersion:      "10",
-		Browser:        BrowserChrome,
-		BrowserVersion: "90",
-		Platform:       PlatformDesktop,
-		ScreenClass:    "XL",
-		UTMSource:      "source",
-		UTMMedium:      "medium",
-		UTMCampaign:    "campaign",
-		UTMContent:     "content",
-		UTMTerm:        "term",
-		Limit:          42,
+		ClientID:             42,
+		From:                 pastDay(5),
+		To:                   pastDay(2),
+		Day:                  pastDay(1),
+		Start:                time.Now().UTC(),
+		Path:                 "/path",
+		EntryPath:            "/entry",
+		ExitPath:             "/exit",
+		Language:             "en",
+		Country:              "en",
+		City:                 "London",
+		Referrer:             "ref",
+		ReferrerName:         "refname",
+		OS:                   OSWindows,
+		OSVersion:            "10",
+		Browser:              BrowserChrome,
+		BrowserVersion:       "90",
+		Platform:             PlatformDesktop,
+		ScreenClass:          "XL",
+		UTMSource:            "source",
+		UTMMedium:            "medium",
+		UTMCampaign:          "campaign",
+		UTMContent:           "content",
+		UTMTerm:              "term",
+		Limit:                42,
+		IncludeAvgTimeOnPage: true,
 	}
 }
