@@ -374,6 +374,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.Path = ""
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
@@ -461,6 +462,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 // ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.Path = ""
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
