@@ -287,10 +287,13 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
+	fieldArgs, fieldQuery, _ := filter.queryFields()
+	var fields []string
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
+		filter.Path = ""
+		_, _, fields = filter.queryFields()
 	}
 
 	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs))
