@@ -1130,6 +1130,8 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 5, byDay[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 5, byDay[2].AverageTimeSpentSeconds)
+	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter())
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {

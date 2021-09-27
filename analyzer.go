@@ -1119,15 +1119,17 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	query := fmt.Sprintf(`SELECT day,
 		toUInt64(avg(time_on_page)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') day,
+			SELECT day,
 			%s time_on_page
 			FROM (
 				SELECT session_id,
-				time,
-				duration_seconds
+				toDate(time, '%s') day,
+				duration_seconds,
+				argMax(path, time) exit_path
 				%s
 				FROM hit
 				WHERE %s
+				GROUP BY fingerprint, session_id, time, duration_seconds %s
 				ORDER BY fingerprint, session_id, time
 			)
 			WHERE time_on_page > 0
@@ -1135,7 +1137,10 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			%s
 		)
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldQuery, withFillQuery)
+		ORDER BY day
+		%s`, analyzer.timeOnPageQuery(filter), filter.Timezone.String(),
+		fieldsQuery, timeQuery, fieldsQuery,
+		fieldQuery, withFillQuery)
 	timeArgs = append(timeArgs, fieldArgs...)
 	timeArgs = append(timeArgs, withFillArgs...)
 	var stats []TimeSpentStats

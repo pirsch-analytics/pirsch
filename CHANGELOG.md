@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.2
+
+* fixed filtering for exit pages in Analyzer.AvgTimeOnPage
+
 ## 3.0.1
 
 * fixed filtering for entry/exit pages
