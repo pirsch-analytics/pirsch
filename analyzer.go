@@ -287,10 +287,13 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
+	fieldArgs, fieldQuery, _ := filter.queryFields()
+	var fields []string
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
+		filter.Path = ""
+		_, _, fields = filter.queryFields()
 	}
 
 	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs))
@@ -311,7 +314,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	if filter.IncludeAvgTimeOnPage {
 		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
 		var topArgs []interface{}
-		topQuery, topArgs = analyzer.avgTimeOnPages(filter)
+		topQuery, topArgs = analyzer.avgTimeOnPages(filter, false)
 		args = append(args, topArgs...)
 	}
 
@@ -352,7 +355,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			FROM %s
 			WHERE %s
 			GROUP BY fingerprint, session_id %s
-		) AS visitors
+		) AS entries
 		%s
 		%s
 		GROUP BY path %s
@@ -374,70 +377,85 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.Path = ""
+	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
-	timeArgs = append(timeArgs, fieldArgs...)
 
 	if fieldQuery != "" {
 		fieldQuery = "WHERE " + fieldQuery
 	}
 
-	filter.addFieldIfRequired(&fields, "path")
 	filter.addFieldIfRequired(&fields, "entry_path")
-	title, titleInner, titleOrderBy := "", "", ""
+	title, titleInner, titleOuter, titleOrderBy, titleJoin := "", "", "", "", ""
 
 	if filter.IncludeTitle {
 		title = "title,"
 		titleInner = ",title"
+		titleOuter = "entries.title title,"
 		titleOrderBy = "title ASC,"
+		titleJoin = "AND visitors.title = entries.title"
 		filter.addFieldIfRequired(&fields, "title")
 	}
 
+	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
+	args = append(args, timeArgs...)
 	top, topQuery := "", ""
 
 	if filter.IncludeAvgTimeOnPage {
 		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
 		var topArgs []interface{}
-		topQuery, topArgs = analyzer.avgTimeOnPages(filter)
-		timeArgs = append(timeArgs, topArgs...)
+		topQuery, topArgs = analyzer.avgTimeOnPages(filter, true)
+		args = append(args, topArgs...)
 	}
 
 	fieldsQuery := strings.Join(fields, ",")
 	query := fmt.Sprintf(`SELECT *
 		FROM (
-			SELECT path,
+			SELECT entries.path path,
 			%s
 			sum(visitors) visitors,
 			sum(entries) entries,
 			entries/IF(visitors = 0, 1, visitors) entry_rate
 			%s
 			FROM (
-				SELECT path,
+				SELECT entry_path path,
 				%s
-				sum(visits) visitors,
-				sumIf(visits, path = entry_path) entries
+				sum(entries) entries
 				FROM (
 					SELECT %s,
-					count(DISTINCT fingerprint) visits,
-					argMax(path, time) exit_path
+					argMax(path, time) exit_path,
+					count(DISTINCT fingerprint) entries
 					FROM %s
 					WHERE %s
 					GROUP BY fingerprint, session_id, %s
 				)
 				%s
 				GROUP BY path %s
+			) AS entries
+			INNER JOIN (
+				SELECT path,
+				%s
+				count(DISTINCT fingerprint) visitors
+				FROM %s
+				WHERE %s
+				GROUP BY path %s
 			) AS visitors
+			ON visitors.path = entries.path %s
 			%s
 			GROUP BY path %s
 		)
 		WHERE entries > 0
 		ORDER BY entries DESC, %s path ASC
-		%s`, title, top, title,
-		fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery, titleInner,
+		%s`, titleOuter, top, title,
+		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery, titleInner,
+		title, table, timeQuery, titleInner, titleJoin,
 		topQuery, titleInner, titleOrderBy, filter.withLimit())
 	var stats []EntryStats
 
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -447,6 +465,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 // ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.Path = ""
 	table := filter.table()
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
@@ -487,7 +506,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 			WHERE %s
 			GROUP BY exit_path %s %s
 		) AS visitors
-		ANY INNER JOIN (
+		INNER JOIN (
 			SELECT exit_path %s %s,
 			count(1) exits
 			FROM (
@@ -1205,7 +1224,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-func (analyzer *Analyzer) avgTimeOnPages(filter *Filter) (string, []interface{}) {
+func (analyzer *Analyzer) avgTimeOnPages(filter *Filter, useJoinOn bool) (string, []interface{}) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
@@ -1215,10 +1234,11 @@ func (analyzer *Analyzer) avgTimeOnPages(filter *Filter) (string, []interface{})
 	}
 
 	filter.addFieldIfRequired(&fields, "path")
-	title := ""
+	title, joinTitle := "", ""
 
 	if filter.IncludeTitle {
 		title = ",title"
+		joinTitle = "AND entries.title = top.title"
 		filter.addFieldIfRequired(&fields, "title")
 	}
 
@@ -1228,7 +1248,15 @@ func (analyzer *Analyzer) avgTimeOnPages(filter *Filter) (string, []interface{})
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	query := fmt.Sprintf(`ANY LEFT JOIN (
+	join := ""
+
+	if useJoinOn {
+		join = fmt.Sprintf(`ON entries.path = top.path %s`, joinTitle)
+	} else {
+		join = fmt.Sprintf(`USING path %s`, title)
+	}
+
+	query := fmt.Sprintf(`LEFT JOIN (
 			SELECT path %s,
 			toUInt64(avg(time_on_page)) average_time_spent_seconds
 			FROM (
@@ -1251,7 +1279,9 @@ func (analyzer *Analyzer) avgTimeOnPages(filter *Filter) (string, []interface{})
 			%s
 			GROUP BY path %s
 		) AS top
-		USING path %s`, title, analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title)
+		%s`, title,
+		analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldsQuery, fieldQuery,
+		title, join)
 	timeArgs = append(timeArgs, fieldArgs...)
 	return query, timeArgs
 }

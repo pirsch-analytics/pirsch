@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1
+
+* fixed filtering for entry/exit pages
+* updated dependencies
+
 ## 3.0.0
 
 * added rolling forward page view information for deeper analysis of sessions

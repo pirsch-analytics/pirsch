@@ -440,7 +440,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.6666, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, EntryPath: "/"})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
@@ -480,14 +480,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 1, exits[1].Exits)
 	assert.InDelta(t, 0.75, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.33, exits[1].ExitRate, 0.01)
-	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, Path: "/"})
-	assert.NoError(t, err)
-	assert.Len(t, exits, 1)
-	assert.Equal(t, "/", exits[0].Path)
-	assert.Equal(t, 3, exits[0].Visitors)
-	assert.Equal(t, 3, exits[0].Exits)
-	assert.InDelta(t, 1, exits[0].ExitRate, 0.01)
-	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), ExitPath: "/"})
+	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeAvgTimeOnPage: true, ExitPath: "/"})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
 	assert.Equal(t, "/", exits[0].Path)
@@ -1227,6 +1220,149 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/.+/slashes$"})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
+}
+
+func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		// / -> /foo -> /bar -> /exit
+		{Fingerprint: "fp1", Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp1", Time: Today().Add(time.Second * 10), Path: "/foo", EntryPath: "/", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp1", Time: Today().Add(time.Second * 20), Path: "/bar", EntryPath: "/", PageViews: 3, IsBounce: false},
+		{Fingerprint: "fp1", Time: Today().Add(time.Second * 30), Path: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
+
+		// / -> /bar -> /
+		{Fingerprint: "fp2", Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp2", Time: Today().Add(time.Second * 10), Path: "/bar", EntryPath: "/", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp2", Time: Today().Add(time.Second * 20), Path: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+
+	// no filter
+	pages, err := analyzer.Pages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 4)
+	assert.Equal(t, "/", pages[0].Path)
+	assert.Equal(t, "/bar", pages[1].Path)
+	assert.Equal(t, "/exit", pages[2].Path)
+	assert.Equal(t, "/foo", pages[3].Path)
+	assert.Equal(t, 2, pages[0].Visitors)
+	assert.Equal(t, 2, pages[1].Visitors)
+	assert.Equal(t, 1, pages[2].Visitors)
+	assert.Equal(t, 1, pages[3].Visitors)
+	entryPages, err := analyzer.EntryPages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 2, entryPages[0].Entries)
+	exitPages, err := analyzer.ExitPages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 2)
+	assert.Equal(t, "/", exitPages[0].Path)
+	assert.Equal(t, "/exit", exitPages[1].Path)
+	assert.Equal(t, 2, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[1].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
+	assert.Equal(t, 1, exitPages[1].Exits)
+
+	// filter entry page
+	filter := &Filter{EntryPath: "/bar"}
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 0)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 0)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 0)
+
+	filter.EntryPath = "/"
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 4)
+	assert.Equal(t, "/", pages[0].Path)
+	assert.Equal(t, "/bar", pages[1].Path)
+	assert.Equal(t, "/exit", pages[2].Path)
+	assert.Equal(t, "/foo", pages[3].Path)
+	assert.Equal(t, 2, pages[0].Visitors)
+	assert.Equal(t, 2, pages[1].Visitors)
+	assert.Equal(t, 1, pages[2].Visitors)
+	assert.Equal(t, 1, pages[3].Visitors)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 2, entryPages[0].Entries)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 2)
+	assert.Equal(t, "/", exitPages[0].Path)
+	assert.Equal(t, "/exit", exitPages[1].Path)
+	assert.Equal(t, 2, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[1].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
+	assert.Equal(t, 1, exitPages[1].Exits)
+
+	// filter entry + exit page
+	filter.ExitPath = "/bar"
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 0)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 0)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 0)
+
+	filter.ExitPath = "/exit"
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 4)
+	assert.Equal(t, "/", pages[0].Path)
+	assert.Equal(t, "/bar", pages[1].Path)
+	assert.Equal(t, "/exit", pages[2].Path)
+	assert.Equal(t, "/foo", pages[3].Path)
+	assert.Equal(t, 1, pages[0].Visitors)
+	assert.Equal(t, 1, pages[1].Visitors)
+	assert.Equal(t, 1, pages[2].Visitors)
+	assert.Equal(t, 1, pages[3].Visitors)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 1, entryPages[0].Entries)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 1)
+	assert.Equal(t, "/exit", exitPages[0].Path)
+	assert.Equal(t, 1, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
+
+	// filter entry + exit page + page
+	filter.Path = "/bar"
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 1)
+	assert.Equal(t, "/bar", pages[0].Path)
+	assert.Equal(t, 1, pages[0].Visitors)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 1, entryPages[0].Entries)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 1)
+	assert.Equal(t, "/exit", exitPages[0].Path)
+	assert.Equal(t, 1, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
 }
 
 func getMaxFilter() *Filter {
