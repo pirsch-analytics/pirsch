@@ -43,7 +43,7 @@ type TrackerConfig struct {
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
 	// SessionCache is the session cache implementation to be used.
-	// This will be set to NewSessionMemCache by default.
+	// This will be set to NewSessionCacheMem by default.
 	SessionCache SessionCache
 
 	// MaxSessions sets the maximum size for the session cache.
@@ -122,7 +122,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	config.validate()
 
 	if config.SessionCache == nil {
-		config.SessionCache = NewSessionMemCache(client, config.MaxSessions)
+		config.SessionCache = NewSessionCacheMem(client, config.MaxSessions)
 	}
 
 	tracker := &Tracker{

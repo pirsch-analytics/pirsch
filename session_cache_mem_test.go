@@ -11,7 +11,7 @@ import (
 func TestSessionCacheMem(t *testing.T) {
 	cleanupDB()
 	client := NewMockClient()
-	cache := NewSessionMemCache(client, 10)
+	cache := NewSessionCacheMem(client, 10)
 	session := cache.Get(1, "fp", time.Now().Add(-time.Second*10))
 	assert.Nil(t, session)
 	client.ReturnSession = &Hit{

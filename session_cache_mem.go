@@ -19,8 +19,8 @@ type SessionCacheMem struct {
 	m           sync.RWMutex
 }
 
-// NewSessionMemCache creates a new cache for given client and maximum size.
-func NewSessionMemCache(client Store, maxSessions int) *SessionCacheMem {
+// NewSessionCacheMem creates a new cache for given client and maximum size.
+func NewSessionCacheMem(client Store, maxSessions int) *SessionCacheMem {
 	if maxSessions <= 0 {
 		maxSessions = defaultMaxSessions
 	}
@@ -34,7 +34,7 @@ func NewSessionMemCache(client Store, maxSessions int) *SessionCacheMem {
 
 // Get implements the SessionCache interface.
 func (cache *SessionCacheMem) Get(clientID uint64, fingerprint string, maxAge time.Time) *Hit {
-	key := cache.getKey(clientID, fingerprint)
+	key := getSessionKey(clientID, fingerprint)
 	cache.m.RLock()
 	hit, ok := cache.sessions[key]
 	cache.m.RUnlock()
@@ -49,7 +49,7 @@ func (cache *SessionCacheMem) Get(clientID uint64, fingerprint string, maxAge ti
 
 // Put implements the SessionCache interface.
 func (cache *SessionCacheMem) Put(clientID uint64, fingerprint string, hit *Hit) {
-	key := cache.getKey(clientID, fingerprint)
+	key := getSessionKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
 
@@ -67,6 +67,6 @@ func (cache *SessionCacheMem) Clear() {
 	cache.sessions = make(map[string]Hit)
 }
 
-func (cache *SessionCacheMem) getKey(clientID uint64, fingerprint string) string {
+func getSessionKey(clientID uint64, fingerprint string) string {
 	return fmt.Sprintf("%d%s", clientID, fingerprint)
 }
