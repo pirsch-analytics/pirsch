@@ -1269,8 +1269,54 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[0].Exits)
 	assert.Equal(t, 1, exitPages[1].Exits)
 
+	// filter for a path
+	filter := &Filter{Path: "/exit"}
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 1)
+	assert.Equal(t, "/exit", pages[0].Path)
+	assert.Equal(t, 1, pages[0].Visitors)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 2, entryPages[0].Entries)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 2)
+	assert.Equal(t, "/", exitPages[0].Path)
+	assert.Equal(t, "/exit", exitPages[1].Path)
+	assert.Equal(t, 2, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[1].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
+	assert.Equal(t, 1, exitPages[1].Exits)
+
+	filter.Path = "/"
+	pages, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, pages, 1)
+	assert.Equal(t, "/", pages[0].Path)
+	assert.Equal(t, 2, pages[0].Visitors)
+	entryPages, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entryPages, 1)
+	assert.Equal(t, "/", entryPages[0].Path)
+	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 2, entryPages[0].Entries)
+	exitPages, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exitPages, 2)
+	assert.Equal(t, "/", exitPages[0].Path)
+	assert.Equal(t, "/exit", exitPages[1].Path)
+	assert.Equal(t, 2, exitPages[0].Visitors)
+	assert.Equal(t, 1, exitPages[1].Visitors)
+	assert.Equal(t, 1, exitPages[0].Exits)
+	assert.Equal(t, 1, exitPages[1].Exits)
+
 	// filter entry page
-	filter := &Filter{EntryPath: "/bar"}
+	filter.Path = ""
+	filter.EntryPath = "/bar"
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 0)
