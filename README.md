@@ -18,8 +18,6 @@ The tracking works without invading the visitor's privacy as no cookies are used
 
 ## Features
 
-Pirsch tracks the following data:
-
 * unique visitor count per day, path, and hour
 * session count
 * bounce rate
@@ -31,11 +29,13 @@ Pirsch tracks the following data:
 * operating system and browser (including versions)
 * referrers
 * countries
+* cities
 * platform
 * screen size
 * UTM query parameters for campaign tracking
 * entry and exit pages
 * custom event tracking
+* conversion goals
 
 All timestamps are stored as UTC. Starting with version 2.1, the results can be transformed to the desired timezone. All data points belongs to an (optional) client, which can be used to split data between multiple domains for example. If you just integrate Pirsch into your application, you don't need to care about that field. **But if you do, you need to set a client ID for all columns!**
 
@@ -153,7 +153,7 @@ http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
 
-## Mapping IPs to countries
+## Mapping IPs to countries and cities
 
 Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database **is not included**, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
 

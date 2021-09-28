@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/ClickHouse/clickhouse-go v1.4.8
 	github.com/emvi/iso-639-1 v1.0.1
+	github.com/go-redis/redis/v8 v8.11.3 // indirect
 	github.com/golang-migrate/migrate/v4 v4.15.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

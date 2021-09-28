@@ -42,6 +42,10 @@ type TrackerConfig struct {
 	// ReferrerDomainBlacklistIncludesSubdomains see HitOptions.ReferrerDomainBlacklistIncludesSubdomains.
 	ReferrerDomainBlacklistIncludesSubdomains bool
 
+	// SessionCache is the session cache implementation to be used.
+	// This will be set to NewSessionCacheMem by default.
+	SessionCache SessionCache
+
 	// MaxSessions sets the maximum size for the session cache.
 	// If you leave it 0, the default will be used.
 	MaxSessions int
@@ -88,7 +92,7 @@ func (config *TrackerConfig) validate() {
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
-	sessionCache                              *SessionCache
+	sessionCache                              SessionCache
 	salt                                      string
 	hits                                      chan Hit
 	events                                    chan Event
@@ -116,9 +120,14 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	}
 
 	config.validate()
+
+	if config.SessionCache == nil {
+		config.SessionCache = NewSessionCacheMem(client, config.MaxSessions)
+	}
+
 	tracker := &Tracker{
 		store:                   client,
-		sessionCache:            NewSessionCache(client, config.MaxSessions),
+		sessionCache:            config.SessionCache,
 		salt:                    salt,
 		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
@@ -244,7 +253,7 @@ func (tracker *Tracker) SetGeoDB(geoDB *GeoDB) {
 
 // ClearSessionCache clears the session cache.
 func (tracker *Tracker) ClearSessionCache() {
-	tracker.sessionCache.clear()
+	tracker.sessionCache.Clear()
 }
 
 func (tracker *Tracker) startWorker() {
