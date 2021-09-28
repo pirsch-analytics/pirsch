@@ -17,7 +17,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
 	hit, ua := HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		ClientID:     42,
 		Title:        "title",
 		ScreenWidth:  640,
@@ -59,7 +59,7 @@ func TestHitFromRequest(t *testing.T) {
 func TestHitFromRequestSession(t *testing.T) {
 	cleanupDB()
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
-	sessionCache := NewSessionCache(dbClient, 100)
+	sessionCache := NewSessionMemCache(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
@@ -101,7 +101,7 @@ func TestHitFromRequestSession(t *testing.T) {
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit, _ := HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
@@ -113,7 +113,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit, _ := HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		URL:          "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:         "/new/custom/path",
 		Referrer:     "http://custom.ref/",
@@ -127,7 +127,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	hit, _ := HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		ScreenWidth:  0,
 		ScreenHeight: 400,
 	})
@@ -137,7 +137,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	}
 
 	hit, _ = HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
@@ -147,7 +147,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 	}
 
 	hit, _ = HitFromRequest(req, "salt", &HitOptions{
-		SessionCache: NewSessionCache(dbClient, 100),
+		SessionCache: NewSessionMemCache(dbClient, 100),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
@@ -158,7 +158,7 @@ func TestHitFromRequestScreenSize(t *testing.T) {
 }
 
 func TestHitFromRequestCountryCodeCity(t *testing.T) {
-	sessionCache := NewSessionCache(dbClient, 100)
+	sessionCache := NewSessionMemCache(dbClient, 100)
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})

@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1.0
+
+* added interface for session cache
+* added Redis session cache for distributed systems
+* added filtering for entry/exit page paths back in
+* updated dependencies
+
 ## 3.0.2
 
 * fixed filtering for exit pages in Analyzer.AvgTimeOnPage

@@ -44,7 +44,8 @@ func TestTrackerHitTimeout(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", uaString2)
 	client := NewMockClient()
-	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
+	sessionCache := NewSessionMemCache(client, 100)
+	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200, SessionCache: sessionCache})
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
@@ -63,7 +64,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	}
 
 	tracker.ClearSessionCache()
-	assert.Len(t, tracker.sessionCache.sessions, 0)
+	assert.Len(t, sessionCache.sessions, 0)
 }
 
 func TestTrackerHitLimit(t *testing.T) {

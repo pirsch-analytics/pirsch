@@ -26,7 +26,7 @@ type HitOptions struct {
 	//Client Store
 
 	// SessionCache is the cache to look up sessions.
-	SessionCache *SessionCache
+	SessionCache SessionCache
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID uint64
@@ -90,7 +90,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
-	hit := options.SessionCache.get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 	var ua *UserAgent
 
 	if hit == nil {
@@ -161,7 +161,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 		hit.Title = title
 	}
 
-	options.SessionCache.put(options.ClientID, fingerprint, hit)
+	options.SessionCache.Put(options.ClientID, fingerprint, hit)
 	return hit, ua
 }
 
