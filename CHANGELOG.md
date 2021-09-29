@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.1.1
+
+* fixed filtering for entry/exit pages (path)
+
 ## 3.1.0
 
 * added interface for session cache
