@@ -22,7 +22,7 @@ func TestSessionCacheRedis(t *testing.T) {
 	session = cache.Get(1, "fp", time.Time{})
 	assert.Nil(t, session)
 	cache.Put(1, "fp", &Hit{Path: "/test"})
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 	session = cache.Get(1, "fp", time.Time{})
 	assert.Nil(t, session)
 }

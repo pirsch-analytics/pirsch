@@ -277,6 +277,24 @@ func TestFilter_WithLimit(t *testing.T) {
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
 }
 
+func TestFilter_addFieldIfRequired(t *testing.T) {
+	filter := NewFilter(NullClient)
+	fields := []string{"foo", "bar"}
+	filter.addFieldIfRequired(&fields, "foo")
+	assert.Len(t, fields, 2)
+	filter.addFieldIfRequired(&fields, "daa")
+	assert.Len(t, fields, 3)
+}
+
+func TestFilter_removeField(t *testing.T) {
+	filter := NewFilter(NullClient)
+	fields := []string{"foo", "bar"}
+	filter.removeField(&fields, "daa")
+	assert.Len(t, fields, 2)
+	filter.removeField(&fields, "foo")
+	assert.Len(t, fields, 1)
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)

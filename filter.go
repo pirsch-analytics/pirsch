@@ -324,6 +324,15 @@ func (filter *Filter) addFieldIfRequired(fields *[]string, field string) {
 	*fields = append(*fields, field)
 }
 
+func (filter *Filter) removeField(fields *[]string, field string) {
+	for i, f := range *fields {
+		if f == field {
+			*fields = append((*fields)[:i], (*fields)[i+1:]...)
+			break
+		}
+	}
+}
+
 func (filter *Filter) withFill() ([]interface{}, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
 		timezone := filter.Timezone.String()
