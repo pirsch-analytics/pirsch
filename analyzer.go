@@ -487,9 +487,11 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 
 	filter.removeField(&fields, "path")
 	fieldsQuery := strings.Join(fields, ",")
+	joinFieldsQuery := strings.Join(fields, " AND ")
 
 	if fieldsQuery != "" {
 		fieldsQuery = "," + fieldsQuery
+		joinFieldsQuery = "AND " + joinFieldsQuery
 	}
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)*2)
@@ -526,14 +528,14 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 			WHERE %s
 			GROUP BY path %s %s
 		) AS exits
-		USING path %s
+		ON exits.path = visitors.exit_path %s
 		%s
 		GROUP by %s exit_path
 		ORDER BY exits DESC, %s exit_path ASC
 		%s`, title,
 		fieldsQuery, titleInner, fieldsQuery, titleInnerArgMax, table, timeQuery, fieldsQuery, fieldQuery, fieldsQuery, titleInner,
 		fieldsQuery, titleInner, table, timeQuery, fieldsQuery, titleInner,
-		fieldsQuery, fieldQuery, title, titleOrderBy, filter.withLimit())
+		joinFieldsQuery, fieldQuery, title, titleOrderBy, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {

@@ -458,6 +458,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/foo", exits[2].Path)
 	assert.Empty(t, exits[0].Title)
 	assert.Empty(t, exits[1].Title)
+	assert.Empty(t, exits[2].Title)
 	assert.Equal(t, 6, exits[0].Visitors)
 	assert.Equal(t, 4, exits[1].Visitors)
 	assert.Equal(t, 1, exits[2].Visitors)
