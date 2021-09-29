@@ -119,7 +119,7 @@ type EntryStats struct {
 
 // ExitStats is the result type for exit page statistics.
 type ExitStats struct {
-	Path     string  `json:"path"`
+	Path     string  `db:"exit_path" json:"path"`
 	Title    string  `json:"title"`
 	Visitors int     `json:"visitors"`
 	Exits    int     `json:"exits"`

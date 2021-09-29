@@ -485,6 +485,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		titleOrderBy = "title ASC,"
 	}
 
+	filter.removeField(&fields, "path")
 	fieldsQuery := strings.Join(fields, ",")
 
 	if fieldsQuery != "" {
@@ -493,40 +494,45 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)*2)
 	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
 	args = append(args, timeArgs...)
 	args = append(args, fieldArgs...)
-	args = append(args, fieldArgs...)
-	query := fmt.Sprintf(`SELECT exit_path path,
+	query := fmt.Sprintf(`SELECT exit_path,
 		%s
-		sum(visitors) visitors,
-		sum(exits) exits,
+		any(visitors) visitors,
+		count(DISTINCT fingerprint, session_id) exits,
 		exits/IF(visitors = 0, 1, visitors) exit_rate
 		FROM (
-			SELECT path exit_path %s %s,
-			count(DISTINCT fingerprint) visitors
-			FROM %s
-			WHERE %s
-			GROUP BY exit_path %s %s
-		) AS visitors
-		INNER JOIN (
-			SELECT exit_path %s %s,
-			count(1) exits
+			SELECT arrayJoin(paths) path,
+			exit_path %s %s,
+			fingerprint,
+			session_id
 			FROM (
-				SELECT argMax(path, time) exit_path %s %s
+				SELECT fingerprint,
+				session_id,
+				groupArray(path) paths,
+				argMax(path, time) exit_path %s %s
 				FROM %s
 				WHERE %s
 				GROUP BY fingerprint, session_id %s
 			)
 			%s
-			GROUP BY exit_path %s %s
+			GROUP BY exit_path, path, fingerprint, session_id %s %s
+		) AS visitors
+		INNER JOIN (
+			SELECT path %s %s,
+			count(DISTINCT fingerprint) visitors
+			FROM %s
+			WHERE %s
+			GROUP BY path %s %s
 		) AS exits
-		USING exit_path %s
+		USING path %s
 		%s
-		GROUP by  %s exit_path
+		GROUP by %s exit_path
 		ORDER BY exits DESC, %s exit_path ASC
 		%s`, title,
-		fieldsQuery, titleInner, table, timeQuery, fieldsQuery, titleInner,
 		fieldsQuery, titleInner, fieldsQuery, titleInnerArgMax, table, timeQuery, fieldsQuery, fieldQuery, fieldsQuery, titleInner,
+		fieldsQuery, titleInner, table, timeQuery, fieldsQuery, titleInner,
 		fieldsQuery, fieldQuery, title, titleOrderBy, filter.withLimit())
 	var stats []ExitStats
 
