@@ -112,6 +112,7 @@ type EntryStats struct {
 	Path                    string  `json:"path"`
 	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
+	Sessions                int     `json:"sessions"`
 	Entries                 int     `json:"entries"`
 	EntryRate               float64 `db:"entry_rate" json:"entry_rate"`
 	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -122,6 +123,7 @@ type ExitStats struct {
 	Path     string  `db:"exit_path" json:"path"`
 	Title    string  `json:"title"`
 	Visitors int     `json:"visitors"`
+	Sessions int     `json:"sessions"`
 	Exits    int     `json:"exits"`
 	ExitRate float64 `db:"exit_rate" json:"exit_rate"`
 }

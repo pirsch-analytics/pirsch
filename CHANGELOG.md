@@ -3,6 +3,7 @@
 ## 3.1.1
 
 * fixed filtering for entry/exit pages (path)
+* fixed calculation of entry and exit rates
 
 ## 3.1.0
 

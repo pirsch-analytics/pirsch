@@ -420,8 +420,9 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 			SELECT entries.entry_path path,
 			%s
 			sum(visitors) visitors,
+			sum(sessions) sessions,
 			sum(entries) entries,
-			entries/IF(visitors = 0, 1, visitors) entry_rate
+			entries/IF(sessions = 0, 1, sessions) entry_rate
 			%s
 			FROM (
 				SELECT p entry_path,
@@ -441,7 +442,8 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 			INNER JOIN (
 				SELECT path,
 				%s
-				count(DISTINCT fingerprint) visitors
+				count(DISTINCT fingerprint) visitors,
+				count(DISTINCT fingerprint, session_id) sessions
 				FROM %s
 				WHERE %s
 				GROUP BY path %s
@@ -502,8 +504,9 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	query := fmt.Sprintf(`SELECT exit_path,
 		%s
 		any(visitors) visitors,
+		any(sessions) sessions,
 		count(DISTINCT fingerprint, session_id) exits,
-		exits/IF(visitors = 0, 1, visitors) exit_rate
+		exits/IF(sessions = 0, 1, sessions) exit_rate
 		FROM (
 			SELECT arrayJoin(paths) path,
 			exit_path %s %s,
@@ -523,7 +526,8 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		) AS visitors
 		INNER JOIN (
 			SELECT path %s %s,
-			count(DISTINCT fingerprint) visitors
+			count(DISTINCT fingerprint) visitors,
+			count(DISTINCT fingerprint, session_id) sessions
 			FROM %s
 			WHERE %s
 			GROUP BY path %s %s
