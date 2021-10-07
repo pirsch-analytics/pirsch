@@ -153,7 +153,13 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 			UTMTerm:        utm.term,
 		}
 	} else {
-		hit.DurationSeconds = uint32(now.Unix() - hit.Time.Unix())
+		duration := now.Unix() - hit.Time.Unix()
+
+		if duration < 0 {
+			duration = 0
+		}
+
+		hit.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
 		hit.IsBounce = hit.IsBounce && path == hit.Path
 		hit.Time = now
 		hit.Path = path
@@ -307,4 +313,12 @@ func getURLQueryParam(param string) string {
 	}
 
 	return param
+}
+
+func min(a, b int64) int64 {
+	if a > b {
+		return b
+	}
+
+	return a
 }

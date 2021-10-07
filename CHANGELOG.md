@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.1.2
+
+* added limit for maximum duration on page
+
 ## 3.1.1
 
 * fixed filtering for entry/exit pages (path)
