@@ -35,7 +35,7 @@ func NewAnalyzer(store Store) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
-	filter.Start = time.Now().UTC().Add(-duration)
+	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
 	timeArgs, timeQuery := filter.queryTime()
 	fieldArgs, fieldQuery, fields := filter.queryFields()
 	timeArgs = append(timeArgs, fieldArgs...)

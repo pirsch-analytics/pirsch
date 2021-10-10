@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.1.4
+
+* fixed timezone for active visitors
+
 ## 3.1.3
 
 * fixed limiting filter to today (UTC)
