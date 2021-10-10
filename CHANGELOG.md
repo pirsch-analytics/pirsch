@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.3
+
+* fixed limiting filter to today (UTC)
+* some query optimizations
+
 ## 3.1.2
 
 * added limit for maximum duration on page

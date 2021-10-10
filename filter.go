@@ -174,11 +174,12 @@ func (filter *Filter) validate() {
 		filter.From, filter.To = filter.To, filter.From
 	}
 
+	// use tomorrow instead of limiting to "today", so that all timezones are included
 	now := time.Now().UTC()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 
-	if !filter.To.IsZero() && filter.To.After(today) {
-		filter.To = today
+	if !filter.To.IsZero() && filter.To.After(tomorrow) {
+		filter.To = tomorrow
 	}
 
 	if filter.Path != "" && filter.PathPattern != "" {
@@ -207,17 +208,17 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 
 	if !filter.From.IsZero() {
 		args = append(args, filter.From)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?, '%s') ", timezone, timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", timezone))
 	}
 
 	if !filter.To.IsZero() {
 		args = append(args, filter.To)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?, '%s') ", timezone, timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", timezone))
 	}
 
 	if !filter.Day.IsZero() {
 		args = append(args, filter.Day)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?, '%s') ", timezone, timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", timezone))
 	}
 
 	if !filter.Start.IsZero() {
@@ -335,8 +336,7 @@ func (filter *Filter) removeField(fields *[]string, field string) {
 
 func (filter *Filter) withFill() ([]interface{}, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
-		timezone := filter.Timezone.String()
-		return []interface{}{filter.From, filter.To}, fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 ", timezone, timezone)
+		return []interface{}{filter.From, filter.To}, "WITH FILL FROM toDate(?) TO toDate(?)+1 "
 	}
 
 	return nil, ""
