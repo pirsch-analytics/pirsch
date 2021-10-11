@@ -175,7 +175,6 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 // This function does not store a hit or event in database.
 func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 	fingerprint := Fingerprint(r, salt)
-	getRequestURI(r, options)
 	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 	if hit != nil {

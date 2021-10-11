@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.1
+
+* small optimization for `ExtendSession`
+* added convenience method `Tracker.ExtendSession`
+
 ## 3.2.0
 
 * added function to manually extend sessions

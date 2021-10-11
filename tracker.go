@@ -225,6 +225,16 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 	}
 }
 
+// ExtendSession looks up and extends the session for given request and client ID (optional).
+// This function does not store a hit or event in database.
+func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
+	ExtendSession(r, tracker.salt, &HitOptions{
+		ClientID:      clientID,
+		SessionCache:  tracker.sessionCache,
+		SessionMaxAge: tracker.sessionMaxAge,
+	})
+}
+
 // Flush flushes all hits to client that are currently buffered by the workers.
 // Call Tracker.Stop to also save hits that are in the queue.
 func (tracker *Tracker) Flush() {

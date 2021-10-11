@@ -327,6 +327,31 @@ func TestTrackerEventSession(t *testing.T) {
 	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
 }
 
+func TestTrackerExtendSession(t *testing.T) {
+	cleanupDB()
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+	sessionCache := NewSessionCacheMem(dbClient, 100)
+	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)
+	req.Header.Set("User-Agent", uaString)
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
+		SessionCache:  sessionCache,
+		SessionMaxAge: time.Second * 10,
+	})
+	tracker.Hit(req, nil)
+	tracker.Flush()
+	assert.Len(t, client.Hits, 1)
+	at := client.Hits[0].Time
+	fingerprint := client.Hits[0].Fingerprint
+	time.Sleep(time.Millisecond * 20)
+	tracker.ExtendSession(req, 0)
+	tracker.Flush()
+	assert.Len(t, client.Hits, 1)
+	hit := sessionCache.Get(0, fingerprint, time.Now().UTC().Add(-time.Second))
+	assert.NotEqual(t, at, hit.Time)
+	assert.True(t, hit.Time.After(at))
+}
+
 func TestTrackerEventIgnoreSubdomain(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
