@@ -206,6 +206,7 @@ func TestTrackerEvent(t *testing.T) {
 	assert.Len(t, client.UserAgents, 1)
 	assert.Equal(t, "event", client.Events[0].Name)
 	assert.Equal(t, 42, client.Events[0].DurationSeconds)
+	assert.Equal(t, uint16(1), client.Events[0].PageViews)
 	assert.Len(t, client.Events[0].MetaKeys, 2)
 	assert.Len(t, client.Events[0].MetaValues, 2)
 	assert.Contains(t, client.Events[0].MetaKeys, "hello")

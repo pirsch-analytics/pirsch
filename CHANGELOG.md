@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.0
+
+* fixed events counting up page views
+
 ## 3.1.4
 
 * fixed timezone for active visitors

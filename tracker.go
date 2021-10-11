@@ -209,6 +209,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		hit, ua := HitFromRequest(r, tracker.salt, options)
 
 		if hit != nil {
+			hit.PageViews = 1
 			tracker.events <- Event{
 				Hit:             *hit,
 				Name:            strings.TrimSpace(eventOptions.Name),
