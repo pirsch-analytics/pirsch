@@ -171,6 +171,19 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 	return hit, ua
 }
 
+// ExtendSession looks up and extends the session for given request.
+// This function does not store a hit or event in database.
+func ExtendSession(r *http.Request, salt string, options *HitOptions) {
+	fingerprint := Fingerprint(r, salt)
+	getRequestURI(r, options)
+	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+
+	if hit != nil {
+		hit.Time = time.Now().UTC()
+		options.SessionCache.Put(options.ClientID, fingerprint, hit)
+	}
+}
+
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
 // The easiest way to track visitors is to use the Tracker.
 func IgnoreHit(r *http.Request) bool {

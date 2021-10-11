@@ -181,6 +181,24 @@ func TestHitFromRequestCountryCodeCity(t *testing.T) {
 	assert.Empty(t, hit.City)
 }
 
+func TestExtendSession(t *testing.T) {
+	cleanupDB()
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+	sessionCache := NewSessionCacheMem(dbClient, 100)
+	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)
+	req.Header.Set("User-Agent", uaString)
+	options := &HitOptions{
+		SessionCache: sessionCache,
+	}
+	hit, _ := HitFromRequest(req, "salt", options)
+	assert.NotNil(t, hit)
+	at := hit.Time
+	ExtendSession(req, "salt", options)
+	hit = sessionCache.Get(0, hit.Fingerprint, time.Now().UTC().Add(-time.Second))
+	assert.NotEqual(t, at, hit.Time)
+	assert.True(t, hit.Time.After(at))
+}
+
 func TestIgnoreHitPrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")

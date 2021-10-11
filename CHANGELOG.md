@@ -2,6 +2,7 @@
 
 ## 3.2.0
 
+* added function to manually extend sessions
 * fixed events counting up page views
 
 ## 3.1.4
