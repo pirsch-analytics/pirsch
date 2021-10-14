@@ -642,12 +642,12 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/", Referrer: "ref2/path", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
+		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref2/path", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp4", Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp5", Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{Fingerprint: "fp6", Time: time.Now(), Path: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -660,9 +660,9 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	assert.Equal(t, 2, visitors[0].Bounces)
 	assert.Equal(t, 1, visitors[1].Bounces)
 	assert.Equal(t, 0, visitors[2].Bounces)
@@ -684,11 +684,11 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
 	assert.Equal(t, "ref1/bar", visitors[1].Referrer)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[1].Visitors)
-	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.Equal(t, 1, visitors[1].Bounces)
-	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
 
 	// filter for full referrer
 	visitors, err = analyzer.Referrer(&Filter{Referrer: "ref1/foo"})
@@ -697,8 +697,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[0].Bounces)
-	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
 
 	// filter for referrer name and full referrer
 	visitors, err = analyzer.Referrer(&Filter{ReferrerName: "Ref1", Referrer: "ref1/foo"})
@@ -707,8 +707,8 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[0].Bounces)
-	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerUnknown(t *testing.T) {
@@ -716,9 +716,9 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute * 2), Path: "/", PageViews: 3, IsBounce: false},
+		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute * 2), SessionID: 1, Path: "/", PageViews: 3, IsBounce: false},
 		{Fingerprint: "fp2", Time: time.Now(), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
+		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute), SessionID: 3, Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
 		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 	}))

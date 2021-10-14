@@ -457,68 +457,37 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 	return stats, nil
 }
 
-// TODO
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	selectReferrer, groupReferrer := "", ""
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	ref := ""
 
 	if filter.Referrer != "" || filter.ReferrerName != "" {
-		selectReferrer = ",referrer"
-		groupReferrer = ",referrer"
-	} else {
-		selectReferrer = ",any(referrer) referrer"
+		ref = "referrer,"
 	}
 
-	filter.addFieldIfRequired(&fields, "referrer_name")
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	query := fmt.Sprintf(`SELECT referrer_name,
-		any(referrer_icon) referrer_icon %s,
+	query := fmt.Sprintf(`SELECT %s referrer_name,
+		any(referrer_icon) referrer_icon,
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM %s
+			FROM sessions
 			WHERE %s
 		), 1) relative_visitors,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
-		FROM (
-			SELECT fingerprint %s %s,
-			any(referrer_icon) referrer_icon,
-			session_id,
-			argMax(is_bounce, time) is_bounce,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s %s
-		)
-		%s
-		GROUP BY referrer_name %s
-		ORDER BY visitors DESC, referrer_name ASC
-		%s`, selectReferrer, table, timeQuery,
-		selectReferrer, fieldsQuery, table, timeQuery, groupReferrer, fieldsQuery, fieldQuery,
-		groupReferrer, filter.withLimit())
+		FROM sessions
+		WHERE %s
+		GROUP BY %s referrer_name
+		ORDER BY visitors DESC, %s referrer_name ASC
+		%s`, ref, innerFilterQuery, outerFilterQuery, ref, ref, filter.withLimit())
 	var stats []ReferrerStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
