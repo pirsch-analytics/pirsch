@@ -36,60 +36,24 @@ func NewAnalyzer(store Store) *Analyzer {
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-	timeArgs = append(timeArgs, fieldArgs...)
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	filter.addFieldIfRequired(&fields, "path")
-	title, orderByTitle := "", ""
-
-	if filter.IncludeTitle {
-		filter.addFieldIfRequired(&fields, "title")
-		title = ",title"
-		orderByTitle = ",title ASC"
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-	query := fmt.Sprintf(`SELECT path %s,
-		sum(visitors) visitors
-		FROM (
-			SELECT path %s,
-			count(DISTINCT fingerprint) visitors
-			FROM (
-				SELECT %s,
-				fingerprint,
-				argMax(path, time) exit_path
-				FROM hit
-				WHERE %s
-				GROUP BY fingerprint, session_id, %s
-			)
-			%s
-			GROUP BY path %s
-		)
-		GROUP BY path %s
-		ORDER BY visitors DESC, path ASC %s
-		%s`, title, title, fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title, orderByTitle, filter.withLimit())
+	filterArgs, filterQuery, _ := filter.query()
+	query := fmt.Sprintf(`SELECT path,
+		count(DISTINCT fingerprint) visitors
+		FROM sessions
+		WHERE %s
+		GROUP BY path
+		ORDER BY visitors DESC, path ASC
+		%s`, filterQuery, filter.withLimit())
 	var stats []ActiveVisitorStats
 
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, 0, err
 	}
 
 	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors
-		FROM (
-			SELECT %s,
-			fingerprint,
-			argMax(path, time) exit_path
-			FROM hit
-			WHERE %s
-			GROUP BY fingerprint, session_id, %s
-		)
-		%s`, fieldsQuery, timeQuery, fieldsQuery, fieldQuery)
-	count, err := analyzer.store.Count(query, timeArgs...)
+		FROM sessions
+		WHERE %s`, filterQuery)
+	count, err := analyzer.store.Count(query, filterArgs...)
 
 	if err != nil {
 		return nil, 0, err
