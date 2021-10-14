@@ -11,8 +11,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 5), Path: "/bar", Title: "Bar"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home"},
+		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar"},
 		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
 		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
 		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home"},
@@ -22,7 +22,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	analyzer := NewAnalyzer(dbClient)
 	visitors, count, err := analyzer.ActiveVisitors(nil, time.Minute*10)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, count)
+	assert.Equal(t, 3, count)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
@@ -31,10 +31,10 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	/*assert.Empty(t, visitors[0].Title)
 	assert.Empty(t, visitors[1].Title)
 	assert.Empty(t, visitors[2].Title)*/
-	assert.Equal(t, 3, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: "/bar"}, time.Minute*10)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: "/bar"}, time.Minute*30)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, count)
 	assert.Len(t, visitors, 1)
