@@ -26,7 +26,7 @@ func TestHitFromRequest(t *testing.T) {
 	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotEmpty(t, hit.Fingerprint)
 	assert.NoError(t, dbClient.SaveHits([]Hit{*hit}))
-	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
+	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 20)
 	assert.Equal(t, uaString, ua.UserAgent)
 
 	if hit.Time.IsZero() ||

@@ -377,90 +377,38 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
 
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
+	if filter.ExitPath != "" {
+		filter.Path = filter.ExitPath
+		filter.ExitPath = ""
 	}
 
-	title, titleInner, titleOuter, titleOrderBy, titleJoin := "", "", "", "", ""
-
-	if filter.IncludeTitle {
-		title = "title,"
-		titleInner = ",title"
-		titleOuter = "entries.title title,"
-		titleOrderBy = "title ASC,"
-		titleJoin = "AND visitors.title = entries.title"
-		filter.addFieldIfRequired(&fields, "title")
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	args = append(args, timeArgs...)
-	top, topQuery := "", ""
-
-	if filter.IncludeAvgTimeOnPage {
-		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
-		var topArgs []interface{}
-		topQuery, topArgs = analyzer.avgTimeOnPages(filter, "entry_path")
-		args = append(args, topArgs...)
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	query := fmt.Sprintf(`SELECT *
-		FROM (
-			SELECT entries.entry_path path,
-			%s
-			sum(visitors) visitors,
-			sum(sessions) sessions,
-			sum(entries) entries,
-			entries/IF(sessions = 0, 1, sessions) entry_rate
-			%s
-			FROM (
-				SELECT p entry_path,
-				%s
-				sum(entries) entries
-				FROM (
-					SELECT entry_path p %s,
-					argMax(path, time) exit_path,
-					count(DISTINCT fingerprint) entries
-					FROM %s
-					WHERE %s
-					GROUP BY fingerprint, session_id, entry_path %s
-				)
-				%s
-				GROUP BY entry_path %s
-			) AS entries
-			INNER JOIN (
-				SELECT path,
-				%s
-				count(DISTINCT fingerprint) visitors,
-				count(DISTINCT fingerprint, session_id) sessions
-				FROM %s
-				WHERE %s
-				GROUP BY path %s
-			) AS visitors
-			ON visitors.path = entries.entry_path %s
-			%s
-			GROUP BY path %s
-		)
-		WHERE entries > 0
-		ORDER BY entries DESC, %s path ASC
-		%s`, titleOuter, top, title,
-		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery, titleInner,
-		title, table, timeQuery, titleInner, titleJoin,
-		topQuery, titleInner, titleOrderBy, filter.withLimit())
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	query := fmt.Sprintf(`SELECT entry_path,
+		count(DISTINCT fingerprint, session_id) entries,
+		any(v.visitors) visitors,
+		any(v.sessions) sessions,
+		entries/sessions entry_rate,
+		toUInt64(avg(duration_seconds)) average_time_spent_seconds
+		FROM sessions
+		INNER JOIN (
+			SELECT path,
+			count(DISTINCT fingerprint) visitors,
+			count(DISTINCT fingerprint, session_id) sessions
+			FROM sessions
+			WHERE %s
+			GROUP BY path
+		) AS v
+		ON entry_path = v.path
+		WHERE %s
+		GROUP BY entry_path
+		ORDER BY entries DESC, entry_path
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []EntryStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -482,11 +430,13 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	query := fmt.Sprintf(`SELECT exit_path,
 		count(DISTINCT fingerprint, session_id) exits,
 		any(v.visitors) visitors,
-		exits/visitors exit_rate
+		any(v.sessions) sessions,
+		exits/sessions exit_rate
 		FROM sessions
 		INNER JOIN (
 			SELECT path,
-			count(DISTINCT fingerprint, session_id) visitors
+			count(DISTINCT fingerprint) visitors,
+			count(DISTINCT fingerprint, session_id) sessions
 			FROM sessions
 			WHERE %s
 			GROUP BY path
