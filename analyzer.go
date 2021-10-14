@@ -325,44 +325,23 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	query := fmt.Sprintf(`SELECT sum(visitors) visitors,
-		sum(views) views,
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
+		sum(page_views) views,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM sessions
 			WHERE %s
 		), 1) cr
-		FROM (
-			SELECT count(DISTINCT fingerprint) visitors %s,
-			argMax(page_views, time) views,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s
-		ORDER BY visitors DESC`, timeQuery, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery)
+		FROM sessions
+		WHERE %s
+		ORDER BY visitors DESC
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	stats := new(PageConversionsStats)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
+	if err := analyzer.store.Get(stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
