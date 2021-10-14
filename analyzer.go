@@ -98,38 +98,16 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, ErrNoPeriodOrDay
 	}
 
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	timeArgs = append(timeArgs, fieldArgs...)
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
+	filterArgs, filterQuery, _ := filter.query()
 	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
 		count(DISTINCT(fingerprint, session_id)) sessions,
-		sum(views) views,
+		count(1) views,
 		countIf(is_bounce) / IF(sessions = 0, 1, sessions) bounce_rate
-		FROM (
-			SELECT fingerprint %s,
-			session_id,
-			argMax(page_views, time) views,
-			argMax(is_bounce, time) is_bounce,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s`, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
+		FROM sessions
+		WHERE %s`, filterQuery)
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query, timeArgs...); err != nil {
+	if err := analyzer.store.Get(current, query, filterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -154,12 +132,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	timeArgs, _ = filter.queryTime()
-	fieldArgs, _, _ = filter.queryFields()
-	timeArgs = append(timeArgs, fieldArgs...)
+	filterArgs, _, _ = filter.query()
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query, timeArgs...); err != nil {
+	if err := analyzer.store.Get(previous, query, filterArgs...); err != nil {
 		return nil, err
 	}
 
