@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0
+
+* added materialized view for sessions and events
+* optimized queries using materialized views
+* removed `Filter.IncludeAvgTimeOnPage` (now always included)
+
 ## 3.2.1
 
 * small optimization for `ExtendSession`

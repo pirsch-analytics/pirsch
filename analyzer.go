@@ -285,89 +285,44 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, _ := filter.queryFields()
-	var fields []string
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
 
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-		filter.Path = ""
-		_, _, fields = filter.queryFields()
+	if filter.ExitPath != "" {
+		filter.Path = filter.ExitPath
+		filter.ExitPath = ""
 	}
 
-	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	title, titleGroupBy, titleOrderBy := "", "", ""
-
-	if filter.IncludeTitle {
-		title = "title,"
-		titleGroupBy = ",title"
-		titleOrderBy = "title ASC,"
-		filter.addFieldIfRequired(&fields, "title")
-	}
-
-	top, topQuery := "", ""
-
-	if filter.IncludeAvgTimeOnPage {
-		top = ",avg(average_time_spent_seconds) average_time_spent_seconds"
-		var topArgs []interface{}
-		topQuery, topArgs = analyzer.avgTimeOnPages(filter, "")
-		args = append(args, topArgs...)
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args = append(args, fieldArgs...)
-	query := fmt.Sprintf(`SELECT arrayJoin(paths) path,
-		%s
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, innerFilterArgs...)
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	query := fmt.Sprintf(`SELECT path,
 		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session_id)) sessions,
+		count(DISTINCT fingerprint, session_id) sessions,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM %s
+			FROM sessions
 			WHERE %s
 		), 1) relative_visitors,
 		count(1) views,
 		views / greatest((
-			SELECT sum(views) FROM (
-				SELECT argMax(page_views, time) views
-				FROM %s
+			select sum(views) from (
+				SELECT max(page_views) views
+				FROM sessions
 				WHERE %s
 				GROUP BY fingerprint, session_id
 			)
 		), 1) relative_views,
 		countIf(is_bounce) bounces,
-		bounces / IF(sessions = 0, 1, sessions) bounce_rate
-		%s
-		FROM (
-			SELECT groupArray(path) paths %s,
-			argMax(is_bounce, time) is_bounce,
-			argMax(path, time) exit_path,
-			fingerprint,
-			session_id
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		) AS entries
-		%s
-		%s
-		GROUP BY path %s
-		ORDER BY visitors DESC, %s path ASC
-		%s`, title,
-		table, timeQuery,
-		table, timeQuery,
-		top, fieldsQuery, table, timeQuery, fieldsQuery, topQuery, fieldQuery,
-		titleGroupBy, titleOrderBy, filter.withLimit())
+		bounces / IF(sessions = 0, 1, sessions) bounce_rate,
+		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
+		FROM sessions
+		WHERE %s
+		GROUP BY path
+		ORDER BY visitors DESC, path
+		%s`, innerFilterQuery, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []PageStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -391,7 +346,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
 		entries/sessions entry_rate,
-		toUInt64(avg(duration_seconds)) average_time_spent_seconds
+		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 		FROM sessions
 		INNER JOIN (
 			SELECT path,

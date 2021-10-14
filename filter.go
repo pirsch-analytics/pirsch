@@ -127,9 +127,6 @@ type Filter struct {
 	// IncludeTitle indicates whether the Analyzer.Pages, Analyzer.EntryPages, and Analyzer.ExitPages should contain the page title or not.
 	IncludeTitle bool
 
-	// IncludeAvgTimeOnPage indicates whether Analyzer.Pages and Analyzer.EntryPages should contain the average time on page or not.
-	IncludeAvgTimeOnPage bool
-
 	// MaxTimeOnPageSeconds is an optional maximum for the time spent on page.
 	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
