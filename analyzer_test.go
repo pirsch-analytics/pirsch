@@ -761,11 +761,11 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
 		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
-		{Fingerprint: "fp1", Time: time.Now(), Language: "de"},
 		{Fingerprint: "fp2", Time: time.Now(), Language: "de"},
-		{Fingerprint: "fp2", Time: time.Now(), Language: "jp"},
-		{Fingerprint: "fp3", Time: time.Now(), Language: "en"},
-		{Fingerprint: "fp4", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp3", Time: time.Now(), Language: "de"},
+		{Fingerprint: "fp4", Time: time.Now(), Language: "jp"},
+		{Fingerprint: "fp5", Time: time.Now(), Language: "en"},
+		{Fingerprint: "fp6", Time: time.Now(), Language: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -778,9 +778,9 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.Languages(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -790,11 +790,11 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
 		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "de"},
 		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "de"},
-		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "jp"},
-		{Fingerprint: "fp3", Time: time.Now(), CountryCode: "en"},
-		{Fingerprint: "fp4", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp3", Time: time.Now(), CountryCode: "de"},
+		{Fingerprint: "fp4", Time: time.Now(), CountryCode: "jp"},
+		{Fingerprint: "fp5", Time: time.Now(), CountryCode: "en"},
+		{Fingerprint: "fp6", Time: time.Now(), CountryCode: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -807,9 +807,9 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.Countries(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -819,11 +819,11 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
 		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
-		{Fingerprint: "fp1", Time: time.Now(), City: "Berlin"},
 		{Fingerprint: "fp2", Time: time.Now(), City: "Berlin"},
-		{Fingerprint: "fp2", Time: time.Now(), City: "Tokyo"},
-		{Fingerprint: "fp3", Time: time.Now(), City: "London"},
-		{Fingerprint: "fp4", Time: time.Now(), City: "London"},
+		{Fingerprint: "fp3", Time: time.Now(), City: "Berlin"},
+		{Fingerprint: "fp4", Time: time.Now(), City: "Tokyo"},
+		{Fingerprint: "fp5", Time: time.Now(), City: "London"},
+		{Fingerprint: "fp6", Time: time.Now(), City: "London"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -836,9 +836,9 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.Cities(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -848,11 +848,11 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
 		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
-		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserFirefox},
 		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserFirefox},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserSafari},
-		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserChrome},
-		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserFirefox},
+		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserSafari},
+		{Fingerprint: "fp5", Time: time.Now(), Browser: BrowserChrome},
+		{Fingerprint: "fp6", Time: time.Now(), Browser: BrowserChrome},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -865,9 +865,9 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.Browser(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -922,11 +922,11 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
 		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
-		{Fingerprint: "fp1", Time: time.Now(), OS: OSMac},
 		{Fingerprint: "fp2", Time: time.Now(), OS: OSMac},
-		{Fingerprint: "fp2", Time: time.Now(), OS: OSLinux},
-		{Fingerprint: "fp3", Time: time.Now(), OS: OSWindows},
-		{Fingerprint: "fp4", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp3", Time: time.Now(), OS: OSMac},
+		{Fingerprint: "fp4", Time: time.Now(), OS: OSLinux},
+		{Fingerprint: "fp5", Time: time.Now(), OS: OSWindows},
+		{Fingerprint: "fp6", Time: time.Now(), OS: OSWindows},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -939,9 +939,9 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.OS(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -996,11 +996,11 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
 		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XL"},
 		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "XL"},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "L"},
-		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: "XXL"},
-		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: "XL"},
+		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: "L"},
+		{Fingerprint: "fp5", Time: time.Now(), ScreenClass: "XXL"},
+		{Fingerprint: "fp6", Time: time.Now(), ScreenClass: "XXL"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1013,9 +1013,9 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	assert.InDelta(t, 0.75, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
 	_, err = analyzer.ScreenClass(getMaxFilter())
 	assert.NoError(t, err)
 }
@@ -1025,11 +1025,11 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
 		{Fingerprint: "fp2", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-		{Fingerprint: "fp2", Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
-		{Fingerprint: "fp3", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{Fingerprint: "fp4", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Fingerprint: "fp3", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{Fingerprint: "fp4", Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
+		{Fingerprint: "fp5", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Fingerprint: "fp6", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1042,9 +1042,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.Equal(t, 3, source[0].Visitors)
 	assert.Equal(t, 2, source[1].Visitors)
 	assert.Equal(t, 1, source[2].Visitors)
-	assert.InDelta(t, 0.75, source[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, source[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, source[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, source[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, source[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, source[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMSource(getMaxFilter())
 	assert.NoError(t, err)
 	medium, err := analyzer.UTMMedium(nil)
@@ -1056,9 +1056,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.Equal(t, 3, medium[0].Visitors)
 	assert.Equal(t, 2, medium[1].Visitors)
 	assert.Equal(t, 1, medium[2].Visitors)
-	assert.InDelta(t, 0.75, medium[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, medium[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, medium[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, medium[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, medium[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, medium[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMMedium(getMaxFilter())
 	assert.NoError(t, err)
 	campaign, err := analyzer.UTMCampaign(nil)
@@ -1070,9 +1070,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.Equal(t, 3, campaign[0].Visitors)
 	assert.Equal(t, 2, campaign[1].Visitors)
 	assert.Equal(t, 1, campaign[2].Visitors)
-	assert.InDelta(t, 0.75, campaign[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, campaign[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, campaign[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, campaign[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, campaign[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, campaign[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMCampaign(getMaxFilter())
 	assert.NoError(t, err)
 	content, err := analyzer.UTMContent(nil)
@@ -1084,9 +1084,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.Equal(t, 3, content[0].Visitors)
 	assert.Equal(t, 2, content[1].Visitors)
 	assert.Equal(t, 1, content[2].Visitors)
-	assert.InDelta(t, 0.75, content[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, content[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, content[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, content[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, content[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, content[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMContent(getMaxFilter())
 	assert.NoError(t, err)
 	term, err := analyzer.UTMTerm(nil)
@@ -1098,9 +1098,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.Equal(t, 3, term[0].Visitors)
 	assert.Equal(t, 2, term[1].Visitors)
 	assert.Equal(t, 1, term[2].Visitors)
-	assert.InDelta(t, 0.75, term[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.5, term[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.25, term[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, term[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, term[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, term[2].RelativeVisitors, 0.01)
 	_, err = analyzer.UTMTerm(getMaxFilter())
 	assert.NoError(t, err)
 }
