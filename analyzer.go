@@ -470,79 +470,35 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 // ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
 
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
+	if filter.ExitPath != "" {
+		filter.Path = filter.ExitPath
+		filter.ExitPath = ""
 	}
 
-	title, titleInner, titleInnerArgMax, titleOrderBy := "", "", "", ""
-
-	if filter.IncludeTitle {
-		title = "title,"
-		titleInner = ",title"
-		titleInnerArgMax = ",argMax(title, time) title"
-		titleOrderBy = "title ASC,"
-	}
-
-	filter.removeField(&fields, "path")
-	fieldsQuery := strings.Join(fields, ",")
-	joinFieldsQuery := strings.Join(fields, " AND ")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-		joinFieldsQuery = "AND " + joinFieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)*2)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT exit_path,
-		%s
-		any(visitors) visitors,
-		any(sessions) sessions,
 		count(DISTINCT fingerprint, session_id) exits,
-		exits/IF(sessions = 0, 1, sessions) exit_rate
-		FROM (
-			SELECT arrayJoin(paths) path,
-			exit_path %s %s,
-			fingerprint,
-			session_id
-			FROM (
-				SELECT fingerprint,
-				session_id,
-				groupArray(path) paths,
-				argMax(path, time) exit_path %s %s
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			%s
-			GROUP BY exit_path, path, fingerprint, session_id %s %s
-		) AS visitors
+		any(v.visitors) visitors,
+		exits/visitors exit_rate
+		FROM sessions
 		INNER JOIN (
-			SELECT path %s %s,
-			count(DISTINCT fingerprint) visitors,
-			count(DISTINCT fingerprint, session_id) sessions
-			FROM %s
+			SELECT path,
+			count(DISTINCT fingerprint, session_id) visitors
+			FROM sessions
 			WHERE %s
-			GROUP BY path %s %s
-		) AS exits
-		ON exits.path = visitors.exit_path %s
-		%s
-		GROUP by %s exit_path
-		ORDER BY exits DESC, %s exit_path ASC
-		%s`, title,
-		fieldsQuery, titleInner, fieldsQuery, titleInnerArgMax, table, timeQuery, fieldsQuery, fieldQuery, fieldsQuery, titleInner,
-		fieldsQuery, titleInner, table, timeQuery, fieldsQuery, titleInner,
-		joinFieldsQuery, fieldQuery, title, titleOrderBy, filter.withLimit())
+			GROUP BY path
+		) AS v
+		ON exit_path = v.path
+		WHERE %s
+		GROUP BY exit_path
+		ORDER BY exits DESC, exit_path
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []ExitStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -1383,5 +1339,6 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	}
 
 	filter.validate()
-	return filter
+	filterCopy := *filter
+	return &filterCopy
 }
