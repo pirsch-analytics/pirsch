@@ -65,46 +65,23 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 // Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
+	filterArgs, filterQuery, _ := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
-	timeArgs = append(timeArgs, fieldArgs...)
-	timeArgs = append(timeArgs, withFillArgs...)
-	timezone := filter.Timezone.String()
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	query := fmt.Sprintf(`SELECT day,
+	filterArgs = append(filterArgs, withFillArgs...)
+	query := fmt.Sprintf(`SELECT toDate(time, '%s') day,
 		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session_id)) sessions,
-		sum(views) views,
+		count(DISTINCT fingerprint, session_id) sessions,
+		count(1) views,
 		countIf(is_bounce) bounces,
 		bounces / IF(sessions = 0, 1, sessions) bounce_rate
-		FROM (
-			SELECT toDate(time, '%s') day %s,
-			fingerprint,
-			session_id,
-			argMax(page_views, time) views,
-			argMax(is_bounce, time) is_bounce,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id, day %s
-		)
-		%s
+		FROM sessions
+		WHERE %s
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, timezone, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery, withFillQuery)
+		ORDER BY day ASC %s, visitors DESC
+		%s`, filter.Timezone.String(), filterQuery, withFillQuery, filter.withLimit())
 	var stats []VisitorStats
 
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -250,12 +227,6 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	outerFilterArgs, outerFilterQuery, _ := filter.query()
-
-	if filter.ExitPath != "" {
-		filter.Path = filter.ExitPath
-		filter.ExitPath = ""
-	}
-
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, innerFilterArgs...)
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
@@ -1105,12 +1076,6 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr string) error {
 	filter = analyzer.getFilter(filter)
 	outerFilterArgs, outerFilterQuery, _ := filter.query()
-
-	if filter.ExitPath != "" {
-		filter.Path = filter.ExitPath
-		filter.ExitPath = ""
-	}
-
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
