@@ -350,6 +350,7 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
+// TODO need to return fields?
 func (filter *Filter) query() ([]interface{}, string, []string) {
 	args, query := filter.queryTime()
 	fieldArgs, queryFields, fields := filter.queryFields()

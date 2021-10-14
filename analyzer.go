@@ -688,104 +688,56 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 	return stats, nil
 }
 
-// TODO
 // OSVersion returns the visitor count grouped by operating systems and version.
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	filter.addFieldIfRequired(&fields, "os")
-	filter.addFieldIfRequired(&fields, "os_version")
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT os,
 		os_version,
-		sum(visitors) visitors,
+		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM sessions
 			WHERE %s
 		), 1) relative_visitors
-		FROM (
-			SELECT count(DISTINCT fingerprint) visitors %s,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s
+		FROM sessions
+		WHERE %s
 		GROUP BY os, os_version
 		ORDER BY visitors DESC, os, os_version
-		%s`, timeQuery, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery, filter.withLimit())
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []OSVersionStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
 	return stats, nil
 }
 
-// TODO
 // BrowserVersion returns the visitor count grouped by browser and version.
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	filter.addFieldIfRequired(&fields, "browser")
-	filter.addFieldIfRequired(&fields, "browser_version")
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
+	outerFilterArgs, outerFilterQuery, _ := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT browser,
 		browser_version,
-		sum(visitors) visitors,
+		count(DISTINCT fingerprint) visitors,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM sessions
 			WHERE %s
 		), 1) relative_visitors
-		FROM (
-			SELECT count(DISTINCT fingerprint) visitors %s,
-			argMax(path, time) exit_path
-			FROM %s
-			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s
+		FROM sessions
+		WHERE %s
 		GROUP BY browser, browser_version
 		ORDER BY visitors DESC, browser, browser_version
-		%s`, timeQuery, fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery, filter.withLimit())
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []BrowserVersionStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
