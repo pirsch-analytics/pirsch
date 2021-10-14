@@ -286,6 +286,7 @@ func (filter *Filter) queryPlatform(fields, queryFields *[]string) {
 	}
 }
 
+// TODO required?
 func (filter Filter) queryExitPath(queryFields *[]string, args *[]interface{}) {
 	if filter.ExitPath != "" {
 		if strings.HasPrefix(filter.ExitPath, "!") {
@@ -312,6 +313,7 @@ func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]int
 	}
 }
 
+// TODO required?
 func (filter *Filter) addFieldIfRequired(fields *[]string, field string) {
 	for _, f := range *fields {
 		if f == field {
@@ -322,6 +324,7 @@ func (filter *Filter) addFieldIfRequired(fields *[]string, field string) {
 	*fields = append(*fields, field)
 }
 
+// TODO required?
 func (filter *Filter) removeField(fields *[]string, field string) {
 	for i, f := range *fields {
 		if f == field {

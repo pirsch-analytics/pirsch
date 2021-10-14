@@ -739,11 +739,11 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
 		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Mobile: true},
 		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp2", Time: time.Now()},
-		{Fingerprint: "fp3", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp4", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp3", Time: time.Now(), Mobile: true},
+		{Fingerprint: "fp4", Time: time.Now()},
+		{Fingerprint: "fp5", Time: time.Now(), Desktop: true},
+		{Fingerprint: "fp6", Time: time.Now(), Desktop: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

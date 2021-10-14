@@ -31,6 +31,8 @@ func NewAnalyzer(store Store) *Analyzer {
 	}
 }
 
+// TODO add event materialized view to everything
+
 // ActiveVisitors returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
@@ -348,6 +350,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	return stats, nil
 }
 
+// TODO
 // Events returns the visitor count, views, and conversion rate for custom events.
 func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -403,6 +406,7 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	return stats, nil
 }
 
+// TODO
 // EventBreakdown returns the visitor count, views, and conversion rate for a custom event grouping them by a meta value for given key.
 // The Filter.EventName and Filter.EventMetaKey must be set, or otherwise the result set will be empty.
 func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
@@ -453,6 +457,7 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 	return stats, nil
 }
 
+// TODO
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -523,74 +528,36 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 // Platform returns the visitor count grouped by platform.
 func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "AND " + fieldQuery
-	}
-
-	filter.addFieldIfRequired(&fields, "desktop")
-	filter.addFieldIfRequired(&fields, "mobile")
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]interface{}, 0, len(timeArgs)*3+len(fieldArgs)*3)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
+	filterArgs, filterQuery, _ := filter.query()
+	args := make([]interface{}, 0, len(filterArgs)*3)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
+	args = append(args, filterArgs...)
 	query := fmt.Sprintf(`SELECT (
 			SELECT count(DISTINCT fingerprint)
-			FROM (
-				SELECT fingerprint %s,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			WHERE desktop = 1
+			FROM sessions
+			WHERE %s
+			AND desktop = 1
 			AND mobile = 0
-			%s
 		) AS "platform_desktop",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM (
-				SELECT fingerprint %s,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			WHERE desktop = 0
+			FROM sessions
+			WHERE %s
+			AND desktop = 0
 			AND mobile = 1
-			%s
 		) AS "platform_mobile",
 		(
 			SELECT count(DISTINCT fingerprint)
-			FROM (
-				SELECT fingerprint %s,
-				argMax(path, time) exit_path
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id %s
-			)
-			WHERE desktop = 0
+			FROM sessions
+			WHERE %s
+			AND desktop = 0
 			AND mobile = 0
-			%s
 		) AS "platform_unknown",
 		"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 		"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`,
-		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
-		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery,
-		fieldsQuery, table, timeQuery, fieldsQuery, fieldQuery)
+		filterQuery, filterQuery, filterQuery)
 	stats := new(PlatformStats)
 
 	if err := analyzer.store.Get(stats, query, args...); err != nil {
@@ -721,6 +688,7 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 	return stats, nil
 }
 
+// TODO
 // OSVersion returns the visitor count grouped by operating systems and version.
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -772,6 +740,7 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	return stats, nil
 }
 
+// TODO
 // BrowserVersion returns the visitor count grouped by browser and version.
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -823,6 +792,7 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	return stats, nil
 }
 
+// TODO
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -864,6 +834,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	return stats, nil
 }
 
+// TODO
 // AvgTimeOnPage returns the average time on page grouped by day.
 func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
@@ -917,6 +888,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	return stats, nil
 }
 
+// TODO
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
@@ -951,6 +923,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	return averageTimeSpentSeconds, nil
 }
 
+// TODO
 func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
@@ -994,30 +967,6 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
-	if current == 0 && previous == 0 {
-		return 0
-	} else if previous == 0 {
-		return 1
-	}
-
-	c := float64(current)
-	p := float64(previous)
-	return (c - p) / p
-}
-
-func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) float64 {
-	if current == 0 && previous == 0 {
-		return 0
-	} else if previous == 0 {
-		return 1
-	}
-
-	c := current
-	p := previous
-	return (c - p) / p
-}
-
 func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	timeOnPage := "neighbor(duration_seconds, 1, 0)"
 
@@ -1046,6 +995,30 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		ORDER BY visitors DESC, "%s" ASC
 		%s`, attr, innerFilterQuery, outerFilterQuery, attr, attr, filter.withLimit())
 	return analyzer.store.Select(results, query, innerFilterArgs...)
+}
+
+func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := float64(current)
+	p := float64(previous)
+	return (c - p) / p
+}
+
+func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := current
+	p := previous
+	return (c - p) / p
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
