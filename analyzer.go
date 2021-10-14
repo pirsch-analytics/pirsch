@@ -809,42 +809,25 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	return stats, nil
 }
 
-// TODO
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	timeArgs = append(timeArgs, fieldArgs...)
+	filterArgs, filterQuery, _ := filter.query()
 	query := fmt.Sprintf(`SELECT sum(duration_seconds)
 		FROM (
-			SELECT sum(duration_seconds) duration_seconds %s,
-			argMax(path, time) exit_path
-			FROM %s
+			SELECT any(duration_seconds) duration_seconds
+			FROM sessions
 			WHERE %s
-			GROUP BY fingerprint, session_id %s
-		)
-		%s`, fieldsQuery, filter.table(), timeQuery, fieldsQuery, fieldQuery)
+			GROUP BY fingerprint, session_id
+		)`, filterQuery)
 	var averageTimeSpentSeconds int
 
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, timeArgs...); err != nil {
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {
 		return 0, err
 	}
 
 	return averageTimeSpentSeconds, nil
 }
 
-// TODO
 func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	filter = analyzer.getFilter(filter)
 	timeArgs, timeQuery := filter.queryTime()
