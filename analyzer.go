@@ -1104,68 +1104,6 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	return stats.AverageTimeSpentSeconds, nil
 }
 
-func (analyzer *Analyzer) avgTimeOnPages(filter *Filter, useJoinField string) (string, []interface{}) {
-	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if len(fieldArgs) > 0 {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	filter.addFieldIfRequired(&fields, "path")
-	title, joinTitle := "", ""
-
-	if filter.IncludeTitle {
-		title = ",title"
-		joinTitle = "AND entries.title = top.title"
-		filter.addFieldIfRequired(&fields, "title")
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	join := ""
-
-	if useJoinField != "" {
-		join = fmt.Sprintf(`ON top.path = entries.%s %s`, useJoinField, joinTitle)
-	} else {
-		join = fmt.Sprintf(`USING path %s`, title)
-	}
-
-	query := fmt.Sprintf(`LEFT JOIN (
-			SELECT path %s,
-			toUInt64(avg(time_on_page)) average_time_spent_seconds
-			FROM (
-				SELECT *,
-				%s time_on_page
-				FROM (
-					SELECT session_id,
-					time,
-					sum(duration_seconds) duration_seconds,
-					argMax(path, time) exit_path
-					%s
-					FROM hit
-					WHERE %s
-					GROUP BY fingerprint, session_id, time %s
-					ORDER BY fingerprint, session_id, time
-				)
-				WHERE time_on_page > 0
-				AND session_id = neighbor(session_id, 1, null)
-			)
-			%s
-			GROUP BY path %s
-		) AS top
-		%s`, title,
-		analyzer.timeOnPageQuery(filter), fieldsQuery, timeQuery, fieldsQuery, fieldQuery,
-		title, join)
-	timeArgs = append(timeArgs, fieldArgs...)
-	return query, timeArgs
-}
-
 func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
 	if current == 0 && previous == 0 {
 		return 0
