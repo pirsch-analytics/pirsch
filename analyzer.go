@@ -713,42 +713,23 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	return stats, nil
 }
 
-// TODO
 // AvgSessionDuration returns the average session duration grouped by day.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery, fields := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "AND " + fieldQuery
-	}
-
-	fieldsQuery := strings.Join(fields, ",")
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
+	filterArgs, filterQuery, _ := filter.query()
 	withFillArgs, withFillQuery := filter.withFill()
-	timeArgs = append(timeArgs, fieldArgs...)
-	timeArgs = append(timeArgs, withFillArgs...)
-	query := fmt.Sprintf(`SELECT day,
-		toUInt64(avg(duration)) average_time_spent_seconds
-		FROM (
-			SELECT toDate(time, '%s') day %s,
-			sum(duration_seconds) duration,
-			argMax(path, time) exit_path
-			FROM hit
-			WHERE %s
-			GROUP BY fingerprint, session_id, day %s
-		)
-		WHERE duration != 0 %s
+	filterArgs = append(filterArgs, withFillArgs...)
+	query := fmt.Sprintf(`SELECT toDate(time) day,
+		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
+		FROM sessions
+		WHERE %s
+		AND duration_seconds != 0
 		GROUP BY day
-		ORDER BY day %s`, filter.Timezone.String(), fieldsQuery, timeQuery, fieldsQuery, fieldQuery, withFillQuery)
+		ORDER BY day
+		%s`, filterQuery, withFillQuery)
 	var stats []TimeSpentStats
 
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, err
 	}
 
