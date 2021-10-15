@@ -226,80 +226,58 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 	return args, sqlQuery.String()
 }
 
-func (filter *Filter) queryFields() ([]interface{}, string, []string) {
-	args := make([]interface{}, 0, 21)
-	queryFields := make([]string, 0, 21)
-	fields := make([]string, 0, 21)
-	filter.appendQuery(&fields, &queryFields, &args, "path", filter.Path)
-	filter.appendQuery(&fields, &queryFields, &args, "entry_path", filter.EntryPath)
-	filter.appendQuery(&fields, &queryFields, &args, "language", filter.Language)
-	filter.appendQuery(&fields, &queryFields, &args, "country_code", filter.Country)
-	filter.appendQuery(&fields, &queryFields, &args, "city", filter.City)
-	filter.appendQuery(&fields, &queryFields, &args, "referrer", filter.Referrer)
-	filter.appendQuery(&fields, &queryFields, &args, "referrer_name", filter.ReferrerName)
-	filter.appendQuery(&fields, &queryFields, &args, "os", filter.OS)
-	filter.appendQuery(&fields, &queryFields, &args, "os_version", filter.OSVersion)
-	filter.appendQuery(&fields, &queryFields, &args, "browser", filter.Browser)
-	filter.appendQuery(&fields, &queryFields, &args, "browser_version", filter.BrowserVersion)
-	filter.appendQuery(&fields, &queryFields, &args, "screen_class", filter.ScreenClass)
-	filter.appendQuery(&fields, &queryFields, &args, "utm_source", filter.UTMSource)
-	filter.appendQuery(&fields, &queryFields, &args, "utm_medium", filter.UTMMedium)
-	filter.appendQuery(&fields, &queryFields, &args, "utm_campaign", filter.UTMCampaign)
-	filter.appendQuery(&fields, &queryFields, &args, "utm_content", filter.UTMContent)
-	filter.appendQuery(&fields, &queryFields, &args, "utm_term", filter.UTMTerm)
-	filter.appendQuery(&fields, &queryFields, &args, "event_name", filter.EventName)
-	filter.queryPlatform(&fields, &queryFields)
-	filter.queryExitPath(&queryFields, &args)
-	filter.queryPathPattern(&fields, &queryFields, &args)
-	return args, strings.Join(queryFields, "AND "), fields
+func (filter *Filter) queryFields() ([]interface{}, string) {
+	args := make([]interface{}, 0, 22)
+	queryFields := make([]string, 0, 22)
+	filter.appendQuery(&queryFields, &args, "path", filter.Path)
+	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
+	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
+	filter.appendQuery(&queryFields, &args, "language", filter.Language)
+	filter.appendQuery(&queryFields, &args, "country_code", filter.Country)
+	filter.appendQuery(&queryFields, &args, "city", filter.City)
+	filter.appendQuery(&queryFields, &args, "referrer", filter.Referrer)
+	filter.appendQuery(&queryFields, &args, "referrer_name", filter.ReferrerName)
+	filter.appendQuery(&queryFields, &args, "os", filter.OS)
+	filter.appendQuery(&queryFields, &args, "os_version", filter.OSVersion)
+	filter.appendQuery(&queryFields, &args, "browser", filter.Browser)
+	filter.appendQuery(&queryFields, &args, "browser_version", filter.BrowserVersion)
+	filter.appendQuery(&queryFields, &args, "screen_class", filter.ScreenClass)
+	filter.appendQuery(&queryFields, &args, "utm_source", filter.UTMSource)
+	filter.appendQuery(&queryFields, &args, "utm_medium", filter.UTMMedium)
+	filter.appendQuery(&queryFields, &args, "utm_campaign", filter.UTMCampaign)
+	filter.appendQuery(&queryFields, &args, "utm_content", filter.UTMContent)
+	filter.appendQuery(&queryFields, &args, "utm_term", filter.UTMTerm)
+	filter.appendQuery(&queryFields, &args, "event_name", filter.EventName)
+	filter.queryPlatform(&queryFields)
+	filter.queryPathPattern(&queryFields, &args)
+	return args, strings.Join(queryFields, "AND ")
 }
 
-func (filter *Filter) queryPlatform(fields, queryFields *[]string) {
+func (filter *Filter) queryPlatform(queryFields *[]string) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
 			if platform == PlatformDesktop {
 				*queryFields = append(*queryFields, "desktop != 1 ")
-				*fields = append(*fields, "desktop")
 			} else if platform == PlatformMobile {
 				*queryFields = append(*queryFields, "mobile != 1 ")
-				*fields = append(*fields, "mobile")
 			} else {
 				*queryFields = append(*queryFields, "(desktop = 1 OR mobile = 1) ")
-				*fields = append(*fields, "desktop")
-				*fields = append(*fields, "mobile")
 			}
 		} else {
 			if filter.Platform == PlatformDesktop {
 				*queryFields = append(*queryFields, "desktop = 1 ")
-				*fields = append(*fields, "desktop")
 			} else if filter.Platform == PlatformMobile {
 				*queryFields = append(*queryFields, "mobile = 1 ")
-				*fields = append(*fields, "mobile")
 			} else {
 				*queryFields = append(*queryFields, "desktop = 0 AND mobile = 0 ")
-				*fields = append(*fields, "desktop")
-				*fields = append(*fields, "mobile")
 			}
 		}
 	}
 }
 
-// TODO required?
-func (filter Filter) queryExitPath(queryFields *[]string, args *[]interface{}) {
-	if filter.ExitPath != "" {
-		if strings.HasPrefix(filter.ExitPath, "!") {
-			*args = append(*args, filter.ExitPath[1:])
-			*queryFields = append(*queryFields, `exit_path != ?`)
-		} else {
-			*args = append(*args, filter.ExitPath)
-			*queryFields = append(*queryFields, `exit_path = ?`)
-		}
-	}
-}
-
-func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]interface{}) {
+func (filter Filter) queryPathPattern(queryFields *[]string, args *[]interface{}) {
 	if filter.PathPattern != "" {
 		if strings.HasPrefix(filter.PathPattern, "!") {
 			*args = append(*args, filter.PathPattern[1:])
@@ -308,29 +286,58 @@ func (filter Filter) queryPathPattern(fields, queryFields *[]string, args *[]int
 			*args = append(*args, filter.PathPattern)
 			*queryFields = append(*queryFields, `match("path", ?) = 1`)
 		}
-
-		filter.addFieldIfRequired(fields, "path")
 	}
 }
 
-// TODO required?
-func (filter *Filter) addFieldIfRequired(fields *[]string, field string) {
-	for _, f := range *fields {
-		if f == field {
-			return
+func (filter *Filter) fields() string {
+	// do not include exit_path, as it is selected using argMax
+	fields := make([]string, 0, 20)
+	filter.appendField(&fields, "path", filter.Path)
+	filter.appendField(&fields, "entry_path", filter.EntryPath)
+	filter.appendField(&fields, "language", filter.Language)
+	filter.appendField(&fields, "country_code", filter.Country)
+	filter.appendField(&fields, "city", filter.City)
+	filter.appendField(&fields, "referrer", filter.Referrer)
+	filter.appendField(&fields, "referrer_name", filter.ReferrerName)
+	filter.appendField(&fields, "os", filter.OS)
+	filter.appendField(&fields, "os_version", filter.OSVersion)
+	filter.appendField(&fields, "browser", filter.Browser)
+	filter.appendField(&fields, "browser_version", filter.BrowserVersion)
+	filter.appendField(&fields, "screen_class", filter.ScreenClass)
+	filter.appendField(&fields, "utm_source", filter.UTMSource)
+	filter.appendField(&fields, "utm_medium", filter.UTMMedium)
+	filter.appendField(&fields, "utm_campaign", filter.UTMCampaign)
+	filter.appendField(&fields, "utm_content", filter.UTMContent)
+	filter.appendField(&fields, "utm_term", filter.UTMTerm)
+	filter.appendField(&fields, "event_name", filter.EventName)
+
+	if filter.Platform != "" {
+		platform := filter.Platform
+
+		if strings.HasPrefix(platform, "!") {
+			platform = filter.Platform[1:]
+		}
+
+		if platform == PlatformDesktop {
+			fields = append(fields, "desktop")
+		} else if platform == PlatformMobile {
+			fields = append(fields, "mobile")
+		} else {
+			fields = append(fields, "desktop")
+			fields = append(fields, "mobile")
 		}
 	}
 
-	*fields = append(*fields, field)
+	if filter.Path == "" && filter.PathPattern != "" {
+		fields = append(fields, "path")
+	}
+
+	return strings.Join(fields, ",")
 }
 
-// TODO required?
-func (filter *Filter) removeField(fields *[]string, field string) {
-	for i, f := range *fields {
-		if f == field {
-			*fields = append((*fields)[:i], (*fields)[i+1:]...)
-			break
-		}
+func (filter *Filter) appendField(fields *[]string, field, value string) {
+	if value != "" {
+		*fields = append(*fields, field)
 	}
 }
 
@@ -350,20 +357,19 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-// TODO need to return fields?
-func (filter *Filter) query() ([]interface{}, string, []string) {
+func (filter *Filter) query() ([]interface{}, string) {
 	args, query := filter.queryTime()
-	fieldArgs, queryFields, fields := filter.queryFields()
+	fieldArgs, queryFields := filter.queryFields()
 	args = append(args, fieldArgs...)
 
 	if queryFields != "" {
 		query += "AND " + queryFields
 	}
 
-	return args, query, fields
+	return args, query
 }
 
-func (filter *Filter) appendQuery(fields, queryFields *[]string, args *[]interface{}, field, value string) {
+func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
 		if strings.HasPrefix(value, "!") {
 			value = filter.nullValue(value[1:])
@@ -373,8 +379,6 @@ func (filter *Filter) appendQuery(fields, queryFields *[]string, args *[]interfa
 			*args = append(*args, filter.nullValue(value))
 			*queryFields = append(*queryFields, fmt.Sprintf("%s = ? ", field))
 		}
-
-		*fields = append(*fields, field)
 	}
 }
 
