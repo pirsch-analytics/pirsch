@@ -32,6 +32,8 @@ func NewAnalyzer(store Store) *Analyzer {
 }
 
 // TODO add event materialized view to everything
+// TODO add grouping by title back in
+// TODO add (optional, manual) sorting key migration for hit and event table
 
 // ActiveVisitors returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
