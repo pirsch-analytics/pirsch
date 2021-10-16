@@ -3,7 +3,6 @@ package pirsch
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -33,7 +32,7 @@ func NewAnalyzer(store Store) *Analyzer {
 
 // TODO add event materialized view to everything
 // TODO add grouping by title back in
-// TODO add (optional, manual) sorting key migration for hit and event table
+// TODO add (optional, manual) sorting key migration for hit and event table and fingerprints
 
 // ActiveVisitors returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
@@ -352,60 +351,30 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	return stats, nil
 }
 
-// TODO
 // Events returns the visitor count, views, and conversion rate for custom events.
 func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	filter = analyzer.getFilter(filter)
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	fieldsQuery := filter.fields()
-
-	if !strings.Contains(fieldsQuery, "event_name") {
-		if fieldsQuery == "" {
-			fieldsQuery = "event_name"
-		} else {
-			fieldsQuery += ",event_name"
-		}
-	}
-
-	fieldsQuery = "," + fieldsQuery
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
-	args = append(args, timeArgs...)
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
+	outerFilterArgs, outerFilterQuery := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT event_name,
-		sum(visitors) visitors,
-		sum(views) views,
+		count(DISTINCT fingerprint) visitors,
+		count(1) views,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM sessions
 			WHERE %s
 		), 1) cr,
-		toUInt64(avg(avg_duration)) average_duration_seconds,
-		groupUniqArrayArray(meta_keys) meta_keys
-		FROM (
-			SELECT event_name %s,
-			groupUniqArrayArray(event_meta_keys) meta_keys,
-			count(DISTINCT fingerprint) visitors,
-			argMax(page_views, time) views,
-			avg(event_duration_seconds) avg_duration,
-			argMax(path, time) exit_path
-			FROM event
-			WHERE %s
-			GROUP BY fingerprint, session_id, event_name %s
-		)
-		%s
+		ifNull(toUInt64(avg(nullIf(event_duration_seconds, 0))), 0) average_duration_seconds,
+		groupUniqArrayArray(event_meta_keys) meta_keys
+		FROM events
+		WHERE %s
 		GROUP BY event_name
 		ORDER BY visitors DESC, event_name
-		%s`, timeQuery, fieldsQuery, timeQuery, fieldsQuery, fieldQuery, filter.withLimit())
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []EventStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
