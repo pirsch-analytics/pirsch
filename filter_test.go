@@ -45,6 +45,13 @@ func TestFilter_Table(t *testing.T) {
 	assert.Equal(t, "event", filter.table())
 }
 
+func TestFilter_View(t *testing.T) {
+	filter := NewFilter(NullClient)
+	assert.Equal(t, "sessions", filter.view())
+	filter.EventName = "event"
+	assert.Equal(t, "events", filter.view())
+}
+
 func TestFilter_QueryTime(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.From = pastDay(5)

@@ -196,6 +196,14 @@ func (filter *Filter) table() string {
 	return "hit"
 }
 
+func (filter *Filter) view() string {
+	if filter.EventName != "" {
+		return "events"
+	}
+
+	return "sessions"
+}
+
 func (filter *Filter) queryTime() ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
