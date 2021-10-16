@@ -381,7 +381,6 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	return stats, nil
 }
 
-// TODO
 // EventBreakdown returns the visitor count, views, and conversion rate for a custom event grouping them by a meta value for given key.
 // The Filter.EventName and Filter.EventMetaKey must be set, or otherwise the result set will be empty.
 func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
@@ -391,41 +390,30 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 		return []EventStats{}, nil
 	}
 
-	filterArgs, filterQuery := filter.query()
-	filter.EventName = ""
-	crFilterArgs, crFilterQuery := filter.query()
+	outerFilterArgs, outerFilterQuery := filter.query()
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, filter.EventMetaKey)
+	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	innerFilterArgs = append(innerFilterArgs, filter.EventMetaKey)
 	query := fmt.Sprintf(`SELECT event_name,
-		sum(visitors) visitors,
-		sum(views) views,
+		count(DISTINCT fingerprint) visitors,
+		count(1) views,
 		visitors / greatest((
 			SELECT count(DISTINCT fingerprint)
-			FROM hit
+			FROM sessions
 			WHERE %s
 		), 1) cr,
-		toUInt64(avg(avg_duration)) average_duration_seconds,
-		meta_value
-		FROM (
-			SELECT event_name,
-			count(DISTINCT fingerprint) visitors,
-			argMax(page_views, time) views,
-			avg(event_duration_seconds) avg_duration,
-			event_meta_values[indexOf(event_meta_keys, ?)] meta_value
-			FROM event
-			WHERE %s
-			AND has(event_meta_keys, ?)
-			GROUP BY fingerprint, session_id, event_name, meta_value
-		)
+		ifNull(toUInt64(avg(nullIf(event_duration_seconds, 0))), 0) average_duration_seconds,
+		event_meta_values[indexOf(event_meta_keys, ?)] meta_value
+		FROM events
+		WHERE %s
+		AND has(event_meta_keys, ?)
 		GROUP BY event_name, meta_value
 		ORDER BY visitors DESC, meta_value
-		%s`, crFilterQuery, filterQuery, filter.withLimit())
-	args := make([]interface{}, 0, len(filterArgs)*2)
-	args = append(args, crFilterArgs...)
-	args = append(args, filter.EventMetaKey)
-	args = append(args, filterArgs...)
-	args = append(args, filter.EventMetaKey)
+		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
 	var stats []EventStats
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
 	}
 

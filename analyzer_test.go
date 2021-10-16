@@ -537,17 +537,17 @@ func TestAnalyzer_Events(t *testing.T) {
 	}
 
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/", PageViews: 1}},
-		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second), Path: "/simple/page", PageViews: 1}},
-		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 2), Path: "/simple/page/1", PageViews: 1}},
-		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/simple/page/2", PageViews: 2}},
-		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 3), Path: "/", PageViews: 1}},
-		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today().Add(time.Second * 4), Path: "/", PageViews: 1}},
-		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second * 5), Path: "/", PageViews: 1}},
-		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page", PageViews: 2}},
-		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 6), Path: "/simple/page", PageViews: 1}},
-		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 7), Path: "/", PageViews: 1}},
-		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today().Add(time.Second * 8), Path: "/", PageViews: 1}},
+		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
+		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second), Path: "/simple/page"}},
+		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 2), Path: "/simple/page/1"}},
+		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/simple/page/2"}},
+		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 3), Path: "/"}},
+		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today().Add(time.Second * 4), Path: "/"}},
+		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second * 5), Path: "/"}},
+		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page"}},
+		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 6), Path: "/simple/page"}},
+		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 7), Path: "/"}},
+		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today().Add(time.Second * 8), Path: "/"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -600,7 +600,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
 	assert.Equal(t, 2, stats[0].Visitors)
-	assert.Equal(t, 3, stats[0].Views)
+	assert.Equal(t, 2, stats[0].Views)
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 8, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "in", stats[0].MetaValue)
@@ -611,7 +611,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Equal(t, "event2", stats[1].Name)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
-	assert.Equal(t, 3, stats[0].Views)
+	assert.Equal(t, 2, stats[0].Views)
 	assert.Equal(t, 1, stats[1].Views)
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
