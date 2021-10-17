@@ -124,7 +124,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	var currentTimeSpent int
 	var err error
 
-	if filter.Path == "" {
+	if filter.EventName != "" {
+		currentTimeSpent, err = analyzer.totalEventDuration(filter)
+	} else if filter.Path == "" {
 		currentTimeSpent, err = analyzer.totalSessionDuration(filter)
 	} else {
 		currentTimeSpent, err = analyzer.totalTimeOnPage(filter)
@@ -151,7 +153,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	var previousTimeSpent int
 
-	if filter.Path == "" {
+	if filter.EventName != "" {
+		previousTimeSpent, err = analyzer.totalEventDuration(filter)
+	} else if filter.Path == "" {
 		previousTimeSpent, err = analyzer.totalSessionDuration(filter)
 	} else {
 		previousTimeSpent, err = analyzer.totalTimeOnPage(filter)
@@ -807,11 +811,23 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT sum(duration_seconds)
 		FROM (
-			SELECT any(duration_seconds) duration_seconds
-			FROM %s
+			SELECT max(duration_seconds) duration_seconds
+			FROM sessions
 			WHERE %s
 			GROUP BY fingerprint, session_id
-		)`, filter.view(), filterQuery)
+		)`, filterQuery)
+	var averageTimeSpentSeconds int
+
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {
+		return 0, err
+	}
+
+	return averageTimeSpentSeconds, nil
+}
+
+func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT sum(duration_seconds) FROM events WHERE %s`, filterQuery)
 	var averageTimeSpentSeconds int
 
 	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {

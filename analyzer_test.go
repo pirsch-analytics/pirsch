@@ -218,6 +218,13 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1", Path: "/bar"})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.TimeSpentGrowth, 0.001)
 	maxFilter := getMaxFilter()
 	maxFilter.EventName = "event1"
 	_, err = analyzer.Growth(maxFilter)
