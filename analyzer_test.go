@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -10,13 +9,13 @@ import (
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
-		{Fingerprint: "fp2", Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
-		{Fingerprint: "fp3", Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home"},
-		{Fingerprint: "fp4", Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar"},
+		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
+		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
+		{VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home"},
+		{VisitorID: 4, Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -51,20 +50,20 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-		{Fingerprint: "fp1", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", Time: pastDay(4).Add(time.Minute * 10), SessionID: 41, Path: "/bar", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp3", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp5", Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-		{Fingerprint: "fp6", Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
-		{Fingerprint: "fp7", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp8", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp9", Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+		{VisitorID: 1, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 41, Path: "/bar", PageViews: 1, IsBounce: true},
+		{VisitorID: 3, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 4, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 5, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+		{VisitorID: 6, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
+		{VisitorID: 7, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 8, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 9, Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -137,23 +136,23 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp2", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp3", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp4", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp5", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp6", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp7", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp8", Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp9", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp10", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp11", Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+		{VisitorID: 2, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 3, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 4, Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+		{VisitorID: 4, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 5, Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 5, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar", PageViews: 1, IsBounce: true},
+		{VisitorID: 6, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 7, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 8, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 8, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+		{VisitorID: 9, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 10, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 11, Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -185,23 +184,23 @@ func TestAnalyzer_Growth(t *testing.T) {
 func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", Fingerprint: "fp1", Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
-		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
-		{Name: "event1", DurationSeconds: 600, Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar"},
-		{Name: "event1", Fingerprint: "fp2", Time: pastDay(4).Add(time.Second * 2), Path: "/"},
-		{Name: "event1", Fingerprint: "fp3", Time: pastDay(4).Add(time.Second * 3), Path: "/"},
-		{Name: "event1", Fingerprint: "fp4", Time: pastDay(3).Add(time.Second * 4), SessionID: 3, Path: "/"},
-		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo"},
-		{Name: "event1", Fingerprint: "fp4", Time: pastDay(3).Add(time.Second * 5), Path: "/"},
-		{Name: "event1", Fingerprint: "fp5", Time: pastDay(3).Add(time.Second * 6), SessionID: 3, Path: "/"},
-		{Name: "event1", Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar"},
-		{Name: "event1", Fingerprint: "fp6", Time: pastDay(3).Add(time.Second * 7), Path: "/"},
-		{Name: "event1", Fingerprint: "fp7", Time: pastDay(3).Add(time.Second * 8), Path: "/"},
-		{Name: "event1", Fingerprint: "fp8", Time: pastDay(2).Add(time.Second * 9), SessionID: 2, Path: "/"},
-		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
-		{Name: "event1", Fingerprint: "fp9", Time: pastDay(2).Add(time.Second * 10), Path: "/"},
-		{Name: "event1", Fingerprint: "fp10", Time: pastDay(2).Add(time.Second * 11), Path: "/"},
-		{Name: "event1", Fingerprint: "fp11", Time: Today().Add(time.Second * 12), Path: "/"},
+		{Name: "event1", VisitorID: 1, Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
+		{Name: "event1", DurationSeconds: 600, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar"},
+		{Name: "event1", VisitorID: 2, Time: pastDay(4).Add(time.Second * 2), Path: "/"},
+		{Name: "event1", VisitorID: 3, Time: pastDay(4).Add(time.Second * 3), Path: "/"},
+		{Name: "event1", VisitorID: 4, Time: pastDay(3).Add(time.Second * 4), SessionID: 3, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo"},
+		{Name: "event1", VisitorID: 4, Time: pastDay(3).Add(time.Second * 5), Path: "/"},
+		{Name: "event1", VisitorID: 5, Time: pastDay(3).Add(time.Second * 6), SessionID: 3, Path: "/"},
+		{Name: "event1", VisitorID: 5, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar"},
+		{Name: "event1", VisitorID: 6, Time: pastDay(3).Add(time.Second * 7), Path: "/"},
+		{Name: "event1", VisitorID: 7, Time: pastDay(3).Add(time.Second * 8), Path: "/"},
+		{Name: "event1", VisitorID: 8, Time: pastDay(2).Add(time.Second * 9), SessionID: 2, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, VisitorID: 8, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{Name: "event1", VisitorID: 9, Time: pastDay(2).Add(time.Second * 10), Path: "/"},
+		{Name: "event1", VisitorID: 10, Time: pastDay(2).Add(time.Second * 11), Path: "/"},
+		{Name: "event1", VisitorID: 11, Time: Today().Add(time.Second * 12), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -236,17 +235,17 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2), Path: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 5), Path: "/"},
-		{Fingerprint: "fp2", Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
-		{Fingerprint: "fp3", Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
-		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 3), Path: "/"},
-		{Fingerprint: "fp6", Time: Today().Add(time.Hour * 5), Path: "/"},
-		{Fingerprint: "fp7", Time: Today().Add(time.Hour * 10), Path: "/"},
+		{VisitorID: 1, Time: pastDay(2), Path: "/"},
+		{VisitorID: 1, Time: pastDay(2), Path: "/"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
+		{VisitorID: 2, Time: pastDay(2).Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
+		{VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 6, Time: Today().Add(time.Hour * 3), Path: "/"},
+		{VisitorID: 6, Time: Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 7, Time: Today().Add(time.Hour * 10), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -287,22 +286,22 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
-		{Fingerprint: "fp1", Time: pastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp2", Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp2", Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
-		{Fingerprint: "fp3", Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp4", Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp5", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp5", Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp6", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 11), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp6", Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
-		{Fingerprint: "fp7", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp8", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{Fingerprint: "fp9", Time: Today(), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
+		{VisitorID: 3, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 4, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 5, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
+		{VisitorID: 6, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 11), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
+		{VisitorID: 7, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 8, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{VisitorID: 9, Time: Today(), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -390,9 +389,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{Fingerprint: "fp1", Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
-		{Fingerprint: "fp2", Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
+		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
+		{VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -410,9 +409,9 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event", Fingerprint: "fp1", Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{Name: "event", Fingerprint: "fp1", Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
-		{Name: "event", Fingerprint: "fp2", Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
+		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
+		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{Name: "event", VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -430,18 +429,18 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp1", Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo", EntryPath: "/"},
-		{Fingerprint: "fp2", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp3", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp4", Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar", EntryPath: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar", EntryPath: "/"},
-		{Fingerprint: "fp6", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
-		{Fingerprint: "fp7", Time: pastDay(1).Add(time.Minute), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/bar"},
+		{VisitorID: 1, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo", EntryPath: "/"},
+		{VisitorID: 2, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 3, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 4, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar", EntryPath: "/"},
+		{VisitorID: 5, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
+		{VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar", EntryPath: "/"},
+		{VisitorID: 6, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
+		{VisitorID: 7, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
+		{VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/bar"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -532,12 +531,12 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 func TestAnalyzer_PageConversions(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: Today(), Path: "/", PageViews: 1},
-		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page", PageViews: 1},
-		{Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page", PageViews: 2},
-		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/", PageViews: 1},
-		{Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/siMple/page/", PageViews: 2},
-		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes", PageViews: 1},
+		{VisitorID: 1, Time: Today(), Path: "/", PageViews: 1},
+		{VisitorID: 2, Time: Today(), Path: "/simple/page", PageViews: 1},
+		{VisitorID: 2, Time: Today().Add(time.Minute), Path: "/simple/page", PageViews: 2},
+		{VisitorID: 3, Time: Today(), Path: "/siMple/page/", PageViews: 1},
+		{VisitorID: 3, Time: Today().Add(time.Minute), Path: "/siMple/page/", PageViews: 2},
+		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes", PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -563,22 +562,22 @@ func TestAnalyzer_Events(t *testing.T) {
 	// create hits for the conversion rate
 	for i := 0; i < 10; i++ {
 		assert.NoError(t, dbClient.SaveHits([]Hit{
-			{Fingerprint: fmt.Sprintf("fp%d", i), Time: Today(), Path: "/"},
+			{VisitorID: uint64(i), Time: Today(), Path: "/"},
 		}))
 	}
 
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Fingerprint: "fp1", Time: Today(), Path: "/"},
-		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Fingerprint: "fp2", Time: Today().Add(time.Second), Path: "/simple/page"},
-		{Name: "event1", DurationSeconds: 3, Fingerprint: "fp3", Time: Today().Add(time.Second * 2), Path: "/simple/page/1"},
-		{Name: "event1", DurationSeconds: 8, Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/simple/page/2"},
-		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Fingerprint: "fp4", Time: Today().Add(time.Second * 3), Path: "/"},
-		{Name: "event2", DurationSeconds: 1, Fingerprint: "fp1", Time: Today().Add(time.Second * 4), Path: "/"},
-		{Name: "event2", DurationSeconds: 5, Fingerprint: "fp2", Time: Today().Add(time.Second * 5), Path: "/"},
-		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page"},
-		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Fingerprint: "fp3", Time: Today().Add(time.Second * 6), Path: "/simple/page"},
-		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Fingerprint: "fp4", Time: Today().Add(time.Second * 7), Path: "/"},
-		{Name: "event2", DurationSeconds: 4, Fingerprint: "fp5", Time: Today().Add(time.Second * 8), Path: "/"},
+		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, VisitorID: 1, Time: Today(), Path: "/"},
+		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, VisitorID: 2, Time: Today().Add(time.Second), Path: "/simple/page"},
+		{Name: "event1", DurationSeconds: 3, VisitorID: 3, Time: Today().Add(time.Second * 2), Path: "/simple/page/1"},
+		{Name: "event1", DurationSeconds: 8, VisitorID: 3, Time: Today().Add(time.Minute), Path: "/simple/page/2"},
+		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, VisitorID: 4, Time: Today().Add(time.Second * 3), Path: "/"},
+		{Name: "event2", DurationSeconds: 1, VisitorID: 1, Time: Today().Add(time.Second * 4), Path: "/"},
+		{Name: "event2", DurationSeconds: 5, VisitorID: 2, Time: Today().Add(time.Second * 5), Path: "/"},
+		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, VisitorID: 2, Time: Today().Add(time.Minute), Path: "/simple/page"},
+		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, VisitorID: 3, Time: Today().Add(time.Second * 6), Path: "/simple/page"},
+		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, VisitorID: 4, Time: Today().Add(time.Second * 7), Path: "/"},
+		{Name: "event2", DurationSeconds: 4, VisitorID: 5, Time: Today().Add(time.Second * 8), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -674,13 +673,13 @@ func TestAnalyzer_Events(t *testing.T) {
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref2/path", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp5", Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp6", Time: time.Now(), Path: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 2, IsBounce: false},
+		{VisitorID: 2, Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
+		{VisitorID: 3, Time: time.Now(), Path: "/", Referrer: "ref2/path", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
+		{VisitorID: 4, Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
+		{VisitorID: 5, Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 6, Time: time.Now(), Path: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -749,13 +748,13 @@ func TestAnalyzer_Referrer(t *testing.T) {
 func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", Time: time.Now().Add(time.Minute * 2), SessionID: 1, Path: "/", PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp2", Time: time.Now(), Path: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", Time: time.Now().Add(time.Minute), SessionID: 3, Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp3", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp4", Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1", PageViews: 2, IsBounce: false},
+		{VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, Path: "/", PageViews: 3, IsBounce: false},
+		{VisitorID: 2, Time: time.Now(), Path: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 2, Time: time.Now().Add(time.Minute), SessionID: 3, Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
+		{VisitorID: 3, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{VisitorID: 4, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -772,13 +771,13 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 func TestAnalyzer_Platform(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp1", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp2", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp3", Time: time.Now(), Mobile: true},
-		{Fingerprint: "fp4", Time: time.Now()},
-		{Fingerprint: "fp5", Time: time.Now(), Desktop: true},
-		{Fingerprint: "fp6", Time: time.Now(), Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Desktop: true},
+		{VisitorID: 2, Time: time.Now(), Mobile: true},
+		{VisitorID: 3, Time: time.Now(), Mobile: true},
+		{VisitorID: 4, Time: time.Now()},
+		{VisitorID: 5, Time: time.Now(), Desktop: true},
+		{VisitorID: 6, Time: time.Now(), Desktop: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -799,13 +798,13 @@ func TestAnalyzer_Platform(t *testing.T) {
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
-		{Fingerprint: "fp1", Time: time.Now(), Language: "en"},
-		{Fingerprint: "fp2", Time: time.Now(), Language: "de"},
-		{Fingerprint: "fp3", Time: time.Now(), Language: "de"},
-		{Fingerprint: "fp4", Time: time.Now(), Language: "jp"},
-		{Fingerprint: "fp5", Time: time.Now(), Language: "en"},
-		{Fingerprint: "fp6", Time: time.Now(), Language: "en"},
+		{VisitorID: 1, Time: time.Now(), Language: "en"},
+		{VisitorID: 1, Time: time.Now(), Language: "en"},
+		{VisitorID: 2, Time: time.Now(), Language: "de"},
+		{VisitorID: 3, Time: time.Now(), Language: "de"},
+		{VisitorID: 4, Time: time.Now(), Language: "jp"},
+		{VisitorID: 5, Time: time.Now(), Language: "en"},
+		{VisitorID: 6, Time: time.Now(), Language: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -830,13 +829,13 @@ func TestAnalyzer_Languages(t *testing.T) {
 func TestAnalyzer_Countries(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
-		{Fingerprint: "fp1", Time: time.Now(), CountryCode: "en"},
-		{Fingerprint: "fp2", Time: time.Now(), CountryCode: "de"},
-		{Fingerprint: "fp3", Time: time.Now(), CountryCode: "de"},
-		{Fingerprint: "fp4", Time: time.Now(), CountryCode: "jp"},
-		{Fingerprint: "fp5", Time: time.Now(), CountryCode: "en"},
-		{Fingerprint: "fp6", Time: time.Now(), CountryCode: "en"},
+		{VisitorID: 1, Time: time.Now(), CountryCode: "en"},
+		{VisitorID: 1, Time: time.Now(), CountryCode: "en"},
+		{VisitorID: 2, Time: time.Now(), CountryCode: "de"},
+		{VisitorID: 3, Time: time.Now(), CountryCode: "de"},
+		{VisitorID: 4, Time: time.Now(), CountryCode: "jp"},
+		{VisitorID: 5, Time: time.Now(), CountryCode: "en"},
+		{VisitorID: 6, Time: time.Now(), CountryCode: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -861,13 +860,13 @@ func TestAnalyzer_Countries(t *testing.T) {
 func TestAnalyzer_Cities(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
-		{Fingerprint: "fp1", Time: time.Now(), City: "London"},
-		{Fingerprint: "fp2", Time: time.Now(), City: "Berlin"},
-		{Fingerprint: "fp3", Time: time.Now(), City: "Berlin"},
-		{Fingerprint: "fp4", Time: time.Now(), City: "Tokyo"},
-		{Fingerprint: "fp5", Time: time.Now(), City: "London"},
-		{Fingerprint: "fp6", Time: time.Now(), City: "London"},
+		{VisitorID: 1, Time: time.Now(), City: "London"},
+		{VisitorID: 1, Time: time.Now(), City: "London"},
+		{VisitorID: 2, Time: time.Now(), City: "Berlin"},
+		{VisitorID: 3, Time: time.Now(), City: "Berlin"},
+		{VisitorID: 4, Time: time.Now(), City: "Tokyo"},
+		{VisitorID: 5, Time: time.Now(), City: "London"},
+		{VisitorID: 6, Time: time.Now(), City: "London"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -892,13 +891,13 @@ func TestAnalyzer_Cities(t *testing.T) {
 func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
-		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserFirefox},
-		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserFirefox},
-		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserSafari},
-		{Fingerprint: "fp5", Time: time.Now(), Browser: BrowserChrome},
-		{Fingerprint: "fp6", Time: time.Now(), Browser: BrowserChrome},
+		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
+		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
+		{VisitorID: 2, Time: time.Now(), Browser: BrowserFirefox},
+		{VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox},
+		{VisitorID: 4, Time: time.Now(), Browser: BrowserSafari},
+		{VisitorID: 5, Time: time.Now(), Browser: BrowserChrome},
+		{VisitorID: 6, Time: time.Now(), Browser: BrowserChrome},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -923,14 +922,14 @@ func TestAnalyzer_Browser(t *testing.T) {
 func TestAnalyzer_BrowserVersion(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{Fingerprint: "fp2", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{Fingerprint: "fp3", Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
-		{Fingerprint: "fp4", Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
-		{Fingerprint: "fp5", Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
-		{Fingerprint: "fp6", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
-		{Fingerprint: "fp7", Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
+		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
+		{VisitorID: 4, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
+		{VisitorID: 5, Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
+		{VisitorID: 6, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
+		{VisitorID: 7, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -970,13 +969,13 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
-		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows},
-		{Fingerprint: "fp2", Time: time.Now(), OS: OSMac},
-		{Fingerprint: "fp3", Time: time.Now(), OS: OSMac},
-		{Fingerprint: "fp4", Time: time.Now(), OS: OSLinux},
-		{Fingerprint: "fp5", Time: time.Now(), OS: OSWindows},
-		{Fingerprint: "fp6", Time: time.Now(), OS: OSWindows},
+		{VisitorID: 1, Time: time.Now(), OS: OSWindows},
+		{VisitorID: 1, Time: time.Now(), OS: OSWindows},
+		{VisitorID: 2, Time: time.Now(), OS: OSMac},
+		{VisitorID: 3, Time: time.Now(), OS: OSMac},
+		{VisitorID: 4, Time: time.Now(), OS: OSLinux},
+		{VisitorID: 5, Time: time.Now(), OS: OSWindows},
+		{VisitorID: 6, Time: time.Now(), OS: OSWindows},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1001,14 +1000,14 @@ func TestAnalyzer_OS(t *testing.T) {
 func TestAnalyzer_OSVersion(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{Fingerprint: "fp2", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{Fingerprint: "fp2", Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{Fingerprint: "fp3", Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
-		{Fingerprint: "fp4", Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
-		{Fingerprint: "fp5", Time: time.Now(), OS: OSLinux},
-		{Fingerprint: "fp6", Time: time.Now(), OS: OSWindows, OSVersion: "9"},
-		{Fingerprint: "fp7", Time: time.Now(), OS: OSWindows, OSVersion: "8"},
+		{VisitorID: 1, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{VisitorID: 3, Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
+		{VisitorID: 4, Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
+		{VisitorID: 5, Time: time.Now(), OS: OSLinux},
+		{VisitorID: 6, Time: time.Now(), OS: OSWindows, OSVersion: "9"},
+		{VisitorID: 7, Time: time.Now(), OS: OSWindows, OSVersion: "8"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1048,13 +1047,13 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
-		{Fingerprint: "fp1", Time: time.Now(), ScreenClass: "XXL"},
-		{Fingerprint: "fp2", Time: time.Now(), ScreenClass: "XL"},
-		{Fingerprint: "fp3", Time: time.Now(), ScreenClass: "XL"},
-		{Fingerprint: "fp4", Time: time.Now(), ScreenClass: "L"},
-		{Fingerprint: "fp5", Time: time.Now(), ScreenClass: "XXL"},
-		{Fingerprint: "fp6", Time: time.Now(), ScreenClass: "XXL"},
+		{VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
+		{VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
+		{VisitorID: 2, Time: time.Now(), ScreenClass: "XL"},
+		{VisitorID: 3, Time: time.Now(), ScreenClass: "XL"},
+		{VisitorID: 4, Time: time.Now(), ScreenClass: "L"},
+		{VisitorID: 5, Time: time.Now(), ScreenClass: "XXL"},
+		{VisitorID: 6, Time: time.Now(), ScreenClass: "XXL"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1079,13 +1078,13 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 func TestAnalyzer_UTM(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{Fingerprint: "fp1", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{Fingerprint: "fp2", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-		{Fingerprint: "fp3", Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-		{Fingerprint: "fp4", Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
-		{Fingerprint: "fp5", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{Fingerprint: "fp6", Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{VisitorID: 2, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{VisitorID: 3, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{VisitorID: 4, Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
+		{VisitorID: 5, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{VisitorID: 6, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1166,18 +1165,18 @@ func TestAnalyzer_UTM(t *testing.T) {
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
-		{Fingerprint: "fp1", Time: pastDay(3).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
-		{Fingerprint: "fp2", Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
-		{Fingerprint: "fp2", Time: pastDay(3).Add(time.Second * 7), SessionID: 3, Path: "/foo", DurationSeconds: 7, Title: "Foo"},
-		{Fingerprint: "fp3", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp3", Time: pastDay(2).Add(time.Second * 5), SessionID: 2, Path: "/foo", DurationSeconds: 5, Title: "Foo"},
-		{Fingerprint: "fp4", Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
-		{Fingerprint: "fp4", Time: pastDay(2).Add(time.Second * 4), SessionID: 2, Path: "/foo", DurationSeconds: 4, Title: "Foo"},
-		{Fingerprint: "fp5", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
-		{Fingerprint: "fp5", Time: pastDay(1).Add(time.Second * 8), SessionID: 1, Path: "/foo", DurationSeconds: 8, Title: "Foo"},
-		{Fingerprint: "fp6", Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
-		{Fingerprint: "fp6", Time: pastDay(1).Add(time.Second * 6), SessionID: 1, Path: "/foo", DurationSeconds: 6, Title: "Foo"},
+		{VisitorID: 1, Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: pastDay(3).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
+		{VisitorID: 2, Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
+		{VisitorID: 2, Time: pastDay(3).Add(time.Second * 7), SessionID: 3, Path: "/foo", DurationSeconds: 7, Title: "Foo"},
+		{VisitorID: 3, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 3, Time: pastDay(2).Add(time.Second * 5), SessionID: 2, Path: "/foo", DurationSeconds: 5, Title: "Foo"},
+		{VisitorID: 4, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 4, Time: pastDay(2).Add(time.Second * 4), SessionID: 2, Path: "/foo", DurationSeconds: 4, Title: "Foo"},
+		{VisitorID: 5, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
+		{VisitorID: 5, Time: pastDay(1).Add(time.Second * 8), SessionID: 1, Path: "/foo", DurationSeconds: 8, Title: "Foo"},
+		{VisitorID: 6, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
+		{VisitorID: 6, Time: pastDay(1).Add(time.Second * 6), SessionID: 1, Path: "/foo", DurationSeconds: 6, Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1231,9 +1230,9 @@ func TestAnalyzer_CalculateGrowthFloat64(t *testing.T) {
 func TestAnalyzer_Timezone(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
-		{Fingerprint: "fp2", Time: pastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
-		{Fingerprint: "fp3", Time: pastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
+		{VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
+		{VisitorID: 2, Time: pastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
+		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1266,10 +1265,10 @@ func TestAnalyzer_Timezone(t *testing.T) {
 func TestAnalyzer_PathPattern(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", Time: Today(), Path: "/"},
-		{Fingerprint: "fp2", Time: Today(), Path: "/simple/page"},
-		{Fingerprint: "fp3", Time: Today(), Path: "/siMple/page/"},
-		{Fingerprint: "fp4", Time: Today(), Path: "/simple/page/with/many/slashes"},
+		{VisitorID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 2, Time: Today(), Path: "/simple/page"},
+		{VisitorID: 3, Time: Today(), Path: "/siMple/page/"},
+		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1293,10 +1292,10 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{Fingerprint: "fp1", SessionID: 1, Time: Today(), DurationSeconds: 0, Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/", EntryPath: "/", PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today(), DurationSeconds: 0, Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/", EntryPath: "/", PageViews: 2, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/", EntryPath: "/", PageViews: 3, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1322,15 +1321,15 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		// / -> /foo -> /bar -> /exit
-		{Fingerprint: "fp1", SessionID: 1, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 10), Path: "/foo", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 20), Path: "/bar", EntryPath: "/", PageViews: 3, IsBounce: false},
-		{Fingerprint: "fp1", SessionID: 1, Time: Today().Add(time.Second * 30), Path: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 10), Path: "/foo", EntryPath: "/", PageViews: 2, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 20), Path: "/bar", EntryPath: "/", PageViews: 3, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Path: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
 
 		// / -> /bar -> /
-		{Fingerprint: "fp2", SessionID: 2, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{Fingerprint: "fp2", SessionID: 2, Time: Today().Add(time.Second * 10), Path: "/bar", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{Fingerprint: "fp2", SessionID: 2, Time: Today().Add(time.Second * 20), Path: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
+		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
+		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 10), Path: "/bar", EntryPath: "/", PageViews: 2, IsBounce: false},
+		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), Path: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

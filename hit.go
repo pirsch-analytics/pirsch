@@ -123,7 +123,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 
 		hit = &Hit{
 			ClientID:       options.ClientID,
-			Fingerprint:    fingerprint,
+			VisitorID:      fingerprint,
 			Time:           now,
 			SessionID:      rand.Uint32(),
 			Path:           path,

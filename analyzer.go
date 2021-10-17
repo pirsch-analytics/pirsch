@@ -39,7 +39,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
 	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT path %s,
-		count(DISTINCT fingerprint) visitors
+		count(DISTINCT visitor_id) visitors
 		FROM sessions
 		WHERE %s
 		GROUP BY path %s
@@ -51,7 +51,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		return nil, 0, err
 	}
 
-	query = fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors
+	query = fmt.Sprintf(`SELECT count(DISTINCT visitor_id) visitors
 		FROM sessions
 		WHERE %s`, filterQuery)
 	count, err := analyzer.store.Count(query, filterArgs...)
@@ -72,8 +72,8 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filterArgs = append(filterArgs, withFillArgs...)
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
-		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT fingerprint, session_id) sessions,
+		count(DISTINCT visitor_id) visitors,
+		count(DISTINCT visitor_id, session_id) sessions,
 		count(1) views `, filter.Timezone.String()))
 
 	if view == "sessions" {
@@ -107,8 +107,8 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	view := filter.view()
 	filterArgs, filterQuery := filter.query()
 	var query strings.Builder
-	query.WriteString(`SELECT count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session_id)) sessions,
+	query.WriteString(`SELECT count(DISTINCT visitor_id) visitors,
+		count(DISTINCT(visitor_id, session_id)) sessions,
 		count(1) views `)
 
 	if view == "sessions" {
@@ -199,7 +199,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 		sum(visitors) visitors
 		FROM (
 			SELECT time %s,
-			count(DISTINCT fingerprint) visitors `, filter.Timezone.String(), fieldsQuery))
+			count(DISTINCT visitor_id) visitors `, filter.Timezone.String(), fieldsQuery))
 
 	if table == "hit" {
 		query.WriteString(`,argMax(path, time) exit_path `)
@@ -207,7 +207,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 
 	query.WriteString(fmt.Sprintf(`FROM %s
 			WHERE %s
-			GROUP BY fingerprint, session_id, time %s
+			GROUP BY visitor_id, session_id, time %s
 		)
 		%s
 		GROUP BY hour
@@ -232,10 +232,10 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path %s,
-		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT fingerprint, session_id) sessions,
+		count(DISTINCT visitor_id) visitors,
+		count(DISTINCT visitor_id, session_id) sessions,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM %s
 			WHERE %s
 		), 1) relative_visitors,
@@ -247,7 +247,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 					SELECT max(page_views) views
 					FROM sessions
 					WHERE %s
-					GROUP BY fingerprint, session_id
+					GROUP BY visitor_id, session_id
 				)
 			), 1) relative_views,
 			countIf(is_bounce) bounces,
@@ -300,7 +300,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT entry_path %s,
-		count(DISTINCT fingerprint, session_id) entries,
+		count(DISTINCT visitor_id, session_id) entries,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
 		entries/sessions entry_rate,
@@ -308,8 +308,8 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		FROM sessions
 		INNER JOIN (
 			SELECT path %s,
-			count(DISTINCT fingerprint) visitors,
-			count(DISTINCT fingerprint, session_id) sessions
+			count(DISTINCT visitor_id) visitors,
+			count(DISTINCT visitor_id, session_id) sessions
 			FROM sessions
 			WHERE %s
 			GROUP BY path %s
@@ -353,15 +353,15 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT exit_path %s,
-		count(DISTINCT fingerprint, session_id) exits,
+		count(DISTINCT visitor_id, session_id) exits,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
 		exits/sessions exit_rate
 		FROM sessions
 		INNER JOIN (
 			SELECT path %s,
-			count(DISTINCT fingerprint) visitors,
-			count(DISTINCT fingerprint, session_id) sessions
+			count(DISTINCT visitor_id) visitors,
+			count(DISTINCT visitor_id, session_id) sessions
 			FROM sessions
 			WHERE %s
 			GROUP BY path %s
@@ -392,10 +392,10 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	outerFilterArgs, outerFilterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT count(DISTINCT fingerprint) visitors,
+	query := fmt.Sprintf(`SELECT count(DISTINCT visitor_id) visitors,
 		sum(page_views) views,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) cr
@@ -420,10 +420,10 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT event_name,
-		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT visitor_id) visitors,
 		count(1) views,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) cr,
@@ -458,10 +458,10 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	innerFilterArgs = append(innerFilterArgs, filter.EventMetaKey)
 	query := fmt.Sprintf(`SELECT event_name,
-		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT visitor_id) visitors,
 		count(1) views,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) cr,
@@ -498,10 +498,10 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT %s referrer_name,
 		any(referrer_icon) referrer_icon,
-		count(DISTINCT fingerprint) visitors,
-		count(DISTINCT(fingerprint, session_id)) sessions,
+		count(DISTINCT visitor_id) visitors,
+		count(DISTINCT(visitor_id, session_id)) sessions,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) relative_visitors `, ref, innerFilterQuery))
@@ -534,21 +534,21 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	args = append(args, filterArgs...)
 	args = append(args, filterArgs...)
 	query := fmt.Sprintf(`SELECT (
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM %s
 			WHERE %s
 			AND desktop = 1
 			AND mobile = 0
 		) AS "platform_desktop",
 		(
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM %s
 			WHERE %s
 			AND desktop = 0
 			AND mobile = 1
 		) AS "platform_mobile",
 		(
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM %s
 			WHERE %s
 			AND desktop = 0
@@ -696,9 +696,9 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT os,
 		os_version,
-		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) relative_visitors
@@ -724,9 +724,9 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT browser,
 		browser_version,
-		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) relative_visitors
@@ -807,8 +807,8 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 				%s
 				FROM hit
 				WHERE %s
-				GROUP BY fingerprint, session_id, time, duration_seconds %s
-				ORDER BY fingerprint, session_id, time
+				GROUP BY visitor_id, session_id, time, duration_seconds %s
+				ORDER BY visitor_id, session_id, time
 			)
 			WHERE time_on_page > 0
 			AND session_id = neighbor(session_id, 1, null)
@@ -837,7 +837,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 			SELECT max(duration_seconds) duration_seconds
 			FROM sessions
 			WHERE %s
-			GROUP BY fingerprint, session_id
+			GROUP BY visitor_id, session_id
 		)`, filterQuery)
 	var averageTimeSpentSeconds int
 
@@ -883,8 +883,8 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				argMax(path, time) exit_path
 				FROM %s
 				WHERE %s
-				GROUP BY fingerprint, session_id, time %s
-				ORDER BY fingerprint, session_id, time
+				GROUP BY visitor_id, session_id, time %s
+				ORDER BY visitor_id, session_id, time
 			)
 			WHERE time_on_page > 0
 			AND session_id = neighbor(session_id, 1, null)
@@ -918,9 +918,9 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
-		count(DISTINCT fingerprint) visitors,
+		count(DISTINCT visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT fingerprint)
+			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) relative_visitors

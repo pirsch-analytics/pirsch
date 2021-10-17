@@ -212,7 +212,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 			hit.PageViews = 1
 			tracker.events <- Event{
 				ClientID:        hit.ClientID,
-				Fingerprint:     hit.Fingerprint,
+				VisitorID:       hit.VisitorID,
 				Time:            hit.Time,
 				SessionID:       hit.SessionID,
 				DurationSeconds: eventOptions.Duration,

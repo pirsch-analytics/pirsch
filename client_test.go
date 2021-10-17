@@ -19,7 +19,7 @@ func TestClient_SaveHit(t *testing.T) {
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
 			ClientID:        1,
-			Fingerprint:     "fp",
+			VisitorID:       1,
 			Time:            time.Now(),
 			SessionID:       rand.Uint32(),
 			DurationSeconds: 42,
@@ -45,9 +45,9 @@ func TestClient_SaveHit(t *testing.T) {
 			ScreenClass:     "XL",
 		},
 		{
-			Fingerprint: "fp",
-			Time:        time.Now().UTC(),
-			Path:        "/path",
+			VisitorID: 1,
+			Time:      time.Now().UTC(),
+			Path:      "/path",
 		},
 	}))
 }
@@ -57,7 +57,7 @@ func TestClient_SaveEvent(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{
 			ClientID:        1,
-			Fingerprint:     "fp",
+			VisitorID:       1,
 			Time:            time.Now(),
 			SessionID:       rand.Uint32(),
 			Name:            "event_name",
@@ -83,10 +83,10 @@ func TestClient_SaveEvent(t *testing.T) {
 			ScreenClass:     "XL",
 		},
 		{
-			Fingerprint: "fp",
-			Time:        time.Now().UTC(),
-			Name:        "different_event",
-			Path:        "/path",
+			VisitorID: 1,
+			Time:      time.Now().UTC(),
+			Name:      "different_event",
+			Path:      "/path",
 		},
 	}))
 }
@@ -107,38 +107,37 @@ func TestClient_SaveUserAgents(t *testing.T) {
 
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
-	fp := "session_fp"
 	now := time.Now().UTC().Add(-time.Second * 20)
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
-			ClientID:    1,
-			Fingerprint: fp,
-			Time:        now.Add(-time.Second * 20),
-			SessionID:   rand.Uint32(),
-			Path:        "/path1",
-			EntryPath:   "/entry1",
-			PageViews:   2,
+			ClientID:  1,
+			VisitorID: 1,
+			Time:      now.Add(-time.Second * 20),
+			SessionID: rand.Uint32(),
+			Path:      "/path1",
+			EntryPath: "/entry1",
+			PageViews: 2,
 		},
 		{
-			ClientID:    1,
-			Fingerprint: fp,
-			Time:        now,
-			SessionID:   123456,
-			Path:        "/path2",
-			EntryPath:   "/entry2",
-			PageViews:   3,
+			ClientID:  1,
+			VisitorID: 1,
+			Time:      now,
+			SessionID: 123456,
+			Path:      "/path2",
+			EntryPath: "/entry2",
+			PageViews: 3,
 		},
 		{
-			ClientID:    1,
-			Fingerprint: fp,
-			Time:        now.Add(-time.Second * 10),
-			SessionID:   rand.Uint32(),
-			Path:        "/path3",
-			EntryPath:   "/entry3",
-			PageViews:   4,
+			ClientID:  1,
+			VisitorID: 1,
+			Time:      now.Add(-time.Second * 10),
+			SessionID: rand.Uint32(),
+			Path:      "/path3",
+			EntryPath: "/entry3",
+			PageViews: 4,
 		},
 	}))
-	session, err := dbClient.Session(1, fp, time.Now().UTC().Add(-time.Minute))
+	session, err := dbClient.Session(1, 1, time.Now().UTC().Add(-time.Minute))
 	assert.NoError(t, err)
 	assert.Equal(t, now.Unix(), session.Time.Unix())
 	assert.Equal(t, uint32(123456), session.SessionID)

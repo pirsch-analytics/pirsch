@@ -341,7 +341,7 @@ func TestTrackerExtendSession(t *testing.T) {
 	tracker.Flush()
 	assert.Len(t, client.Hits, 1)
 	at := client.Hits[0].Time
-	fingerprint := client.Hits[0].Fingerprint
+	fingerprint := client.Hits[0].VisitorID
 	time.Sleep(time.Millisecond * 20)
 	tracker.ExtendSession(req, 0)
 	tracker.Flush()

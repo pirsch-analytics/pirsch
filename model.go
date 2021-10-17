@@ -8,7 +8,7 @@ import (
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
 	ClientID        uint64 `db:"client_id"`
-	Fingerprint     string
+	VisitorID       uint64 `db:"visitor_id"`
 	Time            time.Time
 	SessionID       uint32 `db:"session_id"`
 	DurationSeconds uint32 `db:"duration_seconds"`
@@ -49,7 +49,7 @@ func (hit Hit) String() string {
 // It's basically the same as Hit, but with some additional fields (event name, time, and meta fields).
 type Event struct {
 	ClientID        uint64 `db:"client_id"`
-	Fingerprint     string
+	VisitorID       uint64 `db:"visitor_id"`
 	Time            time.Time
 	SessionID       uint32   `db:"session_id"`
 	Name            string   `db:"event_name" json:"name"`

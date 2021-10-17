@@ -48,7 +48,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, fingerprint, time, session_id, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, visitor_id, time, session_id, duration_seconds,
 		path, entry_path, page_views, is_bounce, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -59,7 +59,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 
 	for _, hit := range hits {
 		_, err := query.Exec(hit.ClientID,
-			hit.Fingerprint,
+			hit.VisitorID,
 			hit.Time,
 			hit.SessionID,
 			hit.DurationSeconds,
@@ -113,7 +113,7 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
 		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -124,7 +124,7 @@ func (client *Client) SaveEvents(events []Event) error {
 
 	for _, event := range events {
 		_, err := query.Exec(event.ClientID,
-			event.Fingerprint,
+			event.VisitorID,
 			event.Time,
 			event.SessionID,
 			event.Name,
@@ -204,8 +204,8 @@ func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID uint64, fingerprint string, maxAge time.Time) (*Hit, error) {
-	query := `SELECT * FROM hit WHERE client_id = ? AND fingerprint = ? AND time > ? ORDER BY time DESC LIMIT 1`
+func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*Hit, error) {
+	query := `SELECT * FROM hit WHERE client_id = ? AND visitor_id = ? AND time > ? ORDER BY time DESC LIMIT 1`
 	hit := new(Hit)
 
 	if err := client.DB.Get(hit, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
