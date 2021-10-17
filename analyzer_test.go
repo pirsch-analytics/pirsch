@@ -27,10 +27,9 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, "/foo", visitors[2].Path)
-	// TODO
-	/*assert.Empty(t, visitors[0].Title)
+	assert.Empty(t, visitors[0].Title)
 	assert.Empty(t, visitors[1].Title)
-	assert.Empty(t, visitors[2].Title)*/
+	assert.Empty(t, visitors[2].Title)
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
@@ -42,12 +41,11 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, 2, visitors[0].Visitors)
 	_, _, err = analyzer.ActiveVisitors(getMaxFilter(""), time.Minute*10)
 	assert.NoError(t, err)
-	// TODO
-	/*visitors, count, err = analyzer.ActiveVisitors(&Filter{IncludeTitle: true}, time.Minute*10)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{IncludeTitle: true}, time.Minute*10)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Home", visitors[0].Title)
 	assert.Equal(t, "Bar", visitors[1].Title)
-	assert.Equal(t, "Foo", visitors[2].Title)*/
+	assert.Equal(t, "Foo", visitors[2].Title)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
@@ -357,9 +355,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, "/foo", visitors[2].Path)
-	// TODO
-	/*assert.Equal(t, "Home", visitors[0].Title)
-	assert.Equal(t, "Bar", visitors[1].Title)*/
+	assert.Equal(t, "Home", visitors[0].Title)
+	assert.Equal(t, "Bar", visitors[1].Title)
+	assert.Equal(t, "Foo", visitors[2].Title)
 	assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[2].AverageTimeSpentSeconds)

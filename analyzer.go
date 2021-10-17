@@ -224,12 +224,13 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	view := filter.view()
+	title := filter.groupByTitle()
 	outerFilterArgs, outerFilterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, innerFilterArgs...)
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path,
+	query.WriteString(fmt.Sprintf(`SELECT path %s,
 		count(DISTINCT fingerprint) visitors,
 		count(DISTINCT fingerprint, session_id) sessions,
 		visitors / greatest((
@@ -237,7 +238,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			FROM %s
 			WHERE %s
 		), 1) relative_visitors,
-		count(1) views, `, view, innerFilterQuery))
+		count(1) views, `, title, view, innerFilterQuery))
 
 	if view == "sessions" {
 		query.WriteString(fmt.Sprintf(`views / greatest((
@@ -261,9 +262,9 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	query.WriteString(fmt.Sprintf(`ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 		FROM %s
 		WHERE %s
-		GROUP BY path
+		GROUP BY path %s
 		ORDER BY visitors DESC, path
-		%s`, view, outerFilterQuery, filter.withLimit()))
+		%s`, view, outerFilterQuery, title, filter.withLimit()))
 	var stats []PageStats
 
 	if err := analyzer.store.Select(&stats, query.String(), innerFilterArgs...); err != nil {
