@@ -48,7 +48,7 @@ func (client *ClientMock) SaveUserAgents(userAgents []UserAgent) error {
 }
 
 // Session implements the Store interface.
-func (client *ClientMock) Session(clientID uint64, fingerprint string, maxAge time.Time) (*Hit, error) {
+func (client *ClientMock) Session(clientID, fingerprint uint64, maxAge time.Time) (*Hit, error) {
 	if client.ReturnSession != nil {
 		return client.ReturnSession, nil
 	}

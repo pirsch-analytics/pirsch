@@ -205,8 +205,7 @@ func TestTrackerEvent(t *testing.T) {
 	assert.Len(t, client.Events, 1)
 	assert.Len(t, client.UserAgents, 1)
 	assert.Equal(t, "event", client.Events[0].Name)
-	assert.Equal(t, 42, client.Events[0].DurationSeconds)
-	assert.Equal(t, uint16(1), client.Events[0].PageViews)
+	assert.Equal(t, uint32(42), client.Events[0].DurationSeconds)
 	assert.Len(t, client.Events[0].MetaKeys, 2)
 	assert.Len(t, client.Events[0].MetaValues, 2)
 	assert.Contains(t, client.Events[0].MetaKeys, "hello")
@@ -342,7 +341,7 @@ func TestTrackerExtendSession(t *testing.T) {
 	tracker.Flush()
 	assert.Len(t, client.Hits, 1)
 	at := client.Hits[0].Time
-	fingerprint := client.Hits[0].Fingerprint
+	fingerprint := client.Hits[0].VisitorID
 	time.Sleep(time.Millisecond * 20)
 	tracker.ExtendSession(req, 0)
 	tracker.Flush()

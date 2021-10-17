@@ -22,8 +22,9 @@ const (
 
 // HitOptions is used to manipulate the data saved on a hit.
 type HitOptions struct {
-	// Client is the database client required to look up sessions.
-	//Client Store
+	// Salt is used to generate a fingerprint (optional).
+	// It can be different for every request.
+	Salt string
 
 	// SessionCache is the cache to look up sessions.
 	SessionCache SessionCache
@@ -86,7 +87,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
-	fingerprint := Fingerprint(r, salt)
+	fingerprint := Fingerprint(r, salt+options.Salt)
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
@@ -123,7 +124,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 
 		hit = &Hit{
 			ClientID:       options.ClientID,
-			Fingerprint:    fingerprint,
+			VisitorID:      fingerprint,
 			Time:           now,
 			SessionID:      rand.Uint32(),
 			Path:           path,
@@ -174,7 +175,11 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 // ExtendSession looks up and extends the session for given request.
 // This function does not store a hit or event in database.
 func ExtendSession(r *http.Request, salt string, options *HitOptions) {
-	fingerprint := Fingerprint(r, salt)
+	if options == nil {
+		return
+	}
+
+	fingerprint := Fingerprint(r, salt+options.Salt)
 	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 	if hit != nil {

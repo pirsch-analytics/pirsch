@@ -12,17 +12,17 @@ func TestSessionCacheRedis(t *testing.T) {
 	cache := NewSessionCacheRedis(time.Second, &redis.Options{
 		Addr: "localhost:6379",
 	})
-	session := cache.Get(1, "fp", time.Time{})
+	session := cache.Get(1, 1, time.Time{})
 	assert.Nil(t, session)
-	cache.Put(1, "fp", &Hit{Path: "/test"})
-	session = cache.Get(1, "fp", time.Time{})
+	cache.Put(1, 1, &Hit{Path: "/test"})
+	session = cache.Get(1, 1, time.Time{})
 	assert.NotNil(t, session)
 	assert.Equal(t, "/test", session.Path)
 	cache.Clear()
-	session = cache.Get(1, "fp", time.Time{})
+	session = cache.Get(1, 1, time.Time{})
 	assert.Nil(t, session)
-	cache.Put(1, "fp", &Hit{Path: "/test"})
+	cache.Put(1, 1, &Hit{Path: "/test"})
 	time.Sleep(time.Second * 2)
-	session = cache.Get(1, "fp", time.Time{})
+	session = cache.Get(1, 1, time.Time{})
 	assert.Nil(t, session)
 }

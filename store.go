@@ -16,7 +16,7 @@ type Store interface {
 	SaveUserAgents([]UserAgent) error
 
 	// Session returns the last hit for given client, fingerprint, and maximum age.
-	Session(uint64, string, time.Time) (*Hit, error)
+	Session(uint64, uint64, time.Time) (*Hit, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)

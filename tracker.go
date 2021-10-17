@@ -211,11 +211,36 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		if hit != nil {
 			hit.PageViews = 1
 			tracker.events <- Event{
-				Hit:             *hit,
-				Name:            strings.TrimSpace(eventOptions.Name),
+				ClientID:        hit.ClientID,
+				VisitorID:       hit.VisitorID,
+				Time:            hit.Time,
+				SessionID:       hit.SessionID,
 				DurationSeconds: eventOptions.Duration,
+				Name:            strings.TrimSpace(eventOptions.Name),
 				MetaKeys:        metaKeys,
 				MetaValues:      metaValues,
+				Path:            hit.Path,
+				Title:           hit.Title,
+				Language:        hit.Language,
+				CountryCode:     hit.CountryCode,
+				City:            hit.City,
+				Referrer:        hit.Referrer,
+				ReferrerName:    hit.ReferrerName,
+				ReferrerIcon:    hit.ReferrerIcon,
+				OS:              hit.OS,
+				OSVersion:       hit.OSVersion,
+				Browser:         hit.Browser,
+				BrowserVersion:  hit.BrowserVersion,
+				Desktop:         hit.Desktop,
+				Mobile:          hit.Mobile,
+				ScreenWidth:     hit.ScreenWidth,
+				ScreenHeight:    hit.ScreenHeight,
+				ScreenClass:     hit.ScreenClass,
+				UTMSource:       hit.UTMSource,
+				UTMMedium:       hit.UTMMedium,
+				UTMCampaign:     hit.UTMCampaign,
+				UTMContent:      hit.UTMContent,
+				UTMTerm:         hit.UTMTerm,
 			}
 		}
 

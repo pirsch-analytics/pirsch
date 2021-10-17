@@ -33,7 +33,7 @@ func NewSessionCacheMem(client Store, maxSessions int) *SessionCacheMem {
 }
 
 // Get implements the SessionCache interface.
-func (cache *SessionCacheMem) Get(clientID uint64, fingerprint string, maxAge time.Time) *Hit {
+func (cache *SessionCacheMem) Get(clientID, fingerprint uint64, maxAge time.Time) *Hit {
 	key := getSessionKey(clientID, fingerprint)
 	cache.m.RLock()
 	hit, ok := cache.sessions[key]
@@ -48,7 +48,7 @@ func (cache *SessionCacheMem) Get(clientID uint64, fingerprint string, maxAge ti
 }
 
 // Put implements the SessionCache interface.
-func (cache *SessionCacheMem) Put(clientID uint64, fingerprint string, hit *Hit) {
+func (cache *SessionCacheMem) Put(clientID, fingerprint uint64, hit *Hit) {
 	key := getSessionKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
@@ -67,6 +67,6 @@ func (cache *SessionCacheMem) Clear() {
 	cache.sessions = make(map[string]Hit)
 }
 
-func getSessionKey(clientID uint64, fingerprint string) string {
-	return fmt.Sprintf("%d%s", clientID, fingerprint)
+func getSessionKey(clientID, fingerprint uint64) string {
+	return fmt.Sprintf("%d_%d", clientID, fingerprint)
 }

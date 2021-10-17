@@ -24,9 +24,9 @@ func TestHitFromRequest(t *testing.T) {
 		ScreenHeight: 1024,
 	})
 	assert.Equal(t, 42, int(hit.ClientID))
-	assert.NotEmpty(t, hit.Fingerprint)
+	assert.NotZero(t, hit.VisitorID)
 	assert.NoError(t, dbClient.SaveHits([]Hit{*hit}))
-	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
+	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 20)
 	assert.Equal(t, uaString, ua.UserAgent)
 
 	if hit.Time.IsZero() ||
@@ -68,7 +68,7 @@ func TestHitFromRequestSession(t *testing.T) {
 		SessionCache: sessionCache,
 	})
 	assert.Equal(t, uint64(0), hit1.ClientID)
-	assert.NotEmpty(t, hit1.Fingerprint)
+	assert.NotZero(t, hit1.VisitorID)
 	assert.Equal(t, "/test/path", hit1.Path)
 	assert.Equal(t, "/test/path", hit1.EntryPath)
 	assert.Equal(t, uint32(0), hit1.DurationSeconds)
@@ -76,7 +76,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua1.Time.UnixMilli(), 10)
 	assert.Equal(t, uaString, ua1.UserAgent)
 
-	session := sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.Fingerprint)]
+	session := sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.VisitorID)]
 	assert.False(t, session.Time.IsZero())
 	assert.NotEqual(t, uint32(0), session.SessionID)
 	assert.Equal(t, "/test/path", session.Path)
@@ -84,13 +84,13 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, uint16(1), session.PageViews)
 	session.Time = session.Time.Add(-time.Second * 5) // manipulate the time the session was created
 	session.Path = "/different/path"
-	sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.Fingerprint)] = session
+	sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.VisitorID)] = session
 
 	hit2, ua2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
 	assert.Equal(t, uint64(0), hit2.ClientID)
-	assert.Equal(t, hit1.Fingerprint, hit2.Fingerprint)
+	assert.Equal(t, hit1.VisitorID, hit2.VisitorID)
 	assert.Equal(t, "/test/path", hit2.Path)
 	assert.Equal(t, "/test/path", hit2.EntryPath)
 	assert.Equal(t, uint32(5), hit2.DurationSeconds)
@@ -194,7 +194,7 @@ func TestExtendSession(t *testing.T) {
 	assert.NotNil(t, hit)
 	at := hit.Time
 	ExtendSession(req, "salt", options)
-	hit = sessionCache.Get(0, hit.Fingerprint, time.Now().UTC().Add(-time.Second))
+	hit = sessionCache.Get(0, hit.VisitorID, time.Now().UTC().Add(-time.Second))
 	assert.NotEqual(t, at, hit.Time)
 	assert.True(t, hit.Time.After(at))
 }
