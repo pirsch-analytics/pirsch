@@ -237,18 +237,25 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			FROM %s
 			WHERE %s
 		), 1) relative_visitors,
-		count(1) views,
-		views / greatest((
-			select sum(views) from (
-				SELECT max(page_views) views
-				FROM %s
-				WHERE %s
-				GROUP BY fingerprint, session_id
-			)
-		), 1) relative_views, `, view, innerFilterQuery, view, innerFilterQuery))
+		count(1) views, `, view, innerFilterQuery))
 
 	if view == "sessions" {
-		query.WriteString(`countIf(is_bounce) bounces, bounces / IF(sessions = 0, 1, sessions) bounce_rate, `)
+		query.WriteString(fmt.Sprintf(`views / greatest((
+				select sum(views) from (
+					SELECT max(page_views) views
+					FROM sessions
+					WHERE %s
+					GROUP BY fingerprint, session_id
+				)
+			), 1) relative_views,
+			countIf(is_bounce) bounces,
+			bounces / IF(sessions = 0, 1, sessions) bounce_rate, `, innerFilterQuery))
+	} else {
+		query.WriteString(fmt.Sprintf(`views / greatest((
+				SELECT count(1) views
+				FROM events
+				WHERE %s
+			), 1) relative_views, `, innerFilterQuery))
 	}
 
 	query.WriteString(fmt.Sprintf(`ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds

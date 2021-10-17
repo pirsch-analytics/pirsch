@@ -40,7 +40,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "/bar", visitors[0].Path)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	_, _, err = analyzer.ActiveVisitors(getMaxFilter(), time.Minute*10)
+	_, _, err = analyzer.ActiveVisitors(getMaxFilter(""), time.Minute*10)
 	assert.NoError(t, err)
 	// TODO
 	/*visitors, count, err = analyzer.ActiveVisitors(&Filter{IncludeTitle: true}, time.Minute*10)
@@ -124,11 +124,15 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	tsd, err = analyzer.totalSessionDuration(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 900, tsd)
-	_, err = analyzer.Visitors(getMaxFilter())
+	_, err = analyzer.Visitors(getMaxFilter(""))
 	assert.NoError(t, err)
-	_, err = analyzer.AvgSessionDuration(getMaxFilter())
+	_, err = analyzer.Visitors(getMaxFilter("event"))
 	assert.NoError(t, err)
-	_, err = analyzer.totalSessionDuration(getMaxFilter())
+	_, err = analyzer.AvgSessionDuration(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.AvgSessionDuration(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.totalSessionDuration(getMaxFilter(""))
 	assert.NoError(t, err)
 }
 
@@ -174,7 +178,9 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0.1666, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
-	_, err = analyzer.Growth(getMaxFilter())
+	_, err = analyzer.Growth(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Growth(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -225,9 +231,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 1, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.TimeSpentGrowth, 0.001)
-	maxFilter := getMaxFilter()
-	maxFilter.EventName = "event1"
-	_, err = analyzer.Growth(maxFilter)
+	_, err = analyzer.Growth(getMaxFilter("event1"))
 	assert.NoError(t, err)
 }
 
@@ -276,7 +280,9 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 1, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
-	_, err = analyzer.VisitorHours(getMaxFilter())
+	_, err = analyzer.VisitorHours(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.VisitorHours(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -369,9 +375,11 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err = analyzer.totalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 1200, ttop)
-	_, err = analyzer.Pages(getMaxFilter())
+	_, err = analyzer.Pages(getMaxFilter(""))
 	assert.NoError(t, err)
-	_, err = analyzer.totalTimeOnPage(getMaxFilter())
+	_, err = analyzer.Pages(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.totalTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)
 	visitors, err = analyzer.Pages(&Filter{Limit: 1})
 	assert.NoError(t, err)
@@ -500,7 +508,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 3, exits[0].Visitors)
 	assert.Equal(t, 1, exits[0].Exits)
 	assert.InDelta(t, 0.3333, exits[0].ExitRate, 0.01)
-	_, err = analyzer.ExitPages(getMaxFilter())
+	_, err = analyzer.ExitPages(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.ExitPages(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -526,7 +536,9 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
-	_, err = analyzer.PageConversions(getMaxFilter())
+	_, err = analyzer.PageConversions(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.PageConversions(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -582,7 +594,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	stats, err = analyzer.Events(&Filter{EventName: "does-not-exist"})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
-	_, err = analyzer.Events(getMaxFilter())
+	_, err = analyzer.Events(getMaxFilter(""))
 	assert.NoError(t, err)
 	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "status"})
 	assert.NoError(t, err)
@@ -638,7 +650,9 @@ func TestAnalyzer_Events(t *testing.T) {
 	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "does-not-exist"})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
-	_, err = analyzer.EventBreakdown(getMaxFilter())
+	_, err = analyzer.EventBreakdown(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.EventBreakdown(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -673,7 +687,9 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
 	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
-	_, err = analyzer.Referrer(getMaxFilter())
+	_, err = analyzer.Referrer(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Referrer(getMaxFilter("event"))
 	assert.NoError(t, err)
 	visitors, err = analyzer.Referrer(&Filter{Limit: 1})
 	assert.NoError(t, err)
@@ -759,7 +775,9 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-	_, err = analyzer.Platform(getMaxFilter())
+	_, err = analyzer.Platform(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Platform(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -788,7 +806,9 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.Languages(getMaxFilter())
+	_, err = analyzer.Languages(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Languages(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -817,7 +837,9 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.Countries(getMaxFilter())
+	_, err = analyzer.Countries(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Countries(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -846,7 +868,9 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.Cities(getMaxFilter())
+	_, err = analyzer.Cities(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Cities(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -875,7 +899,9 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.Browser(getMaxFilter())
+	_, err = analyzer.Browser(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Browser(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -920,7 +946,9 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
-	_, err = analyzer.BrowserVersion(getMaxFilter())
+	_, err = analyzer.BrowserVersion(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.BrowserVersion(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -949,7 +977,9 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.OS(getMaxFilter())
+	_, err = analyzer.OS(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.OS(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -994,7 +1024,9 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[4].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.1428, visitors[5].RelativeVisitors, 0.001)
-	_, err = analyzer.OSVersion(getMaxFilter())
+	_, err = analyzer.OSVersion(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.OSVersion(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -1023,7 +1055,9 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	_, err = analyzer.ScreenClass(getMaxFilter())
+	_, err = analyzer.ScreenClass(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.ScreenClass(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -1052,7 +1086,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.5, source[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, source[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, source[2].RelativeVisitors, 0.01)
-	_, err = analyzer.UTMSource(getMaxFilter())
+	_, err = analyzer.UTMSource(getMaxFilter(""))
 	assert.NoError(t, err)
 	medium, err := analyzer.UTMMedium(nil)
 	assert.NoError(t, err)
@@ -1066,7 +1100,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.5, medium[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, medium[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, medium[2].RelativeVisitors, 0.01)
-	_, err = analyzer.UTMMedium(getMaxFilter())
+	_, err = analyzer.UTMMedium(getMaxFilter(""))
 	assert.NoError(t, err)
 	campaign, err := analyzer.UTMCampaign(nil)
 	assert.NoError(t, err)
@@ -1080,7 +1114,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.5, campaign[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, campaign[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, campaign[2].RelativeVisitors, 0.01)
-	_, err = analyzer.UTMCampaign(getMaxFilter())
+	_, err = analyzer.UTMCampaign(getMaxFilter(""))
 	assert.NoError(t, err)
 	content, err := analyzer.UTMContent(nil)
 	assert.NoError(t, err)
@@ -1094,7 +1128,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.5, content[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, content[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, content[2].RelativeVisitors, 0.01)
-	_, err = analyzer.UTMContent(getMaxFilter())
+	_, err = analyzer.UTMContent(getMaxFilter(""))
 	assert.NoError(t, err)
 	term, err := analyzer.UTMTerm(nil)
 	assert.NoError(t, err)
@@ -1108,7 +1142,9 @@ func TestAnalyzer_UTM(t *testing.T) {
 	assert.InDelta(t, 0.5, term[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, term[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, term[2].RelativeVisitors, 0.01)
-	_, err = analyzer.UTMTerm(getMaxFilter())
+	_, err = analyzer.UTMTerm(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.UTMTerm(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -1143,7 +1179,9 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 5, byDay[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 5, byDay[2].AverageTimeSpentSeconds)
-	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter())
+	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter(""))
+	assert.NoError(t, err)
+	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
@@ -1432,7 +1470,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[0].Exits)
 }
 
-func getMaxFilter() *Filter {
+func getMaxFilter(eventName string) *Filter {
 	return &Filter{
 		ClientID:       42,
 		From:           pastDay(5),
@@ -1458,6 +1496,7 @@ func getMaxFilter() *Filter {
 		UTMCampaign:    "campaign",
 		UTMContent:     "content",
 		UTMTerm:        "term",
+		EventName:      eventName,
 		Limit:          42,
 	}
 }
