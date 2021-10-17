@@ -1,8 +1,8 @@
 CREATE MATERIALIZED VIEW sessions
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(time)
-ORDER BY (time, fingerprint, session_id, path)
-POPULATE AS
+ORDER BY (client_id, fingerprint, session_id, time, path, title)
+AS
     SELECT client_id, fingerprint, session_id, path, title, time, duration_seconds,
     entry_path, exit_path, page_views, is_bounce, language, country_code, city,
     referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version,

@@ -35,15 +35,16 @@ func NewAnalyzer(store Store) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
+	title := filter.groupByTitle()
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
 	filterArgs, filterQuery := filter.query()
-	query := fmt.Sprintf(`SELECT path,
+	query := fmt.Sprintf(`SELECT path %s,
 		count(DISTINCT fingerprint) visitors
 		FROM sessions
 		WHERE %s
-		GROUP BY path
+		GROUP BY path %s
 		ORDER BY visitors DESC, path ASC
-		%s`, filterQuery, filter.withLimit())
+		%s`, title, filterQuery, title, filter.withLimit())
 	var stats []ActiveVisitorStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -263,8 +264,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		FROM %s
 		WHERE %s
 		GROUP BY path %s
-		ORDER BY visitors DESC, path
-		%s`, view, outerFilterQuery, title, filter.withLimit()))
+		ORDER BY visitors DESC %s, path
+		%s`, view, outerFilterQuery, title, title, filter.withLimit()))
 	var stats []PageStats
 
 	if err := analyzer.store.Select(&stats, query.String(), innerFilterArgs...); err != nil {
@@ -282,6 +283,13 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		return []EntryStats{}, nil
 	}
 
+	title := filter.groupByTitle()
+	joinTitle := ""
+
+	if title != "" {
+		joinTitle = "AND sessions.title = v.title"
+	}
+
 	outerFilterArgs, outerFilterQuery := filter.query()
 
 	if filter.ExitPath != "" {
@@ -291,7 +299,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT entry_path,
+	query := fmt.Sprintf(`SELECT entry_path %s,
 		count(DISTINCT fingerprint, session_id) entries,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
@@ -299,18 +307,18 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 		FROM sessions
 		INNER JOIN (
-			SELECT path,
+			SELECT path %s,
 			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT fingerprint, session_id) sessions
 			FROM sessions
 			WHERE %s
-			GROUP BY path
+			GROUP BY path %s
 		) AS v
-		ON entry_path = v.path
+		ON entry_path = v.path %s
 		WHERE %s
-		GROUP BY entry_path
-		ORDER BY entries DESC, entry_path
-		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
+		GROUP BY entry_path %s
+		ORDER BY entries DESC %s, entry_path
+		%s`, title, title, innerFilterQuery, title, joinTitle, outerFilterQuery, title, title, filter.withLimit())
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
@@ -328,6 +336,13 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		return []ExitStats{}, nil
 	}
 
+	title := filter.groupByTitle()
+	joinTitle := ""
+
+	if title != "" {
+		joinTitle = "AND sessions.title = v.title"
+	}
+
 	outerFilterArgs, outerFilterQuery := filter.query()
 
 	if filter.ExitPath != "" {
@@ -337,25 +352,25 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT exit_path,
+	query := fmt.Sprintf(`SELECT exit_path %s,
 		count(DISTINCT fingerprint, session_id) exits,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
 		exits/sessions exit_rate
 		FROM sessions
 		INNER JOIN (
-			SELECT path,
+			SELECT path %s,
 			count(DISTINCT fingerprint) visitors,
 			count(DISTINCT fingerprint, session_id) sessions
 			FROM sessions
 			WHERE %s
-			GROUP BY path
+			GROUP BY path %s
 		) AS v
-		ON exit_path = v.path
+		ON exit_path = v.path %s
 		WHERE %s
-		GROUP BY exit_path
-		ORDER BY exits DESC, exit_path
-		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
+		GROUP BY exit_path %s
+		ORDER BY exits DESC %s, exit_path
+		%s`, title, title, innerFilterQuery, title, joinTitle, outerFilterQuery, title, title, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {

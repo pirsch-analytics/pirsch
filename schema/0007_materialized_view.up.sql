@@ -5,8 +5,8 @@ ALTER TABLE event DROP COLUMN is_bounce;
 CREATE MATERIALIZED VIEW events
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(time)
-ORDER BY (time, fingerprint, session_id, path)
-POPULATE AS
+ORDER BY (client_id, fingerprint, session_id, time, path, title)
+AS
     SELECT client_id, fingerprint, session_id, event_name, event_meta_keys, event_meta_values, path, title, time,
     duration_seconds, language, country_code, city, referrer, referrer_name, referrer_icon,
     os, os_version, browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
