@@ -3,8 +3,11 @@
 ## 3.3.0
 
 * added materialized view for sessions and events
+* added optional salt per request to `HitOptions`
 * optimized queries using materialized views
+* switched to SipHash for fingerprints (64 bit instead of 256)
 * removed `Filter.IncludeAvgTimeOnPage` (now always included)
+* removed entry_path, page_views, and is_bounce from events
 
 ## 3.2.1
 
