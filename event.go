@@ -7,7 +7,7 @@ type EventOptions struct {
 	Name string
 
 	// Duration is an optional duration that is used to calculate an average time on the dashboard.
-	Duration int
+	Duration uint32
 
 	// Meta are optional fields used to break down the events that were send for a name.
 	Meta map[string]string

@@ -131,6 +131,8 @@ type Filter struct {
 	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
+
+	eventFilter bool
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -189,7 +191,7 @@ func (filter *Filter) validate() {
 }
 
 func (filter *Filter) table() string {
-	if filter.EventName != "" {
+	if filter.EventName != "" || filter.eventFilter {
 		return "event"
 	}
 
@@ -197,7 +199,7 @@ func (filter *Filter) table() string {
 }
 
 func (filter *Filter) view() string {
-	if filter.EventName != "" {
+	if filter.EventName != "" || filter.eventFilter {
 		return "events"
 	}
 
@@ -238,8 +240,12 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	args := make([]interface{}, 0, 22)
 	queryFields := make([]string, 0, 22)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
-	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
-	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
+
+	if filter.EventName == "" && !filter.eventFilter {
+		filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
+		filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
+	}
+
 	filter.appendQuery(&queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&queryFields, &args, "country_code", filter.Country)
 	filter.appendQuery(&queryFields, &args, "city", filter.City)
@@ -301,7 +307,11 @@ func (filter *Filter) fields() string {
 	// do not include exit_path, as it is selected using argMax
 	fields := make([]string, 0, 20)
 	filter.appendField(&fields, "path", filter.Path)
-	filter.appendField(&fields, "entry_path", filter.EntryPath)
+
+	if filter.EventName == "" && !filter.eventFilter {
+		filter.appendField(&fields, "entry_path", filter.EntryPath)
+	}
+
 	filter.appendField(&fields, "language", filter.Language)
 	filter.appendField(&fields, "country_code", filter.Country)
 	filter.appendField(&fields, "city", filter.City)

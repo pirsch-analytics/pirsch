@@ -1,3 +1,7 @@
+ALTER TABLE event DROP COLUMN entry_path;
+ALTER TABLE event DROP COLUMN page_views;
+ALTER TABLE event DROP COLUMN is_bounce;
+
 CREATE MATERIALIZED VIEW events
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(time)
@@ -12,11 +16,6 @@ POPULATE AS
     arrayJoin(paths) path,
     time,
     duration_seconds,
-    event_duration_seconds,
-    entry_path,
-    exit_path,
-    page_views,
-    is_bounce,
     language,
     country_code,
     city,
@@ -47,11 +46,6 @@ POPULATE AS
         groupArray(path) paths,
         time,
         sum(duration_seconds) duration_seconds,
-        sum(event_duration_seconds) event_duration_seconds,
-        argMin(path, time) entry_path,
-        argMax(path, time) exit_path,
-        argMax(page_views, time) page_views,
-        argMax(is_bounce, time) is_bounce,
         argMax(language, time) language,
         argMax(country_code, time) country_code,
         argMax(city, time) city,
@@ -76,8 +70,7 @@ POPULATE AS
         GROUP BY client_id, fingerprint, session_id, time, event_name, event_meta_keys, event_meta_values
     )
     GROUP BY client_id, fingerprint, session_id, event_name, event_meta_keys, event_meta_values, path, time,
-        duration_seconds, event_duration_seconds, entry_path, exit_path, page_views,
-        is_bounce, language, country_code, city, referrer, referrer_name, referrer_icon,
+        duration_seconds, language, country_code, city, referrer, referrer_name, referrer_icon,
         os, os_version, browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term
 ;

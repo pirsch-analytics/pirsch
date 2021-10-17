@@ -178,27 +178,26 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO
-/*func TestAnalyzer_GrowthEvents(t *testing.T) {
+func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", Hit: Hit{Fingerprint: "fp1", Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
-		{Name: "event1", DurationSeconds: 600, Hit: Hit{Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp2", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp3", Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp4", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp4", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp5", Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp6", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp7", Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp8", Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", DurationSeconds: 300, Hit: Hit{Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp9", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp10", Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true}},
-		{Name: "event1", Hit: Hit{Fingerprint: "fp11", Time: Today(), Path: "/", PageViews: 1, IsBounce: true}},
+		{Name: "event1", Fingerprint: "fp1", Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
+		{Name: "event1", DurationSeconds: 600, Fingerprint: "fp1", Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar"},
+		{Name: "event1", Fingerprint: "fp2", Time: pastDay(4).Add(time.Second * 2), Path: "/"},
+		{Name: "event1", Fingerprint: "fp3", Time: pastDay(4).Add(time.Second * 3), Path: "/"},
+		{Name: "event1", Fingerprint: "fp4", Time: pastDay(3).Add(time.Second * 4), SessionID: 3, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp4", Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo"},
+		{Name: "event1", Fingerprint: "fp4", Time: pastDay(3).Add(time.Second * 5), Path: "/"},
+		{Name: "event1", Fingerprint: "fp5", Time: pastDay(3).Add(time.Second * 6), SessionID: 3, Path: "/"},
+		{Name: "event1", Fingerprint: "fp5", Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar"},
+		{Name: "event1", Fingerprint: "fp6", Time: pastDay(3).Add(time.Second * 7), Path: "/"},
+		{Name: "event1", Fingerprint: "fp7", Time: pastDay(3).Add(time.Second * 8), Path: "/"},
+		{Name: "event1", Fingerprint: "fp8", Time: pastDay(2).Add(time.Second * 9), SessionID: 2, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, Fingerprint: "fp8", Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{Name: "event1", Fingerprint: "fp9", Time: pastDay(2).Add(time.Second * 10), Path: "/"},
+		{Name: "event1", Fingerprint: "fp10", Time: pastDay(2).Add(time.Second * 11), Path: "/"},
+		{Name: "event1", Fingerprint: "fp11", Time: Today().Add(time.Second * 12), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -211,7 +210,6 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
 	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, -0.2, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1"})
 	assert.NoError(t, err)
@@ -219,13 +217,12 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, 0.1666, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
 	maxFilter := getMaxFilter()
 	maxFilter.EventName = "event1"
 	_, err = analyzer.Growth(maxFilter)
 	assert.NoError(t, err)
-}*/
+}
 
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
@@ -537,17 +534,17 @@ func TestAnalyzer_Events(t *testing.T) {
 	}
 
 	assert.NoError(t, dbClient.SaveEvents([]Event{
-		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp1", Time: Today(), Path: "/"}},
-		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second), Path: "/simple/page"}},
-		{Name: "event1", DurationSeconds: 3, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 2), Path: "/simple/page/1"}},
-		{Name: "event1", DurationSeconds: 8, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/simple/page/2"}},
-		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 3), Path: "/"}},
-		{Name: "event2", DurationSeconds: 1, Hit: Hit{Fingerprint: "fp1", Time: Today().Add(time.Second * 4), Path: "/"}},
-		{Name: "event2", DurationSeconds: 5, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Second * 5), Path: "/"}},
-		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Hit: Hit{Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page"}},
-		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Hit: Hit{Fingerprint: "fp3", Time: Today().Add(time.Second * 6), Path: "/simple/page"}},
-		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Hit: Hit{Fingerprint: "fp4", Time: Today().Add(time.Second * 7), Path: "/"}},
-		{Name: "event2", DurationSeconds: 4, Hit: Hit{Fingerprint: "fp5", Time: Today().Add(time.Second * 8), Path: "/"}},
+		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Fingerprint: "fp1", Time: Today(), Path: "/"},
+		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, Fingerprint: "fp2", Time: Today().Add(time.Second), Path: "/simple/page"},
+		{Name: "event1", DurationSeconds: 3, Fingerprint: "fp3", Time: Today().Add(time.Second * 2), Path: "/simple/page/1"},
+		{Name: "event1", DurationSeconds: 8, Fingerprint: "fp3", Time: Today().Add(time.Minute), Path: "/simple/page/2"},
+		{Name: "event1", DurationSeconds: 2, MetaKeys: []string{"status"}, MetaValues: []string{"in"}, Fingerprint: "fp4", Time: Today().Add(time.Second * 3), Path: "/"},
+		{Name: "event2", DurationSeconds: 1, Fingerprint: "fp1", Time: Today().Add(time.Second * 4), Path: "/"},
+		{Name: "event2", DurationSeconds: 5, Fingerprint: "fp2", Time: Today().Add(time.Second * 5), Path: "/"},
+		{Name: "event2", DurationSeconds: 7, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, Fingerprint: "fp2", Time: Today().Add(time.Minute), Path: "/simple/page"},
+		{Name: "event2", DurationSeconds: 9, MetaKeys: []string{"status", "price", "third"}, MetaValues: []string{"in", "13.74", "param"}, Fingerprint: "fp3", Time: Today().Add(time.Second * 6), Path: "/simple/page"},
+		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, Fingerprint: "fp4", Time: Today().Add(time.Second * 7), Path: "/"},
+		{Name: "event2", DurationSeconds: 4, Fingerprint: "fp5", Time: Today().Add(time.Second * 8), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)

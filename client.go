@@ -113,11 +113,10 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, duration_seconds,
-		path, entry_path, page_views, is_bounce, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+	query, err := tx.Prepare(`INSERT INTO "event" (client_id, fingerprint, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
+		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-		event_name, event_duration_seconds, event_meta_keys, event_meta_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -128,11 +127,11 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.Fingerprint,
 			event.Time,
 			event.SessionID,
+			event.Name,
+			event.MetaKeys,
+			event.MetaValues,
 			event.DurationSeconds,
 			event.Path,
-			event.EntryPath,
-			event.PageViews,
-			event.IsBounce,
 			event.Title,
 			event.Language,
 			event.CountryCode,
@@ -153,11 +152,7 @@ func (client *Client) SaveEvents(events []Event) error {
 			event.UTMMedium,
 			event.UTMCampaign,
 			event.UTMContent,
-			event.UTMTerm,
-			event.Name,
-			event.DurationSeconds,
-			event.MetaKeys,
-			event.MetaValues)
+			event.UTMTerm)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
