@@ -83,8 +83,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	query.WriteString(fmt.Sprintf(`FROM %s
 		WHERE %s
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC
-		%s`, view, filterQuery, withFillQuery, filter.withLimit()))
+		ORDER BY day ASC %s, visitors DESC`, view, filterQuery, withFillQuery))
 	var stats []VisitorStats
 
 	if err := analyzer.store.Select(&stats, query.String(), filterArgs...); err != nil {

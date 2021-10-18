@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.3.1
+
+* fixed limit for `Analyzer.Visitors`
+
 ## 3.3.0
 
 * added materialized view for sessions and events
