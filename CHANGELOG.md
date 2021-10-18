@@ -3,6 +3,7 @@
 ## 3.3.2
 
 * fixed reading active visitors directly from hit table
+* fixed reading full referrer (for favicon URL)
 
 ## 3.3.1
 

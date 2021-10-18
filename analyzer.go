@@ -532,9 +532,13 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	ref := ""
+	groupSortRef := ""
 
 	if filter.Referrer != "" || filter.ReferrerName != "" {
-		ref = "referrer,"
+		ref = "referrer ref,"
+		groupSortRef = ",ref"
+	} else {
+		ref = "any(referrer) ref,"
 	}
 
 	var query strings.Builder
@@ -554,9 +558,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s
 		WHERE %s
-		GROUP BY %s referrer_name
-		ORDER BY visitors DESC, %s referrer_name ASC
-		%s`, view, outerFilterQuery, ref, ref, filter.withLimit()))
+		GROUP BY referrer_name %s
+		ORDER BY visitors DESC, referrer_name %s
+		%s`, view, outerFilterQuery, groupSortRef, groupSortRef, filter.withLimit()))
 	var stats []ReferrerStats
 
 	if err := analyzer.store.Select(&stats, query.String(), innerFilterArgs...); err != nil {
