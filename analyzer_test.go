@@ -45,6 +45,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, "Home", visitors[0].Title)
 	assert.Equal(t, "Bar", visitors[1].Title)
 	assert.Equal(t, "Foo", visitors[2].Title)
+	_, _, err = analyzer.ActiveVisitors(getMaxFilter(""), time.Minute*10)
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.3.2
+
+* fixed reading active visitors directly from hit table
+
 ## 3.3.1
 
 * fixed limit for `Analyzer.Visitors`

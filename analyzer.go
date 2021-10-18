@@ -35,26 +35,66 @@ func NewAnalyzer(store Store) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
-	title := filter.groupByTitle()
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
-	filterArgs, filterQuery := filter.query()
+	title := filter.groupByTitle()
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery := filter.queryFields()
+
+	if fieldQuery != "" {
+		fieldQuery = "WHERE " + fieldQuery
+	}
+
+	timeArgs = append(timeArgs, fieldArgs...)
+	fieldsQuery := filter.fields()
+
+	if filter.Path == "" {
+		if fieldsQuery == "" {
+			fieldsQuery = "path"
+		} else {
+			fieldsQuery += ",path"
+		}
+	}
+
+	if filter.IncludeTitle {
+		fieldsQuery += ",title"
+	}
+
 	query := fmt.Sprintf(`SELECT path %s,
-		count(DISTINCT visitor_id) visitors
-		FROM sessions
-		WHERE %s
+		sum(visitors) visitors
+		FROM (
+			SELECT path %s,
+			count(DISTINCT visitor_id) visitors
+			FROM (
+				SELECT %s,
+				visitor_id,
+				argMax(path, time) exit_path
+				FROM hit
+				WHERE %s
+				GROUP BY visitor_id, session_id, %s
+			)
+			%s
+			GROUP BY path %s
+		)
 		GROUP BY path %s
-		ORDER BY visitors DESC, path ASC
-		%s`, title, filterQuery, title, filter.withLimit())
+		ORDER BY visitors DESC %s, path ASC
+		%s`, title, title, fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title, title, filter.withLimit())
 	var stats []ActiveVisitorStats
 
-	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
 		return nil, 0, err
 	}
 
 	query = fmt.Sprintf(`SELECT count(DISTINCT visitor_id) visitors
-		FROM sessions
-		WHERE %s`, filterQuery)
-	count, err := analyzer.store.Count(query, filterArgs...)
+		FROM (
+			SELECT %s,
+			visitor_id,
+			argMax(path, time) exit_path
+			FROM hit
+			WHERE %s
+			GROUP BY visitor_id, session_id, %s
+		)
+		%s`, fieldsQuery, timeQuery, fieldsQuery, fieldQuery)
+	count, err := analyzer.store.Count(query, timeArgs...)
 
 	if err != nil {
 		return nil, 0, err
