@@ -384,28 +384,31 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
-
-	if filter.view() == "events" {
-		return new(PageConversionsStats), nil
-	}
-
+	view := filter.view()
 	outerFilterArgs, outerFilterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT count(DISTINCT visitor_id) visitors,
-		sum(page_views) views,
-		visitors / greatest((
+	var query strings.Builder
+	query.WriteString(`SELECT count(DISTINCT visitor_id) visitors, `)
+
+	if view == "sessions" {
+		query.WriteString(`sum(page_views) views, `)
+	} else {
+		query.WriteString(`count(1) views, `)
+	}
+
+	query.WriteString(fmt.Sprintf(`visitors / greatest((
 			SELECT count(DISTINCT visitor_id)
 			FROM sessions
 			WHERE %s
 		), 1) cr
-		FROM sessions
+		FROM %s
 		WHERE %s
 		ORDER BY visitors DESC
-		%s`, innerFilterQuery, outerFilterQuery, filter.withLimit())
+		%s`, innerFilterQuery, view, outerFilterQuery, filter.withLimit()))
 	stats := new(PageConversionsStats)
 
-	if err := analyzer.store.Get(stats, query, innerFilterArgs...); err != nil {
+	if err := analyzer.store.Get(stats, query.String(), innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
