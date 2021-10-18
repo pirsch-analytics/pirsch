@@ -43,6 +43,8 @@ All timestamps are stored as UTC. Starting with version 2.1, the results can be 
 
 To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be run manually be executing the migrations steps in `schema` or by using the automatic migration (make sure you set `x-multi-statement` to `true`).
 
+**Make sure you read the changelog before upgrading! There are sometimes manual steps required to migrate the data to the new version.**
+
 ### Server-side tracking
 
 Here is a quick demo on how to use the library:
