@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.0
+
+* fixed counting unique visitors by hour
+
 ## 3.3.2
 
 * fixed reading active visitors directly from hit table

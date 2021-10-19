@@ -234,10 +234,10 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 	}
 
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT toHour(time, '%s') hour,
+	query.WriteString(fmt.Sprintf(`SELECT hour,
 		sum(visitors) visitors
 		FROM (
-			SELECT time %s,
+			SELECT toHour(time, '%s') hour %s,
 			count(DISTINCT visitor_id) visitors `, filter.Timezone.String(), fieldsQuery))
 
 	if table == "hit" {
@@ -246,7 +246,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 
 	query.WriteString(fmt.Sprintf(`FROM %s
 			WHERE %s
-			GROUP BY visitor_id, session_id, time %s
+			GROUP BY visitor_id, session_id, hour %s
 		)
 		%s
 		GROUP BY hour
