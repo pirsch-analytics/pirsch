@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 }
 
 func cleanupDB() {
+	dbClient.MustExec(`ALTER TABLE "page_view" DELETE WHERE 1=1`)
 	dbClient.MustExec(`ALTER TABLE "session" DELETE WHERE 1=1`)
 	dbClient.MustExec(`ALTER TABLE "event" DELETE WHERE 1=1`)
 	dbClient.MustExec(`ALTER TABLE "user_agent" DELETE WHERE 1=1`)

@@ -37,64 +37,24 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
 	title := filter.groupByTitle()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	timeArgs = append(timeArgs, fieldArgs...)
-	fieldsQuery := filter.fields()
-
-	if filter.Path == "" {
-		if fieldsQuery == "" {
-			fieldsQuery = "path"
-		} else {
-			fieldsQuery += ",path"
-		}
-	}
-
-	if filter.IncludeTitle {
-		fieldsQuery += ",title"
-	}
-
+	filterArgs, filterQuery := filter.query()
 	query := fmt.Sprintf(`SELECT path %s,
-		sum(visitors) visitors
-		FROM (
-			SELECT path %s,
-			count(DISTINCT visitor_id) visitors
-			FROM (
-				SELECT %s,
-				visitor_id,
-				argMax(path, time) exit_path
-				FROM session
-				WHERE %s
-				GROUP BY visitor_id, session_id, %s
-			)
-			%s
-			GROUP BY path %s
-		)
+		uniq(visitor_id) visitors
+		FROM page_view
+		WHERE %s
 		GROUP BY path %s
-		ORDER BY visitors DESC %s, path ASC
-		%s`, title, title, fieldsQuery, timeQuery, fieldsQuery, fieldQuery, title, title, title, filter.withLimit())
+		ORDER BY visitors DESC, path
+		%s`, title, filterQuery, title, filter.withLimit())
 	var stats []ActiveVisitorStats
 
-	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, 0, err
 	}
 
-	query = fmt.Sprintf(`SELECT count(DISTINCT visitor_id) visitors
-		FROM (
-			SELECT %s,
-			visitor_id,
-			argMax(path, time) exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, %s
-		)
-		%s`, fieldsQuery, timeQuery, fieldsQuery, fieldQuery)
-	count, err := analyzer.store.Count(query, timeArgs...)
+	query = fmt.Sprintf(`SELECT uniq(visitor_id) visitors
+		FROM page_view
+		WHERE %s`, filterQuery)
+	count, err := analyzer.store.Count(query, filterArgs...)
 
 	if err != nil {
 		return nil, 0, err
@@ -103,7 +63,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	return stats, count, nil
 }
 
-// Visitors returns the visitor count, session count, bounce rate, views, and average session duration grouped by day.
+// Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
@@ -112,12 +72,13 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filterArgs = append(filterArgs, withFillArgs...)
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
-		count(DISTINCT visitor_id) visitors,
-		count(DISTINCT visitor_id, session_id) sessions,
-		count(1) views `, filter.Timezone.String()))
+		uniq(visitor_id) visitors,
+		uniq(visitor_id, session_id) sessions,
+		sum(page_views*sign) views `, filter.Timezone.String()))
 
 	if table == "session" {
-		query.WriteString(`, sum(sign) bounces, bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
+		query.WriteString(`, sum(is_bounce*sign) bounces,
+			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	}
 
 	query.WriteString(fmt.Sprintf(`FROM %s
@@ -216,44 +177,17 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
-	// we cannot read from materialized views here, as they only represent the last point in time
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	timeArgs, timeQuery := filter.queryTime()
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "WHERE " + fieldQuery
-	}
-
-	timeArgs = append(timeArgs, fieldArgs...)
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT hour,
-		sum(visitors) visitors
-		FROM (
-			SELECT toHour(time, '%s') hour %s,
-			count(DISTINCT visitor_id) visitors `, filter.Timezone.String(), fieldsQuery))
-
-	if table == "session" {
-		query.WriteString(`,argMax(path, time) exit_path `)
-	}
-
-	query.WriteString(fmt.Sprintf(`FROM %s
-			WHERE %s
-			GROUP BY visitor_id, session_id, hour %s
-		)
-		%s
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour,
+		uniq(visitor_id) visitors
+		FROM session
+		WHERE %s
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, table, timeQuery, fieldsQuery, fieldQuery))
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), filterQuery)
 	var stats []VisitorHourStats
 
-	if err := analyzer.store.Select(&stats, query.String(), timeArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -321,10 +255,10 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	}
 
 	title := filter.groupByTitle()
-	joinTitle := ""
+	anyTitle := ""
 
 	if title != "" {
-		joinTitle = "AND sessions.title = v.title"
+		anyTitle = ",any(title) title"
 	}
 
 	outerFilterArgs, outerFilterQuery := filter.query()
@@ -336,26 +270,27 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	// TODO
+	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 	query := fmt.Sprintf(`SELECT entry_path %s,
-		count(DISTINCT visitor_id, session_id) entries,
+		sum(sign) entries,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
-		entries/sessions entry_rate,
-		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
-		FROM sessions
+		entries/sessions entry_rate
+		FROM session
 		INNER JOIN (
 			SELECT path %s,
-			count(DISTINCT visitor_id) visitors,
-			count(DISTINCT visitor_id, session_id) sessions
-			FROM sessions
+			uniq(visitor_id) visitors,
+			uniq(visitor_id, session_id) sessions
+			FROM page_view
 			WHERE %s
 			GROUP BY path %s
 		) AS v
-		ON entry_path = v.path %s
+		ON entry_path = v.path
 		WHERE %s
-		GROUP BY entry_path %s
-		ORDER BY entries DESC %s, entry_path
-		%s`, title, title, innerFilterQuery, title, joinTitle, outerFilterQuery, title, title, filter.withLimit())
+		GROUP BY entry_path
+		ORDER BY entries DESC, entry_path
+		%s`, anyTitle, title, innerFilterQuery, title, outerFilterQuery, filter.withLimit())
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
@@ -374,10 +309,10 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	}
 
 	title := filter.groupByTitle()
-	joinTitle := ""
+	anyTitle := ""
 
 	if title != "" {
-		joinTitle = "AND sessions.title = v.title"
+		anyTitle = ",any(title) title"
 	}
 
 	outerFilterArgs, outerFilterQuery := filter.query()
@@ -389,25 +324,25 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT exit_path %s,
-		count(DISTINCT visitor_id, session_id) exits,
+	query := fmt.Sprintf(`SELECT session.path exit_path %s,
+		sum(sign) exits,
 		any(v.visitors) visitors,
 		any(v.sessions) sessions,
 		exits/sessions exit_rate
-		FROM sessions
+		FROM session
 		INNER JOIN (
 			SELECT path %s,
-			count(DISTINCT visitor_id) visitors,
-			count(DISTINCT visitor_id, session_id) sessions
-			FROM sessions
+			uniq(visitor_id) visitors,
+			uniq(visitor_id, session_id) sessions
+			FROM page_view
 			WHERE %s
 			GROUP BY path %s
 		) AS v
-		ON exit_path = v.path %s
+		ON exit_path = v.path
 		WHERE %s
-		GROUP BY exit_path %s
-		ORDER BY exits DESC %s, exit_path
-		%s`, title, title, innerFilterQuery, title, joinTitle, outerFilterQuery, title, title, filter.withLimit())
+		GROUP BY exit_path
+		ORDER BY exits DESC, exit_path
+		%s`, anyTitle, title, innerFilterQuery, title, outerFilterQuery, filter.withLimit())
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
