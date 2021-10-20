@@ -27,7 +27,7 @@ func TestHitFromRequest(t *testing.T) {
 	hit := hits[0]
 	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotZero(t, hit.VisitorID)
-	assert.NoError(t, dbClient.SaveSession(hits))
+	assert.NoError(t, dbClient.SaveSessions(hits))
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 30)
 	assert.Equal(t, uaString, ua.UserAgent)
 

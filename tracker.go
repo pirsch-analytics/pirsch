@@ -366,7 +366,7 @@ func (tracker *Tracker) aggregateHits(ctx context.Context) {
 
 func (tracker *Tracker) saveHits(hits []Session) {
 	if len(hits) > 0 {
-		if err := tracker.store.SaveSession(hits); err != nil {
+		if err := tracker.store.SaveSessions(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}

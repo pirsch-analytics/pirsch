@@ -7,6 +7,7 @@ import (
 
 // ClientMock is a mock Store implementation.
 type ClientMock struct {
+	Hits          []Hit
 	Sessions      []Session
 	Events        []Event
 	UserAgents    []UserAgent
@@ -17,14 +18,23 @@ type ClientMock struct {
 // NewMockClient returns a new mock client.
 func NewMockClient() *ClientMock {
 	return &ClientMock{
+		Hits:       make([]Hit, 0),
 		Sessions:   make([]Session, 0),
 		Events:     make([]Event, 0),
 		UserAgents: make([]UserAgent, 0),
 	}
 }
 
-// SaveSession implements the Store interface.
-func (client *ClientMock) SaveSession(sessions []Session) error {
+// SaveHits implements the Store interface.
+func (client *ClientMock) SaveHits(hits []Hit) error {
+	client.m.Lock()
+	defer client.m.Unlock()
+	client.Hits = append(client.Hits, hits...)
+	return nil
+}
+
+// SaveSessions implements the Store interface.
+func (client *ClientMock) SaveSessions(sessions []Session) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.Sessions = append(client.Sessions, sessions...)

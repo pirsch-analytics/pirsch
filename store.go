@@ -6,8 +6,11 @@ import (
 
 // Store is the database storage interface.
 type Store interface {
-	// SaveSession saves given sessions.
-	SaveSession([]Session) error
+	// SaveHits saves given hits.
+	SaveHits([]Hit) error
+
+	// SaveSessions saves given sessions.
+	SaveSessions([]Session) error
 
 	// SaveEvents saves given events.
 	SaveEvents([]Event) error

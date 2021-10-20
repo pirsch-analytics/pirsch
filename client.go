@@ -40,8 +40,70 @@ func NewClient(connection string, logger *log.Logger) (*Client, error) {
 	}, nil
 }
 
-// SaveSession implements the Store interface.
-func (client *Client) SaveSession(sessions []Session) error {
+// SaveHits implements the Store interface.
+func (client *Client) SaveHits(hits []Hit) error {
+	tx, err := client.Beginx()
+
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, visitor_id, session_id, time, duration_seconds,
+		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, hit := range hits {
+		_, err := query.Exec(hit.ClientID,
+			hit.VisitorID,
+			hit.SessionID,
+			hit.Time,
+			hit.DurationSeconds,
+			hit.Path,
+			hit.Title,
+			hit.Language,
+			hit.CountryCode,
+			hit.City,
+			hit.Referrer,
+			hit.ReferrerName,
+			hit.ReferrerIcon,
+			hit.OS,
+			hit.OSVersion,
+			hit.Browser,
+			hit.BrowserVersion,
+			client.boolean(hit.Desktop),
+			client.boolean(hit.Mobile),
+			hit.ScreenWidth,
+			hit.ScreenHeight,
+			hit.ScreenClass,
+			hit.UTMSource,
+			hit.UTMMedium,
+			hit.UTMCampaign,
+			hit.UTMContent,
+			hit.UTMTerm)
+
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				client.logger.Printf("error rolling back transaction to save hits: %s", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveSessions implements the Store interface.
+func (client *Client) SaveSessions(sessions []Session) error {
 	tx, err := client.Beginx()
 
 	if err != nil {

@@ -14,9 +14,44 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, client.DB.Ping())
 }
 
-func TestClient_SaveSession(t *testing.T) {
+func TestClient_SaveHits(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveSession([]Session{
+	assert.NoError(t, dbClient.SaveHits([]Hit{
+		{
+			ClientID:        1,
+			VisitorID:       1,
+			Time:            time.Now(),
+			SessionID:       rand.Uint32(),
+			DurationSeconds: 42,
+			Path:            "/path",
+			Title:           "title",
+			Language:        "en",
+			Referrer:        "ref",
+			ReferrerName:    "ref_name",
+			ReferrerIcon:    "ref_icon",
+			OS:              "os",
+			OSVersion:       "10",
+			Browser:         "browser",
+			BrowserVersion:  "89",
+			CountryCode:     "en",
+			City:            "London",
+			Desktop:         true,
+			Mobile:          false,
+			ScreenWidth:     1920,
+			ScreenHeight:    1080,
+			ScreenClass:     "XL",
+		},
+		{
+			VisitorID: 1,
+			Time:      time.Now().UTC(),
+			Path:      "/path",
+		},
+	}))
+}
+
+func TestClient_SaveSessions(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{
 			Sign:            1,
 			ClientID:        1,
@@ -55,7 +90,7 @@ func TestClient_SaveSession(t *testing.T) {
 	}))
 }
 
-func TestClient_SaveEvent(t *testing.T) {
+func TestClient_SaveEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{
@@ -111,7 +146,7 @@ func TestClient_SaveUserAgents(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveSession([]Session{
+	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{
 			Sign:      1,
 			ClientID:  1,

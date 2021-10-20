@@ -73,7 +73,7 @@ CREATE TABLE page_view
     `utm_content` String DEFAULT '',
     `utm_term` String DEFAULT ''
 )
-    ENGINE = MergeTree
+ENGINE = MergeTree
 PARTITION BY toYYYYMM(time)
 ORDER BY (client_id, visitor_id, session_id, time)
 TTL time + toIntervalMonth(12)
