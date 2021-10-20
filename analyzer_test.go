@@ -1315,7 +1315,7 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 7, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1402,13 +1402,13 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 2, entryPages[0].Entries)
 	exitPages, err = analyzer.ExitPages(filter)
 	assert.NoError(t, err)
-	assert.Len(t, exitPages, 0)
-	/*assert.Equal(t, "/", exitPages[0].ExitPath)
-	assert.Equal(t, "/exit", exitPages[1].ExitPath)
+	assert.Len(t, exitPages, 2)
+	assert.Equal(t, "/", exitPages[0].Path)
+	assert.Equal(t, "/exit", exitPages[1].Path)
 	assert.Equal(t, 2, exitPages[0].Visitors)
 	assert.Equal(t, 1, exitPages[1].Visitors)
 	assert.Equal(t, 1, exitPages[0].Exits)
-	assert.Equal(t, 1, exitPages[1].Exits)*/
+	assert.Equal(t, 1, exitPages[1].Exits)
 
 	// filter entry page
 	filter.Path = ""

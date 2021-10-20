@@ -214,6 +214,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter.EntryPath = entryPath
 	filter.ExitPath = exitPath
 	filter.Path = ""
+	filter.PathPattern = ""
 	innerFilterArgs, innerFilterQuery := filter.query()
 	filter.EventName = ""
 	visitorsFilterArgs, visitorsFilterQuery := filter.query()
@@ -310,7 +311,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT entry_path %s,
-		countIf(entry_path = path) entries
+		uniq(visitor_id, session_id) entries
 		FROM session s
 		INNER JOIN (
 			SELECT path %s,
@@ -375,7 +376,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT exit_path %s,
-		countIf(exit_path = path) exits
+		uniq(visitor_id, session_id) exits
 		FROM session s
 		INNER JOIN (
 			SELECT path %s,
@@ -868,6 +869,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 
 func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter) ([]totalVisitorSessionStats, error) {
 	filter = analyzer.getFilter(filter)
+	filter.Path = ""
 	filter.EntryPath = ""
 	filter.ExitPath = ""
 	filterArgs, filterQuery := filter.query()
