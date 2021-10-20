@@ -51,8 +51,8 @@ type Session struct {
 	Time            time.Time
 	Start           time.Time
 	DurationSeconds uint32 `db:"duration_seconds"`
-	Path            string
 	EntryPath       string `db:"entry_path"`
+	ExitPath        string `db:"exit_path"`
 	PageViews       uint16 `db:"page_views"`
 	IsBounce        bool   `db:"is_bounce"`
 	Title           string

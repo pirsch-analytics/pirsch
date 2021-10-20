@@ -199,10 +199,19 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	title := filter.groupByTitle()
+	entryPath := filter.EntryPath
+	exitPath := filter.ExitPath
+	filter.EntryPath = ""
+	filter.ExitPath = ""
 	outerFilterArgs, outerFilterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(innerFilterArgs)*3+len(outerFilterArgs))
-	args = append(args, innerFilterArgs...)
+	filter.EntryPath = entryPath
+	filter.ExitPath = exitPath
+	filter.Path = ""
+	innerFilterArgs, innerFilterQuery := filter.query()
+	filter.EventName = ""
+	visitorsFilterArgs, visitorsFilterQuery := filter.query()
+	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(visitorsFilterArgs)+len(outerFilterArgs))
+	args = append(args, visitorsFilterArgs...)
 	args = append(args, innerFilterArgs...)
 
 	if table == "session" {
@@ -219,7 +228,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			FROM session
 			WHERE %s
 		), 1) relative_visitors,
-		count(1) views, `, title, innerFilterQuery))
+		count(1) views, `, title, visitorsFilterQuery))
 
 	if table == "session" {
 		table = "page_view"
@@ -286,12 +295,8 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter.Path = ""
 	outerFilterArgs, outerFilterQuery := filter.query()
 	filter.Path = path
-
-	if filter.ExitPath != "" {
-		filter.Path = filter.ExitPath
-		filter.ExitPath = ""
-	}
-
+	filter.EntryPath = ""
+	filter.ExitPath = ""
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	// TODO
@@ -302,7 +307,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		uniq(v.visitor_id, v.session_id) sessions,
 		entries/sessions entry_rate
 		FROM session s
-		INNER JOIN (
+		ANY INNER JOIN (
 			SELECT path %s,
 			visitor_id,
 			session_id
@@ -343,18 +348,14 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter.Path = ""
 	outerFilterArgs, outerFilterQuery := filter.query()
 	filter.Path = path
-
-	if filter.ExitPath != "" {
-		filter.Path = filter.ExitPath
-		filter.ExitPath = ""
-	}
-
+	filter.EntryPath = ""
+	filter.ExitPath = ""
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	query := fmt.Sprintf(`SELECT s.path exit_path %s,
+	query := fmt.Sprintf(`SELECT exit_path %s,
 		sum(sign) exits,
-		uniq(v.visitor_id) visitors,
-		uniq(v.visitor_id, v.session_id) sessions,
+		uniq(visitor_id) visitors,
+		uniq(visitor_id, session_id) sessions,
 		exits/sessions exit_rate
 		FROM session s
 		INNER JOIN (

@@ -130,7 +130,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 			SessionID:      rand.Uint32(),
 			Time:           now,
 			Start:          now,
-			Path:           path,
+			ExitPath:       path,
 			EntryPath:      path,
 			PageViews:      1,
 			IsBounce:       true,
@@ -175,9 +175,9 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 
 		session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
 		session.Sign = 1
-		session.IsBounce = session.IsBounce && path == session.Path
+		session.IsBounce = session.IsBounce && path == session.ExitPath
 		session.Time = now
-		session.Path = path
+		session.ExitPath = path
 		session.PageViews++
 		session.Title = title
 		sessions = append(sessions, *session)
@@ -190,7 +190,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		SessionID:       sessions[len(sessions)-1].SessionID,
 		Time:            sessions[len(sessions)-1].Time,
 		DurationSeconds: timeOnPage,
-		Path:            sessions[len(sessions)-1].Path,
+		Path:            sessions[len(sessions)-1].ExitPath,
 		Title:           sessions[len(sessions)-1].Title,
 		Language:        sessions[len(sessions)-1].Language,
 		CountryCode:     sessions[len(sessions)-1].CountryCode,

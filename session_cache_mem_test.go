@@ -16,18 +16,18 @@ func TestSessionCacheMem(t *testing.T) {
 	client.ReturnSession = &Session{
 		Time:      time.Now().Add(-time.Second * 15),
 		SessionID: rand.Uint32(),
-		Path:      "/",
+		ExitPath:  "/",
 		EntryPath: "/entry",
 		PageViews: 3,
 	}
 	session = cache.Get(1, 1, time.Now().Add(-time.Second*20))
 	assert.NotNil(t, session)
-	assert.Equal(t, "/", session.Path)
+	assert.Equal(t, "/", session.ExitPath)
 	assert.Equal(t, "/entry", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
 	client.ReturnSession = nil
 	cache.Put(1, 1, &Session{
-		Path:      session.Path,
+		ExitPath:  session.ExitPath,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
 		Time:      session.Time,
@@ -35,11 +35,11 @@ func TestSessionCacheMem(t *testing.T) {
 	})
 	session = cache.Get(1, 1, time.Now().Add(-time.Second*20))
 	assert.NotNil(t, session)
-	assert.Equal(t, "/", session.Path)
+	assert.Equal(t, "/", session.ExitPath)
 	assert.Equal(t, "/entry", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
 	cache.Put(1, 1, &Session{
-		Path:      session.Path,
+		ExitPath:  session.ExitPath,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
 		Time:      time.Now().Add(-time.Second * 21),
@@ -52,7 +52,7 @@ func TestSessionCacheMem(t *testing.T) {
 		cache.Put(1, uint64(i+2), &Session{
 			SessionID: rand.Uint32(),
 			Time:      time.Now(),
-			Path:      "/foo",
+			ExitPath:  "/foo",
 			EntryPath: "/bar",
 			PageViews: 42,
 		})
@@ -61,9 +61,9 @@ func TestSessionCacheMem(t *testing.T) {
 	assert.Len(t, cache.sessions, 10)
 	session = cache.Get(1, 1, time.Now().Add(-time.Minute))
 	assert.NotNil(t, session)
-	assert.Equal(t, "/", session.Path)
+	assert.Equal(t, "/", session.ExitPath)
 	cache.Put(1, 10, &Session{
-		Path:      "/foo",
+		ExitPath:  "/foo",
 		EntryPath: "/bar",
 		PageViews: 42,
 		Time:      time.Now(),
@@ -74,7 +74,7 @@ func TestSessionCacheMem(t *testing.T) {
 	assert.Nil(t, session)
 	session = cache.Get(1, 10, time.Now().Add(-time.Minute))
 	assert.NotNil(t, session)
-	assert.Equal(t, "/foo", session.Path)
+	assert.Equal(t, "/foo", session.ExitPath)
 	cache.Clear()
 	assert.Len(t, cache.sessions, 0)
 }

@@ -53,8 +53,8 @@ func TestTrackerHitTimeout(t *testing.T) {
 	assert.Len(t, client.UserAgents, 2)
 
 	// ignore order...
-	if client.Sessions[0].Path != "/" && client.Sessions[0].Path != "/hello-world" ||
-		client.Sessions[1].Path != "/" && client.Sessions[1].Path != "/hello-world" {
+	if client.Sessions[0].ExitPath != "/" && client.Sessions[0].ExitPath != "/hello-world" ||
+		client.Sessions[1].ExitPath != "/" && client.Sessions[1].ExitPath != "/hello-world" {
 		t.Fatalf("Sessions not as expected: %v %v", client.Sessions[0], client.Sessions[1])
 	}
 

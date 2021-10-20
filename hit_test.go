@@ -59,7 +59,7 @@ func TestHitFromRequest(t *testing.T) {
 		session.Time.IsZero() ||
 		session.SessionID == 0 ||
 		session.DurationSeconds != 0 ||
-		session.Path != "/test/path" ||
+		session.ExitPath != "/test/path" ||
 		session.EntryPath != "/test/path" ||
 		session.PageViews != 1 ||
 		!session.IsBounce ||
@@ -100,7 +100,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, int8(1), session1.Sign)
 	assert.Equal(t, uint64(0), session1.ClientID)
 	assert.NotZero(t, session1.VisitorID)
-	assert.Equal(t, "/test/path", session1.Path)
+	assert.Equal(t, "/test/path", session1.ExitPath)
 	assert.Equal(t, "/test/path", session1.EntryPath)
 	assert.Equal(t, uint32(0), session1.DurationSeconds)
 	assert.True(t, session1.IsBounce)
@@ -114,12 +114,12 @@ func TestHitFromRequestSession(t *testing.T) {
 	session := sessionCache.sessions[getSessionKey(session1.ClientID, session1.VisitorID)]
 	assert.False(t, session.Time.IsZero())
 	assert.NotEqual(t, uint32(0), session.SessionID)
-	assert.Equal(t, "/test/path", session.Path)
+	assert.Equal(t, "/test/path", session.ExitPath)
 	assert.Equal(t, "/test/path", session.EntryPath)
 	assert.Equal(t, uint16(1), session.PageViews)
 	session.Time = session.Time.Add(-time.Second * 5)   // manipulate the time the hit was created
 	session.Start = session.Start.Add(-time.Second * 5) // manipulate the time the session was created
-	session.Path = "/different/path"
+	session.ExitPath = "/different/path"
 	sessionCache.sessions[getSessionKey(session1.ClientID, session1.VisitorID)] = session
 
 	pageView2, sessions, ua2 := HitFromRequest(req, "salt", &HitOptions{
@@ -131,7 +131,7 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, int8(1), session2.Sign)
 	assert.Equal(t, uint64(0), session2.ClientID)
 	assert.Equal(t, session1.VisitorID, session2.VisitorID)
-	assert.Equal(t, "/test/path", session2.Path)
+	assert.Equal(t, "/test/path", session2.ExitPath)
 	assert.Equal(t, "/test/path", session2.EntryPath)
 	assert.Equal(t, uint32(5), session2.DurationSeconds)
 	assert.False(t, session2.IsBounce)
@@ -149,7 +149,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if session[0].Path != "/new/custom/path" {
+	if session[0].ExitPath != "/new/custom/path" {
 		t.Fatalf("Session not as expected: %v", session)
 	}
 }
@@ -163,7 +163,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 		Referrer:     "http://custom.ref/",
 	})
 
-	if session[0].Path != "/new/custom/path" || session[0].Referrer != "http://custom.ref" {
+	if session[0].ExitPath != "/new/custom/path" || session[0].Referrer != "http://custom.ref" {
 		t.Fatalf("Session not as expected: %v", session)
 	}
 }
