@@ -19,6 +19,13 @@ type growthStats struct {
 	BounceRate float64 `db:"bounce_rate"`
 }
 
+type totalVisitorSessionStats struct {
+	Path     string
+	Visitors int
+	Views    int
+	Sessions int
+}
+
 // Analyzer provides an interface to analyze statistics.
 type Analyzer struct {
 	store Store
@@ -278,6 +285,9 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
+	// TODO
+	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
+
 	filter = analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
@@ -299,15 +309,10 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter.ExitPath = ""
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
-	// TODO
-	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 	query := fmt.Sprintf(`SELECT entry_path %s,
-		sum(sign) entries,
-		uniq(v.visitor_id) visitors,
-		uniq(v.visitor_id, v.session_id) sessions,
-		entries/sessions entry_rate
+		countIf(entry_path = path) entries
 		FROM session s
-		ANY INNER JOIN (
+		INNER JOIN (
 			SELECT path %s,
 			visitor_id,
 			session_id
@@ -324,6 +329,23 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
+	}
+
+	total, err := analyzer.totalVisitorsSessions(filter)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range stats {
+		for j := range total {
+			if stats[i].Path == total[j].Path {
+				stats[i].Visitors = total[j].Visitors
+				stats[i].Sessions = total[j].Sessions
+				stats[i].EntryRate = float64(stats[i].Entries) / float64(total[j].Sessions)
+				break
+			}
+		}
 	}
 
 	return stats, nil
@@ -353,10 +375,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	innerFilterArgs, innerFilterQuery := filter.query()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT exit_path %s,
-		sum(sign) exits,
-		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions,
-		exits/sessions exit_rate
+		countIf(exit_path = path) exits
 		FROM session s
 		INNER JOIN (
 			SELECT path %s,
@@ -375,6 +394,23 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 
 	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
 		return nil, err
+	}
+
+	total, err := analyzer.totalVisitorsSessions(filter)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range stats {
+		for j := range total {
+			if stats[i].Path == total[j].Path {
+				stats[i].Visitors = total[j].Visitors
+				stats[i].Sessions = total[j].Sessions
+				stats[i].ExitRate = float64(stats[i].Exits) / float64(total[j].Sessions)
+				break
+			}
+		}
 	}
 
 	return stats, nil
@@ -824,6 +860,29 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query, timeArgs...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter) ([]totalVisitorSessionStats, error) {
+	filter = analyzer.getFilter(filter)
+	filter.EntryPath = ""
+	filter.ExitPath = ""
+	filterArgs, filterQuery := filter.query()
+	query := fmt.Sprintf(`SELECT path,
+		uniq(visitor_id) visitors,
+		uniq(visitor_id, session_id) sessions,
+		count(1) views
+		FROM page_view
+		WHERE %s
+		GROUP BY path
+		ORDER BY visitors DESC, sessions DESC
+		%s`, filterQuery, filter.withLimit())
+	var stats []totalVisitorSessionStats
+
+	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
 		return nil, err
 	}
 

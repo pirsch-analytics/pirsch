@@ -446,13 +446,15 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 		{VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 2, Path: "/", Title: "Home"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 1, DurationSeconds: 10, ExitPath: "/", Title: "Foo", EntryPath: "/"},
 		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, ExitPath: "/foo", Title: "Foo", EntryPath: "/"},
 		{Sign: 1, VisitorID: 2, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
 		{Sign: 1, VisitorID: 3, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
 		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, ExitPath: "/bar", Title: "Bar", EntryPath: "/"},
 		{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, ExitPath: "/bar", Title: "Bar", EntryPath: "/"},
 		{Sign: 1, VisitorID: 6, Time: pastDay(1), SessionID: 1, ExitPath: "/bar", Title: "Bar", EntryPath: "/bar"},
-		{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, ExitPath: "/", Title: "Home", EntryPath: "/bar"},
+		{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, ExitPath: "/bar", Title: "Home", EntryPath: "/bar"},
+		{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -467,9 +469,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 4, entries[1].Visitors)
 	assert.Equal(t, 7, entries[0].Sessions)
 	assert.Equal(t, 4, entries[1].Sessions)
-	assert.Equal(t, 5, entries[0].Entries)
+	assert.Equal(t, 7, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
-	assert.InDelta(t, 0.7142, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
 	/*assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)*/
@@ -482,9 +484,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 4, entries[1].Visitors)
 	assert.Equal(t, 3, entries[0].Sessions)
 	assert.Equal(t, 4, entries[1].Sessions)
-	assert.Equal(t, 2, entries[0].Entries)
+	assert.Equal(t, 3, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
-	assert.InDelta(t, 0.6666, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
 	/*assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)*/
@@ -493,8 +495,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, 3, entries[0].Visitors)
-	assert.Equal(t, 2, entries[0].Entries)
-	assert.InDelta(t, 0.6666, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 3, entries[0].Entries)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	/*assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	_, err = analyzer.EntryPages(getMaxFilter(""))
 	assert.NoError(t, err)*/
@@ -513,11 +515,11 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 7, exits[0].Sessions)
 	assert.Equal(t, 4, exits[1].Sessions)
 	assert.Equal(t, 1, exits[2].Sessions)
-	assert.Equal(t, 3, exits[0].Exits)
-	assert.Equal(t, 3, exits[1].Exits)
+	assert.Equal(t, 4, exits[0].Exits)
+	assert.Equal(t, 4, exits[1].Exits)
 	assert.Equal(t, 1, exits[2].Exits)
-	assert.InDelta(t, 0.4285, exits[0].ExitRate, 0.001)
-	assert.InDelta(t, 0.75, exits[1].ExitRate, 0.001)
+	assert.InDelta(t, 0.5714, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 1, exits[1].ExitRate, 0.001)
 	assert.InDelta(t, 1, exits[2].ExitRate, 0.001)
 	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true})
 	assert.NoError(t, err)
@@ -528,9 +530,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "Home", exits[1].Title)
 	assert.Equal(t, 4, exits[0].Visitors)
 	assert.Equal(t, 3, exits[1].Visitors)
-	assert.Equal(t, 3, exits[0].Exits)
+	assert.Equal(t, 4, exits[0].Exits)
 	assert.Equal(t, 1, exits[1].Exits)
-	assert.InDelta(t, 0.75, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.33, exits[1].ExitRate, 0.01)
 	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), ExitPath: "/"})
 	assert.NoError(t, err)
@@ -1505,6 +1507,38 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, "/exit", exitPages[0].Path)
 	assert.Equal(t, 1, exitPages[0].Visitors)
 	assert.Equal(t, 1, exitPages[0].Exits)
+}
+
+func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/bar"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/bar"},
+		{VisitorID: 1, SessionID: 2, Time: Today(), Path: "/foo"},
+		{VisitorID: 2, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/foo"},
+		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/foo"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	total, err := analyzer.totalVisitorsSessions(nil)
+	assert.NoError(t, err)
+	assert.Len(t, total, 3)
+	assert.Equal(t, "/foo", total[0].Path)
+	assert.Equal(t, "/", total[1].Path)
+	assert.Equal(t, "/bar", total[2].Path)
+	assert.Equal(t, 4, total[0].Views)
+	assert.Equal(t, 3, total[1].Views)
+	assert.Equal(t, 2, total[2].Views)
+	assert.Equal(t, 3, total[0].Visitors)
+	assert.Equal(t, 3, total[1].Visitors)
+	assert.Equal(t, 1, total[2].Visitors)
+	assert.Equal(t, 4, total[0].Sessions)
+	assert.Equal(t, 3, total[1].Sessions)
+	assert.Equal(t, 1, total[2].Sessions)
 }
 
 func getMaxFilter(eventName string) *Filter {
