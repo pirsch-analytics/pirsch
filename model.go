@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// Hit represents a single page visit.
-type Hit struct {
+// PageView represents a single page visit.
+type PageView struct {
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`
 	SessionID       uint32 `db:"session_id"`
@@ -37,8 +37,8 @@ type Hit struct {
 }
 
 // String implements the Stringer interface.
-func (hit Hit) String() string {
-	out, _ := json.Marshal(hit)
+func (pageView PageView) String() string {
+	out, _ := json.Marshal(pageView)
 	return string(out)
 }
 

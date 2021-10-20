@@ -88,13 +88,14 @@ func (config *TrackerConfig) validate() {
 	}
 }
 
-// Tracker provides methods to track requests (hits and events).
+// Tracker provides methods to track requests.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
 	sessionCache                              SessionCache
 	salt                                      string
-	hits                                      chan Session
+	pageViews                                 chan PageView
+	sessions                                  chan Session
 	events                                    chan Event
 	userAgents                                chan UserAgent
 	stopped                                   int32
@@ -129,7 +130,8 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		store:                   client,
 		sessionCache:            config.SessionCache,
 		salt:                    salt,
-		hits:                    make(chan Session, config.Worker*config.WorkerBufferSize),
+		pageViews:               make(chan PageView, config.Worker*config.WorkerBufferSize),
+		sessions:                make(chan Session, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
 		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -146,9 +148,9 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	return tracker
 }
 
-// Session stores the given request.
+// Hit stores the given request.
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
-// It's save (and recommended!) to call this function in its own goroutine.
+// It's safe (and recommended!) to call this function in its own goroutine.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 	if atomic.LoadInt32(&tracker.stopped) > 0 {
 		return
@@ -170,11 +172,15 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		hits, ua := HitFromRequest(r, tracker.salt, options)
+		pageView, sessions, ua := HitFromRequest(r, tracker.salt, options)
 
-		if hits != nil {
-			for _, hit := range hits {
-				tracker.hits <- hit
+		if pageView != nil {
+			tracker.pageViews <- *pageView
+		}
+
+		if sessions != nil {
+			for _, session := range sessions {
+				tracker.sessions <- session
 			}
 		}
 
@@ -208,40 +214,40 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		hit := EventFromRequest(r, tracker.salt, options)
+		session := EventFromRequest(r, tracker.salt, options)
 
-		if hit != nil {
+		if session != nil {
 			tracker.events <- Event{
-				ClientID:        hit.ClientID,
-				VisitorID:       hit.VisitorID,
-				Time:            hit.Time,
-				SessionID:       hit.SessionID,
+				ClientID:        session.ClientID,
+				VisitorID:       session.VisitorID,
+				Time:            session.Time,
+				SessionID:       session.SessionID,
 				DurationSeconds: eventOptions.Duration,
 				Name:            strings.TrimSpace(eventOptions.Name),
 				MetaKeys:        metaKeys,
 				MetaValues:      metaValues,
-				Path:            hit.Path,
-				Title:           hit.Title,
-				Language:        hit.Language,
-				CountryCode:     hit.CountryCode,
-				City:            hit.City,
-				Referrer:        hit.Referrer,
-				ReferrerName:    hit.ReferrerName,
-				ReferrerIcon:    hit.ReferrerIcon,
-				OS:              hit.OS,
-				OSVersion:       hit.OSVersion,
-				Browser:         hit.Browser,
-				BrowserVersion:  hit.BrowserVersion,
-				Desktop:         hit.Desktop,
-				Mobile:          hit.Mobile,
-				ScreenWidth:     hit.ScreenWidth,
-				ScreenHeight:    hit.ScreenHeight,
-				ScreenClass:     hit.ScreenClass,
-				UTMSource:       hit.UTMSource,
-				UTMMedium:       hit.UTMMedium,
-				UTMCampaign:     hit.UTMCampaign,
-				UTMContent:      hit.UTMContent,
-				UTMTerm:         hit.UTMTerm,
+				Path:            session.Path,
+				Title:           session.Title,
+				Language:        session.Language,
+				CountryCode:     session.CountryCode,
+				City:            session.City,
+				Referrer:        session.Referrer,
+				ReferrerName:    session.ReferrerName,
+				ReferrerIcon:    session.ReferrerIcon,
+				OS:              session.OS,
+				OSVersion:       session.OSVersion,
+				Browser:         session.Browser,
+				BrowserVersion:  session.BrowserVersion,
+				Desktop:         session.Desktop,
+				Mobile:          session.Mobile,
+				ScreenWidth:     session.ScreenWidth,
+				ScreenHeight:    session.ScreenHeight,
+				ScreenClass:     session.ScreenClass,
+				UTMSource:       session.UTMSource,
+				UTMMedium:       session.UTMMedium,
+				UTMCampaign:     session.UTMCampaign,
+				UTMContent:      session.UTMContent,
+				UTMTerm:         session.UTMTerm,
 			}
 		}
 	}
@@ -269,7 +275,8 @@ func (tracker *Tracker) Stop() {
 	if atomic.LoadInt32(&tracker.stopped) == 0 {
 		atomic.StoreInt32(&tracker.stopped, 1)
 		tracker.stopWorker()
-		tracker.flushHits()
+		tracker.flushPageViews()
+		tracker.flushSessions()
 		tracker.flushEvents()
 		tracker.flushUserAgents()
 	}
@@ -294,7 +301,8 @@ func (tracker *Tracker) startWorker() {
 	tracker.workerCancel = cancelFunc
 
 	for i := 0; i < tracker.worker; i++ {
-		go tracker.aggregateHits(ctx)
+		go tracker.aggregatePageViews(ctx)
+		go tracker.aggregateSessions(ctx)
 		go tracker.aggregateEvents(ctx)
 		go tracker.aggregateUserAgents(ctx)
 	}
@@ -303,27 +311,24 @@ func (tracker *Tracker) startWorker() {
 func (tracker *Tracker) stopWorker() {
 	tracker.workerCancel()
 
-	for i := 0; i < tracker.worker*3; i++ {
+	for i := 0; i < tracker.worker*4; i++ {
 		<-tracker.workerDone
 	}
 }
 
-// This function will make sure all dangling hits will be saved in database before shutdown.
-// Sessions are buffered before saving.
-// The same method is used for events and user agents.
-func (tracker *Tracker) flushHits() {
-	hits := make([]Session, 0, tracker.workerBufferSize)
+func (tracker *Tracker) flushPageViews() {
+	pageViews := make([]PageView, 0, tracker.workerBufferSize)
 
 	for {
 		stop := false
 
 		select {
-		case hit := <-tracker.hits:
-			hits = append(hits, hit)
+		case pageView := <-tracker.pageViews:
+			pageViews = append(pageViews, pageView)
 
-			if len(hits) == tracker.workerBufferSize {
-				tracker.saveHits(hits)
-				hits = hits[:0]
+			if len(pageViews) == tracker.workerBufferSize {
+				tracker.savePageViews(pageViews)
+				pageViews = pageViews[:0]
 			}
 		default:
 			stop = true
@@ -334,11 +339,11 @@ func (tracker *Tracker) flushHits() {
 		}
 	}
 
-	tracker.saveHits(hits)
+	tracker.savePageViews(pageViews)
 }
 
-func (tracker *Tracker) aggregateHits(ctx context.Context) {
-	hits := make([]Session, 0, tracker.workerBufferSize)
+func (tracker *Tracker) aggregatePageViews(ctx context.Context) {
+	pageViews := make([]PageView, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -346,28 +351,89 @@ func (tracker *Tracker) aggregateHits(ctx context.Context) {
 		timer.Reset(tracker.workerTimeout)
 
 		select {
-		case hit := <-tracker.hits:
-			hits = append(hits, hit)
+		case pageView := <-tracker.pageViews:
+			pageViews = append(pageViews, pageView)
 
-			if len(hits) == tracker.workerBufferSize {
-				tracker.saveHits(hits)
-				hits = hits[:0]
+			if len(pageViews) == tracker.workerBufferSize {
+				tracker.savePageViews(pageViews)
+				pageViews = pageViews[:0]
 			}
 		case <-timer.C:
-			tracker.saveHits(hits)
-			hits = hits[:0]
+			tracker.savePageViews(pageViews)
+			pageViews = pageViews[:0]
 		case <-ctx.Done():
-			tracker.saveHits(hits)
+			tracker.savePageViews(pageViews)
 			tracker.workerDone <- true
 			return
 		}
 	}
 }
 
-func (tracker *Tracker) saveHits(hits []Session) {
-	if len(hits) > 0 {
-		if err := tracker.store.SaveSessions(hits); err != nil {
-			tracker.logger.Printf("error saving hits: %s", err)
+func (tracker *Tracker) savePageViews(pageViews []PageView) {
+	if len(pageViews) > 0 {
+		if err := tracker.store.SavePageViews(pageViews); err != nil {
+			tracker.logger.Printf("error saving page views: %s", err)
+		}
+	}
+}
+
+func (tracker *Tracker) flushSessions() {
+	sessions := make([]Session, 0, tracker.workerBufferSize)
+
+	for {
+		stop := false
+
+		select {
+		case session := <-tracker.sessions:
+			sessions = append(sessions, session)
+
+			if len(sessions) == tracker.workerBufferSize {
+				tracker.saveSessions(sessions)
+				sessions = sessions[:0]
+			}
+		default:
+			stop = true
+		}
+
+		if stop {
+			break
+		}
+	}
+
+	tracker.saveSessions(sessions)
+}
+
+func (tracker *Tracker) aggregateSessions(ctx context.Context) {
+	sessions := make([]Session, 0, tracker.workerBufferSize)
+	timer := time.NewTimer(tracker.workerTimeout)
+	defer timer.Stop()
+
+	for {
+		timer.Reset(tracker.workerTimeout)
+
+		select {
+		case session := <-tracker.sessions:
+			sessions = append(sessions, session)
+
+			if len(sessions) == tracker.workerBufferSize {
+				tracker.saveSessions(sessions)
+				sessions = sessions[:0]
+			}
+		case <-timer.C:
+			tracker.saveSessions(sessions)
+			sessions = sessions[:0]
+		case <-ctx.Done():
+			tracker.saveSessions(sessions)
+			tracker.workerDone <- true
+			return
+		}
+	}
+}
+
+func (tracker *Tracker) saveSessions(sessions []Session) {
+	if len(sessions) > 0 {
+		if err := tracker.store.SaveSessions(sessions); err != nil {
+			tracker.logger.Printf("error saving sessions: %s", err)
 		}
 	}
 }

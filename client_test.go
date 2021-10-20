@@ -14,9 +14,9 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, client.DB.Ping())
 }
 
-func TestClient_SaveHits(t *testing.T) {
+func TestClient_SavePageViews(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{
 			ClientID:        1,
 			VisitorID:       1,

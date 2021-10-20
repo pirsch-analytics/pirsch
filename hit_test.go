@@ -16,46 +16,70 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	hits, ua := HitFromRequest(req, "salt", &HitOptions{
+	pageView, sessions, ua := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ClientID:     42,
 		Title:        "title",
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
-	assert.Len(t, hits, 1)
-	hit := hits[0]
-	assert.Equal(t, 42, int(hit.ClientID))
-	assert.NotZero(t, hit.VisitorID)
-	assert.NoError(t, dbClient.SaveSessions(hits))
+	assert.NotNil(t, pageView)
+	assert.Len(t, sessions, 1)
+	session := sessions[0]
+	assert.Equal(t, 42, int(session.ClientID))
+	assert.NotZero(t, session.VisitorID)
+	assert.NoError(t, dbClient.SaveSessions(sessions))
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 30)
 	assert.Equal(t, uaString, ua.UserAgent)
 
-	if hit.Sign != 1 ||
-		hit.Time.IsZero() ||
-		hit.SessionID == 0 ||
-		hit.DurationSeconds != 0 ||
-		hit.Path != "/test/path" ||
-		hit.EntryPath != "/test/path" ||
-		hit.PageViews != 1 ||
-		!hit.IsBounce ||
-		hit.Title != "title" ||
-		hit.Language != "de" ||
-		hit.Referrer != "http://ref" ||
-		hit.OS != OSWindows ||
-		hit.OSVersion != "10" ||
-		hit.Browser != BrowserChrome ||
-		hit.BrowserVersion != "84.0" ||
-		!hit.Desktop ||
-		hit.Mobile ||
-		hit.ScreenWidth != 640 ||
-		hit.ScreenHeight != 1024 ||
-		hit.UTMSource != "test source" ||
-		hit.UTMMedium != "email" ||
-		hit.UTMCampaign != "newsletter" ||
-		hit.UTMContent != "signup" ||
-		hit.UTMTerm != "keywords" {
-		t.Fatalf("Session not as expected: %v", hit)
+	if pageView.Time.IsZero() ||
+		pageView.SessionID == 0 ||
+		pageView.DurationSeconds != 0 ||
+		pageView.Path != "/test/path" ||
+		pageView.Title != "title" ||
+		pageView.Language != "de" ||
+		pageView.Referrer != "http://ref" ||
+		pageView.OS != OSWindows ||
+		pageView.OSVersion != "10" ||
+		pageView.Browser != BrowserChrome ||
+		pageView.BrowserVersion != "84.0" ||
+		!pageView.Desktop ||
+		pageView.Mobile ||
+		pageView.ScreenWidth != 640 ||
+		pageView.ScreenHeight != 1024 ||
+		pageView.UTMSource != "test source" ||
+		pageView.UTMMedium != "email" ||
+		pageView.UTMCampaign != "newsletter" ||
+		pageView.UTMContent != "signup" ||
+		pageView.UTMTerm != "keywords" {
+		t.Fatalf("PageView not as expected: %v", pageView)
+	}
+
+	if session.Sign != 1 ||
+		session.Time.IsZero() ||
+		session.SessionID == 0 ||
+		session.DurationSeconds != 0 ||
+		session.Path != "/test/path" ||
+		session.EntryPath != "/test/path" ||
+		session.PageViews != 1 ||
+		!session.IsBounce ||
+		session.Title != "title" ||
+		session.Language != "de" ||
+		session.Referrer != "http://ref" ||
+		session.OS != OSWindows ||
+		session.OSVersion != "10" ||
+		session.Browser != BrowserChrome ||
+		session.BrowserVersion != "84.0" ||
+		!session.Desktop ||
+		session.Mobile ||
+		session.ScreenWidth != 640 ||
+		session.ScreenHeight != 1024 ||
+		session.UTMSource != "test source" ||
+		session.UTMMedium != "email" ||
+		session.UTMCampaign != "newsletter" ||
+		session.UTMContent != "signup" ||
+		session.UTMTerm != "keywords" {
+		t.Fatalf("Session not as expected: %v", session)
 	}
 }
 
@@ -67,103 +91,113 @@ func TestHitFromRequestSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	hits, ua1 := HitFromRequest(req, "salt", &HitOptions{
+	pageView1, sessions, ua1 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, hits, 1)
-	hit1 := hits[0]
-	assert.Equal(t, int8(1), hit1.Sign)
-	assert.Equal(t, uint64(0), hit1.ClientID)
-	assert.NotZero(t, hit1.VisitorID)
-	assert.Equal(t, "/test/path", hit1.Path)
-	assert.Equal(t, "/test/path", hit1.EntryPath)
-	assert.Equal(t, uint32(0), hit1.DurationSeconds)
-	assert.True(t, hit1.IsBounce)
+	assert.NotNil(t, pageView1)
+	assert.Len(t, sessions, 1)
+	session1 := sessions[0]
+	assert.Equal(t, int8(1), session1.Sign)
+	assert.Equal(t, uint64(0), session1.ClientID)
+	assert.NotZero(t, session1.VisitorID)
+	assert.Equal(t, "/test/path", session1.Path)
+	assert.Equal(t, "/test/path", session1.EntryPath)
+	assert.Equal(t, uint32(0), session1.DurationSeconds)
+	assert.True(t, session1.IsBounce)
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua1.Time.UnixMilli(), 10)
 	assert.Equal(t, uaString, ua1.UserAgent)
+	assert.Equal(t, uint64(0), pageView1.ClientID)
+	assert.NotZero(t, pageView1.VisitorID)
+	assert.Equal(t, "/test/path", pageView1.Path)
+	assert.Equal(t, uint32(0), pageView1.DurationSeconds)
 
-	session := sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.VisitorID)]
+	session := sessionCache.sessions[getSessionKey(session1.ClientID, session1.VisitorID)]
 	assert.False(t, session.Time.IsZero())
 	assert.NotEqual(t, uint32(0), session.SessionID)
 	assert.Equal(t, "/test/path", session.Path)
 	assert.Equal(t, "/test/path", session.EntryPath)
 	assert.Equal(t, uint16(1), session.PageViews)
+	session.Time = session.Time.Add(-time.Second * 5)   // manipulate the time the hit was created
 	session.Start = session.Start.Add(-time.Second * 5) // manipulate the time the session was created
 	session.Path = "/different/path"
-	sessionCache.sessions[getSessionKey(hit1.ClientID, hit1.VisitorID)] = session
+	sessionCache.sessions[getSessionKey(session1.ClientID, session1.VisitorID)] = session
 
-	hits, ua2 := HitFromRequest(req, "salt", &HitOptions{
+	pageView2, sessions, ua2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, hits, 2)
-	hit2 := hits[1]
-	assert.Equal(t, int8(-1), hits[0].Sign)
-	assert.Equal(t, int8(1), hit2.Sign)
-	assert.Equal(t, uint64(0), hit2.ClientID)
-	assert.Equal(t, hit1.VisitorID, hit2.VisitorID)
-	assert.Equal(t, "/test/path", hit2.Path)
-	assert.Equal(t, "/test/path", hit2.EntryPath)
-	assert.Equal(t, uint32(5), hit2.DurationSeconds)
-	assert.False(t, hit2.IsBounce)
+	assert.Len(t, sessions, 2)
+	session2 := sessions[1]
+	assert.Equal(t, int8(-1), sessions[0].Sign)
+	assert.Equal(t, int8(1), session2.Sign)
+	assert.Equal(t, uint64(0), session2.ClientID)
+	assert.Equal(t, session1.VisitorID, session2.VisitorID)
+	assert.Equal(t, "/test/path", session2.Path)
+	assert.Equal(t, "/test/path", session2.EntryPath)
+	assert.Equal(t, uint32(5), session2.DurationSeconds)
+	assert.False(t, session2.IsBounce)
 	assert.Nil(t, ua2)
+	assert.Equal(t, uint64(0), pageView2.ClientID)
+	assert.NotZero(t, pageView2.VisitorID)
+	assert.Equal(t, "/test/path", pageView2.Path)
+	assert.Equal(t, uint32(5), pageView2.DurationSeconds)
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, session, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if hit[0].Path != "/new/custom/path" {
-		t.Fatalf("Session not as expected: %v", hit)
+	if session[0].Path != "/new/custom/path" {
+		t.Fatalf("Session not as expected: %v", session)
 	}
 }
 
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, session, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		URL:          "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:         "/new/custom/path",
 		Referrer:     "http://custom.ref/",
 	})
 
-	if hit[0].Path != "/new/custom/path" || hit[0].Referrer != "http://custom.ref" {
-		t.Fatalf("Session not as expected: %v", hit)
+	if session[0].Path != "/new/custom/path" || session[0].Referrer != "http://custom.ref" {
+		t.Fatalf("Session not as expected: %v", session)
 	}
 }
 
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	hit, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  0,
 		ScreenHeight: 400,
 	})
 
-	if hit[0].ScreenWidth != 0 || hit[0].ScreenHeight != 0 {
-		t.Fatalf("Screen size must be 0, but was: %v %v", hit[0].ScreenWidth, hit[0].ScreenHeight)
+	if sessions[0].ScreenWidth != 0 || sessions[0].ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
 	}
 
-	hit, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
 
-	if hit[0].ScreenWidth != 0 || hit[0].ScreenHeight != 0 {
-		t.Fatalf("Screen size must be 0, but was: %v %v", hit[0].ScreenWidth, hit[0].ScreenHeight)
+	if sessions[0].ScreenWidth != 0 || sessions[0].ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
 	}
 
-	hit, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
 
-	if hit[0].ScreenWidth != 640 || hit[0].ScreenHeight != 1024 {
-		t.Fatalf("Screen size must be set, but was: %v %v", hit[0].ScreenWidth, hit[0].ScreenHeight)
+	if sessions[0].ScreenWidth != 640 || sessions[0].ScreenHeight != 1024 {
+		t.Fatalf("Screen size must be set, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
 	}
 }
 
@@ -175,20 +209,20 @@ func TestHitFromRequestCountryCodeCity(t *testing.T) {
 	assert.NoError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
-	hit, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-	assert.Equal(t, "gb", hit[0].CountryCode)
-	assert.Equal(t, "London", hit[0].City)
+	assert.Equal(t, "gb", sessions[0].CountryCode)
+	assert.Equal(t, "London", sessions[0].City)
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
-	hit, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-	assert.Empty(t, hit[0].CountryCode)
-	assert.Empty(t, hit[0].City)
+	assert.Empty(t, sessions[0].CountryCode)
+	assert.Empty(t, sessions[0].City)
 }
 
 func TestExtendSession(t *testing.T) {
@@ -200,13 +234,13 @@ func TestExtendSession(t *testing.T) {
 	options := &HitOptions{
 		SessionCache: sessionCache,
 	}
-	hits, _ := HitFromRequest(req, "salt", options)
-	assert.Len(t, hits, 1)
-	at := hits[0].Time
+	_, sessions, _ := HitFromRequest(req, "salt", options)
+	assert.Len(t, sessions, 1)
+	at := sessions[0].Time
 	ExtendSession(req, "salt", options)
-	hit := sessionCache.Get(0, hits[0].VisitorID, time.Now().UTC().Add(-time.Second))
-	assert.NotEqual(t, at, hit.Time)
-	assert.True(t, hit.Time.After(at))
+	session := sessionCache.Get(0, sessions[0].VisitorID, time.Now().UTC().Add(-time.Second))
+	assert.NotEqual(t, at, session.Time)
+	assert.True(t, session.Time.After(at))
 }
 
 func TestIgnoreHitPrefetch(t *testing.T) {

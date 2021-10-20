@@ -81,6 +81,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
+	assert.Len(t, client.PageViews, 7)
 	assert.Len(t, client.Sessions, 13)
 	assert.Len(t, client.UserAgents, 1)
 }
@@ -102,6 +103,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 		}
 	}
 
+	assert.Len(t, client.PageViews, 5)
 	assert.Len(t, client.Sessions, 9)
 	assert.Len(t, client.UserAgents, 1)
 }
@@ -125,6 +127,7 @@ func TestTrackerHitCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
+	assert.Len(t, client.PageViews, 2)
 	assert.Len(t, client.Sessions, 2)
 	assert.Len(t, client.UserAgents, 2)
 	foundGB := false
@@ -154,6 +157,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
+	assert.Len(t, client.PageViews, 2)
 	assert.Len(t, client.Sessions, 3)
 	assert.Len(t, client.UserAgents, 1)
 	assert.Equal(t, client.Sessions[0].SessionID, client.Sessions[1].SessionID)
@@ -185,6 +189,7 @@ func TestTrackerHitIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
+	assert.Len(t, client.PageViews, 4)
 	assert.Len(t, client.Sessions, 7)
 	assert.Len(t, client.UserAgents, 1)
 

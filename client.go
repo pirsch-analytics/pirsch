@@ -40,15 +40,15 @@ func NewClient(connection string, logger *log.Logger) (*Client, error) {
 	}, nil
 }
 
-// SaveHits implements the Store interface.
-func (client *Client) SaveHits(hits []Hit) error {
+// SavePageViews implements the Store interface.
+func (client *Client) SavePageViews(pageViews []PageView) error {
 	tx, err := client.Beginx()
 
 	if err != nil {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, visitor_id, session_id, time, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
 		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -57,38 +57,38 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	for _, hit := range hits {
-		_, err := query.Exec(hit.ClientID,
-			hit.VisitorID,
-			hit.SessionID,
-			hit.Time,
-			hit.DurationSeconds,
-			hit.Path,
-			hit.Title,
-			hit.Language,
-			hit.CountryCode,
-			hit.City,
-			hit.Referrer,
-			hit.ReferrerName,
-			hit.ReferrerIcon,
-			hit.OS,
-			hit.OSVersion,
-			hit.Browser,
-			hit.BrowserVersion,
-			client.boolean(hit.Desktop),
-			client.boolean(hit.Mobile),
-			hit.ScreenWidth,
-			hit.ScreenHeight,
-			hit.ScreenClass,
-			hit.UTMSource,
-			hit.UTMMedium,
-			hit.UTMCampaign,
-			hit.UTMContent,
-			hit.UTMTerm)
+	for _, pageView := range pageViews {
+		_, err := query.Exec(pageView.ClientID,
+			pageView.VisitorID,
+			pageView.SessionID,
+			pageView.Time,
+			pageView.DurationSeconds,
+			pageView.Path,
+			pageView.Title,
+			pageView.Language,
+			pageView.CountryCode,
+			pageView.City,
+			pageView.Referrer,
+			pageView.ReferrerName,
+			pageView.ReferrerIcon,
+			pageView.OS,
+			pageView.OSVersion,
+			pageView.Browser,
+			pageView.BrowserVersion,
+			client.boolean(pageView.Desktop),
+			client.boolean(pageView.Mobile),
+			pageView.ScreenWidth,
+			pageView.ScreenHeight,
+			pageView.ScreenClass,
+			pageView.UTMSource,
+			pageView.UTMMedium,
+			pageView.UTMCampaign,
+			pageView.UTMContent,
+			pageView.UTMTerm)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save hits: %s", err)
+				client.logger.Printf("error rolling back transaction to save sessions: %s", err)
 			}
 
 			return err

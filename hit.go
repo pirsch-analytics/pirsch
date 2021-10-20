@@ -71,15 +71,14 @@ type HitOptions struct {
 	geoDB *GeoDB
 }
 
-// HitFromRequest returns a new Session for given request, salt and HitOptions.
+// HitFromRequest returns a new PageView and Session for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-// The options must be set!
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Session, *UserAgent) {
-	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, []Session, *UserAgent) {
+	now := time.Now().UTC() // capture first to get as close as possible
 
 	if options == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// set default options in case they're nil
@@ -91,11 +90,12 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Sessio
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
-	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-	hits := make([]Session, 0, 2)
+	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	sessions := make([]Session, 0, 2)
+	var timeOnPage uint32
 	var ua *UserAgent
 
-	if hit == nil {
+	if session == nil {
 		// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
 		userAgent := r.UserAgent()
 		uaInfo := ParseUserAgent(userAgent)
@@ -123,7 +123,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Sessio
 			options.ScreenHeight = 0
 		}
 
-		hits = append(hits, Session{
+		sessions = append(sessions, Session{
 			Sign:           1,
 			ClientID:       options.ClientID,
 			VisitorID:      fingerprint,
@@ -156,28 +156,63 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Sessio
 			UTMContent:     utm.content,
 			UTMTerm:        utm.term,
 		})
-		options.SessionCache.Put(options.ClientID, fingerprint, &hits[0])
+		options.SessionCache.Put(options.ClientID, fingerprint, &sessions[0])
 	} else {
-		hit.Sign = -1
-		hits = append(hits, *hit)
-		duration := now.Unix() - hit.Start.Unix()
+		session.Sign = -1
+		sessions = append(sessions, *session)
+		top := now.Unix() - session.Time.Unix()
+
+		if top < 0 {
+			top = 0
+		}
+
+		timeOnPage = uint32(top)
+		duration := now.Unix() - session.Start.Unix()
 
 		if duration < 0 {
 			duration = 0
 		}
 
-		hit.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
-		hit.Sign = 1
-		hit.IsBounce = hit.IsBounce && path == hit.Path
-		hit.Time = now
-		hit.Path = path
-		hit.PageViews++
-		hit.Title = title
-		hits = append(hits, *hit)
-		options.SessionCache.Put(options.ClientID, fingerprint, hit)
+		session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
+		session.Sign = 1
+		session.IsBounce = session.IsBounce && path == session.Path
+		session.Time = now
+		session.Path = path
+		session.PageViews++
+		session.Title = title
+		sessions = append(sessions, *session)
+		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	}
 
-	return hits, ua
+	return &PageView{
+		ClientID:        sessions[len(sessions)-1].ClientID,
+		VisitorID:       sessions[len(sessions)-1].VisitorID,
+		SessionID:       sessions[len(sessions)-1].SessionID,
+		Time:            sessions[len(sessions)-1].Time,
+		DurationSeconds: timeOnPage,
+		Path:            sessions[len(sessions)-1].Path,
+		Title:           sessions[len(sessions)-1].Title,
+		Language:        sessions[len(sessions)-1].Language,
+		CountryCode:     sessions[len(sessions)-1].CountryCode,
+		City:            sessions[len(sessions)-1].City,
+		Referrer:        sessions[len(sessions)-1].Referrer,
+		ReferrerName:    sessions[len(sessions)-1].ReferrerName,
+		ReferrerIcon:    sessions[len(sessions)-1].ReferrerIcon,
+		OS:              sessions[len(sessions)-1].OS,
+		OSVersion:       sessions[len(sessions)-1].OSVersion,
+		Browser:         sessions[len(sessions)-1].Browser,
+		BrowserVersion:  sessions[len(sessions)-1].BrowserVersion,
+		Desktop:         sessions[len(sessions)-1].Desktop,
+		Mobile:          sessions[len(sessions)-1].Mobile,
+		ScreenWidth:     sessions[len(sessions)-1].ScreenWidth,
+		ScreenHeight:    sessions[len(sessions)-1].ScreenHeight,
+		ScreenClass:     sessions[len(sessions)-1].ScreenClass,
+		UTMSource:       sessions[len(sessions)-1].UTMSource,
+		UTMMedium:       sessions[len(sessions)-1].UTMMedium,
+		UTMCampaign:     sessions[len(sessions)-1].UTMCampaign,
+		UTMContent:      sessions[len(sessions)-1].UTMContent,
+		UTMTerm:         sessions[len(sessions)-1].UTMTerm,
+	}, sessions, ua
 }
 
 // ExtendSession looks up and extends the session for given request.
@@ -188,11 +223,11 @@ func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 	}
 
 	fingerprint := Fingerprint(r, salt+options.Salt)
-	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
-	if hit != nil {
-		hit.Time = time.Now().UTC()
-		options.SessionCache.Put(options.ClientID, fingerprint, hit)
+	if session != nil {
+		session.Time = time.Now().UTC()
+		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	}
 }
 

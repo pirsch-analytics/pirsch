@@ -34,13 +34,13 @@ func TestEventFromRequest(t *testing.T) {
 	assert.Nil(t, EventFromRequest(req, "salt", &HitOptions{
 		SessionCache: cache,
 	}))
-	hits, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: cache,
 	})
-	assert.Len(t, hits, 1)
-	hit := EventFromRequest(req, "salt", &HitOptions{
+	assert.Len(t, sessions, 1)
+	event := EventFromRequest(req, "salt", &HitOptions{
 		SessionCache: cache,
 	})
-	assert.NotNil(t, hit)
-	assert.Equal(t, hits[0].VisitorID, hit.VisitorID)
+	assert.NotNil(t, event)
+	assert.Equal(t, sessions[0].VisitorID, event.VisitorID)
 }
