@@ -40,22 +40,12 @@ func TestFilter_Validate(t *testing.T) {
 
 func TestFilter_Table(t *testing.T) {
 	filter := NewFilter(NullClient)
-	assert.Equal(t, "hit", filter.table())
+	assert.Equal(t, "session", filter.table())
 	filter.eventFilter = true
 	assert.Equal(t, "event", filter.table())
 	filter.eventFilter = false
 	filter.EventName = "event"
 	assert.Equal(t, "event", filter.table())
-}
-
-func TestFilter_View(t *testing.T) {
-	filter := NewFilter(NullClient)
-	assert.Equal(t, "sessions", filter.view())
-	filter.eventFilter = true
-	assert.Equal(t, "events", filter.view())
-	filter.eventFilter = false
-	filter.EventName = "event"
-	assert.Equal(t, "events", filter.view())
 }
 
 func TestFilter_QueryTime(t *testing.T) {

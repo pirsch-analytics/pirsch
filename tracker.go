@@ -170,10 +170,12 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		hit, ua := HitFromRequest(r, tracker.salt, options)
+		hits, ua := HitFromRequest(r, tracker.salt, options)
 
-		if hit != nil {
-			tracker.hits <- *hit
+		if hits != nil {
+			for _, hit := range hits {
+				tracker.hits <- hit
+			}
 		}
 
 		if ua != nil {
@@ -206,10 +208,9 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		hit, ua := HitFromRequest(r, tracker.salt, options)
+		hit := EventFromRequest(r, tracker.salt, options)
 
 		if hit != nil {
-			hit.PageViews = 1
 			tracker.events <- Event{
 				ClientID:        hit.ClientID,
 				VisitorID:       hit.VisitorID,
@@ -242,10 +243,6 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 				UTMContent:      hit.UTMContent,
 				UTMTerm:         hit.UTMTerm,
 			}
-		}
-
-		if ua != nil {
-			tracker.userAgents <- *ua
 		}
 	}
 }

@@ -48,7 +48,7 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	query, err := tx.Prepare(`INSERT INTO "hit" (client_id, visitor_id, time, session_id, duration_seconds,
+	query, err := tx.Prepare(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
 		path, entry_path, page_views, is_bounce, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -58,10 +58,12 @@ func (client *Client) SaveHits(hits []Hit) error {
 	}
 
 	for _, hit := range hits {
-		_, err := query.Exec(hit.ClientID,
+		_, err := query.Exec(hit.Sign,
+			hit.ClientID,
 			hit.VisitorID,
-			hit.Time,
 			hit.SessionID,
+			hit.Time,
+			hit.Start,
 			hit.DurationSeconds,
 			hit.Path,
 			hit.EntryPath,
@@ -205,7 +207,7 @@ func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
 
 // Session implements the Store interface.
 func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*Hit, error) {
-	query := `SELECT * FROM hit WHERE client_id = ? AND visitor_id = ? AND time > ? ORDER BY time DESC LIMIT 1`
+	query := `SELECT * FROM session WHERE client_id = ? AND visitor_id = ? AND time > ? ORDER BY time DESC LIMIT 1`
 	hit := new(Hit)
 
 	if err := client.DB.Get(hit, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {

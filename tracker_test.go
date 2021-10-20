@@ -81,7 +81,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
-	assert.Len(t, client.Hits, 7)
+	assert.Len(t, client.Hits, 13)
 	assert.Len(t, client.UserAgents, 1)
 }
 
@@ -102,7 +102,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, client.Hits, 5)
+	assert.Len(t, client.Hits, 9)
 	assert.Len(t, client.UserAgents, 1)
 }
 
@@ -154,7 +154,7 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, client.Hits, 2)
+	assert.Len(t, client.Hits, 3)
 	assert.Len(t, client.UserAgents, 1)
 	assert.Equal(t, client.Hits[0].SessionID, client.Hits[1].SessionID)
 }
@@ -185,7 +185,7 @@ func TestTrackerHitIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-	assert.Len(t, client.Hits, 4)
+	assert.Len(t, client.Hits, 7)
 	assert.Len(t, client.UserAgents, 1)
 
 	for _, hit := range client.Hits {
@@ -198,6 +198,9 @@ func TestTrackerEvent(t *testing.T) {
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", nil)
+	tracker.Hit(req, &HitOptions{
+		SessionCache: NewSessionCacheMem(client, 100),
+	})
 	tracker.Event(req, EventOptions{Name: "  "}, nil)                                                                                // ignore (invalid name)
 	tracker.Event(req, EventOptions{Name: ""}, nil)                                                                                  // ignore (invalid name)
 	tracker.Event(req, EventOptions{Name: " event  ", Duration: 42, Meta: map[string]string{"hello": "world", "meta": "data"}}, nil) // store duration and meta data
@@ -220,7 +223,14 @@ func TestTrackerEventTimeout(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
+	cache := NewSessionCacheMem(client, 100)
 	tracker := NewTracker(client, "salt", &TrackerConfig{WorkerTimeout: time.Millisecond * 200})
+	tracker.Hit(req1, &HitOptions{
+		SessionCache: cache,
+	})
+	tracker.Hit(req2, &HitOptions{
+		SessionCache: cache,
+	})
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	time.Sleep(time.Millisecond * 210)
@@ -240,6 +250,11 @@ func TestTrackerEventLimit(t *testing.T) {
 		Worker:           1,
 		WorkerBufferSize: 10,
 	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	tracker.Hit(req, &HitOptions{
+		SessionCache: NewSessionCacheMem(client, 100),
+	})
 
 	for i := 0; i < 7; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -257,6 +272,11 @@ func TestTrackerEventDiscard(t *testing.T) {
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
 		WorkerBufferSize: 5,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	tracker.Hit(req, &HitOptions{
+		SessionCache: NewSessionCacheMem(client, 100),
 	})
 
 	for i := 0; i < 10; i++ {
@@ -285,10 +305,17 @@ func TestTrackerEventCountryCode(t *testing.T) {
 	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2.RemoteAddr = "127.0.0.1"
 	client := NewMockClient()
+	cache := NewSessionCacheMem(client, 100)
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
 	})
 	tracker.SetGeoDB(geoDB)
+	tracker.Hit(req1, &HitOptions{
+		SessionCache: cache,
+	})
+	tracker.Hit(req2, &HitOptions{
+		SessionCache: cache,
+	})
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
@@ -315,8 +342,15 @@ func TestTrackerEventSession(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
 	req2.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
+	cache := NewSessionCacheMem(client, 100)
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
+	})
+	tracker.Hit(req1, &HitOptions{
+		SessionCache: cache,
+	})
+	tracker.Hit(req2, &HitOptions{
+		SessionCache: cache,
 	})
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
@@ -359,6 +393,9 @@ func TestTrackerEventIgnoreSubdomain(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req.RemoteAddr = "81.2.69.142"
+	tracker.Hit(req, &HitOptions{
+		SessionCache: NewSessionCacheMem(client, 100),
+	})
 	tracker.Event(req, EventOptions{Name: "event"}, &HitOptions{
 		ReferrerDomainBlacklist: []string{"pirsch.io"},
 		Referrer:                "https://pirsch.io/",

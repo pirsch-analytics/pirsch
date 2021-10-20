@@ -195,15 +195,7 @@ func (filter *Filter) table() string {
 		return "event"
 	}
 
-	return "hit"
-}
-
-func (filter *Filter) view() string {
-	if filter.EventName != "" || filter.eventFilter {
-		return "events"
-	}
-
-	return "sessions"
+	return "session"
 }
 
 func (filter *Filter) queryTime() ([]interface{}, string) {

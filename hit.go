@@ -75,7 +75,7 @@ type HitOptions struct {
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
 // The options must be set!
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *UserAgent) {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Hit, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
 
 	if options == nil {
@@ -92,6 +92,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	hits := make([]Hit, 0, 2)
 	var ua *UserAgent
 
 	if hit == nil {
@@ -122,11 +123,13 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 			options.ScreenHeight = 0
 		}
 
-		hit = &Hit{
+		hits = append(hits, Hit{
+			Sign:           1,
 			ClientID:       options.ClientID,
 			VisitorID:      fingerprint,
-			Time:           now,
 			SessionID:      rand.Uint32(),
+			Time:           now,
+			Start:          now,
 			Path:           path,
 			EntryPath:      path,
 			PageViews:      1,
@@ -152,24 +155,29 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*Hit, *U
 			UTMCampaign:    utm.campaign,
 			UTMContent:     utm.content,
 			UTMTerm:        utm.term,
-		}
+		})
+		options.SessionCache.Put(options.ClientID, fingerprint, &hits[0])
 	} else {
-		duration := now.Unix() - hit.Time.Unix()
+		hit.Sign = -1
+		hits = append(hits, *hit)
+		duration := now.Unix() - hit.Start.Unix()
 
 		if duration < 0 {
 			duration = 0
 		}
 
 		hit.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
+		hit.Sign = 1
 		hit.IsBounce = hit.IsBounce && path == hit.Path
 		hit.Time = now
 		hit.Path = path
 		hit.PageViews++
 		hit.Title = title
+		hits = append(hits, *hit)
+		options.SessionCache.Put(options.ClientID, fingerprint, hit)
 	}
 
-	options.SessionCache.Put(options.ClientID, fingerprint, hit)
-	return hit, ua
+	return hits, ua
 }
 
 // ExtendSession looks up and extends the session for given request.

@@ -18,9 +18,11 @@ func TestClient_SaveHit(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
+			Sign:            1,
 			ClientID:        1,
 			VisitorID:       1,
 			Time:            time.Now(),
+			Start:           time.Now(),
 			SessionID:       rand.Uint32(),
 			DurationSeconds: 42,
 			Path:            "/path",
@@ -45,6 +47,7 @@ func TestClient_SaveHit(t *testing.T) {
 			ScreenClass:     "XL",
 		},
 		{
+			Sign:      -1,
 			VisitorID: 1,
 			Time:      time.Now().UTC(),
 			Path:      "/path",
@@ -110,6 +113,7 @@ func TestClient_Session(t *testing.T) {
 	now := time.Now().UTC().Add(-time.Second * 20)
 	assert.NoError(t, dbClient.SaveHits([]Hit{
 		{
+			Sign:      1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 20),
@@ -119,6 +123,7 @@ func TestClient_Session(t *testing.T) {
 			PageViews: 2,
 		},
 		{
+			Sign:      -1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now,
@@ -128,6 +133,7 @@ func TestClient_Session(t *testing.T) {
 			PageViews: 3,
 		},
 		{
+			Sign:      -1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 10),

@@ -7,9 +7,11 @@ import (
 
 // Hit represents a single data point/page visit and is the central entity of Pirsch.
 type Hit struct {
+	Sign            int8
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`
 	Time            time.Time
+	Start           time.Time
 	SessionID       uint32 `db:"session_id"`
 	DurationSeconds uint32 `db:"duration_seconds"`
 	Path            string
