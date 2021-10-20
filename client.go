@@ -40,8 +40,8 @@ func NewClient(connection string, logger *log.Logger) (*Client, error) {
 	}, nil
 }
 
-// SaveHits implements the Store interface.
-func (client *Client) SaveHits(hits []Hit) error {
+// SaveSession implements the Store interface.
+func (client *Client) SaveSession(sessions []Session) error {
 	tx, err := client.Beginx()
 
 	if err != nil {
@@ -57,43 +57,43 @@ func (client *Client) SaveHits(hits []Hit) error {
 		return err
 	}
 
-	for _, hit := range hits {
-		_, err := query.Exec(hit.Sign,
-			hit.ClientID,
-			hit.VisitorID,
-			hit.SessionID,
-			hit.Time,
-			hit.Start,
-			hit.DurationSeconds,
-			hit.Path,
-			hit.EntryPath,
-			hit.PageViews,
-			hit.IsBounce,
-			hit.Title,
-			hit.Language,
-			hit.CountryCode,
-			hit.City,
-			hit.Referrer,
-			hit.ReferrerName,
-			hit.ReferrerIcon,
-			hit.OS,
-			hit.OSVersion,
-			hit.Browser,
-			hit.BrowserVersion,
-			client.boolean(hit.Desktop),
-			client.boolean(hit.Mobile),
-			hit.ScreenWidth,
-			hit.ScreenHeight,
-			hit.ScreenClass,
-			hit.UTMSource,
-			hit.UTMMedium,
-			hit.UTMCampaign,
-			hit.UTMContent,
-			hit.UTMTerm)
+	for _, session := range sessions {
+		_, err := query.Exec(session.Sign,
+			session.ClientID,
+			session.VisitorID,
+			session.SessionID,
+			session.Time,
+			session.Start,
+			session.DurationSeconds,
+			session.Path,
+			session.EntryPath,
+			session.PageViews,
+			session.IsBounce,
+			session.Title,
+			session.Language,
+			session.CountryCode,
+			session.City,
+			session.Referrer,
+			session.ReferrerName,
+			session.ReferrerIcon,
+			session.OS,
+			session.OSVersion,
+			session.Browser,
+			session.BrowserVersion,
+			client.boolean(session.Desktop),
+			client.boolean(session.Mobile),
+			session.ScreenWidth,
+			session.ScreenHeight,
+			session.ScreenClass,
+			session.UTMSource,
+			session.UTMMedium,
+			session.UTMCampaign,
+			session.UTMContent,
+			session.UTMTerm)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save hits: %s", err)
+				client.logger.Printf("error rolling back transaction to save sessions: %s", err)
 			}
 
 			return err
@@ -206,18 +206,18 @@ func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*Hit, error) {
+func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*Session, error) {
 	query := `SELECT * FROM session WHERE client_id = ? AND visitor_id = ? AND time > ? ORDER BY time DESC LIMIT 1`
-	hit := new(Hit)
+	session := new(Session)
 
-	if err := client.DB.Get(hit, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
+	if err := client.DB.Get(session, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error reading session: %s", err)
 		return nil, err
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	}
 
-	return hit, nil
+	return session, nil
 }
 
 // Count implements the Store interface.

@@ -13,7 +13,7 @@ const (
 // SessionCacheMem caches sessions in memory.
 // This does only make sense for non-distributed systems (tracking on a single machine/app).
 type SessionCacheMem struct {
-	sessions    map[string]Hit
+	sessions    map[string]Session
 	maxSessions int
 	client      Store
 	m           sync.RWMutex
@@ -26,14 +26,14 @@ func NewSessionCacheMem(client Store, maxSessions int) *SessionCacheMem {
 	}
 
 	return &SessionCacheMem{
-		sessions:    make(map[string]Hit),
+		sessions:    make(map[string]Session),
 		maxSessions: maxSessions,
 		client:      client,
 	}
 }
 
 // Get implements the SessionCache interface.
-func (cache *SessionCacheMem) Get(clientID, fingerprint uint64, maxAge time.Time) *Hit {
+func (cache *SessionCacheMem) Get(clientID, fingerprint uint64, maxAge time.Time) *Session {
 	key := getSessionKey(clientID, fingerprint)
 	cache.m.RLock()
 	hit, ok := cache.sessions[key]
@@ -48,13 +48,13 @@ func (cache *SessionCacheMem) Get(clientID, fingerprint uint64, maxAge time.Time
 }
 
 // Put implements the SessionCache interface.
-func (cache *SessionCacheMem) Put(clientID, fingerprint uint64, hit *Hit) {
+func (cache *SessionCacheMem) Put(clientID, fingerprint uint64, hit *Session) {
 	key := getSessionKey(clientID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
 
 	if len(cache.sessions) >= cache.maxSessions {
-		cache.sessions = make(map[string]Hit)
+		cache.sessions = make(map[string]Session)
 	}
 
 	cache.sessions[key] = *hit
@@ -64,7 +64,7 @@ func (cache *SessionCacheMem) Put(clientID, fingerprint uint64, hit *Hit) {
 func (cache *SessionCacheMem) Clear() {
 	cache.m.Lock()
 	defer cache.m.Unlock()
-	cache.sessions = make(map[string]Hit)
+	cache.sessions = make(map[string]Session)
 }
 
 func getSessionKey(clientID, fingerprint uint64) string {

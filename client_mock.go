@@ -7,27 +7,27 @@ import (
 
 // ClientMock is a mock Store implementation.
 type ClientMock struct {
-	Hits          []Hit
+	Sessions      []Session
 	Events        []Event
 	UserAgents    []UserAgent
-	ReturnSession *Hit
+	ReturnSession *Session
 	m             sync.Mutex
 }
 
 // NewMockClient returns a new mock client.
 func NewMockClient() *ClientMock {
 	return &ClientMock{
-		Hits:       make([]Hit, 0),
+		Sessions:   make([]Session, 0),
 		Events:     make([]Event, 0),
 		UserAgents: make([]UserAgent, 0),
 	}
 }
 
-// SaveHits implements the Store interface.
-func (client *ClientMock) SaveHits(hits []Hit) error {
+// SaveSession implements the Store interface.
+func (client *ClientMock) SaveSession(sessions []Session) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.Hits = append(client.Hits, hits...)
+	client.Sessions = append(client.Sessions, sessions...)
 	return nil
 }
 
@@ -48,7 +48,7 @@ func (client *ClientMock) SaveUserAgents(userAgents []UserAgent) error {
 }
 
 // Session implements the Store interface.
-func (client *ClientMock) Session(clientID, fingerprint uint64, maxAge time.Time) (*Hit, error) {
+func (client *ClientMock) Session(clientID, fingerprint uint64, maxAge time.Time) (*Session, error) {
 	if client.ReturnSession != nil {
 		return client.ReturnSession, nil
 	}

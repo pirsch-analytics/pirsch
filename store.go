@@ -6,8 +6,8 @@ import (
 
 // Store is the database storage interface.
 type Store interface {
-	// SaveHits saves given hits.
-	SaveHits([]Hit) error
+	// SaveSession saves given sessions.
+	SaveSession([]Session) error
 
 	// SaveEvents saves given events.
 	SaveEvents([]Event) error
@@ -16,7 +16,7 @@ type Store interface {
 	SaveUserAgents([]UserAgent) error
 
 	// Session returns the last hit for given client, fingerprint, and maximum age.
-	Session(uint64, uint64, time.Time) (*Hit, error)
+	Session(uint64, uint64, time.Time) (*Session, error)
 
 	// Count returns the number of results for given query.
 	Count(string, ...interface{}) (int, error)

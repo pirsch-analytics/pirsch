@@ -94,7 +94,7 @@ type Tracker struct {
 	store                                     Store
 	sessionCache                              SessionCache
 	salt                                      string
-	hits                                      chan Hit
+	hits                                      chan Session
 	events                                    chan Event
 	userAgents                                chan UserAgent
 	stopped                                   int32
@@ -129,7 +129,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		store:                   client,
 		sessionCache:            config.SessionCache,
 		salt:                    salt,
-		hits:                    make(chan Hit, config.Worker*config.WorkerBufferSize),
+		hits:                    make(chan Session, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
 		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -146,7 +146,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 	return tracker
 }
 
-// Hit stores the given request.
+// Session stores the given request.
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // It's save (and recommended!) to call this function in its own goroutine.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
@@ -309,10 +309,10 @@ func (tracker *Tracker) stopWorker() {
 }
 
 // This function will make sure all dangling hits will be saved in database before shutdown.
-// Hits are buffered before saving.
+// Sessions are buffered before saving.
 // The same method is used for events and user agents.
 func (tracker *Tracker) flushHits() {
-	hits := make([]Hit, 0, tracker.workerBufferSize)
+	hits := make([]Session, 0, tracker.workerBufferSize)
 
 	for {
 		stop := false
@@ -338,7 +338,7 @@ func (tracker *Tracker) flushHits() {
 }
 
 func (tracker *Tracker) aggregateHits(ctx context.Context) {
-	hits := make([]Hit, 0, tracker.workerBufferSize)
+	hits := make([]Session, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -364,9 +364,9 @@ func (tracker *Tracker) aggregateHits(ctx context.Context) {
 	}
 }
 
-func (tracker *Tracker) saveHits(hits []Hit) {
+func (tracker *Tracker) saveHits(hits []Session) {
 	if len(hits) > 0 {
-		if err := tracker.store.SaveHits(hits); err != nil {
+		if err := tracker.store.SaveSession(hits); err != nil {
 			tracker.logger.Printf("error saving hits: %s", err)
 		}
 	}

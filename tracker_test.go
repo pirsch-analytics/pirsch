@@ -49,13 +49,13 @@ func TestTrackerHitTimeout(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
-	assert.Len(t, client.Hits, 2)
+	assert.Len(t, client.Sessions, 2)
 	assert.Len(t, client.UserAgents, 2)
 
 	// ignore order...
-	if client.Hits[0].Path != "/" && client.Hits[0].Path != "/hello-world" ||
-		client.Hits[1].Path != "/" && client.Hits[1].Path != "/hello-world" {
-		t.Fatalf("Hits not as expected: %v %v", client.Hits[0], client.Hits[1])
+	if client.Sessions[0].Path != "/" && client.Sessions[0].Path != "/hello-world" ||
+		client.Sessions[1].Path != "/" && client.Sessions[1].Path != "/hello-world" {
+		t.Fatalf("Sessions not as expected: %v %v", client.Sessions[0], client.Sessions[1])
 	}
 
 	if client.UserAgents[0].UserAgent != uaString1 && client.UserAgents[0].UserAgent != uaString2 ||
@@ -81,7 +81,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
-	assert.Len(t, client.Hits, 13)
+	assert.Len(t, client.Sessions, 13)
 	assert.Len(t, client.UserAgents, 1)
 }
 
@@ -102,7 +102,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, client.Hits, 9)
+	assert.Len(t, client.Sessions, 9)
 	assert.Len(t, client.UserAgents, 1)
 }
 
@@ -125,12 +125,12 @@ func TestTrackerHitCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, client.Hits, 2)
+	assert.Len(t, client.Sessions, 2)
 	assert.Len(t, client.UserAgents, 2)
 	foundGB := false
 	foundEmpty := false
 
-	for _, hit := range client.Hits {
+	for _, hit := range client.Sessions {
 		if hit.CountryCode == "gb" {
 			foundGB = true
 		} else if hit.CountryCode == "" {
@@ -154,9 +154,9 @@ func TestTrackerHitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, client.Hits, 3)
+	assert.Len(t, client.Sessions, 3)
 	assert.Len(t, client.UserAgents, 1)
-	assert.Equal(t, client.Hits[0].SessionID, client.Hits[1].SessionID)
+	assert.Equal(t, client.Sessions[0].SessionID, client.Sessions[1].SessionID)
 }
 
 func TestTrackerHitIgnoreSubdomain(t *testing.T) {
@@ -185,10 +185,10 @@ func TestTrackerHitIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-	assert.Len(t, client.Hits, 7)
+	assert.Len(t, client.Sessions, 7)
 	assert.Len(t, client.UserAgents, 1)
 
-	for _, hit := range client.Hits {
+	for _, hit := range client.Sessions {
 		assert.Empty(t, hit.Referrer)
 	}
 }
@@ -240,7 +240,7 @@ func TestTrackerEventTimeout(t *testing.T) {
 	// ignore order...
 	if client.Events[0].Path != "/" && client.Events[0].Path != "/hello-world" ||
 		client.Events[1].Path != "/" && client.Events[1].Path != "/hello-world" {
-		t.Fatalf("Hits not as expected: %v %v", client.Events[0], client.Events[1])
+		t.Fatalf("Sessions not as expected: %v %v", client.Events[0], client.Events[1])
 	}
 }
 
@@ -373,13 +373,13 @@ func TestTrackerExtendSession(t *testing.T) {
 	})
 	tracker.Hit(req, nil)
 	tracker.Flush()
-	assert.Len(t, client.Hits, 1)
-	at := client.Hits[0].Time
-	fingerprint := client.Hits[0].VisitorID
+	assert.Len(t, client.Sessions, 1)
+	at := client.Sessions[0].Time
+	fingerprint := client.Sessions[0].VisitorID
 	time.Sleep(time.Millisecond * 20)
 	tracker.ExtendSession(req, 0)
 	tracker.Flush()
-	assert.Len(t, client.Hits, 1)
+	assert.Len(t, client.Sessions, 1)
 	hit := sessionCache.Get(0, fingerprint, time.Now().UTC().Add(-time.Second))
 	assert.NotEqual(t, at, hit.Time)
 	assert.True(t, hit.Time.After(at))

@@ -33,7 +33,7 @@ func (options *EventOptions) getMetaData() ([]string, []string) {
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track events is to use the Tracker.
 // The options must be set!
-func EventFromRequest(r *http.Request, salt string, options *HitOptions) *Hit {
+func EventFromRequest(r *http.Request, salt string, options *HitOptions) *Session {
 	if options == nil {
 		return nil
 	}

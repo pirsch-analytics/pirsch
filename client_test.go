@@ -14,9 +14,9 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, client.DB.Ping())
 }
 
-func TestClient_SaveHit(t *testing.T) {
+func TestClient_SaveSession(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SaveSession([]Session{
 		{
 			Sign:            1,
 			ClientID:        1,
@@ -111,7 +111,7 @@ func TestClient_SaveUserAgents(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SaveSession([]Session{
 		{
 			Sign:      1,
 			ClientID:  1,

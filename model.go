@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// Hit represents a single data point/page visit and is the central entity of Pirsch.
-type Hit struct {
+// Session represents a single data point/page visit and is the central entity of Pirsch.
+type Session struct {
 	Sign            int8
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`
@@ -42,13 +42,13 @@ type Hit struct {
 }
 
 // String implements the Stringer interface.
-func (hit Hit) String() string {
-	out, _ := json.Marshal(hit)
+func (session Session) String() string {
+	out, _ := json.Marshal(session)
 	return string(out)
 }
 
 // Event represents a single data point for custom events.
-// It's basically the same as Hit, but with some additional fields (event name, time, and meta fields).
+// It's basically the same as Session, but with some additional fields (event name, time, and meta fields).
 type Event struct {
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`

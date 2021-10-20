@@ -27,7 +27,7 @@ func TestHitFromRequest(t *testing.T) {
 	hit := hits[0]
 	assert.Equal(t, 42, int(hit.ClientID))
 	assert.NotZero(t, hit.VisitorID)
-	assert.NoError(t, dbClient.SaveHits(hits))
+	assert.NoError(t, dbClient.SaveSession(hits))
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 30)
 	assert.Equal(t, uaString, ua.UserAgent)
 
@@ -55,7 +55,7 @@ func TestHitFromRequest(t *testing.T) {
 		hit.UTMCampaign != "newsletter" ||
 		hit.UTMContent != "signup" ||
 		hit.UTMTerm != "keywords" {
-		t.Fatalf("Hit not as expected: %v", hit)
+		t.Fatalf("Session not as expected: %v", hit)
 	}
 }
 
@@ -116,7 +116,7 @@ func TestHitFromRequestOverwrite(t *testing.T) {
 	})
 
 	if hit[0].Path != "/new/custom/path" {
-		t.Fatalf("Hit not as expected: %v", hit)
+		t.Fatalf("Session not as expected: %v", hit)
 	}
 }
 
@@ -130,7 +130,7 @@ func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	})
 
 	if hit[0].Path != "/new/custom/path" || hit[0].Referrer != "http://custom.ref" {
-		t.Fatalf("Hit not as expected: %v", hit)
+		t.Fatalf("Session not as expected: %v", hit)
 	}
 }
 
@@ -215,39 +215,39 @@ func TestIgnoreHitPrefetch(t *testing.T) {
 	req.Header.Set("X-Moz", "prefetch")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with X-Moz header must be ignored")
+		t.Fatal("Session with X-Moz header must be ignored")
 	}
 
 	req.Header.Del("X-Moz")
 	req.Header.Set("X-Purpose", "prefetch")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with X-Purpose header must be ignored")
+		t.Fatal("Session with X-Purpose header must be ignored")
 	}
 
 	req.Header.Set("X-Purpose", "preview")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with X-Purpose header must be ignored")
+		t.Fatal("Session with X-Purpose header must be ignored")
 	}
 
 	req.Header.Del("X-Purpose")
 	req.Header.Set("Purpose", "prefetch")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with Purpose header must be ignored")
+		t.Fatal("Session with Purpose header must be ignored")
 	}
 
 	req.Header.Set("Purpose", "preview")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with Purpose header must be ignored")
+		t.Fatal("Session with Purpose header must be ignored")
 	}
 
 	req.Header.Del("Purpose")
 
 	if IgnoreHit(req) {
-		t.Fatal("Hit must not be ignored")
+		t.Fatal("Session must not be ignored")
 	}
 }
 
@@ -256,37 +256,37 @@ func TestIgnoreHitUserAgent(t *testing.T) {
 	req.Header.Set("User-Agent", "This is a bot request")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with keyword in User-Agent must be ignored")
+		t.Fatal("Session with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "This is a crawler request")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with keyword in User-Agent must be ignored")
+		t.Fatal("Session with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "This is a spider request")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with keyword in User-Agent must be ignored")
+		t.Fatal("Session with keyword in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "Visit http://spam.com!")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with URL in User-Agent must be ignored")
+		t.Fatal("Session with URL in User-Agent must be ignored")
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/123.0")
 
 	if IgnoreHit(req) {
-		t.Fatal("Hit with regular User-Agent must not be ignored")
+		t.Fatal("Session with regular User-Agent must not be ignored")
 	}
 
 	req.Header.Set("User-Agent", "")
 
 	if !IgnoreHit(req) {
-		t.Fatal("Hit with empty User-Agent must be ignored")
+		t.Fatal("Session with empty User-Agent must be ignored")
 	}
 }
 
@@ -296,7 +296,7 @@ func TestIgnoreHitBotUserAgent(t *testing.T) {
 		req.Header.Set("User-Agent", botUserAgent)
 
 		if !IgnoreHit(req) {
-			t.Fatalf("Hit with user agent '%v' must have been ignored", botUserAgent)
+			t.Fatalf("Session with user agent '%v' must have been ignored", botUserAgent)
 		}
 	}
 }

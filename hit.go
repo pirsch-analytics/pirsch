@@ -71,11 +71,11 @@ type HitOptions struct {
 	geoDB *GeoDB
 }
 
-// HitFromRequest returns a new Hit for given request, salt and HitOptions.
+// HitFromRequest returns a new Session for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
 // The options must be set!
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Hit, *UserAgent) {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Session, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible, hits and sessions use UTC
 
 	if options == nil {
@@ -92,7 +92,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Hit, *
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 	hit := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-	hits := make([]Hit, 0, 2)
+	hits := make([]Session, 0, 2)
 	var ua *UserAgent
 
 	if hit == nil {
@@ -123,7 +123,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) ([]Hit, *
 			options.ScreenHeight = 0
 		}
 
-		hits = append(hits, Hit{
+		hits = append(hits, Session{
 			Sign:           1,
 			ClientID:       options.ClientID,
 			VisitorID:      fingerprint,
