@@ -675,10 +675,10 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT os,
 		os_version,
-		count(DISTINCT visitor_id) visitors,
+		uniq(visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT visitor_id)
-			FROM sessions
+			SELECT uniq(visitor_id)
+			FROM session
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
@@ -703,10 +703,10 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT browser,
 		browser_version,
-		count(DISTINCT visitor_id) visitors,
+		uniq(visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT visitor_id)
-			FROM sessions
+			SELECT uniq(visitor_id)
+			FROM session
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
@@ -897,10 +897,10 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
 	query := fmt.Sprintf(`SELECT "%s",
-		count(DISTINCT visitor_id) visitors,
+		uniq(visitor_id) visitors,
 		visitors / greatest((
-			SELECT count(DISTINCT visitor_id)
-			FROM sessions
+			SELECT uniq(visitor_id)
+			FROM session
 			WHERE %s
 		), 1) relative_visitors
 		FROM %s
