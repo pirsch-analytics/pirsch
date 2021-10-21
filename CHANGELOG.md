@@ -2,7 +2,8 @@
 
 ## 3.4.0
 
-* fixed counting unique visitors by hour
+* switched to CollapsingMergeTree in favor of materialized view (which didn't work)
+* rewrote all queries
 
 ## 3.3.2
 
