@@ -149,37 +149,22 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	table := filter.table()
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
 	query.WriteString(`SELECT uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions,
-		count(1) views `)
+		uniq(visitor_id, session_id) sessions, `)
 
 	if table == "session" {
-		query.WriteString(`, sum(is_bounce*sign) / IF(sessions = 0, 1, sessions) bounce_rate `)
+		query.WriteString(`sum(page_views) views,
+			countIf(is_bounce = 1) / IF(sessions = 0, 1, sessions) bounce_rate `)
+	} else {
+		query.WriteString(`count(1) views `)
 	}
 
-	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
+	baseArgs, baseQuery := filter.baseQuery()
+	query.WriteString(fmt.Sprintf(`FROM (%s)`, baseQuery))
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query.String(), args...); err != nil {
+	if err := analyzer.store.Get(current, query.String(), baseArgs...); err != nil {
 		return nil, err
 	}
 
@@ -206,17 +191,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	filterArgs, _ = filter.query()
-	args = make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-	}
-
-	args = append(args, filterArgs...)
+	baseArgs, _ = filter.baseQuery()
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query.String(), args...); err != nil {
+	if err := analyzer.store.Get(previous, query.String(), baseArgs...); err != nil {
 		return nil, err
 	}
 

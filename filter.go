@@ -391,6 +391,7 @@ func (filter *Filter) query() ([]interface{}, string) {
 	return args, query
 }
 
+// TODO add test
 func (filter *Filter) baseQuery() ([]interface{}, string) {
 	table := filter.table()
 	args := make([]interface{}, 0)
@@ -408,7 +409,7 @@ func (filter *Filter) baseQuery() ([]interface{}, string) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
-	if filter.Path != "" || filter.PathPattern != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
 		filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
 		innerFilterArgs, innerFilterQuery := filter.query()
