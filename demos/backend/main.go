@@ -21,7 +21,9 @@ func main() {
 
 	// Set up a default tracker with a salt.
 	// This will buffer and store hits and generate sessions by default.
-	tracker := pirsch.NewTracker(store, "salt", nil)
+	tracker := pirsch.NewTracker(store, "salt", &pirsch.TrackerConfig{
+		SessionCache: pirsch.NewSessionCacheMem(store, 100),
+	})
 
 	// Create a handler to serve traffic.
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	tracker := pirsch.NewTracker(store, "salt", nil)
+	tracker := pirsch.NewTracker(store, "salt", &pirsch.TrackerConfig{
+		SessionCache: pirsch.NewSessionCacheMem(store, 100),
+	})
 
 	// Create an endpoint to handle client tracking requests.
 	// HitOptionsFromRequest is a utility function to process the required parameters.
