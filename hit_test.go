@@ -142,6 +142,36 @@ func TestHitFromRequestSession(t *testing.T) {
 	assert.Equal(t, uint32(5), pageView2.DurationSeconds)
 }
 
+func TestHitFromRequestBounces(t *testing.T) {
+	cleanupDB()
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+	sessionCache := NewSessionCacheMem(dbClient, 100)
+	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
+	req.Header.Set("User-Agent", uaString)
+	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: sessionCache,
+	})
+	assert.Len(t, sessions, 1)
+	session1 := sessions[0]
+	assert.True(t, session1.IsBounce)
+
+	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: sessionCache,
+	})
+	assert.Len(t, sessions, 2)
+	assert.True(t, sessions[0].IsBounce)
+	assert.True(t, sessions[1].IsBounce)
+
+	req.URL.Path = "/different/path"
+	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+		SessionCache: sessionCache,
+	})
+	assert.Len(t, sessions, 2)
+	assert.True(t, sessions[0].IsBounce)
+	assert.False(t, sessions[1].IsBounce)
+}
+
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	_, session, _ := HitFromRequest(req, "salt", &HitOptions{
