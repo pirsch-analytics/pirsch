@@ -296,6 +296,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s v `, table))
 
+	// TODO base query
 	if table != "event" {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -507,6 +508,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 		), 1) cr
 		FROM %s v `, innerFilterQuery, table))
 
+	// TODO base query
 	if table == "page_view" && (filter.EntryPath != "" || filter.ExitPath != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -639,6 +641,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
+	// TODO base query
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -674,7 +677,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	args := make([]interface{}, 0, len(filterArgs)*3+len(innerFilterArgs)*3)
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT (
-			SELECT count(DISTINCT visitor_id)
+			SELECT uniq(visitor_id)
 			FROM %s s `, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
@@ -695,7 +698,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			AND mobile = 0
 		) AS "platform_desktop",
 		(
-			SELECT count(DISTINCT visitor_id)
+			SELECT uniq(visitor_id)
 			FROM %s s `, filterQuery, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
@@ -716,7 +719,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			AND mobile = 1
 		) AS "platform_mobile",
 		(
-			SELECT count(DISTINCT visitor_id)
+			SELECT uniq(visitor_id)
 			FROM %s s `, filterQuery, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
