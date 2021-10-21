@@ -320,7 +320,7 @@ func TestFilter_Fields(t *testing.T) {
 	filter.validate()
 
 	// exit_path not included
-	assert.Equal(t, "path,entry_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,desktop,mobile", filter.fields())
+	assert.Equal(t, "path,entry_path,exit_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,desktop,mobile", filter.fields())
 
 	filter.validate()
 	filter.EventName = "event"

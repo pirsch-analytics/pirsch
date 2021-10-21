@@ -302,6 +302,7 @@ func (filter *Filter) fields() string {
 
 	if filter.EventName == "" && !filter.eventFilter {
 		filter.appendField(&fields, "entry_path", filter.EntryPath)
+		filter.appendField(&fields, "exit_path", filter.ExitPath)
 	}
 
 	filter.appendField(&fields, "language", filter.Language)
