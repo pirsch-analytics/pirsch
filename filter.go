@@ -124,8 +124,11 @@ type Filter struct {
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
-	// IncludeTitle indicates whether the Analyzer.Pages, Analyzer.EntryPages, and Analyzer.ExitPages should contain the page title or not.
+	// IncludeTitle indicates that the Analyzer.Pages, Analyzer.EntryPages, and Analyzer.ExitPages should contain the page title.
 	IncludeTitle bool
+
+	// IncludeTimeOnPage indicates that the Analyzer.Pages and Analyzer.EntryPages should contain the average time on page.
+	IncludeTimeOnPage bool
 
 	// MaxTimeOnPageSeconds is an optional maximum for the time spent on page.
 	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.

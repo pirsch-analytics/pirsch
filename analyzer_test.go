@@ -303,7 +303,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(nil)
+	visitors, err := analyzer.Pages(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
@@ -333,20 +333,20 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.InDelta(t, 0.7, visitors[0].BounceRate, 0.01)
 	assert.InDelta(t, 0.25, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
-	/*assert.Equal(t, 300, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 440, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 390, visitors[2].AverageTimeSpentSeconds)*/
+	assert.Equal(t, 300, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 	top, err := analyzer.AvgTimeOnPage(nil)
 	assert.NoError(t, err)
 	assert.Len(t, top, 2)
 	assert.Equal(t, pastDay(4), top[0].Day)
 	assert.Equal(t, pastDay(2), top[1].Day)
-	/*assert.Equal(t, 150, top[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 600, top[1].AverageTimeSpentSeconds)*/
+	assert.Equal(t, 150, top[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, top[1].AverageTimeSpentSeconds)
 	ttop, err := analyzer.totalTimeOnPage(&Filter{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1500, ttop)
-	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true})
+	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
@@ -355,18 +355,18 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "Home", visitors[0].Title)
 	assert.Equal(t, "Bar", visitors[1].Title)
 	assert.Equal(t, "Foo", visitors[2].Title)
-	/*assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 600, visitors[2].AverageTimeSpentSeconds)*/
-	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
+	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1), IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, top, 3)
 	assert.Equal(t, pastDay(3), top[0].Day)
 	assert.Equal(t, pastDay(2), top[1].Day)
 	assert.Equal(t, pastDay(1), top[2].Day)
-	/*assert.Equal(t, 0, top[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, top[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, top[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, top[2].AverageTimeSpentSeconds)*/
+	assert.Equal(t, 0, top[2].AverageTimeSpentSeconds)
 	ttop, err = analyzer.totalTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
 	assert.NoError(t, err)
 	assert.Equal(t, 1200, ttop)
@@ -388,7 +388,7 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
@@ -398,27 +398,27 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true})
+	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Foo", visitors[0].Title)
 	assert.Equal(t, "Home 1", visitors[1].Title)
 	assert.Equal(t, "Home 2", visitors[2].Title)
 	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
-	//assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{Name: "event", VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true})
+	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Foo", visitors[0].Title)
@@ -426,7 +426,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	assert.Equal(t, "Home 2", visitors[2].Title)
 	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
-	//assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
@@ -458,7 +458,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	entries, err := analyzer.EntryPages(nil)
+	entries, err := analyzer.EntryPages(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/", entries[0].Path)
@@ -473,9 +473,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 2, entries[1].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
-	/*assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)*/
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true})
+	assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/", entries[0].Path)
@@ -488,16 +488,16 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 2, entries[1].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
-	/*assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)*/
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), EntryPath: "/"})
+	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), EntryPath: "/", IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, 3, entries[0].Visitors)
 	assert.Equal(t, 3, entries[0].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
-	//assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	_, err = analyzer.EntryPages(getMaxFilter(""))
 	assert.NoError(t, err)
 	exits, err := analyzer.ExitPages(nil)
@@ -1540,6 +1540,38 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 3, total[1].Sessions)
 	assert.Equal(t, 1, total[2].Sessions)
 	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""))
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_avgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, Time: Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
+		{VisitorID: 1, Time: Today().Add(time.Minute * 2).Add(time.Second * 23), Path: "/bar", DurationSeconds: 23},
+
+		{VisitorID: 2, Time: Today(), Path: "/bar"},
+		{VisitorID: 2, Time: Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
+		{VisitorID: 2, Time: Today().Add(time.Second * 16).Add(time.Second * 8), Path: "/", DurationSeconds: 8},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/bar"},
+		{Sign: 1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.avgTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 3)
+	paths := []string{stats[0].Path, stats[1].Path, stats[2].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	top := []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, (23+8)/2)
+	assert.Contains(t, top, 16)
+	_, err = analyzer.avgTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)
 }
 

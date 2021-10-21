@@ -26,6 +26,11 @@ type totalVisitorSessionStats struct {
 	Sessions int
 }
 
+type avgTimeSpentStats struct {
+	Path                    string
+	AverageTimeSpentSeconds int `db:"average_time_spent_seconds"`
+}
+
 // Analyzer provides an interface to analyze statistics.
 type Analyzer struct {
 	store Store
@@ -344,11 +349,10 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 				SELECT count(1) views
 				FROM event
 				WHERE %s
-			), 1) relative_views `, innerFilterQuery))
+			), 1) relative_views,
+			ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds `, innerFilterQuery))
 	}
 
-	// TODO
-	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 	query.WriteString(fmt.Sprintf(`FROM %s v `, table))
 
 	if table != "event" {
@@ -373,14 +377,28 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		return nil, err
 	}
 
+	if filter.IncludeTimeOnPage && table == "page_view" {
+		top, err := analyzer.avgTimeOnPage(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range stats {
+			for j := range top {
+				if stats[i].Path == top[j].Path {
+					stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
+					break
+				}
+			}
+		}
+	}
+
 	return stats, nil
 }
 
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
-	// TODO
-	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
-
 	filter = analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
@@ -436,6 +454,23 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 				stats[i].Sessions = total[j].Sessions
 				stats[i].EntryRate = float64(stats[i].Entries) / float64(total[j].Sessions)
 				break
+			}
+		}
+	}
+
+	if filter.IncludeTimeOnPage {
+		top, err := analyzer.avgTimeOnPage(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range stats {
+			for j := range top {
+				if stats[i].Path == top[j].Path {
+					stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
+					break
+				}
 			}
 		}
 	}
@@ -1054,7 +1089,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT day,
-		toUInt64(avg(time_on_page)) average_time_spent_seconds
+		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
 			SELECT day,
 			%s time_on_page
@@ -1082,7 +1117,6 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	args = append(args, fieldArgs...)
 	args = append(args, withFillArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
-				GROUP BY visitor_id, session_id, time, duration_seconds %s
 				ORDER BY visitor_id, session_id, time
 			)
 			WHERE time_on_page > 0
@@ -1091,7 +1125,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		)
 		GROUP BY day
 		ORDER BY day
-		%s`, timeQuery, fieldsQuery, fieldQuery, withFillQuery))
+		%s`, timeQuery, fieldQuery, withFillQuery))
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
@@ -1229,6 +1263,73 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 	}
 
 	return stats.AverageTimeSpentSeconds, nil
+}
+
+// TODO optimize filtering for paths
+func (analyzer *Analyzer) avgTimeOnPage(filter *Filter) ([]avgTimeSpentStats, error) {
+	filter = analyzer.getFilter(filter)
+
+	if filter.table() == "event" {
+		return []avgTimeSpentStats{}, nil
+	}
+
+	timeArgs, timeQuery := filter.queryTime()
+	fieldArgs, fieldQuery := filter.queryFields()
+
+	if len(fieldArgs) > 0 {
+		fieldQuery = "AND " + fieldQuery
+	}
+
+	fieldsQuery := filter.fields()
+
+	if fieldsQuery != "" {
+		fieldsQuery = "," + fieldsQuery
+	}
+
+	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
+	var query strings.Builder
+	query.WriteString(fmt.Sprintf(`SELECT path,
+		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
+		FROM (
+			SELECT path,
+			%s time_on_page
+			FROM (
+				SELECT session_id,
+				path,
+				duration_seconds
+				%s
+				FROM page_view v `, analyzer.timeOnPageQuery(filter), fieldsQuery))
+
+	if filter.EntryPath != "" || filter.ExitPath != "" {
+		args = append(args, timeArgs...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (
+			SELECT visitor_id,
+			session_id,
+			entry_path,
+			exit_path
+			FROM session
+			WHERE %s
+		) s
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
+	}
+
+	args = append(args, timeArgs...)
+	args = append(args, fieldArgs...)
+	query.WriteString(fmt.Sprintf(`WHERE %s
+				ORDER BY visitor_id, session_id, time
+			)
+			WHERE time_on_page > 0
+			AND session_id = neighbor(session_id, 1, null)
+			%s
+		)
+		GROUP BY path`, timeQuery, fieldQuery))
+	var stats []avgTimeSpentStats
+
+	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
