@@ -110,46 +110,28 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	withFillArgs, withFillQuery := filter.withFill()
-	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
+	query.WriteString(`SELECT day,
 		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions `, filter.Timezone.String()))
+		uniq(visitor_id, session_id) sessions `)
 
-	if table == "session" {
-		query.WriteString(`,sum(page_views*sign) views,
-			sum(is_bounce*sign) bounces,
+	if filter.table() == "session" {
+		query.WriteString(`,sum(page_views) views,
+			countIf(is_bounce = 1) bounces,
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	} else {
 		query.WriteString(`,count(1) views `)
 	}
 
-	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
-
-	if filter.Path != "" || filter.PathPattern != "" {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	args = append(args, withFillArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
+	baseArgs, baseQuery := filter.baseQuery()
+	withFillArgs, withFillQuery := filter.withFill()
+	baseArgs = append(baseArgs, withFillArgs...)
+	query.WriteString(fmt.Sprintf(`FROM (%s)
 		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, filterQuery, withFillQuery))
+		ORDER BY day ASC %s, visitors DESC`, baseQuery, withFillQuery))
 	var stats []VisitorStats
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Select(&stats, query.String(), baseArgs...); err != nil {
 		return nil, err
 	}
 
