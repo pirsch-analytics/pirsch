@@ -396,9 +396,9 @@ func (filter *Filter) baseQuery() ([]interface{}, string) {
 	table := filter.table()
 	args := make([]interface{}, 0)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT visitor_id,
+	query.WriteString(`SELECT visitor_id,
 		session_id,
-		toDate(time, '%s') day `, filter.Timezone.String()))
+		time `)
 
 	if table == "session" {
 		query.WriteString(`,sum(page_views*sign) page_views,

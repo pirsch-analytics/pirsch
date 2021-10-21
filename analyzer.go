@@ -111,9 +111,9 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
 	var query strings.Builder
-	query.WriteString(`SELECT day,
+	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
 		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions `)
+		uniq(visitor_id, session_id) sessions `, filter.Timezone.String()))
 
 	if filter.table() == "session" {
 		query.WriteString(`,sum(page_views) views,
@@ -224,34 +224,15 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT toHour(time, '%s') hour,
+	baseArgs, baseQuery := filter.baseQuery()
+	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour,
 		uniq(visitor_id) visitors
-		FROM %s s `, filter.Timezone.String(), table))
-
-	if filter.Path != "" || filter.PathPattern != "" {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
+		FROM (%s)
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filterQuery))
+		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), baseQuery)
 	var stats []VisitorHourStats
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, baseArgs...); err != nil {
 		return nil, err
 	}
 
