@@ -1524,7 +1524,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	total, err := analyzer.totalVisitorsSessions(nil)
+	total, err := analyzer.totalVisitorsSessions(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	assert.Len(t, total, 3)
 	assert.Equal(t, "/foo", total[0].Path)
@@ -1539,7 +1539,14 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 4, total[0].Sessions)
 	assert.Equal(t, 3, total[1].Sessions)
 	assert.Equal(t, 1, total[2].Sessions)
-	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""))
+	total, err = analyzer.totalVisitorsSessions(nil, []string{"/"})
+	assert.NoError(t, err)
+	assert.Len(t, total, 1)
+	assert.Equal(t, "/", total[0].Path)
+	assert.Equal(t, 3, total[0].Views)
+	assert.Equal(t, 3, total[0].Visitors)
+	assert.Equal(t, 3, total[0].Sessions)
+	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 }
 
@@ -1560,7 +1567,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	stats, err := analyzer.avgTimeOnPage(nil)
+	stats, err := analyzer.avgTimeOnPage(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 3)
 	paths := []string{stats[0].Path, stats[1].Path, stats[2].Path}
@@ -1571,7 +1578,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, 120)
 	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
-	_, err = analyzer.avgTimeOnPage(getMaxFilter(""))
+	_, err = analyzer.avgTimeOnPage(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 }
 
