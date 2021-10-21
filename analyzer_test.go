@@ -558,23 +558,23 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/"},
-		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page"},
-		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/"},
-		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/"},
-		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes"},
+		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/", PageViews: 1},
+		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page", PageViews: 1},
+		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/", PageViews: 1},
+		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/", PageViews: 2},
+		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.PageConversions(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
-	assert.Equal(t, 6, stats.Views)
+	assert.Equal(t, 5, stats.Views)
 	assert.InDelta(t, 1, stats.CR, 0.01)
 	stats, err = analyzer.PageConversions(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 3, stats.Views)
+	assert.Equal(t, 5, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
 	_, err = analyzer.PageConversions(getMaxFilter(""))
 	assert.NoError(t, err)

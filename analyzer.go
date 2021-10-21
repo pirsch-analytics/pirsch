@@ -123,7 +123,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		query.WriteString(`,count(1) views `)
 	}
 
-	baseArgs, baseQuery := filter.baseQuery()
+	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
 	withFillArgs, withFillQuery := filter.withFill()
 	baseArgs = append(baseArgs, withFillArgs...)
 	query.WriteString(fmt.Sprintf(`FROM (%s)
@@ -160,7 +160,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		query.WriteString(`count(1) views `)
 	}
 
-	baseArgs, baseQuery := filter.baseQuery()
+	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
 	query.WriteString(fmt.Sprintf(`FROM (%s)`, baseQuery))
 	current := new(growthStats)
 
@@ -191,7 +191,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	baseArgs, _ = filter.baseQuery()
+	baseArgs, _ = analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
 	previous := new(growthStats)
 
 	if err := analyzer.store.Get(previous, query.String(), baseArgs...); err != nil {
@@ -224,7 +224,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	filter = analyzer.getFilter(filter)
-	baseArgs, baseQuery := filter.baseQuery()
+	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
 	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour,
 		uniq(visitor_id) visitors
 		FROM (%s)
@@ -244,27 +244,22 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	title := filter.groupByTitle()
-	entryPath := filter.EntryPath
-	exitPath := filter.ExitPath
-	filter.EntryPath = ""
-	filter.ExitPath = ""
-	outerFilterArgs, outerFilterQuery := filter.query()
-	filter.EntryPath = entryPath
-	filter.ExitPath = exitPath
+	fields := []string{"visitor_id", "session_id", "path"}
+
+	if filter.IncludeTitle {
+		fields = append(fields, "title")
+	}
+
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	filter.Path = ""
 	filter.PathPattern = ""
 	innerFilterArgs, innerFilterQuery := filter.query()
 	filter.EventName = ""
 	visitorsFilterArgs, visitorsFilterQuery := filter.query()
-	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(visitorsFilterArgs)+len(outerFilterArgs))
+	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(visitorsFilterArgs)+len(baseArgs))
 	args = append(args, visitorsFilterArgs...)
 	args = append(args, innerFilterArgs...)
-
-	if table == "session" {
-		args = append(args, innerFilterArgs...)
-	}
-
-	args = append(args, outerFilterArgs...)
+	args = append(args, baseArgs...)
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path %s,
 		uniq(visitor_id) visitors,
@@ -273,12 +268,11 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
-		), 1) relative_visitors,
-		count(1) views, `, title, visitorsFilterQuery))
+		), 1) relative_visitors, `, title, visitorsFilterQuery))
 
 	if table == "session" {
-		table = "page_view"
-		query.WriteString(fmt.Sprintf(`views / greatest((
+		query.WriteString(fmt.Sprintf(`sum(page_views) views,
+			views / greatest((
 				SELECT sum(page_views*sign) views
 				FROM session
 				WHERE %s
@@ -286,7 +280,8 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			sum(is_bounce) bounces,
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `, innerFilterQuery))
 	} else {
-		query.WriteString(fmt.Sprintf(`views / greatest((
+		query.WriteString(fmt.Sprintf(`count(1) views,
+			views / greatest((
 				SELECT count(1) views
 				FROM event
 				WHERE %s
@@ -294,32 +289,17 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 			ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds `, innerFilterQuery))
 	}
 
-	query.WriteString(fmt.Sprintf(`FROM %s v `, table))
-
-	// TODO base query
-	if table != "event" {
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			sum(is_bounce*sign) is_bounce
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	query.WriteString(fmt.Sprintf(`WHERE %s
+	query.WriteString(fmt.Sprintf(`FROM (%s)
 		GROUP BY path %s
 		ORDER BY visitors DESC %s, path
-		%s`, outerFilterQuery, title, title, filter.withLimit()))
+		%s`, baseQuery, title, title, filter.withLimit()))
 	var stats []PageStats
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Select(&stats, strings.Replace(query.String(), "sum(page_views*sign) page_views", "count(1) page_views", 1), args...); err != nil {
 		return nil, err
 	}
 
-	if filter.IncludeTimeOnPage && table == "page_view" {
+	if filter.IncludeTimeOnPage && table == "session" {
 		top, err := analyzer.avgTimeOnPage(filter)
 
 		if err != nil {
@@ -488,47 +468,29 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
-	table := filter.table()
+	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id"})
+	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	innerFilterArgs = append(innerFilterArgs, baseArgs...)
+	var query strings.Builder
+	query.WriteString(`SELECT uniq(visitor_id) visitors, `)
 
-	if table == "session" {
-		table = "page_view"
+	if filter.table() == "session" {
+		query.WriteString(`sum(page_views) views, `)
+	} else {
+		query.WriteString(`count(1) views, `)
 	}
 
-	outerFilterArgs, outerFilterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(outerFilterArgs))
-	args = append(args, innerFilterArgs...)
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT uniq(visitor_id) visitors,
-		count(1) views,
-		visitors / greatest((
+	query.WriteString(fmt.Sprintf(`visitors / greatest((
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
 		), 1) cr
-		FROM %s v `, innerFilterQuery, table))
-
-	// TODO base query
-	if table == "page_view" && (filter.EntryPath != "" || filter.ExitPath != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, outerFilterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
+		FROM (%s)
 		ORDER BY visitors DESC
-		%s`, outerFilterQuery, filter.withLimit()))
+		%s`, innerFilterQuery, baseQuery, filter.withLimit()))
 	stats := new(PageConversionsStats)
 
-	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Get(stats, query.String(), innerFilterArgs...); err != nil {
 		return nil, err
 	}
 
@@ -609,10 +571,7 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
-	outerFilterArgs, outerFilterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(outerFilterArgs))
-	args = append(args, innerFilterArgs...)
 	ref := ""
 	groupSortRef := ""
 
@@ -635,30 +594,24 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		), 1) relative_visitors `, ref, innerFilterQuery))
 
 	if table == "session" {
-		query.WriteString(`, sum(is_bounce*sign) bounces,
+		query.WriteString(`, countIf(is_bounce = 1) bounces,
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	}
 
-	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
+	fields := []string{"visitor_id", "session_id", "time", "referrer_name", "referrer_icon"}
 
-	// TODO base query
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+	if ref != "" {
+		fields = append(fields, "referrer")
 	}
 
-	args = append(args, outerFilterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	args := make([]interface{}, 0, len(innerFilterArgs)+len(baseArgs))
+	args = append(args, innerFilterArgs...)
+	args = append(args, baseArgs...)
+	query.WriteString(fmt.Sprintf(`FROM (%s)
 		GROUP BY referrer_name %s
 		ORDER BY visitors DESC, referrer_name %s
-		%s`, outerFilterQuery, groupSortRef, groupSortRef, filter.withLimit()))
+		%s`, baseQuery, groupSortRef, groupSortRef, filter.withLimit()))
 	var stats []ReferrerStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
@@ -1345,6 +1298,55 @@ func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) floa
 	c := current
 	p := previous
 	return (c - p) / p
+}
+
+func (analyzer *Analyzer) baseQuery(filter *Filter, fields []string) ([]interface{}, string) {
+	table := filter.table()
+	args := make([]interface{}, 0)
+	fieldQuery := strings.Join(fields, ",")
+	var query strings.Builder
+	query.WriteString(fmt.Sprintf(`SELECT %s `, fieldQuery))
+
+	if table == "session" {
+		query.WriteString(`,sum(page_views*sign) page_views,
+			any(is_bounce*sign) is_bounce `)
+	} else {
+		query.WriteString(`,count(1) views `)
+	}
+
+	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
+
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "" || analyzer.contains(fields, "path")) {
+		entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
+		filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
+		innerFilterArgs, innerFilterQuery := filter.query()
+		filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
+		args = append(args, innerFilterArgs...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (
+			SELECT visitor_id,
+			session_id,
+			path
+			FROM page_view
+			WHERE %s
+		) v
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+	}
+
+	filterArgs, filterQuery := filter.query()
+	args = append(args, filterArgs...)
+	query.WriteString(fmt.Sprintf(`WHERE %s
+		GROUP BY %s`, filterQuery, fieldQuery))
+	return args, query.String()
+}
+
+func (analyzer *Analyzer) contains(haystack []string, needle string) bool {
+	for i := range haystack {
+		if haystack[i] == needle {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

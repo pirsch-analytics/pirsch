@@ -391,47 +391,6 @@ func (filter *Filter) query() ([]interface{}, string) {
 	return args, query
 }
 
-// TODO add test
-func (filter *Filter) baseQuery() ([]interface{}, string) {
-	table := filter.table()
-	args := make([]interface{}, 0)
-	var query strings.Builder
-	query.WriteString(`SELECT visitor_id,
-		session_id,
-		time `)
-
-	if table == "session" {
-		query.WriteString(`,sum(page_views*sign) page_views,
-			any(is_bounce*sign) is_bounce `)
-	} else {
-		query.WriteString(`,count(1) views `)
-	}
-
-	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
-		filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
-		innerFilterArgs, innerFilterQuery := filter.query()
-		filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	filterArgs, filterQuery := filter.query()
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY visitor_id, session_id, time`, filterQuery))
-	return args, query.String()
-}
-
 func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
 		if strings.HasPrefix(value, "!") {
