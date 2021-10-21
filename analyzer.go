@@ -130,7 +130,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
-	if filter.Path != "" {
+	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -181,7 +181,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -227,7 +227,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	filterArgs, _ = filter.query()
 	args = make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 	}
 
@@ -273,7 +273,7 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 		uniq(visitor_id) visitors
 		FROM %s s `, filter.Timezone.String(), table))
 
-	if filter.Path != "" {
+	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -698,7 +698,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -736,7 +736,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT visitor_id)
 			FROM %s s `, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -757,7 +757,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT visitor_id)
 			FROM %s s `, filterQuery, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -778,7 +778,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			SELECT count(DISTINCT visitor_id)
 			FROM %s s `, filterQuery, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -948,7 +948,7 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		), 1) relative_visitors
 		FROM %s v `, innerFilterQuery, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -993,7 +993,7 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		), 1) relative_visitors
 		FROM %s v `, innerFilterQuery, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -1036,7 +1036,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
 		FROM session s `)
 
-	if filter.Path != "" {
+	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -1170,7 +1170,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 			SELECT max(duration_seconds) duration_seconds
 			FROM session s `)
 
-	if filter.Path != "" {
+	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -1359,7 +1359,7 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		), 1) relative_visitors
 		FROM %s v `, attr, innerFilterQuery, table))
 
-	if table == "session" && filter.Path != "" {
+	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestTrackerConfigValidate(t *testing.T) {
+func TestTrackerConfig_Validate(t *testing.T) {
 	cfg := &TrackerConfig{}
 	cfg.validate()
 	assert.Equal(t, runtime.NumCPU(), cfg.Worker)
@@ -36,7 +36,7 @@ func TestTrackerConfigValidate(t *testing.T) {
 	assert.Equal(t, maxWorkerTimeout, cfg.WorkerTimeout)
 }
 
-func TestTrackerHitTimeout(t *testing.T) {
+func TestTracker_HitTimeout(t *testing.T) {
 	uaString1 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0"
 	uaString2 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/88.0"
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -67,7 +67,7 @@ func TestTrackerHitTimeout(t *testing.T) {
 	assert.Len(t, sessionCache.sessions, 0)
 }
 
-func TestTrackerHitLimit(t *testing.T) {
+func TestTracker_HitLimit(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
@@ -86,7 +86,7 @@ func TestTrackerHitLimit(t *testing.T) {
 	assert.Len(t, client.UserAgents, 1)
 }
 
-func TestTrackerHitDiscard(t *testing.T) {
+func TestTracker_HitDiscard(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
@@ -108,7 +108,7 @@ func TestTrackerHitDiscard(t *testing.T) {
 	assert.Len(t, client.UserAgents, 1)
 }
 
-func TestTrackerHitCountryCode(t *testing.T) {
+func TestTracker_HitCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
@@ -145,7 +145,7 @@ func TestTrackerHitCountryCode(t *testing.T) {
 	assert.True(t, foundEmpty)
 }
 
-func TestTrackerHitSession(t *testing.T) {
+func TestTracker_HitSession(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
@@ -163,7 +163,7 @@ func TestTrackerHitSession(t *testing.T) {
 	assert.Equal(t, client.Sessions[0].SessionID, client.Sessions[1].SessionID)
 }
 
-func TestTrackerHitIgnoreSubdomain(t *testing.T) {
+func TestTracker_HitIgnoreSubdomain(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
@@ -198,7 +198,7 @@ func TestTrackerHitIgnoreSubdomain(t *testing.T) {
 	}
 }
 
-func TestTrackerEvent(t *testing.T) {
+func TestTracker_Event(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	client := NewMockClient()
@@ -222,7 +222,7 @@ func TestTrackerEvent(t *testing.T) {
 	assert.Contains(t, client.Events[0].MetaValues, "data")
 }
 
-func TestTrackerEventTimeout(t *testing.T) {
+func TestTracker_EventTimeout(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
@@ -249,7 +249,7 @@ func TestTrackerEventTimeout(t *testing.T) {
 	}
 }
 
-func TestTrackerEventLimit(t *testing.T) {
+func TestTracker_EventLimit(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
@@ -272,7 +272,7 @@ func TestTrackerEventLimit(t *testing.T) {
 	assert.Len(t, client.UserAgents, 1)
 }
 
-func TestTrackerEventDiscard(t *testing.T) {
+func TestTracker_EventDiscard(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		Worker:           1,
@@ -298,7 +298,7 @@ func TestTrackerEventDiscard(t *testing.T) {
 	assert.Len(t, client.UserAgents, 1)
 }
 
-func TestTrackerEventCountryCode(t *testing.T) {
+func TestTracker_EventCountryCode(t *testing.T) {
 	geoDB, err := NewGeoDB(GeoDBConfig{
 		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
 	})
@@ -341,7 +341,7 @@ func TestTrackerEventCountryCode(t *testing.T) {
 	assert.True(t, foundEmpty)
 }
 
-func TestTrackerEventSession(t *testing.T) {
+func TestTracker_EventSession(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
 	req1.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 	req2 := httptest.NewRequest(http.MethodGet, "/hello-world", nil)
@@ -365,7 +365,7 @@ func TestTrackerEventSession(t *testing.T) {
 	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
 }
 
-func TestTrackerExtendSession(t *testing.T) {
+func TestTracker_ExtendSession(t *testing.T) {
 	cleanupDB()
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCacheMem(dbClient, 100)
@@ -390,7 +390,7 @@ func TestTrackerExtendSession(t *testing.T) {
 	assert.True(t, hit.Time.After(at))
 }
 
-func TestTrackerEventIgnoreSubdomain(t *testing.T) {
+func TestTracker_EventIgnoreSubdomain(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
 		WorkerTimeout: time.Second,
