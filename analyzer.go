@@ -176,7 +176,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
 
-	if filter.Path != "" {
+	if table == "session" && filter.Path != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -222,7 +222,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	filterArgs, _ = filter.query()
 	args = make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
 
-	if filter.Path != "" {
+	if table == "session" && filter.Path != "" {
 		args = append(args, innerFilterArgs...)
 	}
 
