@@ -14,9 +14,9 @@ func TestNewClient(t *testing.T) {
 	assert.NoError(t, client.DB.Ping())
 }
 
-func TestClient_SaveHit(t *testing.T) {
+func TestClient_SavePageViews(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -24,9 +24,6 @@ func TestClient_SaveHit(t *testing.T) {
 			SessionID:       rand.Uint32(),
 			DurationSeconds: 42,
 			Path:            "/path",
-			EntryPath:       "/entry-path",
-			PageViews:       7,
-			IsBounce:        true,
 			Title:           "title",
 			Language:        "en",
 			Referrer:        "ref",
@@ -52,7 +49,48 @@ func TestClient_SaveHit(t *testing.T) {
 	}))
 }
 
-func TestClient_SaveEvent(t *testing.T) {
+func TestClient_SaveSessions(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{
+			Sign:            1,
+			ClientID:        1,
+			VisitorID:       1,
+			Time:            time.Now(),
+			Start:           time.Now(),
+			SessionID:       rand.Uint32(),
+			DurationSeconds: 42,
+			EntryPath:       "/entry-path",
+			ExitPath:        "/exit-path",
+			PageViews:       7,
+			IsBounce:        true,
+			Title:           "title",
+			Language:        "en",
+			Referrer:        "ref",
+			ReferrerName:    "ref_name",
+			ReferrerIcon:    "ref_icon",
+			OS:              "os",
+			OSVersion:       "10",
+			Browser:         "browser",
+			BrowserVersion:  "89",
+			CountryCode:     "en",
+			City:            "London",
+			Desktop:         true,
+			Mobile:          false,
+			ScreenWidth:     1920,
+			ScreenHeight:    1080,
+			ScreenClass:     "XL",
+		},
+		{
+			Sign:      -1,
+			VisitorID: 1,
+			Time:      time.Now().UTC(),
+			ExitPath:  "/path",
+		},
+	}))
+}
+
+func TestClient_SaveEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{
@@ -108,31 +146,34 @@ func TestClient_SaveUserAgents(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	cleanupDB()
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{
+			Sign:      1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 20),
 			SessionID: rand.Uint32(),
-			Path:      "/path1",
+			ExitPath:  "/path1",
 			EntryPath: "/entry1",
 			PageViews: 2,
 		},
 		{
+			Sign:      -1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now,
 			SessionID: 123456,
-			Path:      "/path2",
+			ExitPath:  "/path2",
 			EntryPath: "/entry2",
 			PageViews: 3,
 		},
 		{
+			Sign:      -1,
 			ClientID:  1,
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 10),
 			SessionID: rand.Uint32(),
-			Path:      "/path3",
+			ExitPath:  "/path3",
 			EntryPath: "/entry3",
 			PageViews: 4,
 		},
@@ -141,7 +182,7 @@ func TestClient_Session(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, now.Unix(), session.Time.Unix())
 	assert.Equal(t, uint32(123456), session.SessionID)
-	assert.Equal(t, "/path2", session.Path)
+	assert.Equal(t, "/path2", session.ExitPath)
 	assert.Equal(t, "/entry2", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
 }

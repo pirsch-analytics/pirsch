@@ -8,7 +8,7 @@ import (
 
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar"},
@@ -16,6 +16,12 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
 		{VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home"},
 		{VisitorID: 4, Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), ExitPath: "/bar", Title: "Bar"},
+		{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), ExitPath: "/foo", Title: "Foo"},
+		{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), ExitPath: "/", Title: "Home"},
+		{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), ExitPath: "/", Title: "Home"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -51,21 +57,18 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-		{VisitorID: 1, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 41, Path: "/bar", PageViews: 1, IsBounce: true},
-		{VisitorID: 3, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 4, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 5, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-		{VisitorID: 6, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
-		{VisitorID: 7, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 8, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 9, Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/foo", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+		{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 41, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+		{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
+		{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 9, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -137,24 +140,20 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 
 func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-		{VisitorID: 2, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 3, Time: pastDay(4), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 4, Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, Path: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{VisitorID: 4, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 5, Time: pastDay(3), SessionID: 3, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 5, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, Path: "/bar", PageViews: 1, IsBounce: true},
-		{VisitorID: 6, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 7, Time: pastDay(3), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 8, Time: pastDay(2), SessionID: 2, Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 8, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-		{VisitorID: 9, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 10, Time: pastDay(2), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 11, Time: Today(), Path: "/", PageViews: 1, IsBounce: true},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+		{Sign: 1, VisitorID: 2, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+		{Sign: 1, VisitorID: 4, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 5, Time: pastDay(3), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 5, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 6, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 7, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 8, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+		{Sign: 1, VisitorID: 9, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 10, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 11, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -165,7 +164,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, -0.2, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
@@ -173,10 +172,10 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0.1666, growth.BouncesGrowth, 0.001)
-	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	_, err = analyzer.Growth(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Growth(getMaxFilter("event"))
@@ -236,45 +235,28 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(2), Path: "/"},
-		{VisitorID: 1, Time: pastDay(2), Path: "/"},
-		{VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
-		{VisitorID: 2, Time: pastDay(2).Add(time.Hour * 5), Path: "/"},
-		{VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
-		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
-		{VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
-		{VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
-		{VisitorID: 6, Time: Today().Add(time.Hour * 3), Path: "/"},
-		{VisitorID: 6, Time: Today().Add(time.Hour * 5), Path: "/"},
-		{VisitorID: 7, Time: Today().Add(time.Hour * 10), Path: "/"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/"},
+		{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), ExitPath: "/"},
+		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), ExitPath: "/"},
+		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), ExitPath: "/"},
+		{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), ExitPath: "/"},
+		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), ExitPath: "/"},
+		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), ExitPath: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.VisitorHours(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
-	assert.Equal(t, 0, visitors[0].Hour)
-	assert.Equal(t, 3, visitors[3].Hour)
-	assert.Equal(t, 4, visitors[4].Hour)
-	assert.Equal(t, 5, visitors[5].Hour)
-	assert.Equal(t, 8, visitors[8].Hour)
-	assert.Equal(t, 10, visitors[10].Hour)
-	assert.Equal(t, 1, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
-	assert.Equal(t, 3, visitors[5].Visitors)
+	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 2, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
 	visitors, err = analyzer.VisitorHours(&Filter{From: pastDay(1), To: Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
-	assert.Equal(t, 3, visitors[3].Hour)
-	assert.Equal(t, 4, visitors[4].Hour)
-	assert.Equal(t, 5, visitors[5].Hour)
-	assert.Equal(t, 8, visitors[8].Hour)
-	assert.Equal(t, 10, visitors[10].Hour)
-	assert.Equal(t, 1, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 1, visitors[8].Visitors)
@@ -287,27 +269,41 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 
 func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
-		{VisitorID: 1, Time: pastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
-		{VisitorID: 3, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 4, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 5, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
-		{VisitorID: 6, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, Path: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
-		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 11), SessionID: 21, Path: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
-		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, Path: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
-		{VisitorID: 7, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 8, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
-		{VisitorID: 9, Time: Today(), SessionID: 2, Path: "/", Title: "Home", IsBounce: true, PageViews: 1},
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo"},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home"},
+		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home"},
+		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, Path: "/bar", Title: "Bar"},
+		{VisitorID: 3, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home"},
+		{VisitorID: 4, Time: pastDay(4), SessionID: 4, Path: "/", Title: "Home"},
+		{VisitorID: 5, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, Path: "/bar", Title: "Bar"},
+		{VisitorID: 6, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, Path: "/bar", Title: "Bar"},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 11), SessionID: 21, Path: "/bar", Title: "Bar"},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, Path: "/foo", Title: "Foo"},
+		{VisitorID: 7, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 8, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 9, Time: Today(), SessionID: 2, Path: "/", Title: "Home"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, ExitPath: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Hour), SessionID: 41, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, ExitPath: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
+		{Sign: 1, VisitorID: 3, Time: pastDay(4), SessionID: 4, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 4, Time: pastDay(4), SessionID: 4, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 5, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, ExitPath: "/bar", Title: "Bar", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, ExitPath: "/bar", Title: "Bar", IsBounce: false, PageViews: 2},
+		{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, ExitPath: "/foo", Title: "Foo", IsBounce: false, PageViews: 2},
+		{Sign: 1, VisitorID: 7, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 8, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
+		{Sign: 1, VisitorID: 9, Time: Today(), SessionID: 2, ExitPath: "/", Title: "Home", IsBounce: true, PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(nil)
+	visitors, err := analyzer.Pages(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
@@ -338,8 +334,8 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.InDelta(t, 0.25, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
 	assert.Equal(t, 300, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 440, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 390, visitors[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 	top, err := analyzer.AvgTimeOnPage(nil)
 	assert.NoError(t, err)
 	assert.Len(t, top, 2)
@@ -350,7 +346,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err := analyzer.totalTimeOnPage(&Filter{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1500, ttop)
-	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true})
+	visitors, err = analyzer.Pages(&Filter{From: pastDay(3), To: pastDay(1), IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "/", visitors[0].Path)
@@ -361,8 +357,8 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "Foo", visitors[2].Title)
 	assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 600, visitors[2].AverageTimeSpentSeconds)
-	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1)})
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
+	top, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(3), To: pastDay(1), IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, top, 3)
 	assert.Equal(t, pastDay(3), top[0].Day)
@@ -390,21 +386,26 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 
 func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(2), SessionID: 1, ExitPath: "/", Title: "Home 1"},
+		{Sign: 1, VisitorID: 1, Time: pastDay(1), SessionID: 2, ExitPath: "/", Title: "Home 2", DurationSeconds: 42},
+		{Sign: 1, VisitorID: 2, Time: Today(), SessionID: 3, ExitPath: "/foo", Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true})
+	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Foo", visitors[0].Title)
 	assert.Equal(t, "Home 1", visitors[1].Title)
 	assert.Equal(t, "Home 2", visitors[2].Title)
 	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
 }
 
@@ -412,12 +413,12 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 2, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{Name: "event", VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true})
+	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Foo", visitors[0].Title)
@@ -430,23 +431,34 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 1, Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo", EntryPath: "/"},
-		{VisitorID: 2, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 3, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 4, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar", EntryPath: "/"},
-		{VisitorID: 5, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/"},
-		{VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar", EntryPath: "/"},
-		{VisitorID: 6, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
-		{VisitorID: 7, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar", EntryPath: "/bar"},
-		{VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, Path: "/", Title: "Home", EntryPath: "/bar"},
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo"},
+		{VisitorID: 2, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 3, Time: pastDay(2), SessionID: 2, Path: "/", Title: "Home"},
+		{VisitorID: 4, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
+		{VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, Path: "/bar", Title: "Bar"},
+		{VisitorID: 5, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
+		{VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, Path: "/bar", Title: "Bar"},
+		{VisitorID: 6, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar"},
+		{VisitorID: 7, Time: pastDay(1), SessionID: 1, Path: "/bar", Title: "Bar"},
+		{VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 2, Path: "/", Title: "Home"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 1, DurationSeconds: 10, ExitPath: "/", Title: "Foo", EntryPath: "/"},
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, ExitPath: "/foo", Title: "Foo", EntryPath: "/"},
+		{Sign: 1, VisitorID: 2, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
+		{Sign: 1, VisitorID: 3, Time: pastDay(2), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
+		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, ExitPath: "/bar", Title: "Bar", EntryPath: "/"},
+		{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, ExitPath: "/bar", Title: "Bar", EntryPath: "/"},
+		{Sign: 1, VisitorID: 6, Time: pastDay(1), SessionID: 1, ExitPath: "/bar", Title: "Bar", EntryPath: "/bar"},
+		{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, ExitPath: "/bar", Title: "Home", EntryPath: "/bar"},
+		{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 2, ExitPath: "/", Title: "Home", EntryPath: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	entries, err := analyzer.EntryPages(nil)
+	entries, err := analyzer.EntryPages(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/", entries[0].Path)
@@ -455,34 +467,36 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Empty(t, entries[1].Title)
 	assert.Equal(t, 6, entries[0].Visitors)
 	assert.Equal(t, 4, entries[1].Visitors)
-	assert.Equal(t, 5, entries[0].Entries)
+	assert.Equal(t, 7, entries[0].Sessions)
+	assert.Equal(t, 4, entries[1].Sessions)
+	assert.Equal(t, 7, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
-	assert.InDelta(t, 0.8333, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true})
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
-	assert.Equal(t, "/bar", entries[0].Path)
-	assert.Equal(t, "/", entries[1].Path)
-	assert.Equal(t, "Bar", entries[0].Title)
-	assert.Equal(t, "Home", entries[1].Title)
-	assert.Equal(t, 4, entries[0].Visitors)
-	assert.Equal(t, 3, entries[1].Visitors)
-	assert.Equal(t, 2, entries[0].Entries)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "/bar", entries[1].Path)
+	assert.Equal(t, 3, entries[0].Visitors)
+	assert.Equal(t, 4, entries[1].Visitors)
+	assert.Equal(t, 3, entries[0].Sessions)
+	assert.Equal(t, 4, entries[1].Sessions)
+	assert.Equal(t, 3, entries[0].Entries)
 	assert.Equal(t, 2, entries[1].Entries)
-	assert.InDelta(t, 0.5, entries[0].EntryRate, 0.001)
-	assert.InDelta(t, 0.6666, entries[1].EntryRate, 0.001)
-	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 30, entries[1].AverageTimeSpentSeconds)
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), EntryPath: "/"})
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
+	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: Today(), EntryPath: "/", IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, 3, entries[0].Visitors)
-	assert.Equal(t, 2, entries[0].Entries)
-	assert.InDelta(t, 0.6666, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 3, entries[0].Entries)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	_, err = analyzer.EntryPages(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -498,11 +512,14 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 6, exits[0].Visitors)
 	assert.Equal(t, 4, exits[1].Visitors)
 	assert.Equal(t, 1, exits[2].Visitors)
-	assert.Equal(t, 3, exits[0].Exits)
-	assert.Equal(t, 3, exits[1].Exits)
+	assert.Equal(t, 7, exits[0].Sessions)
+	assert.Equal(t, 4, exits[1].Sessions)
+	assert.Equal(t, 1, exits[2].Sessions)
+	assert.Equal(t, 4, exits[0].Exits)
+	assert.Equal(t, 4, exits[1].Exits)
 	assert.Equal(t, 1, exits[2].Exits)
-	assert.InDelta(t, 0.5, exits[0].ExitRate, 0.001)
-	assert.InDelta(t, 0.75, exits[1].ExitRate, 0.001)
+	assert.InDelta(t, 0.5714, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 1, exits[1].ExitRate, 0.001)
 	assert.InDelta(t, 1, exits[2].ExitRate, 0.001)
 	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), IncludeTitle: true})
 	assert.NoError(t, err)
@@ -513,9 +530,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "Home", exits[1].Title)
 	assert.Equal(t, 4, exits[0].Visitors)
 	assert.Equal(t, 3, exits[1].Visitors)
-	assert.Equal(t, 3, exits[0].Exits)
+	assert.Equal(t, 4, exits[0].Exits)
 	assert.Equal(t, 1, exits[1].Exits)
-	assert.InDelta(t, 0.75, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.33, exits[1].ExitRate, 0.01)
 	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: Today(), ExitPath: "/"})
 	assert.NoError(t, err)
@@ -532,13 +549,20 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 
 func TestAnalyzer_PageConversions(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: Today(), Path: "/", PageViews: 1},
-		{VisitorID: 2, Time: Today(), Path: "/simple/page", PageViews: 1},
-		{VisitorID: 2, Time: Today().Add(time.Minute), Path: "/simple/page", PageViews: 2},
-		{VisitorID: 3, Time: Today(), Path: "/siMple/page/", PageViews: 1},
-		{VisitorID: 3, Time: Today().Add(time.Minute), Path: "/siMple/page/", PageViews: 2},
-		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes", PageViews: 1},
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 2, Time: Today(), Path: "/simple/page"},
+		{VisitorID: 2, Time: Today().Add(time.Minute), Path: "/simple/page"},
+		{VisitorID: 3, Time: Today(), Path: "/siMple/page/"},
+		{VisitorID: 3, Time: Today().Add(time.Minute), Path: "/siMple/page/"},
+		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/"},
+		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page"},
+		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/"},
+		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/"},
+		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -563,8 +587,8 @@ func TestAnalyzer_Events(t *testing.T) {
 
 	// create hits for the conversion rate
 	for i := 0; i < 10; i++ {
-		assert.NoError(t, dbClient.SaveHits([]Hit{
-			{VisitorID: uint64(i), Time: Today(), Path: "/"},
+		assert.NoError(t, dbClient.SaveSessions([]Session{
+			{Sign: 1, VisitorID: uint64(i), Time: Today(), ExitPath: "/"},
 		}))
 	}
 
@@ -674,14 +698,11 @@ func TestAnalyzer_Events(t *testing.T) {
 
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 2, IsBounce: false},
-		{VisitorID: 2, Time: time.Now().Add(time.Minute * 2), Path: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
-		{VisitorID: 3, Time: time.Now(), Path: "/", Referrer: "ref2/path", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
-		{VisitorID: 4, Time: time.Now().Add(time.Minute), Path: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
-		{VisitorID: 5, Time: time.Now(), Path: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-		{VisitorID: 6, Time: time.Now(), Path: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), ExitPath: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
+		{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute), ExitPath: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), ExitPath: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -691,17 +712,17 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "Ref2", visitors[1].ReferrerName)
 	assert.Equal(t, "Ref3", visitors[2].ReferrerName)
-	assert.Equal(t, 3, visitors[0].Visitors)
-	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
-	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
 	assert.Equal(t, 2, visitors[0].Bounces)
-	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
 	assert.Equal(t, 0, visitors[2].Bounces)
-	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.01)
-	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
 	_, err = analyzer.Referrer(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -717,13 +738,13 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 2)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "Ref1", visitors[1].ReferrerName)
-	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
-	assert.Equal(t, "ref1/bar", visitors[1].Referrer)
-	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, "ref1/bar", visitors[0].Referrer)
+	assert.Equal(t, "ref1/foo", visitors[1].Referrer)
+	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.Equal(t, 1, visitors[1].Bounces)
-	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
 
 	// filter for full referrer
@@ -732,9 +753,9 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
-	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[0].Bounces)
-	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 
 	// filter for referrer name and full referrer
 	visitors, err = analyzer.Referrer(&Filter{ReferrerName: "Ref1", Referrer: "ref1/foo"})
@@ -742,21 +763,19 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
 	assert.Equal(t, "ref1/foo", visitors[0].Referrer)
-	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[0].Bounces)
-	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, Time: time.Now().Add(time.Minute), Path: "/foo", Referrer: "ref1", PageViews: 2, IsBounce: false},
-		{VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, Path: "/", PageViews: 3, IsBounce: false},
-		{VisitorID: 2, Time: time.Now(), Path: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 2, Time: time.Now().Add(time.Minute), SessionID: 3, Path: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
-		{VisitorID: 3, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
-		{VisitorID: 4, Time: time.Now(), Path: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: true},
+		{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: false},
+		{Sign: 1, VisitorID: 3, Time: time.Now().Add(time.Minute), SessionID: 3, ExitPath: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -765,21 +784,20 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Referrer)
 	assert.Equal(t, 2, visitors[0].Visitors)
-	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.4, visitors[0].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_Platform(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Desktop: true},
-		{VisitorID: 1, Time: time.Now(), Desktop: true},
-		{VisitorID: 2, Time: time.Now(), Mobile: true},
-		{VisitorID: 3, Time: time.Now(), Mobile: true},
-		{VisitorID: 4, Time: time.Now()},
-		{VisitorID: 5, Time: time.Now(), Desktop: true},
-		{VisitorID: 6, Time: time.Now(), Desktop: true},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), Desktop: true},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), Mobile: true},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), Mobile: true},
+		{Sign: 1, VisitorID: 4, Time: time.Now()},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), Desktop: true},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), Desktop: true},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -799,14 +817,13 @@ func TestAnalyzer_Platform(t *testing.T) {
 
 func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Language: "en"},
-		{VisitorID: 1, Time: time.Now(), Language: "en"},
-		{VisitorID: 2, Time: time.Now(), Language: "de"},
-		{VisitorID: 3, Time: time.Now(), Language: "de"},
-		{VisitorID: 4, Time: time.Now(), Language: "jp"},
-		{VisitorID: 5, Time: time.Now(), Language: "en"},
-		{VisitorID: 6, Time: time.Now(), Language: "en"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), Language: "en"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), Language: "de"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), Language: "de"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), Language: "jp"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), Language: "en"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), Language: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -830,14 +847,13 @@ func TestAnalyzer_Languages(t *testing.T) {
 
 func TestAnalyzer_Countries(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), CountryCode: "en"},
-		{VisitorID: 1, Time: time.Now(), CountryCode: "en"},
-		{VisitorID: 2, Time: time.Now(), CountryCode: "de"},
-		{VisitorID: 3, Time: time.Now(), CountryCode: "de"},
-		{VisitorID: 4, Time: time.Now(), CountryCode: "jp"},
-		{VisitorID: 5, Time: time.Now(), CountryCode: "en"},
-		{VisitorID: 6, Time: time.Now(), CountryCode: "en"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "en"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), CountryCode: "de"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), CountryCode: "de"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), CountryCode: "jp"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), CountryCode: "en"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), CountryCode: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -861,14 +877,13 @@ func TestAnalyzer_Countries(t *testing.T) {
 
 func TestAnalyzer_Cities(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), City: "London"},
-		{VisitorID: 1, Time: time.Now(), City: "London"},
-		{VisitorID: 2, Time: time.Now(), City: "Berlin"},
-		{VisitorID: 3, Time: time.Now(), City: "Berlin"},
-		{VisitorID: 4, Time: time.Now(), City: "Tokyo"},
-		{VisitorID: 5, Time: time.Now(), City: "London"},
-		{VisitorID: 6, Time: time.Now(), City: "London"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), City: "London"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), City: "Berlin"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), City: "Berlin"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), City: "Tokyo"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), City: "London"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), City: "London"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -892,14 +907,13 @@ func TestAnalyzer_Cities(t *testing.T) {
 
 func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
-		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
-		{VisitorID: 2, Time: time.Now(), Browser: BrowserFirefox},
-		{VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox},
-		{VisitorID: 4, Time: time.Now(), Browser: BrowserSafari},
-		{VisitorID: 5, Time: time.Now(), Browser: BrowserChrome},
-		{VisitorID: 6, Time: time.Now(), Browser: BrowserChrome},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), Browser: BrowserFirefox},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), Browser: BrowserSafari},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), Browser: BrowserChrome},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), Browser: BrowserChrome},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -923,15 +937,14 @@ func TestAnalyzer_Browser(t *testing.T) {
 
 func TestAnalyzer_BrowserVersion(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-		{VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
-		{VisitorID: 4, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
-		{VisitorID: 5, Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
-		{VisitorID: 6, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
-		{VisitorID: 7, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
+		{Sign: 1, VisitorID: 7, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -970,14 +983,13 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 
 func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), OS: OSWindows},
-		{VisitorID: 1, Time: time.Now(), OS: OSWindows},
-		{VisitorID: 2, Time: time.Now(), OS: OSMac},
-		{VisitorID: 3, Time: time.Now(), OS: OSMac},
-		{VisitorID: 4, Time: time.Now(), OS: OSLinux},
-		{VisitorID: 5, Time: time.Now(), OS: OSWindows},
-		{VisitorID: 6, Time: time.Now(), OS: OSWindows},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSWindows},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), OS: OSMac},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), OS: OSMac},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), OS: OSLinux},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), OS: OSWindows},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), OS: OSWindows},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1001,15 +1013,14 @@ func TestAnalyzer_OS(t *testing.T) {
 
 func TestAnalyzer_OSVersion(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-		{VisitorID: 3, Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
-		{VisitorID: 4, Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
-		{VisitorID: 5, Time: time.Now(), OS: OSLinux},
-		{VisitorID: 6, Time: time.Now(), OS: OSWindows, OSVersion: "9"},
-		{VisitorID: 7, Time: time.Now(), OS: OSWindows, OSVersion: "8"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), OS: OSLinux},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), OS: OSWindows, OSVersion: "9"},
+		{Sign: 1, VisitorID: 7, Time: time.Now(), OS: OSWindows, OSVersion: "8"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1048,14 +1059,13 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
-		{VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
-		{VisitorID: 2, Time: time.Now(), ScreenClass: "XL"},
-		{VisitorID: 3, Time: time.Now(), ScreenClass: "XL"},
-		{VisitorID: 4, Time: time.Now(), ScreenClass: "L"},
-		{VisitorID: 5, Time: time.Now(), ScreenClass: "XXL"},
-		{VisitorID: 6, Time: time.Now(), ScreenClass: "XXL"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), ScreenClass: "XL"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), ScreenClass: "XL"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), ScreenClass: "L"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), ScreenClass: "XXL"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), ScreenClass: "XXL"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1079,14 +1089,13 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 
 func TestAnalyzer_UTM(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{VisitorID: 2, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-		{VisitorID: 3, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-		{VisitorID: 4, Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
-		{VisitorID: 5, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-		{VisitorID: 6, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Sign: 1, VisitorID: 2, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{Sign: 1, VisitorID: 3, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+		{Sign: 1, VisitorID: 4, Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
+		{Sign: 1, VisitorID: 5, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+		{Sign: 1, VisitorID: 6, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1166,7 +1175,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: pastDay(3).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
 		{VisitorID: 2, Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
@@ -1231,10 +1240,10 @@ func TestAnalyzer_CalculateGrowthFloat64(t *testing.T) {
 
 func TestAnalyzer_Timezone(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
-		{VisitorID: 2, Time: pastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
-		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), ExitPath: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
+		{Sign: 1, VisitorID: 2, Time: pastDay(2), ExitPath: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
+		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), ExitPath: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1266,11 +1275,17 @@ func TestAnalyzer_Timezone(t *testing.T) {
 
 func TestAnalyzer_PathPattern(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: Today(), Path: "/"},
 		{VisitorID: 2, Time: Today(), Path: "/simple/page"},
 		{VisitorID: 3, Time: Today(), Path: "/siMple/page/"},
 		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/"},
+		{Sign: 1, VisitorID: 2, Time: Today(), ExitPath: "/simple/page"},
+		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/"},
+		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1293,11 +1308,14 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
-		{VisitorID: 1, SessionID: 1, Time: Today(), DurationSeconds: 0, Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/", EntryPath: "/", PageViews: 3, IsBounce: false},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, SessionID: 1, Time: Today(), DurationSeconds: 0, Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 7, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1321,17 +1339,21 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 
 func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	cleanupDB()
-	assert.NoError(t, dbClient.SaveHits([]Hit{
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		// / -> /foo -> /bar -> /exit
-		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 10), Path: "/foo", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 20), Path: "/bar", EntryPath: "/", PageViews: 3, IsBounce: false},
-		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Path: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 10), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 20), Path: "/bar"},
+		{VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Path: "/exit"},
 
 		// / -> /bar -> /
-		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/", EntryPath: "/", PageViews: 1, IsBounce: true},
-		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 10), Path: "/bar", EntryPath: "/", PageViews: 2, IsBounce: false},
-		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), Path: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
+		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/"},
+		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 10), Path: "/bar"},
+		{VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), ExitPath: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
+		{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1353,6 +1375,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Len(t, entryPages, 1)
 	assert.Equal(t, "/", entryPages[0].Path)
 	assert.Equal(t, 2, entryPages[0].Visitors)
+	assert.Equal(t, 2, entryPages[0].Sessions)
 	assert.Equal(t, 2, entryPages[0].Entries)
 	exitPages, err := analyzer.ExitPages(nil)
 	assert.NoError(t, err)
@@ -1484,6 +1507,72 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, "/exit", exitPages[0].Path)
 	assert.Equal(t, 1, exitPages[0].Visitors)
 	assert.Equal(t, 1, exitPages[0].Exits)
+}
+
+func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/bar"},
+		{VisitorID: 1, SessionID: 1, Time: Today(), Path: "/bar"},
+		{VisitorID: 1, SessionID: 2, Time: Today(), Path: "/foo"},
+		{VisitorID: 2, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/foo"},
+		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/foo"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	total, err := analyzer.totalVisitorsSessions(nil)
+	assert.NoError(t, err)
+	assert.Len(t, total, 3)
+	assert.Equal(t, "/foo", total[0].Path)
+	assert.Equal(t, "/", total[1].Path)
+	assert.Equal(t, "/bar", total[2].Path)
+	assert.Equal(t, 4, total[0].Views)
+	assert.Equal(t, 3, total[1].Views)
+	assert.Equal(t, 2, total[2].Views)
+	assert.Equal(t, 3, total[0].Visitors)
+	assert.Equal(t, 3, total[1].Visitors)
+	assert.Equal(t, 1, total[2].Visitors)
+	assert.Equal(t, 4, total[0].Sessions)
+	assert.Equal(t, 3, total[1].Sessions)
+	assert.Equal(t, 1, total[2].Sessions)
+	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""))
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_avgTimeOnPage(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, Time: Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
+		{VisitorID: 1, Time: Today().Add(time.Minute * 2).Add(time.Second * 23), Path: "/bar", DurationSeconds: 23},
+
+		{VisitorID: 2, Time: Today(), Path: "/bar"},
+		{VisitorID: 2, Time: Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
+		{VisitorID: 2, Time: Today().Add(time.Second * 16).Add(time.Second * 8), Path: "/", DurationSeconds: 8},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/bar"},
+		{Sign: 1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.avgTimeOnPage(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 3)
+	paths := []string{stats[0].Path, stats[1].Path, stats[2].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	top := []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, (23+8)/2)
+	assert.Contains(t, top, 16)
+	_, err = analyzer.avgTimeOnPage(getMaxFilter(""))
+	assert.NoError(t, err)
 }
 
 func getMaxFilter(eventName string) *Filter {

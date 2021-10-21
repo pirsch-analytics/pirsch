@@ -5,15 +5,54 @@ import (
 	"time"
 )
 
-// Hit represents a single data point/page visit and is the central entity of Pirsch.
-type Hit struct {
+// PageView represents a single page visit.
+type PageView struct {
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`
-	Time            time.Time
 	SessionID       uint32 `db:"session_id"`
+	Time            time.Time
 	DurationSeconds uint32 `db:"duration_seconds"`
 	Path            string
+	Title           string
+	Language        string
+	CountryCode     string `db:"country_code"`
+	City            string
+	Referrer        string
+	ReferrerName    string `db:"referrer_name"`
+	ReferrerIcon    string `db:"referrer_icon"`
+	OS              string
+	OSVersion       string `db:"os_version"`
+	Browser         string
+	BrowserVersion  string `db:"browser_version"`
+	Desktop         bool
+	Mobile          bool
+	ScreenWidth     uint16 `db:"screen_width"`
+	ScreenHeight    uint16 `db:"screen_height"`
+	ScreenClass     string `db:"screen_class"`
+	UTMSource       string `db:"utm_source"`
+	UTMMedium       string `db:"utm_medium"`
+	UTMCampaign     string `db:"utm_campaign"`
+	UTMContent      string `db:"utm_content"`
+	UTMTerm         string `db:"utm_term"`
+}
+
+// String implements the Stringer interface.
+func (pageView PageView) String() string {
+	out, _ := json.Marshal(pageView)
+	return string(out)
+}
+
+// Session represents a single visitor.
+type Session struct {
+	Sign            int8
+	ClientID        uint64 `db:"client_id"`
+	VisitorID       uint64 `db:"visitor_id"`
+	SessionID       uint32 `db:"session_id"`
+	Time            time.Time
+	Start           time.Time
+	DurationSeconds uint32 `db:"duration_seconds"`
 	EntryPath       string `db:"entry_path"`
+	ExitPath        string `db:"exit_path"`
 	PageViews       uint16 `db:"page_views"`
 	IsBounce        bool   `db:"is_bounce"`
 	Title           string
@@ -40,13 +79,13 @@ type Hit struct {
 }
 
 // String implements the Stringer interface.
-func (hit Hit) String() string {
-	out, _ := json.Marshal(hit)
+func (session Session) String() string {
+	out, _ := json.Marshal(session)
 	return string(out)
 }
 
 // Event represents a single data point for custom events.
-// It's basically the same as Hit, but with some additional fields (event name, time, and meta fields).
+// It's basically the same as Session, but with some additional fields (event name, time, and meta fields).
 type Event struct {
 	ClientID        uint64 `db:"client_id"`
 	VisitorID       uint64 `db:"visitor_id"`

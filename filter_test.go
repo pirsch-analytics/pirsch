@@ -40,22 +40,12 @@ func TestFilter_Validate(t *testing.T) {
 
 func TestFilter_Table(t *testing.T) {
 	filter := NewFilter(NullClient)
-	assert.Equal(t, "hit", filter.table())
+	assert.Equal(t, "session", filter.table())
 	filter.eventFilter = true
 	assert.Equal(t, "event", filter.table())
 	filter.eventFilter = false
 	filter.EventName = "event"
 	assert.Equal(t, "event", filter.table())
-}
-
-func TestFilter_View(t *testing.T) {
-	filter := NewFilter(NullClient)
-	assert.Equal(t, "sessions", filter.view())
-	filter.eventFilter = true
-	assert.Equal(t, "events", filter.view())
-	filter.eventFilter = false
-	filter.EventName = "event"
-	assert.Equal(t, "events", filter.view())
 }
 
 func TestFilter_QueryTime(t *testing.T) {
@@ -330,7 +320,7 @@ func TestFilter_Fields(t *testing.T) {
 	filter.validate()
 
 	// exit_path not included
-	assert.Equal(t, "path,entry_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,desktop,mobile", filter.fields())
+	assert.Equal(t, "path,entry_path,exit_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,desktop,mobile", filter.fields())
 
 	filter.validate()
 	filter.EventName = "event"

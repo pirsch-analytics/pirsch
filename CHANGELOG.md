@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.0
+
+* switched to CollapsingMergeTree in favor of materialized view (which didn't work)
+* rewrote all queries
+
 ## 3.3.2
 
 * fixed reading active visitors directly from hit table

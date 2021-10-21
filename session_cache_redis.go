@@ -22,25 +22,25 @@ func NewSessionCacheRedis(maxAge time.Duration, redisOptions *redis.Options) *Se
 }
 
 // Get implements the SessionCache interface.
-func (cache *SessionCacheRedis) Get(clientID, fingerprint uint64, maxAge time.Time) *Hit {
+func (cache *SessionCacheRedis) Get(clientID, fingerprint uint64, maxAge time.Time) *Session {
 	r, err := cache.rds.Get(context.Background(), getSessionKey(clientID, fingerprint)).Result()
 
 	if err != nil {
 		return nil
 	}
 
-	var hit Hit
+	var session Session
 
-	if err := json.Unmarshal([]byte(r), &hit); err != nil {
+	if err := json.Unmarshal([]byte(r), &session); err != nil {
 		return nil
 	}
 
-	return &hit
+	return &session
 }
 
 // Put implements the SessionCache interface.
-func (cache *SessionCacheRedis) Put(clientID, fingerprint uint64, hit *Hit) {
-	v, err := json.Marshal(hit)
+func (cache *SessionCacheRedis) Put(clientID, fingerprint uint64, session *Session) {
+	v, err := json.Marshal(session)
 
 	if err == nil {
 		cache.rds.SetEX(context.Background(), getSessionKey(clientID, fingerprint), v, cache.maxAge)
