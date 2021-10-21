@@ -44,5 +44,12 @@ func EventFromRequest(r *http.Request, salt string, options *HitOptions) *Sessio
 	}
 
 	fingerprint := Fingerprint(r, salt+options.Salt)
-	return options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+
+	if session != nil {
+		getRequestURI(r, options)
+		session.ExitPath = getPath(options.Path)
+	}
+
+	return session
 }

@@ -38,9 +38,11 @@ func TestEventFromRequest(t *testing.T) {
 		SessionCache: cache,
 	})
 	assert.Len(t, sessions, 1)
+	req.URL.Path = "/event/path"
 	event := EventFromRequest(req, "salt", &HitOptions{
 		SessionCache: cache,
 	})
 	assert.NotNil(t, event)
 	assert.Equal(t, sessions[0].VisitorID, event.VisitorID)
+	assert.Equal(t, "/event/path", event.ExitPath)
 }

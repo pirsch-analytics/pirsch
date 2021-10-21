@@ -227,7 +227,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 				MetaKeys:        metaKeys,
 				MetaValues:      metaValues,
 				Path:            session.ExitPath,
-				Title:           session.Title,
+				Title:           options.Title,
 				Language:        session.Language,
 				CountryCode:     session.CountryCode,
 				City:            session.City,
