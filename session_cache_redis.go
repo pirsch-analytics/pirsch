@@ -22,7 +22,7 @@ func NewSessionCacheRedis(maxAge time.Duration, redisOptions *redis.Options) *Se
 }
 
 // Get implements the SessionCache interface.
-func (cache *SessionCacheRedis) Get(clientID, fingerprint uint64, maxAge time.Time) *Session {
+func (cache *SessionCacheRedis) Get(clientID, fingerprint uint64, _ time.Time) *Session {
 	r, err := cache.rds.Get(context.Background(), getSessionKey(clientID, fingerprint)).Result()
 
 	if err != nil {

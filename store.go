@@ -6,7 +6,7 @@ import (
 
 // Store is the database storage interface.
 type Store interface {
-	// SaveHits saves given hits.
+	// SavePageViews saves given hits.
 	SavePageViews([]PageView) error
 
 	// SaveSessions saves given sessions.

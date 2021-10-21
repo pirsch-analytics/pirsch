@@ -104,7 +104,6 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
 		uaInfo.Browser = shortenString(uaInfo.Browser, 20)
 		uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
-		userAgent = shortenString(userAgent, 200)
 		lang := shortenString(getLanguage(r), 10)
 		referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
 		referrer = shortenString(referrer, 200)

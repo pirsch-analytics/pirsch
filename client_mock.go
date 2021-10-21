@@ -58,7 +58,7 @@ func (client *ClientMock) SaveUserAgents(userAgents []UserAgent) error {
 }
 
 // Session implements the Store interface.
-func (client *ClientMock) Session(clientID, fingerprint uint64, maxAge time.Time) (*Session, error) {
+func (client *ClientMock) Session(uint64, uint64, time.Time) (*Session, error) {
 	if client.ReturnSession != nil {
 		return client.ReturnSession, nil
 	}
@@ -67,16 +67,16 @@ func (client *ClientMock) Session(clientID, fingerprint uint64, maxAge time.Time
 }
 
 // Count implements the Store interface.
-func (client *ClientMock) Count(query string, args ...interface{}) (int, error) {
+func (client *ClientMock) Count(string, ...interface{}) (int, error) {
 	return 0, nil
 }
 
 // Get implements the Store interface.
-func (client *ClientMock) Get(result interface{}, query string, args ...interface{}) error {
+func (client *ClientMock) Get(interface{}, string, ...interface{}) error {
 	return nil
 }
 
 // Select implements the Store interface.
-func (client *ClientMock) Select(results interface{}, query string, args ...interface{}) error {
+func (client *ClientMock) Select(interface{}, string, ...interface{}) error {
 	return nil
 }

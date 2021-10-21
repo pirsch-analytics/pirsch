@@ -47,6 +47,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	_, _, err = analyzer.ActiveVisitors(getMaxFilter(""), time.Minute*10)
 	assert.NoError(t, err)
 	visitors, count, err = analyzer.ActiveVisitors(&Filter{IncludeTitle: true}, time.Minute*10)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, count)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Home", visitors[0].Title)
 	assert.Equal(t, "Bar", visitors[1].Title)
@@ -1204,9 +1206,9 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 5, byDay[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 5, byDay[2].AverageTimeSpentSeconds)
-	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter(""))
+	_, err = analyzer.AvgTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)
-	byDay, err = analyzer.AvgTimeOnPage(getMaxFilter("event"))
+	_, err = analyzer.AvgTimeOnPage(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
