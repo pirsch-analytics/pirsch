@@ -164,7 +164,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, -0.5, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, -0.2, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
@@ -172,7 +172,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, 2, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0.1666, growth.BouncesGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
@@ -558,23 +558,23 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 		{VisitorID: 4, Time: Today(), Path: "/simple/page/with/many/slashes"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/"},
-		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page"},
-		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/"},
-		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/"},
-		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes"},
+		{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/", PageViews: 1},
+		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page", PageViews: 1},
+		{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/", PageViews: 1},
+		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/", PageViews: 2},
+		{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.PageConversions(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
-	assert.Equal(t, 6, stats.Views)
+	assert.Equal(t, 5, stats.Views)
 	assert.InDelta(t, 1, stats.CR, 0.01)
 	stats, err = analyzer.PageConversions(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 3, stats.Views)
+	assert.Equal(t, 5, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
 	_, err = analyzer.PageConversions(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -1524,7 +1524,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	total, err := analyzer.totalVisitorsSessions(nil)
+	total, err := analyzer.totalVisitorsSessions(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	assert.Len(t, total, 3)
 	assert.Equal(t, "/foo", total[0].Path)
@@ -1539,7 +1539,14 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 4, total[0].Sessions)
 	assert.Equal(t, 3, total[1].Sessions)
 	assert.Equal(t, 1, total[2].Sessions)
-	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""))
+	total, err = analyzer.totalVisitorsSessions(nil, []string{"/"})
+	assert.NoError(t, err)
+	assert.Len(t, total, 1)
+	assert.Equal(t, "/", total[0].Path)
+	assert.Equal(t, 3, total[0].Views)
+	assert.Equal(t, 3, total[0].Visitors)
+	assert.Equal(t, 3, total[0].Sessions)
+	_, err = analyzer.totalVisitorsSessions(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 }
 
@@ -1560,7 +1567,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	stats, err := analyzer.avgTimeOnPage(nil)
+	stats, err := analyzer.avgTimeOnPage(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 3)
 	paths := []string{stats[0].Path, stats[1].Path, stats[2].Path}
@@ -1571,7 +1578,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, 120)
 	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
-	_, err = analyzer.avgTimeOnPage(getMaxFilter(""))
+	_, err = analyzer.avgTimeOnPage(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 }
 
