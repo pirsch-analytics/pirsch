@@ -224,15 +224,44 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	filter = analyzer.getFilter(filter)
-	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
-	query := fmt.Sprintf(`SELECT toHour(time, '%s') hour,
+	table := filter.table()
+
+	if table == "session" {
+		table = "page_view"
+	}
+
+	outerFilterArgs, outerFilterQuery := filter.query()
+	args := make([]interface{}, 0)
+	var query strings.Builder
+	query.WriteString(fmt.Sprintf(`SELECT toHour(time, '%s') hour,
 		uniq(visitor_id) visitors
-		FROM (%s)
+		FROM (
+			SELECT visitor_id,
+			time
+			FROM %s v `, filter.Timezone.String(), table))
+
+	if table == "page_view" && (filter.EntryPath != "" || filter.ExitPath != "") {
+		innerFilterArgs, innerFilterQuery := filter.queryTime()
+		args = append(args, innerFilterArgs...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (
+				SELECT visitor_id,
+				session_id,
+				entry_path,
+				exit_path
+				FROM session
+				WHERE %s
+			) s
+			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+	}
+
+	args = append(args, outerFilterArgs...)
+	query.WriteString(fmt.Sprintf(`WHERE %s 
+		)
 		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, filter.Timezone.String(), baseQuery)
+		ORDER BY hour WITH FILL FROM 0 TO 24`, outerFilterQuery))
 	var stats []VisitorHourStats
 
-	if err := analyzer.store.Select(&stats, query, baseArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
 		return nil, err
 	}
 

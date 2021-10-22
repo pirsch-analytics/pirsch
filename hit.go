@@ -20,6 +20,17 @@ const (
 	defaultSessionMaxAge = time.Minute * 15
 )
 
+// SessionState is the state and cancellation for a session.
+// The sessions must be inserted together to ensure sessions collapse.
+type SessionState struct {
+	// State is the new state for the session.
+	State Session
+
+	// Cancel is the state to cancel.
+	// On session creation, this field is nil.
+	Cancel *Session
+}
+
 // HitOptions is used to manipulate the data saved on a hit.
 type HitOptions struct {
 	// Salt is used to generate a fingerprint (optional).
@@ -74,11 +85,11 @@ type HitOptions struct {
 // HitFromRequest returns a new PageView and Session for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, []Session, *UserAgent) {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, SessionState, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	if options == nil {
-		return nil, nil, nil
+		return nil, SessionState{}, nil
 	}
 
 	// set default options in case they're nil
@@ -91,127 +102,52 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-	sessions := make([]Session, 0, 2)
+	var sessionState SessionState
 	var timeOnPage uint32
 	var ua *UserAgent
 
 	if session == nil {
-		// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
-		userAgent := r.UserAgent()
-		uaInfo := ParseUserAgent(userAgent)
-		ua = &uaInfo
-		uaInfo.OS = shortenString(uaInfo.OS, 20)
-		uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
-		uaInfo.Browser = shortenString(uaInfo.Browser, 20)
-		uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
-		lang := shortenString(getLanguage(r), 10)
-		referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
-		referrer = shortenString(referrer, 200)
-		referrerName = shortenString(referrerName, 200)
-		referrerIcon = shortenString(referrerIcon, 2000)
-		screen := GetScreenClass(options.ScreenWidth)
-		utm := getUTMParams(r)
-		countryCode, city := "", ""
-
-		if options.geoDB != nil {
-			countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r))
-		}
-
-		if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
-			options.ScreenWidth = 0
-			options.ScreenHeight = 0
-		}
-
-		sessions = append(sessions, Session{
-			Sign:           1,
-			ClientID:       options.ClientID,
-			VisitorID:      fingerprint,
-			SessionID:      rand.Uint32(),
-			Time:           now,
-			Start:          now,
-			EntryPath:      path,
-			ExitPath:       path,
-			PageViews:      1,
-			IsBounce:       true,
-			Title:          title,
-			Language:       lang,
-			CountryCode:    countryCode,
-			City:           city,
-			Referrer:       referrer,
-			ReferrerName:   referrerName,
-			ReferrerIcon:   referrerIcon,
-			OS:             uaInfo.OS,
-			OSVersion:      uaInfo.OSVersion,
-			Browser:        uaInfo.Browser,
-			BrowserVersion: uaInfo.BrowserVersion,
-			Desktop:        uaInfo.IsDesktop(),
-			Mobile:         uaInfo.IsMobile(),
-			ScreenWidth:    options.ScreenWidth,
-			ScreenHeight:   options.ScreenHeight,
-			ScreenClass:    screen,
-			UTMSource:      utm.source,
-			UTMMedium:      utm.medium,
-			UTMCampaign:    utm.campaign,
-			UTMContent:     utm.content,
-			UTMTerm:        utm.term,
-		})
-		options.SessionCache.Put(options.ClientID, fingerprint, &sessions[0])
+		session, ua = newSession(r, options, fingerprint, now, path, title)
+		sessionState.State = *session
+		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	} else {
 		session.Sign = -1
-		sessions = append(sessions, *session)
-		top := now.Unix() - session.Time.Unix()
-
-		if top < 0 {
-			top = 0
-		}
-
-		timeOnPage = uint32(top)
-		duration := now.Unix() - session.Start.Unix()
-
-		if duration < 0 {
-			duration = 0
-		}
-
-		session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
-		session.Sign = 1
-		session.IsBounce = session.IsBounce && path == session.ExitPath
-		session.Time = now
-		session.ExitPath = path
-		session.PageViews++
-		session.Title = title
-		sessions = append(sessions, *session)
-		options.SessionCache.Put(options.ClientID, fingerprint, session)
+		sessionState.Cancel = session
+		state := *session
+		timeOnPage = updateSession(options, &state, now, path, title)
+		sessionState.State = state
+		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
 	return &PageView{
-		ClientID:        sessions[len(sessions)-1].ClientID,
-		VisitorID:       sessions[len(sessions)-1].VisitorID,
-		SessionID:       sessions[len(sessions)-1].SessionID,
-		Time:            sessions[len(sessions)-1].Time,
+		ClientID:        sessionState.State.ClientID,
+		VisitorID:       sessionState.State.VisitorID,
+		SessionID:       sessionState.State.SessionID,
+		Time:            sessionState.State.Time,
 		DurationSeconds: timeOnPage,
-		Path:            sessions[len(sessions)-1].ExitPath,
-		Title:           sessions[len(sessions)-1].Title,
-		Language:        sessions[len(sessions)-1].Language,
-		CountryCode:     sessions[len(sessions)-1].CountryCode,
-		City:            sessions[len(sessions)-1].City,
-		Referrer:        sessions[len(sessions)-1].Referrer,
-		ReferrerName:    sessions[len(sessions)-1].ReferrerName,
-		ReferrerIcon:    sessions[len(sessions)-1].ReferrerIcon,
-		OS:              sessions[len(sessions)-1].OS,
-		OSVersion:       sessions[len(sessions)-1].OSVersion,
-		Browser:         sessions[len(sessions)-1].Browser,
-		BrowserVersion:  sessions[len(sessions)-1].BrowserVersion,
-		Desktop:         sessions[len(sessions)-1].Desktop,
-		Mobile:          sessions[len(sessions)-1].Mobile,
-		ScreenWidth:     sessions[len(sessions)-1].ScreenWidth,
-		ScreenHeight:    sessions[len(sessions)-1].ScreenHeight,
-		ScreenClass:     sessions[len(sessions)-1].ScreenClass,
-		UTMSource:       sessions[len(sessions)-1].UTMSource,
-		UTMMedium:       sessions[len(sessions)-1].UTMMedium,
-		UTMCampaign:     sessions[len(sessions)-1].UTMCampaign,
-		UTMContent:      sessions[len(sessions)-1].UTMContent,
-		UTMTerm:         sessions[len(sessions)-1].UTMTerm,
-	}, sessions, ua
+		Path:            sessionState.State.ExitPath,
+		Title:           sessionState.State.Title,
+		Language:        sessionState.State.Language,
+		CountryCode:     sessionState.State.CountryCode,
+		City:            sessionState.State.City,
+		Referrer:        sessionState.State.Referrer,
+		ReferrerName:    sessionState.State.ReferrerName,
+		ReferrerIcon:    sessionState.State.ReferrerIcon,
+		OS:              sessionState.State.OS,
+		OSVersion:       sessionState.State.OSVersion,
+		Browser:         sessionState.State.Browser,
+		BrowserVersion:  sessionState.State.BrowserVersion,
+		Desktop:         sessionState.State.Desktop,
+		Mobile:          sessionState.State.Mobile,
+		ScreenWidth:     sessionState.State.ScreenWidth,
+		ScreenHeight:    sessionState.State.ScreenHeight,
+		ScreenClass:     sessionState.State.ScreenClass,
+		UTMSource:       sessionState.State.UTMSource,
+		UTMMedium:       sessionState.State.UTMMedium,
+		UTMCampaign:     sessionState.State.UTMCampaign,
+		UTMContent:      sessionState.State.UTMContent,
+		UTMTerm:         sessionState.State.UTMTerm,
+	}, sessionState, ua
 }
 
 // ExtendSession looks up and extends the session for given request.
@@ -291,6 +227,90 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 		ScreenWidth:  getUInt16QueryParam(query.Get("w")),
 		ScreenHeight: getUInt16QueryParam(query.Get("h")),
 	}
+}
+
+func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now time.Time, path, title string) (*Session, *UserAgent) {
+	// shorten strings if required and parse User-Agent to extract more data (OS, Browser)
+	userAgent := r.UserAgent()
+	uaInfo := ParseUserAgent(userAgent)
+	uaInfo.OS = shortenString(uaInfo.OS, 20)
+	uaInfo.OSVersion = shortenString(uaInfo.OSVersion, 20)
+	uaInfo.Browser = shortenString(uaInfo.Browser, 20)
+	uaInfo.BrowserVersion = shortenString(uaInfo.BrowserVersion, 20)
+	lang := shortenString(getLanguage(r), 10)
+	referrer, referrerName, referrerIcon := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
+	referrer = shortenString(referrer, 200)
+	referrerName = shortenString(referrerName, 200)
+	referrerIcon = shortenString(referrerIcon, 2000)
+	screen := GetScreenClass(options.ScreenWidth)
+	utm := getUTMParams(r)
+	countryCode, city := "", ""
+
+	if options.geoDB != nil {
+		countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r))
+	}
+
+	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
+		options.ScreenWidth = 0
+		options.ScreenHeight = 0
+	}
+
+	return &Session{
+		Sign:           1,
+		ClientID:       options.ClientID,
+		VisitorID:      fingerprint,
+		SessionID:      rand.Uint32(),
+		Time:           now,
+		Start:          now,
+		EntryPath:      path,
+		ExitPath:       path,
+		PageViews:      1,
+		IsBounce:       true,
+		Title:          title,
+		Language:       lang,
+		CountryCode:    countryCode,
+		City:           city,
+		Referrer:       referrer,
+		ReferrerName:   referrerName,
+		ReferrerIcon:   referrerIcon,
+		OS:             uaInfo.OS,
+		OSVersion:      uaInfo.OSVersion,
+		Browser:        uaInfo.Browser,
+		BrowserVersion: uaInfo.BrowserVersion,
+		Desktop:        uaInfo.IsDesktop(),
+		Mobile:         uaInfo.IsMobile(),
+		ScreenWidth:    options.ScreenWidth,
+		ScreenHeight:   options.ScreenHeight,
+		ScreenClass:    screen,
+		UTMSource:      utm.source,
+		UTMMedium:      utm.medium,
+		UTMCampaign:    utm.campaign,
+		UTMContent:     utm.content,
+		UTMTerm:        utm.term,
+	}, &uaInfo
+}
+
+func updateSession(options *HitOptions, session *Session, now time.Time, path, title string) uint32 {
+	top := now.Unix() - session.Time.Unix()
+
+	if top < 0 {
+		top = 0
+	}
+
+	duration := now.Unix() - session.Start.Unix()
+
+	if duration < 0 {
+		duration = 0
+	}
+
+	session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
+	session.Sign = 1
+	session.IsBounce = session.IsBounce && path == session.ExitPath
+	session.Time = now
+	session.ExitPath = path
+	session.PageViews++
+	session.Title = title
+	return uint32(top)
 }
 
 func getPath(path string) string {

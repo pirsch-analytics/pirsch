@@ -95,7 +95,7 @@ type Tracker struct {
 	sessionCache                              SessionCache
 	salt                                      string
 	pageViews                                 chan PageView
-	sessions                                  chan Session
+	sessions                                  chan SessionState
 	events                                    chan Event
 	userAgents                                chan UserAgent
 	stopped                                   int32
@@ -131,7 +131,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		sessionCache:            config.SessionCache,
 		salt:                    salt,
 		pageViews:               make(chan PageView, config.Worker*config.WorkerBufferSize),
-		sessions:                make(chan Session, config.Worker*config.WorkerBufferSize),
+		sessions:                make(chan SessionState, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
 		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -172,16 +172,11 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		pageView, sessions, ua := HitFromRequest(r, tracker.salt, options)
+		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
 			tracker.pageViews <- *pageView
-		}
-
-		if sessions != nil {
-			for _, session := range sessions {
-				tracker.sessions <- session
-			}
+			tracker.sessions <- sessionState
 		}
 
 		if ua != nil {
@@ -214,40 +209,40 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		session := EventFromRequest(r, tracker.salt, options)
+		pageView, _, _ := HitFromRequest(r, tracker.salt, options)
 
-		if session != nil {
+		if pageView != nil {
 			tracker.events <- Event{
-				ClientID:        session.ClientID,
-				VisitorID:       session.VisitorID,
-				Time:            session.Time,
-				SessionID:       session.SessionID,
+				ClientID:        pageView.ClientID,
+				VisitorID:       pageView.VisitorID,
+				Time:            pageView.Time,
+				SessionID:       pageView.SessionID,
 				DurationSeconds: eventOptions.Duration,
 				Name:            strings.TrimSpace(eventOptions.Name),
 				MetaKeys:        metaKeys,
 				MetaValues:      metaValues,
-				Path:            session.ExitPath,
+				Path:            pageView.Path,
 				Title:           options.Title,
-				Language:        session.Language,
-				CountryCode:     session.CountryCode,
-				City:            session.City,
-				Referrer:        session.Referrer,
-				ReferrerName:    session.ReferrerName,
-				ReferrerIcon:    session.ReferrerIcon,
-				OS:              session.OS,
-				OSVersion:       session.OSVersion,
-				Browser:         session.Browser,
-				BrowserVersion:  session.BrowserVersion,
-				Desktop:         session.Desktop,
-				Mobile:          session.Mobile,
-				ScreenWidth:     session.ScreenWidth,
-				ScreenHeight:    session.ScreenHeight,
-				ScreenClass:     session.ScreenClass,
-				UTMSource:       session.UTMSource,
-				UTMMedium:       session.UTMMedium,
-				UTMCampaign:     session.UTMCampaign,
-				UTMContent:      session.UTMContent,
-				UTMTerm:         session.UTMTerm,
+				Language:        pageView.Language,
+				CountryCode:     pageView.CountryCode,
+				City:            pageView.City,
+				Referrer:        pageView.Referrer,
+				ReferrerName:    pageView.ReferrerName,
+				ReferrerIcon:    pageView.ReferrerIcon,
+				OS:              pageView.OS,
+				OSVersion:       pageView.OSVersion,
+				Browser:         pageView.Browser,
+				BrowserVersion:  pageView.BrowserVersion,
+				Desktop:         pageView.Desktop,
+				Mobile:          pageView.Mobile,
+				ScreenWidth:     pageView.ScreenWidth,
+				ScreenHeight:    pageView.ScreenHeight,
+				ScreenClass:     pageView.ScreenClass,
+				UTMSource:       pageView.UTMSource,
+				UTMMedium:       pageView.UTMMedium,
+				UTMCampaign:     pageView.UTMCampaign,
+				UTMContent:      pageView.UTMContent,
+				UTMTerm:         pageView.UTMTerm,
 			}
 		}
 	}
@@ -378,16 +373,20 @@ func (tracker *Tracker) savePageViews(pageViews []PageView) {
 }
 
 func (tracker *Tracker) flushSessions() {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
 
 	for {
 		stop := false
 
 		select {
 		case session := <-tracker.sessions:
-			sessions = append(sessions, session)
+			sessions = append(sessions, session.State)
 
-			if len(sessions) == tracker.workerBufferSize {
+			if session.Cancel != nil {
+				sessions = append(sessions, *session.Cancel)
+			}
+
+			if len(sessions) >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
@@ -404,7 +403,7 @@ func (tracker *Tracker) flushSessions() {
 }
 
 func (tracker *Tracker) aggregateSessions(ctx context.Context) {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -413,9 +412,13 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
-			sessions = append(sessions, session)
+			sessions = append(sessions, session.State)
 
-			if len(sessions) == tracker.workerBufferSize {
+			if session.Cancel != nil {
+				sessions = append(sessions, *session.Cancel)
+			}
+
+			if len(sessions) >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
