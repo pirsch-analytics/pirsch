@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.1
+
+* removed the requirement to send a page view before an event can be tracked
+
 ## 3.4.0
 
 * switched to CollapsingMergeTree in favor of materialized view (which didn't work)

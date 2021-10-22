@@ -214,40 +214,40 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 		options.SessionCache = tracker.sessionCache
 		metaKeys, metaValues := eventOptions.getMetaData()
-		session := EventFromRequest(r, tracker.salt, options)
+		pageView, _, _ := HitFromRequest(r, tracker.salt, options)
 
-		if session != nil {
+		if pageView != nil {
 			tracker.events <- Event{
-				ClientID:        session.ClientID,
-				VisitorID:       session.VisitorID,
-				Time:            session.Time,
-				SessionID:       session.SessionID,
+				ClientID:        pageView.ClientID,
+				VisitorID:       pageView.VisitorID,
+				Time:            pageView.Time,
+				SessionID:       pageView.SessionID,
 				DurationSeconds: eventOptions.Duration,
 				Name:            strings.TrimSpace(eventOptions.Name),
 				MetaKeys:        metaKeys,
 				MetaValues:      metaValues,
-				Path:            session.ExitPath,
+				Path:            pageView.Path,
 				Title:           options.Title,
-				Language:        session.Language,
-				CountryCode:     session.CountryCode,
-				City:            session.City,
-				Referrer:        session.Referrer,
-				ReferrerName:    session.ReferrerName,
-				ReferrerIcon:    session.ReferrerIcon,
-				OS:              session.OS,
-				OSVersion:       session.OSVersion,
-				Browser:         session.Browser,
-				BrowserVersion:  session.BrowserVersion,
-				Desktop:         session.Desktop,
-				Mobile:          session.Mobile,
-				ScreenWidth:     session.ScreenWidth,
-				ScreenHeight:    session.ScreenHeight,
-				ScreenClass:     session.ScreenClass,
-				UTMSource:       session.UTMSource,
-				UTMMedium:       session.UTMMedium,
-				UTMCampaign:     session.UTMCampaign,
-				UTMContent:      session.UTMContent,
-				UTMTerm:         session.UTMTerm,
+				Language:        pageView.Language,
+				CountryCode:     pageView.CountryCode,
+				City:            pageView.City,
+				Referrer:        pageView.Referrer,
+				ReferrerName:    pageView.ReferrerName,
+				ReferrerIcon:    pageView.ReferrerIcon,
+				OS:              pageView.OS,
+				OSVersion:       pageView.OSVersion,
+				Browser:         pageView.Browser,
+				BrowserVersion:  pageView.BrowserVersion,
+				Desktop:         pageView.Desktop,
+				Mobile:          pageView.Mobile,
+				ScreenWidth:     pageView.ScreenWidth,
+				ScreenHeight:    pageView.ScreenHeight,
+				ScreenClass:     pageView.ScreenClass,
+				UTMSource:       pageView.UTMSource,
+				UTMMedium:       pageView.UTMMedium,
+				UTMCampaign:     pageView.UTMCampaign,
+				UTMContent:      pageView.UTMContent,
+				UTMTerm:         pageView.UTMTerm,
 			}
 		}
 	}
