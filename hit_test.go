@@ -16,7 +16,7 @@ func TestHitFromRequest(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	pageView, sessions, ua := HitFromRequest(req, "salt", &HitOptions{
+	pageView, sessionState, ua := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ClientID:     42,
 		Title:        "title",
@@ -24,11 +24,10 @@ func TestHitFromRequest(t *testing.T) {
 		ScreenHeight: 1024,
 	})
 	assert.NotNil(t, pageView)
-	assert.Len(t, sessions, 1)
-	session := sessions[0]
+	session := sessionState.State
 	assert.Equal(t, 42, int(session.ClientID))
 	assert.NotZero(t, session.VisitorID)
-	assert.NoError(t, dbClient.SaveSessions(sessions))
+	assert.NoError(t, dbClient.SaveSessions([]Session{session}))
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 30)
 	assert.Equal(t, uaString, ua.UserAgent)
 
@@ -91,12 +90,11 @@ func TestHitFromRequestSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
 	req.Header.Set("Referer", "http://ref/")
-	pageView1, sessions, ua1 := HitFromRequest(req, "salt", &HitOptions{
+	pageView1, sessionState, ua1 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
 	assert.NotNil(t, pageView1)
-	assert.Len(t, sessions, 1)
-	session1 := sessions[0]
+	session1 := sessionState.State
 	assert.Equal(t, int8(1), session1.Sign)
 	assert.Equal(t, uint64(0), session1.ClientID)
 	assert.NotZero(t, session1.VisitorID)
@@ -122,12 +120,11 @@ func TestHitFromRequestSession(t *testing.T) {
 	session.ExitPath = "/different/path"
 	sessionCache.sessions[getSessionKey(session1.ClientID, session1.VisitorID)] = session
 
-	pageView2, sessions, ua2 := HitFromRequest(req, "salt", &HitOptions{
+	pageView2, sessionState2, ua2 := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, sessions, 2)
-	session2 := sessions[1]
-	assert.Equal(t, int8(-1), sessions[0].Sign)
+	session2 := sessionState2.State
+	assert.Equal(t, int8(-1), sessionState2.Cancel.Sign)
 	assert.Equal(t, int8(1), session2.Sign)
 	assert.Equal(t, uint64(0), session2.ClientID)
 	assert.Equal(t, session1.VisitorID, session2.VisitorID)
@@ -149,85 +146,82 @@ func TestHitFromRequestBounces(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
 	req.Header.Set("User-Agent", uaString)
-	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, sessions, 1)
-	session1 := sessions[0]
+	session1 := sessionState.State
 	assert.True(t, session1.IsBounce)
 
-	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, sessions, 2)
-	assert.True(t, sessions[0].IsBounce)
-	assert.True(t, sessions[1].IsBounce)
+	assert.True(t, sessionState.State.IsBounce)
+	assert.True(t, sessionState.Cancel.IsBounce)
 
 	req.URL.Path = "/different/path"
-	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.Len(t, sessions, 2)
-	assert.True(t, sessions[0].IsBounce)
-	assert.False(t, sessions[1].IsBounce)
+	assert.True(t, sessionState.Cancel.IsBounce)
+	assert.False(t, sessionState.State.IsBounce)
 }
 
 func TestHitFromRequestOverwrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	_, session, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		URL:          "http://bar.foo/new/custom/path?query=param&foo=bar#anchor",
 	})
 
-	if session[0].ExitPath != "/new/custom/path" {
-		t.Fatalf("Session not as expected: %v", session)
+	if sessionState.State.ExitPath != "/new/custom/path" {
+		t.Fatalf("Session not as expected: %v", sessionState.State)
 	}
 }
 
 func TestHitFromRequestOverwritePathAndReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	_, session, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		URL:          "http://bar.foo/overwrite/this?query=param&foo=bar#anchor",
 		Path:         "/new/custom/path",
 		Referrer:     "http://custom.ref/",
 	})
 
-	if session[0].ExitPath != "/new/custom/path" || session[0].Referrer != "http://custom.ref" {
-		t.Fatalf("Session not as expected: %v", session)
+	if sessionState.State.ExitPath != "/new/custom/path" || sessionState.State.Referrer != "http://custom.ref" {
+		t.Fatalf("Session not as expected: %v", sessionState.State)
 	}
 }
 
 func TestHitFromRequestScreenSize(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
-	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  0,
 		ScreenHeight: 400,
 	})
 
-	if sessions[0].ScreenWidth != 0 || sessions[0].ScreenHeight != 0 {
-		t.Fatalf("Screen size must be 0, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
+	if sessionState.State.ScreenWidth != 0 || sessionState.State.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", sessionState.State.ScreenWidth, sessionState.State.ScreenHeight)
 	}
 
-	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  400,
 		ScreenHeight: 0,
 	})
 
-	if sessions[0].ScreenWidth != 0 || sessions[0].ScreenHeight != 0 {
-		t.Fatalf("Screen size must be 0, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
+	if sessionState.State.ScreenWidth != 0 || sessionState.State.ScreenHeight != 0 {
+		t.Fatalf("Screen size must be 0, but was: %v %v", sessionState.State.ScreenWidth, sessionState.State.ScreenHeight)
 	}
 
-	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: NewSessionCacheMem(dbClient, 100),
 		ScreenWidth:  640,
 		ScreenHeight: 1024,
 	})
 
-	if sessions[0].ScreenWidth != 640 || sessions[0].ScreenHeight != 1024 {
-		t.Fatalf("Screen size must be set, but was: %v %v", sessions[0].ScreenWidth, sessions[0].ScreenHeight)
+	if sessionState.State.ScreenWidth != 640 || sessionState.State.ScreenHeight != 1024 {
+		t.Fatalf("Screen size must be set, but was: %v %v", sessionState.State.ScreenWidth, sessionState.State.ScreenHeight)
 	}
 }
 
@@ -239,20 +233,20 @@ func TestHitFromRequestCountryCodeCity(t *testing.T) {
 	assert.NoError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "81.2.69.142"
-	_, sessions, _ := HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-	assert.Equal(t, "gb", sessions[0].CountryCode)
-	assert.Equal(t, "London", sessions[0].City)
+	assert.Equal(t, "gb", sessionState.State.CountryCode)
+	assert.Equal(t, "London", sessionState.State.City)
 	req = httptest.NewRequest(http.MethodGet, "http://foo.bar/test/path?query=param&foo=bar#anchor", nil)
 	req.RemoteAddr = "127.0.0.1"
-	_, sessions, _ = HitFromRequest(req, "salt", &HitOptions{
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 		geoDB:        geoDB,
 	})
-	assert.Empty(t, sessions[0].CountryCode)
-	assert.Empty(t, sessions[0].City)
+	assert.Empty(t, sessionState.State.CountryCode)
+	assert.Empty(t, sessionState.State.City)
 }
 
 func TestExtendSession(t *testing.T) {
@@ -264,11 +258,10 @@ func TestExtendSession(t *testing.T) {
 	options := &HitOptions{
 		SessionCache: sessionCache,
 	}
-	_, sessions, _ := HitFromRequest(req, "salt", options)
-	assert.Len(t, sessions, 1)
-	at := sessions[0].Time
+	_, sessionState, _ := HitFromRequest(req, "salt", options)
+	at := sessionState.State.Time
 	ExtendSession(req, "salt", options)
-	session := sessionCache.Get(0, sessions[0].VisitorID, time.Now().UTC().Add(-time.Second))
+	session := sessionCache.Get(0, sessionState.State.VisitorID, time.Now().UTC().Add(-time.Second))
 	assert.NotEqual(t, at, session.Time)
 	assert.True(t, session.Time.After(at))
 }

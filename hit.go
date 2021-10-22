@@ -20,6 +20,17 @@ const (
 	defaultSessionMaxAge = time.Minute * 15
 )
 
+// SessionState is the state and cancellation for a session.
+// The sessions must be inserted together to ensure sessions collapse.
+type SessionState struct {
+	// State is the new state for the session.
+	State Session
+
+	// Cancel is the state to cancel.
+	// On session creation, this field is nil.
+	Cancel *Session
+}
+
 // HitOptions is used to manipulate the data saved on a hit.
 type HitOptions struct {
 	// Salt is used to generate a fingerprint (optional).
@@ -74,11 +85,11 @@ type HitOptions struct {
 // HitFromRequest returns a new PageView and Session for given request, salt and HitOptions.
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
-func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, []Session, *UserAgent) {
+func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, SessionState, *UserAgent) {
 	now := time.Now().UTC() // capture first to get as close as possible
 
 	if options == nil {
-		return nil, nil, nil
+		return nil, SessionState{}, nil
 	}
 
 	// set default options in case they're nil
@@ -91,52 +102,52 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-	sessions := make([]Session, 0, 2)
+	var sessionState SessionState
 	var timeOnPage uint32
 	var ua *UserAgent
 
 	if session == nil {
 		session, ua = newSession(r, options, fingerprint, now, path, title)
-		sessions = append(sessions, *session)
-		options.SessionCache.Put(options.ClientID, fingerprint, &sessions[0])
+		sessionState.State = *session
+		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	} else {
 		session.Sign = -1
-		sessions = append(sessions, *session)
-		timeOnPage = updateSession(options, session, now, path, title)
-		sessions = append(sessions, *session)
-		options.SessionCache.Put(options.ClientID, fingerprint, session)
+		sessionState.Cancel = session
+		state := *session
+		timeOnPage = updateSession(options, &state, now, path, title)
+		sessionState.State = state
+		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
-	n := len(sessions) - 1
 	return &PageView{
-		ClientID:        sessions[n].ClientID,
-		VisitorID:       sessions[n].VisitorID,
-		SessionID:       sessions[n].SessionID,
-		Time:            sessions[n].Time,
+		ClientID:        sessionState.State.ClientID,
+		VisitorID:       sessionState.State.VisitorID,
+		SessionID:       sessionState.State.SessionID,
+		Time:            sessionState.State.Time,
 		DurationSeconds: timeOnPage,
-		Path:            sessions[n].ExitPath,
-		Title:           sessions[n].Title,
-		Language:        sessions[n].Language,
-		CountryCode:     sessions[n].CountryCode,
-		City:            sessions[n].City,
-		Referrer:        sessions[n].Referrer,
-		ReferrerName:    sessions[n].ReferrerName,
-		ReferrerIcon:    sessions[n].ReferrerIcon,
-		OS:              sessions[n].OS,
-		OSVersion:       sessions[n].OSVersion,
-		Browser:         sessions[n].Browser,
-		BrowserVersion:  sessions[n].BrowserVersion,
-		Desktop:         sessions[n].Desktop,
-		Mobile:          sessions[n].Mobile,
-		ScreenWidth:     sessions[n].ScreenWidth,
-		ScreenHeight:    sessions[n].ScreenHeight,
-		ScreenClass:     sessions[n].ScreenClass,
-		UTMSource:       sessions[n].UTMSource,
-		UTMMedium:       sessions[n].UTMMedium,
-		UTMCampaign:     sessions[n].UTMCampaign,
-		UTMContent:      sessions[n].UTMContent,
-		UTMTerm:         sessions[n].UTMTerm,
-	}, sessions, ua
+		Path:            sessionState.State.ExitPath,
+		Title:           sessionState.State.Title,
+		Language:        sessionState.State.Language,
+		CountryCode:     sessionState.State.CountryCode,
+		City:            sessionState.State.City,
+		Referrer:        sessionState.State.Referrer,
+		ReferrerName:    sessionState.State.ReferrerName,
+		ReferrerIcon:    sessionState.State.ReferrerIcon,
+		OS:              sessionState.State.OS,
+		OSVersion:       sessionState.State.OSVersion,
+		Browser:         sessionState.State.Browser,
+		BrowserVersion:  sessionState.State.BrowserVersion,
+		Desktop:         sessionState.State.Desktop,
+		Mobile:          sessionState.State.Mobile,
+		ScreenWidth:     sessionState.State.ScreenWidth,
+		ScreenHeight:    sessionState.State.ScreenHeight,
+		ScreenClass:     sessionState.State.ScreenClass,
+		UTMSource:       sessionState.State.UTMSource,
+		UTMMedium:       sessionState.State.UTMMedium,
+		UTMCampaign:     sessionState.State.UTMCampaign,
+		UTMContent:      sessionState.State.UTMContent,
+		UTMTerm:         sessionState.State.UTMTerm,
+	}, sessionState, ua
 }
 
 // ExtendSession looks up and extends the session for given request.

@@ -95,7 +95,7 @@ type Tracker struct {
 	sessionCache                              SessionCache
 	salt                                      string
 	pageViews                                 chan PageView
-	sessions                                  chan Session
+	sessions                                  chan SessionState
 	events                                    chan Event
 	userAgents                                chan UserAgent
 	stopped                                   int32
@@ -131,7 +131,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		sessionCache:            config.SessionCache,
 		salt:                    salt,
 		pageViews:               make(chan PageView, config.Worker*config.WorkerBufferSize),
-		sessions:                make(chan Session, config.Worker*config.WorkerBufferSize),
+		sessions:                make(chan SessionState, config.Worker*config.WorkerBufferSize),
 		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
 		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
@@ -172,16 +172,11 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
-		pageView, sessions, ua := HitFromRequest(r, tracker.salt, options)
+		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
 			tracker.pageViews <- *pageView
-		}
-
-		if sessions != nil {
-			for _, session := range sessions {
-				tracker.sessions <- session
-			}
+			tracker.sessions <- sessionState
 		}
 
 		if ua != nil {
@@ -378,16 +373,20 @@ func (tracker *Tracker) savePageViews(pageViews []PageView) {
 }
 
 func (tracker *Tracker) flushSessions() {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
 
 	for {
 		stop := false
 
 		select {
 		case session := <-tracker.sessions:
-			sessions = append(sessions, session)
+			sessions = append(sessions, session.State)
 
-			if len(sessions) == tracker.workerBufferSize {
+			if session.Cancel != nil {
+				sessions = append(sessions, *session.Cancel)
+			}
+
+			if len(sessions) >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
@@ -404,7 +403,7 @@ func (tracker *Tracker) flushSessions() {
 }
 
 func (tracker *Tracker) aggregateSessions(ctx context.Context) {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -413,9 +412,13 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
-			sessions = append(sessions, session)
+			sessions = append(sessions, session.State)
 
-			if len(sessions) == tracker.workerBufferSize {
+			if session.Cancel != nil {
+				sessions = append(sessions, *session.Cancel)
+			}
+
+			if len(sessions) >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
