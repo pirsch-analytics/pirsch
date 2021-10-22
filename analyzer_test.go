@@ -18,10 +18,14 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 		{VisitorID: 4, Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), ExitPath: "/bar", Title: "Bar"},
-		{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), ExitPath: "/foo", Title: "Foo"},
-		{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), ExitPath: "/", Title: "Home"},
-		{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), ExitPath: "/", Title: "Home"},
+		{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25)},
+		{Sign: -1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25)},
+		{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15)},
+		{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3)},
+		{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5)},
+		{Sign: -1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5)},
+		{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3)},
+		{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute)},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -60,12 +64,16 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/foo", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, PageViews: 1, IsBounce: true},
+		{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, PageViews: 2, IsBounce: false, DurationSeconds: 300},
 		{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 41, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
 		{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
 		{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
@@ -146,6 +154,8 @@ func TestAnalyzer_Growth(t *testing.T) {
 		{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
 		{Sign: 1, VisitorID: 2, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: -1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
 		{Sign: 1, VisitorID: 4, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
 		{Sign: 1, VisitorID: 5, Time: pastDay(3), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
@@ -238,6 +248,8 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo"},
+		{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/bar"},
 		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/"},
 		{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), ExitPath: "/"},
 		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), ExitPath: "/"},
@@ -246,11 +258,22 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), ExitPath: "/"},
 		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), ExitPath: "/"},
 	}))
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(2).Add(time.Hour*2 + time.Minute*30), Path: "/foo"},
+		{VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Path: "/"},
+		{VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), Path: "/"},
+		{VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 6, Time: Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 7, Time: Today().Add(time.Hour * 10), Path: "/"},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.VisitorHours(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
+	assert.Equal(t, 1, visitors[2].Visitors)
 	assert.Equal(t, 1, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
 	assert.Equal(t, 2, visitors[5].Visitors)
@@ -1246,6 +1269,11 @@ func TestAnalyzer_Timezone(t *testing.T) {
 		{Sign: 1, VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), ExitPath: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
 		{Sign: 1, VisitorID: 2, Time: pastDay(2), ExitPath: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
 		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), ExitPath: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
+	}))
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
+		{VisitorID: 2, Time: pastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
+		{VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
