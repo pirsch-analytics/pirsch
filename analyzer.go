@@ -694,10 +694,16 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filterArgs, filterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	args := make([]interface{}, 0, len(filterArgs)*3+len(innerFilterArgs)*3)
+	count := "uniq(visitor_id) "
+
+	if table == "session" {
+		count = "sum(sign) "
+	}
+
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT (
-			SELECT uniq(visitor_id)
-			FROM %s s `, table))
+			SELECT %s
+			FROM %s s `, count, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
@@ -717,8 +723,8 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			AND mobile = 0
 		) AS "platform_desktop",
 		(
-			SELECT uniq(visitor_id)
-			FROM %s s `, filterQuery, table))
+			SELECT %s
+			FROM %s s `, filterQuery, count, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
@@ -738,8 +744,8 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			AND mobile = 1
 		) AS "platform_mobile",
 		(
-			SELECT uniq(visitor_id)
-			FROM %s s `, filterQuery, table))
+			SELECT %s
+			FROM %s s `, filterQuery, count, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
@@ -901,10 +907,15 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(outerFilterArgs))
 	args = append(args, innerFilterArgs...)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT os,
-		os_version,
-		uniq(visitor_id) visitors,
-		visitors / greatest((
+	query.WriteString(`SELECT os, os_version, `)
+
+	if table == "session" {
+		query.WriteString(`sum(sign) visitors, `)
+	} else {
+		query.WriteString(`uniq(visitor_id) visitors, `)
+	}
+
+	query.WriteString(fmt.Sprintf(`visitors / greatest((
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
@@ -923,10 +934,13 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY os, os_version
-		ORDER BY visitors DESC, os, os_version
-		%s`, outerFilterQuery, filter.withLimit()))
+	query.WriteString(fmt.Sprintf(`WHERE %s GROUP BY os, os_version `, outerFilterQuery))
+
+	if table == "session" {
+		query.WriteString(`HAVING sum(sign) > 0 `)
+	}
+
+	query.WriteString(fmt.Sprintf(`ORDER BY visitors DESC, os, os_version %s`, filter.withLimit()))
 	args = append(args, outerFilterArgs...)
 	var stats []OSVersionStats
 
@@ -946,10 +960,15 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(outerFilterArgs))
 	args = append(args, innerFilterArgs...)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT browser,
-		browser_version,
-		uniq(visitor_id) visitors,
-		visitors / greatest((
+	query.WriteString(`SELECT browser, browser_version, `)
+
+	if table == "session" {
+		query.WriteString(`sum(sign) visitors, `)
+	} else {
+		query.WriteString(`uniq(visitor_id) visitors, `)
+	}
+
+	query.WriteString(fmt.Sprintf(`visitors / greatest((
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
@@ -968,10 +987,13 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY browser, browser_version
-		ORDER BY visitors DESC, browser, browser_version
-		%s`, outerFilterQuery, filter.withLimit()))
+	query.WriteString(fmt.Sprintf(`WHERE %s GROUP BY browser, browser_version `, outerFilterQuery))
+
+	if table == "session" {
+		query.WriteString(`HAVING sum(sign) > 0 `)
+	}
+
+	query.WriteString(fmt.Sprintf(`ORDER BY visitors DESC, browser, browser_version %s`, filter.withLimit()))
 	args = append(args, outerFilterArgs...)
 	var stats []BrowserVersionStats
 
@@ -1333,14 +1355,20 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(outerFilterArgs))
 	args = append(args, innerFilterArgs...)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT "%s",
-		uniq(visitor_id) visitors,
-		visitors / greatest((
+	query.WriteString(fmt.Sprintf(`SELECT "%s", `, attr))
+
+	if table == "session" {
+		query.WriteString(`sum(sign) visitors, `)
+	} else {
+		query.WriteString(`uniq(visitor_id) visitors, `)
+	}
+
+	query.WriteString(fmt.Sprintf(`visitors / greatest((
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
 		), 1) relative_visitors
-		FROM %s v `, attr, innerFilterQuery, table))
+		FROM %s v `, innerFilterQuery, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
 		args = append(args, innerFilterArgs...)
@@ -1354,10 +1382,13 @@ func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter,
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY "%s"
-		ORDER BY visitors DESC, "%s" ASC
-		%s`, outerFilterQuery, attr, attr, filter.withLimit()))
+	query.WriteString(fmt.Sprintf(`WHERE %s GROUP BY "%s" `, outerFilterQuery, attr))
+
+	if table == "session" {
+		query.WriteString(`HAVING sum(sign) > 0 `)
+	}
+
+	query.WriteString(fmt.Sprintf(`ORDER BY visitors DESC, "%s" ASC %s`, attr, filter.withLimit()))
 	args = append(args, outerFilterArgs...)
 	return analyzer.store.Select(results, query.String(), args...)
 }

@@ -877,6 +877,16 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 
 func TestAnalyzer_Platform(t *testing.T) {
 	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: time.Now(), Path: "/"},
+		{VisitorID: 1, Time: time.Now(), Path: "/foo"},
+		{VisitorID: 1, Time: time.Now(), Path: "/bar"},
+		{VisitorID: 2, Time: time.Now(), Path: "/"},
+		{VisitorID: 3, Time: time.Now(), Path: "/"},
+		{VisitorID: 4, Time: time.Now(), Path: "/"},
+		{VisitorID: 5, Time: time.Now(), Path: "/"},
+		{VisitorID: 6, Time: time.Now(), Path: "/"},
+	}))
 	saveSessions(t, [][]Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Desktop: false},
@@ -901,6 +911,14 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Platform(&Filter{Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, platform.PlatformDesktop)
+	assert.Equal(t, 0, platform.PlatformMobile)
+	assert.Equal(t, 0, platform.PlatformUnknown)
+	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformUnknown, 0.01)
 	_, err = analyzer.Platform(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Platform(getMaxFilter("event"))
@@ -1019,10 +1037,10 @@ func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserSafari},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Browser: BrowserSafari},
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
 			{Sign: 1, VisitorID: 2, Time: time.Now(), Browser: BrowserFirefox},
 			{Sign: 1, VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox},
@@ -1107,16 +1125,16 @@ func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSLinux},
+			{Sign: 1, VisitorID: 1, Time: Today(), OS: OSLinux},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), OS: OSLinux},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSWindows},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), OS: OSMac},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), OS: OSMac},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), OS: OSLinux},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), OS: OSWindows},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), OS: OSWindows},
+			{Sign: -1, VisitorID: 1, Time: Today(), OS: OSLinux},
+			{Sign: 1, VisitorID: 1, Time: Today(), OS: OSWindows},
+			{Sign: 1, VisitorID: 2, Time: Today(), OS: OSMac},
+			{Sign: 1, VisitorID: 3, Time: Today(), OS: OSMac},
+			{Sign: 1, VisitorID: 4, Time: Today(), OS: OSLinux},
+			{Sign: 1, VisitorID: 5, Time: Today(), OS: OSWindows},
+			{Sign: 1, VisitorID: 6, Time: Today(), OS: OSWindows},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
