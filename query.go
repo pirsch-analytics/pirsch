@@ -274,7 +274,11 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			) s
 			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, filterQuery))
 
-			if filter.Path != "" || filter.PathPattern != "" || filter.EventName != "" {
+			if filter.EventName != "" {
+				filterArgs, filterQuery = filter.query()
+				args = append(args, filterArgs...)
+				query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
+			} else if filter.Path != "" || filter.PathPattern != "" {
 				filterArgs, filterQuery = filter.queryPageOrEvent()
 				args = append(args, filterArgs...)
 				query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))

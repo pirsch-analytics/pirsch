@@ -252,7 +252,6 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO
 func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{

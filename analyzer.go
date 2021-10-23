@@ -142,13 +142,14 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, ErrNoPeriodOrDay
 	}
 
-	args, query := buildQuery(filter, []field{
+	fields := []field{
 		fieldVisitors,
 		fieldSessions,
 		fieldViews,
 		fieldBounces,
 		fieldBounceRate,
-	}, nil, nil)
+	}
+	args, query := buildQuery(filter, fields, nil, nil)
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query, args...); err != nil {
@@ -178,13 +179,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	args, query = buildQuery(filter, []field{
-		fieldVisitors,
-		fieldSessions,
-		fieldViews,
-		fieldBounces,
-		fieldBounceRate,
-	}, nil, nil)
+	args, query = buildQuery(filter, fields, nil, nil)
 	previous := new(growthStats)
 
 	if err := analyzer.store.Get(previous, query, args...); err != nil {

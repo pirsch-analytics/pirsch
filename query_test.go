@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// TODO event
 func TestBuildQuery(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
