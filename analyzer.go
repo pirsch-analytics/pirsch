@@ -109,7 +109,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 	table := filter.table()
 	fields := []string{"visitor_id", "session_id", "time"}
 	var query strings.Builder
@@ -126,7 +126,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		query.WriteString(`count(1) views `)
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	baseArgs, baseQuery := baseQuery(filter, fields, nil)
 	withFillArgs, withFillQuery := filter.withFill()
 	baseArgs = append(baseArgs, withFillArgs...)
 	query.WriteString(fmt.Sprintf(`FROM (%s) GROUP BY day `, baseQuery))
@@ -140,8 +140,9 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 
 	if err := analyzer.store.Select(&stats, query.String(), baseArgs...); err != nil {
 		return nil, err
-	}
+	}*/
 
+	var stats []VisitorStats
 	return stats, nil
 }
 
@@ -149,7 +150,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 // The growth rate is relative to the previous time range or day.
 // The period or day for the filter must be set, else an error is returned.
 func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 
 	if filter.Day.IsZero() && (filter.From.IsZero() || filter.To.IsZero()) {
 		return nil, ErrNoPeriodOrDay
@@ -169,8 +170,8 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		query.WriteString(`count(1) views `)
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
-	query.WriteString(fmt.Sprintf(`FROM (%s)`, baseQuery))
+	baseArgs, bQuery := baseQuery(filter, fields, nil)
+	query.WriteString(fmt.Sprintf(`FROM (%s)`, bQuery))
 	current := new(growthStats)
 
 	if err := analyzer.store.Get(current, query.String(), baseArgs...); err != nil {
@@ -200,7 +201,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	baseArgs, _ = analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
+	baseArgs, _ = baseQuery(filter, []string{"visitor_id", "session_id", "time"}, nil)
 	previous := new(growthStats)
 
 	if err := analyzer.store.Get(previous, query.String(), baseArgs...); err != nil {
@@ -227,7 +228,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		SessionsGrowth:  analyzer.calculateGrowth(current.Sessions, previous.Sessions),
 		BouncesGrowth:   analyzer.calculateGrowthFloat64(current.BounceRate, previous.BounceRate),
 		TimeSpentGrowth: analyzer.calculateGrowth(currentTimeSpent, previousTimeSpent),
-	}, nil
+	}, nil*/
+
+	return &Growth{}, nil
 }
 
 // VisitorHours returns the visitor count grouped by time of day.
@@ -384,7 +387,7 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 
 // EntryPages returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
 		return []EntryStats{}, nil
@@ -399,7 +402,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		anyTitle = ",any(title) title"
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	baseArgs, baseQuery := baseQuery(filter, fields, nil)
 	query := fmt.Sprintf(`SELECT entry_path %s,
 		sum(sign) entries
 		FROM (%s)
@@ -453,12 +456,14 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		}
 	}
 
-	return stats, nil
+	return stats, nil*/
+
+	return []EntryStats{}, nil
 }
 
 // ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
 		return []ExitStats{}, nil
@@ -473,7 +478,7 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		anyTitle = ",any(title) title"
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	baseArgs, baseQuery := baseQuery(filter, fields, nil)
 	query := fmt.Sprintf(`SELECT exit_path %s,
 		sum(sign) exits
 		FROM (%s)
@@ -510,13 +515,15 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		}
 	}
 
-	return stats, nil
+	return stats, nil*/
+
+	return []ExitStats{}, nil
 }
 
 // PageConversions returns the visitor count, views, and conversion rate for conversion goals.
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 	table := filter.table()
 	fields := []string{"visitor_id"}
 
@@ -524,7 +531,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 		fields = append(fields, "sign", "page_views")
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	baseArgs, baseQuery := baseQuery(filter, fields, nil)
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, baseArgs...)
 	var query strings.Builder
@@ -550,7 +557,9 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
+
+	return &PageConversionsStats{}, nil
 }
 
 // Events returns the visitor count, views, and conversion rate for custom events.
@@ -625,7 +634,7 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
-	filter = analyzer.getFilter(filter)
+	/*filter = analyzer.getFilter(filter)
 	table := filter.table()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	ref := ""
@@ -661,7 +670,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
+	baseArgs, baseQuery := baseQuery(filter, fields, nil)
 	args := make([]interface{}, 0, len(innerFilterArgs)+len(baseArgs))
 	args = append(args, innerFilterArgs...)
 	args = append(args, baseArgs...)
@@ -679,7 +688,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
+
+	return []ReferrerStats{}, nil
 }
 
 // Platform returns the visitor count grouped by platform.
@@ -1395,45 +1406,6 @@ func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) floa
 	c := current
 	p := previous
 	return (c - p) / p
-}
-
-func (analyzer *Analyzer) baseQuery(filter *Filter, fields []string) ([]interface{}, string) {
-	table := filter.table()
-	args := make([]interface{}, 0)
-	fieldQuery := strings.Join(fields, ",")
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s FROM %s s `, fieldQuery, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "" || analyzer.contains(fields, "path")) {
-		entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
-		filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
-		innerFilterArgs, innerFilterQuery := filter.query()
-		filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	filterArgs, filterQuery := filter.query()
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
-	return args, query.String()
-}
-
-func (analyzer *Analyzer) contains(haystack []string, needle string) bool {
-	for i := range haystack {
-		if haystack[i] == needle {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {

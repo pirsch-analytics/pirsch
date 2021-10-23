@@ -71,11 +71,11 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
 			{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
@@ -86,12 +86,27 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 		{
 			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
 			{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 9, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: pastDay(4), Path: "/"},
+		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/"},
+		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 3, Time: pastDay(4), Path: "/"},
+		{VisitorID: 4, Time: pastDay(4), Path: "/"},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 7, Time: pastDay(2), Path: "/"},
+		{VisitorID: 8, Time: pastDay(2), Path: "/"},
+		{VisitorID: 9, Time: Today(), Path: "/"},
+	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors(&Filter{From: pastDay(4), To: Today()})
 	assert.NoError(t, err)
@@ -103,7 +118,40 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.Equal(t, Today(), visitors[4].Day)
 	assert.Equal(t, 4, visitors[0].Visitors)
 	assert.Equal(t, 0, visitors[1].Visitors)
-	assert.Equal(t, 4, visitors[2].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+
+	assert.Equal(t, 5, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 2, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+
+	assert.Equal(t, 5, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 2, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+
+	assert.Equal(t, 4, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 2, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+
+	assert.InDelta(t, 0.8, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+
+	visitors, err = analyzer.Visitors(&Filter{Path: "/", From: pastDay(4), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
 	assert.Equal(t, 0, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
 	assert.Equal(t, 6, visitors[0].Sessions)
@@ -111,9 +159,9 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.Equal(t, 4, visitors[2].Sessions)
 	assert.Equal(t, 0, visitors[3].Sessions)
 	assert.Equal(t, 1, visitors[4].Sessions)
-	assert.Equal(t, 7, visitors[0].Views)
+	assert.Equal(t, 5, visitors[0].Views)
 	assert.Equal(t, 0, visitors[1].Views)
-	assert.Equal(t, 6, visitors[2].Views)
+	assert.Equal(t, 2, visitors[2].Views)
 	assert.Equal(t, 0, visitors[3].Views)
 	assert.Equal(t, 1, visitors[4].Views)
 	assert.Equal(t, 5, visitors[0].Bounces)
@@ -126,6 +174,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+
 	asd, err := analyzer.AvgSessionDuration(nil)
 	assert.NoError(t, err)
 	assert.Len(t, asd, 2)
@@ -1759,11 +1808,11 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: Today(), Path: "/"},
 		{VisitorID: 1, Time: Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
-		{VisitorID: 1, Time: Today().Add(time.Minute * 2).Add(time.Second * 23), Path: "/bar", DurationSeconds: 23},
+		{VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
 
 		{VisitorID: 2, Time: Today(), Path: "/bar"},
 		{VisitorID: 2, Time: Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
-		{VisitorID: 2, Time: Today().Add(time.Second * 16).Add(time.Second * 8), Path: "/", DurationSeconds: 8},
+		{VisitorID: 2, Time: Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
 	}))
 	saveSessions(t, [][]Session{
 		{
