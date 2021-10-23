@@ -156,18 +156,20 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	table := filter.table()
+	fields := []string{"visitor_id", "session_id", "time"}
 	var query strings.Builder
 	query.WriteString(`SELECT uniq(visitor_id) visitors,
 		uniq(visitor_id, session_id) sessions, `)
 
 	if table == "session" {
-		query.WriteString(`sum(page_views) views,
-			sum(is_bounce) / IF(sessions = 0, 1, sessions) bounce_rate `)
+		fields = append(fields, "sign", "page_views", "is_bounce")
+		query.WriteString(`sum(page_views*sign) views,
+			sum(is_bounce*sign) / IF(sessions = 0, 1, sessions) bounce_rate `)
 	} else {
 		query.WriteString(`count(1) views `)
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	query.WriteString(fmt.Sprintf(`FROM (%s)`, baseQuery))
 	current := new(growthStats)
 
@@ -388,39 +390,26 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		return []EntryStats{}, nil
 	}
 
+	fields := []string{"sign", "entry_path"}
 	title := filter.groupByTitle()
 	anyTitle := ""
 
 	if title != "" {
+		fields = append(fields, "title")
 		anyTitle = ",any(title) title"
 	}
 
-	path := filter.Path
-	filter.Path = ""
-	outerFilterArgs, outerFilterQuery := filter.query()
-	filter.Path = path
-	filter.EntryPath = ""
-	filter.ExitPath = ""
-	innerFilterArgs, innerFilterQuery := filter.query()
-	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	query := fmt.Sprintf(`SELECT entry_path %s,
-		uniq(visitor_id, session_id) entries
-		FROM session s
-		INNER JOIN (
-			SELECT path %s,
-			visitor_id,
-			session_id
-			FROM page_view
-			WHERE %s
-		) AS v
-		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id
-		WHERE %s
+		sum(sign) entries
+		FROM (%s)
 		GROUP BY entry_path
+		HAVING sum(sign) > 0
 		ORDER BY entries DESC, entry_path
-		%s`, anyTitle, title, innerFilterQuery, outerFilterQuery, filter.withLimit())
+		%s`, anyTitle, baseQuery, filter.withLimit())
 	var stats []EntryStats
 
-	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, baseArgs...); err != nil {
 		return nil, err
 	}
 
@@ -475,39 +464,26 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		return []ExitStats{}, nil
 	}
 
+	fields := []string{"sign", "exit_path"}
 	title := filter.groupByTitle()
 	anyTitle := ""
 
 	if title != "" {
+		fields = append(fields, "title")
 		anyTitle = ",any(title) title"
 	}
 
-	path := filter.Path
-	filter.Path = ""
-	outerFilterArgs, outerFilterQuery := filter.query()
-	filter.Path = path
-	filter.EntryPath = ""
-	filter.ExitPath = ""
-	innerFilterArgs, innerFilterQuery := filter.query()
-	innerFilterArgs = append(innerFilterArgs, outerFilterArgs...)
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	query := fmt.Sprintf(`SELECT exit_path %s,
-		uniq(visitor_id, session_id) exits
-		FROM session s
-		INNER JOIN (
-			SELECT path %s,
-			visitor_id,
-			session_id
-			FROM page_view
-			WHERE %s
-		) AS v
-		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id
-		WHERE %s
+		sum(sign) exits
+		FROM (%s)
 		GROUP BY exit_path
+		HAVING sum(sign) > 0
 		ORDER BY exits DESC, exit_path
-		%s`, anyTitle, title, innerFilterQuery, outerFilterQuery, filter.withLimit())
+		%s`, anyTitle, baseQuery, filter.withLimit())
 	var stats []ExitStats
 
-	if err := analyzer.store.Select(&stats, query, innerFilterArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, baseArgs...); err != nil {
 		return nil, err
 	}
 
