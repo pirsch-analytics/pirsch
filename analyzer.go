@@ -1,6 +1,7 @@
 package pirsch
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -157,7 +158,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	args, query := buildQuery(filter, fields, nil, nil)
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query, args...); err != nil {
+	if err := analyzer.store.Get(current, query, args...); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
@@ -187,7 +188,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	args, query = buildQuery(filter, fields, nil, nil)
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query, args...); err != nil {
+	if err := analyzer.store.Get(previous, query, args...); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 

@@ -252,6 +252,23 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_GrowthNoData(t *testing.T) {
+	cleanupDB()
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Growth(&Filter{Day: pastDay(7)})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	_, err = analyzer.Growth(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Growth(getMaxFilter("event"))
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
