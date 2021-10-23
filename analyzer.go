@@ -16,6 +16,7 @@ type growthStats struct {
 	Visitors   int
 	Views      int
 	Sessions   int
+	Bounces    int
 	BounceRate float64 `db:"bounce_rate"`
 }
 
@@ -109,7 +110,6 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
-	filter = analyzer.getFilter(filter)
 	args, query := buildQuery(analyzer.getFilter(filter), []field{
 		fieldDay,
 		fieldUniqVisitors,
@@ -136,31 +136,22 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 // The growth rate is relative to the previous time range or day.
 // The period or day for the filter must be set, else an error is returned.
 func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
-	/*filter = analyzer.getFilter(filter)
+	filter = analyzer.getFilter(filter)
 
 	if filter.Day.IsZero() && (filter.From.IsZero() || filter.To.IsZero()) {
 		return nil, ErrNoPeriodOrDay
 	}
 
-	table := filter.table()
-	fields := []string{"visitor_id", "session_id", "time"}
-	var query strings.Builder
-	query.WriteString(`SELECT uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions, `)
-
-	if table == "session" {
-		fields = append(fields, "sign", "page_views", "is_bounce")
-		query.WriteString(`sum(page_views*sign) views,
-			sum(is_bounce*sign) / IF(sessions = 0, 1, sessions) bounce_rate `)
-	} else {
-		query.WriteString(`count(1) views `)
-	}
-
-	baseArgs, bQuery := baseQuery(filter, fields, nil)
-	query.WriteString(fmt.Sprintf(`FROM (%s)`, bQuery))
+	args, query := buildQuery(filter, []field{
+		fieldUniqVisitors,
+		fieldUniqSessions,
+		fieldViews,
+		fieldBounces,
+		fieldBounceRate,
+	}, nil, nil)
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query.String(), baseArgs...); err != nil {
+	if err := analyzer.store.Get(current, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -187,10 +178,16 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		filter.Day = filter.Day.Add(-time.Hour * 24)
 	}
 
-	baseArgs, _ = baseQuery(filter, []string{"visitor_id", "session_id", "time"}, nil)
+	args, query = buildQuery(filter, []field{
+		fieldUniqVisitors,
+		fieldUniqSessions,
+		fieldViews,
+		fieldBounces,
+		fieldBounceRate,
+	}, nil, nil)
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query.String(), baseArgs...); err != nil {
+	if err := analyzer.store.Get(previous, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -214,52 +211,22 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		SessionsGrowth:  analyzer.calculateGrowth(current.Sessions, previous.Sessions),
 		BouncesGrowth:   analyzer.calculateGrowthFloat64(current.BounceRate, previous.BounceRate),
 		TimeSpentGrowth: analyzer.calculateGrowth(currentTimeSpent, previousTimeSpent),
-	}, nil*/
-
-	return &Growth{}, nil
+	}, nil
 }
 
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
-	filter = analyzer.getFilter(filter)
-	table := filter.table()
-
-	if table == "session" {
-		table = "page_view"
-	}
-
-	outerFilterArgs, outerFilterQuery := filter.query()
-	args := make([]interface{}, 0)
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT toHour(time, '%s') hour,
-		uniq(visitor_id) visitors
-		FROM (
-			SELECT visitor_id,
-			time
-			FROM %s v `, filter.Timezone.String(), table))
-
-	if table == "page_view" && (filter.EntryPath != "" || filter.ExitPath != "") {
-		innerFilterArgs, innerFilterQuery := filter.queryTime()
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id,
-				session_id,
-				entry_path,
-				exit_path
-				FROM session
-				WHERE %s
-			) s
-			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, outerFilterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s 
-		)
-		GROUP BY hour
-		ORDER BY hour WITH FILL FROM 0 TO 24`, outerFilterQuery))
+	args, query := buildQuery(analyzer.getFilter(filter), []field{
+		fieldHour,
+		fieldUniqVisitors,
+	}, []field{
+		fieldHour,
+	}, []field{
+		fieldHour,
+	})
 	var stats []VisitorHourStats
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 

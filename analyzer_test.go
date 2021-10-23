@@ -335,7 +335,6 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	visitors, err := analyzer.VisitorHours(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
-	assert.Equal(t, 1, visitors[2].Visitors)
 	assert.Equal(t, 1, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
 	assert.Equal(t, 2, visitors[5].Visitors)

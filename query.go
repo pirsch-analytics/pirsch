@@ -51,12 +51,21 @@ var (
 		timezone:       true,
 		name:           "day",
 	}
+	fieldHour = field{
+		querySessions:  "toHour(time, '%s')",
+		queryPageViews: "toHour(time, '%s')",
+		queryDirection: "ASC",
+		queryWithFill:  "WITH FILL FROM 0 TO 24",
+		timezone:       true,
+		name:           "hour",
+	}
 )
 
 type field struct {
 	querySessions  string
 	queryPageViews string
 	queryDirection string
+	queryWithFill  string
 	withFill       bool
 	timezone       bool
 	name           string
@@ -195,7 +204,9 @@ func joinOrderBy(args *[]interface{}, filter *Filter, fields []field) string {
 	var out strings.Builder
 
 	for i := range fields {
-		if fields[i].withFill {
+		if fields[i].queryWithFill != "" {
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fields[i].queryWithFill))
+		} else if fields[i].withFill {
 			fillArgs, fillQuery := filter.withFill()
 			*args = append(*args, fillArgs...)
 			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fillQuery))
