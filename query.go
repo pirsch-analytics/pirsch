@@ -195,6 +195,18 @@ var (
 		queryDirection: "ASC",
 		name:           "title",
 	}
+	fieldEntryTitle = field{
+		querySessions:  "entry_title",
+		queryPageViews: "entry_title",
+		queryDirection: "ASC",
+		name:           "title",
+	}
+	fieldExitTitle = field{
+		querySessions:  "exit_title",
+		queryPageViews: "exit_title",
+		queryDirection: "ASC",
+		name:           "title",
+	}
 	fieldDay = field{
 		querySessions:  "toDate(time, '%s')",
 		queryPageViews: "toDate(time, '%s')",

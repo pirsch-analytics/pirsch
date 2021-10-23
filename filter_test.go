@@ -335,13 +335,6 @@ func TestFilter_WithLimit(t *testing.T) {
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
 }
 
-func TestFilter_GroupByTitle(t *testing.T) {
-	filter := NewFilter(NullClient)
-	assert.Empty(t, filter.groupByTitle())
-	filter.IncludeTitle = true
-	assert.Equal(t, ",title", filter.groupByTitle())
-}
-
 func TestFilter_Fields(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.Path = "/"

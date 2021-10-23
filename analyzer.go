@@ -49,7 +49,12 @@ func NewAnalyzer(store Store) *Analyzer {
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
 	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
-	title := filter.groupByTitle()
+	title := ""
+
+	if filter.IncludeTitle {
+		title = ",title"
+	}
+
 	filterArgs, filterQuery := filter.query()
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
@@ -300,15 +305,25 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		return []EntryStats{}, nil
 	}
 
-	args, query := buildQuery(filter, []field{
+	fields := []field{
 		fieldEntryPath,
 		fieldEntries,
-	}, []field{
+	}
+	groupBy := []field{
 		fieldEntryPath,
-	}, []field{
+	}
+	orderBy := []field{
 		fieldEntries,
 		fieldEntryPath,
-	})
+	}
+
+	if filter.IncludeTitle {
+		fields = append(fields, fieldEntryTitle)
+		groupBy = append(groupBy, fieldEntryTitle)
+		orderBy = append(orderBy, fieldEntryTitle)
+	}
+
+	args, query := buildQuery(filter, fields, groupBy, orderBy)
 	var stats []EntryStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -366,15 +381,25 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		return []ExitStats{}, nil
 	}
 
-	args, query := buildQuery(filter, []field{
+	fields := []field{
 		fieldExitPath,
 		fieldExits,
-	}, []field{
+	}
+	groupBy := []field{
 		fieldExitPath,
-	}, []field{
+	}
+	orderBy := []field{
 		fieldExits,
 		fieldExitPath,
-	})
+	}
+
+	if filter.IncludeTitle {
+		fields = append(fields, fieldExitTitle)
+		groupBy = append(groupBy, fieldExitTitle)
+		orderBy = append(orderBy, fieldExitTitle)
+	}
+
+	args, query := buildQuery(filter, fields, groupBy, orderBy)
 	var stats []ExitStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {

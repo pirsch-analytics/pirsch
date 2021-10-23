@@ -111,7 +111,7 @@ func (client *Client) SaveSessions(sessions []Session) error {
 	}
 
 	query, err := tx.Prepare(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
-		entry_path, exit_path, page_views, is_bounce, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
@@ -131,7 +131,8 @@ func (client *Client) SaveSessions(sessions []Session) error {
 			session.ExitPath,
 			session.PageViews,
 			session.IsBounce,
-			session.Title,
+			session.EntryTitle,
+			session.ExitTitle,
 			session.Language,
 			session.CountryCode,
 			session.City,

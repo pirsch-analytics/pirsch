@@ -62,7 +62,7 @@ func TestHitFromRequest(t *testing.T) {
 		session.EntryPath != "/test/path" ||
 		session.PageViews != 1 ||
 		!session.IsBounce ||
-		session.Title != "title" ||
+		session.EntryTitle != "title" ||
 		session.Language != "de" ||
 		session.Referrer != "http://ref" ||
 		session.OS != OSWindows ||

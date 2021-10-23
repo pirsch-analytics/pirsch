@@ -126,7 +126,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		Time:            sessionState.State.Time,
 		DurationSeconds: timeOnPage,
 		Path:            sessionState.State.ExitPath,
-		Title:           sessionState.State.Title,
+		Title:           sessionState.State.EntryTitle,
 		Language:        sessionState.State.Language,
 		CountryCode:     sessionState.State.CountryCode,
 		City:            sessionState.State.City,
@@ -266,7 +266,8 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 		ExitPath:       path,
 		PageViews:      1,
 		IsBounce:       true,
-		Title:          title,
+		EntryTitle:     title,
+		ExitTitle:      title,
 		Language:       lang,
 		CountryCode:    countryCode,
 		City:           city,
@@ -308,8 +309,8 @@ func updateSession(options *HitOptions, session *Session, now time.Time, path, t
 	session.IsBounce = session.IsBounce && path == session.ExitPath
 	session.Time = now
 	session.ExitPath = path
+	session.ExitTitle = title
 	session.PageViews++
-	session.Title = title
 	return uint32(top)
 }
 

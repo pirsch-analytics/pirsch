@@ -380,14 +380,6 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-func (filter *Filter) groupByTitle() string {
-	if filter.IncludeTitle {
-		return ",title"
-	}
-
-	return ""
-}
-
 func (filter *Filter) query() ([]interface{}, string) {
 	args, query := filter.queryTime()
 	fieldArgs, queryFields := filter.queryFields()
