@@ -998,7 +998,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
 	var query strings.Builder
 	query.WriteString(`SELECT toDate(time) day,
-		ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
+		ifNull(toUInt64(avg(nullIf(duration_seconds, 0)*sign)), 0) average_time_spent_seconds
 		FROM session s `)
 
 	if filter.Path != "" || filter.PathPattern != "" {
@@ -1084,8 +1084,8 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	query.WriteString(fmt.Sprintf(`WHERE %s
 				ORDER BY visitor_id, session_id, time
 			)
-			WHERE time_on_page > 0
-			AND session_id = neighbor(session_id, 1, null)
+			WHERE session_id = neighbor(session_id, 1, null)
+			AND time_on_page > 0
 			%s
 		)
 		GROUP BY day
@@ -1142,7 +1142,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	var query strings.Builder
 	query.WriteString(`SELECT sum(duration_seconds)
 		FROM (
-			SELECT max(duration_seconds) duration_seconds
+			SELECT sum(duration_seconds*sign) duration_seconds
 			FROM session s `)
 
 	if filter.Path != "" || filter.PathPattern != "" {
@@ -1225,8 +1225,8 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				GROUP BY visitor_id, session_id, time %s
 				ORDER BY visitor_id, session_id, time
 			)
-			WHERE time_on_page > 0
-			AND session_id = neighbor(session_id, 1, null)
+			WHERE session_id = neighbor(session_id, 1, null)
+			AND time_on_page > 0
 			%s
 		)`, timeQuery, fieldsQuery, fieldQuery))
 	stats := new(struct {

@@ -1339,7 +1339,6 @@ func TestAnalyzer_UTM(t *testing.T) {
 
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	cleanupDB()
-	// TODO add sessions
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(3), SessionID: 3, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: pastDay(3).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
@@ -1354,6 +1353,20 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 		{VisitorID: 6, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home"},
 		{VisitorID: 6, Time: pastDay(1).Add(time.Second * 6), SessionID: 1, Path: "/foo", DurationSeconds: 6, Title: "Foo"},
 	}))
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 5, Time: pastDay(1), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(1), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+		},
+	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: "/", From: pastDay(3), To: Today()})
@@ -1363,6 +1376,9 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+	byDay, err = analyzer.AvgTimeOnPage(&Filter{Path: "/foo", From: pastDay(3), To: Today()})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 0)
 	byDay, err = analyzer.AvgTimeOnPage(&Filter{MaxTimeOnPageSeconds: 5})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 3)
