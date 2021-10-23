@@ -262,6 +262,15 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	return args, strings.Join(queryFields, "AND ")
 }
 
+func (filter *Filter) queryPageOrEvent() ([]interface{}, string) {
+	args := make([]interface{}, 0, 3)
+	queryFields := make([]string, 0, 3)
+	filter.appendQuery(&queryFields, &args, "path", filter.Path)
+	filter.appendQuery(&queryFields, &args, "event_name", filter.EventName)
+	filter.queryPathPattern(&queryFields, &args)
+	return args, strings.Join(queryFields, "AND ")
+}
+
 func (filter *Filter) queryPlatform(queryFields *[]string) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
@@ -366,14 +375,6 @@ func (filter *Filter) withFill() ([]interface{}, string) {
 func (filter *Filter) withLimit() string {
 	if filter.Limit > 0 {
 		return fmt.Sprintf("LIMIT %d ", filter.Limit)
-	}
-
-	return ""
-}
-
-func (filter *Filter) groupByTitle() string {
-	if filter.IncludeTitle {
-		return ",title"
 	}
 
 	return ""

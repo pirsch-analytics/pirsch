@@ -267,6 +267,53 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	assert.Equal(t, `match("path", ?) = 0`, query)
 }
 
+func TestFilter_QueryPageOrEvent(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "/"
+	filter.EventName = "event"
+	filter.validate()
+	args, query := filter.queryPageOrEvent()
+	assert.Len(t, args, 2)
+	assert.Equal(t, "/", args[0])
+	assert.Equal(t, "event", args[1])
+	assert.Equal(t, "path = ? AND event_name = ? ", query)
+}
+
+func TestFilter_QueryPageOrEventInvert(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "!/"
+	filter.EventName = "!event"
+	filter.validate()
+	args, query := filter.queryPageOrEvent()
+	assert.Len(t, args, 2)
+	assert.Equal(t, "/", args[0])
+	assert.Equal(t, "event", args[1])
+	assert.Equal(t, `path != ? AND event_name != ? `, query)
+	filter.Path = ""
+	filter.PathPattern = "!pattern"
+	filter.validate()
+	args, query = filter.queryPageOrEvent()
+	assert.Len(t, args, 2)
+	assert.Equal(t, "event", args[0])
+	assert.Equal(t, "pattern", args[1])
+	assert.Equal(t, `event_name != ? AND match("path", ?) = 0`, query)
+}
+
+func TestFilter_QueryPageOrEventNull(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "null"
+	filter.EventName = "null"
+	filter.validate()
+	args, query := filter.queryPageOrEvent()
+	assert.Len(t, args, 2)
+
+	for i := 0; i < len(args); i++ {
+		assert.Empty(t, args[i])
+	}
+
+	assert.Equal(t, "path = ? AND event_name = ? ", query)
+}
+
 func TestFilter_WithFill(t *testing.T) {
 	filter := NewFilter(NullClient)
 	args, query := filter.withFill()
@@ -286,13 +333,6 @@ func TestFilter_WithLimit(t *testing.T) {
 	assert.Empty(t, filter.withLimit())
 	filter.Limit = 42
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
-}
-
-func TestFilter_GroupByTitle(t *testing.T) {
-	filter := NewFilter(NullClient)
-	assert.Empty(t, filter.groupByTitle())
-	filter.IncludeTitle = true
-	assert.Equal(t, ",title", filter.groupByTitle())
 }
 
 func TestFilter_Fields(t *testing.T) {

@@ -55,7 +55,8 @@ type Session struct {
 	ExitPath        string `db:"exit_path"`
 	PageViews       uint16 `db:"page_views"`
 	IsBounce        bool   `db:"is_bounce"`
-	Title           string
+	EntryTitle      string `db:"entry_title"`
+	ExitTitle       string `db:"exit_title"`
 	Language        string
 	CountryCode     string `db:"country_code"`
 	City            string
@@ -212,7 +213,7 @@ type EventStats struct {
 
 // ReferrerStats is the result type for referrer statistics.
 type ReferrerStats struct {
-	Referrer         string  `db:"ref" json:"referrer"`
+	Referrer         string  `json:"referrer"`
 	ReferrerName     string  `db:"referrer_name" json:"referrer_name"`
 	ReferrerIcon     string  `db:"referrer_icon" json:"referrer_icon"`
 	Visitors         int     `json:"visitors"`
