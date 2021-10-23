@@ -271,20 +271,40 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 				query.WriteString("LEFT ")
 			}
 
-			// TODO optimize fields
+			sessionFields := make([]string, 0, 4)
+
+			if fieldsContain(fields, fieldEntryPath.name) {
+				sessionFields = append(sessionFields, fieldEntryPath.name)
+			}
+
+			if fieldsContain(fields, fieldExitPath.name) {
+				sessionFields = append(sessionFields, fieldExitPath.name)
+			}
+
+			if fieldsContain(fields, fieldBounces.name) {
+				sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
+			}
+
+			if fieldsContain(fields, fieldViews.name) {
+				sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
+			}
+
+			sessionFieldsQuery := strings.Join(sessionFields, ",")
+
+			if sessionFieldsQuery != "" {
+				sessionFieldsQuery = "," + sessionFieldsQuery
+			}
+
 			query.WriteString(fmt.Sprintf(`JOIN (
 				SELECT visitor_id,
-				session_id,
-				entry_path,
-				exit_path,
-				sum(is_bounce*sign) is_bounce,
-				sum(page_views*sign) page_views
+				session_id
+				%s
 				FROM session
 				WHERE %s
 				GROUP BY visitor_id, session_id, entry_path, exit_path
 				HAVING sum(sign) > 0
 			) s
-			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, filterQuery))
+			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery))
 
 			if filter.EventName != "" {
 				filterArgs, filterQuery = filter.query()
