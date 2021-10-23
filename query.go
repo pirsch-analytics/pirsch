@@ -12,6 +12,30 @@ var (
 		queryDirection: "ASC",
 		name:           "path",
 	}
+	fieldEntryPath = field{
+		querySessions:  "entry_path",
+		queryPageViews: "entry_path",
+		queryDirection: "ASC",
+		name:           "entry_path",
+	}
+	fieldEntries = field{
+		querySessions:  "sum(sign)",
+		queryPageViews: "uniq(visitor_id, session_id)",
+		queryDirection: "DESC",
+		name:           "entries",
+	}
+	fieldExitPath = field{
+		querySessions:  "exit_path",
+		queryPageViews: "exit_path",
+		queryDirection: "ASC",
+		name:           "exit_path",
+	}
+	fieldExits = field{
+		querySessions:  "sum(sign)",
+		queryPageViews: "uniq(visitor_id, session_id)",
+		queryDirection: "DESC",
+		name:           "exits",
+	}
 	fieldVisitors = field{
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",
@@ -24,6 +48,13 @@ var (
 		queryDirection: "DESC",
 		filterTime:     true,
 		name:           "relative_visitors",
+	}
+	fieldCR = field{
+		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		queryDirection: "DESC",
+		filterTime:     true,
+		name:           "cr",
 	}
 	fieldSessions = field{
 		querySessions:  "uniq(visitor_id, session_id)",
@@ -55,6 +86,30 @@ var (
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
 		queryDirection: "DESC",
 		name:           "bounce_rate",
+	}
+	fieldReferrer = field{
+		querySessions:  "referrer",
+		queryPageViews: "referrer",
+		queryDirection: "ASC",
+		name:           "referrer",
+	}
+	fieldAnyReferrer = field{
+		querySessions:  "any(referrer)",
+		queryPageViews: "any(referrer)",
+		queryDirection: "ASC",
+		name:           "referrer",
+	}
+	fieldReferrerName = field{
+		querySessions:  "referrer_name",
+		queryPageViews: "referrer_name",
+		queryDirection: "ASC",
+		name:           "referrer_name",
+	}
+	fieldReferrerIcon = field{
+		querySessions:  "any(referrer_icon)",
+		queryPageViews: "any(referrer_icon)",
+		queryDirection: "ASC",
+		name:           "referrer_icon",
 	}
 	fieldDay = field{
 		querySessions:  "toDate(time, '%s')",
@@ -106,14 +161,17 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			filterArgs, filterQuery := filter.query()
 			filter.Path, filter.PathPattern, filter.EventName = path, pathPattern, eventName
 			args = append(args, filterArgs...)
+			// TODO optimize
 			query.WriteString(fmt.Sprintf(`INNER JOIN (
 				SELECT visitor_id,
 				session_id,
+				entry_path,
+				exit_path,
 				sum(is_bounce*sign) is_bounce,
 				sum(page_views*sign) page_views
 				FROM session
 				WHERE %s
-				GROUP BY visitor_id, session_id
+				GROUP BY visitor_id, session_id, entry_path, exit_path
 				HAVING sum(sign) > 0
 			) s
 			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, filterQuery))
@@ -138,10 +196,10 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 		}
 	} else {
 		filterArgs, filterQuery := filter.query()
-		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`SELECT %s
 			FROM session
 			WHERE %s `, joinSessionFields(&args, filter, fields), filterQuery))
+		args = append(args, filterArgs...)
 
 		if len(groupBy) > 0 {
 			query.WriteString(fmt.Sprintf(`GROUP BY %s `, joinGroupBy(groupBy)))

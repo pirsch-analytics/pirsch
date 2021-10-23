@@ -212,7 +212,7 @@ type EventStats struct {
 
 // ReferrerStats is the result type for referrer statistics.
 type ReferrerStats struct {
-	Referrer         string  `db:"ref" json:"referrer"`
+	Referrer         string  `json:"referrer"`
 	ReferrerName     string  `db:"referrer_name" json:"referrer_name"`
 	ReferrerIcon     string  `db:"referrer_icon" json:"referrer_icon"`
 	Visitors         int     `json:"visitors"`
