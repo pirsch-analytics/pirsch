@@ -517,14 +517,21 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
 	filter = analyzer.getFilter(filter)
-	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id"})
+	table := filter.table()
+	fields := []string{"visitor_id"}
+
+	if table == "session" {
+		fields = append(fields, "sign", "page_views")
+	}
+
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	innerFilterArgs, innerFilterQuery := filter.queryTime()
 	innerFilterArgs = append(innerFilterArgs, baseArgs...)
 	var query strings.Builder
 	query.WriteString(`SELECT uniq(visitor_id) visitors, `)
 
-	if filter.table() == "session" {
-		query.WriteString(`sum(page_views) views, `)
+	if table == "session" {
+		query.WriteString(`sum(page_views*sign) views, `)
 	} else {
 		query.WriteString(`count(1) views, `)
 	}
