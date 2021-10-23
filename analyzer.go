@@ -109,40 +109,26 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
-	/*filter = analyzer.getFilter(filter)
-	table := filter.table()
-	fields := []string{"visitor_id", "session_id", "time"}
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
-		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions, `, filter.Timezone.String()))
-
-	if table == "session" {
-		fields = append(fields, "sign", "is_bounce", "page_views")
-		query.WriteString(`sum(page_views*sign) views,
-			sum(is_bounce*sign) bounces,
-			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
-	} else {
-		query.WriteString(`count(1) views `)
-	}
-
-	baseArgs, baseQuery := baseQuery(filter, fields, nil)
-	withFillArgs, withFillQuery := filter.withFill()
-	baseArgs = append(baseArgs, withFillArgs...)
-	query.WriteString(fmt.Sprintf(`FROM (%s) GROUP BY day `, baseQuery))
-
-	if table == "session" {
-		query.WriteString(`HAVING sum(sign) > 0 `)
-	}
-
-	query.WriteString(fmt.Sprintf(`ORDER BY day ASC %s, visitors DESC`, withFillQuery))
+	filter = analyzer.getFilter(filter)
+	args, query := buildQuery(analyzer.getFilter(filter), []field{
+		fieldDay,
+		fieldUniqVisitors,
+		fieldUniqSessions,
+		fieldViews,
+		fieldBounces,
+		fieldBounceRate,
+	}, []field{
+		fieldDay,
+	}, []field{
+		fieldDay,
+		fieldUniqVisitors,
+	})
 	var stats []VisitorStats
 
-	if err := analyzer.store.Select(&stats, query.String(), baseArgs...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
-	}*/
+	}
 
-	var stats []VisitorStats
 	return stats, nil
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 // TODO event
-func TestBaseQuery(t *testing.T) {
+func TestBuildQuery(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: Today(), Path: "/"},
@@ -40,25 +40,31 @@ func TestBaseQuery(t *testing.T) {
 
 	// no filter (from page views)
 	analyzer := NewAnalyzer(dbClient)
-	args, query := baseQuery(analyzer.getFilter(nil), []field{fieldPath, fieldUniqVisitors}, []string{"path"})
+	args, query := buildQuery(analyzer.getFilter(nil), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldUniqVisitors, fieldPath})
 	var stats []PageStats
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
 	assert.Equal(t, 2, stats[2].Visitors)
+	assert.Equal(t, "/", stats[0].Path)
+	assert.Equal(t, "/bar", stats[1].Path)
+	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join (from page views)
-	args, query = baseQuery(analyzer.getFilter(&Filter{EntryPath: "/"}), []field{fieldPath, fieldUniqVisitors}, []string{"path"})
+	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
 	assert.Equal(t, 1, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
 	assert.Equal(t, 1, stats[2].Visitors)
+	assert.Equal(t, "/", stats[0].Path)
+	assert.Equal(t, "/bar", stats[1].Path)
+	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join and filter (from page views)
-	args, query = baseQuery(analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []string{"path"})
+	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -66,7 +72,7 @@ func TestBaseQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 
 	// filter (from page views)
-	args, query = baseQuery(analyzer.getFilter(&Filter{Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []string{"path"})
+	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -74,7 +80,7 @@ func TestBaseQuery(t *testing.T) {
 	assert.Equal(t, 2, stats[0].Visitors)
 
 	// no filter (from sessions)
-	args, query = baseQuery(analyzer.getFilter(nil), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil)
+	args, query = buildQuery(analyzer.getFilter(nil), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
 	var vstats VisitorStats
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 2, vstats.Visitors)
@@ -84,7 +90,7 @@ func TestBaseQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 
 	// filter (from page views)
-	args, query = baseQuery(analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil)
+	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
