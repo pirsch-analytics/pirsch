@@ -189,6 +189,12 @@ var (
 		queryDirection: "ASC",
 		name:           "utm_term",
 	}
+	fieldTitle = field{
+		querySessions:  "title",
+		queryPageViews: "title",
+		queryDirection: "ASC",
+		name:           "title",
+	}
 	fieldDay = field{
 		querySessions:  "toDate(time, '%s')",
 		queryPageViews: "toDate(time, '%s')",
@@ -204,6 +210,11 @@ var (
 		queryWithFill:  "WITH FILL FROM 0 TO 24",
 		timezone:       true,
 		name:           "hour",
+	}
+	fieldEventTimeSpent = field{
+		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
+		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
+		name:           "average_time_spent_seconds",
 	}
 )
 
@@ -223,7 +234,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 	args := make([]interface{}, 0)
 	var query strings.Builder
 
-	if table == "event" || filter.Path != "" || filter.PathPattern != "" || fieldsContain(fields, "path") {
+	if table == "event" || filter.Path != "" || filter.PathPattern != "" || fieldsContain(fields, fieldPath.name) {
 		if table == "session" {
 			table = "page_view"
 		}
@@ -232,15 +243,24 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 
 		if filter.EntryPath != "" ||
 			filter.ExitPath != "" ||
-			fieldsContain(fields, fieldBounces.querySessions) ||
-			fieldsContain(fields, fieldViews.querySessions) {
+			fieldsContain(fields, fieldBounces.name) ||
+			fieldsContain(fields, fieldViews.name) ||
+			fieldsContain(fields, fieldEntryPath.name) ||
+			fieldsContain(fields, fieldExitPath.name) {
 			path, pathPattern, eventName := filter.Path, filter.PathPattern, filter.EventName
 			filter.Path, filter.PathPattern, filter.EventName = "", "", ""
 			filterArgs, filterQuery := filter.query()
 			filter.Path, filter.PathPattern, filter.EventName = path, pathPattern, eventName
 			args = append(args, filterArgs...)
-			// TODO optimize
-			query.WriteString(fmt.Sprintf(`INNER JOIN (
+
+			if table == "page_view" {
+				query.WriteString("INNER ")
+			} else {
+				query.WriteString("LEFT ")
+			}
+
+			// TODO optimize fields
+			query.WriteString(fmt.Sprintf(`JOIN (
 				SELECT visitor_id,
 				session_id,
 				entry_path,
@@ -380,7 +400,7 @@ func joinOrderBy(args *[]interface{}, filter *Filter, fields []field) string {
 
 func fieldsContain(haystack []field, needle string) bool {
 	for i := range haystack {
-		if haystack[i].querySessions == needle {
+		if haystack[i].name == needle {
 			return true
 		}
 	}

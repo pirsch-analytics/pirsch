@@ -235,9 +235,8 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
-	// TODO events
-	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
-	args, query := buildQuery(analyzer.getFilter(filter), []field{
+	filter = analyzer.getFilter(filter)
+	fields := []field{
 		fieldPath,
 		fieldVisitors,
 		fieldSessions,
@@ -246,12 +245,26 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 		fieldRelativeViews,
 		fieldBounces,
 		fieldBounceRate,
-	}, []field{
+	}
+	groupBy := []field{
 		fieldPath,
-	}, []field{
+	}
+	orderBy := []field{
 		fieldVisitors,
 		fieldPath,
-	})
+	}
+
+	if filter.IncludeTitle {
+		fields = append(fields, fieldTitle)
+		groupBy = append(groupBy, fieldTitle)
+		orderBy = append(orderBy, fieldTitle)
+	}
+
+	if filter.table() == "event" {
+		fields = append(fields, fieldEventTimeSpent)
+	}
+
+	args, query := buildQuery(filter, fields, groupBy, orderBy)
 	var stats []PageStats
 
 	if err := analyzer.store.Select(&stats, query, args...); err != nil {
@@ -892,9 +905,7 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 	}
 
 	filter = analyzer.getFilter(filter)
-	filter.Path = ""
-	filter.EntryPath = ""
-	filter.ExitPath = ""
+	filter.Path, filter.EntryPath, filter.ExitPath = "", "", ""
 	filterArgs, filterQuery := filter.query()
 	pathQuery := strings.Repeat("?,", len(paths))
 

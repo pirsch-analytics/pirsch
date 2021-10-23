@@ -445,10 +445,9 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, "/", visitors[0].Path)
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, "/foo", visitors[2].Path)
-	// TODO
-	/*assert.Equal(t, "Home", visitors[0].Title)
+	assert.Equal(t, "Home", visitors[0].Title)
 	assert.Equal(t, "Bar", visitors[1].Title)
-	assert.Equal(t, "Foo", visitors[2].Title)*/
+	assert.Equal(t, "Foo", visitors[2].Title)
 	assert.Equal(t, 600, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
@@ -478,7 +477,6 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 180+120+200+200, ttop)
 }
 
-// TODO
 func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -502,15 +500,14 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	visitors, err := analyzer.Pages(&Filter{IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
-	assert.Equal(t, "Foo", visitors[0].Title)
-	assert.Equal(t, "Home 1", visitors[1].Title)
-	assert.Equal(t, "Home 2", visitors[2].Title)
-	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, "Home 1", visitors[0].Title)
+	assert.Equal(t, "Home 2", visitors[1].Title)
+	assert.Equal(t, "Foo", visitors[2].Title)
+	assert.Equal(t, 42, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
-// TODO
 func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
@@ -523,12 +520,12 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
-	assert.Equal(t, "Foo", visitors[0].Title)
-	assert.Equal(t, "Home 1", visitors[1].Title)
-	assert.Equal(t, "Home 2", visitors[2].Title)
+	assert.Equal(t, "Home 1", visitors[0].Title)
+	assert.Equal(t, "Home 2", visitors[1].Title)
+	assert.Equal(t, "Foo", visitors[2].Title)
 	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, visitors[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 42, visitors[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
