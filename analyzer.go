@@ -112,8 +112,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	args, query := buildQuery(analyzer.getFilter(filter), []field{
 		fieldDay,
-		fieldUniqVisitors,
-		fieldUniqSessions,
+		fieldVisitors,
+		fieldSessions,
 		fieldViews,
 		fieldBounces,
 		fieldBounceRate,
@@ -121,7 +121,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		fieldDay,
 	}, []field{
 		fieldDay,
-		fieldUniqVisitors,
+		fieldVisitors,
 	})
 	var stats []VisitorStats
 
@@ -143,8 +143,8 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	args, query := buildQuery(filter, []field{
-		fieldUniqVisitors,
-		fieldUniqSessions,
+		fieldVisitors,
+		fieldSessions,
 		fieldViews,
 		fieldBounces,
 		fieldBounceRate,
@@ -179,8 +179,8 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	args, query = buildQuery(filter, []field{
-		fieldUniqVisitors,
-		fieldUniqSessions,
+		fieldVisitors,
+		fieldSessions,
 		fieldViews,
 		fieldBounces,
 		fieldBounceRate,
@@ -218,7 +218,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
 	args, query := buildQuery(analyzer.getFilter(filter), []field{
 		fieldHour,
-		fieldUniqVisitors,
+		fieldVisitors,
 	}, []field{
 		fieldHour,
 	}, []field{
@@ -235,84 +235,30 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
-	filter = analyzer.getFilter(filter)
-	table := filter.table()
-	title := filter.groupByTitle()
-	entryPath := filter.EntryPath
-	exitPath := filter.ExitPath
-	filter.EntryPath = ""
-	filter.ExitPath = ""
-	outerFilterArgs, outerFilterQuery := filter.query()
-	filter.EntryPath = entryPath
-	filter.ExitPath = exitPath
-	filter.Path = ""
-	filter.PathPattern = ""
-	innerFilterArgs, innerFilterQuery := filter.query()
-	filter.EventName = ""
-	visitorsFilterArgs, visitorsFilterQuery := filter.query()
-	args := make([]interface{}, 0, len(innerFilterArgs)*2+len(visitorsFilterArgs)+len(outerFilterArgs))
-	args = append(args, visitorsFilterArgs...)
-	args = append(args, innerFilterArgs...)
-
-	if table == "session" {
-		args = append(args, innerFilterArgs...)
-	}
-
-	args = append(args, outerFilterArgs...)
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path %s,
-		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions,
-		visitors / greatest((
-			SELECT uniq(visitor_id)
-			FROM session
-			WHERE %s
-		), 1) relative_visitors,
-		count(1) views, `, title, visitorsFilterQuery))
-
-	if table == "session" {
-		table = "page_view"
-		query.WriteString(fmt.Sprintf(`views / greatest((
-				SELECT sum(page_views*sign) views
-				FROM session
-				WHERE %s
-			), 1) relative_views,
-			sum(is_bounce) bounces,
-			bounces / IF(sessions = 0, 1, sessions) bounce_rate `, innerFilterQuery))
-	} else {
-		query.WriteString(fmt.Sprintf(`views / greatest((
-				SELECT count(1) views
-				FROM event
-				WHERE %s
-			), 1) relative_views,
-			ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds `, innerFilterQuery))
-	}
-
-	query.WriteString(fmt.Sprintf(`FROM %s v `, table))
-
-	if table != "event" {
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			sum(is_bounce*sign) is_bounce
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY path %s
-		ORDER BY visitors DESC %s, path
-		%s`, outerFilterQuery, title, title, filter.withLimit()))
+	// TODO events
+	// ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0) average_time_spent_seconds
+	args, query := buildQuery(analyzer.getFilter(filter), []field{
+		fieldPath,
+		fieldVisitors,
+		fieldSessions,
+		fieldRelativeVisitors,
+		fieldViews,
+		fieldRelativeViews,
+		fieldBounces,
+		fieldBounceRate,
+	}, []field{
+		fieldPath,
+	}, []field{
+		fieldVisitors,
+		fieldPath,
+	})
 	var stats []PageStats
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
 		return nil, err
 	}
 
-	if filter.IncludeTimeOnPage && table == "page_view" {
+	if filter.IncludeTimeOnPage && filter.table() == "session" {
 		paths := make([]string, 0, len(stats))
 
 		for i := range stats {

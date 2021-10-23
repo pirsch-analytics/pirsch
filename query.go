@@ -3,7 +3,6 @@ package pirsch
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 var (
@@ -13,13 +12,20 @@ var (
 		queryDirection: "ASC",
 		name:           "path",
 	}
-	fieldUniqVisitors = field{
+	fieldVisitors = field{
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",
 		queryDirection: "DESC",
 		name:           "visitors",
 	}
-	fieldUniqSessions = field{
+	fieldRelativeVisitors = field{
+		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		queryDirection: "DESC",
+		filterTime:     true,
+		name:           "relative_visitors",
+	}
+	fieldSessions = field{
 		querySessions:  "uniq(visitor_id, session_id)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryDirection: "DESC",
@@ -30,6 +36,13 @@ var (
 		queryPageViews: "count(1)",
 		queryDirection: "DESC",
 		name:           "views",
+	}
+	fieldRelativeViews = field{
+		querySessions:  "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
+		queryPageViews: "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
+		queryDirection: "DESC",
+		filterTime:     true,
+		name:           "relative_views",
 	}
 	fieldBounces = field{
 		querySessions:  "sum(is_bounce*sign)",
@@ -68,6 +81,7 @@ type field struct {
 	queryWithFill  string
 	withFill       bool
 	timezone       bool
+	filterTime     bool
 	name           string
 }
 
@@ -81,7 +95,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			table = "page_view"
 		}
 
-		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, joinPageViewFields(fields, filter.Timezone), table))
+		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, joinPageViewFields(&args, filter, fields), table))
 
 		if filter.EntryPath != "" ||
 			filter.ExitPath != "" ||
@@ -127,7 +141,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`SELECT %s
 			FROM session
-			WHERE %s `, joinSessionFields(fields, filter.Timezone), filterQuery))
+			WHERE %s `, joinSessionFields(&args, filter, fields), filterQuery))
 
 		if len(groupBy) > 0 {
 			query.WriteString(fmt.Sprintf(`GROUP BY %s `, joinGroupBy(groupBy)))
@@ -140,10 +154,11 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 		}
 	}
 
+	query.WriteString(filter.withLimit())
 	return args, query.String()
 }
 
-func joinPageViewFields(fields []field, tz *time.Location) string {
+func joinPageViewFields(args *[]interface{}, filter *Filter, fields []field) string {
 	if len(fields) == 0 {
 		return ""
 	}
@@ -151,8 +166,12 @@ func joinPageViewFields(fields []field, tz *time.Location) string {
 	var out strings.Builder
 
 	for i := range fields {
-		if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, tz.String()), fields[i].name))
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime()
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].name))
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
 		}
@@ -162,7 +181,7 @@ func joinPageViewFields(fields []field, tz *time.Location) string {
 	return str[:len(str)-1]
 }
 
-func joinSessionFields(fields []field, tz *time.Location) string {
+func joinSessionFields(args *[]interface{}, filter *Filter, fields []field) string {
 	if len(fields) == 0 {
 		return ""
 	}
@@ -170,8 +189,12 @@ func joinSessionFields(fields []field, tz *time.Location) string {
 	var out strings.Builder
 
 	for i := range fields {
-		if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, tz.String()), fields[i].name))
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime()
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].name))
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].name))
 		}

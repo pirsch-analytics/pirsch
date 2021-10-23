@@ -40,7 +40,7 @@ func TestBuildQuery(t *testing.T) {
 
 	// no filter (from page views)
 	analyzer := NewAnalyzer(dbClient)
-	args, query := buildQuery(analyzer.getFilter(nil), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldUniqVisitors, fieldPath})
+	args, query := buildQuery(analyzer.getFilter(nil), []field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldVisitors, fieldPath})
 	var stats []PageStats
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
@@ -52,7 +52,7 @@ func TestBuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join (from page views)
-	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/"}), []field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
@@ -64,7 +64,7 @@ func TestBuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join and filter (from page views)
-	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = buildQuery(analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}), []field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -72,7 +72,7 @@ func TestBuildQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 
 	// filter (from page views)
-	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo"}), []field{fieldPath, fieldUniqVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo"}), []field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -80,8 +80,8 @@ func TestBuildQuery(t *testing.T) {
 	assert.Equal(t, 2, stats[0].Visitors)
 
 	// no filter (from sessions)
-	args, query = buildQuery(analyzer.getFilter(nil), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
-	var vstats VisitorStats
+	args, query = buildQuery(analyzer.getFilter(nil), []field{fieldVisitors, fieldSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
+	var vstats PageStats
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 2, vstats.Visitors)
 	assert.Equal(t, 2, vstats.Sessions)
@@ -90,11 +90,13 @@ func TestBuildQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 
 	// filter (from page views)
-	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}), []field{fieldUniqVisitors, fieldUniqSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
+	args, query = buildQuery(analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}), []field{fieldVisitors, fieldRelativeVisitors, fieldSessions, fieldViews, fieldRelativeViews, fieldBounces, fieldBounceRate}, nil, nil)
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
 	assert.Equal(t, 2, vstats.Views)
 	assert.Equal(t, 0, vstats.Bounces)
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
+	assert.InDelta(t, 0.5, vstats.RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 }
