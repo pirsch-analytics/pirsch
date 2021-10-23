@@ -4,7 +4,7 @@
 
 * added tuple for session state cancellation
 * removed the requirement to send a page view before an event can be tracked
-* fixed grouping visitors by hour
+* fixed collapsing sessions for statistics
 
 ## 3.4.0
 

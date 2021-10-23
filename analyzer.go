@@ -648,36 +648,46 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		ref = "any(referrer) ref,"
 	}
 
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s referrer_name,
-		any(referrer_icon) referrer_icon,
-		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions,
-		visitors / greatest((
-			SELECT uniq(visitor_id)
-			FROM session
-			WHERE %s
-		), 1) relative_visitors `, ref, innerFilterQuery))
-
-	if table == "session" {
-		query.WriteString(`, sum(is_bounce) bounces,
-			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
-	}
-
 	fields := []string{"visitor_id", "session_id", "time", "referrer_name", "referrer_icon"}
 
 	if ref != "" {
 		fields = append(fields, "referrer")
 	}
 
+	var query strings.Builder
+	query.WriteString(fmt.Sprintf(`SELECT %s referrer_name, any(referrer_icon) referrer_icon, `, ref))
+
+	if table == "session" {
+		fields = append(fields, "sign", "is_bounce")
+		query.WriteString(`sum(sign) visitors, `)
+	} else {
+		query.WriteString(`uniq(visitor_id) visitors, `)
+	}
+
+	query.WriteString(fmt.Sprintf(`uniq(visitor_id, session_id) sessions,
+		visitors / greatest((
+			SELECT uniq(visitor_id)
+			FROM session
+			WHERE %s
+		), 1) relative_visitors `, innerFilterQuery))
+
+	if table == "session" {
+		query.WriteString(`, sum(is_bounce*sign) bounces,
+			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
+	}
+
 	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	args := make([]interface{}, 0, len(innerFilterArgs)+len(baseArgs))
 	args = append(args, innerFilterArgs...)
 	args = append(args, baseArgs...)
-	query.WriteString(fmt.Sprintf(`FROM (%s)
-		GROUP BY referrer_name %s
-		ORDER BY visitors DESC, referrer_name %s
-		%s`, baseQuery, groupSortRef, groupSortRef, filter.withLimit()))
+	query.WriteString(fmt.Sprintf(`FROM (%s) GROUP BY referrer_name %s `, baseQuery, groupSortRef))
+
+	if table == "session" {
+		query.WriteString(`HAVING sum(sign) > 0 `)
+	}
+
+	query.WriteString(fmt.Sprintf(`ORDER BY visitors DESC, referrer_name %s
+		%s`, groupSortRef, filter.withLimit()))
 	var stats []ReferrerStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
@@ -1422,16 +1432,7 @@ func (analyzer *Analyzer) baseQuery(filter *Filter, fields []string) ([]interfac
 	args := make([]interface{}, 0)
 	fieldQuery := strings.Join(fields, ",")
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s `, fieldQuery))
-
-	if table == "session" {
-		query.WriteString(`,sum(page_views*sign) page_views,
-			any(is_bounce*sign) is_bounce `)
-	} else {
-		query.WriteString(`,count(1) views `)
-	}
-
-	query.WriteString(fmt.Sprintf(`FROM %s s `, table))
+	query.WriteString(fmt.Sprintf(`SELECT %s FROM %s s `, fieldQuery, table))
 
 	if table == "session" && (filter.Path != "" || filter.PathPattern != "" || analyzer.contains(fields, "path")) {
 		entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
@@ -1451,8 +1452,7 @@ func (analyzer *Analyzer) baseQuery(filter *Filter, fields []string) ([]interfac
 
 	filterArgs, filterQuery := filter.query()
 	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY %s`, filterQuery, fieldQuery))
+	query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
 	return args, query.String()
 }
 
