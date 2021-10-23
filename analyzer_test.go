@@ -1080,6 +1080,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TODO
 func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
@@ -1168,6 +1169,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TODO
 func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{

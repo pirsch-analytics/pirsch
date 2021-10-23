@@ -111,6 +111,84 @@ var (
 		queryDirection: "ASC",
 		name:           "referrer_icon",
 	}
+	fieldLanguage = field{
+		querySessions:  "language",
+		queryPageViews: "language",
+		queryDirection: "ASC",
+		name:           "language",
+	}
+	fieldCountry = field{
+		querySessions:  "country_code",
+		queryPageViews: "country_code",
+		queryDirection: "ASC",
+		name:           "country_code",
+	}
+	fieldCity = field{
+		querySessions:  "city",
+		queryPageViews: "city",
+		queryDirection: "ASC",
+		name:           "city",
+	}
+	fieldBrowser = field{
+		querySessions:  "browser",
+		queryPageViews: "browser",
+		queryDirection: "ASC",
+		name:           "browser",
+	}
+	fieldBrowserVersion = field{
+		querySessions:  "browser_version",
+		queryPageViews: "browser_version",
+		queryDirection: "ASC",
+		name:           "browser_version",
+	}
+	fieldOS = field{
+		querySessions:  "os",
+		queryPageViews: "os",
+		queryDirection: "ASC",
+		name:           "os",
+	}
+	fieldOSVersion = field{
+		querySessions:  "os_version",
+		queryPageViews: "os_version",
+		queryDirection: "ASC",
+		name:           "os_version",
+	}
+	fieldScreenClass = field{
+		querySessions:  "screen_class",
+		queryPageViews: "screen_class",
+		queryDirection: "ASC",
+		name:           "screen_class",
+	}
+	fieldUTMSource = field{
+		querySessions:  "utm_source",
+		queryPageViews: "utm_source",
+		queryDirection: "ASC",
+		name:           "utm_source",
+	}
+	fieldUTMMedium = field{
+		querySessions:  "utm_medium",
+		queryPageViews: "utm_medium",
+		queryDirection: "ASC",
+		name:           "utm_medium",
+	}
+	fieldUTMCampaign = field{
+		querySessions:  "utm_campaign",
+		queryPageViews: "utm_campaign",
+		queryDirection: "ASC",
+		name:           "utm_campaign",
+	}
+	fieldUTMContent = field{
+		querySessions:  "utm_content",
+		queryPageViews: "utm_content",
+		queryDirection: "ASC",
+		name:           "utm_content",
+	}
+	fieldUTMTerm = field{
+		querySessions:  "utm_term",
+		queryPageViews: "utm_term",
+		queryDirection: "ASC",
+		name:           "utm_term",
+	}
 	fieldDay = field{
 		querySessions:  "toDate(time, '%s')",
 		queryPageViews: "toDate(time, '%s')",
