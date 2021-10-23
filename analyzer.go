@@ -110,25 +110,32 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
+	table := filter.table()
+	fields := []string{"visitor_id", "session_id", "time"}
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT toDate(time, '%s') day,
 		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions `, filter.Timezone.String()))
+		uniq(visitor_id, session_id) sessions, `, filter.Timezone.String()))
 
-	if filter.table() == "session" {
-		query.WriteString(`,sum(page_views) views,
-			sum(is_bounce) bounces,
+	if table == "session" {
+		fields = append(fields, "sign", "is_bounce", "page_views")
+		query.WriteString(`sum(page_views*sign) views,
+			sum(is_bounce*sign) bounces,
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	} else {
-		query.WriteString(`,count(1) views `)
+		query.WriteString(`count(1) views `)
 	}
 
-	baseArgs, baseQuery := analyzer.baseQuery(filter, []string{"visitor_id", "session_id", "time"})
+	baseArgs, baseQuery := analyzer.baseQuery(filter, fields)
 	withFillArgs, withFillQuery := filter.withFill()
 	baseArgs = append(baseArgs, withFillArgs...)
-	query.WriteString(fmt.Sprintf(`FROM (%s)
-		GROUP BY day
-		ORDER BY day ASC %s, visitors DESC`, baseQuery, withFillQuery))
+	query.WriteString(fmt.Sprintf(`FROM (%s) GROUP BY day `, baseQuery))
+
+	if table == "session" {
+		query.WriteString(`HAVING sum(sign) > 0 `)
+	}
+
+	query.WriteString(fmt.Sprintf(`ORDER BY day ASC %s, visitors DESC`, withFillQuery))
 	var stats []VisitorStats
 
 	if err := analyzer.store.Select(&stats, query.String(), baseArgs...); err != nil {
@@ -655,23 +662,18 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	}
 
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s referrer_name, any(referrer_icon) referrer_icon, `, ref))
-
-	if table == "session" {
-		fields = append(fields, "sign", "is_bounce")
-		query.WriteString(`sum(sign) visitors, `)
-	} else {
-		query.WriteString(`uniq(visitor_id) visitors, `)
-	}
-
-	query.WriteString(fmt.Sprintf(`uniq(visitor_id, session_id) sessions,
+	query.WriteString(fmt.Sprintf(`SELECT %s referrer_name,
+		any(referrer_icon) referrer_icon,
+		uniq(visitor_id) visitors,
+		uniq(visitor_id, session_id) sessions,
 		visitors / greatest((
 			SELECT uniq(visitor_id)
 			FROM session
 			WHERE %s
-		), 1) relative_visitors `, innerFilterQuery))
+		), 1) relative_visitors `, ref, innerFilterQuery))
 
 	if table == "session" {
+		fields = append(fields, "sign", "is_bounce")
 		query.WriteString(`, sum(is_bounce*sign) bounces,
 			bounces / IF(sessions = 0, 1, sessions) bounce_rate `)
 	}
@@ -702,82 +704,67 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
-	args := make([]interface{}, 0, len(filterArgs)*3+len(innerFilterArgs)*3)
-	count := "uniq(visitor_id) "
+	args := make([]interface{}, 0, len(filterArgs)*4)
+	var query strings.Builder
 
 	if table == "session" {
-		count = "sum(sign) "
+		query.WriteString(`SELECT sum(desktop*sign) platform_desktop,
+			sum(mobile*sign) platform_mobile,
+			sum(sign)-platform_desktop-platform_mobile platform_unknown, `)
+	} else {
+		args = append(args, filterArgs...)
+		args = append(args, filterArgs...)
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`SELECT (
+				SELECT uniq(visitor_id)
+				FROM event
+				WHERE %s
+				AND desktop = 1
+				AND mobile = 0
+			) platform_desktop,
+			(
+				SELECT uniq(visitor_id)
+				FROM event
+				WHERE %s
+				AND desktop = 0
+				AND mobile = 1
+			) platform_mobile,
+			(
+				SELECT uniq(visitor_id)
+				FROM event
+				WHERE %s
+				AND desktop = 0
+				AND mobile = 0
+			) platform_unknown, `, filterQuery, filterQuery, filterQuery))
 	}
 
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT (
-			SELECT %s
-			FROM %s s `, count, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			AND desktop = 1
-			AND mobile = 0
-		) AS "platform_desktop",
-		(
-			SELECT %s
-			FROM %s s `, filterQuery, count, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			AND desktop = 0
-			AND mobile = 1
-		) AS "platform_mobile",
-		(
-			SELECT %s
-			FROM %s s `, filterQuery, count, table))
-
-	if table == "session" && (filter.Path != "" || filter.PathPattern != "") {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			AND desktop = 0
-			AND mobile = 0
-		) AS "platform_unknown",
-		"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
+	query.WriteString(`"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 		"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
-		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown`,
-		filterQuery))
+		"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown `)
+
+	if table == "session" {
+		query.WriteString(`FROM session s `)
+
+		if filter.Path != "" || filter.PathPattern != "" {
+			entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
+			filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
+			innerFilterArgs, innerFilterQuery := filter.query()
+			filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
+			args = append(args, innerFilterArgs...)
+			query.WriteString(fmt.Sprintf(`INNER JOIN (
+			SELECT visitor_id,
+			session_id,
+			path
+			FROM page_view
+			WHERE %s
+		) v
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+		}
+
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
+	}
+
 	stats := new(PlatformStats)
 
 	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
