@@ -3,6 +3,8 @@
 ## 3.4.2
 
 * added logger to Redis session cache
+* return nil if path pattern is not set for `Analyzer.PageConversions`
+* updated dependencies
 
 ## 3.4.1
 

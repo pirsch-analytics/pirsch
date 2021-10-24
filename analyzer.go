@@ -436,7 +436,13 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 // PageConversions returns the visitor count, views, and conversion rate for conversion goals.
 // This function is supposed to be used with the Filter.PathPattern, to list page conversions.
 func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats, error) {
-	args, query := buildQuery(analyzer.getFilter(filter), []field{
+	filter = analyzer.getFilter(filter)
+
+	if filter.PathPattern == "" {
+		return nil, nil
+	}
+
+	args, query := buildQuery(filter, []field{
 		fieldVisitors,
 		fieldViews,
 		fieldCR,

@@ -1853,6 +1853,45 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_NoData(t *testing.T) {
+	cleanupDB()
+	analyzer := NewAnalyzer(dbClient)
+	_, _, err := analyzer.ActiveVisitors(nil, time.Minute*15)
+	assert.NoError(t, err)
+	_, err = analyzer.Visitors(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Growth(&Filter{From: pastDay(7), To: Today()})
+	assert.NoError(t, err)
+	_, err = analyzer.VisitorHours(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Pages(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.EntryPages(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.ExitPages(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.PageConversions(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Events(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.EventBreakdown(&Filter{EventName: "event"})
+	assert.NoError(t, err)
+	_, err = analyzer.Referrer(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Platform(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Languages(nil) // other metadata works the same...
+	assert.NoError(t, err)
+	_, err = analyzer.OSVersion(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.BrowserVersion(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.AvgSessionDuration(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.AvgTimeOnPage(nil)
+	assert.NoError(t, err)
+}
+
 func getMaxFilter(eventName string) *Filter {
 	return &Filter{
 		ClientID:       42,
