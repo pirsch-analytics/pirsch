@@ -9,7 +9,7 @@ import (
 
 func TestSessionCacheRedis(t *testing.T) {
 	cleanupDB()
-	cache := NewSessionCacheRedis(time.Second, &redis.Options{
+	cache := NewSessionCacheRedis(time.Second, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
 	session := cache.Get(1, 1, time.Time{})

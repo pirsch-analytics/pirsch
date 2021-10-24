@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.2
+
+* added logger to Redis session cache
+
 ## 3.4.1
 
 * added tuple for session state cancellation
