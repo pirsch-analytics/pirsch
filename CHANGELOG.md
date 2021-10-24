@@ -4,6 +4,7 @@
 
 * added logger to Redis session cache
 * return nil if path pattern is not set for `Analyzer.PageConversions`
+* fixed order in which session cancel state gets stored
 * updated dependencies
 
 ## 3.4.1

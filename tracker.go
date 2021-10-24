@@ -321,7 +321,7 @@ func (tracker *Tracker) flushPageViews() {
 		case pageView := <-tracker.pageViews:
 			pageViews = append(pageViews, pageView)
 
-			if len(pageViews) == tracker.workerBufferSize {
+			if len(pageViews) >= tracker.workerBufferSize {
 				tracker.savePageViews(pageViews)
 				pageViews = pageViews[:0]
 			}
@@ -349,7 +349,7 @@ func (tracker *Tracker) aggregatePageViews(ctx context.Context) {
 		case pageView := <-tracker.pageViews:
 			pageViews = append(pageViews, pageView)
 
-			if len(pageViews) == tracker.workerBufferSize {
+			if len(pageViews) >= tracker.workerBufferSize {
 				tracker.savePageViews(pageViews)
 				pageViews = pageViews[:0]
 			}
@@ -412,11 +412,11 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
-			sessions = append(sessions, session.State)
-
 			if session.Cancel != nil {
 				sessions = append(sessions, *session.Cancel)
 			}
+
+			sessions = append(sessions, session.State)
 
 			if len(sessions) >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
@@ -451,7 +451,7 @@ func (tracker *Tracker) flushEvents() {
 		case event := <-tracker.events:
 			events = append(events, event)
 
-			if len(events) == tracker.workerBufferSize {
+			if len(events) >= tracker.workerBufferSize {
 				tracker.saveEvents(events)
 				events = events[:0]
 			}
@@ -479,7 +479,7 @@ func (tracker *Tracker) aggregateEvents(ctx context.Context) {
 		case event := <-tracker.events:
 			events = append(events, event)
 
-			if len(events) == tracker.workerBufferSize {
+			if len(events) >= tracker.workerBufferSize {
 				tracker.saveEvents(events)
 				events = events[:0]
 			}
