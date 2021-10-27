@@ -163,6 +163,25 @@ func TestTracker_HitSession(t *testing.T) {
 	assert.Equal(t, client.Sessions[0].SessionID, client.Sessions[1].SessionID)
 }
 
+func TestTracker_HitTitle(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+	})
+	tracker.Hit(req, &HitOptions{
+		Title: "title",
+	})
+	tracker.Stop()
+	assert.Len(t, client.PageViews, 1)
+	assert.Len(t, client.Sessions, 1)
+	assert.Len(t, client.UserAgents, 1)
+	assert.Equal(t, "title", client.Sessions[0].EntryTitle)
+	assert.Equal(t, "title", client.Sessions[0].ExitTitle)
+	assert.Equal(t, "title", client.PageViews[0].Title)
+}
+
 func TestTracker_HitIgnoreSubdomain(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
@@ -327,6 +346,24 @@ func TestTracker_EventSession(t *testing.T) {
 	tracker.Stop()
 	assert.Len(t, client.Events, 2)
 	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
+}
+
+func TestTracker_EventTitle(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
+		WorkerTimeout: time.Second,
+	})
+	tracker.Event(req, EventOptions{Name: "event"}, &HitOptions{
+		Title: "title",
+	})
+	tracker.Stop()
+	assert.Len(t, client.PageViews, 0)
+	assert.Len(t, client.Sessions, 0)
+	assert.Len(t, client.UserAgents, 0)
+	assert.Len(t, client.Events, 1)
+	assert.Equal(t, "title", client.Events[0].Title)
 }
 
 func TestTracker_EventIgnoreSubdomain(t *testing.T) {
