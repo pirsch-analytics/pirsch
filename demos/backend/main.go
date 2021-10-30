@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	// Set the key for SipHash.
+	pirsch.SetFingerprintKeys(42, 123)
+
 	if err := pirsch.Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true"); err != nil {
 		panic(err)
 	}

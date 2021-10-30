@@ -11,9 +11,14 @@ import (
 // For more details, take a look at the backend demo and documentation.
 func main() {
 	copyPirschJs()
+
+	// Set the key for SipHash.
+	pirsch.SetFingerprintKeys(42, 123)
+
 	if err := pirsch.Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true"); err != nil {
 		panic(err)
 	}
+
 	store, err := pirsch.NewClient("tcp://127.0.0.1:9000", nil)
 
 	if err != nil {

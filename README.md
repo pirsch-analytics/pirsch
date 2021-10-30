@@ -50,6 +50,9 @@ To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be
 Here is a quick demo on how to use the library:
 
 ```Go
+// Set the key for SipHash. This should be called on startup (before generating the first fingerprint) and is NOT concurrency save.
+pirsch.SetFingerprintKeys(42, 123)
+
 // Migrate the database.
 pirsch.Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true")
 
