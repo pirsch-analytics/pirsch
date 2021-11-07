@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.3
+
+* added `Analyzer.TotalVisitors` (sums not grouped by day)
+* don't return an error when no result is found when expecting a single row
+* fixed conversion goals test
+
 ## 3.4.2
 
 * added logger to Redis session cache

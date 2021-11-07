@@ -67,6 +67,70 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_TotalVisitors(t *testing.T) {
+	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
+		{VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: pastDay(4), Path: "/"},
+		{VisitorID: 2, Time: pastDay(4), SessionID: 4, Path: "/"},
+		{VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 3, Time: pastDay(4), Path: "/"},
+		{VisitorID: 4, Time: pastDay(4), Path: "/"},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 7, Time: pastDay(2), Path: "/"},
+		{VisitorID: 8, Time: pastDay(2), Path: "/"},
+		{VisitorID: 9, Time: Today(), Path: "/"},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.TotalVisitors(&Filter{From: pastDay(4), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 9, visitors.Visitors)
+	assert.Equal(t, 11, visitors.Sessions)
+	assert.Equal(t, 13, visitors.Views)
+	assert.Equal(t, 8, visitors.Bounces)
+	assert.InDelta(t, 0.7272, visitors.BounceRate, 0.01)
+	visitors, err = analyzer.TotalVisitors(&Filter{From: pastDay(2), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, visitors.Visitors)
+	assert.Equal(t, 5, visitors.Sessions)
+	assert.Equal(t, 6, visitors.Views)
+	assert.Equal(t, 3, visitors.Bounces)
+	assert.InDelta(t, 0.6, visitors.BounceRate, 0.01)
+	visitors, err = analyzer.TotalVisitors(&Filter{From: pastDay(1), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+}
+
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
@@ -696,6 +760,9 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.PageConversions(nil)
+	assert.NoError(t, err)
+	assert.Nil(t, stats)
+	stats, err = analyzer.PageConversions(&Filter{PathPattern: ".*"})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
 	assert.Equal(t, 6, stats.Views)
