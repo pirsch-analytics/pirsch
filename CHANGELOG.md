@@ -3,6 +3,7 @@
 ## 3.4.5
 
 * updated User-Agent blacklist
+* updated OS and browser versions
 
 ## 3.4.4
 
