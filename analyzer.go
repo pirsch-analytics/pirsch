@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -125,7 +124,7 @@ func (analyzer *Analyzer) TotalVisitors(filter *Filter) (*TotalVisitorStats, err
 	}, nil, nil)
 	stats := new(TotalVisitorStats)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -176,7 +175,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	args, query := buildQuery(filter, fields, nil, nil)
 	current := new(growthStats)
 
-	if err := analyzer.store.Get(current, query, args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(current, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -206,7 +205,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	args, query = buildQuery(filter, fields, nil, nil)
 	previous := new(growthStats)
 
-	if err := analyzer.store.Get(previous, query, args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(previous, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -469,7 +468,7 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	})
 	stats := new(PageConversionsStats)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -652,7 +651,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 
 	stats := new(PlatformStats)
 
-	if err := analyzer.store.Get(stats, query.String(), args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
 		return nil, err
 	}
 
@@ -1005,7 +1004,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 		)`, filterQuery))
 	var averageTimeSpentSeconds int
 
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query.String(), args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query.String(), args...); err != nil {
 		return 0, err
 	}
 
@@ -1017,7 +1016,7 @@ func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
 	query := fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
 	var averageTimeSpentSeconds int
 
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {
 		return 0, err
 	}
 
@@ -1075,7 +1074,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 	})
 
-	if err := analyzer.store.Get(stats, query.String(), args...); err != nil && err != sql.ErrNoRows {
+	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
 		return 0, err
 	}
 

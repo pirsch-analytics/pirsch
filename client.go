@@ -297,7 +297,8 @@ func (client *Client) Count(query string, args ...interface{}) (int, error) {
 
 // Get implements the Store interface.
 func (client *Client) Get(result interface{}, query string, args ...interface{}) error {
-	if err := client.DB.Get(result, query, args...); err != nil {
+	// don't return an error if nothing was found
+	if err := client.DB.Get(result, query, args...); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error getting result: %s", err)
 		return err
 	}

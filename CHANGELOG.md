@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.4
+
+* updated referrer spam list
+* ignore no rows found error when selecting a single result
+
 ## 3.4.3
 
 * added `Analyzer.TotalVisitors` (sums not grouped by day)

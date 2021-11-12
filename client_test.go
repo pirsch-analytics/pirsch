@@ -187,3 +187,9 @@ func TestClient_Session(t *testing.T) {
 	assert.Equal(t, "/entry2", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
 }
+
+func TestClient_GetNoError(t *testing.T) {
+	cleanupDB()
+	var session Session
+	assert.NoError(t, dbClient.Get(&session, `SELECT * FROM "session" LIMIT 1`))
+}
