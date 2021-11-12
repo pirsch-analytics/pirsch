@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.5
+
+* updated User-Agent blacklist
+
 ## 3.4.4
 
 * updated referrer spam list
