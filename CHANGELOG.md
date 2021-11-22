@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.4.6
+
+* updated dependencies
+
 ## 3.4.5
 
 * updated User-Agent blacklist
