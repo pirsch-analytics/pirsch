@@ -636,17 +636,19 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
 			args = append(args, innerFilterArgs...)
 			query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
-		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+				SELECT visitor_id,
+				session_id,
+				path
+				FROM page_view
+				WHERE %s
+			) v
+			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 		}
 
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
+
+		// TODO add group by and having sum(sign) > 0
 	}
 
 	stats := new(PlatformStats)

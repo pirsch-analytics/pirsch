@@ -2,6 +2,7 @@
 
 ## 3.4.6
 
+* fixed User-Agent blacklist (must be lowercase)
 * updated dependencies
 
 ## 3.4.5
