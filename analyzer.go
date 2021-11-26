@@ -647,8 +647,6 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
-
-		// TODO add group by and having sum(sign) > 0
 	}
 
 	stats := new(PlatformStats)
