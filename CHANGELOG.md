@@ -4,6 +4,7 @@
 
 * create new session when referrer or UTM parameter changes
 * update session on event and set bounced to false (keep everything else)
+* removed TTL from tables
 * fixed User-Agent blacklist (must be lowercase)
 * updated dependencies
 
