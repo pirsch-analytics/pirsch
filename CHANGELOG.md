@@ -1,7 +1,8 @@
 # Changelog
 
-## 3.4.6
+## 3.5.0
 
+* create new session when referrer or UTM parameter changes
 * fixed User-Agent blacklist (must be lowercase)
 * updated dependencies
 
