@@ -360,7 +360,7 @@ func TestTracker_EventTitle(t *testing.T) {
 	})
 	tracker.Stop()
 	assert.Len(t, client.PageViews, 0)
-	assert.Len(t, client.Sessions, 0)
+	assert.Len(t, client.Sessions, 1)
 	assert.Len(t, client.UserAgents, 0)
 	assert.Len(t, client.Events, 1)
 	assert.Equal(t, "title", client.Events[0].Title)
@@ -397,6 +397,32 @@ func TestTracker_EventIgnoreSubdomain(t *testing.T) {
 	for _, hit := range client.Events {
 		assert.Empty(t, hit.Referrer)
 	}
+}
+
+func TestTracker_EventUpdateSession(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	client := NewMockClient()
+	tracker := NewTracker(client, "salt", &TrackerConfig{
+		Worker: 1,
+	})
+	tracker.Hit(req, nil)
+	time.Sleep(time.Millisecond * 10)
+	tracker.Event(req, EventOptions{Name: "event"}, nil)
+	tracker.Stop()
+	assert.Len(t, client.PageViews, 1)
+	assert.Len(t, client.Sessions, 3)
+	assert.Len(t, client.UserAgents, 1)
+	assert.Len(t, client.Events, 1)
+	assert.Equal(t, int8(1), client.Sessions[0].Sign)
+	assert.Equal(t, int8(-1), client.Sessions[1].Sign)
+	assert.Equal(t, int8(1), client.Sessions[2].Sign)
+	assert.True(t, client.Sessions[0].IsBounce)
+	assert.True(t, client.Sessions[1].IsBounce)
+	assert.False(t, client.Sessions[2].IsBounce)
+	assert.Equal(t, uint16(1), client.Sessions[0].PageViews)
+	assert.Equal(t, uint16(1), client.Sessions[1].PageViews)
+	assert.Equal(t, uint16(1), client.Sessions[2].PageViews)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
