@@ -79,12 +79,18 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 		return "", "", ""
 	}
 
+	name := getReferrerName(hostname, u.Path)
+
 	if ignoreSubdomain {
 		hostname = stripSubdomain(hostname)
 	}
 
 	if containsString(domainBlacklist, hostname) {
 		return "", "", ""
+	}
+
+	if name == "" {
+		name = hostname
 	}
 
 	// remove query parameters and anchor
@@ -95,7 +101,7 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 		u.Path = ""
 	}
 
-	return u.String(), hostname, ""
+	return u.String(), name, ""
 }
 
 func getReferrerFromHeaderOrQuery(r *http.Request) string {
@@ -152,6 +158,10 @@ func stripSubdomain(hostname string) string {
 	}
 
 	return hostname[index:]
+}
+
+func getReferrerName(hostname, path string) string {
+	return referrerGroups[strings.ToLower(hostname)+path]
 }
 
 func getAndroidAppName(referrer string) (string, string) {
