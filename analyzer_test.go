@@ -615,9 +615,18 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
-// TODO
-/*func TestAnalyzer_PageTitleEvent(t *testing.T) {
+func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
+			{Sign: 1, VisitorID: 2, SessionID: 3, Time: pastDay(1), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
+		},
+	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
@@ -634,7 +643,7 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
-}*/
+}
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	cleanupDB()
