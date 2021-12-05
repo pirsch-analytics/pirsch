@@ -576,18 +576,17 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
 	var args []interface{}
-	var query strings.Builder
+	query := ""
 
 	if table == "session" {
-		// TODO use query builder
 		filterArgs, filterQuery := filter.query()
-		query.WriteString(`SELECT sum(desktop*sign) platform_desktop,
+		query = `SELECT sum(desktop*sign) platform_desktop,
 			sum(mobile*sign) platform_mobile,
 			sum(sign)-platform_desktop-platform_mobile platform_unknown,
 			"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 			"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 			"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown
-			FROM session s `)
+			FROM session s `
 
 		if filter.Path != "" || filter.PathPattern != "" {
 			entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
@@ -595,42 +594,65 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			innerFilterArgs, innerFilterQuery := filter.query()
 			filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
 			args = append(args, innerFilterArgs...)
-			query.WriteString(fmt.Sprintf(`INNER JOIN (
+			query += fmt.Sprintf(`INNER JOIN (
 				SELECT visitor_id,
 				session_id,
 				path
 				FROM page_view
 				WHERE %s
 			) v
-			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery)
 		}
 
 		args = append(args, filterArgs...)
-		query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
+		query += fmt.Sprintf(`WHERE %s`, filterQuery)
 	} else {
-		// TODO join sessions
+		var innerArgs []interface{}
+		innerQuery := ""
+
+		if filter.EntryPath != "" || filter.ExitPath != "" {
+			fields := make([]field, 0, 2)
+
+			if filter.EntryPath != "" {
+				fields = append(fields, fieldEntryPath)
+			}
+
+			if filter.ExitPath != "" {
+				fields = append(fields, fieldExitPath)
+			}
+
+			innerArgs, innerQuery = joinSessions(filter, table, fields)
+			filter.EntryPath, filter.ExitPath = "", ""
+		}
+
 		filterArgs, filterQuery := filter.query()
-		args = make([]interface{}, 0, len(filterArgs)*3)
+		args = make([]interface{}, 0, len(filterArgs)*3+len(innerArgs)*3)
+		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
+		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
+		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
-		query.WriteString(fmt.Sprintf(`SELECT (
+		query = fmt.Sprintf(`SELECT (
 				SELECT uniq(visitor_id)
-				FROM event
+				FROM event v
+				%s
 				WHERE %s
 				AND desktop = 1
 				AND mobile = 0
 			) platform_desktop,
 			(
 				SELECT uniq(visitor_id)
-				FROM event
+				FROM event v
+				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 1
 			) platform_mobile,
 			(
 				SELECT uniq(visitor_id)
-				FROM event
+				FROM event v
+				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 0
@@ -638,12 +660,12 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 			"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 			"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown `,
-			filterQuery, filterQuery, filterQuery))
+			innerQuery, filterQuery, innerQuery, filterQuery, innerQuery, filterQuery)
 	}
 
 	stats := new(PlatformStats)
 
-	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
+	if err := analyzer.store.Get(stats, query, args...); err != nil {
 		return nil, err
 	}
 

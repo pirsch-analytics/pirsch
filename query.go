@@ -274,52 +274,9 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			fieldsContain(fields, fieldViews.name) ||
 			fieldsContain(fields, fieldEntryPath.name) ||
 			fieldsContain(fields, fieldExitPath.name) {
-			path, pathPattern, eventName, eventMetaKey := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey
-			filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = "", "", "", ""
-			filterArgs, filterQuery := filter.query()
-			filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = path, pathPattern, eventName, eventMetaKey
+			filterArgs, filterQuery := joinSessions(filter, table, fields)
 			args = append(args, filterArgs...)
-
-			sessionFields := make([]string, 0, 4)
-
-			if fieldsContain(fields, fieldEntryPath.name) {
-				sessionFields = append(sessionFields, fieldEntryPath.name)
-			}
-
-			if fieldsContain(fields, fieldExitPath.name) {
-				sessionFields = append(sessionFields, fieldExitPath.name)
-			}
-
-			if fieldsContain(fields, fieldBounces.name) {
-				sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
-			}
-
-			if fieldsContain(fields, fieldViews.name) {
-				sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
-			}
-
-			sessionFieldsQuery := strings.Join(sessionFields, ",")
-
-			if sessionFieldsQuery != "" {
-				sessionFieldsQuery = "," + sessionFieldsQuery
-			}
-
-			if table == "page_view" || table == "event" {
-				query.WriteString("INNER ")
-			} else {
-				query.WriteString("LEFT ")
-			}
-
-			query.WriteString(fmt.Sprintf(`JOIN (
-				SELECT visitor_id,
-				session_id
-				%s
-				FROM session
-				WHERE %s
-				GROUP BY visitor_id, session_id, entry_path, exit_path
-				HAVING sum(sign) > 0
-			) s
-			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery))
+			query.WriteString(filterQuery)
 
 			if filter.EventName != "" {
 				filter.EntryPath, filter.ExitPath = "", ""
@@ -413,6 +370,56 @@ func joinSessionFields(args *[]interface{}, filter *Filter, fields []field) stri
 
 	str := out.String()
 	return str[:len(str)-1]
+}
+
+func joinSessions(filter *Filter, table string, fields []field) ([]interface{}, string) {
+	path, pathPattern, eventName, eventMetaKey := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = "", "", "", ""
+	filterArgs, filterQuery := filter.query()
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = path, pathPattern, eventName, eventMetaKey
+	sessionFields := make([]string, 0, 4)
+
+	if fieldsContain(fields, fieldEntryPath.name) {
+		sessionFields = append(sessionFields, fieldEntryPath.name)
+	}
+
+	if fieldsContain(fields, fieldExitPath.name) {
+		sessionFields = append(sessionFields, fieldExitPath.name)
+	}
+
+	if fieldsContain(fields, fieldBounces.name) {
+		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
+	}
+
+	if fieldsContain(fields, fieldViews.name) {
+		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
+	}
+
+	sessionFieldsQuery := strings.Join(sessionFields, ",")
+
+	if sessionFieldsQuery != "" {
+		sessionFieldsQuery = "," + sessionFieldsQuery
+	}
+
+	query := ""
+
+	if table == "page_view" || table == "event" {
+		query = "INNER "
+	} else {
+		query = "LEFT "
+	}
+
+	query += fmt.Sprintf(`JOIN (
+			SELECT visitor_id,
+			session_id
+			%s
+			FROM session
+			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
+		) s
+		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery)
+	return filterArgs, query
 }
 
 func joinGroupBy(fields []field) string {
