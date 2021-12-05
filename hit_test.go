@@ -1,9 +1,11 @@
 package pirsch
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
@@ -247,6 +249,67 @@ func TestHitFromRequestCountryCodeCity(t *testing.T) {
 	})
 	assert.Empty(t, sessionState.State.CountryCode)
 	assert.Empty(t, sessionState.State.City)
+}
+
+func TestHitFromRequestResetSessionReferrer(t *testing.T) {
+	cleanupDB()
+	cache := NewSessionCacheMem(dbClient, 100)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+	req.Header.Set("Referer", "https://referrer-header.com")
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, "https://referrer-header.com", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
+
+	// keep session
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, "https://referrer-header.com", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
+
+	// create new session on changing referrer
+	req.Header.Set("Referer", "https://new-referrer-header.com")
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, "https://new-referrer-header.com", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
+
+	// URL query parameters
+	req.Header.Del("Referer")
+
+	for _, param := range referrerQueryParams {
+		req.URL, _ = url.Parse(fmt.Sprintf("/test?%s=https://%s.com", param, param))
+		_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+		assert.Equal(t, fmt.Sprintf("https://%s.com", param), cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
+	}
+}
+
+func TestHitFromRequestResetSessionUTM(t *testing.T) {
+	cleanupDB()
+	cache := NewSessionCacheMem(dbClient, 100)
+	req := httptest.NewRequest(http.MethodGet, "/test?utm_source=source&utm_medium=medium&utm_campaign=campaign&utm_content=content&utm_term=term", nil)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
+	_, sessionState, _ := HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, "source", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).UTMSource)
+
+	// keep session
+	sessionID := sessionState.State.SessionID
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, sessionID, cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).SessionID)
+
+	// create new session on changing utm parameter
+	params := [][]string{
+		{"new-source", "medium", "campaign", "content", "term"},
+		{"new-source", "new-medium", "campaign", "content", "term"},
+		{"new-source", "new-medium", "new-campaign", "content", "term"},
+		{"new-source", "new-medium", "new-campaign", "new-content", "term"},
+		{"new-source", "new-medium", "new-campaign", "new-content", "new-term"},
+	}
+	sessionID = sessionState.State.SessionID
+
+	for _, p := range params {
+		req.URL, _ = url.Parse(fmt.Sprintf("/test?utm_source=%s&utm_medium=%s&utm_campaign=%s&utm_content=%s&utm_term=%s", p[0], p[1], p[2], p[3], p[4]))
+		_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+		assert.NotEqual(t, sessionID, cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).SessionID)
+		sessionID = sessionState.State.SessionID
+	}
 }
 
 func TestExtendSession(t *testing.T) {

@@ -1,7 +1,11 @@
 # Changelog
 
-## 3.4.6
+## 3.5.0
 
+* create new session when referrer or UTM parameter changes
+* update session on event and set bounced to false (keep everything else)
+* added list to group referrer domains
+* removed TTL from tables
 * fixed User-Agent blacklist (must be lowercase)
 * updated dependencies
 

@@ -79,6 +79,7 @@ type HitOptions struct {
 	// ScreenHeight sets the screen height to be stored with the hit.
 	ScreenHeight uint16
 
+	event bool
 	geoDB *GeoDB
 }
 
@@ -106,7 +107,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 	var timeOnPage uint32
 	var ua *UserAgent
 
-	if session == nil {
+	if session == nil || referrerOrCampaignChanged(session, r, options) {
 		session, ua = newSession(r, options, fingerprint, now, path, title)
 		sessionState.State = *session
 		options.SessionCache.Put(options.ClientID, fingerprint, session)
@@ -114,7 +115,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		session.Sign = -1
 		sessionState.Cancel = session
 		state := *session
-		timeOnPage = updateSession(options, &state, now, path, title)
+		timeOnPage = updateSession(options, &state, options.event, now, path, title)
 		sessionState.State = state
 		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
@@ -291,7 +292,7 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 	}, &uaInfo
 }
 
-func updateSession(options *HitOptions, session *Session, now time.Time, path, title string) uint32 {
+func updateSession(options *HitOptions, session *Session, event bool, now time.Time, path, title string) uint32 {
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {
@@ -306,12 +307,33 @@ func updateSession(options *HitOptions, session *Session, now time.Time, path, t
 
 	session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
 	session.Sign = 1
-	session.IsBounce = session.IsBounce && path == session.ExitPath
 	session.Time = now
-	session.ExitPath = path
-	session.ExitTitle = title
-	session.PageViews++
+
+	if event {
+		session.IsBounce = false
+	} else {
+		session.IsBounce = session.IsBounce && path == session.ExitPath
+		session.ExitPath = path
+		session.ExitTitle = title
+		session.PageViews++
+	}
+
 	return uint32(top)
+}
+
+func referrerOrCampaignChanged(session *Session, r *http.Request, options *HitOptions) bool {
+	referrer, _, _ := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
+
+	if referrer != session.Referrer {
+		return true
+	}
+
+	utm := getUTMParams(r)
+	return utm.source != session.UTMSource ||
+		utm.medium != session.UTMMedium ||
+		utm.campaign != session.UTMCampaign ||
+		utm.content != session.UTMContent ||
+		utm.term != session.UTMTerm
 }
 
 func getPath(path string) string {

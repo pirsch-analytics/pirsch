@@ -133,7 +133,7 @@ http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Reque
 
 `HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were sent by the user.
 
-## Custom Event Tracking
+### Custom Event Tracking
 
 Custom events are conceptually the same as hits, except that they have a name and hold additional metadata. To create an event, call the tracker and pass in the additional fields.
 
@@ -158,7 +158,7 @@ http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
 
-## Mapping IPs to countries and cities
+### Mapping IPs to countries and cities
 
 Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database **is not included**, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
 
@@ -173,9 +173,22 @@ The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeo
 
 Read the [full documentation](https://godoc.org/github.com/pirsch-analytics/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl.
 
-## Build pirsch.js
+## Building pirsch.js and pirsch-event.js
 
-To minify `pirsch.js` to `pirsch.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
+To minify `pirsch.js`/`pirsch-event.js` to `pirsch.min.js`/`pirsch-event.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
+
+## Things to maintain
+
+The following things need regular maintenance/updates:
+
+* Go and JS dependencies
+* referrer blacklist
+* User-Agent blacklist
+* browser version mapping
+* os version mapping
+* referrer mapping (grouping)
+
+GeoDB updates itself if used.
 
 ## Changelog
 

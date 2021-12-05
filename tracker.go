@@ -208,10 +208,12 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.event = true
 		metaKeys, metaValues := eventOptions.getMetaData()
-		pageView, _, _ := HitFromRequest(r, tracker.salt, options)
+		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
+			tracker.sessions <- sessionState
 			tracker.events <- Event{
 				ClientID:        pageView.ClientID,
 				VisitorID:       pageView.VisitorID,
