@@ -110,9 +110,9 @@ func TestFilter_QueryFields(t *testing.T) {
 	assert.Equal(t, "path = ? AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
 	filter.EventName = "event"
 	args, query = filter.queryFields()
-	assert.Len(t, args, 17)
-	assert.Equal(t, "event", args[16])
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Len(t, args, 19)
+	assert.Equal(t, "event", args[18])
+	assert.Equal(t, "path = ? AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
 }
 
 func TestFilter_QueryFieldsInvert(t *testing.T) {
@@ -161,9 +161,9 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	assert.Equal(t, "path != ? AND entry_path != ? AND exit_path != ? AND language != ? AND country_code != ? AND city != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND (desktop = 1 OR mobile = 1) ", query)
 	filter.EventName = "!event"
 	args, query = filter.queryFields()
-	assert.Len(t, args, 17)
-	assert.Equal(t, "event", args[16])
-	assert.Equal(t, "path != ? AND language != ? AND country_code != ? AND city != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
+	assert.Len(t, args, 19)
+	assert.Equal(t, "event", args[18])
+	assert.Equal(t, "path != ? AND entry_path != ? AND exit_path != ? AND language != ? AND country_code != ? AND city != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) ", query)
 }
 
 func TestFilter_QueryFieldsNull(t *testing.T) {
@@ -200,13 +200,13 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 	filter.EventName = "null"
 	filter.validate()
 	args, query = filter.queryFields()
-	assert.Len(t, args, 17)
+	assert.Len(t, args, 19)
 
 	for i := 0; i < len(args); i++ {
 		assert.Empty(t, args[i])
 	}
 
-	assert.Equal(t, "path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
+	assert.Equal(t, "path = ? AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 ", query)
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
@@ -364,7 +364,7 @@ func TestFilter_Fields(t *testing.T) {
 
 	filter.validate()
 	filter.EventName = "event"
-	assert.Equal(t, "path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", filter.fields())
+	assert.Equal(t, "path,entry_path,exit_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile", filter.fields())
 }
 
 func pastDay(n int) time.Time {

@@ -335,6 +335,33 @@ func TestAnalyzer_GrowthNoData(t *testing.T) {
 
 func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 15), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Second * 2), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Second * 5), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 3, Time: pastDay(3).Add(time.Second * 6), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 31, Time: pastDay(3).Add(time.Minute * 10), EntryPath: "/bar", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Second * 7), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Second * 8), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 9, Time: pastDay(2).Add(time.Second * 10), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Second * 11), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 11, Time: Today().Add(time.Second * 12), EntryPath: "/", ExitPath: "/"},
+		},
+	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event1", VisitorID: 1, Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
 		{Name: "event1", DurationSeconds: 300, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
@@ -590,6 +617,16 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 
 func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
+			{Sign: 1, VisitorID: 2, SessionID: 3, Time: pastDay(1), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
+		},
+	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
@@ -785,11 +822,11 @@ func TestAnalyzer_Events(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveSessions(t, [][]Session{
 			{
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i), Time: Today(), ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), ExitPath: "/"},
+				{Sign: -1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
 			},
 		})
 	}
@@ -810,6 +847,24 @@ func TestAnalyzer_Events(t *testing.T) {
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 4, stats[1].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.Equal(t, 5, stats[1].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+	assert.Len(t, stats[0].MetaKeys, 3)
+	assert.Len(t, stats[1].MetaKeys, 2)
+	stats, err = analyzer.Events(&Filter{EntryPath: "/exit"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
+	stats, err = analyzer.Events(&Filter{EntryPath: "/", ExitPath: "/exit"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event2", stats[0].Name)
