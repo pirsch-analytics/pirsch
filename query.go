@@ -378,13 +378,16 @@ func joinSessions(filter *Filter, table string, fields []field) ([]interface{}, 
 	filterArgs, filterQuery := filter.query()
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = path, pathPattern, eventName, eventMetaKey
 	sessionFields := make([]string, 0, 4)
+	groupBy := make([]string, 0, 2)
 
 	if fieldsContain(fields, fieldEntryPath.name) {
 		sessionFields = append(sessionFields, fieldEntryPath.name)
+		groupBy = append(groupBy, fieldEntryPath.name)
 	}
 
 	if fieldsContain(fields, fieldExitPath.name) {
 		sessionFields = append(sessionFields, fieldExitPath.name)
+		groupBy = append(groupBy, fieldExitPath.name)
 	}
 
 	if fieldsContain(fields, fieldBounces.name) {
@@ -409,16 +412,22 @@ func joinSessions(filter *Filter, table string, fields []field) ([]interface{}, 
 		query = "LEFT "
 	}
 
+	groupByQuery := strings.Join(groupBy, ",")
+
+	if groupByQuery != "" {
+		groupByQuery = "," + groupByQuery
+	}
+
 	query += fmt.Sprintf(`JOIN (
 			SELECT visitor_id,
 			session_id
 			%s
 			FROM session
 			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
+			GROUP BY visitor_id, session_id %s
 			HAVING sum(sign) > 0
 		) s
-		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery)
+		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery, groupByQuery)
 	return filterArgs, query
 }
 
