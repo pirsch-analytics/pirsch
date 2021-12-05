@@ -223,6 +223,21 @@ var (
 		timezone:       true,
 		name:           "hour",
 	}
+	fieldEventName = field{
+		querySessions:  "event_name",
+		queryPageViews: "event_name",
+		name:           "event_name",
+	}
+	fieldEventMetaKeys = field{
+		querySessions:  "groupUniqArrayArray(event_meta_keys)",
+		queryPageViews: "groupUniqArrayArray(event_meta_keys)",
+		name:           "meta_keys",
+	}
+	fieldEventMetaValues = field{
+		querySessions:  "event_meta_values[indexOf(event_meta_keys, ?)]",
+		queryPageViews: "event_meta_values[indexOf(event_meta_keys, ?)]",
+		name:           "meta_value",
+	}
 	fieldEventTimeSpent = field{
 		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
@@ -259,17 +274,11 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			fieldsContain(fields, fieldViews.name) ||
 			fieldsContain(fields, fieldEntryPath.name) ||
 			fieldsContain(fields, fieldExitPath.name) {
-			path, pathPattern, eventName := filter.Path, filter.PathPattern, filter.EventName
-			filter.Path, filter.PathPattern, filter.EventName = "", "", ""
+			path, pathPattern, eventName, eventMetaKey := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey
+			filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = "", "", "", ""
 			filterArgs, filterQuery := filter.query()
-			filter.Path, filter.PathPattern, filter.EventName = path, pathPattern, eventName
+			filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = path, pathPattern, eventName, eventMetaKey
 			args = append(args, filterArgs...)
-
-			if table == "page_view" {
-				query.WriteString("INNER ")
-			} else {
-				query.WriteString("LEFT ")
-			}
 
 			sessionFields := make([]string, 0, 4)
 
@@ -295,6 +304,12 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 				sessionFieldsQuery = "," + sessionFieldsQuery
 			}
 
+			if table == "page_view" || table == "event" {
+				query.WriteString("INNER ")
+			} else {
+				query.WriteString("LEFT ")
+			}
+
 			query.WriteString(fmt.Sprintf(`JOIN (
 				SELECT visitor_id,
 				session_id
@@ -307,6 +322,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery))
 
 			if filter.EventName != "" {
+				filter.EntryPath, filter.ExitPath = "", ""
 				filterArgs, filterQuery = filter.query()
 				args = append(args, filterArgs...)
 				query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
@@ -364,6 +380,9 @@ func joinPageViewFields(args *[]interface{}, filter *Filter, fields []field) str
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
 		} else if fields[i].timezone {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].name))
+		} else if fields[i].name == "meta_value" {
+			*args = append(*args, filter.EventMetaKey)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
 		}

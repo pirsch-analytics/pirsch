@@ -235,12 +235,8 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	args := make([]interface{}, 0, 22)
 	queryFields := make([]string, 0, 22)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
-
-	if filter.EventName == "" && !filter.eventFilter {
-		filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
-		filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
-	}
-
+	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
+	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
 	filter.appendQuery(&queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&queryFields, &args, "country_code", filter.Country)
 	filter.appendQuery(&queryFields, &args, "city", filter.City)
@@ -257,6 +253,7 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&queryFields, &args, "utm_content", filter.UTMContent)
 	filter.appendQuery(&queryFields, &args, "utm_term", filter.UTMTerm)
 	filter.appendQuery(&queryFields, &args, "event_name", filter.EventName)
+	filter.appendQuery(&queryFields, &args, "event_meta_keys", filter.EventMetaKey)
 	filter.queryPlatform(&queryFields)
 	filter.queryPathPattern(&queryFields, &args)
 	return args, strings.Join(queryFields, "AND ")
@@ -311,12 +308,8 @@ func (filter *Filter) fields() string {
 	// do not include exit_path, as it is selected using argMax
 	fields := make([]string, 0, 20)
 	filter.appendField(&fields, "path", filter.Path)
-
-	if filter.EventName == "" && !filter.eventFilter {
-		filter.appendField(&fields, "entry_path", filter.EntryPath)
-		filter.appendField(&fields, "exit_path", filter.ExitPath)
-	}
-
+	filter.appendField(&fields, "entry_path", filter.EntryPath)
+	filter.appendField(&fields, "exit_path", filter.ExitPath)
 	filter.appendField(&fields, "language", filter.Language)
 	filter.appendField(&fields, "country_code", filter.Country)
 	filter.appendField(&fields, "city", filter.City)
@@ -333,6 +326,7 @@ func (filter *Filter) fields() string {
 	filter.appendField(&fields, "utm_content", filter.UTMContent)
 	filter.appendField(&fields, "utm_term", filter.UTMTerm)
 	filter.appendField(&fields, "event_name", filter.EventName)
+	filter.appendField(&fields, "event_meta_keys", filter.EventMetaKey)
 
 	if filter.Platform != "" {
 		platform := filter.Platform
@@ -394,13 +388,27 @@ func (filter *Filter) query() ([]interface{}, string) {
 
 func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
+		comparator := "%s = ? "
+
+		if strings.HasPrefix(value, "!") {
+			comparator = "%s != ? "
+		}
+
+		if field == "event_meta_keys" {
+			if strings.HasPrefix(value, "!") {
+				comparator = "!has(%s, ?) "
+			} else {
+				comparator = "has(%s, ?) "
+			}
+		}
+
 		if strings.HasPrefix(value, "!") {
 			value = filter.nullValue(value[1:])
 			*args = append(*args, value)
-			*queryFields = append(*queryFields, fmt.Sprintf("%s != ? ", field))
+			*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 		} else {
 			*args = append(*args, filter.nullValue(value))
-			*queryFields = append(*queryFields, fmt.Sprintf("%s = ? ", field))
+			*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 		}
 	}
 }

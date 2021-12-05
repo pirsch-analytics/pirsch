@@ -215,7 +215,7 @@ type EventStats struct {
 	Visitors               int      `json:"visitors"`
 	Views                  int      `json:"views"`
 	CR                     float64  `json:"cr"`
-	AverageDurationSeconds int      `db:"average_duration_seconds" json:"average_duration_seconds"`
+	AverageDurationSeconds int      `db:"average_time_spent_seconds" json:"average_duration_seconds"`
 	MetaKeys               []string `db:"meta_keys" json:"meta_keys"`
 	MetaValue              string   `db:"meta_value" json:"meta_value"`
 }
