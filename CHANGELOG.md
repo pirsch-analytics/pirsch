@@ -9,6 +9,7 @@
 * optimized building queries
 * removed TTL from tables
 * fixed User-Agent blacklist (must be lowercase)
+* fixed growing sessions buffer in tracker
 * updated dependencies
 
 ## 3.4.5
