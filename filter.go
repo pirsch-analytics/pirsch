@@ -389,27 +389,22 @@ func (filter *Filter) query() ([]interface{}, string) {
 func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
 		comparator := "%s = ? "
-
-		if strings.HasPrefix(value, "!") {
-			comparator = "%s != ? "
-		}
+		not := strings.HasPrefix(value, "!")
 
 		if field == "event_meta_keys" {
-			if strings.HasPrefix(value, "!") {
+			if not {
+				value = value[1:]
 				comparator = "!has(%s, ?) "
 			} else {
 				comparator = "has(%s, ?) "
 			}
+		} else if not {
+			value = value[1:]
+			comparator = "%s != ? "
 		}
 
-		if strings.HasPrefix(value, "!") {
-			value = filter.nullValue(value[1:])
-			*args = append(*args, value)
-			*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
-		} else {
-			*args = append(*args, filter.nullValue(value))
-			*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
-		}
+		*args = append(*args, filter.nullValue(value))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 	}
 }
 
