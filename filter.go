@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -98,6 +99,12 @@ type Filter struct {
 
 	// ScreenClass filters for the screen class.
 	ScreenClass string
+
+	// ScreenWidth filters for the screen width.
+	ScreenWidth string
+
+	// ScreenHeight filters for the screen width.
+	ScreenHeight string
 
 	// UTMSource filters for the utm_source query parameter.
 	UTMSource string
@@ -232,8 +239,8 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 22)
-	queryFields := make([]string, 0, 22)
+	args := make([]interface{}, 0, 24)
+	queryFields := make([]string, 0, 24)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -247,6 +254,8 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&queryFields, &args, "browser", filter.Browser)
 	filter.appendQuery(&queryFields, &args, "browser_version", filter.BrowserVersion)
 	filter.appendQuery(&queryFields, &args, "screen_class", filter.ScreenClass)
+	filter.appendQueryUInt16(&queryFields, &args, "screen_width", filter.ScreenWidth)
+	filter.appendQueryUInt16(&queryFields, &args, "screen_height", filter.ScreenHeight)
 	filter.appendQuery(&queryFields, &args, "utm_source", filter.UTMSource)
 	filter.appendQuery(&queryFields, &args, "utm_medium", filter.UTMMedium)
 	filter.appendQuery(&queryFields, &args, "utm_campaign", filter.UTMCampaign)
@@ -306,7 +315,7 @@ func (filter Filter) queryPathPattern(queryFields *[]string, args *[]interface{}
 
 func (filter *Filter) fields() string {
 	// do not include exit_path, as it is selected using argMax
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 22)
 	filter.appendField(&fields, "path", filter.Path)
 	filter.appendField(&fields, "entry_path", filter.EntryPath)
 	filter.appendField(&fields, "exit_path", filter.ExitPath)
@@ -320,6 +329,8 @@ func (filter *Filter) fields() string {
 	filter.appendField(&fields, "browser", filter.Browser)
 	filter.appendField(&fields, "browser_version", filter.BrowserVersion)
 	filter.appendField(&fields, "screen_class", filter.ScreenClass)
+	filter.appendField(&fields, "screen_width", filter.ScreenWidth)
+	filter.appendField(&fields, "screen_height", filter.ScreenHeight)
 	filter.appendField(&fields, "utm_source", filter.UTMSource)
 	filter.appendField(&fields, "utm_medium", filter.UTMMedium)
 	filter.appendField(&fields, "utm_campaign", filter.UTMCampaign)
@@ -404,6 +415,31 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, fi
 		}
 
 		*args = append(*args, filter.nullValue(value))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+	}
+}
+
+func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface{}, field, value string) {
+	if value != "" {
+		comparator := "%s = ? "
+		not := strings.HasPrefix(value, "!")
+
+		if not {
+			value = value[1:]
+			comparator = "%s != ? "
+		}
+
+		var valueInt uint16
+
+		if strings.ToLower(value) != "null" {
+			i, err := strconv.Atoi(value)
+
+			if err == nil {
+				valueInt = uint16(i)
+			}
+		}
+
+		*args = append(*args, valueInt)
 		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 	}
 }

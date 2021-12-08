@@ -6,6 +6,7 @@
 * update session on event and set bounced to false (keep everything else)
 * added list to group referrer domains
 * added entry/exit page filter for events
+* added screen width/height to filter (exact match)
 * optimized building queries
 * removed TTL from tables
 * fixed User-Agent blacklist (must be lowercase)
