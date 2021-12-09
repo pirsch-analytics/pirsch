@@ -1009,8 +1009,22 @@ func TestAnalyzer_EventList(t *testing.T) {
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event1", stats[0].Name)
 	assert.Equal(t, "event2", stats[1].Name)
-
-	// TODO filter by key-value
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "bar"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "bar", stats[0].Meta["a"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "foo", "b": "56"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "56", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "no", "b": "result"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
