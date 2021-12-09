@@ -7,6 +7,7 @@
 * added list to group referrer domains
 * added entry/exit page filter for events
 * added screen width/height to filter (exact match)
+* added listing events and filtering for event meta key and value
 * optimized building queries
 * removed TTL from tables
 * fixed User-Agent blacklist (must be lowercase)

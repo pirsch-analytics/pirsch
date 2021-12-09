@@ -953,6 +953,80 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_EventList(t *testing.T) {
+	cleanupDB()
+
+	// create sessions for the conversion rate
+	for i := 0; i < 5; i++ {
+		saveSessions(t, [][]Session{
+			{
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+			},
+			{
+				{Sign: -1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+			},
+		})
+	}
+
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 1, Time: Today(), Path: "/"},
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 2, Time: Today(), Path: "/foo"},
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"bar", "42"}, VisitorID: 1, Time: Today(), Path: "/bar"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 3, Time: Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "56"}, VisitorID: 4, Time: Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 5, Time: Today(), Path: "/foo"},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.EventList(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 4)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	assert.Equal(t, "event1", stats[2].Name)
+	assert.Equal(t, "event2", stats[3].Name)
+	assert.Equal(t, 2, stats[0].Count)
+	assert.Equal(t, 2, stats[1].Count)
+	assert.Equal(t, 1, stats[2].Count)
+	assert.Equal(t, 1, stats[3].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "42", stats[0].Meta["b"])
+	assert.Equal(t, "foo", stats[1].Meta["a"])
+	assert.Equal(t, "42", stats[1].Meta["b"])
+	assert.Equal(t, "bar", stats[2].Meta["a"])
+	assert.Equal(t, "42", stats[2].Meta["b"])
+	assert.Equal(t, "foo", stats[3].Meta["a"])
+	assert.Equal(t, "56", stats[3].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{EventName: "event1", Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "42", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "bar"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "bar", stats[0].Meta["a"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "foo", "b": "56"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "56", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "no", "b": "result"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
+}
+
 func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{

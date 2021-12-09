@@ -6,6 +6,12 @@ import (
 )
 
 var (
+	fieldCount = field{
+		querySessions:  "count(*)",
+		queryPageViews: "count(*)",
+		name:           "count",
+		queryDirection: "DESC",
+	}
 	fieldPath = field{
 		querySessions:  "path",
 		queryPageViews: "path",
@@ -227,6 +233,15 @@ var (
 		querySessions:  "event_name",
 		queryPageViews: "event_name",
 		name:           "event_name",
+		queryDirection: "ASC",
+	}
+	fieldEventMeta = field{
+		// TODO optimize once maps are supported in the driver
+		/*querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
+		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
+		querySessions:  "arrayZip(event_meta_keys, event_meta_values)",
+		queryPageViews: "arrayZip(event_meta_keys, event_meta_values)",
+		name:           "meta",
 	}
 	fieldEventMetaKeys = field{
 		querySessions:  "groupUniqArrayArray(event_meta_keys)",
