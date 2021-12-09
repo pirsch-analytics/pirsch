@@ -1004,6 +1004,11 @@ func TestAnalyzer_EventList(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Count)
 	assert.Equal(t, "foo", stats[0].Meta["a"])
 	assert.Equal(t, "42", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
 
 	// TODO filter by key-value
 }

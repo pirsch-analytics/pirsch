@@ -128,6 +128,9 @@ type Filter struct {
 	// This must be used together with an EventName.
 	EventMetaKey string
 
+	// EventMeta filters for event metadata.
+	EventMeta map[string]string
+
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
@@ -239,8 +242,8 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 24)
-	queryFields := make([]string, 0, 24)
+	args := make([]interface{}, 0, 24+len(filter.EventMeta))
+	queryFields := make([]string, 0, 24+len(filter.EventMeta))
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -265,6 +268,7 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&queryFields, &args, "event_meta_keys", filter.EventMetaKey)
 	filter.queryPlatform(&queryFields)
 	filter.queryPathPattern(&queryFields, &args)
+	filter.appendQueryMeta(&queryFields, &args, filter.EventMeta)
 	return args, strings.Join(queryFields, "AND ")
 }
 
@@ -314,8 +318,7 @@ func (filter Filter) queryPathPattern(queryFields *[]string, args *[]interface{}
 }
 
 func (filter *Filter) fields() string {
-	// do not include exit_path, as it is selected using argMax
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 26)
 	filter.appendField(&fields, "path", filter.Path)
 	filter.appendField(&fields, "entry_path", filter.EntryPath)
 	filter.appendField(&fields, "exit_path", filter.ExitPath)
@@ -337,7 +340,6 @@ func (filter *Filter) fields() string {
 	filter.appendField(&fields, "utm_content", filter.UTMContent)
 	filter.appendField(&fields, "utm_term", filter.UTMTerm)
 	filter.appendField(&fields, "event_name", filter.EventName)
-	filter.appendField(&fields, "event_meta_keys", filter.EventMetaKey)
 
 	if filter.Platform != "" {
 		platform := filter.Platform
@@ -358,6 +360,12 @@ func (filter *Filter) fields() string {
 
 	if filter.Path == "" && filter.PathPattern != "" {
 		fields = append(fields, "path")
+	}
+
+	if len(filter.EventMeta) > 0 {
+		fields = append(fields, "event_meta_keys", "event_meta_values")
+	} else {
+		filter.appendField(&fields, "event_meta_keys", filter.EventMetaKey)
 	}
 
 	return strings.Join(fields, ",")
@@ -422,9 +430,8 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, fi
 func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
 		comparator := "%s = ? "
-		not := strings.HasPrefix(value, "!")
 
-		if not {
+		if strings.HasPrefix(value, "!") {
 			value = value[1:]
 			comparator = "%s != ? "
 		}
@@ -441,6 +448,20 @@ func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface
 
 		*args = append(*args, valueInt)
 		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+	}
+}
+
+func (filter *Filter) appendQueryMeta(queryFields *[]string, args *[]interface{}, kv map[string]string) {
+	for k, v := range kv {
+		comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+
+		if strings.HasPrefix(v, "!") {
+			v = v[1:]
+			comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+		}
+
+		*args = append(*args, filter.nullValue(v))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, k))
 	}
 }
 
