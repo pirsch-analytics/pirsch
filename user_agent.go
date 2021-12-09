@@ -218,7 +218,7 @@ func getWindowsMobileVersion(system string) string {
 	parts := strings.Split(system, " ")
 
 	if len(parts) > 2 {
-		return getOSVersion(parts[2], 2)
+		return getOSVersion(parts[2], 1)
 	}
 
 	return ""
@@ -234,7 +234,7 @@ func getWindowsVersion(system string) string {
 
 func getMacVersion(system string) string {
 	if len(system) > 14 {
-		return getOSVersion(strings.ReplaceAll(system[15:], "_", "."), 2)
+		return getOSVersion(strings.ReplaceAll(system[15:], "_", "."), 1)
 	}
 
 	return ""
@@ -242,7 +242,7 @@ func getMacVersion(system string) string {
 
 func getAndroidVersion(system string) string {
 	if len(system) > 7 {
-		return getOSVersion(system[8:], 2)
+		return getOSVersion(system[8:], 1)
 	}
 
 	return ""
@@ -255,10 +255,10 @@ func getiOSVersion(system string) string {
 	// CPU OS <version> like ...
 	if len(parts) > 3 {
 		if parts[2] == "OS" {
-			return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 2)
+			return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 1)
 		}
 
-		return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 2)
+		return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 1)
 	}
 
 	return ""

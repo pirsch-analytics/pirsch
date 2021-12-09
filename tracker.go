@@ -208,10 +208,12 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.event = true
 		metaKeys, metaValues := eventOptions.getMetaData()
-		pageView, _, _ := HitFromRequest(r, tracker.salt, options)
+		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
+			tracker.sessions <- sessionState
 			tracker.events <- Event{
 				ClientID:        pageView.ClientID,
 				VisitorID:       pageView.VisitorID,
@@ -380,15 +382,15 @@ func (tracker *Tracker) flushSessions() {
 
 		select {
 		case session := <-tracker.sessions:
+			if len(sessions) >= tracker.workerBufferSize*2 {
+				tracker.saveSessions(sessions)
+				sessions = sessions[:0]
+			}
+
 			sessions = append(sessions, session.State)
 
 			if session.Cancel != nil {
 				sessions = append(sessions, *session.Cancel)
-			}
-
-			if len(sessions) >= tracker.workerBufferSize*2 {
-				tracker.saveSessions(sessions)
-				sessions = sessions[:0]
 			}
 		default:
 			stop = true
@@ -412,16 +414,16 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
+			if len(sessions) >= tracker.workerBufferSize*2 {
+				tracker.saveSessions(sessions)
+				sessions = sessions[:0]
+			}
+
 			if session.Cancel != nil {
 				sessions = append(sessions, *session.Cancel)
 			}
 
 			sessions = append(sessions, session.State)
-
-			if len(sessions) >= tracker.workerBufferSize*2 {
-				tracker.saveSessions(sessions)
-				sessions = sessions[:0]
-			}
 		case <-timer.C:
 			tracker.saveSessions(sessions)
 			sessions = sessions[:0]

@@ -335,6 +335,33 @@ func TestAnalyzer_GrowthNoData(t *testing.T) {
 
 func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 15), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Second * 2), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Second * 5), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 3, Time: pastDay(3).Add(time.Second * 6), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 31, Time: pastDay(3).Add(time.Minute * 10), EntryPath: "/bar", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Second * 7), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Second * 8), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 9, Time: pastDay(2).Add(time.Second * 10), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Second * 11), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 11, Time: Today().Add(time.Second * 12), EntryPath: "/", ExitPath: "/"},
+		},
+	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event1", VisitorID: 1, Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
 		{Name: "event1", DurationSeconds: 300, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
@@ -590,6 +617,16 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 
 func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
+			{Sign: 1, VisitorID: 2, SessionID: 3, Time: pastDay(1), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
+		},
+	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{Name: "event", VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{Name: "event", VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
@@ -785,11 +822,11 @@ func TestAnalyzer_Events(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveSessions(t, [][]Session{
 			{
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i), Time: Today(), ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), ExitPath: "/"},
+				{Sign: -1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
 			},
 		})
 	}
@@ -810,6 +847,24 @@ func TestAnalyzer_Events(t *testing.T) {
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.Equal(t, 5, stats[0].Visitors)
+	assert.Equal(t, 4, stats[1].Visitors)
+	assert.Equal(t, 6, stats[0].Views)
+	assert.Equal(t, 5, stats[1].Views)
+	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.4, stats[1].CR, 0.001)
+	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
+	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
+	assert.Len(t, stats[0].MetaKeys, 3)
+	assert.Len(t, stats[1].MetaKeys, 2)
+	stats, err = analyzer.Events(&Filter{EntryPath: "/exit"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
+	stats, err = analyzer.Events(&Filter{EntryPath: "/", ExitPath: "/exit"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -896,6 +951,80 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.EventBreakdown(getMaxFilter("event"))
 	assert.NoError(t, err)
+}
+
+func TestAnalyzer_EventList(t *testing.T) {
+	cleanupDB()
+
+	// create sessions for the conversion rate
+	for i := 0; i < 5; i++ {
+		saveSessions(t, [][]Session{
+			{
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+			},
+			{
+				{Sign: -1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+			},
+		})
+	}
+
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 1, Time: Today(), Path: "/"},
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 2, Time: Today(), Path: "/foo"},
+		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"bar", "42"}, VisitorID: 1, Time: Today(), Path: "/bar"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 3, Time: Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "56"}, VisitorID: 4, Time: Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 5, Time: Today(), Path: "/foo"},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.EventList(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 4)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	assert.Equal(t, "event1", stats[2].Name)
+	assert.Equal(t, "event2", stats[3].Name)
+	assert.Equal(t, 2, stats[0].Count)
+	assert.Equal(t, 2, stats[1].Count)
+	assert.Equal(t, 1, stats[2].Count)
+	assert.Equal(t, 1, stats[3].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "42", stats[0].Meta["b"])
+	assert.Equal(t, "foo", stats[1].Meta["a"])
+	assert.Equal(t, "42", stats[1].Meta["b"])
+	assert.Equal(t, "bar", stats[2].Meta["a"])
+	assert.Equal(t, "42", stats[2].Meta["b"])
+	assert.Equal(t, "foo", stats[3].Meta["a"])
+	assert.Equal(t, "56", stats[3].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{EventName: "event1", Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "42", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{Path: "/foo"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "bar"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "bar", stats[0].Meta["a"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "foo", "b": "56"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, 1, stats[0].Count)
+	assert.Equal(t, "foo", stats[0].Meta["a"])
+	assert.Equal(t, "56", stats[0].Meta["b"])
+	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "no", "b": "result"}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -1342,16 +1471,16 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "S"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), ScreenClass: "S"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "XXL"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), ScreenClass: "XL"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), ScreenClass: "XL"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), ScreenClass: "L"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), ScreenClass: "XXL"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), ScreenClass: "XXL"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), ScreenClass: "L", ScreenWidth: 1980, ScreenHeight: 1080},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1368,6 +1497,18 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	visitors, err = analyzer.ScreenClass(&Filter{ScreenWidth: "2560"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "XL", visitors[0].ScreenClass)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
+	visitors, err = analyzer.ScreenClass(&Filter{ScreenHeight: "1080"})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "L", visitors[0].ScreenClass)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.InDelta(t, 0.1666, visitors[0].RelativeVisitors, 0.01)
 	_, err = analyzer.ScreenClass(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.ScreenClass(getMaxFilter("event"))

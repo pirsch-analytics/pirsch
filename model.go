@@ -215,9 +215,20 @@ type EventStats struct {
 	Visitors               int      `json:"visitors"`
 	Views                  int      `json:"views"`
 	CR                     float64  `json:"cr"`
-	AverageDurationSeconds int      `db:"average_duration_seconds" json:"average_duration_seconds"`
+	AverageDurationSeconds int      `db:"average_time_spent_seconds" json:"average_duration_seconds"`
 	MetaKeys               []string `db:"meta_keys" json:"meta_keys"`
 	MetaValue              string   `db:"meta_value" json:"meta_value"`
+}
+
+// EventListStats is the result type for a custom event list.
+type EventListStats struct {
+	Name     string            `db:"event_name" json:"name"`
+	Meta     map[string]string `db:"-" json:"meta"`
+	Visitors int               `json:"visitors"`
+	Count    int               `json:"count"`
+
+	// TODO optimize once maps are supported in the driver
+	Metadata [][]interface{} `db:"meta" json:"-"`
 }
 
 // ReferrerStats is the result type for referrer statistics.

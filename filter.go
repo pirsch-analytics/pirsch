@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -99,6 +100,12 @@ type Filter struct {
 	// ScreenClass filters for the screen class.
 	ScreenClass string
 
+	// ScreenWidth filters for the screen width.
+	ScreenWidth string
+
+	// ScreenHeight filters for the screen width.
+	ScreenHeight string
+
 	// UTMSource filters for the utm_source query parameter.
 	UTMSource string
 
@@ -120,6 +127,9 @@ type Filter struct {
 	// EventMetaKey filters for an event meta key.
 	// This must be used together with an EventName.
 	EventMetaKey string
+
+	// EventMeta filters for event metadata.
+	EventMeta map[string]string
 
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
@@ -232,15 +242,11 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 22)
-	queryFields := make([]string, 0, 22)
+	args := make([]interface{}, 0, 24+len(filter.EventMeta))
+	queryFields := make([]string, 0, 24+len(filter.EventMeta))
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
-
-	if filter.EventName == "" && !filter.eventFilter {
-		filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
-		filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
-	}
-
+	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
+	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
 	filter.appendQuery(&queryFields, &args, "language", filter.Language)
 	filter.appendQuery(&queryFields, &args, "country_code", filter.Country)
 	filter.appendQuery(&queryFields, &args, "city", filter.City)
@@ -251,14 +257,18 @@ func (filter *Filter) queryFields() ([]interface{}, string) {
 	filter.appendQuery(&queryFields, &args, "browser", filter.Browser)
 	filter.appendQuery(&queryFields, &args, "browser_version", filter.BrowserVersion)
 	filter.appendQuery(&queryFields, &args, "screen_class", filter.ScreenClass)
+	filter.appendQueryUInt16(&queryFields, &args, "screen_width", filter.ScreenWidth)
+	filter.appendQueryUInt16(&queryFields, &args, "screen_height", filter.ScreenHeight)
 	filter.appendQuery(&queryFields, &args, "utm_source", filter.UTMSource)
 	filter.appendQuery(&queryFields, &args, "utm_medium", filter.UTMMedium)
 	filter.appendQuery(&queryFields, &args, "utm_campaign", filter.UTMCampaign)
 	filter.appendQuery(&queryFields, &args, "utm_content", filter.UTMContent)
 	filter.appendQuery(&queryFields, &args, "utm_term", filter.UTMTerm)
 	filter.appendQuery(&queryFields, &args, "event_name", filter.EventName)
+	filter.appendQuery(&queryFields, &args, "event_meta_keys", filter.EventMetaKey)
 	filter.queryPlatform(&queryFields)
 	filter.queryPathPattern(&queryFields, &args)
+	filter.appendQueryMeta(&queryFields, &args, filter.EventMeta)
 	return args, strings.Join(queryFields, "AND ")
 }
 
@@ -308,15 +318,10 @@ func (filter Filter) queryPathPattern(queryFields *[]string, args *[]interface{}
 }
 
 func (filter *Filter) fields() string {
-	// do not include exit_path, as it is selected using argMax
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 26)
 	filter.appendField(&fields, "path", filter.Path)
-
-	if filter.EventName == "" && !filter.eventFilter {
-		filter.appendField(&fields, "entry_path", filter.EntryPath)
-		filter.appendField(&fields, "exit_path", filter.ExitPath)
-	}
-
+	filter.appendField(&fields, "entry_path", filter.EntryPath)
+	filter.appendField(&fields, "exit_path", filter.ExitPath)
 	filter.appendField(&fields, "language", filter.Language)
 	filter.appendField(&fields, "country_code", filter.Country)
 	filter.appendField(&fields, "city", filter.City)
@@ -327,6 +332,8 @@ func (filter *Filter) fields() string {
 	filter.appendField(&fields, "browser", filter.Browser)
 	filter.appendField(&fields, "browser_version", filter.BrowserVersion)
 	filter.appendField(&fields, "screen_class", filter.ScreenClass)
+	filter.appendField(&fields, "screen_width", filter.ScreenWidth)
+	filter.appendField(&fields, "screen_height", filter.ScreenHeight)
 	filter.appendField(&fields, "utm_source", filter.UTMSource)
 	filter.appendField(&fields, "utm_medium", filter.UTMMedium)
 	filter.appendField(&fields, "utm_campaign", filter.UTMCampaign)
@@ -353,6 +360,12 @@ func (filter *Filter) fields() string {
 
 	if filter.Path == "" && filter.PathPattern != "" {
 		fields = append(fields, "path")
+	}
+
+	if len(filter.EventMeta) > 0 {
+		fields = append(fields, "event_meta_keys", "event_meta_values")
+	} else {
+		filter.appendField(&fields, "event_meta_keys", filter.EventMetaKey)
 	}
 
 	return strings.Join(fields, ",")
@@ -394,14 +407,61 @@ func (filter *Filter) query() ([]interface{}, string) {
 
 func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
 	if value != "" {
-		if strings.HasPrefix(value, "!") {
-			value = filter.nullValue(value[1:])
-			*args = append(*args, value)
-			*queryFields = append(*queryFields, fmt.Sprintf("%s != ? ", field))
-		} else {
-			*args = append(*args, filter.nullValue(value))
-			*queryFields = append(*queryFields, fmt.Sprintf("%s = ? ", field))
+		comparator := "%s = ? "
+		not := strings.HasPrefix(value, "!")
+
+		if field == "event_meta_keys" {
+			if not {
+				value = value[1:]
+				comparator = "!has(%s, ?) "
+			} else {
+				comparator = "has(%s, ?) "
+			}
+		} else if not {
+			value = value[1:]
+			comparator = "%s != ? "
 		}
+
+		*args = append(*args, filter.nullValue(value))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+	}
+}
+
+func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface{}, field, value string) {
+	if value != "" {
+		comparator := "%s = ? "
+
+		if strings.HasPrefix(value, "!") {
+			value = value[1:]
+			comparator = "%s != ? "
+		}
+
+		var valueInt uint16
+
+		if strings.ToLower(value) != "null" {
+			i, err := strconv.Atoi(value)
+
+			if err == nil {
+				valueInt = uint16(i)
+			}
+		}
+
+		*args = append(*args, valueInt)
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+	}
+}
+
+func (filter *Filter) appendQueryMeta(queryFields *[]string, args *[]interface{}, kv map[string]string) {
+	for k, v := range kv {
+		comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+
+		if strings.HasPrefix(v, "!") {
+			v = v[1:]
+			comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+		}
+
+		*args = append(*args, filter.nullValue(v))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, k))
 	}
 }
 

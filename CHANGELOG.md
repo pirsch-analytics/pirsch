@@ -1,8 +1,18 @@
 # Changelog
 
-## 3.4.6
+## 3.5.0
 
+* create new session when referrer or UTM parameter changes
+* update session on event and set bounced to false (keep everything else)
+* added list to group referrer domains
+* added entry/exit page filter for events
+* added screen width/height to filter (exact match)
+* added listing events and filtering for event meta key and value
+* optimized building queries
+* removed TTL from tables
+* group OS versions by minor version instead of full length
 * fixed User-Agent blacklist (must be lowercase)
+* fixed growing sessions buffer in tracker
 * updated dependencies
 
 ## 3.4.5
