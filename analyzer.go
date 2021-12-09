@@ -533,6 +533,42 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 	return stats, nil
 }
 
+// EventList returns events as a list. The metadata is grouped as key-value pairs.
+func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
+	filter = analyzer.getFilter(filter)
+	filter.eventFilter = true
+	args, query := buildQuery(filter, []field{
+		fieldEventName,
+		fieldEventMeta,
+		fieldVisitors,
+		fieldCount,
+	}, []field{
+		fieldEventName,
+		fieldEventMeta,
+	}, []field{
+		fieldCount,
+		fieldEventName,
+	})
+	var stats []EventListStats
+
+	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+		return nil, err
+	}
+
+	// TODO optimize once maps are supported in the driver
+	for i := range stats {
+		stats[i].Meta = make(map[string]string)
+
+		for j := range stats[i].Metadata {
+			key := stats[i].Metadata[j][0].(string)
+			value := stats[i].Metadata[j][1].(string)
+			stats[i].Meta[key] = value
+		}
+	}
+
+	return stats, nil
+}
+
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
