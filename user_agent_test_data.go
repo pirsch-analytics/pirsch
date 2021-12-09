@@ -28,7 +28,7 @@ var userAgentsEdge = []testUserAgent{
 		browser:        BrowserEdge,
 		browserVersion: "84.0",
 		os:             OSMac,
-		osVersion:      "10.15.6",
+		osVersion:      "10.15",
 	},
 	{
 		ua:             "Mozilla/5.0 (Linux; Android 10; HD1913) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36 EdgA/45.6.2.5042",
@@ -63,7 +63,7 @@ var userAgentsEdge = []testUserAgent{
 		browser:        BrowserEdge,
 		browserVersion: "45.7",
 		os:             OSiOS,
-		osVersion:      "13.6.1",
+		osVersion:      "13.6",
 	},
 	{
 		ua:             "Mozilla/5.0 (Windows Mobile 10; Android 10.0; Microsoft; Lumia 950XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Mobile Safari/537.36 Edge/40.15254.603",
@@ -101,7 +101,7 @@ var userAgentsOpera = []testUserAgent{
 		browser:        BrowserOpera,
 		browserVersion: "70.0",
 		os:             OSMac,
-		osVersion:      "10.15.6",
+		osVersion:      "10.15",
 	},
 	{
 		ua:             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36 OPR/70.0.3728.119",
@@ -189,21 +189,21 @@ var userAgentsFirefox = []testUserAgent{
 		browser:        BrowserFirefox,
 		browserVersion: "28.0",
 		os:             OSiOS,
-		osVersion:      "10.15.6",
+		osVersion:      "10.15",
 	},
 	{
 		ua:             "Mozilla/5.0 (iPad; CPU OS 10_15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/28.0 Mobile/15E148 Safari/605.1.15",
 		browser:        BrowserFirefox,
 		browserVersion: "28.0",
 		os:             OSiOS,
-		osVersion:      "10.15.6",
+		osVersion:      "10.15",
 	},
 	{
 		ua:             "Mozilla/5.0 (iPod touch; CPU iPhone OS 10_15_6 like Mac OS X) AppleWebKit/604.5.6 (KHTML, like Gecko) FxiOS/28.0 Mobile/15E148 Safari/605.1.15",
 		browser:        BrowserFirefox,
 		browserVersion: "28.0",
 		os:             OSiOS,
-		osVersion:      "10.15.6",
+		osVersion:      "10.15",
 	},
 	{
 		ua:             "Mozilla/5.0 (Android 10; Mobile; rv:68.0) Gecko/68.0 Firefox/79.0",
@@ -321,7 +321,7 @@ var userAgentsChrome = []testUserAgent{
 	{ // this can be optimized, but it's a fairly old Android version
 		ua:        "Mozilla/5.0 (Linux; U; Android 4.1.1; en-gb; Build/KLP) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30",
 		os:        OSAndroid,
-		osVersion: "4.1.1",
+		osVersion: "4.1",
 	},
 	{
 		ua:             "Mozilla/5.0 (Linux; Android 4.4; Nexus 5 Build/_BuildID_) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Mobile Safari/537.36",
@@ -335,7 +335,7 @@ var userAgentsChrome = []testUserAgent{
 		browser:        BrowserChrome,
 		browserVersion: "43.0",
 		os:             OSAndroid,
-		osVersion:      "5.1.1",
+		osVersion:      "5.1",
 	},
 }
 

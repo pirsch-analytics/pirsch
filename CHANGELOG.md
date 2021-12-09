@@ -10,6 +10,7 @@
 * added listing events and filtering for event meta key and value
 * optimized building queries
 * removed TTL from tables
+* group OS versions by minor version instead of full length
 * fixed User-Agent blacklist (must be lowercase)
 * fixed growing sessions buffer in tracker
 * updated dependencies
