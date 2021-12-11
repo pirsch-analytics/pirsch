@@ -324,16 +324,16 @@ func updateSession(options *HitOptions, session *Session, event bool, now time.T
 func referrerOrCampaignChanged(session *Session, r *http.Request, options *HitOptions) bool {
 	referrer, _, _ := getReferrer(r, options.Referrer, options.ReferrerDomainBlacklist, options.ReferrerDomainBlacklistIncludesSubdomains)
 
-	if referrer != session.Referrer {
+	if referrer != "" && referrer != session.Referrer {
 		return true
 	}
 
 	utm := getUTMParams(r)
-	return utm.source != session.UTMSource ||
-		utm.medium != session.UTMMedium ||
-		utm.campaign != session.UTMCampaign ||
-		utm.content != session.UTMContent ||
-		utm.term != session.UTMTerm
+	return (utm.source != "" && utm.source != session.UTMSource) ||
+		(utm.medium != "" && utm.medium != session.UTMMedium) ||
+		(utm.campaign != "" && utm.campaign != session.UTMCampaign) ||
+		(utm.content != "" && utm.content != session.UTMContent) ||
+		(utm.term != "" && utm.term != session.UTMTerm)
 }
 
 func getPath(path string) string {

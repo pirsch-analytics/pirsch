@@ -264,6 +264,9 @@ func TestHitFromRequestResetSessionReferrer(t *testing.T) {
 	// keep session
 	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
 	assert.Equal(t, "https://referrer-header.com", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
+	req.Header.Del("Referer")
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, "https://referrer-header.com", cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).Referrer)
 
 	// create new session on changing referrer
 	req.Header.Set("Referer", "https://new-referrer-header.com")
@@ -291,6 +294,11 @@ func TestHitFromRequestResetSessionUTM(t *testing.T) {
 
 	// keep session
 	sessionID := sessionState.State.SessionID
+	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
+	assert.Equal(t, sessionID, cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).SessionID)
+	req = httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{SessionCache: cache})
 	assert.Equal(t, sessionID, cache.Get(0, sessionState.State.VisitorID, time.Now().Add(-time.Second)).SessionID)
 
