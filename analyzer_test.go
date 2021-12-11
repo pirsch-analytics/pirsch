@@ -771,6 +771,40 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
+	cleanupDB()
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: Today(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: Today(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Second), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second * 2), SessionID: 1, EntryPath: "/", ExitPath: "/bar"},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event", VisitorID: 1, SessionID: 1, Time: Today(), Path: "/foo"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	entries, err := analyzer.EntryPages(&Filter{EventName: "event"})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Entries)
+	exits, err := analyzer.ExitPages(&Filter{EventName: "event"})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 1)
+	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, 1, exits[0].Exits)
+	_, err = analyzer.EntryPages(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.ExitPages(getMaxFilter("event"))
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_PageConversions(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{

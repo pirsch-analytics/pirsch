@@ -319,10 +319,6 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
 
-	if filter.table() == "event" {
-		return []EntryStats{}, nil
-	}
-
 	fields := []field{
 		fieldEntryPath,
 		fieldEntries,
@@ -354,24 +350,26 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		paths = append(paths, stats[i].Path)
 	}
 
-	total, err := analyzer.totalVisitorsSessions(filter, paths)
+	if filter.table() != "event" {
+		total, err := analyzer.totalVisitorsSessions(filter, paths)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	for i := range stats {
-		for j := range total {
-			if stats[i].Path == total[j].Path {
-				stats[i].Visitors = total[j].Visitors
-				stats[i].Sessions = total[j].Sessions
-				stats[i].EntryRate = float64(stats[i].Entries) / float64(total[j].Sessions)
-				break
+		for i := range stats {
+			for j := range total {
+				if stats[i].Path == total[j].Path {
+					stats[i].Visitors = total[j].Visitors
+					stats[i].Sessions = total[j].Sessions
+					stats[i].EntryRate = float64(stats[i].Entries) / float64(total[j].Sessions)
+					break
+				}
 			}
 		}
 	}
 
-	if filter.IncludeTimeOnPage {
+	if filter.IncludeTimeOnPage && filter.table() != "event" {
 		top, err := analyzer.avgTimeOnPage(filter, paths)
 
 		if err != nil {
@@ -394,10 +392,6 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 // ExitPages returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
-
-	if filter.table() == "event" {
-		return []ExitStats{}, nil
-	}
 
 	fields := []field{
 		fieldExitPath,
@@ -430,19 +424,21 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		paths = append(paths, stats[i].Path)
 	}
 
-	total, err := analyzer.totalVisitorsSessions(filter, paths)
+	if filter.table() != "event" {
+		total, err := analyzer.totalVisitorsSessions(filter, paths)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	for i := range stats {
-		for j := range total {
-			if stats[i].Path == total[j].Path {
-				stats[i].Visitors = total[j].Visitors
-				stats[i].Sessions = total[j].Sessions
-				stats[i].ExitRate = float64(stats[i].Exits) / float64(total[j].Sessions)
-				break
+		for i := range stats {
+			for j := range total {
+				if stats[i].Path == total[j].Path {
+					stats[i].Visitors = total[j].Visitors
+					stats[i].Sessions = total[j].Sessions
+					stats[i].ExitRate = float64(stats[i].Exits) / float64(total[j].Sessions)
+					break
+				}
 			}
 		}
 	}

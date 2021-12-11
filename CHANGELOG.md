@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.1
+
+* added event filter for entry/exit pages
+
 ## 3.5.0
 
 * create new session when referrer or UTM parameter changes
