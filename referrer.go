@@ -73,6 +73,10 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 		return "", "", ""
 	}
 
+	if u.Path == "/" {
+		u.Path = ""
+	}
+
 	hostname := u.Hostname()
 
 	if isIP(hostname) {
@@ -96,11 +100,6 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	// remove query parameters and anchor
 	u.RawQuery = ""
 	u.Fragment = ""
-
-	if u.Path == "/" {
-		u.Path = ""
-	}
-
 	return u.String(), name, ""
 }
 

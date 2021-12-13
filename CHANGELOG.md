@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.2
+
+* fixed grouping referrers with trailing slashes
+* updated dependencies
+
 ## 3.5.1
 
 * added event filter for entry/exit pages

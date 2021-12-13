@@ -42,7 +42,7 @@ func TestGetReferrer(t *testing.T) {
 		{"http://sub.example.com/with/path/", nil, false},
 		{"https://www.google.com", nil, false},
 		{"https://www.google.bf", nil, false},
-		{"https://google.com", nil, false},
+		{"https://google.com/", nil, false},
 		{"https://google.bf", nil, false},
 		{"https://www.google.pl/products", nil, false},
 	}
