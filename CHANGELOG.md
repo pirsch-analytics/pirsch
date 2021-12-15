@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.3
+
+* optimized query builder
+* updated dependencies
+
 ## 3.5.2
 
 * fixed grouping referrers with trailing slashes

@@ -339,10 +339,6 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 }
 
 func joinPageViewFields(args *[]interface{}, filter *Filter, fields []field) string {
-	if len(fields) == 0 {
-		return ""
-	}
-
 	var out strings.Builder
 
 	for i := range fields {
@@ -365,10 +361,6 @@ func joinPageViewFields(args *[]interface{}, filter *Filter, fields []field) str
 }
 
 func joinSessionFields(args *[]interface{}, filter *Filter, fields []field) string {
-	if len(fields) == 0 {
-		return ""
-	}
-
 	var out strings.Builder
 
 	for i := range fields {
@@ -447,10 +439,6 @@ func joinSessions(filter *Filter, table string, fields []field) ([]interface{}, 
 }
 
 func joinGroupBy(fields []field) string {
-	if len(fields) == 0 {
-		return ""
-	}
-
 	var out strings.Builder
 
 	for i := range fields {
@@ -462,10 +450,6 @@ func joinGroupBy(fields []field) string {
 }
 
 func joinOrderBy(args *[]interface{}, filter *Filter, fields []field) string {
-	if len(fields) == 0 {
-		return ""
-	}
-
 	var out strings.Builder
 
 	for i := range fields {
