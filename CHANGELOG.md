@@ -3,6 +3,7 @@
 ## 3.5.3
 
 * optimized query builder
+* fixed missing session collapsing
 * updated dependencies
 
 ## 3.5.2

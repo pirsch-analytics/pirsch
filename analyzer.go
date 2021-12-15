@@ -72,6 +72,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 			exit_path
 			FROM session
 			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
 		) s
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 	}
@@ -99,6 +101,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 			exit_path
 			FROM session
 			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
 		) s
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
 	}
@@ -637,7 +641,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		}
 
 		args = append(args, filterArgs...)
-		query += fmt.Sprintf(`WHERE %s`, filterQuery)
+		query += fmt.Sprintf(`WHERE %s HAVING sum(sign) > 0`, filterQuery)
 	} else {
 		var innerArgs []interface{}
 		innerQuery := ""
@@ -907,6 +911,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	query.WriteString(fmt.Sprintf(`WHERE %s
 		AND duration_seconds != 0
 		GROUP BY day
+		HAVING sum(sign) > 0
 		ORDER BY day
 		%s`, filterQuery, withFillQuery))
 	var stats []TimeSpentStats
@@ -963,6 +968,8 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			exit_path
 			FROM session
 			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
 		) s
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
 	}
@@ -1047,6 +1054,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	args = append(args, filterArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
 			GROUP BY visitor_id, session_id
+			HAVING sum(sign) > 0
 		)`, filterQuery))
 	var averageTimeSpentSeconds int
 
@@ -1102,6 +1110,8 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 			exit_path
 			FROM session
 			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
 		) s
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
 	}
@@ -1174,6 +1184,8 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 			exit_path
 			FROM session
 			WHERE %s
+			GROUP BY visitor_id, session_id, entry_path, exit_path
+			HAVING sum(sign) > 0
 		) s
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
 	}
