@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.4
+
+* fixed Windows 11 User-Agent version
+
 ## 3.5.3
 
 * optimized query builder
