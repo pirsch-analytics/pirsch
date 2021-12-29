@@ -400,13 +400,13 @@ func shortenString(str string, n int) string {
 }
 
 func getUInt16QueryParam(param string) uint16 {
-	i, _ := strconv.Atoi(param)
+	i, _ := strconv.ParseUint(param, 10, 16)
 	return uint16(i)
 }
 
 func getUInt64QueryParam(param string) uint64 {
-	i, _ := strconv.Atoi(param)
-	return uint64(i)
+	i, _ := strconv.ParseUint(param, 10, 64)
+	return i
 }
 
 func getURLQueryParam(param string) string {

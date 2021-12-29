@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.5.5
+
+* use `strconv.ParseUint` instead of `strconv.Atoi` where possible
+* updated referrer list
+* updated referrer blacklist
+* updated dependencies
+
 ## 3.5.4
 
 * fixed Windows 11 User-Agent version

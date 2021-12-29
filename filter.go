@@ -439,7 +439,7 @@ func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface
 		var valueInt uint16
 
 		if strings.ToLower(value) != "null" {
-			i, err := strconv.Atoi(value)
+			i, err := strconv.ParseUint(value, 10, 16)
 
 			if err == nil {
 				valueInt = uint16(i)
