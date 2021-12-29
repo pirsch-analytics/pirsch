@@ -371,6 +371,34 @@ var userAgentsSafari = []testUserAgent{
 		browser: BrowserSafari,
 		os:      OSMac,
 	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15",
+		browser:        BrowserSafari,
+		browserVersion: "15.0",
+		os:             OSMac,
+		osVersion:      "10.15",
+	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15",
+		browser:        BrowserSafari,
+		browserVersion: "14.0",
+		os:             OSMac,
+		osVersion:      "10.15",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1",
+		browser:        BrowserSafari,
+		browserVersion: "15.1",
+		os:             OSiOS,
+		osVersion:      "15.1",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1",
+		browser:        BrowserSafari,
+		browserVersion: "14.0",
+		os:             OSiOS,
+		osVersion:      "14.4",
+	},
 }
 
 var userAgentsIE = []testUserAgent{
