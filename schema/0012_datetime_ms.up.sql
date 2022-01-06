@@ -40,7 +40,7 @@ CREATE TABLE session
 )
 ENGINE = CollapsingMergeTree(sign)
 PARTITION BY toYYYYMM(time)
-ORDER BY (client_id, visitor_id, session_id, start)
+ORDER BY (client_id, visitor_id, session_id, time)
 SETTINGS index_granularity = 8192
 ;
 

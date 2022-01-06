@@ -246,14 +246,17 @@ func TestTracker_HitConcurrency(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	time.Sleep(time.Second * 4)
+	time.Sleep(time.Millisecond * 5)
 
 	for i := 0; i < 10; i++ {
 		tracker[i].Stop()
 	}
 
 	var session Session
-	assert.NoError(t, dbClient.Get(&session, `SELECT * FROM session FINAL`))
+	assert.NoError(t, dbClient.Get(&session, `SELECT entry_path, exit_path, max(page_views) page_views
+		FROM session
+		GROUP BY entry_path, exit_path
+		HAVING sum(sign) > 0`))
 	assert.Equal(t, 100, int(session.PageViews))
 	assert.Equal(t, "/page/1", session.EntryPath)
 	assert.Equal(t, "/page/100", session.ExitPath)

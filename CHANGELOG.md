@@ -4,6 +4,7 @@
 
 * migrated to DateTime64 for millisecond precision dates
 * added optimistic locking for session cache (in-memory and Redis)
+* fixed session collapsing order by
 * updated User-Agent blacklist
 * updated dependencies
 
