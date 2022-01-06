@@ -3,6 +3,7 @@
 ## 3.5.6
 
 * migrated to DateTime64 for millisecond precision dates
+* added optimistic locking for session cache (in-memory and Redis)
 * updated User-Agent blacklist
 * updated dependencies
 

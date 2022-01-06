@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+const (
+	rdsPutLua = `if redis.call("EXISTS", KEYS[2]) == 0 or tonumber(redis.call("GET", KEYS[2])) <= tonumber(ARGV[3]) then
+	redis.call("SETEX", KEYS[2], ARGV[2], ARGV[3])
+	return redis.call("SETEX", KEYS[1], ARGV[2], ARGV[1])
+end
+
+return ""`
+)
+
 // SessionCacheRedis caches sessions in Redis.
 type SessionCacheRedis struct {
 	maxAge time.Duration
@@ -55,9 +64,14 @@ func (cache *SessionCacheRedis) Put(clientID, fingerprint uint64, session *Sessi
 	v, err := json.Marshal(session)
 
 	if err == nil {
-		cache.rds.SetEX(context.Background(), getSessionKey(clientID, fingerprint), v, cache.maxAge)
+		key := getSessionKey(clientID, fingerprint)
+		cmd := cache.rds.Eval(context.Background(), rdsPutLua, []string{key, key + "_time"}, string(v), int(cache.maxAge.Seconds()), session.Time.UnixMilli())
+
+		if err := cmd.Err(); err != nil {
+			cache.logger.Printf("error storing session in cache: %s", err)
+		}
 	} else {
-		cache.logger.Printf("error storing session in cache: %s", err)
+		cache.logger.Printf("error marshalling session: %s", err)
 	}
 }
 

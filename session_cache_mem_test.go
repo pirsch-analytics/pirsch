@@ -8,7 +8,6 @@ import (
 )
 
 func TestSessionCacheMem(t *testing.T) {
-	cleanupDB()
 	client := NewMockClient()
 	cache := NewSessionCacheMem(client, 10)
 	session := cache.Get(1, 1, time.Now().Add(-time.Second*10))
@@ -38,6 +37,7 @@ func TestSessionCacheMem(t *testing.T) {
 	assert.Equal(t, "/", session.ExitPath)
 	assert.Equal(t, "/entry", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
+	cache.Clear()
 	cache.Put(1, 1, &Session{
 		ExitPath:  session.ExitPath,
 		EntryPath: session.EntryPath,
@@ -77,4 +77,21 @@ func TestSessionCacheMem(t *testing.T) {
 	assert.Equal(t, "/foo", session.ExitPath)
 	cache.Clear()
 	assert.Len(t, cache.sessions, 0)
+}
+
+func TestSessionCacheMem_Put(t *testing.T) {
+	client := NewMockClient()
+	cache := NewSessionCacheMem(client, 10)
+	now := time.Now()
+	cache.Put(1, 1, &Session{
+		EntryPath: "/",
+		Time:      now,
+	})
+	now = now.Add(-time.Second)
+	cache.Put(1, 1, &Session{
+		EntryPath: "/dont-update",
+		Time:      now,
+	})
+	session := cache.Get(1, 1, now.Add(-time.Second*10))
+	assert.Equal(t, "/", session.EntryPath)
 }
