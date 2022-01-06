@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.6
+
+* updated User-Agent blacklist
+
 ## 3.5.5
 
 * use `strconv.ParseUint` instead of `strconv.Atoi` where possible
