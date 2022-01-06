@@ -1,6 +1,8 @@
 package pirsch
 
 import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -215,6 +217,46 @@ func TestTracker_HitIgnoreSubdomain(t *testing.T) {
 	for _, hit := range client.Sessions {
 		assert.Empty(t, hit.Referrer)
 	}
+}
+
+func TestTracker_HitConcurrency(t *testing.T) {
+	cleanupDB()
+	cache := NewSessionCacheRedis(time.Second*60, nil, &redis.Options{
+		Addr: "localhost:6379",
+	})
+	cache.Clear()
+	config := &TrackerConfig{
+		Worker:           4,
+		WorkerBufferSize: 5,
+		WorkerTimeout:    time.Second * 3,
+		SessionCache:     cache,
+	}
+	tracker := make([]*Tracker, 10)
+
+	for i := 0; i < 10; i++ {
+		tracker[i] = NewTracker(dbClient, "salt", config)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+
+	for i := 0; i < 100; i++ {
+		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
+		tracker[i%10].Hit(req, nil)
+		time.Sleep(time.Millisecond)
+	}
+
+	time.Sleep(time.Second * 4)
+
+	for i := 0; i < 10; i++ {
+		tracker[i].Stop()
+	}
+
+	var session Session
+	assert.NoError(t, dbClient.Get(&session, `SELECT * FROM session FINAL`))
+	assert.Equal(t, 100, int(session.PageViews))
+	assert.Equal(t, "/page/1", session.EntryPath)
+	assert.Equal(t, "/page/100", session.ExitPath)
 }
 
 func TestTracker_Event(t *testing.T) {

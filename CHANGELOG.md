@@ -2,7 +2,9 @@
 
 ## 3.5.6
 
+* migrated to DateTime64 for millisecond precision dates
 * updated User-Agent blacklist
+* updated dependencies
 
 ## 3.5.5
 
