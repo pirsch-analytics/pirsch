@@ -3,6 +3,9 @@
 ## 3.5.7
 
 * drop backup tables
+* fixed github.com/containerd/containerd security issue
+* set minimum Go version to 1.17
+* updated dependencies
 
 ## 3.5.6
 
