@@ -231,7 +231,7 @@ type EventListStats struct {
 	Visitors int               `json:"visitors"`
 	Count    int               `json:"count"`
 
-	// TODO optimize once maps are supported in the driver
+	// TODO optimize once maps are supported in the driver (v2)
 	Metadata [][]interface{} `db:"meta" json:"-"`
 }
 

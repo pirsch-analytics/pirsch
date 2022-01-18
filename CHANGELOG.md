@@ -4,6 +4,8 @@
 
 * added sessions, views, bounces, and bounce rate to hourly visitor statistics
 * fixed average session duration calculation
+* updated referrer name list
+* updated dependencies
 
 ## 3.5.7
 

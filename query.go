@@ -236,7 +236,7 @@ var (
 		queryDirection: "ASC",
 	}
 	fieldEventMeta = field{
-		// TODO optimize once maps are supported in the driver
+		// TODO optimize once maps are supported in the driver (v2)
 		/*querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
 		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
 		querySessions:  "arrayZip(event_meta_keys, event_meta_values)",

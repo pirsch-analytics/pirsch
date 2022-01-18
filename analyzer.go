@@ -560,7 +560,7 @@ func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 		return nil, err
 	}
 
-	// TODO optimize once maps are supported in the driver
+	// TODO optimize once maps are supported in the driver (v2)
 	for i := range stats {
 		stats[i].Meta = make(map[string]string)
 
