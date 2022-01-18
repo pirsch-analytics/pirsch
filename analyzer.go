@@ -241,10 +241,15 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 	args, query := buildQuery(analyzer.getFilter(filter), []field{
 		fieldHour,
 		fieldVisitors,
+		fieldSessions,
+		fieldViews,
+		fieldBounces,
+		fieldBounceRate,
 	}, []field{
 		fieldHour,
 	}, []field{
 		fieldHour,
+		fieldVisitors,
 	})
 	var stats []VisitorHourStats
 

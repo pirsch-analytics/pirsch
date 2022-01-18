@@ -163,8 +163,12 @@ type Growth struct {
 
 // VisitorHourStats is the result type for visitor statistics grouped by time of day.
 type VisitorHourStats struct {
-	Hour     int `json:"hour"`
-	Visitors int `json:"visitors"`
+	Hour       int     `json:"hour"`
+	Visitors   int     `json:"visitors"`
+	Views      int     `json:"views"`
+	Sessions   int     `json:"sessions"`
+	Bounces    int     `json:"bounces"`
+	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
 }
 
 // PageStats is the result type for page statistics.

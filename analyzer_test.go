@@ -415,17 +415,17 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/"},
-			{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), ExitPath: "/"},
-			{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), ExitPath: "/"},
-			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), ExitPath: "/"},
-			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), ExitPath: "/"},
-			{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), ExitPath: "/"},
-			{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), ExitPath: "/"},
+			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -448,6 +448,31 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 2, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
+
+	assert.Equal(t, 2, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 2, visitors[5].Views)
+	assert.Equal(t, 2, visitors[8].Views)
+	assert.Equal(t, 1, visitors[10].Views)
+
+	assert.Equal(t, 1, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 2, visitors[5].Sessions)
+	assert.Equal(t, 2, visitors[8].Sessions)
+	assert.Equal(t, 1, visitors[10].Sessions)
+
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.Equal(t, 2, visitors[5].Bounces)
+	assert.Equal(t, 2, visitors[8].Bounces)
+	assert.Equal(t, 1, visitors[10].Bounces)
+
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
+
 	visitors, err = analyzer.VisitorHours(&Filter{From: pastDay(1), To: Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
@@ -455,6 +480,27 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 1, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
+
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 2, visitors[5].Views)
+	assert.Equal(t, 1, visitors[8].Views)
+	assert.Equal(t, 1, visitors[10].Views)
+
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 2, visitors[5].Sessions)
+	assert.Equal(t, 1, visitors[8].Sessions)
+	assert.Equal(t, 1, visitors[10].Sessions)
+
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.Equal(t, 2, visitors[5].Bounces)
+	assert.Equal(t, 1, visitors[8].Bounces)
+	assert.Equal(t, 1, visitors[10].Bounces)
+
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
+
 	_, err = analyzer.VisitorHours(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.VisitorHours(getMaxFilter("event"))

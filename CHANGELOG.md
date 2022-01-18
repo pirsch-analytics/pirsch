@@ -1,7 +1,8 @@
 # Changelog
 
-## 3.5.8
+## 3.6.0
 
+* added sessions, views, bounces, and bounce rate to hourly visitor statistics
 * fixed average session duration calculation
 
 ## 3.5.7
