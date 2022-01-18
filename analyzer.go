@@ -890,9 +890,13 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
 	var query strings.Builder
-	query.WriteString(`SELECT toDate(time) day,
-		ifNull(toUInt64(avg(nullIf(duration_seconds, 0)*sign)), 0) average_time_spent_seconds
-		FROM session s `)
+	query.WriteString(`SELECT day, average_time_spent_seconds
+		FROM (
+			SELECT toDate(time) day,
+			sum(duration_seconds*sign) duration,
+			sum(sign) n,
+			toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
+			FROM session s `)
 
 	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
@@ -909,11 +913,12 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args = append(args, filterArgs...)
 	args = append(args, withFillArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
-		AND duration_seconds != 0
-		GROUP BY day
-		HAVING sum(sign) > 0
-		ORDER BY day
-		%s`, filterQuery, withFillQuery))
+			AND duration_seconds != 0
+			GROUP BY day
+			HAVING sum(sign) > 0
+			ORDER BY day
+			%s
+		)`, filterQuery, withFillQuery))
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {

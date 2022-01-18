@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.8
+
+* fixed average session duration calculation
+
 ## 3.5.7
 
 * drop backup tables
