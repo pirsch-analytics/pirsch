@@ -10,7 +10,7 @@ Pirsch is a server side, no-cookie, drop-in and privacy focused tracking solutio
 
 ## How does it work?
 
-Pirsch generates a unique fingerprint for each visitor. The fingerprint is a hash of the visitors IP, User-Agent, the date, and a salt. The date guarantees that the data is separated by day, so visitors can only be tracked for up to one day.
+Pirsch generates a unique fingerprint for each visitor. The fingerprint is a hash of the visitors IP, User-Agent, the date, and a salt.
 
 Each time a visitor opens your page, Pirsch will store a hit. The hits are analyzed using the `Analyzer` to extract meaningful data.
 
