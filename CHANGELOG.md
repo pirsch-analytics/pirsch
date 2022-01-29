@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.1
+
+* added JSON field names for page views, sessions, and events
+
 ## 3.6.0
 
 * added sessions, views, bounces, and bounce rate to hourly visitor statistics
