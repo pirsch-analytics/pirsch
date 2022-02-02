@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.2
+
+* updated User-Agent blacklist
+
 ## 3.6.1
 
 * added JSON field names for page views, sessions, and events
