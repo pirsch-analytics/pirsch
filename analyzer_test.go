@@ -633,8 +633,10 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
-		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		// these need to be at the same day, because otherwise they will be in different partitions
+		// and the neighbor function doesn't work for the time on page calculation (visitor ID 2 is unrelated, so next day is fine)
+		{VisitorID: 1, Time: pastDay(1).Add(time.Hour), SessionID: 1, Path: "/", Title: "Home 1"},
+		{VisitorID: 1, Time: pastDay(1).Add(time.Hour * 2), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	saveSessions(t, [][]Session{
