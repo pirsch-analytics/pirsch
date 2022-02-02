@@ -1339,16 +1339,16 @@ func TestAnalyzer_Cities(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), City: "Oslo"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), City: "London"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), City: "Berlin"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), City: "Berlin"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), City: "Tokyo"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), City: "London"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), City: "London"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), CountryCode: "jp", City: "Tokyo"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), CountryCode: "gb", City: "London"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1356,6 +1356,9 @@ func TestAnalyzer_Cities(t *testing.T) {
 	visitors, err := analyzer.Cities(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
+	assert.Equal(t, "gb", visitors[0].CountryCode)
+	assert.Equal(t, "de", visitors[1].CountryCode)
+	assert.Equal(t, "jp", visitors[2].CountryCode)
 	assert.Equal(t, "London", visitors[0].City)
 	assert.Equal(t, "Berlin", visitors[1].City)
 	assert.Equal(t, "Tokyo", visitors[2].City)

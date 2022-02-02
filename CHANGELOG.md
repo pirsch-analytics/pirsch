@@ -2,6 +2,9 @@
 
 ## 3.6.2
 
+* include country code in cities statistics
+* make sure path is not included more than once in filter list
+* smaller optimizations
 * updated User-Agent blacklist
 
 ## 3.6.1
