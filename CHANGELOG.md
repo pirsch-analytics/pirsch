@@ -5,8 +5,10 @@
 * include country code in cities statistics
 * make sure path is not included more than once in filter list
 * smaller optimizations
+* changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
 * updated User-Agent blacklist
 * fixed time on page test when grouping by page title
+* updated dependencies (including new ClickHouse driver)
 
 ## 3.6.1
 
