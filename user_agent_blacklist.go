@@ -4,7 +4,7 @@ package pirsch
 // Please add the reference in case you copy an existing list.
 // Make sure it doesn't contain duplicates.
 var userAgentBlacklist = []string{
-	// custom
+	// custom (last update: 2022-02-11)
 	"://", // urls
 	"bot",
 	"crawler",
@@ -108,6 +108,16 @@ var userAgentBlacklist = []string{
 	"barracuda sentinel",
 	"kaspersky",
 	"dalvik",
+	"statping",
+	"uptime",
+	"matrix-media-repo",
+	"trello",
+	"tmems",
+	"<script>",
+	"marktplaats",
+	"gzip",
+	"polycomsoundpointip",
+	"whiteboard",
 
 	// https://github.com/gorangajic/isbot (no longer available, modified)
 	"12345",

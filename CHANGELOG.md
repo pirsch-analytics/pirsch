@@ -1,17 +1,16 @@
 # Changelog
 
-## 3.6.2
+## 3.6.1
 
 * include country code in cities statistics
 * make sure path is not included more than once in filter list
 * moved capturing the page view time after looking up the session to prevent overlaps
+* added JSON field names for page views, sessions, and events
 * smaller optimizations
 * updated User-Agent blacklist
+* updated browser version mapping
+* updated referrer mapping
 * fixed time on page test when grouping by page title
-
-## 3.6.1
-
-* added JSON field names for page views, sessions, and events
 
 ## 3.6.0
 
