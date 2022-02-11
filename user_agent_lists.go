@@ -8,7 +8,6 @@ var (
 		"(KHTML,", // we split by space, so this was "(KHTML like Gecko)"
 		"like",
 		"Gecko", // just Gecko, to ignore it in IE user agent, as a product version string and in "(KHTML like Gecko)"
-		//"Version/",
 		"Mobile/",
 		"QtWebEngine/",
 	}
@@ -24,7 +23,7 @@ var (
 		"6.2":  "8",
 		"6.3":  "8",
 		"10.0": "10",
-		"13.0": "11",
+		"13.0": "11", // this is unreliable, as Chrome and Firefox decided to freeze the User-Agent header
 		"CE":   "CE",
 	}
 
@@ -89,8 +88,8 @@ var (
 		"610.2":  "14.0",
 		"610.3":  "14.0",
 		"610.4":  "14.0",
-		"611.1":  "14.0",
-		"611.2":  "14.0",
-		"611.3":  "14.0",
+		"611.1":  "14.1",
+		"611.2":  "14.1",
+		"611.3":  "14.1",
 	}
 )

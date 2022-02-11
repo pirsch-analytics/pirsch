@@ -633,8 +633,10 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_PageTitle(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
-		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
-		{VisitorID: 1, Time: pastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		// these need to be at the same day, because otherwise they will be in different partitions
+		// and the neighbor function doesn't work for the time on page calculation (visitor ID 2 is unrelated, so next day is fine)
+		{VisitorID: 1, Time: pastDay(1).Add(time.Hour), SessionID: 1, Path: "/", Title: "Home 1"},
+		{VisitorID: 1, Time: pastDay(1).Add(time.Hour * 2), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{VisitorID: 2, Time: Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	saveSessions(t, [][]Session{
@@ -1339,16 +1341,16 @@ func TestAnalyzer_Cities(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), City: "Oslo"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), City: "London"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), City: "Berlin"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), City: "Berlin"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), City: "Tokyo"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), City: "London"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), City: "London"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), CountryCode: "jp", City: "Tokyo"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), CountryCode: "gb", City: "London"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1356,6 +1358,9 @@ func TestAnalyzer_Cities(t *testing.T) {
 	visitors, err := analyzer.Cities(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
+	assert.Equal(t, "gb", visitors[0].CountryCode)
+	assert.Equal(t, "de", visitors[1].CountryCode)
+	assert.Equal(t, "jp", visitors[2].CountryCode)
 	assert.Equal(t, "London", visitors[0].City)
 	assert.Equal(t, "Berlin", visitors[1].City)
 	assert.Equal(t, "Tokyo", visitors[2].City)

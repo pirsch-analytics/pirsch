@@ -299,13 +299,19 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	}
 
 	if filter.IncludeTimeOnPage && filter.table() == "session" {
-		paths := make([]string, 0, len(stats))
+		paths := make(map[string]struct{})
 
 		for i := range stats {
-			paths = append(paths, stats[i].Path)
+			paths[stats[i].Path] = struct{}{}
 		}
 
-		top, err := analyzer.avgTimeOnPage(filter, paths)
+		pathList := make([]string, 0, len(paths))
+
+		for path := range paths {
+			pathList = append(pathList, path)
+		}
+
+		top, err := analyzer.avgTimeOnPage(filter, pathList)
 
 		if err != nil {
 			return nil, err
@@ -353,14 +359,20 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 		return nil, err
 	}
 
-	paths := make([]string, 0, len(stats))
+	paths := make(map[string]struct{})
 
 	for i := range stats {
-		paths = append(paths, stats[i].Path)
+		paths[stats[i].Path] = struct{}{}
+	}
+
+	pathList := make([]string, 0, len(paths))
+
+	for path := range paths {
+		pathList = append(pathList, path)
 	}
 
 	if filter.table() != "event" {
-		total, err := analyzer.totalVisitorsSessions(filter, paths)
+		total, err := analyzer.totalVisitorsSessions(filter, pathList)
 
 		if err != nil {
 			return nil, err
@@ -379,7 +391,7 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	}
 
 	if filter.IncludeTimeOnPage && filter.table() != "event" {
-		top, err := analyzer.avgTimeOnPage(filter, paths)
+		top, err := analyzer.avgTimeOnPage(filter, pathList)
 
 		if err != nil {
 			return nil, err
@@ -427,14 +439,20 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 		return nil, err
 	}
 
-	paths := make([]string, 0, len(stats))
-
-	for i := range stats {
-		paths = append(paths, stats[i].Path)
-	}
-
 	if filter.table() != "event" {
-		total, err := analyzer.totalVisitorsSessions(filter, paths)
+		paths := make(map[string]struct{})
+
+		for i := range stats {
+			paths[stats[i].Path] = struct{}{}
+		}
+
+		pathList := make([]string, 0, len(paths))
+
+		for path := range paths {
+			pathList = append(pathList, path)
+		}
+
+		total, err := analyzer.totalVisitorsSessions(filter, pathList)
 
 		if err != nil {
 			return nil, err
@@ -739,7 +757,7 @@ func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
 	var stats []CityStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldCity); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, fieldCity, fieldCountry); err != nil {
 		return nil, err
 	}
 
@@ -1236,17 +1254,14 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr field) error {
-	args, query := buildQuery(analyzer.getFilter(filter), []field{
-		attr,
-		fieldVisitors,
-		fieldRelativeVisitors,
-	}, []field{
-		attr,
-	}, []field{
-		fieldVisitors,
-		attr,
-	})
+func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr ...field) error {
+	fields := make([]field, 0, len(attr)+2)
+	fields = append(fields, attr...)
+	fields = append(fields, fieldVisitors, fieldRelativeVisitors)
+	orderBy := make([]field, 0, len(attr)+1)
+	orderBy = append(orderBy, fieldVisitors)
+	orderBy = append(orderBy, attr...)
+	args, query := buildQuery(analyzer.getFilter(filter), fields, attr, orderBy)
 	return analyzer.store.Select(results, query, args...)
 }
 

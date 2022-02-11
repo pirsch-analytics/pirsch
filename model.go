@@ -286,7 +286,8 @@ type CountryStats struct {
 // CityStats is the result type for city statistics.
 type CityStats struct {
 	MetaStats
-	City string `json:"city"`
+	CountryCode string `db:"country_code" json:"country_code"`
+	City        string `json:"city"`
 }
 
 // BrowserStats is the result type for browser statistics.
