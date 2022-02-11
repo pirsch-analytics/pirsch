@@ -4,6 +4,7 @@
 
 * include country code in cities statistics
 * make sure path is not included more than once in filter list
+* moved capturing the page view time after looking up the session to prevent overlaps
 * smaller optimizations
 * updated User-Agent blacklist
 * fixed time on page test when grouping by page title
