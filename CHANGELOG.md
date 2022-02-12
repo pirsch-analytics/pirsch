@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.2
+
+* clear session buffer before it's full or exceeds the buffer size
+
 ## 3.6.1
 
 * include country code in cities statistics

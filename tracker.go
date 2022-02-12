@@ -382,7 +382,7 @@ func (tracker *Tracker) flushSessions() {
 
 		select {
 		case session := <-tracker.sessions:
-			if len(sessions) >= tracker.workerBufferSize*2 {
+			if len(sessions)+2 >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
@@ -414,7 +414,7 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
-			if len(sessions) >= tracker.workerBufferSize*2 {
+			if len(sessions)+2 >= tracker.workerBufferSize*2 {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
