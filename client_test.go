@@ -91,6 +91,54 @@ func TestClient_SaveSessions(t *testing.T) {
 	}))
 }
 
+func TestClient_SaveSessionsBatch(t *testing.T) {
+	cleanupDB()
+	sessions := make([]Session, 0, 101)
+
+	for i := 0; i < 100; i++ {
+		now := time.Now().Add(time.Millisecond * time.Duration(i))
+		sessions = append(sessions, Session{
+			Sign:      1,
+			ClientID:  2,
+			VisitorID: 3,
+			Time:      now,
+			Start:     now,
+			SessionID: 4,
+			PageViews: uint16(i + 1),
+		})
+		sessions = append(sessions, Session{
+			Sign:      -1,
+			ClientID:  2,
+			VisitorID: 3,
+			Time:      now,
+			Start:     now,
+			SessionID: 4,
+			PageViews: uint16(i + 1),
+		})
+	}
+
+	sessions = append(sessions, Session{
+		Sign:      1,
+		ClientID:  2,
+		VisitorID: 3,
+		Time:      time.Now(),
+		Start:     time.Now(),
+		SessionID: 4,
+		PageViews: 101,
+	})
+
+	// randomize insertion order
+	rand.Shuffle(len(sessions), func(i, j int) {
+		sessions[i], sessions[j] = sessions[j], sessions[i]
+	})
+
+	assert.NoError(t, dbClient.SaveSessions(sessions))
+	var insertedSessions []Session
+	assert.NoError(t, dbClient.Select(&insertedSessions, `SELECT page_views FROM "session" GROUP BY page_views HAVING sum(sign) > 0`))
+	assert.Len(t, insertedSessions, 1)
+	assert.Equal(t, uint16(101), insertedSessions[0].PageViews)
+}
+
 func TestClient_SaveEvents(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveEvents([]Event{
