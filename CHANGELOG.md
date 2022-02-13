@@ -4,6 +4,7 @@
 
 * clear session buffer before it's full or exceeds the buffer size
 * fixed concurrent access to redis session cache
+* updated dependencies
 
 ## 3.6.1
 
