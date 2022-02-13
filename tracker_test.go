@@ -228,7 +228,7 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	config := &TrackerConfig{
 		Worker:           4,
 		WorkerBufferSize: 5,
-		WorkerTimeout:    time.Second * 3,
+		WorkerTimeout:    time.Second * 2,
 		SessionCache:     cache,
 	}
 	tracker := make([]*Tracker, 10)
@@ -242,11 +242,11 @@ func TestTracker_HitConcurrency(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
-		tracker[i%10].Hit(req, nil)
+		go tracker[i%10].Hit(req, nil)
 		time.Sleep(time.Millisecond)
 	}
 
-	time.Sleep(time.Millisecond * 5)
+	time.Sleep(time.Second * 3)
 
 	for i := 0; i < 10; i++ {
 		tracker[i].Stop()
