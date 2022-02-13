@@ -4,24 +4,36 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-redis/redis/v8"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
 	"log"
+	"sync"
 	"time"
-)
-
-const (
-	rdsPutLua = `if redis.call("EXISTS", KEYS[2]) == 0 or tonumber(redis.call("GET", KEYS[2])) <= tonumber(ARGV[3]) then
-	redis.call("SETEX", KEYS[2], ARGV[2], ARGV[3])
-	return redis.call("SETEX", KEYS[1], ARGV[2], ARGV[1])
-end
-
-return ""`
 )
 
 // SessionCacheRedis caches sessions in Redis.
 type SessionCacheRedis struct {
 	maxAge time.Duration
 	rds    *redis.Client
+	rs     *redsync.Redsync
 	logger *log.Logger
+}
+
+// RedisMutex wraps a redis mutex.
+type RedisMutex struct {
+	m *redsync.Mutex
+}
+
+func (m *RedisMutex) Lock() {
+	if err := m.m.Lock(); err != nil {
+		panic(err)
+	}
+}
+
+func (m *RedisMutex) Unlock() {
+	if _, err := m.m.Unlock(); err != nil {
+		panic(err)
+	}
 }
 
 // NewSessionCacheRedis creates a new cache for given maximum age and redis connection.
@@ -30,9 +42,11 @@ func NewSessionCacheRedis(maxAge time.Duration, log *log.Logger, redisOptions *r
 		log = logger
 	}
 
+	client := redis.NewClient(redisOptions)
 	return &SessionCacheRedis{
 		maxAge: maxAge,
-		rds:    redis.NewClient(redisOptions),
+		rds:    client,
+		rs:     redsync.New(goredis.NewPool(client)),
 		logger: log,
 	}
 }
@@ -64,18 +78,18 @@ func (cache *SessionCacheRedis) Put(clientID, fingerprint uint64, session *Sessi
 	v, err := json.Marshal(session)
 
 	if err == nil {
-		key := getSessionKey(clientID, fingerprint)
-		cmd := cache.rds.Eval(context.Background(), rdsPutLua, []string{key, key + "_time"}, string(v), int(cache.maxAge.Seconds()), session.Time.UnixMilli())
-
-		if err := cmd.Err(); err != nil {
-			cache.logger.Printf("error storing session in cache: %s", err)
-		}
+		cache.rds.SetEX(context.Background(), getSessionKey(clientID, fingerprint), v, cache.maxAge)
 	} else {
-		cache.logger.Printf("error marshalling session: %s", err)
+		cache.logger.Printf("error storing session in cache: %s", err)
 	}
 }
 
 // Clear implements the SessionCache interface.
 func (cache *SessionCacheRedis) Clear() {
 	cache.rds.FlushDB(context.Background())
+}
+
+// NewMutex implements the SessionCache interface.
+func (cache SessionCacheRedis) NewMutex(clientID, fingerprint uint64) sync.Locker {
+	return &RedisMutex{cache.rs.NewMutex(getSessionKey(clientID, fingerprint) + "_lock")}
 }

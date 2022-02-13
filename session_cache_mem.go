@@ -1,7 +1,6 @@
 package pirsch
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -71,6 +70,7 @@ func (cache *SessionCacheMem) Clear() {
 	cache.sessions = make(map[string]Session)
 }
 
-func getSessionKey(clientID, fingerprint uint64) string {
-	return fmt.Sprintf("%d_%d", clientID, fingerprint)
+// NewMutex implements the SessionCache interface.
+func (cache *SessionCacheMem) NewMutex(uint64, uint64) sync.Locker {
+	return new(sync.Mutex)
 }

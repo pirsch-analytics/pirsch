@@ -87,6 +87,8 @@ type HitOptions struct {
 // The salt must stay consistent to track visitors across multiple calls.
 // The easiest way to track visitors is to use the Tracker.
 func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageView, SessionState, *UserAgent) {
+	now := time.Now().UTC() // capture first to get as close as possible
+
 	if options == nil {
 		return nil, SessionState{}, nil
 	}
@@ -97,11 +99,12 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 	}
 
 	fingerprint := Fingerprint(r, salt+options.Salt)
+	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
+	m.Lock()
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
-	now := time.Now().UTC()
 	var sessionState SessionState
 	var timeOnPage uint32
 	var ua *UserAgent
@@ -119,6 +122,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
+	m.Unlock()
 	return &PageView{
 		ClientID:        sessionState.State.ClientID,
 		VisitorID:       sessionState.State.VisitorID,

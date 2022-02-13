@@ -26,22 +26,3 @@ func TestSessionCacheRedis(t *testing.T) {
 	session = cache.Get(1, 1, time.Time{})
 	assert.Nil(t, session)
 }
-
-func TestSessionCacheRedis_PutOlder(t *testing.T) {
-	cache := NewSessionCacheRedis(time.Minute, nil, &redis.Options{
-		Addr: "localhost:6379",
-	})
-	cache.Clear()
-	now := time.Now()
-	cache.Put(1, 1, &Session{
-		EntryPath: "/",
-		Time:      now,
-	})
-	now = now.Add(-time.Second)
-	cache.Put(1, 1, &Session{
-		EntryPath: "/dont-update",
-		Time:      now,
-	})
-	session := cache.Get(1, 1, now.Add(-time.Second*10))
-	assert.Equal(t, "/", session.EntryPath)
-}
