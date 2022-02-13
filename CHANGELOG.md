@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.2
+
+* clear session buffer before it's full or exceeds the buffer size
+* fixed concurrent access to redis session cache
+
 ## 3.6.1
 
 * include country code in cities statistics
