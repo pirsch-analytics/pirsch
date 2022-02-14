@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.3
+
+* fixed counting bounces multiple times when grouping by pages
+
 ## 3.6.2
 
 * clear session buffer before it's full or exceeds the buffer size

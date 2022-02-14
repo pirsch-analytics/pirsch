@@ -121,7 +121,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		Sign:      1,
 		ClientID:  2,
 		VisitorID: 3,
-		Time:      time.Now(),
+		Time:      time.Now().Add(time.Millisecond * 10),
 		Start:     time.Now(),
 		SessionID: 4,
 		PageViews: 101,

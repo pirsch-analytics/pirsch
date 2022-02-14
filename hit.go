@@ -311,11 +311,9 @@ func updateSession(options *HitOptions, session *Session, event bool, now time.T
 	session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
 	session.Sign = 1
 	session.Time = now
+	session.IsBounce = false
 
-	if event {
-		session.IsBounce = false
-	} else {
-		session.IsBounce = session.IsBounce && path == session.ExitPath
+	if !event {
 		session.ExitPath = path
 		session.ExitTitle = title
 		session.PageViews++
