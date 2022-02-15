@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.4
+
+* fixed filtering time range when joining the session table to page views
+
 ## 3.6.3
 
 * fixed counting bounces multiple times when grouping by pages

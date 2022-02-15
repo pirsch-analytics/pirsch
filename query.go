@@ -292,22 +292,12 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			filterArgs, filterQuery := joinSessions(filter, table, fields)
 			args = append(args, filterArgs...)
 			query.WriteString(filterQuery)
-
-			if filter.EventName != "" {
-				filter.EntryPath, filter.ExitPath = "", ""
-				filterArgs, filterQuery = filter.query()
-				args = append(args, filterArgs...)
-				query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
-			} else if filter.Path != "" || filter.PathPattern != "" {
-				filterArgs, filterQuery = filter.queryPageOrEvent()
-				args = append(args, filterArgs...)
-				query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
-			}
-		} else {
-			filterArgs, filterQuery := filter.query()
-			args = append(args, filterArgs...)
-			query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
 		}
+
+		filter.EntryPath, filter.ExitPath = "", ""
+		filterArgs, filterQuery := filter.query()
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
 
 		if len(groupBy) > 0 {
 			query.WriteString(fmt.Sprintf(`GROUP BY %s `, joinGroupBy(groupBy)))
