@@ -157,14 +157,14 @@ func TestHitFromRequestBounces(t *testing.T) {
 	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.False(t, sessionState.State.IsBounce)
+	assert.True(t, sessionState.State.IsBounce)
 	assert.True(t, sessionState.Cancel.IsBounce)
 
 	req.URL.Path = "/different/path"
 	_, sessionState, _ = HitFromRequest(req, "salt", &HitOptions{
 		SessionCache: sessionCache,
 	})
-	assert.False(t, sessionState.Cancel.IsBounce)
+	assert.True(t, sessionState.Cancel.IsBounce)
 	assert.False(t, sessionState.State.IsBounce)
 }
 

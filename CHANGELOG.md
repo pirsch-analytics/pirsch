@@ -2,6 +2,7 @@
 
 ## 3.6.4
 
+* added counting multiple page views without switching the actual page as bounced again
 * fixed filtering time range when joining the session table to page views
 
 ## 3.6.3

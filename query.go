@@ -83,7 +83,7 @@ var (
 	}
 	fieldBounces = field{
 		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "sum(is_bounce)",
+		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
 		queryDirection: "DESC",
 		name:           "bounces",
 	}
