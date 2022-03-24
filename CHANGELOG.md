@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.0
+
+* added `True-Client-IP` header to receive the real visitor IP (Cloudflare)
+
 ## 3.6.4
 
 * added counting multiple page views without switching the actual page as bounced again

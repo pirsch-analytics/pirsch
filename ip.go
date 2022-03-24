@@ -12,6 +12,7 @@ import (
 // CF-Connecting-IP is a header added by Cloudflare: https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
 var ipHeaders = []ipHeader{
 	{"CF-Connecting-IP", parseXForwardedForHeader},
+	{"True-Client-IP", parseXForwardedForHeader},
 	{"X-Forwarded-For", parseXForwardedForHeader},
 	{"Forwarded", parseForwardedHeader},
 	{"X-Real-IP", parseXRealIPHeader},
