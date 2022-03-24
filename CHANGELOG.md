@@ -7,6 +7,7 @@
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping
+* updated dependencies
 
 ## 3.6.4
 
