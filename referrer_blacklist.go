@@ -7,7 +7,7 @@ var referrerBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-02-11)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-03-24)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -657,6 +657,7 @@ var referrerBlacklist = map[string]struct{}{
 	"escort-russian.com":                   {},
 	"eskei83.com":                          {},
 	"esoterikforum.at":                     {},
+	"essaytags.com":                        {},
 	"estdj.com":                            {},
 	"este-line.com.ua":                     {},
 	"etairikavideo.gr":                     {},
@@ -1120,6 +1121,7 @@ var referrerBlacklist = map[string]struct{}{
 	"loveorganic.ch":                       {},
 	"lowpricesiterx.com":                   {},
 	"lsex.xyz":                             {},
+	"lsitenonrepeat.com":                   {},
 	"luckybull.io":                         {},
 	"lukoilcard.ru":                        {},
 	"lumb.co":                              {},

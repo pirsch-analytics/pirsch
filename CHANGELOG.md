@@ -3,6 +3,10 @@
 ## 3.7.0
 
 * added `True-Client-IP` header to receive the real visitor IP (Cloudflare)
+* fixed grouping referrers with path in URL
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
 
 ## 3.6.4
 

@@ -85,6 +85,11 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 
 	name := referrerGroups[strings.ToLower(hostname)+u.Path]
 
+	if name == "" {
+		// try again without path
+		name = referrerGroups[strings.ToLower(hostname)]
+	}
+
 	if ignoreSubdomain {
 		hostname = stripSubdomain(hostname)
 	}
