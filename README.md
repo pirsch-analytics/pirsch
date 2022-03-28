@@ -179,7 +179,7 @@ To minify `pirsch.js`/`pirsch-event.js` to `pirsch.min.js`/`pirsch-event.min.js`
 
 ## Things to maintain
 
-The following things need regular maintenance/updates:
+The following things need regular maintenance/updates (using the scripts in the `scripts` directory when possible):
 
 * Go and JS dependencies
 * referrer blacklist
