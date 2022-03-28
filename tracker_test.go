@@ -72,8 +72,9 @@ func TestTracker_HitTimeout(t *testing.T) {
 func TestTracker_HitLimit(t *testing.T) {
 	client := NewMockClient()
 	tracker := NewTracker(client, "salt", &TrackerConfig{
-		Worker:           1,
-		WorkerBufferSize: 10,
+		Worker:              1,
+		WorkerBufferSize:    10,
+		DisableFlaggingBots: true,
 	})
 
 	for i := 0; i < 7; i++ {
@@ -280,7 +281,7 @@ func TestTracker_HitIsBot(t *testing.T) {
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 
 	for i := 0; i < 7; i++ {
-		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
+		req.URL.Path = fmt.Sprintf("/page/%d", i)
 		go tracker.Hit(req, nil)
 		time.Sleep(time.Millisecond * 5)
 	}
@@ -291,10 +292,10 @@ func TestTracker_HitIsBot(t *testing.T) {
 		FROM session
 		GROUP BY entry_path, exit_path
 		HAVING sum(sign) > 0`))
-	assert.Equal(t, uint8(6), session.IsBot)
-	assert.Equal(t, 7, int(session.PageViews))
-	assert.Equal(t, "/page/1", session.EntryPath)
-	assert.Equal(t, "/page/7", session.ExitPath)
+	assert.Equal(t, uint8(5), session.IsBot)
+	assert.Equal(t, 6, int(session.PageViews))
+	assert.Equal(t, "/page/0", session.EntryPath)
+	assert.Equal(t, "/page/5", session.ExitPath)
 }
 
 func TestTracker_Event(t *testing.T) {

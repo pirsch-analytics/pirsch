@@ -32,15 +32,39 @@ type avgTimeSpentStats struct {
 	AverageTimeSpentSeconds int `db:"average_time_spent_seconds"`
 }
 
+// AnalyzerConfig is the optional configuration for the Analyzer.
+type AnalyzerConfig struct {
+	// IsBotThreshold see HitOptions.IsBotThreshold.
+	IsBotThreshold uint8
+
+	// DisableBotFilter disables IsBotThreshold (otherwise these would be set to the default value).
+	DisableBotFilter bool
+}
+
+func (config *AnalyzerConfig) validate() {
+	if config.DisableBotFilter {
+		config.IsBotThreshold = 0
+	} else if config.IsBotThreshold == 0 {
+		config.IsBotThreshold = defaultIsBotThreshold
+	}
+}
+
 // Analyzer provides an interface to analyze statistics.
 type Analyzer struct {
-	store Store
+	store    Store
+	minIsBot uint8
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.
-func NewAnalyzer(store Store) *Analyzer {
+func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
+	if config == nil {
+		config = new(AnalyzerConfig)
+	}
+
+	config.validate()
 	return &Analyzer{
 		store,
+		config.IsBotThreshold,
 	}
 }
 
@@ -55,8 +79,8 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		title = ",title"
 	}
 
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	filterArgs, filterQuery := filter.query(false)
+	innerFilterArgs, innerFilterQuery := filter.queryTime(true)
 	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path %s,
@@ -638,7 +662,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	query := ""
 
 	if table == "session" {
-		filterArgs, filterQuery := filter.query()
+		filterArgs, filterQuery := filter.query(true)
 		query = `SELECT sum(desktop*sign) platform_desktop,
 			sum(mobile*sign) platform_mobile,
 			sum(sign)-platform_desktop-platform_mobile platform_unknown,
@@ -650,7 +674,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		if filter.Path != "" || filter.PathPattern != "" {
 			entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
 			filter.EntryPath, filter.ExitPath, filter.EventName = "", "", ""
-			innerFilterArgs, innerFilterQuery := filter.query()
+			innerFilterArgs, innerFilterQuery := filter.query(false)
 			filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
 			args = append(args, innerFilterArgs...)
 			query += fmt.Sprintf(`INNER JOIN (
@@ -684,7 +708,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			filter.EntryPath, filter.ExitPath = "", ""
 		}
 
-		filterArgs, filterQuery := filter.query()
+		filterArgs, filterQuery := filter.query(false)
 		args = make([]interface{}, 0, len(filterArgs)*3+len(innerArgs)*3)
 		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
@@ -908,8 +932,8 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 		return []TimeSpentStats{}, nil
 	}
 
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	filterArgs, filterQuery := filter.query(true)
+	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
 	var query strings.Builder
@@ -959,7 +983,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		return []TimeSpentStats{}, nil
 	}
 
-	timeArgs, timeQuery := filter.queryTime()
+	timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if len(fieldArgs) > 0 {
@@ -975,6 +999,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
 	var query strings.Builder
+	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT day,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -1031,7 +1056,7 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 
 	filter = analyzer.getFilter(filter)
 	filter.Path, filter.EntryPath, filter.ExitPath = "", "", ""
-	filterArgs, filterQuery := filter.query()
+	filterArgs, filterQuery := filter.query(false)
 	pathQuery := strings.Repeat("?,", len(paths))
 
 	for _, path := range paths {
@@ -1058,8 +1083,8 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 }
 
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query()
-	innerFilterArgs, innerFilterQuery := filter.queryTime()
+	filterArgs, filterQuery := filter.query(true)
+	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
 	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
 	query.WriteString(`SELECT sum(duration_seconds)
@@ -1094,7 +1119,7 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 }
 
 func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query()
+	filterArgs, filterQuery := filter.query(false)
 	query := fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
 	var averageTimeSpentSeconds int
 
@@ -1106,7 +1131,7 @@ func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
 }
 
 func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
-	timeArgs, timeQuery := filter.queryTime()
+	timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if fieldQuery != "" {
@@ -1121,6 +1146,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
+	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
 			SELECT %s time_on_page
@@ -1176,7 +1202,7 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 		return []avgTimeSpentStats{}, nil
 	}
 
-	timeArgs, timeQuery := filter.queryTime()
+	timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if len(fieldArgs) > 0 {
@@ -1191,6 +1217,7 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
+	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -1295,6 +1322,11 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	}
 
 	filter.validate()
+
+	if analyzer.minIsBot > 0 {
+		filter.minIsBot = analyzer.minIsBot
+	}
+
 	filterCopy := *filter
 	return &filterCopy
 }

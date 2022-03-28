@@ -146,6 +146,7 @@ type Filter struct {
 	MaxTimeOnPageSeconds int
 
 	eventFilter bool
+	minIsBot    uint8
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -211,7 +212,7 @@ func (filter *Filter) table() string {
 	return "session"
 }
 
-func (filter *Filter) queryTime() ([]interface{}, string) {
+func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
 	timezone := filter.Timezone.String()
@@ -238,12 +239,18 @@ func (filter *Filter) queryTime() ([]interface{}, string) {
 		sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", timezone, timezone))
 	}
 
+	if filterBots && filter.minIsBot > 0 {
+		args = append(args, filter.minIsBot)
+		sqlQuery.WriteString("AND is_bot < ? ")
+	}
+
 	return args, sqlQuery.String()
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 24+len(filter.EventMeta))
-	queryFields := make([]string, 0, 24+len(filter.EventMeta))
+	n := 25 + len(filter.EventMeta) // maximum number of fields + one for bot filter + meta data fields
+	args := make([]interface{}, 0, n)
+	queryFields := make([]string, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -384,13 +391,18 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-func (filter *Filter) query() ([]interface{}, string) {
-	args, query := filter.queryTime()
+func (filter *Filter) query(filterBots bool) ([]interface{}, string) {
+	args, query := filter.queryTime(false)
 	fieldArgs, queryFields := filter.queryFields()
 	args = append(args, fieldArgs...)
 
 	if queryFields != "" {
 		query += "AND " + queryFields
+	}
+
+	if filterBots && filter.minIsBot > 0 {
+		args = append(args, filter.minIsBot)
+		query += "AND is_bot < ? "
 	}
 
 	return args, query

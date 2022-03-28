@@ -54,7 +54,7 @@ type HitOptions struct {
 	MinDelay int64
 
 	// IsBotThreshold sets the threshold before a request is ignored.
-	// If Session.IsBot is larger than the configured value, the request won't be accepted.
+	// If Session.IsBot is larger or equal to the configured value, the request won't be accepted.
 	// Set it to 0 to disable ignoring requests.
 	IsBotThreshold uint8
 
@@ -124,7 +124,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		sessionState.State = *session
 		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	} else {
-		if options.IsBotThreshold > 0 && session.IsBot > options.IsBotThreshold {
+		if options.IsBotThreshold > 0 && session.IsBot >= options.IsBotThreshold {
 			return nil, SessionState{}, nil
 		}
 

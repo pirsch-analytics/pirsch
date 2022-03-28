@@ -38,7 +38,7 @@ func TestBuildQuery(t *testing.T) {
 	})
 
 	// no filter (from page views)
-	analyzer := NewAnalyzer(dbClient)
+	analyzer := NewAnalyzer(dbClient, nil)
 	args, query := buildQuery(analyzer.getFilter(nil), []field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldVisitors, fieldPath})
 	var stats []PageStats
 	assert.NoError(t, dbClient.Select(&stats, query, args...))

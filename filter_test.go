@@ -54,7 +54,7 @@ func TestFilter_QueryTime(t *testing.T) {
 	filter.To = pastDay(2)
 	filter.Day = pastDay(1)
 	filter.Start = time.Now().UTC()
-	args, query := filter.queryTime()
+	args, query := filter.queryTime(false)
 	assert.Len(t, args, 5)
 	assert.Equal(t, NullClient, args[0])
 	assert.Equal(t, filter.From, args[1])
@@ -246,7 +246,7 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
-	_, query = filter.query()
+	_, query = filter.query(false)
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
 }
 
@@ -266,8 +266,18 @@ func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
-	_, query = filter.query()
+	_, query = filter.query(false)
 	assert.Contains(t, query, "(desktop = 1 OR mobile = 1)")
+}
+
+func TestFilter_QueryIsBot(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "/path"
+	filter.minIsBot = 5
+	args, query := filter.query(true)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint8(5), args[2])
+	assert.Equal(t, "client_id = ? AND path = ? AND is_bot < ? ", query)
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {

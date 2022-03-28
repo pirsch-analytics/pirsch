@@ -283,7 +283,8 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 
 		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, joinPageViewFields(&args, filter, fields), table))
 
-		if filter.EntryPath != "" ||
+		if filter.minIsBot > 0 ||
+			filter.EntryPath != "" ||
 			filter.ExitPath != "" ||
 			fieldsContain(fields, fieldBounces.name) ||
 			fieldsContain(fields, fieldViews.name) ||
@@ -295,7 +296,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 		}
 
 		filter.EntryPath, filter.ExitPath = "", ""
-		filterArgs, filterQuery := filter.query()
+		filterArgs, filterQuery := filter.query(false)
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
 
@@ -307,7 +308,7 @@ func buildQuery(filter *Filter, fields, groupBy, orderBy []field) ([]interface{}
 			query.WriteString(fmt.Sprintf(`ORDER BY %s `, joinOrderBy(&args, filter, orderBy)))
 		}
 	} else {
-		filterArgs, filterQuery := filter.query()
+		filterArgs, filterQuery := filter.query(true)
 		query.WriteString(fmt.Sprintf(`SELECT %s
 			FROM session
 			WHERE %s `, joinSessionFields(&args, filter, fields), filterQuery))
@@ -333,7 +334,7 @@ func joinPageViewFields(args *[]interface{}, filter *Filter, fields []field) str
 
 	for i := range fields {
 		if fields[i].filterTime {
-			timeArgs, timeQuery := filter.queryTime()
+			timeArgs, timeQuery := filter.queryTime(false)
 			*args = append(*args, timeArgs...)
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
 		} else if fields[i].timezone {
@@ -355,7 +356,7 @@ func joinSessionFields(args *[]interface{}, filter *Filter, fields []field) stri
 
 	for i := range fields {
 		if fields[i].filterTime {
-			timeArgs, timeQuery := filter.queryTime()
+			timeArgs, timeQuery := filter.queryTime(false)
 			*args = append(*args, timeArgs...)
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
 		} else if fields[i].timezone {
@@ -370,10 +371,10 @@ func joinSessionFields(args *[]interface{}, filter *Filter, fields []field) stri
 }
 
 func joinSessions(filter *Filter, table string, fields []field) ([]interface{}, string) {
-	path, pathPattern, eventName, eventMetaKey := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = "", "", "", ""
-	filterArgs, filterQuery := filter.query()
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey = path, pathPattern, eventName, eventMetaKey
+	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
+	filterArgs, filterQuery := filter.query(true)
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
 	sessionFields := make([]string, 0, 4)
 	groupBy := make([]string, 0, 2)
 

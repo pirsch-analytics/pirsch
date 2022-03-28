@@ -331,7 +331,7 @@ func TestHitFromRequestIsBot(t *testing.T) {
 		IsBotThreshold: 3,
 	}
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 4; i++ {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/test/path/%d", i), nil)
 		req.Header.Set("User-Agent", uaString)
 		pageView, _, _ := HitFromRequest(req, "salt", options)
@@ -349,7 +349,7 @@ func TestHitFromRequestIsBot(t *testing.T) {
 	assert.Nil(t, pageView)
 
 	for key := range cache.sessions {
-		assert.Equal(t, uint8(4), cache.sessions[key].IsBot)
+		assert.Equal(t, uint8(3), cache.sessions[key].IsBot)
 	}
 }
 

@@ -75,8 +75,6 @@ type TrackerConfig struct {
 	Logger *log.Logger
 }
 
-// The default session configuration is set by the session cache.
-// The TrackerConfig just passes on the values and overwrites them if required.
 func (config *TrackerConfig) validate() {
 	if config.Worker < 1 {
 		config.Worker = runtime.NumCPU()

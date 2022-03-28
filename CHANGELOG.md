@@ -6,6 +6,7 @@
 * added new bot list by Atmire (https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json)
 * added script to update and clean up the User-Agent blacklist
 * added flagging bots based on how quickly page views are being sent
+* added options to `Analyzer`
 * fixed grouping referrers with path in URL
 * updated User-Agent blacklist
 * updated referrer blacklist
