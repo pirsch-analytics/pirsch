@@ -19,7 +19,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer list.Close()
+	defer func() {
+		if err := list.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 	scanner := bufio.NewScanner(list)
 	scanner.Split(bufio.ScanLines)
 	entries := make(map[string]struct{})

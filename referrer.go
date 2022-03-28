@@ -172,7 +172,9 @@ func getAndroidAppName(referrer string) (string, string) {
 		return "", ""
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	doc, err := html.Parse(resp.Body)
 
 	if err != nil {

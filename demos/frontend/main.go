@@ -43,7 +43,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("./")))
 
 	log.Println("Starting server on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func copyPirschJs() {
