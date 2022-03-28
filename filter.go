@@ -204,6 +204,194 @@ func (filter *Filter) validate() {
 	}
 }
 
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]interface{}, string) {
+	table := filter.table()
+	args := make([]interface{}, 0)
+	var query strings.Builder
+
+	if table == "event" || filter.Path != "" || filter.PathPattern != "" || fieldsContain(fields, fieldPath.name) {
+		if table == "session" {
+			table = "page_view"
+		}
+
+		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, filter.joinPageViewFields(&args, fields), table))
+
+		if filter.minIsBot > 0 ||
+			filter.EntryPath != "" ||
+			filter.ExitPath != "" ||
+			fieldsContain(fields, fieldBounces.name) ||
+			fieldsContain(fields, fieldViews.name) ||
+			fieldsContain(fields, fieldEntryPath.name) ||
+			fieldsContain(fields, fieldExitPath.name) {
+			filterArgs, filterQuery := filter.joinSessions(table, fields)
+			args = append(args, filterArgs...)
+			query.WriteString(filterQuery)
+		}
+
+		filter.EntryPath, filter.ExitPath = "", ""
+		filterArgs, filterQuery := filter.query(false)
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
+
+		if len(groupBy) > 0 {
+			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
+		}
+
+		if len(orderBy) > 0 {
+			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
+		}
+	} else {
+		filterArgs, filterQuery := filter.query(true)
+		query.WriteString(fmt.Sprintf(`SELECT %s
+			FROM session
+			WHERE %s `, filter.joinSessionFields(&args, fields), filterQuery))
+		args = append(args, filterArgs...)
+
+		if len(groupBy) > 0 {
+			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
+		}
+
+		query.WriteString(`HAVING sum(sign) > 0 `)
+
+		if len(orderBy) > 0 {
+			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
+		}
+	}
+
+	query.WriteString(filter.withLimit())
+	return args, query.String()
+}
+
+func (filter *Filter) joinPageViewFields(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime(false)
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].name))
+		} else if fields[i].name == "meta_value" {
+			*args = append(*args, filter.EventMetaKey)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinSessionFields(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime(false)
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].name))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].name))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinSessions(table string, fields []field) ([]interface{}, string) {
+	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
+	filterArgs, filterQuery := filter.query(true)
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
+	sessionFields := make([]string, 0, 4)
+	groupBy := make([]string, 0, 2)
+
+	if fieldsContain(fields, fieldEntryPath.name) {
+		sessionFields = append(sessionFields, fieldEntryPath.name)
+		groupBy = append(groupBy, fieldEntryPath.name)
+	}
+
+	if fieldsContain(fields, fieldExitPath.name) {
+		sessionFields = append(sessionFields, fieldExitPath.name)
+		groupBy = append(groupBy, fieldExitPath.name)
+	}
+
+	if fieldsContain(fields, fieldBounces.name) {
+		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
+	}
+
+	if fieldsContain(fields, fieldViews.name) {
+		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
+	}
+
+	sessionFieldsQuery := strings.Join(sessionFields, ",")
+
+	if sessionFieldsQuery != "" {
+		sessionFieldsQuery = "," + sessionFieldsQuery
+	}
+
+	query := ""
+
+	if table == "page_view" || table == "event" {
+		query = "INNER "
+	} else {
+		query = "LEFT "
+	}
+
+	groupByQuery := strings.Join(groupBy, ",")
+
+	if groupByQuery != "" {
+		groupByQuery = "," + groupByQuery
+	}
+
+	query += fmt.Sprintf(`JOIN (
+			SELECT visitor_id,
+			session_id
+			%s
+			FROM session
+			WHERE %s
+			GROUP BY visitor_id, session_id %s
+			HAVING sum(sign) > 0
+		) s
+		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery, groupByQuery)
+	return filterArgs, query
+}
+
+func (filter *Filter) joinGroupBy(fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		out.WriteString(fields[i].name + ",")
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinOrderBy(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].queryWithFill != "" {
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fields[i].queryWithFill))
+		} else if fields[i].withFill {
+			fillArgs, fillQuery := filter.withFill()
+			*args = append(*args, fillArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fillQuery))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].name, fields[i].queryDirection))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
 func (filter *Filter) table() string {
 	if filter.EventName != "" || filter.eventFilter {
 		return "event"
