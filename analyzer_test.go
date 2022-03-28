@@ -393,6 +393,9 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	analyzer = NewAnalyzer(dbClient, &AnalyzerConfig{
+		DisableBotFilter: true,
+	})
 	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -2084,6 +2087,14 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{VisitorID: 2, SessionID: 2, Time: Today(), Path: "/foo"},
 		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/"},
 		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/foo"},
+	}))
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today()},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: Today()},
+		{Sign: 1, VisitorID: 2, SessionID: 1, Time: Today()},
+		{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today()},
+		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today()},
+		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today()},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)

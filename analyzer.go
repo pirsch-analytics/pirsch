@@ -87,7 +87,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		uniq(visitor_id) visitors
 		FROM page_view v `, title))
 
-	if filter.EntryPath != "" || filter.ExitPath != "" {
+	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
 		args = append(args, innerFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
@@ -117,7 +117,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 	query.WriteString(`SELECT uniq(visitor_id) visitors
 		FROM page_view v `)
 
-	if filter.EntryPath != "" || filter.ExitPath != "" {
+	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -693,7 +693,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		var innerArgs []interface{}
 		innerQuery := ""
 
-		if filter.EntryPath != "" || filter.ExitPath != "" {
+		if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
 			fields := make([]field, 0, 2)
 
 			if filter.EntryPath != "" {
@@ -999,7 +999,6 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
 	var query strings.Builder
-	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT day,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -1012,8 +1011,9 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 				%s
 				FROM page_view v `, analyzer.timeOnPageQuery(filter), filter.Timezone.String(), fieldsQuery))
 
-	if filter.EntryPath != "" || filter.ExitPath != "" {
-		args = append(args, timeArgs...)
+	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
+		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
+		args = append(args, innerTimeArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -1024,7 +1024,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
 	}
 
 	args = append(args, timeArgs...)
@@ -1056,23 +1056,47 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 
 	filter = analyzer.getFilter(filter)
 	filter.Path, filter.EntryPath, filter.ExitPath = "", "", ""
-	filterArgs, filterQuery := filter.query(false)
+	filterArgs, filterQuery := filter.query(analyzer.minIsBot > 0)
 	pathQuery := strings.Repeat("?,", len(paths))
 
 	for _, path := range paths {
 		filterArgs = append(filterArgs, path)
 	}
 
-	query := fmt.Sprintf(`SELECT path,
-		uniq(visitor_id) visitors,
-		uniq(visitor_id, session_id) sessions,
-		count(1) views
-		FROM page_view
-		WHERE %s
-		AND path IN (%s)
-		GROUP BY path
-		ORDER BY visitors DESC, sessions DESC
-		%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
+	var query string
+
+	if analyzer.minIsBot > 0 {
+		query = fmt.Sprintf(`SELECT path,
+			uniq(visitor_id) visitors,
+			uniq(visitor_id, session_id) sessions,
+			count(1) views
+			FROM page_view v
+			INNER JOIN (
+				SELECT visitor_id,
+				session_id
+				FROM session
+				WHERE %s
+				GROUP BY visitor_id, session_id
+				HAVING sum(sign) > 0
+			) s
+			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id
+			WHERE path IN (%s)
+			GROUP BY path
+			ORDER BY visitors DESC, sessions DESC
+			%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
+	} else {
+		query = fmt.Sprintf(`SELECT path,
+			uniq(visitor_id) visitors,
+			uniq(visitor_id, session_id) sessions,
+			count(1) views
+			FROM page_view
+			WHERE %s
+			AND path IN (%s)
+			GROUP BY path
+			ORDER BY visitors DESC, sessions DESC
+			%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
+	}
+
 	var stats []totalVisitorSessionStats
 
 	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
@@ -1120,7 +1144,26 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 
 func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
 	filterArgs, filterQuery := filter.query(false)
-	query := fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
+	var query string
+
+	if analyzer.minIsBot > 0 {
+		innerFilterArgs, innerFilterQuery := filter.queryTime(true)
+		query = fmt.Sprintf(`SELECT sum(duration_seconds)
+			FROM event e
+			INNER JOIN (
+				SELECT visitor_id,
+				session_id
+				FROM session
+				WHERE %s
+			) s
+			ON s.visitor_id = e.visitor_id AND s.session_id = e.session_id
+			WHERE %s`, innerFilterQuery, filterQuery)
+		innerFilterArgs = append(innerFilterArgs, filterArgs...)
+		filterArgs = innerFilterArgs
+	} else {
+		query = fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
+	}
+
 	var averageTimeSpentSeconds int
 
 	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {
@@ -1146,7 +1189,6 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
-	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
 			SELECT %s time_on_page
@@ -1155,8 +1197,9 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 				sum(duration_seconds) duration_seconds
 				FROM page_view v `, analyzer.timeOnPageQuery(filter), fieldsQuery))
 
-	if filter.EntryPath != "" || filter.ExitPath != "" {
-		args = append(args, timeArgs...)
+	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
+		innerTimeArgs, innerTimeQuery := filter.queryTime(true)
+		args = append(args, innerTimeArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -1167,7 +1210,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
 	}
 
 	args = append(args, timeArgs...)
@@ -1217,7 +1260,6 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
-	// TODO is_bot
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -1230,8 +1272,9 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 				%s
 				FROM page_view v `, analyzer.timeOnPageQuery(filter), fieldsQuery))
 
-	if filter.EntryPath != "" || filter.ExitPath != "" {
-		args = append(args, timeArgs...)
+	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
+		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
+		args = append(args, innerTimeArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -1242,7 +1285,7 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, timeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
 	}
 
 	args = append(args, timeArgs...)
