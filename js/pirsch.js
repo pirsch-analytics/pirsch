@@ -2,7 +2,7 @@
     "use strict";
 
     // respect Do-Not-Track
-    if(navigator.doNotTrack === "1") {
+    if(navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
         return;
     }
 

@@ -7,7 +7,7 @@
 * added script to update and clean up the User-Agent blacklist
 * added flagging bots based on how quickly page views are being sent
 * added options to `Analyzer`
-* optimized JS scripts and added page filtering
+* optimized JS scripts and added page filtering and option to disable the script using localStorage
 * fixed grouping referrers with path in URL
 * updated User-Agent blacklist
 * updated referrer blacklist

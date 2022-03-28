@@ -122,6 +122,8 @@ The parameters are configured through HTML attributes. All of them are optional,
 | data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
+The scripts can be disabled by setting the `disable_pirsch` variable in localStorage of your browser.
+
 To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
 
 ```Go
