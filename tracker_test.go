@@ -226,10 +226,11 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	})
 	cache.Clear()
 	config := &TrackerConfig{
-		Worker:           4,
-		WorkerBufferSize: 5,
-		WorkerTimeout:    time.Second * 2,
-		SessionCache:     cache,
+		Worker:              4,
+		WorkerBufferSize:    5,
+		WorkerTimeout:       time.Second * 2,
+		SessionCache:        cache,
+		DisableFlaggingBots: true,
 	}
 	tracker := make([]*Tracker, 10)
 
@@ -260,6 +261,40 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	assert.Equal(t, 100, int(session.PageViews))
 	assert.Equal(t, "/page/1", session.EntryPath)
 	assert.Equal(t, "/page/100", session.ExitPath)
+}
+
+func TestTracker_HitIsBot(t *testing.T) {
+	cleanupDB()
+	cache := NewSessionCacheRedis(time.Second*60, nil, &redis.Options{
+		Addr: "localhost:6379",
+	})
+	cache.Clear()
+	tracker := NewTracker(dbClient, "salt", &TrackerConfig{
+		Worker:           4,
+		WorkerBufferSize: 5,
+		WorkerTimeout:    time.Second * 2,
+		SessionCache:     cache,
+		IsBotThreshold:   5,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+
+	for i := 0; i < 7; i++ {
+		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
+		go tracker.Hit(req, nil)
+		time.Sleep(time.Millisecond * 5)
+	}
+
+	tracker.Stop()
+	var session Session
+	assert.NoError(t, dbClient.Get(&session, `SELECT entry_path, exit_path, max(page_views) page_views, max(is_bot) is_bot
+		FROM session
+		GROUP BY entry_path, exit_path
+		HAVING sum(sign) > 0`))
+	assert.Equal(t, uint8(6), session.IsBot)
+	assert.Equal(t, 7, int(session.PageViews))
+	assert.Equal(t, "/page/1", session.EntryPath)
+	assert.Equal(t, "/page/7", session.ExitPath)
 }
 
 func TestTracker_Event(t *testing.T) {

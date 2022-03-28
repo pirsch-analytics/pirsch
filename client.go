@@ -113,7 +113,8 @@ func (client *Client) SaveSessions(sessions []Session) error {
 	query, err := tx.Prepare(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
 		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+        is_bot) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -152,7 +153,8 @@ func (client *Client) SaveSessions(sessions []Session) error {
 			session.UTMMedium,
 			session.UTMCampaign,
 			session.UTMContent,
-			session.UTMTerm)
+			session.UTMTerm,
+			session.IsBot)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {

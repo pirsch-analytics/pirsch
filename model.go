@@ -77,6 +77,7 @@ type Session struct {
 	UTMCampaign     string    `db:"utm_campaign" json:"utm_campaign"`
 	UTMContent      string    `db:"utm_content" json:"utm_content"`
 	UTMTerm         string    `db:"utm_term" json:"utm_term"`
+	IsBot           uint8     `db:"is_bot" json:"is_bot"`
 }
 
 // String implements the Stringer interface.
