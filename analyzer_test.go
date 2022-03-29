@@ -394,20 +394,32 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO
 func TestAnalyzer_GrowthDay(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: Today().Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Hour * 9)},
-		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Hour * 12)},
-		{Sign: 1, VisitorID: 4, Time: Today().Add(time.Hour * 21)},
+		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 5)},
+		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 3)},
+		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4)},
+		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 9)},
+		{Sign: 1, VisitorID: 5, Time: Today().Add(time.Hour * 4)},
+		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 9)},
+		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 12)},
+		{Sign: 1, VisitorID: 8, Time: Today().Add(time.Hour * 17)},
+		{Sign: 1, VisitorID: 9, Time: Today().Add(time.Hour * 21)},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
+
+	// Testing for today is hard because it would require messing with the time.Now function.
+	// I don't want to do that, so let's assume it works (tested in debug mode) and just get no error for today.
 	growth, err := analyzer.Growth(&Filter{From: Today(), To: Today()})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
+
+	growth, err = analyzer.Growth(&Filter{From: pastDay(1), To: pastDay(1)})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 2, growth.VisitorsGrowth, 0.001)
 }
 
 func TestAnalyzer_GrowthNoData(t *testing.T) {

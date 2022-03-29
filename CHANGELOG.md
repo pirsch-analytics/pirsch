@@ -8,8 +8,9 @@
 * added flagging bots based on how quickly page views are being sent
 * added options to `Analyzer`
 * added grouping results by week and year and new fields `Week` and `Year` to `VisitorStats` and `TimeSpentStats`
-* removed `Filter.Day` and `Filter.Start` and added `Filter.IncludeTime` instead, allowing to filter everything by date and time
+* calculating the growth for today will now take the time into account, and not compare to the full past day
 * optimized JS scripts and added page filtering and option to disable the script using localStorage
+* removed `Filter.Day` and `Filter.Start` and added `Filter.IncludeTime` instead, allowing to filter everything by date and time
 * fixed grouping referrers with path in URL
 * fixed missing timezone
 * updated User-Agent blacklist

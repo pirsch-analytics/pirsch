@@ -226,9 +226,21 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	// get previous statistics
-	days := filter.To.Sub(filter.From) // TODO include time
-	filter.To = filter.From.Add(-time.Hour * 24)
-	filter.From = filter.To.Add(-days)
+	if filter.From.Equal(filter.To) {
+		if filter.To.Equal(Today()) {
+			filter.From = filter.From.Add(-time.Hour * 24)
+			filter.To = time.Now().Add(-time.Hour * 24).In(filter.Timezone)
+			filter.IncludeTime = true
+		} else {
+			filter.From = filter.From.Add(-time.Hour * 24)
+			filter.To = filter.To.Add(-time.Hour * 24)
+		}
+	} else {
+		days := filter.To.Sub(filter.From)
+		filter.To = filter.From.Add(-time.Hour * 24)
+		filter.From = filter.To.Add(-days)
+	}
+
 	args, query = filter.buildQuery(fields, nil, nil)
 	previous := new(growthStats)
 
@@ -1379,6 +1391,7 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 		filter = NewFilter(NullClient)
 	}
 
+	filter.IncludeTime = false
 	filter.validate()
 
 	if analyzer.minIsBot > 0 {
