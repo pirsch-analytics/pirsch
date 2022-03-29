@@ -59,7 +59,9 @@ type Filter struct {
 	// Start is the start date and time of the selected period.
 	Start time.Time
 
-	// Period sets the period to group results by.
+	// Period sets the period to group results.
+	// This is only used by Analyzer.Visitors, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
+	// Using it for other queries leads to wrong results and might return an error.
 	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
 	Period Period
 
