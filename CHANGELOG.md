@@ -7,8 +7,10 @@
 * added script to update and clean up the User-Agent blacklist
 * added flagging bots based on how quickly page views are being sent
 * added options to `Analyzer`
+* added grouping results by week and year and new fields `Week` and `Year` to `VisitorStats` and `TimeSpentStats`
 * optimized JS scripts and added page filtering and option to disable the script using localStorage
 * fixed grouping referrers with path in URL
+* fixed missing timezone
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping

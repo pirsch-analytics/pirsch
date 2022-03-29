@@ -216,6 +216,22 @@ var (
 		timezone:       true,
 		name:           "day",
 	}
+	fieldWeek = field{
+		querySessions:  "toISOWeek(time, '%s')",
+		queryPageViews: "toISOWeek(time, '%s')",
+		queryDirection: "ASC",
+		withFill:       true,
+		timezone:       true,
+		name:           "week",
+	}
+	fieldYear = field{
+		querySessions:  "toYear(time, '%s')",
+		queryPageViews: "toYear(time, '%s')",
+		queryDirection: "ASC",
+		withFill:       true,
+		timezone:       true,
+		name:           "year",
+	}
 	fieldHour = field{
 		querySessions:  "toHour(time, '%s')",
 		queryPageViews: "toHour(time, '%s')",

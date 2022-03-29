@@ -142,6 +142,16 @@ func TestFilter_Table(t *testing.T) {
 	assert.Equal(t, "event", filter.table())
 }
 
+func TestFilter_Period(t *testing.T) {
+	filter := NewFilter(NullClient)
+	assert.Equal(t, PeriodDay, filter.Period)
+	assert.Equal(t, fieldDay, filter.period())
+	filter.Period = PeriodWeek
+	assert.Equal(t, fieldWeek, filter.period())
+	filter.Period = PeriodYear
+	assert.Equal(t, fieldYear, filter.period())
+}
+
 func TestFilter_QueryTime(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.From = pastDay(5)
@@ -403,7 +413,13 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
-	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 ", query)
+	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
+	filter.Period = PeriodWeek
+	_, query = filter.withFill()
+	assert.Equal(t, "WITH FILL FROM toISOWeek(toDate(?, 'UTC')) TO toISOWeek(toDate(?, 'UTC')+1) ", query)
+	filter.Period = PeriodYear
+	_, query = filter.withFill()
+	assert.Equal(t, "WITH FILL FROM toYear(toDate(?, 'UTC')) TO toYear(toDate(?, 'UTC')+1) ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {

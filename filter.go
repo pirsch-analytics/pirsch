@@ -8,6 +8,15 @@ import (
 )
 
 const (
+	// PeriodDay groups the results by date.
+	PeriodDay = Period(iota)
+
+	// PeriodWeek groups the results by week.
+	PeriodWeek
+
+	// PeriodYear groups the result by year.
+	PeriodYear
+
 	// PlatformDesktop filters for everything on desktops.
 	PlatformDesktop = "desktop"
 
@@ -21,6 +30,8 @@ const (
 	// This is a synonym for "null".
 	Unknown = "null"
 )
+
+type Period int
 
 // NullClient is a placeholder for no client (0).
 var NullClient = int64(0)
@@ -47,6 +58,10 @@ type Filter struct {
 
 	// Start is the start date and time of the selected period.
 	Start time.Time
+
+	// Period sets the period to group results by.
+	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
+	Period Period
 
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
@@ -400,6 +415,17 @@ func (filter *Filter) table() string {
 	return "session"
 }
 
+func (filter *Filter) period() field {
+	switch filter.Period {
+	case PeriodWeek:
+		return fieldWeek
+	case PeriodYear:
+		return fieldYear
+	default:
+		return fieldDay
+	}
+}
+
 func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
@@ -565,7 +591,19 @@ func (filter *Filter) appendField(fields *[]string, field, value string) {
 
 func (filter *Filter) withFill() ([]interface{}, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
-		return []interface{}{filter.From, filter.To}, "WITH FILL FROM toDate(?) TO toDate(?)+1 "
+		tz := filter.Timezone.String()
+		var query string
+
+		switch filter.Period {
+		case PeriodWeek:
+			query = fmt.Sprintf("WITH FILL FROM toISOWeek(toDate(?, '%s')) TO toISOWeek(toDate(?, '%s')+1) ", tz, tz)
+		case PeriodYear:
+			query = fmt.Sprintf("WITH FILL FROM toYear(toDate(?, '%s')) TO toYear(toDate(?, '%s')+1) ", tz, tz)
+		default:
+			query = fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 ", tz, tz)
+		}
+
+		return []interface{}{filter.From, filter.To}, query
 	}
 
 	return nil, ""
