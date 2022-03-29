@@ -53,11 +53,8 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
-	// Day is an exact match for the result set ("on this day").
-	Day time.Time
-
-	// Start is the start date and time of the selected period.
-	Start time.Time
+	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
+	IncludeTime bool
 
 	// Period sets the period to group results.
 	// This is only used by Analyzer.Visitors, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
@@ -179,25 +176,19 @@ func (filter *Filter) validate() {
 	}
 
 	if !filter.From.IsZero() {
-		filter.From = filter.toDate(filter.From)
-	} else {
-		filter.From = filter.From.In(time.UTC)
+		if filter.IncludeTime {
+			filter.From = filter.From.In(time.UTC)
+		} else {
+			filter.From = filter.toDate(filter.From)
+		}
 	}
 
 	if !filter.To.IsZero() {
-		filter.To = filter.toDate(filter.To)
-	} else {
-		filter.To = filter.To.In(time.UTC)
-	}
-
-	if !filter.Day.IsZero() {
-		filter.Day = filter.toDate(filter.Day)
-	} else {
-		filter.Day = filter.Day.In(time.UTC)
-	}
-
-	if !filter.Start.IsZero() {
-		filter.Start = time.Date(filter.Start.Year(), filter.Start.Month(), filter.Start.Day(), filter.Start.Hour(), filter.Start.Minute(), filter.Start.Second(), 0, time.UTC)
+		if filter.IncludeTime {
+			filter.To = filter.To.In(time.UTC)
+		} else {
+			filter.To = filter.toDate(filter.To)
+		}
 	}
 
 	if !filter.To.IsZero() && filter.From.After(filter.To) {
@@ -205,8 +196,7 @@ func (filter *Filter) validate() {
 	}
 
 	// use tomorrow instead of limiting to "today", so that all timezones are included
-	now := time.Now().UTC()
-	tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+	tomorrow := Today().Add(time.Hour * 24)
 
 	if !filter.To.IsZero() && filter.To.After(tomorrow) {
 		filter.To = tomorrow
@@ -431,28 +421,33 @@ func (filter *Filter) period() field {
 func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
-	timezone := filter.Timezone.String()
 	var sqlQuery strings.Builder
 	sqlQuery.WriteString("client_id = ? ")
+	tz := filter.Timezone.String()
 
-	if !filter.From.IsZero() {
+	if !filter.From.IsZero() && !filter.To.IsZero() && filter.From.Equal(filter.To) {
 		args = append(args, filter.From)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", timezone))
-	}
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
+	} else {
+		if !filter.From.IsZero() {
+			args = append(args, filter.From)
 
-	if !filter.To.IsZero() {
-		args = append(args, filter.To)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", timezone))
-	}
+			if filter.IncludeTime {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+			}
+		}
 
-	if !filter.Day.IsZero() {
-		args = append(args, filter.Day)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", timezone))
-	}
+		if !filter.To.IsZero() {
+			args = append(args, filter.To)
 
-	if !filter.Start.IsZero() {
-		args = append(args, filter.Start)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", timezone, timezone))
+			if filter.IncludeTime {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+			}
+		}
 	}
 
 	if filterBots && filter.minIsBot > 0 {

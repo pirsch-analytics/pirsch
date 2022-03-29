@@ -72,7 +72,8 @@ func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
-	filter.Start = time.Now().In(filter.Timezone).Add(-duration)
+	filter.From = time.Now().In(filter.Timezone).Add(-duration)
+	filter.IncludeTime = true
 	title := ""
 
 	if filter.IncludeTitle {
@@ -190,10 +191,11 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	filter = analyzer.getFilter(filter)
 
-	if filter.Day.IsZero() && (filter.From.IsZero() || filter.To.IsZero()) {
+	if filter.From.IsZero() || filter.To.IsZero() {
 		return nil, ErrNoPeriodOrDay
 	}
 
+	// get current statistics
 	fields := []field{
 		fieldVisitors,
 		fieldSessions,
@@ -223,14 +225,10 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		return nil, err
 	}
 
-	if filter.Day.IsZero() {
-		days := filter.To.Sub(filter.From)
-		filter.To = filter.From.Add(-time.Hour * 24)
-		filter.From = filter.To.Add(-days)
-	} else {
-		filter.Day = filter.Day.Add(-time.Hour * 24)
-	}
-
+	// get previous statistics
+	days := filter.To.Sub(filter.From) // TODO include time
+	filter.To = filter.From.Add(-time.Hour * 24)
+	filter.From = filter.To.Add(-days)
 	args, query = filter.buildQuery(fields, nil, nil)
 	previous := new(growthStats)
 

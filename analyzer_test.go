@@ -372,7 +372,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	growth, err := analyzer.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
-	growth, err = analyzer.Growth(&Filter{Day: pastDay(2)})
+	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
@@ -394,10 +394,26 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TODO
+func TestAnalyzer_GrowthDay(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: Today().Add(time.Hour * 4)},
+		{Sign: 1, VisitorID: 2, Time: Today().Add(time.Hour * 9)},
+		{Sign: 1, VisitorID: 3, Time: Today().Add(time.Hour * 12)},
+		{Sign: 1, VisitorID: 4, Time: Today().Add(time.Hour * 21)},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	growth, err := analyzer.Growth(&Filter{From: Today(), To: Today()})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+}
+
 func TestAnalyzer_GrowthNoData(t *testing.T) {
 	cleanupDB()
 	analyzer := NewAnalyzer(dbClient, nil)
-	growth, err := analyzer.Growth(&Filter{Day: pastDay(7)})
+	growth, err := analyzer.Growth(&Filter{From: pastDay(7), To: pastDay(7)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.001)
@@ -464,7 +480,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	growth, err := analyzer.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
-	growth, err = analyzer.Growth(&Filter{Day: pastDay(2), EventName: "event1"})
+	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2), EventName: "event1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
@@ -2284,8 +2300,6 @@ func getMaxFilter(eventName string) *Filter {
 		ClientID:       42,
 		From:           pastDay(5),
 		To:             pastDay(2),
-		Day:            pastDay(1),
-		Start:          time.Now().UTC(),
 		Path:           "/path",
 		EntryPath:      "/entry",
 		ExitPath:       "/exit",
