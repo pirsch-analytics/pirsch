@@ -77,6 +77,7 @@ type Session struct {
 	UTMCampaign     string    `db:"utm_campaign" json:"utm_campaign"`
 	UTMContent      string    `db:"utm_content" json:"utm_content"`
 	UTMTerm         string    `db:"utm_term" json:"utm_term"`
+	IsBot           uint8     `db:"is_bot" json:"is_bot"`
 }
 
 // String implements the Stringer interface.
@@ -145,6 +146,8 @@ type TotalVisitorStats struct {
 // VisitorStats is the result type for visitor statistics.
 type VisitorStats struct {
 	Day        time.Time `json:"day"`
+	Week       int       `json:"week"`
+	Year       int       `json:"year"`
 	Visitors   int       `json:"visitors"`
 	Views      int       `json:"views"`
 	Sessions   int       `json:"sessions"`
@@ -260,6 +263,8 @@ type PlatformStats struct {
 // TimeSpentStats is the result type for average time spent statistics (sessions, time on page).
 type TimeSpentStats struct {
 	Day                     time.Time `json:"day"`
+	Week                    int       `json:"week"`
+	Year                    int       `json:"year"`
 	Path                    string    `json:"path"`
 	Title                   string    `json:"title"`
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`

@@ -1,20 +1,31 @@
 (function() {
     "use strict";
 
-    if(navigator.doNotTrack === "1") {
+    // respect Do-Not-Track
+    if(navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
         return;
     }
 
+    // ignore script on localhost
     const script = document.querySelector("#pirschjs");
-    const endpoint = script.getAttribute("data-endpoint") || "/pirsch";
-    const clientID = script.getAttribute("data-client-id") || 0;
     const dev = script.hasAttribute("data-dev");
 
     if(!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
-        console.warn("Pirsch ignores hits on localhost. You can enable it by adding the data-track-localhost attribute.");
+        console.warn("Pirsch ignores hits on localhost. You can enable it by adding the data-dev attribute.");
         return;
     }
 
+    // exclude pages
+    const exclude = script.getAttribute("data-exclude");
+    const paths = exclude ? exclude.split(",") : [];
+
+    for(let i = 0; i < paths.length; i++) {
+        if(paths[i].test(location.pathname)) {
+            return;
+        }
+    }
+
+    // get custom attributes
     const attributes = script.getAttributeNames();
     let params = "";
 
@@ -23,6 +34,10 @@
             params += "&"+attributes[i].substr("data-param-".length)+"="+script.getAttribute(attributes[i]);
         }
     }
+
+    // register hit function
+    const endpoint = script.getAttribute("data-endpoint") || "/pirsch";
+    const clientID = script.getAttribute("data-client-id") || 0;
 
     function hit() {
         const url = endpoint+

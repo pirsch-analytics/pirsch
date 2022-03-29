@@ -36,11 +36,13 @@ func main() {
 		}
 
 		// Send response.
-		w.Write([]byte("<h1>Hello World!</h1>"))
+		if _, err := w.Write([]byte("<h1>Hello World!</h1>")); err != nil {
+			log.Fatal(err)
+		}
 	}))
 
 	// And finally, start the server.
 	// We don't flush hits on shutdown but you should add that in a real application by calling Tracker.Flush().
 	log.Println("Starting server on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

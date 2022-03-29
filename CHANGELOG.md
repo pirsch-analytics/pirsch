@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.7.0
+
+* added `True-Client-IP` header to receive the real visitor IP (Cloudflare)
+* added new bot list by Atmire (https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json)
+* added script to update and clean up the User-Agent blacklist
+* added flagging bots based on how quickly page views are being sent
+* added options to `Analyzer`
+* added grouping results by week and year and new fields `Week` and `Year` to `VisitorStats` and `TimeSpentStats`
+* calculating the growth for today will now take the time into account, and not compare to the full past day
+* optimized JS scripts and added page filtering and option to disable the script using localStorage
+* removed `Filter.Day` and `Filter.Start` and added `Filter.IncludeTime` instead, allowing to filter everything by date and time
+* fixed grouping referrers with path in URL
+* fixed missing timezone
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 3.6.4
 
 * added counting multiple page views without switching the actual page as bounced again

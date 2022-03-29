@@ -100,14 +100,15 @@ visitors, err := analyzer.Visitors(&pirsch.Filter{
 
 ### Client-side tracking
 
-You can also track visitors on the client side by adding `pirsch.js` to your website. It will perform a GET request to the configured endpoint.
+You can also track visitors on the client side by adding `pirsch.js`/`pirsch-events.js` to your website. It will perform a GET request to the configured endpoint.
 
 ```HTML
 <!-- add the tracking script to the head area and configure it using attributes -->
 <script type="text/javascript" src="js/pirsch.js" id="pirschjs"
         data-endpoint="/count"
         data-client-id="42"
-        data-track-localhost
+        data-exclude="/path/to/exclude,/regex/.*"
+        data-dev
         data-param-optional-param="test"></script>
 ```
 
@@ -117,8 +118,11 @@ The parameters are configured through HTML attributes. All of them are optional,
 | - | - | - |
 | data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
 | data-client-id | The client ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the client ID must be validated in the backend. | 0 (no client) |
-| data-track-localhost | Enable tracking hits on localhost. This is used for testing purposes only. | false |
+| data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. | (no paths) |
+| data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
+
+The scripts can be disabled by setting the `disable_pirsch` variable in localStorage of your browser.
 
 To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
 
@@ -173,13 +177,13 @@ The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeo
 
 Read the [full documentation](https://godoc.org/github.com/pirsch-analytics/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl.
 
-## Building pirsch.js and pirsch-event.js
+## Building pirsch.js and pirsch-events.js
 
-To minify `pirsch.js`/`pirsch-event.js` to `pirsch.min.js`/`pirsch-event.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
+To minify `pirsch.js`/`pirsch-events.js` to `pirsch.min.js`/`pirsch-events.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
 
 ## Things to maintain
 
-The following things need regular maintenance/updates:
+The following things need regular maintenance/updates (using the scripts in the `scripts` directory when possible):
 
 * Go and JS dependencies
 * referrer blacklist

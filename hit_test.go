@@ -320,6 +320,39 @@ func TestHitFromRequestResetSessionUTM(t *testing.T) {
 	}
 }
 
+func TestHitFromRequestIsBot(t *testing.T) {
+	cleanupDB()
+	cache := NewSessionCacheMem(dbClient, 100)
+	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+	options := &HitOptions{
+		SessionCache:   cache,
+		ClientID:       42,
+		MinDelay:       20,
+		IsBotThreshold: 3,
+	}
+
+	for i := 0; i < 4; i++ {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/test/path/%d", i), nil)
+		req.Header.Set("User-Agent", uaString)
+		pageView, _, _ := HitFromRequest(req, "salt", options)
+		assert.NotNil(t, pageView)
+
+		for key := range cache.sessions {
+			assert.Equal(t, uint8(i), cache.sessions[key].IsBot)
+		}
+	}
+
+	// the last one must be ignored
+	req := httptest.NewRequest(http.MethodGet, "/last/path", nil)
+	req.Header.Set("User-Agent", uaString)
+	pageView, _, _ := HitFromRequest(req, "salt", options)
+	assert.Nil(t, pageView)
+
+	for key := range cache.sessions {
+		assert.Equal(t, uint8(3), cache.sessions[key].IsBot)
+	}
+}
+
 func TestExtendSession(t *testing.T) {
 	cleanupDB()
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"

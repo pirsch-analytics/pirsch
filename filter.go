@@ -8,6 +8,15 @@ import (
 )
 
 const (
+	// PeriodDay groups the results by date.
+	PeriodDay = Period(iota)
+
+	// PeriodWeek groups the results by week.
+	PeriodWeek
+
+	// PeriodYear groups the result by year.
+	PeriodYear
+
 	// PlatformDesktop filters for everything on desktops.
 	PlatformDesktop = "desktop"
 
@@ -21,6 +30,8 @@ const (
 	// This is a synonym for "null".
 	Unknown = "null"
 )
+
+type Period int
 
 // NullClient is a placeholder for no client (0).
 var NullClient = int64(0)
@@ -42,11 +53,15 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
-	// Day is an exact match for the result set ("on this day").
-	Day time.Time
+	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
+	// The Analyzer will ignore this and just always use the date without time, except where it makes sense.
+	IncludeTime bool
 
-	// Start is the start date and time of the selected period.
-	Start time.Time
+	// Period sets the period to group results.
+	// This is only used by Analyzer.Visitors, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
+	// Using it for other queries leads to wrong results and might return an error.
+	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
+	Period Period
 
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
@@ -146,6 +161,7 @@ type Filter struct {
 	MaxTimeOnPageSeconds int
 
 	eventFilter bool
+	minIsBot    uint8
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -161,25 +177,19 @@ func (filter *Filter) validate() {
 	}
 
 	if !filter.From.IsZero() {
-		filter.From = filter.toDate(filter.From)
-	} else {
-		filter.From = filter.From.In(time.UTC)
+		if filter.IncludeTime {
+			filter.From = filter.From.In(time.UTC)
+		} else {
+			filter.From = filter.toDate(filter.From)
+		}
 	}
 
 	if !filter.To.IsZero() {
-		filter.To = filter.toDate(filter.To)
-	} else {
-		filter.To = filter.To.In(time.UTC)
-	}
-
-	if !filter.Day.IsZero() {
-		filter.Day = filter.toDate(filter.Day)
-	} else {
-		filter.Day = filter.Day.In(time.UTC)
-	}
-
-	if !filter.Start.IsZero() {
-		filter.Start = time.Date(filter.Start.Year(), filter.Start.Month(), filter.Start.Day(), filter.Start.Hour(), filter.Start.Minute(), filter.Start.Second(), 0, time.UTC)
+		if filter.IncludeTime {
+			filter.To = filter.To.In(time.UTC)
+		} else {
+			filter.To = filter.toDate(filter.To)
+		}
 	}
 
 	if !filter.To.IsZero() && filter.From.After(filter.To) {
@@ -187,8 +197,7 @@ func (filter *Filter) validate() {
 	}
 
 	// use tomorrow instead of limiting to "today", so that all timezones are included
-	now := time.Now().UTC()
-	tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+	tomorrow := Today().Add(time.Hour * 24)
 
 	if !filter.To.IsZero() && filter.To.After(tomorrow) {
 		filter.To = tomorrow
@@ -203,6 +212,194 @@ func (filter *Filter) validate() {
 	}
 }
 
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]interface{}, string) {
+	table := filter.table()
+	args := make([]interface{}, 0)
+	var query strings.Builder
+
+	if table == "event" || filter.Path != "" || filter.PathPattern != "" || fieldsContain(fields, fieldPath.name) {
+		if table == "session" {
+			table = "page_view"
+		}
+
+		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, filter.joinPageViewFields(&args, fields), table))
+
+		if filter.minIsBot > 0 ||
+			filter.EntryPath != "" ||
+			filter.ExitPath != "" ||
+			fieldsContain(fields, fieldBounces.name) ||
+			fieldsContain(fields, fieldViews.name) ||
+			fieldsContain(fields, fieldEntryPath.name) ||
+			fieldsContain(fields, fieldExitPath.name) {
+			filterArgs, filterQuery := filter.joinSessions(table, fields)
+			args = append(args, filterArgs...)
+			query.WriteString(filterQuery)
+		}
+
+		filter.EntryPath, filter.ExitPath = "", ""
+		filterArgs, filterQuery := filter.query(false)
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
+
+		if len(groupBy) > 0 {
+			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
+		}
+
+		if len(orderBy) > 0 {
+			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
+		}
+	} else {
+		filterArgs, filterQuery := filter.query(true)
+		query.WriteString(fmt.Sprintf(`SELECT %s
+			FROM session
+			WHERE %s `, filter.joinSessionFields(&args, fields), filterQuery))
+		args = append(args, filterArgs...)
+
+		if len(groupBy) > 0 {
+			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
+		}
+
+		query.WriteString(`HAVING sum(sign) > 0 `)
+
+		if len(orderBy) > 0 {
+			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
+		}
+	}
+
+	query.WriteString(filter.withLimit())
+	return args, query.String()
+}
+
+func (filter *Filter) joinPageViewFields(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime(false)
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].name))
+		} else if fields[i].name == "meta_value" {
+			*args = append(*args, filter.EventMetaKey)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinSessionFields(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].filterTime {
+			timeArgs, timeQuery := filter.queryTime(false)
+			*args = append(*args, timeArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+		} else if fields[i].timezone {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].name))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].name))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinSessions(table string, fields []field) ([]interface{}, string) {
+	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
+	filterArgs, filterQuery := filter.query(true)
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
+	sessionFields := make([]string, 0, 4)
+	groupBy := make([]string, 0, 2)
+
+	if fieldsContain(fields, fieldEntryPath.name) {
+		sessionFields = append(sessionFields, fieldEntryPath.name)
+		groupBy = append(groupBy, fieldEntryPath.name)
+	}
+
+	if fieldsContain(fields, fieldExitPath.name) {
+		sessionFields = append(sessionFields, fieldExitPath.name)
+		groupBy = append(groupBy, fieldExitPath.name)
+	}
+
+	if fieldsContain(fields, fieldBounces.name) {
+		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
+	}
+
+	if fieldsContain(fields, fieldViews.name) {
+		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
+	}
+
+	sessionFieldsQuery := strings.Join(sessionFields, ",")
+
+	if sessionFieldsQuery != "" {
+		sessionFieldsQuery = "," + sessionFieldsQuery
+	}
+
+	query := ""
+
+	if table == "page_view" || table == "event" {
+		query = "INNER "
+	} else {
+		query = "LEFT "
+	}
+
+	groupByQuery := strings.Join(groupBy, ",")
+
+	if groupByQuery != "" {
+		groupByQuery = "," + groupByQuery
+	}
+
+	query += fmt.Sprintf(`JOIN (
+			SELECT visitor_id,
+			session_id
+			%s
+			FROM session
+			WHERE %s
+			GROUP BY visitor_id, session_id %s
+			HAVING sum(sign) > 0
+		) s
+		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery, groupByQuery)
+	return filterArgs, query
+}
+
+func (filter *Filter) joinGroupBy(fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		out.WriteString(fields[i].name + ",")
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
+func (filter *Filter) joinOrderBy(args *[]interface{}, fields []field) string {
+	var out strings.Builder
+
+	for i := range fields {
+		if fields[i].queryWithFill != "" {
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fields[i].queryWithFill))
+		} else if fields[i].withFill {
+			fillArgs, fillQuery := filter.withFill()
+			*args = append(*args, fillArgs...)
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fillQuery))
+		} else {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].name, fields[i].queryDirection))
+		}
+	}
+
+	str := out.String()
+	return str[:len(str)-1]
+}
+
 func (filter *Filter) table() string {
 	if filter.EventName != "" || filter.eventFilter {
 		return "event"
@@ -211,39 +408,61 @@ func (filter *Filter) table() string {
 	return "session"
 }
 
-func (filter *Filter) queryTime() ([]interface{}, string) {
+func (filter *Filter) period() field {
+	switch filter.Period {
+	case PeriodWeek:
+		return fieldWeek
+	case PeriodYear:
+		return fieldYear
+	default:
+		return fieldDay
+	}
+}
+
+func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 	args := make([]interface{}, 0, 5)
 	args = append(args, filter.ClientID)
-	timezone := filter.Timezone.String()
 	var sqlQuery strings.Builder
 	sqlQuery.WriteString("client_id = ? ")
+	tz := filter.Timezone.String()
 
-	if !filter.From.IsZero() {
+	if !filter.From.IsZero() && !filter.To.IsZero() && filter.From.Equal(filter.To) {
 		args = append(args, filter.From)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", timezone))
+		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
+	} else {
+		if !filter.From.IsZero() {
+			args = append(args, filter.From)
+
+			if filter.IncludeTime {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+			}
+		}
+
+		if !filter.To.IsZero() {
+			args = append(args, filter.To)
+
+			if filter.IncludeTime {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+			}
+		}
 	}
 
-	if !filter.To.IsZero() {
-		args = append(args, filter.To)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", timezone))
-	}
-
-	if !filter.Day.IsZero() {
-		args = append(args, filter.Day)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", timezone))
-	}
-
-	if !filter.Start.IsZero() {
-		args = append(args, filter.Start)
-		sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", timezone, timezone))
+	if filterBots && filter.minIsBot > 0 {
+		args = append(args, filter.minIsBot)
+		sqlQuery.WriteString("AND is_bot < ? ")
 	}
 
 	return args, sqlQuery.String()
 }
 
 func (filter *Filter) queryFields() ([]interface{}, string) {
-	args := make([]interface{}, 0, 24+len(filter.EventMeta))
-	queryFields := make([]string, 0, 24+len(filter.EventMeta))
+	n := 25 + len(filter.EventMeta) // maximum number of fields + one for bot filter + meta data fields
+	args := make([]interface{}, 0, n)
+	queryFields := make([]string, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -370,7 +589,19 @@ func (filter *Filter) appendField(fields *[]string, field, value string) {
 
 func (filter *Filter) withFill() ([]interface{}, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
-		return []interface{}{filter.From, filter.To}, "WITH FILL FROM toDate(?) TO toDate(?)+1 "
+		tz := filter.Timezone.String()
+		var query string
+
+		switch filter.Period {
+		case PeriodWeek:
+			query = fmt.Sprintf("WITH FILL FROM toISOWeek(toDate(?, '%s')) TO toISOWeek(toDate(?, '%s')+1) ", tz, tz)
+		case PeriodYear:
+			query = fmt.Sprintf("WITH FILL FROM toYear(toDate(?, '%s')) TO toYear(toDate(?, '%s')+1) ", tz, tz)
+		default:
+			query = fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 ", tz, tz)
+		}
+
+		return []interface{}{filter.From, filter.To}, query
 	}
 
 	return nil, ""
@@ -384,13 +615,18 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-func (filter *Filter) query() ([]interface{}, string) {
-	args, query := filter.queryTime()
+func (filter *Filter) query(filterBots bool) ([]interface{}, string) {
+	args, query := filter.queryTime(false)
 	fieldArgs, queryFields := filter.queryFields()
 	args = append(args, fieldArgs...)
 
 	if queryFields != "" {
 		query += "AND " + queryFields
+	}
+
+	if filterBots && filter.minIsBot > 0 {
+		args = append(args, filter.minIsBot)
+		query += "AND is_bot < ? "
 	}
 
 	return args, query

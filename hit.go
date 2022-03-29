@@ -48,6 +48,16 @@ type HitOptions struct {
 	// Set to 15 minutes by default.
 	SessionMaxAge time.Duration
 
+	// MinDelay defines the minimum time in milliseconds between two page views before the session is flagged as a bot request.
+	// This will update the Session.IsBot counter, which can later be used to filter upon.
+	// Set it to 0 to disable flagging bots.
+	MinDelay int64
+
+	// IsBotThreshold sets the threshold before a request is ignored.
+	// If Session.IsBot is larger or equal to the configured value, the request won't be accepted.
+	// Set it to 0 to disable ignoring requests.
+	IsBotThreshold uint8
+
 	// URL can be set to manually overwrite the URL stored for this request.
 	// This will also affect the Path, except it is set too.
 	URL string
@@ -114,6 +124,10 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		sessionState.State = *session
 		options.SessionCache.Put(options.ClientID, fingerprint, session)
 	} else {
+		if options.IsBotThreshold > 0 && session.IsBot >= options.IsBotThreshold {
+			return nil, SessionState{}, nil
+		}
+
 		session.Sign = -1
 		sessionState.Cancel = session
 		state := *session
@@ -296,6 +310,10 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 }
 
 func updateSession(options *HitOptions, session *Session, event bool, now time.Time, path, title string) uint32 {
+	if options.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < options.MinDelay {
+		session.IsBot++
+	}
+
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {

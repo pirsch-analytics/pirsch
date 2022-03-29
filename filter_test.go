@@ -23,19 +23,109 @@ func TestFilter_Validate(t *testing.T) {
 	filter.validate()
 	assert.Equal(t, pastDay(2), filter.From)
 	assert.Equal(t, Today().Add(time.Hour*24), filter.To)
-	filter = &Filter{Day: time.Now().UTC(), Limit: -42, Path: "/path", PathPattern: "pattern"}
+	filter = &Filter{Limit: -42, Path: "/path", PathPattern: "pattern"}
 	filter.validate()
-	assert.Zero(t, filter.Day.Hour())
-	assert.Zero(t, filter.Day.Minute())
-	assert.Zero(t, filter.Day.Second())
-	assert.Zero(t, filter.Day.Nanosecond())
 	assert.Zero(t, filter.Limit)
 	assert.Equal(t, "/path", filter.Path)
 	assert.Empty(t, filter.PathPattern)
-	filter = &Filter{Day: time.Now().UTC(), Limit: -42, PathPattern: "pattern"}
+	filter = &Filter{Limit: -42, PathPattern: "pattern"}
 	filter.validate()
 	assert.Empty(t, filter.Path)
 	assert.Equal(t, "pattern", filter.PathPattern)
+}
+
+func TestFilter_BuildQuery(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SavePageViews([]PageView{
+		{VisitorID: 1, Time: Today(), Path: "/"},
+		{VisitorID: 1, Time: Today().Add(time.Minute * 2), Path: "/foo"},
+		{VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*2), Path: "/foo"},
+		{VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*23), Path: "/bar"},
+
+		{VisitorID: 2, Time: Today(), Path: "/bar"},
+		{VisitorID: 2, Time: Today().Add(time.Second * 16), Path: "/foo"},
+		{VisitorID: 2, Time: Today().Add(time.Second*16 + time.Second*8), Path: "/"},
+	}))
+	saveSessions(t, [][]Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute * 2), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second * 16), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Minute * 2), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*23), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
+			{Sign: -1, VisitorID: 2, Time: Today().Add(time.Second * 16), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second*16 + time.Second*8), EntryPath: "/bar", ExitPath: "/", PageViews: 3},
+		},
+	})
+
+	// no filter (from page views)
+	analyzer := NewAnalyzer(dbClient, nil)
+	args, query := analyzer.getFilter(nil).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldVisitors, fieldPath})
+	var stats []PageStats
+	assert.NoError(t, dbClient.Select(&stats, query, args...))
+	assert.Len(t, stats, 3)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 2, stats[2].Visitors)
+	assert.Equal(t, "/", stats[0].Path)
+	assert.Equal(t, "/bar", stats[1].Path)
+	assert.Equal(t, "/foo", stats[2].Path)
+
+	// join (from page views)
+	args, query = analyzer.getFilter(&Filter{EntryPath: "/"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	stats = stats[:0]
+	assert.NoError(t, dbClient.Select(&stats, query, args...))
+	assert.Len(t, stats, 3)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[2].Visitors)
+	assert.Equal(t, "/", stats[0].Path)
+	assert.Equal(t, "/bar", stats[1].Path)
+	assert.Equal(t, "/foo", stats[2].Path)
+
+	// join and filter (from page views)
+	args, query = analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	stats = stats[:0]
+	assert.NoError(t, dbClient.Select(&stats, query, args...))
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "/foo", stats[0].Path)
+	assert.Equal(t, 1, stats[0].Visitors)
+
+	// filter (from page views)
+	args, query = analyzer.getFilter(&Filter{Path: "/foo"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	stats = stats[:0]
+	assert.NoError(t, dbClient.Select(&stats, query, args...))
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "/foo", stats[0].Path)
+	assert.Equal(t, 2, stats[0].Visitors)
+
+	// no filter (from sessions)
+	args, query = analyzer.getFilter(nil).buildQuery([]field{fieldVisitors, fieldSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
+	var vstats PageStats
+	assert.NoError(t, dbClient.Get(&vstats, query, args...))
+	assert.Equal(t, 2, vstats.Visitors)
+	assert.Equal(t, 2, vstats.Sessions)
+	assert.Equal(t, 6, vstats.Views)
+	assert.Equal(t, 0, vstats.Bounces)
+	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
+
+	// filter (from page views)
+	args, query = analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}).buildQuery([]field{fieldVisitors, fieldRelativeVisitors, fieldSessions, fieldViews, fieldRelativeViews, fieldBounces, fieldBounceRate}, nil, nil)
+	assert.NoError(t, dbClient.Get(&vstats, query, args...))
+	assert.Equal(t, 1, vstats.Visitors)
+	assert.Equal(t, 1, vstats.Sessions)
+	assert.Equal(t, 2, vstats.Views)
+	assert.Equal(t, 0, vstats.Bounces)
+	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
+	assert.InDelta(t, 0.5, vstats.RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 }
 
 func TestFilter_Table(t *testing.T) {
@@ -48,20 +138,43 @@ func TestFilter_Table(t *testing.T) {
 	assert.Equal(t, "event", filter.table())
 }
 
+func TestFilter_Period(t *testing.T) {
+	filter := NewFilter(NullClient)
+	assert.Equal(t, PeriodDay, filter.Period)
+	assert.Equal(t, fieldDay, filter.period())
+	filter.Period = PeriodWeek
+	assert.Equal(t, fieldWeek, filter.period())
+	filter.Period = PeriodYear
+	assert.Equal(t, fieldYear, filter.period())
+}
+
 func TestFilter_QueryTime(t *testing.T) {
 	filter := NewFilter(NullClient)
 	filter.From = pastDay(5)
 	filter.To = pastDay(2)
-	filter.Day = pastDay(1)
-	filter.Start = time.Now().UTC()
-	args, query := filter.queryTime()
-	assert.Len(t, args, 5)
+	args, query := filter.queryTime(false)
+	assert.Len(t, args, 3)
 	assert.Equal(t, NullClient, args[0])
 	assert.Equal(t, filter.From, args[1])
 	assert.Equal(t, filter.To, args[2])
-	assert.Equal(t, filter.Day, args[3])
-	assert.Equal(t, filter.Start, args[4])
-	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND toDate(time, 'UTC') = toDate(?) AND toDateTime(time, 'UTC') >= toDateTime(?, 'UTC') ", query)
+	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ", query)
+	filter.From = pastDay(2)
+	filter.validate()
+	args, query = filter.queryTime(false)
+	assert.Len(t, args, 2)
+	assert.Equal(t, NullClient, args[0])
+	assert.Equal(t, filter.From, args[1])
+	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') = toDate(?) ", query)
+	filter.IncludeTime = true
+	filter.From = filter.From.Add(time.Hour * 5)
+	filter.To = filter.To.Add(time.Hour * 19)
+	filter.validate()
+	args, query = filter.queryTime(false)
+	assert.Len(t, args, 3)
+	assert.Equal(t, NullClient, args[0])
+	assert.Equal(t, filter.From, args[1])
+	assert.Equal(t, filter.To, args[2])
+	assert.Equal(t, "client_id = ? AND toDateTime(time, 'UTC') >= toDateTime(?, 'UTC') AND toDateTime(time, 'UTC') <= toDateTime(?, 'UTC') ", query)
 }
 
 func TestFilter_QueryFields(t *testing.T) {
@@ -246,7 +359,7 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
-	_, query = filter.query()
+	_, query = filter.query(false)
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
 }
 
@@ -266,8 +379,18 @@ func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
-	_, query = filter.query()
+	_, query = filter.query(false)
 	assert.Contains(t, query, "(desktop = 1 OR mobile = 1)")
+}
+
+func TestFilter_QueryIsBot(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Path = "/path"
+	filter.minIsBot = 5
+	args, query := filter.query(true)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint8(5), args[2])
+	assert.Equal(t, "client_id = ? AND path = ? AND is_bot < ? ", query)
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
@@ -299,7 +422,13 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
-	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 ", query)
+	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
+	filter.Period = PeriodWeek
+	_, query = filter.withFill()
+	assert.Equal(t, "WITH FILL FROM toISOWeek(toDate(?, 'UTC')) TO toISOWeek(toDate(?, 'UTC')+1) ", query)
+	filter.Period = PeriodYear
+	_, query = filter.withFill()
+	assert.Equal(t, "WITH FILL FROM toYear(toDate(?, 'UTC')) TO toYear(toDate(?, 'UTC')+1) ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {

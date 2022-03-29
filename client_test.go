@@ -81,6 +81,7 @@ func TestClient_SaveSessions(t *testing.T) {
 			ScreenWidth:     1920,
 			ScreenHeight:    1080,
 			ScreenClass:     "XL",
+			IsBot:           5,
 		},
 		{
 			Sign:      -1,
@@ -214,6 +215,7 @@ func TestClient_Session(t *testing.T) {
 			ExitPath:  "/path2",
 			EntryPath: "/entry2",
 			PageViews: 3,
+			IsBot:     5,
 		},
 		{
 			Sign:      -1,
@@ -233,6 +235,7 @@ func TestClient_Session(t *testing.T) {
 	assert.Equal(t, "/path2", session.ExitPath)
 	assert.Equal(t, "/entry2", session.EntryPath)
 	assert.Equal(t, uint16(3), session.PageViews)
+	assert.Equal(t, uint8(5), session.IsBot)
 }
 
 func TestClient_GetNoError(t *testing.T) {

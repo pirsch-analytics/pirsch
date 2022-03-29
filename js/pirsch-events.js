@@ -1,25 +1,39 @@
 (function() {
     "use strict";
 
+    // add a dummy function for local development
     window.pirsch = (name, options) => {
         console.log(`Pirsch event: ${name}${options ? " "+JSON.stringify(options) : ""}`);
         return Promise.resolve(null);
     };
 
-    if(navigator.doNotTrack === "1") {
+    // respect Do-Not-Track
+    if(navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
         return;
     }
 
+    // ignore script on localhost
     const script = document.querySelector("#pirscheventsjs");
-    const endpoint = script.getAttribute("data-endpoint") || "/pirsch-event";
-    const clientID = script.getAttribute("data-client-id");
     const dev = script.getAttribute("data-dev");
 
     if(!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
-        console.warn("You're running Pirsch on localhost. Events will be ignored.");
+        console.warn("Pirsch ignores events on localhost. You can enable it by adding the data-dev attribute.");
         return;
     }
 
+    // exclude pages
+    const exclude = script.getAttribute("data-exclude");
+    const paths = exclude ? exclude.split(",") : [];
+
+    for(let i = 0; i < paths.length; i++) {
+        if(paths[i].test(location.pathname)) {
+            return;
+        }
+    }
+
+    // register event function
+    const endpoint = script.getAttribute("data-endpoint") || "/pirsch-event";
+    const clientID = script.getAttribute("data-client-id");
     window.pirsch = function(name, options) {
         if(typeof name !== "string" || !name) {
             return Promise.reject("The event name for Pirsch is invalid (must be a non-empty string)! Usage: pirsch('event name', {duration: 42, meta: {key: 'value'}})");

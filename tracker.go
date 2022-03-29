@@ -16,6 +16,8 @@ const (
 	defaultWorkerBufferSize = 100
 	defaultWorkerTimeout    = time.Second * 10
 	maxWorkerTimeout        = time.Second * 60
+	defaultMinDelay         = 30
+	defaultIsBotThreshold   = 5
 )
 
 var logger = log.New(os.Stdout, "[pirsch] ", log.LstdFlags)
@@ -53,6 +55,17 @@ type TrackerConfig struct {
 	// SessionMaxAge see HitOptions.SessionMaxAge.
 	SessionMaxAge time.Duration
 
+	// MinDelay see HitOptions.MinDelay.
+	// Will be set to 30 milliseconds by default.
+	MinDelay int64
+
+	// IsBotThreshold see HitOptions.IsBotThreshold.
+	// Will be set to 5 by default.
+	IsBotThreshold uint8
+
+	// DisableFlaggingBots disables MinDelay and IsBotThreshold (otherwise these would be set to their default values).
+	DisableFlaggingBots bool
+
 	// GeoDB enables/disabled mapping IPs to country codes.
 	// Can be set/updated at runtime by calling Tracker.SetGeoDB.
 	GeoDB *GeoDB
@@ -62,8 +75,6 @@ type TrackerConfig struct {
 	Logger *log.Logger
 }
 
-// The default session configuration is set by the session cache.
-// The TrackerConfig just passes on the values and overwrites them if required.
 func (config *TrackerConfig) validate() {
 	if config.Worker < 1 {
 		config.Worker = runtime.NumCPU()
@@ -81,6 +92,19 @@ func (config *TrackerConfig) validate() {
 
 	if config.SessionMaxAge < 0 {
 		config.SessionMaxAge = 0
+	}
+
+	if config.DisableFlaggingBots {
+		config.MinDelay = 0
+		config.IsBotThreshold = 0
+	} else {
+		if config.MinDelay <= 0 {
+			config.MinDelay = defaultMinDelay
+		}
+
+		if config.IsBotThreshold == 0 {
+			config.IsBotThreshold = defaultIsBotThreshold
+		}
 	}
 
 	if config.Logger == nil {
@@ -107,6 +131,8 @@ type Tracker struct {
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
 	sessionMaxAge                             time.Duration
+	minDelay                                  int64
+	isBotThreshold                            uint8
 	geoDB                                     *GeoDB
 	geoDBMutex                                sync.RWMutex
 	logger                                    *log.Logger
@@ -140,9 +166,11 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
-		sessionMaxAge: config.SessionMaxAge,
-		geoDB:         config.GeoDB,
-		logger:        config.Logger,
+		sessionMaxAge:  config.SessionMaxAge,
+		minDelay:       config.MinDelay,
+		isBotThreshold: config.IsBotThreshold,
+		geoDB:          config.GeoDB,
+		logger:         config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -162,6 +190,8 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
 				SessionMaxAge:                             tracker.sessionMaxAge,
+				MinDelay:                                  tracker.minDelay,
+				IsBotThreshold:                            tracker.isBotThreshold,
 			}
 		}
 
@@ -195,6 +225,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 	if strings.TrimSpace(eventOptions.Name) != "" && !IgnoreHit(r) {
 		if options == nil {
+			// HitOptions.MinDelay and HitOptions.IsBotThreshold are ignored for events
 			options = &HitOptions{
 				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
 				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,

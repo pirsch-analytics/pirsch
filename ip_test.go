@@ -69,6 +69,10 @@ func TestGetIP(t *testing.T) {
 	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67")
 	assert.Equal(t, "127.0.0.1", getIP(r))
 
+	// True-Client-IP
+	r.Header.Set("True-Client-IP", "127.0.0.1, 23.21.45.67")
+	assert.Equal(t, "127.0.0.1", getIP(r))
+
 	// CF-Connecting-IP
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67")
 	assert.Equal(t, "127.0.0.1", getIP(r))
