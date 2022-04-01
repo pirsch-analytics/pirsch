@@ -217,8 +217,8 @@ var (
 		name:           "day",
 	}
 	fieldWeek = field{
-		querySessions:  "toISOWeek(time, '%s')",
-		queryPageViews: "toISOWeek(time, '%s')",
+		querySessions:  "toWeek(toDate(time, '%s'), 1)",
+		queryPageViews: "toWeek(toDate(time, '%s'), 1)",
 		queryDirection: "ASC",
 		withFill:       true,
 		timezone:       true,

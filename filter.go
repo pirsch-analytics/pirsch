@@ -594,7 +594,7 @@ func (filter *Filter) withFill() ([]interface{}, string) {
 
 		switch filter.Period {
 		case PeriodWeek:
-			query = fmt.Sprintf("WITH FILL FROM toISOWeek(toDate(?, '%s')) TO toISOWeek(toDate(?, '%s')+1) ", tz, tz)
+			query = fmt.Sprintf("WITH FILL FROM toWeek(toDate(?, '%s'), 1) TO toWeek(toDate(?, '%s')+1, 1) ", tz, tz)
 		case PeriodYear:
 			query = fmt.Sprintf("WITH FILL FROM toYear(toDate(?, '%s')) TO toYear(toDate(?, '%s')+1) ", tz, tz)
 		default:

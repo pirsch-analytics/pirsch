@@ -425,7 +425,7 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
 	filter.Period = PeriodWeek
 	_, query = filter.withFill()
-	assert.Equal(t, "WITH FILL FROM toISOWeek(toDate(?, 'UTC')) TO toISOWeek(toDate(?, 'UTC')+1) ", query)
+	assert.Equal(t, "WITH FILL FROM toWeek(toDate(?, 'UTC'), 1) TO toWeek(toDate(?, 'UTC')+1, 1) ", query)
 	filter.Period = PeriodYear
 	_, query = filter.withFill()
 	assert.Equal(t, "WITH FILL FROM toYear(toDate(?, 'UTC')) TO toYear(toDate(?, 'UTC')+1) ", query)

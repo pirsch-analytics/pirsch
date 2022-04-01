@@ -1341,7 +1341,7 @@ func (analyzer *Analyzer) getPeriodField(filter *Filter) (string, string) {
 	var groupBy, groupByField string
 
 	if filter.Period == PeriodWeek {
-		groupBy, groupByField = fmt.Sprintf("toISOWeek(time, '%s') week", filter.Timezone.String()), "week"
+		groupBy, groupByField = fmt.Sprintf("toWeek(toDate(time, '%s'), 1) week", filter.Timezone.String()), "week"
 	} else if filter.Period == PeriodYear {
 		groupBy, groupByField = fmt.Sprintf("toYear(time, '%s') year", filter.Timezone.String()), "year"
 	} else {
