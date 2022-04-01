@@ -11,6 +11,7 @@
 * calculating the growth for today will now take the time into account, and not compare to the full past day
 * optimized JS scripts and added page filtering and option to disable the script using localStorage
 * removed `Filter.Day` and `Filter.Start` and added `Filter.IncludeTime` instead, allowing to filter everything by date and time
+* `VisitorStats.Day` and `TimeSpentStats.Day` are now nullable fields (new week, month, and year are also of type `sql.NullTime`)
 * fixed grouping referrers with path in URL
 * fixed missing timezone
 * updated User-Agent blacklist
