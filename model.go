@@ -1,8 +1,8 @@
 package pirsch
 
 import (
-	"database/sql"
 	"encoding/json"
+	"github.com/emvi/null"
 	"time"
 )
 
@@ -146,15 +146,15 @@ type TotalVisitorStats struct {
 
 // VisitorStats is the result type for visitor statistics.
 type VisitorStats struct {
-	Day        sql.NullTime `json:"day,omitempty"`
-	Week       sql.NullTime `json:"week,omitempty"`
-	Month      sql.NullTime `json:"month,omitempty"`
-	Year       sql.NullTime `json:"year,omitempty"`
-	Visitors   int          `json:"visitors"`
-	Views      int          `json:"views"`
-	Sessions   int          `json:"sessions"`
-	Bounces    int          `json:"bounces"`
-	BounceRate float64      `db:"bounce_rate" json:"bounce_rate"`
+	Day        null.Time `json:"day"`
+	Week       null.Time `json:"week"`
+	Month      null.Time `json:"month"`
+	Year       null.Time `json:"year"`
+	Visitors   int       `json:"visitors"`
+	Views      int       `json:"views"`
+	Sessions   int       `json:"sessions"`
+	Bounces    int       `json:"bounces"`
+	BounceRate float64   `db:"bounce_rate" json:"bounce_rate"`
 }
 
 // Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
@@ -264,13 +264,13 @@ type PlatformStats struct {
 
 // TimeSpentStats is the result type for average time spent statistics (sessions, time on page).
 type TimeSpentStats struct {
-	Day                     sql.NullTime `json:"day,omitempty"`
-	Week                    sql.NullTime `json:"week,omitempty"`
-	Month                   sql.NullTime `json:"month,omitempty"`
-	Year                    sql.NullTime `json:"year,omitempty"`
-	Path                    string       `json:"path"`
-	Title                   string       `json:"title"`
-	AverageTimeSpentSeconds int          `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
+	Day                     null.Time `json:"day"`
+	Week                    null.Time `json:"week"`
+	Month                   null.Time `json:"month"`
+	Year                    null.Time `json:"year"`
+	Path                    string    `json:"path"`
+	Title                   string    `json:"title"`
+	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
 // MetaStats is the base for meta result types (languages, countries, ...).
