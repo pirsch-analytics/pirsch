@@ -40,6 +40,7 @@ var (
 	fieldVisitors = field{
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",
+		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
 		name:           "visitors",
 	}
@@ -60,12 +61,14 @@ var (
 	fieldSessions = field{
 		querySessions:  "uniq(visitor_id, session_id)",
 		queryPageViews: "uniq(visitor_id, session_id)",
+		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
 		name:           "sessions",
 	}
 	fieldViews = field{
 		querySessions:  "sum(page_views*sign)",
 		queryPageViews: "count(1)",
+		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
 		name:           "views",
 	}
@@ -79,12 +82,14 @@ var (
 	fieldBounces = field{
 		querySessions:  "sum(is_bounce*sign)",
 		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
+		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		name:           "bounces",
 	}
 	fieldBounceRate = field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
+		queryPeriod:    "avg(bounce_rate)",
 		queryDirection: "DESC",
 		name:           "bounce_rate",
 	}
@@ -216,22 +221,6 @@ var (
 		timezone:       true,
 		name:           "day",
 	}
-	fieldWeek = field{
-		querySessions:  "toWeek(toDate(time, '%s'), 1)",
-		queryPageViews: "toWeek(toDate(time, '%s'), 1)",
-		queryDirection: "ASC",
-		withFill:       true,
-		timezone:       true,
-		name:           "week",
-	}
-	fieldYear = field{
-		querySessions:  "toYear(time, '%s')",
-		queryPageViews: "toYear(time, '%s')",
-		queryDirection: "ASC",
-		withFill:       true,
-		timezone:       true,
-		name:           "year",
-	}
 	fieldHour = field{
 		querySessions:  "toHour(time, '%s')",
 		queryPageViews: "toHour(time, '%s')",
@@ -274,20 +263,11 @@ var (
 type field struct {
 	querySessions  string
 	queryPageViews string
+	queryPeriod    string
 	queryDirection string
 	queryWithFill  string
 	withFill       bool
 	timezone       bool
 	filterTime     bool
 	name           string
-}
-
-func fieldsContain(haystack []field, needle string) bool {
-	for i := range haystack {
-		if haystack[i].name == needle {
-			return true
-		}
-	}
-
-	return false
 }

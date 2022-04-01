@@ -126,6 +126,12 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 	assert.InDelta(t, 0.5, vstats.RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
+
+	// filter period
+	args, query = analyzer.getFilter(&Filter{Period: PeriodWeek}).buildQuery([]field{fieldDay, fieldVisitors}, []field{fieldDay}, []field{fieldDay})
+	var visitors []VisitorStats
+	assert.NoError(t, dbClient.Select(&visitors, query, args...))
+	assert.Len(t, visitors, 1)
 }
 
 func TestFilter_Table(t *testing.T) {
@@ -136,16 +142,6 @@ func TestFilter_Table(t *testing.T) {
 	filter.eventFilter = false
 	filter.EventName = "event"
 	assert.Equal(t, "event", filter.table())
-}
-
-func TestFilter_Period(t *testing.T) {
-	filter := NewFilter(NullClient)
-	assert.Equal(t, PeriodDay, filter.Period)
-	assert.Equal(t, fieldDay, filter.period())
-	filter.Period = PeriodWeek
-	assert.Equal(t, fieldWeek, filter.period())
-	filter.Period = PeriodYear
-	assert.Equal(t, fieldYear, filter.period())
 }
 
 func TestFilter_QueryTime(t *testing.T) {
@@ -423,12 +419,6 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
 	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
-	filter.Period = PeriodWeek
-	_, query = filter.withFill()
-	assert.Equal(t, "WITH FILL FROM toWeek(toDate(?, 'UTC'), 1) TO toWeek(toDate(?, 'UTC')+1, 1) ", query)
-	filter.Period = PeriodYear
-	_, query = filter.withFill()
-	assert.Equal(t, "WITH FILL FROM toYear(toDate(?, 'UTC')) TO toYear(toDate(?, 'UTC')+1) ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {
@@ -476,4 +466,15 @@ func TestFilter_Fields(t *testing.T) {
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
+}
+
+func pastWeek(n int) int {
+	date := pastDay(n * 7)
+	_, week := date.ISOWeek()
+	return week
+}
+
+func pastMonth(n int) time.Time {
+	now := time.Now().UTC()
+	return time.Date(now.Year(), now.Month()-time.Month(n), now.Day(), 0, 0, 0, 0, time.UTC)
 }

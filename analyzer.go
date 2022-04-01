@@ -160,20 +160,20 @@ func (analyzer *Analyzer) TotalVisitors(filter *Filter) (*TotalVisitorStats, err
 	return stats, nil
 }
 
-// Visitors returns the visitor count, session count, bounce rate, and views grouped by day.
+// Visitors returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
 	args, query := filter.buildQuery([]field{
-		filter.period(),
+		fieldDay,
 		fieldVisitors,
 		fieldSessions,
 		fieldViews,
 		fieldBounces,
 		fieldBounceRate,
 	}, []field{
-		filter.period(),
+		fieldDay,
 	}, []field{
-		filter.period(),
+		fieldDay,
 		fieldVisitors,
 	})
 	var stats []VisitorStats
@@ -935,7 +935,7 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 	return stats, nil
 }
 
-// AvgSessionDuration returns the average session duration grouped by day.
+// AvgSessionDuration returns the average session duration grouped by day, week, month, or year.
 func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 
@@ -947,15 +947,26 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
-	groupBy, groupByField := analyzer.getPeriodField(filter)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s, average_time_spent_seconds
+
+	if filter.Period != PeriodDay {
+		switch filter.Period {
+		case PeriodWeek:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day) week FROM (`)
+		case PeriodMonth:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
+		case PeriodYear:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
+		}
+	}
+
+	query.WriteString(fmt.Sprintf(`SELECT day, average_time_spent_seconds
 		FROM (
-			SELECT %s,
+			SELECT toDate(time, '%s') day,
 			sum(duration_seconds*sign) duration,
 			sum(sign) n,
 			toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
-			FROM session s `, groupByField, groupBy))
+			FROM session s `, filter.Timezone.String()))
 
 	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
@@ -973,11 +984,23 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	args = append(args, withFillArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
 			AND duration_seconds != 0
-			GROUP BY %s
+			GROUP BY day
 			HAVING sum(sign) > 0
-			ORDER BY %s
+			ORDER BY day
 			%s
-		)`, filterQuery, groupByField, groupByField, withFillQuery))
+		)`, filterQuery, withFillQuery))
+
+	if filter.Period != PeriodDay {
+		switch filter.Period {
+		case PeriodWeek:
+			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
+		case PeriodMonth:
+			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
+		case PeriodYear:
+			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
+		}
+	}
+
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
@@ -987,7 +1010,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	return stats, nil
 }
 
-// AvgTimeOnPage returns the average time on page grouped by day.
+// AvgTimeOnPage returns the average time on page grouped by day, week, month, or year.
 func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error) {
 	filter = analyzer.getFilter(filter)
 
@@ -1010,19 +1033,30 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 
 	withFillArgs, withFillQuery := filter.withFill()
 	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
-	groupBy, groupByField := analyzer.getPeriodField(filter)
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT %s,
+
+	if filter.Period != PeriodDay {
+		switch filter.Period {
+		case PeriodWeek:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day) week FROM (`)
+		case PeriodMonth:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
+		case PeriodYear:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
+		}
+	}
+
+	query.WriteString(fmt.Sprintf(`SELECT day,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
-			SELECT %s,
+			SELECT day,
 			%s time_on_page
 			FROM (
 				SELECT session_id,
-				%s,
+				toDate(time, '%s') day,
 				duration_seconds
 				%s
-				FROM page_view v `, groupByField, groupByField, analyzer.timeOnPageQuery(filter), groupBy, fieldsQuery))
+				FROM page_view v `, analyzer.timeOnPageQuery(filter), filter.Timezone.String(), fieldsQuery))
 
 	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
 		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
@@ -1050,9 +1084,21 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 			AND time_on_page > 0
 			%s
 		)
-		GROUP BY %s
-		ORDER BY %s
-		%s`, timeQuery, fieldQuery, groupByField, groupByField, withFillQuery))
+		GROUP BY day
+		ORDER BY day
+		%s`, timeQuery, fieldQuery, withFillQuery))
+
+	if filter.Period != PeriodDay {
+		switch filter.Period {
+		case PeriodWeek:
+			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
+		case PeriodMonth:
+			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
+		case PeriodYear:
+			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
+		}
+	}
+
 	var stats []TimeSpentStats
 
 	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
@@ -1335,20 +1381,6 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	}
 
 	return timeOnPage
-}
-
-func (analyzer *Analyzer) getPeriodField(filter *Filter) (string, string) {
-	var groupBy, groupByField string
-
-	if filter.Period == PeriodWeek {
-		groupBy, groupByField = fmt.Sprintf("toWeek(toDate(time, '%s'), 1) week", filter.Timezone.String()), "week"
-	} else if filter.Period == PeriodYear {
-		groupBy, groupByField = fmt.Sprintf("toYear(time, '%s') year", filter.Timezone.String()), "year"
-	} else {
-		groupBy, groupByField = fmt.Sprintf("toDate(time, '%s') day", filter.Timezone.String()), "day"
-	}
-
-	return groupBy, groupByField
 }
 
 func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr ...field) error {
