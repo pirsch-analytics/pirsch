@@ -475,7 +475,7 @@ func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 
 	if filterBots && filter.minIsBot > 0 {
 		args = append(args, filter.minIsBot)
-		sqlQuery.WriteString("AND is_bot < ? ")
+		sqlQuery.WriteString(" AND is_bot < ? ")
 	}
 
 	return args, sqlQuery.String()
@@ -648,7 +648,7 @@ func (filter *Filter) query(filterBots bool) ([]interface{}, string) {
 
 	if filterBots && filter.minIsBot > 0 {
 		args = append(args, filter.minIsBot)
-		query += "AND is_bot < ? "
+		query += " AND is_bot < ? "
 	}
 
 	return args, query

@@ -386,7 +386,7 @@ func TestFilter_QueryIsBot(t *testing.T) {
 	args, query := filter.query(true)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint8(5), args[2])
-	assert.Equal(t, "client_id = ? AND path = ? AND is_bot < ? ", query)
+	assert.Equal(t, "client_id = ? AND path = ?  AND is_bot < ? ", query)
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
@@ -476,5 +476,5 @@ func pastWeek(n int) int {
 
 func pastMonth(n int) time.Time {
 	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month()-time.Month(n), now.Day(), 0, 0, 0, 0, time.UTC)
+	return time.Date(now.Year(), now.Month()-time.Month(n), 1, 0, 0, 0, 0, time.UTC)
 }
