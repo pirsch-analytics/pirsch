@@ -89,7 +89,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
 			{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 9, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -105,7 +105,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		{VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
 		{VisitorID: 7, Time: pastDay(2), Path: "/"},
 		{VisitorID: 8, Time: pastDay(2), Path: "/"},
-		{VisitorID: 9, Time: Today(), Path: "/"},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
 	}))
 	analyzer := NewAnalyzer(dbClient, nil)
 	visitors, err := analyzer.TotalVisitors(&Filter{From: pastDay(4), To: Today()})
@@ -130,6 +130,13 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 1, visitors.Bounces)
 	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
 	visitors, err = analyzer.TotalVisitors(&Filter{From: pastDay(1), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+	visitors, err = analyzer.TotalVisitors(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: Today(), IncludeTime: true})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, visitors.Visitors)
 	assert.Equal(t, 1, visitors.Sessions)

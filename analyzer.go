@@ -72,7 +72,7 @@ func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
-	filter.From = time.Now().In(time.UTC).Add(-duration)
+	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
 	title := ""
 
@@ -229,7 +229,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	if filter.From.Equal(filter.To) {
 		if filter.To.Equal(Today()) {
 			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = time.Now().Add(-time.Hour * 24).In(time.UTC)
+			filter.To = time.Now().Add(-time.Hour * 24).UTC()
 			filter.IncludeTime = true
 		} else {
 			filter.From = filter.From.Add(-time.Hour * 24)
