@@ -129,6 +129,13 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 1, visitors.Views)
 	assert.Equal(t, 1, visitors.Bounces)
 	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+	visitors, err = analyzer.TotalVisitors(&Filter{From: pastDay(1), To: Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {

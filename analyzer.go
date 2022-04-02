@@ -72,7 +72,7 @@ func NewAnalyzer(store Store, config *AnalyzerConfig) *Analyzer {
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration) ([]ActiveVisitorStats, int, error) {
 	filter = analyzer.getFilter(filter)
-	filter.From = time.Now().In(filter.Timezone).Add(-duration)
+	filter.From = time.Now().In(time.UTC).Add(-duration)
 	filter.IncludeTime = true
 	title := ""
 
@@ -229,7 +229,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	if filter.From.Equal(filter.To) {
 		if filter.To.Equal(Today()) {
 			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = time.Now().Add(-time.Hour * 24).In(filter.Timezone)
+			filter.To = time.Now().Add(-time.Hour * 24).In(time.UTC)
 			filter.IncludeTime = true
 		} else {
 			filter.From = filter.From.Add(-time.Hour * 24)
@@ -966,7 +966,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 			sum(duration_seconds*sign) duration,
 			sum(sign) n,
 			toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
-			FROM session s `, filter.Timezone.String()))
+			FROM session s `, time.UTC.String()))
 
 	if filter.Path != "" || filter.PathPattern != "" {
 		args = append(args, innerFilterArgs...)
@@ -1056,7 +1056,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 				toDate(time, '%s') day,
 				duration_seconds
 				%s
-				FROM page_view v `, analyzer.timeOnPageQuery(filter), filter.Timezone.String(), fieldsQuery))
+				FROM page_view v `, analyzer.timeOnPageQuery(filter), time.UTC.String(), fieldsQuery))
 
 	if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
 		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
