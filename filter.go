@@ -57,7 +57,6 @@ type Filter struct {
 	To time.Time
 
 	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
-	// The Analyzer will ignore this and just always use the date without time, except where it makes sense.
 	IncludeTime bool
 
 	// Period sets the period to group results.

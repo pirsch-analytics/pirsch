@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.1
+
+* fixed including time in filter for live view
+
 ## 3.7.0
 
 * added `True-Client-IP` header to receive the real visitor IP (Cloudflare)

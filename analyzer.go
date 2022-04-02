@@ -1423,7 +1423,6 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 		filter = NewFilter(NullClient)
 	}
 
-	filter.IncludeTime = false
 	filter.validate()
 
 	if analyzer.minIsBot > 0 {
