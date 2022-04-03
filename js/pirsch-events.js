@@ -22,13 +22,17 @@
     }
 
     // exclude pages
-    const exclude = script.getAttribute("data-exclude");
-    const paths = exclude ? exclude.split(",") : [];
+    try {
+        const exclude = script.getAttribute("data-exclude");
+        const paths = exclude ? exclude.split(",") : [];
 
-    for(let i = 0; i < paths.length; i++) {
-        if(paths[i].test(location.pathname)) {
-            return;
+        for (let i = 0; i < paths.length; i++) {
+            if (new RegExp(paths[i]).test(location.pathname)) {
+                return;
+            }
         }
+    } catch(e) {
+        console.error(e);
     }
 
     // register event function
