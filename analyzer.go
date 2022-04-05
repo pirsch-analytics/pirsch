@@ -229,7 +229,7 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	if filter.From.Equal(filter.To) {
 		if filter.To.Equal(Today()) {
 			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = time.Now().Add(-time.Hour * 24).UTC()
+			filter.To = time.Now().UTC().Add(-time.Hour * 24)
 			filter.IncludeTime = true
 		} else {
 			filter.From = filter.From.Add(-time.Hour * 24)
@@ -237,8 +237,14 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		}
 	} else {
 		days := filter.To.Sub(filter.From)
-		filter.To = filter.From.Add(-time.Hour * 24)
-		filter.From = filter.To.Add(-days)
+
+		if days >= time.Hour*24 {
+			filter.To = filter.From.Add(-time.Hour * 24)
+			filter.From = filter.To.Add(-days)
+		} else {
+			filter.From = filter.From.Add(-time.Hour * 24)
+			filter.To = filter.To.Add(-time.Hour * 24)
+		}
 	}
 
 	args, query = filter.buildQuery(fields, nil, nil)

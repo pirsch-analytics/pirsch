@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.2
+
+* fixed calculating growth when including time in filter
+
 ## 3.7.1
 
 * fixed including time in filter for live view

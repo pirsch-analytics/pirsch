@@ -320,48 +320,48 @@ func TestAnalyzer_VisitorsAvgSessionDurationAvgTimeOnPagePeriod(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{Sign: 1, VisitorID: 1, Time: pastDay(391), PageViews: 1, DurationSeconds: 42},
-		{Sign: 1, VisitorID: 2, Time: pastDay(27), PageViews: 1, DurationSeconds: 12},
-		{Sign: 1, VisitorID: 3, Time: pastDay(12), PageViews: 1, DurationSeconds: 29},
-		{Sign: 1, VisitorID: 4, Time: pastDay(5), PageViews: 1, DurationSeconds: 34},
+		{Sign: 1, VisitorID: 2, Time: pastDay(14), PageViews: 1, DurationSeconds: 12},
+		{Sign: 1, VisitorID: 3, Time: pastDay(7), PageViews: 1, DurationSeconds: 29},
+		{Sign: 1, VisitorID: 4, Time: Today(), PageViews: 1, DurationSeconds: 34},
 	}))
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(391), Path: "/", DurationSeconds: 5},
-		{VisitorID: 2, Time: pastDay(27), Path: "/", DurationSeconds: 8},
-		{VisitorID: 3, Time: pastDay(12), Path: "/", DurationSeconds: 7},
-		{VisitorID: 4, Time: pastDay(5), Path: "/", DurationSeconds: 3},
+		{VisitorID: 2, Time: pastDay(14), Path: "/", DurationSeconds: 8},
+		{VisitorID: 3, Time: pastDay(7), Path: "/", DurationSeconds: 7},
+		{VisitorID: 4, Time: Today(), Path: "/", DurationSeconds: 3},
 	}))
 	analyzer := NewAnalyzer(dbClient, nil)
-	visitors, err := analyzer.Visitors(&Filter{From: pastDay(27), To: Today(), Period: PeriodWeek})
+	visitors, err := analyzer.Visitors(&Filter{From: pastDay(21), To: Today(), Period: PeriodWeek})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 4)
 	assert.Equal(t, pastWeek(4), getWeek(visitors[0].Week.Time))
 	assert.Equal(t, pastWeek(3), getWeek(visitors[1].Week.Time))
 	assert.Equal(t, pastWeek(2), getWeek(visitors[2].Week.Time))
 	assert.Equal(t, pastWeek(1), getWeek(visitors[3].Week.Time))
-	assert.Equal(t, 1, visitors[0].Visitors)
-	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
 	assert.Equal(t, 1, visitors[3].Visitors)
-	asd, err := analyzer.AvgSessionDuration(&Filter{From: pastDay(27), To: Today(), Period: PeriodWeek})
+	asd, err := analyzer.AvgSessionDuration(&Filter{From: pastDay(21), To: Today(), Period: PeriodWeek})
 	assert.NoError(t, err)
 	assert.Len(t, asd, 4)
 	assert.Equal(t, pastWeek(4), getWeek(asd[0].Week.Time))
 	assert.Equal(t, pastWeek(3), getWeek(asd[1].Week.Time))
 	assert.Equal(t, pastWeek(2), getWeek(asd[2].Week.Time))
 	assert.Equal(t, pastWeek(1), getWeek(asd[3].Week.Time))
-	assert.Equal(t, 2, asd[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, asd[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, asd[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 2, asd[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 4, asd[2].AverageTimeSpentSeconds)
-	assert.Equal(t, 5, asd[3].AverageTimeSpentSeconds)
-	atop, err := analyzer.AvgTimeOnPage(&Filter{From: pastDay(27), To: Today(), Period: PeriodWeek})
+	assert.Equal(t, 11, asd[3].AverageTimeSpentSeconds)
+	atop, err := analyzer.AvgTimeOnPage(&Filter{From: pastDay(21), To: Today(), Period: PeriodWeek})
 	assert.NoError(t, err)
 	assert.Len(t, atop, 4)
 	assert.Equal(t, pastWeek(4), getWeek(atop[0].Week.Time))
 	assert.Equal(t, pastWeek(3), getWeek(atop[1].Week.Time))
 	assert.Equal(t, pastWeek(2), getWeek(atop[2].Week.Time))
 	assert.Equal(t, pastWeek(1), getWeek(atop[3].Week.Time))
-	assert.Equal(t, 1, atop[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, atop[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, atop[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 1, atop[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, atop[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, atop[3].AverageTimeSpentSeconds)
 	visitors, err = analyzer.Visitors(&Filter{From: pastDay(85), To: Today(), Period: PeriodMonth})
@@ -373,8 +373,8 @@ func TestAnalyzer_VisitorsAvgSessionDurationAvgTimeOnPagePeriod(t *testing.T) {
 	assert.Equal(t, pastMonth(0), visitors[3].Month.Time)
 	assert.Equal(t, 0, visitors[0].Visitors)
 	assert.Equal(t, 0, visitors[1].Visitors)
-	assert.Equal(t, 3, visitors[2].Visitors)
-	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
 	asd, err = analyzer.AvgSessionDuration(&Filter{From: pastDay(85), To: Today(), Period: PeriodMonth})
 	assert.NoError(t, err)
 	assert.Len(t, asd, 4)
@@ -384,8 +384,8 @@ func TestAnalyzer_VisitorsAvgSessionDurationAvgTimeOnPagePeriod(t *testing.T) {
 	assert.Equal(t, pastMonth(0), asd[3].Month.Time)
 	assert.Equal(t, 0, asd[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, asd[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 2, asd[2].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, asd[3].AverageTimeSpentSeconds)
+	assert.Equal(t, 1, asd[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 7, asd[3].AverageTimeSpentSeconds)
 	atop, err = analyzer.AvgTimeOnPage(&Filter{From: pastDay(85), To: Today(), Period: PeriodMonth})
 	assert.NoError(t, err)
 	assert.Len(t, atop, 4)
@@ -497,6 +497,25 @@ func TestAnalyzer_GrowthDay(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 2, growth.VisitorsGrowth, 0.001)
+}
+
+func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
+	cleanupDB()
+	assert.NoError(t, dbClient.SaveSessions([]Session{
+		{Sign: 1, VisitorID: 1, Time: pastDay(1)},
+		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 4)},
+		{Sign: 1, VisitorID: 3, Time: Today()},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	growth, err := analyzer.Growth(&Filter{From: Today(), To: Today().Add(time.Hour * 4), IncludeTime: true})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, -0.5, growth.VisitorsGrowth, 0.01)
+	growth, err = analyzer.Growth(&Filter{From: Today(), To: Today().Add(time.Hour * 2), IncludeTime: true})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.01)
 }
 
 func TestAnalyzer_GrowthNoData(t *testing.T) {
