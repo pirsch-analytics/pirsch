@@ -403,14 +403,14 @@ func (tracker *Tracker) savePageViews(pageViews []PageView) {
 }
 
 func (tracker *Tracker) flushSessions() {
-	sessions := make([]Session, 0, tracker.workerBufferSize*2)
+	sessions := make([]Session, 0, tracker.workerBufferSize)
 
 	for {
 		stop := false
 
 		select {
 		case session := <-tracker.sessions:
-			if len(sessions)+2 >= tracker.workerBufferSize*2 {
+			if len(sessions)+2 >= tracker.workerBufferSize {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
@@ -433,7 +433,7 @@ func (tracker *Tracker) flushSessions() {
 }
 
 func (tracker *Tracker) aggregateSessions(ctx context.Context) {
-	sessions := make([]Session, 0, tracker.workerBufferSize*2)
+	sessions := make([]Session, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -442,7 +442,7 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 
 		select {
 		case session := <-tracker.sessions:
-			if len(sessions)+2 >= tracker.workerBufferSize*2 {
+			if len(sessions)+2 >= tracker.workerBufferSize {
 				tracker.saveSessions(sessions)
 				sessions = sessions[:0]
 			}
