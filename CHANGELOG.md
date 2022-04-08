@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.7.3
+
+* added options to `Client`
+* added debug logging to `Client`
+* changed default `Tracker` timeout from 10 to 3 seconds before hits/events are saved
+* updated dependencies
+
 ## 3.7.2
 
 * fixed calculating growth when including time in filter

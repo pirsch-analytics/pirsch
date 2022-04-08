@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -14,13 +13,11 @@ import (
 
 const (
 	defaultWorkerBufferSize = 100
-	defaultWorkerTimeout    = time.Second * 10
+	defaultWorkerTimeout    = time.Second * 3
 	maxWorkerTimeout        = time.Second * 60
 	defaultMinDelay         = 30
 	defaultIsBotThreshold   = 5
 )
-
-var logger = log.New(os.Stdout, "[pirsch] ", log.LstdFlags)
 
 // TrackerConfig is the optional configuration for the Tracker.
 type TrackerConfig struct {

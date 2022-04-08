@@ -13,7 +13,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	c, err := NewClient("tcp://127.0.0.1:9000?database=pirschtest", nil)
+	c, err := NewClient("tcp://127.0.0.1:9000?database=pirschtest", &ClientConfig{
+		Debug: true,
+	})
 
 	if err != nil {
 		panic(err)

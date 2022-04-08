@@ -7,19 +7,40 @@ import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
 	"log"
-	"os"
 	"time"
 )
+
+// ClientConfig is the optional configuration for the Client.
+type ClientConfig struct {
+	// Logger is the log.Logger used for logging.
+	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
+	Logger *log.Logger
+
+	// Debug will enable verbose logging.
+	Debug bool
+}
+
+func (config *ClientConfig) validate() {
+	if config.Logger == nil {
+		config.Logger = logger
+	}
+}
 
 // Client is a ClickHouse database client.
 type Client struct {
 	sqlx.DB
 	logger *log.Logger
+	debug  bool
 }
 
 // NewClient returns a new client for given database connection string.
-// The logger is optional.
-func NewClient(connection string, logger *log.Logger) (*Client, error) {
+// Pass nil for the config to use the defaults.
+func NewClient(connection string, config *ClientConfig) (*Client, error) {
+	if config == nil {
+		config = new(ClientConfig)
+	}
+
+	config.validate()
 	c, err := sqlx.Open("clickhouse", connection)
 
 	if err != nil {
@@ -30,13 +51,10 @@ func NewClient(connection string, logger *log.Logger) (*Client, error) {
 		return nil, err
 	}
 
-	if logger == nil {
-		logger = log.New(os.Stdout, "[pirsch] ", log.LstdFlags)
-	}
-
 	return &Client{
 		*c,
-		logger,
+		config.Logger,
+		config.Debug,
 	}, nil
 }
 
@@ -88,7 +106,7 @@ func (client *Client) SavePageViews(pageViews []PageView) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save sessions: %s", err)
+				client.logger.Printf("error rolling back transaction to save page views: %s", err)
 			}
 
 			return err
@@ -97,6 +115,10 @@ func (client *Client) SavePageViews(pageViews []PageView) error {
 
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+
+	if client.debug {
+		client.logger.Printf("saved %d page views", len(pageViews))
 	}
 
 	return nil
@@ -169,6 +191,10 @@ func (client *Client) SaveSessions(sessions []Session) error {
 		return err
 	}
 
+	if client.debug {
+		client.logger.Printf("saved %d sessions", len(sessions))
+	}
+
 	return nil
 }
 
@@ -234,6 +260,10 @@ func (client *Client) SaveEvents(events []Event) error {
 		return err
 	}
 
+	if client.debug {
+		client.logger.Printf("saved %d events", len(events))
+	}
+
 	return nil
 }
 
@@ -265,6 +295,10 @@ func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
 
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+
+	if client.debug {
+		client.logger.Printf("saved %d user agents", len(userAgents))
 	}
 
 	return nil
