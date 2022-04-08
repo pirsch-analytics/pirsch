@@ -111,6 +111,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 	fingerprint := Fingerprint(r, salt+options.Salt)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
+	defer m.Unlock()
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
@@ -136,7 +137,6 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
-	m.Unlock()
 	return &PageView{
 		ClientID:        sessionState.State.ClientID,
 		VisitorID:       sessionState.State.VisitorID,

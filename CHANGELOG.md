@@ -3,6 +3,7 @@
 ## 3.7.4
 
 * changed default min delay for bot detection to 200ms
+* fixed releasing session lock when request is cancelled because it's a bot
 
 ## 3.7.3
 
