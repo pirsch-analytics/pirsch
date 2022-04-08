@@ -15,7 +15,7 @@ const (
 	defaultWorkerBufferSize = 100
 	defaultWorkerTimeout    = time.Second * 3
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelay         = 30
+	defaultMinDelayMS       = 200
 	defaultIsBotThreshold   = 5
 )
 
@@ -96,7 +96,7 @@ func (config *TrackerConfig) validate() {
 		config.IsBotThreshold = 0
 	} else {
 		if config.MinDelay <= 0 {
-			config.MinDelay = defaultMinDelay
+			config.MinDelay = defaultMinDelayMS
 		}
 
 		if config.IsBotThreshold == 0 {
