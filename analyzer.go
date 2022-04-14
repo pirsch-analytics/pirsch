@@ -227,8 +227,14 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 	// get previous statistics
 	if filter.From.Equal(filter.To) {
-		filter.From = filter.From.Add(-time.Hour * 24 * 7)
-		filter.To = filter.To.Add(-time.Hour * 24 * 7)
+		if filter.To.Equal(Today()) {
+			filter.From = filter.From.Add(-time.Hour * 24 * 7)
+			filter.To = time.Now().UTC().Add(-time.Hour * 24 * 7)
+			filter.IncludeTime = true
+		} else {
+			filter.From = filter.From.Add(-time.Hour * 24 * 7)
+			filter.To = filter.To.Add(-time.Hour * 24 * 7)
+		}
 	} else {
 		days := filter.To.Sub(filter.From)
 

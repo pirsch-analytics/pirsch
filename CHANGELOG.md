@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.6
+
+* fixed calculating growth for today not including time
+
 ## 3.7.5
 
 * the growth for a single day is now compared to the same day of the previous week
