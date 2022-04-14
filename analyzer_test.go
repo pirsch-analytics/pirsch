@@ -426,23 +426,25 @@ func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(9).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: pastDay(9), ExitPath: "/", PageViews: 5, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(3), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
 			{Sign: 1, VisitorID: 6, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 8, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 9, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 10, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 11, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 11, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 12, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 13, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -453,11 +455,11 @@ func TestAnalyzer_Growth(t *testing.T) {
 	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
-	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
-	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, -0.2, growth.BouncesGrowth, 0.001)
-	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0.3333, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, -0.5, growth.TimeSpentGrowth, 0.001)
 	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -470,34 +472,6 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Growth(getMaxFilter("event"))
 	assert.NoError(t, err)
-}
-
-func TestAnalyzer_GrowthDay(t *testing.T) {
-	cleanupDB()
-	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 5)},
-		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 3)},
-		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 9)},
-		{Sign: 1, VisitorID: 5, Time: Today().Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 9)},
-		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 12)},
-		{Sign: 1, VisitorID: 8, Time: Today().Add(time.Hour * 17)},
-		{Sign: 1, VisitorID: 9, Time: Today().Add(time.Hour * 21)},
-	}))
-	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
-
-	// Testing for today is hard because it would require messing with the time.Now function.
-	// I don't want to do that, so let's assume it works (tested in debug mode) and just get no error for today.
-	growth, err := analyzer.Growth(&Filter{From: Today(), To: Today()})
-	assert.NoError(t, err)
-	assert.NotNil(t, growth)
-
-	growth, err = analyzer.Growth(&Filter{From: pastDay(1), To: pastDay(1)})
-	assert.NoError(t, err)
-	assert.NotNil(t, growth)
-	assert.InDelta(t, 2, growth.VisitorsGrowth, 0.001)
 }
 
 func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
@@ -540,6 +514,15 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
+			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 12, Time: pastDay(9).Add(time.Second * 5), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 13, SessionID: 3, Time: pastDay(9).Add(time.Second * 6), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 13, SessionID: 31, Time: pastDay(9).Add(time.Minute * 10), EntryPath: "/bar", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 14, Time: pastDay(9).Add(time.Second * 7), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 15, Time: pastDay(9).Add(time.Second * 8), EntryPath: "/", ExitPath: "/"},
+
 			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
 		},
 		{
@@ -566,6 +549,14 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
+		{Name: "event1", VisitorID: 13, Time: pastDay(9).Add(time.Second * 4), SessionID: 3, Path: "/"},
+		{Name: "event1", DurationSeconds: 300, VisitorID: 14, Time: pastDay(9).Add(time.Minute * 5), SessionID: 3, Path: "/foo"},
+		{Name: "event1", VisitorID: 14, Time: pastDay(9).Add(time.Second * 5), Path: "/"},
+		{Name: "event1", VisitorID: 15, Time: pastDay(9).Add(time.Second * 6), SessionID: 3, Path: "/"},
+		{Name: "event1", VisitorID: 15, Time: pastDay(9).Add(time.Minute * 10), SessionID: 31, Path: "/bar"},
+		{Name: "event1", VisitorID: 16, Time: pastDay(9).Add(time.Second * 7), Path: "/"},
+		{Name: "event1", VisitorID: 17, Time: pastDay(9).Add(time.Second * 8), Path: "/"},
+
 		{Name: "event1", VisitorID: 1, Time: pastDay(4).Add(time.Second), SessionID: 4, Path: "/"},
 		{Name: "event1", DurationSeconds: 300, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/foo"},
 		{Name: "event1", DurationSeconds: 600, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/bar"},
@@ -592,10 +583,10 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2), EventName: "event1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
-	assert.InDelta(t, -0.25, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, -0.4285, growth.ViewsGrowth, 0.001)
-	assert.InDelta(t, -0.5, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.TimeSpentGrowth, 0.001)
 	analyzer = NewAnalyzer(dbClient, &AnalyzerConfig{
 		DisableBotFilter: true,
 	})

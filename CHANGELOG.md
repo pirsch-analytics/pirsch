@@ -2,6 +2,7 @@
 
 ## 3.7.5
 
+* the growth for a single day is now compared to the same day of the previous week
 * fixed building entry/exit page queries when filtering for path and grouping by page titles
 * updated dependencies
 
