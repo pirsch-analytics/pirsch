@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.5
+
+* fixed building entry/exit page queries when filtering for path and grouping by page titles
+
 ## 3.7.4
 
 * changed default min delay for bot detection to 200ms

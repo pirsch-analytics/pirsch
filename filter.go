@@ -348,8 +348,8 @@ func (filter *Filter) joinSessions(table string, fields []field) ([]interface{},
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
 	filterArgs, filterQuery := filter.query(true)
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
-	sessionFields := make([]string, 0, 4)
-	groupBy := make([]string, 0, 2)
+	sessionFields := make([]string, 0, 6)
+	groupBy := make([]string, 0, 4)
 
 	if filter.fieldsContain(fields, fieldEntryPath.name) {
 		sessionFields = append(sessionFields, fieldEntryPath.name)
@@ -359,6 +359,16 @@ func (filter *Filter) joinSessions(table string, fields []field) ([]interface{},
 	if filter.fieldsContain(fields, fieldExitPath.name) {
 		sessionFields = append(sessionFields, fieldExitPath.name)
 		groupBy = append(groupBy, fieldExitPath.name)
+	}
+
+	if filter.fieldsContainByQuerySession(fields, fieldEntryTitle.querySessions) {
+		sessionFields = append(sessionFields, fieldEntryTitle.querySessions)
+		groupBy = append(groupBy, fieldEntryTitle.querySessions)
+	}
+
+	if filter.fieldsContainByQuerySession(fields, fieldExitTitle.querySessions) {
+		sessionFields = append(sessionFields, fieldExitTitle.querySessions)
+		groupBy = append(groupBy, fieldExitTitle.querySessions)
 	}
 
 	if filter.fieldsContain(fields, fieldBounces.name) {
@@ -611,6 +621,16 @@ func (filter *Filter) appendField(fields *[]string, field, value string) {
 func (filter *Filter) fieldsContain(haystack []field, needle string) bool {
 	for i := range haystack {
 		if haystack[i].name == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (filter *Filter) fieldsContainByQuerySession(haystack []field, needle string) bool {
+	for i := range haystack {
+		if haystack[i].querySessions == needle {
 			return true
 		}
 	}
