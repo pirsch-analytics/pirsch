@@ -14,7 +14,7 @@ require (
 	github.com/lib/pq v1.10.5
 	github.com/oschwald/maxminddb-golang v1.9.0
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3
+	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 )
 
 require (
@@ -28,6 +28,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

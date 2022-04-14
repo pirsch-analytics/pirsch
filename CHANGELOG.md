@@ -3,6 +3,7 @@
 ## 3.7.5
 
 * fixed building entry/exit page queries when filtering for path and grouping by page titles
+* updated dependencies
 
 ## 3.7.4
 
