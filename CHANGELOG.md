@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.7.7
+
+* upgraded to Go version 1.18
+* updated referrer mapping
+* updated dependencies
+
 ## 3.7.6
 
 * fixed calculating growth for today not including time

@@ -22,13 +22,13 @@ type Store interface {
 	Session(uint64, uint64, time.Time) (*Session, error)
 
 	// Count returns the number of results for given query.
-	Count(string, ...interface{}) (int, error)
+	Count(string, ...any) (int, error)
 
 	// Get returns a single result for given query.
 	// The result must be a pointer.
-	Get(interface{}, string, ...interface{}) error
+	Get(any, string, ...any) error
 
 	// Select returns the results for given query.
 	// The results must be a pointer to a slice.
-	Select(interface{}, string, ...interface{}) error
+	Select(any, string, ...any) error
 }

@@ -238,12 +238,12 @@ func IgnoreHit(r *http.Request) bool {
 func HitOptionsFromRequest(r *http.Request) *HitOptions {
 	query := r.URL.Query()
 	return &HitOptions{
-		ClientID:     getUInt64QueryParam(query.Get("client_id")),
+		ClientID:     getIntQueryParam[uint64](query.Get("client_id")),
 		URL:          getURLQueryParam(query.Get("url")),
 		Title:        strings.TrimSpace(query.Get("t")),
 		Referrer:     getURLQueryParam(query.Get("ref")),
-		ScreenWidth:  getUInt16QueryParam(query.Get("w")),
-		ScreenHeight: getUInt16QueryParam(query.Get("h")),
+		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
+		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
 	}
 }
 
@@ -420,14 +420,9 @@ func shortenString(str string, n int) string {
 	return str
 }
 
-func getUInt16QueryParam(param string) uint16 {
-	i, _ := strconv.ParseUint(param, 10, 16)
-	return uint16(i)
-}
-
-func getUInt64QueryParam(param string) uint64 {
+func getIntQueryParam[T uint16 | uint64](param string) T {
 	i, _ := strconv.ParseUint(param, 10, 64)
-	return i
+	return T(i)
 }
 
 func getURLQueryParam(param string) string {

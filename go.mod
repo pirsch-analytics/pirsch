@@ -1,6 +1,6 @@
 module github.com/pirsch-analytics/pirsch/v3
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
@@ -10,11 +10,11 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.1
-	github.com/jmoiron/sqlx v1.3.4
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.5
 	github.com/oschwald/maxminddb-golang v1.9.0
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
+	golang.org/x/net v0.0.0-20220420153159-1850ba15e1be
 )
 
 require (

@@ -320,7 +320,7 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 }
 
 // Count implements the Store interface.
-func (client *Client) Count(query string, args ...interface{}) (int, error) {
+func (client *Client) Count(query string, args ...any) (int, error) {
 	count := 0
 
 	if err := client.DB.Get(&count, query, args...); err != nil {
@@ -332,7 +332,7 @@ func (client *Client) Count(query string, args ...interface{}) (int, error) {
 }
 
 // Get implements the Store interface.
-func (client *Client) Get(result interface{}, query string, args ...interface{}) error {
+func (client *Client) Get(result any, query string, args ...any) error {
 	// don't return an error if nothing was found
 	if err := client.DB.Get(result, query, args...); err != nil && err != sql.ErrNoRows {
 		client.logger.Printf("error getting result: %s", err)
@@ -343,7 +343,7 @@ func (client *Client) Get(result interface{}, query string, args ...interface{})
 }
 
 // Select implements the Store interface.
-func (client *Client) Select(results interface{}, query string, args ...interface{}) error {
+func (client *Client) Select(results any, query string, args ...any) error {
 	if err := client.DB.Select(results, query, args...); err != nil {
 		client.logger.Printf("error selecting results: %s", err)
 		return err

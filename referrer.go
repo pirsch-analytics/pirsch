@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/html"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 )
@@ -136,7 +137,8 @@ func isIP(referrer string) bool {
 		}
 	}
 
-	return net.ParseIP(referrer) != nil
+	_, err := netip.ParseAddr(referrer)
+	return err == nil
 }
 
 func stripSubdomain(hostname string) string {

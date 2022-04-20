@@ -67,16 +67,16 @@ func (client *ClientMock) Session(uint64, uint64, time.Time) (*Session, error) {
 }
 
 // Count implements the Store interface.
-func (client *ClientMock) Count(string, ...interface{}) (int, error) {
+func (client *ClientMock) Count(string, ...any) (int, error) {
 	return 0, nil
 }
 
 // Get implements the Store interface.
-func (client *ClientMock) Get(interface{}, string, ...interface{}) error {
+func (client *ClientMock) Get(any, string, ...any) error {
 	return nil
 }
 
 // Select implements the Store interface.
-func (client *ClientMock) Select(interface{}, string, ...interface{}) error {
+func (client *ClientMock) Select(any, string, ...any) error {
 	return nil
 }

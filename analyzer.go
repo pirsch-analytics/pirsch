@@ -82,7 +82,7 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 	filterArgs, filterQuery := filter.query(false)
 	innerFilterArgs, innerFilterQuery := filter.queryTime(true)
-	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
+	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path %s,
 		uniq(visitor_id) visitors
@@ -675,7 +675,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 	filter = analyzer.getFilter(filter)
 	table := filter.table()
-	var args []interface{}
+	var args []any
 	query := ""
 
 	if table == "session" {
@@ -707,7 +707,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		args = append(args, filterArgs...)
 		query += fmt.Sprintf(`WHERE %s HAVING sum(sign) > 0`, filterQuery)
 	} else {
-		var innerArgs []interface{}
+		var innerArgs []any
 		innerQuery := ""
 
 		if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
@@ -726,7 +726,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		}
 
 		filterArgs, filterQuery := filter.query(false)
-		args = make([]interface{}, 0, len(filterArgs)*3+len(innerArgs)*3)
+		args = make([]any, 0, len(filterArgs)*3+len(innerArgs)*3)
 		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
 		args = append(args, innerArgs...)
@@ -952,7 +952,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	filterArgs, filterQuery := filter.query(true)
 	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
 	withFillArgs, withFillQuery := filter.withFill()
-	args := make([]interface{}, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
+	args := make([]any, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
 	var query strings.Builder
 
 	if filter.Period != PeriodDay {
@@ -1038,7 +1038,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	}
 
 	withFillArgs, withFillQuery := filter.withFill()
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
+	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
 	var query strings.Builder
 
 	if filter.Period != PeriodDay {
@@ -1174,7 +1174,7 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 	filterArgs, filterQuery := filter.query(true)
 	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
-	args := make([]interface{}, 0, len(innerFilterArgs)+len(filterArgs))
+	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
 	query.WriteString(`SELECT sum(duration_seconds)
 		FROM (
@@ -1252,7 +1252,7 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
+	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
@@ -1323,7 +1323,7 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	args := make([]interface{}, 0, len(timeArgs)*2+len(fieldArgs))
+	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
@@ -1389,7 +1389,7 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(results interface{}, filter *Filter, attr ...field) error {
+func (analyzer *Analyzer) selectByAttribute(results any, filter *Filter, attr ...field) error {
 	fields := make([]field, 0, len(attr)+2)
 	fields = append(fields, attr...)
 	fields = append(fields, fieldVisitors, fieldRelativeVisitors)

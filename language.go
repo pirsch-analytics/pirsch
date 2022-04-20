@@ -10,10 +10,10 @@ func getLanguage(r *http.Request) string {
 	lang := r.Header.Get("Accept-Language")
 
 	if lang != "" {
-		langs := strings.Split(lang, ";")
-		parts := strings.Split(langs[0], ",")
-		parts = strings.Split(parts[0], "-")
-		code := strings.ToLower(strings.TrimSpace(parts[0]))
+		left, _, _ := strings.Cut(lang, ";")
+		left, _, _ = strings.Cut(left, ",")
+		left, _, _ = strings.Cut(left, "-")
+		code := strings.ToLower(strings.TrimSpace(left))
 
 		if iso6391.ValidCode(code) {
 			return code

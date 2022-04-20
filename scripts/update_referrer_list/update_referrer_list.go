@@ -17,7 +17,7 @@ type domain struct {
 
 type database map[string]map[string]domain
 
-// run this script from the parent directory to generate the referrer_list.go
+// run this script from the root directory to generate the referrer_list.go
 func main() {
 	log.Println("Downloading database")
 	resp, err := http.Get("https://s3-eu-west-1.amazonaws.com/snowplow-hosted-assets/third-party/referer-parser/referers-latest.json")

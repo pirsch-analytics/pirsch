@@ -214,9 +214,9 @@ func (filter *Filter) validate() {
 	}
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]interface{}, string) {
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, string) {
 	table := filter.table()
-	args := make([]interface{}, 0)
+	args := make([]any, 0)
 	var query strings.Builder
 
 	if filter.Period != PeriodDay && filter.fieldsContain(fields, fieldDay.name) {
@@ -302,7 +302,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]interface{
 	return args, query.String()
 }
 
-func (filter *Filter) joinPageViewFields(args *[]interface{}, fields []field) string {
+func (filter *Filter) joinPageViewFields(args *[]any, fields []field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -324,7 +324,7 @@ func (filter *Filter) joinPageViewFields(args *[]interface{}, fields []field) st
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinSessionFields(args *[]interface{}, fields []field) string {
+func (filter *Filter) joinSessionFields(args *[]any, fields []field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -343,7 +343,7 @@ func (filter *Filter) joinSessionFields(args *[]interface{}, fields []field) str
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinSessions(table string, fields []field) ([]interface{}, string) {
+func (filter *Filter) joinSessions(table string, fields []field) ([]any, string) {
 	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
 	filterArgs, filterQuery := filter.query(true)
@@ -423,7 +423,7 @@ func (filter *Filter) joinGroupBy(fields []field) string {
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinOrderBy(args *[]interface{}, fields []field) string {
+func (filter *Filter) joinOrderBy(args *[]any, fields []field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -450,8 +450,8 @@ func (filter *Filter) table() string {
 	return "session"
 }
 
-func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
-	args := make([]interface{}, 0, 5)
+func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
+	args := make([]any, 0, 5)
 	args = append(args, filter.ClientID)
 	var sqlQuery strings.Builder
 	sqlQuery.WriteString("client_id = ? ")
@@ -490,9 +490,9 @@ func (filter *Filter) queryTime(filterBots bool) ([]interface{}, string) {
 	return args, sqlQuery.String()
 }
 
-func (filter *Filter) queryFields() ([]interface{}, string) {
+func (filter *Filter) queryFields() ([]any, string) {
 	n := 25 + len(filter.EventMeta) // maximum number of fields + one for bot filter + meta data fields
-	args := make([]interface{}, 0, n)
+	args := make([]any, 0, n)
 	queryFields := make([]string, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
@@ -546,7 +546,7 @@ func (filter *Filter) queryPlatform(queryFields *[]string) {
 	}
 }
 
-func (filter Filter) queryPathPattern(queryFields *[]string, args *[]interface{}) {
+func (filter Filter) queryPathPattern(queryFields *[]string, args *[]any) {
 	if filter.PathPattern != "" {
 		if strings.HasPrefix(filter.PathPattern, "!") {
 			*args = append(*args, filter.PathPattern[1:])
@@ -638,11 +638,11 @@ func (filter *Filter) fieldsContainByQuerySession(haystack []field, needle strin
 	return false
 }
 
-func (filter *Filter) withFill() ([]interface{}, string) {
+func (filter *Filter) withFill() ([]any, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
 		tz := filter.Timezone.String()
 		query := fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 ", tz, tz)
-		return []interface{}{filter.From, filter.To}, query
+		return []any{filter.From, filter.To}, query
 	}
 
 	return nil, ""
@@ -656,7 +656,7 @@ func (filter *Filter) withLimit() string {
 	return ""
 }
 
-func (filter *Filter) query(filterBots bool) ([]interface{}, string) {
+func (filter *Filter) query(filterBots bool) ([]any, string) {
 	args, query := filter.queryTime(false)
 	fieldArgs, queryFields := filter.queryFields()
 	args = append(args, fieldArgs...)
@@ -673,7 +673,7 @@ func (filter *Filter) query(filterBots bool) ([]interface{}, string) {
 	return args, query
 }
 
-func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, field, value string) {
+func (filter *Filter) appendQuery(queryFields *[]string, args *[]any, field, value string) {
 	if value != "" {
 		comparator := "%s = ? "
 		not := strings.HasPrefix(value, "!")
@@ -695,7 +695,7 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]interface{}, fi
 	}
 }
 
-func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface{}, field, value string) {
+func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]any, field, value string) {
 	if value != "" {
 		comparator := "%s = ? "
 
@@ -719,7 +719,7 @@ func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]interface
 	}
 }
 
-func (filter *Filter) appendQueryMeta(queryFields *[]string, args *[]interface{}, kv map[string]string) {
+func (filter *Filter) appendQueryMeta(queryFields *[]string, args *[]any, kv map[string]string) {
 	for k, v := range kv {
 		comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
 

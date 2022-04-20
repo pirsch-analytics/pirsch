@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// run this script from the parent directory to update the user_agent_blacklist.go
+// run this script from the root directory to update the user_agent_blacklist.go
 func main() {
 	log.Println("Updating User-Agent blacklist")
 	list, err := os.Open("user_agent_blacklist.txt")

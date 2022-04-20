@@ -237,7 +237,7 @@ type EventListStats struct {
 	Count    int               `json:"count"`
 
 	// TODO optimize once maps are supported in the driver (v2)
-	Metadata [][]interface{} `db:"meta" json:"-"`
+	Metadata [][]any `db:"meta" json:"-"`
 }
 
 // ReferrerStats is the result type for referrer statistics.

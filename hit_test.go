@@ -555,7 +555,7 @@ func TestShortenString(t *testing.T) {
 	}
 }
 
-func TestGetUInt16QueryParam(t *testing.T) {
+func TestGetIntQueryParam(t *testing.T) {
 	input := []string{
 		"",
 		"   ",
@@ -563,7 +563,14 @@ func TestGetUInt16QueryParam(t *testing.T) {
 		"32asdf",
 		"42",
 	}
-	expected := []uint16{
+	expectedUInt64 := []uint64{
+		0,
+		0,
+		0,
+		0,
+		42,
+	}
+	expectedUInt16 := []uint16{
 		0,
 		0,
 		0,
@@ -572,31 +579,14 @@ func TestGetUInt16QueryParam(t *testing.T) {
 	}
 
 	for i, in := range input {
-		if out := getUInt16QueryParam(in); out != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
+		if out := getIntQueryParam[uint64](in); out != expectedUInt64[i] {
+			t.Fatalf("Expected '%v', but was: %v", expectedUInt64[i], out)
 		}
 	}
-}
-
-func TestGetUInt64QueryParam(t *testing.T) {
-	input := []string{
-		"",
-		"   ",
-		"asdf",
-		"32asdf",
-		"42",
-	}
-	expected := []uint64{
-		0,
-		0,
-		0,
-		0,
-		42,
-	}
 
 	for i, in := range input {
-		if out := getUInt64QueryParam(in); out != expected[i] {
-			t.Fatalf("Expected '%v', but was: %v", expected[i], out)
+		if out := getIntQueryParam[uint16](in); out != expectedUInt16[i] {
+			t.Fatalf("Expected '%v', but was: %v", expectedUInt64[i], out)
 		}
 	}
 }

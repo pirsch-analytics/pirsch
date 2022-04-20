@@ -55,19 +55,14 @@ func getIP(r *http.Request) string {
 }
 
 func parseForwardedHeader(value string) string {
-	parts := strings.Split(value, ",")
-	parts = strings.Split(parts[0], ";")
+	left, _, _ := strings.Cut(value, ",")
+	parts := strings.Split(left, ";")
 
 	for _, part := range parts {
-		kv := strings.Split(part, "=")
+		k, v, found := strings.Cut(part, "=")
 
-		if len(kv) == 2 {
-			k := strings.ToLower(strings.TrimSpace(kv[0]))
-			v := strings.TrimSpace(kv[1])
-
-			if k == "for" {
-				return v
-			}
+		if found && k == "for" {
+			return v
 		}
 	}
 
@@ -75,8 +70,8 @@ func parseForwardedHeader(value string) string {
 }
 
 func parseXForwardedForHeader(value string) string {
-	parts := strings.Split(value, ",")
-	return strings.TrimSpace(parts[0])
+	left, _, _ := strings.Cut(value, ",")
+	return strings.TrimSpace(left)
 }
 
 func parseXRealIPHeader(value string) string {
