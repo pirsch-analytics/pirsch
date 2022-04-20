@@ -1120,7 +1120,7 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 	}
 
 	filter = analyzer.getFilter(filter)
-	filter.Path, filter.EntryPath, filter.ExitPath = "", "", ""
+	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = "", "", "", ""
 	filterArgs, filterQuery := filter.query(analyzer.minIsBot > 0)
 	pathQuery := strings.Repeat("?,", len(paths))
 

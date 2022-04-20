@@ -2,6 +2,7 @@
 
 ## 3.7.7
 
+* fixed filtering entry/exit pages by path pattern
 * upgraded to Go version 1.18
 * updated referrer mapping
 * updated dependencies

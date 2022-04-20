@@ -2301,6 +2301,15 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, "/exit", exitPages[0].Path)
 	assert.Equal(t, 1, exitPages[0].Visitors)
 	assert.Equal(t, 1, exitPages[0].Exits)
+
+	// filter conversion goal
+	filter = &Filter{PathPattern: "(?i)^/bar$"}
+	_, err = analyzer.Pages(filter)
+	assert.NoError(t, err)
+	_, err = analyzer.EntryPages(filter)
+	assert.NoError(t, err)
+	_, err = analyzer.ExitPages(filter)
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
