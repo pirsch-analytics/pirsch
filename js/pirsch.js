@@ -42,12 +42,27 @@
     // register hit function
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch";
     const clientID = script.getAttribute("data-client-id") || 0;
+    const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
 
     function hit() {
+        sendHit();
+
+        for(let i = 0; i < domains.length; i++) {
+            sendHit(domains[i]);
+        }
+    }
+
+    function sendHit(hostname) {
+        if(!hostname) {
+            hostname = location.href;
+        } else {
+            hostname = location.href.replace(location.hostname, hostname);
+        }
+
         const url = endpoint+
             "?nc="+ new Date().getTime()+
             "&client_id="+clientID+
-            "&url="+encodeURIComponent(location.href.substring(0, 1800))+
+            "&url="+encodeURIComponent(hostname.substring(0, 1800))+
             "&t="+encodeURIComponent(document.title)+
             "&ref="+encodeURIComponent(document.referrer)+
             "&w="+screen.width+

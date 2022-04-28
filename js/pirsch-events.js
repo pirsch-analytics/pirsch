@@ -38,6 +38,7 @@
     // register event function
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch-event";
     const clientID = script.getAttribute("data-client-id");
+    const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
     window.pirsch = function(name, options) {
         if(typeof name !== "string" || !name) {
             return Promise.reject("The event name for Pirsch is invalid (must be a non-empty string)! Usage: pirsch('event name', {duration: 42, meta: {key: 'value'}})");
@@ -52,28 +53,42 @@
                 }
             }
 
-            const req = new XMLHttpRequest();
-            req.open("POST", endpoint);
-            req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-            req.onload = () => {
-                if(req.status >= 200 && req.status < 300) {
-                    resolve(req.response);
-                } else {
-                    reject(req.statusText);
-                }
-            };
-            req.onerror = () => reject(req.statusText);
-            req.send(JSON.stringify({
-                client_id: clientID,
-                url: location.href.substring(0, 1800),
-                title: document.title,
-                referrer: document.referrer,
-                screen_width: screen.width,
-                screen_height: screen.height,
-                event_name: name,
-                event_duration: options && options.duration && typeof options.duration === "number" ? options.duration : 0,
-                event_meta: meta
-            }));
+            sendEvent(null, name, options, meta, resolve, reject);
+
+            for(let i = 0; i < domains.length; i++) {
+                sendEvent(domains[i], name, options, meta, resolve, reject);
+            }
         });
+    }
+
+    function sendEvent(hostname, name, options, meta, resolve, reject) {
+        if(!hostname) {
+            hostname = location.href;
+        } else {
+            hostname = location.href.replace(location.hostname, hostname);
+        }
+
+        const req = new XMLHttpRequest();
+        req.open("POST", endpoint);
+        req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        req.onload = () => {
+            if(req.status >= 200 && req.status < 300) {
+                resolve(req.response);
+            } else {
+                reject(req.statusText);
+            }
+        };
+        req.onerror = () => reject(req.statusText);
+        req.send(JSON.stringify({
+            client_id: clientID,
+            url: hostname.substring(0, 1800),
+            title: document.title,
+            referrer: document.referrer,
+            screen_width: screen.width,
+            screen_height: screen.height,
+            event_name: name,
+            event_duration: options && options.duration && typeof options.duration === "number" ? options.duration : 0,
+            event_meta: meta
+        }));
     }
 })();

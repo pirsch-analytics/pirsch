@@ -3,6 +3,7 @@
 ## 3.7.8
 
 * replace `substr` with `substring` in scripts
+* added option to send data to multiple clients in scripts
 
 ## 3.7.7
 

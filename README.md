@@ -108,6 +108,7 @@ You can also track visitors on the client side by adding `pirsch.js`/`pirsch-eve
         data-endpoint="/count"
         data-client-id="42"
         data-exclude="/path/to/exclude,/regex/.*"
+        data-domain="foo.com,bar.com"
         data-dev
         data-param-optional-param="test"></script>
 ```
@@ -119,6 +120,7 @@ The parameters are configured through HTML attributes. All of them are optional,
 | data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
 | data-client-id | The client ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the client ID must be validated in the backend. | 0 (no client) |
 | data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. | (no paths) |
+| data-domain | Specifies a list of additional domains to send data to. | (empty list) |
 | data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
