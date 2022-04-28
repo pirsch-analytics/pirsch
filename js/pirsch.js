@@ -47,7 +47,7 @@
         const url = endpoint+
             "?nc="+ new Date().getTime()+
             "&client_id="+clientID+
-            "&url="+encodeURIComponent(location.href.substr(0, 1800))+
+            "&url="+encodeURIComponent(location.href.substring(0, 1800))+
             "&t="+encodeURIComponent(document.title)+
             "&ref="+encodeURIComponent(document.referrer)+
             "&w="+screen.width+

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.8
+
+* replace `substr` with `substring` in scripts
+
 ## 3.7.7
 
 * fixed filtering entry/exit pages by path pattern

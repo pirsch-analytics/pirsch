@@ -65,7 +65,7 @@
             req.onerror = () => reject(req.statusText);
             req.send(JSON.stringify({
                 client_id: clientID,
-                url: location.href.substr(0, 1800),
+                url: location.href.substring(0, 1800),
                 title: document.title,
                 referrer: document.referrer,
                 screen_width: screen.width,
