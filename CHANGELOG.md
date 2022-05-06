@@ -3,7 +3,7 @@
 ## 3.8.0
 
 * added `Search` to `Filter`
-* added `Sort` to `Filter` and exposed fields
+* added `Sort` to `Filter`
 * added `Offset` to `Filter`
 * updated referrer blacklist
 * updated referrer mapping
