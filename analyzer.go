@@ -144,12 +144,12 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 
 // TotalVisitors returns the total visitor count, session count, bounce rate, and views.
 func (analyzer *Analyzer) TotalVisitors(filter *Filter) (*TotalVisitorStats, error) {
-	args, query := analyzer.getFilter(filter).buildQuery([]field{
-		fieldVisitors,
-		fieldSessions,
-		fieldViews,
-		fieldBounces,
-		fieldBounceRate,
+	args, query := analyzer.getFilter(filter).buildQuery([]Field{
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
 	}, nil, nil)
 	stats := new(TotalVisitorStats)
 
@@ -163,18 +163,18 @@ func (analyzer *Analyzer) TotalVisitors(filter *Filter) (*TotalVisitorStats, err
 // Visitors returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
 func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 	filter = analyzer.getFilter(filter)
-	args, query := filter.buildQuery([]field{
-		fieldDay,
-		fieldVisitors,
-		fieldSessions,
-		fieldViews,
-		fieldBounces,
-		fieldBounceRate,
-	}, []field{
-		fieldDay,
-	}, []field{
-		fieldDay,
-		fieldVisitors,
+	args, query := filter.buildQuery([]Field{
+		FieldDay,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
+	}, []Field{
+		FieldDay,
+	}, []Field{
+		FieldDay,
+		FieldVisitors,
 	})
 	var stats []VisitorStats
 
@@ -196,12 +196,12 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	// get current statistics
-	fields := []field{
-		fieldVisitors,
-		fieldSessions,
-		fieldViews,
-		fieldBounces,
-		fieldBounceRate,
+	fields := []Field{
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
 	}
 	args, query := filter.buildQuery(fields, nil, nil)
 	current := new(growthStats)
@@ -279,18 +279,18 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 
 // VisitorHours returns the visitor count grouped by time of day.
 func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, error) {
-	args, query := analyzer.getFilter(filter).buildQuery([]field{
-		fieldHour,
-		fieldVisitors,
-		fieldSessions,
-		fieldViews,
-		fieldBounces,
-		fieldBounceRate,
-	}, []field{
-		fieldHour,
-	}, []field{
-		fieldHour,
-		fieldVisitors,
+	args, query := analyzer.getFilter(filter).buildQuery([]Field{
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
+	}, []Field{
+		FieldHour,
+	}, []Field{
+		FieldHour,
+		FieldVisitors,
 	})
 	var stats []VisitorHourStats
 
@@ -304,32 +304,32 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 // Pages returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	filter = analyzer.getFilter(filter)
-	fields := []field{
-		fieldPath,
-		fieldVisitors,
-		fieldSessions,
-		fieldRelativeVisitors,
-		fieldViews,
-		fieldRelativeViews,
-		fieldBounces,
-		fieldBounceRate,
+	fields := []Field{
+		FieldPath,
+		FieldVisitors,
+		FieldSessions,
+		FieldRelativeVisitors,
+		FieldViews,
+		FieldRelativeViews,
+		FieldBounces,
+		FieldBounceRate,
 	}
-	groupBy := []field{
-		fieldPath,
+	groupBy := []Field{
+		FieldPath,
 	}
-	orderBy := []field{
-		fieldVisitors,
-		fieldPath,
+	orderBy := []Field{
+		FieldVisitors,
+		FieldPath,
 	}
 
 	if filter.IncludeTitle {
-		fields = append(fields, fieldTitle)
-		groupBy = append(groupBy, fieldTitle)
-		orderBy = append(orderBy, fieldTitle)
+		fields = append(fields, FieldTitle)
+		groupBy = append(groupBy, FieldTitle)
+		orderBy = append(orderBy, FieldTitle)
 	}
 
 	if filter.table() == "event" {
-		fields = append(fields, fieldEventTimeSpent)
+		fields = append(fields, FieldEventTimeSpent)
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
@@ -375,22 +375,22 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	filter = analyzer.getFilter(filter)
 
-	fields := []field{
-		fieldEntryPath,
-		fieldEntries,
+	fields := []Field{
+		FieldEntryPath,
+		FieldEntries,
 	}
-	groupBy := []field{
-		fieldEntryPath,
+	groupBy := []Field{
+		FieldEntryPath,
 	}
-	orderBy := []field{
-		fieldEntries,
-		fieldEntryPath,
+	orderBy := []Field{
+		FieldEntries,
+		FieldEntryPath,
 	}
 
 	if filter.IncludeTitle {
-		fields = append(fields, fieldEntryTitle)
-		groupBy = append(groupBy, fieldEntryTitle)
-		orderBy = append(orderBy, fieldEntryTitle)
+		fields = append(fields, FieldEntryTitle)
+		groupBy = append(groupBy, FieldEntryTitle)
+		orderBy = append(orderBy, FieldEntryTitle)
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
@@ -455,22 +455,22 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	filter = analyzer.getFilter(filter)
 
-	fields := []field{
-		fieldExitPath,
-		fieldExits,
+	fields := []Field{
+		FieldExitPath,
+		FieldExits,
 	}
-	groupBy := []field{
-		fieldExitPath,
+	groupBy := []Field{
+		FieldExitPath,
 	}
-	orderBy := []field{
-		fieldExits,
-		fieldExitPath,
+	orderBy := []Field{
+		FieldExits,
+		FieldExitPath,
 	}
 
 	if filter.IncludeTitle {
-		fields = append(fields, fieldExitTitle)
-		groupBy = append(groupBy, fieldExitTitle)
-		orderBy = append(orderBy, fieldExitTitle)
+		fields = append(fields, FieldExitTitle)
+		groupBy = append(groupBy, FieldExitTitle)
+		orderBy = append(orderBy, FieldExitTitle)
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
@@ -523,12 +523,12 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 		return nil, nil
 	}
 
-	args, query := filter.buildQuery([]field{
-		fieldVisitors,
-		fieldViews,
-		fieldCR,
-	}, nil, []field{
-		fieldVisitors,
+	args, query := filter.buildQuery([]Field{
+		FieldVisitors,
+		FieldViews,
+		FieldCR,
+	}, nil, []Field{
+		FieldVisitors,
 	})
 	stats := new(PageConversionsStats)
 
@@ -543,18 +543,18 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 	filter = analyzer.getFilter(filter)
 	filter.eventFilter = true
-	args, query := filter.buildQuery([]field{
-		fieldEventName,
-		fieldVisitors,
-		fieldViews,
-		fieldCR,
-		fieldEventTimeSpent,
-		fieldEventMetaKeys,
-	}, []field{
-		fieldEventName,
-	}, []field{
-		fieldVisitors,
-		fieldEventName,
+	args, query := filter.buildQuery([]Field{
+		FieldEventName,
+		FieldVisitors,
+		FieldViews,
+		FieldCR,
+		FieldEventTimeSpent,
+		FieldEventMetaKeys,
+	}, []Field{
+		FieldEventName,
+	}, []Field{
+		FieldVisitors,
+		FieldEventName,
 	})
 	var stats []EventStats
 
@@ -574,19 +574,19 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 		return []EventStats{}, nil
 	}
 
-	args, query := filter.buildQuery([]field{
-		fieldEventName,
-		fieldVisitors,
-		fieldViews,
-		fieldCR,
-		fieldEventTimeSpent,
-		fieldEventMetaValues,
-	}, []field{
-		fieldEventName,
-		fieldEventMetaValues,
-	}, []field{
-		fieldVisitors,
-		fieldEventMetaValues,
+	args, query := filter.buildQuery([]Field{
+		FieldEventName,
+		FieldVisitors,
+		FieldViews,
+		FieldCR,
+		FieldEventTimeSpent,
+		FieldEventMetaValues,
+	}, []Field{
+		FieldEventName,
+		FieldEventMetaValues,
+	}, []Field{
+		FieldVisitors,
+		FieldEventMetaValues,
 	})
 	var stats []EventStats
 
@@ -601,17 +601,17 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 	filter = analyzer.getFilter(filter)
 	filter.eventFilter = true
-	args, query := filter.buildQuery([]field{
-		fieldEventName,
-		fieldEventMeta,
-		fieldVisitors,
-		fieldCount,
-	}, []field{
-		fieldEventName,
-		fieldEventMeta,
-	}, []field{
-		fieldCount,
-		fieldEventName,
+	args, query := filter.buildQuery([]Field{
+		FieldEventName,
+		FieldEventMeta,
+		FieldVisitors,
+		FieldCount,
+	}, []Field{
+		FieldEventName,
+		FieldEventMeta,
+	}, []Field{
+		FieldCount,
+		FieldEventName,
 	})
 	var stats []EventListStats
 
@@ -636,29 +636,29 @@ func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	filter = analyzer.getFilter(filter)
-	fields := []field{
-		fieldReferrerName,
-		fieldReferrerIcon,
-		fieldVisitors,
-		fieldSessions,
-		fieldRelativeVisitors,
-		fieldBounces,
-		fieldBounceRate,
+	fields := []Field{
+		FieldReferrerName,
+		FieldReferrerIcon,
+		FieldVisitors,
+		FieldSessions,
+		FieldRelativeVisitors,
+		FieldBounces,
+		FieldBounceRate,
 	}
-	groupBy := []field{
-		fieldReferrerName,
+	groupBy := []Field{
+		FieldReferrerName,
 	}
-	orderBy := []field{
-		fieldVisitors,
-		fieldReferrerName,
+	orderBy := []Field{
+		FieldVisitors,
+		FieldReferrerName,
 	}
 
 	if filter.Referrer != "" || filter.ReferrerName != "" {
-		fields = append(fields, fieldReferrer)
-		groupBy = append(groupBy, fieldReferrer)
-		orderBy = append(orderBy, fieldReferrer)
+		fields = append(fields, FieldReferrer)
+		groupBy = append(groupBy, FieldReferrer)
+		orderBy = append(orderBy, FieldReferrer)
 	} else {
-		fields = append(fields, fieldAnyReferrer)
+		fields = append(fields, FieldAnyReferrer)
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
@@ -711,14 +711,14 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		innerQuery := ""
 
 		if analyzer.minIsBot > 0 || filter.EntryPath != "" || filter.ExitPath != "" {
-			fields := make([]field, 0, 2)
+			fields := make([]Field, 0, 2)
 
 			if filter.EntryPath != "" {
-				fields = append(fields, fieldEntryPath)
+				fields = append(fields, FieldEntryPath)
 			}
 
 			if filter.ExitPath != "" {
-				fields = append(fields, fieldExitPath)
+				fields = append(fields, FieldExitPath)
 			}
 
 			innerArgs, innerQuery = filter.joinSessions(table, fields)
@@ -776,7 +776,7 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 	var stats []LanguageStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldLanguage); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldLanguage); err != nil {
 		return nil, err
 	}
 
@@ -787,7 +787,7 @@ func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
 func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 	var stats []CountryStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldCountry); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldCountry); err != nil {
 		return nil, err
 	}
 
@@ -798,7 +798,7 @@ func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
 	var stats []CityStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldCity, fieldCountry); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldCity, FieldCountry); err != nil {
 		return nil, err
 	}
 
@@ -809,7 +809,7 @@ func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
 func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 	var stats []BrowserStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldBrowser); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldBrowser); err != nil {
 		return nil, err
 	}
 
@@ -820,7 +820,7 @@ func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
 func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 	var stats []OSStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldOS); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldOS); err != nil {
 		return nil, err
 	}
 
@@ -831,7 +831,7 @@ func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
 func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenClassStats, error) {
 	var stats []ScreenClassStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldScreenClass); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldScreenClass); err != nil {
 		return nil, err
 	}
 
@@ -842,7 +842,7 @@ func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenClassStats, error
 func (analyzer *Analyzer) UTMSource(filter *Filter) ([]UTMSourceStats, error) {
 	var stats []UTMSourceStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldUTMSource); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMSource); err != nil {
 		return nil, err
 	}
 
@@ -853,7 +853,7 @@ func (analyzer *Analyzer) UTMSource(filter *Filter) ([]UTMSourceStats, error) {
 func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]UTMMediumStats, error) {
 	var stats []UTMMediumStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldUTMMedium); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMMedium); err != nil {
 		return nil, err
 	}
 
@@ -864,7 +864,7 @@ func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]UTMMediumStats, error) {
 func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]UTMCampaignStats, error) {
 	var stats []UTMCampaignStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldUTMCampaign); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMCampaign); err != nil {
 		return nil, err
 	}
 
@@ -875,7 +875,7 @@ func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]UTMCampaignStats, error
 func (analyzer *Analyzer) UTMContent(filter *Filter) ([]UTMContentStats, error) {
 	var stats []UTMContentStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldUTMContent); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMContent); err != nil {
 		return nil, err
 	}
 
@@ -886,7 +886,7 @@ func (analyzer *Analyzer) UTMContent(filter *Filter) ([]UTMContentStats, error) 
 func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 	var stats []UTMTermStats
 
-	if err := analyzer.selectByAttribute(&stats, filter, fieldUTMTerm); err != nil {
+	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMTerm); err != nil {
 		return nil, err
 	}
 
@@ -895,18 +895,18 @@ func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
 
 // OSVersion returns the visitor count grouped by operating systems and version.
 func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
-	args, query := analyzer.getFilter(filter).buildQuery([]field{
-		fieldOS,
-		fieldOSVersion,
-		fieldVisitors,
-		fieldRelativeVisitors,
-	}, []field{
-		fieldOS,
-		fieldOSVersion,
-	}, []field{
-		fieldVisitors,
-		fieldOS,
-		fieldOSVersion,
+	args, query := analyzer.getFilter(filter).buildQuery([]Field{
+		FieldOS,
+		FieldOSVersion,
+		FieldVisitors,
+		FieldRelativeVisitors,
+	}, []Field{
+		FieldOS,
+		FieldOSVersion,
+	}, []Field{
+		FieldVisitors,
+		FieldOS,
+		FieldOSVersion,
 	})
 	var stats []OSVersionStats
 
@@ -919,18 +919,18 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 
 // BrowserVersion returns the visitor count grouped by browser and version.
 func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats, error) {
-	args, query := analyzer.getFilter(filter).buildQuery([]field{
-		fieldBrowser,
-		fieldBrowserVersion,
-		fieldVisitors,
-		fieldRelativeVisitors,
-	}, []field{
-		fieldBrowser,
-		fieldBrowserVersion,
-	}, []field{
-		fieldVisitors,
-		fieldBrowser,
-		fieldBrowserVersion,
+	args, query := analyzer.getFilter(filter).buildQuery([]Field{
+		FieldBrowser,
+		FieldBrowserVersion,
+		FieldVisitors,
+		FieldRelativeVisitors,
+	}, []Field{
+		FieldBrowser,
+		FieldBrowserVersion,
+	}, []Field{
+		FieldVisitors,
+		FieldBrowser,
+		FieldBrowserVersion,
 	})
 	var stats []BrowserVersionStats
 
@@ -1389,12 +1389,12 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(results any, filter *Filter, attr ...field) error {
-	fields := make([]field, 0, len(attr)+2)
+func (analyzer *Analyzer) selectByAttribute(results any, filter *Filter, attr ...Field) error {
+	fields := make([]Field, 0, len(attr)+2)
 	fields = append(fields, attr...)
-	fields = append(fields, fieldVisitors, fieldRelativeVisitors)
-	orderBy := make([]field, 0, len(attr)+1)
-	orderBy = append(orderBy, fieldVisitors)
+	fields = append(fields, FieldVisitors, FieldRelativeVisitors)
+	orderBy := make([]Field, 0, len(attr)+1)
+	orderBy = append(orderBy, FieldVisitors)
 	orderBy = append(orderBy, attr...)
 	args, query := analyzer.getFilter(filter).buildQuery(fields, attr, orderBy)
 	return analyzer.store.Select(results, query, args...)

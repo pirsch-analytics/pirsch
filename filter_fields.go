@@ -1,219 +1,288 @@
 package pirsch
 
 var (
-	fieldCount = field{
+	// FieldCount is a query result column.
+	FieldCount = Field{
 		querySessions:  "count(*)",
 		queryPageViews: "count(*)",
 		name:           "count",
 		queryDirection: "DESC",
 	}
-	fieldPath = field{
+
+	// FieldPath is a query result column.
+	FieldPath = Field{
 		querySessions:  "path",
 		queryPageViews: "path",
 		queryDirection: "ASC",
 		name:           "path",
 	}
-	fieldEntryPath = field{
+
+	// FieldEntryPath is a query result column.
+	FieldEntryPath = Field{
 		querySessions:  "entry_path",
 		queryPageViews: "entry_path",
 		queryDirection: "ASC",
 		name:           "entry_path",
 	}
-	fieldEntries = field{
+
+	// FieldEntries is a query result column.
+	FieldEntries = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryDirection: "DESC",
 		name:           "entries",
 	}
-	fieldExitPath = field{
+
+	// FieldExitPath is a query result column.
+	FieldExitPath = Field{
 		querySessions:  "exit_path",
 		queryPageViews: "exit_path",
 		queryDirection: "ASC",
 		name:           "exit_path",
 	}
-	fieldExits = field{
+
+	// FieldExits is a query result column.
+	FieldExits = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryDirection: "DESC",
 		name:           "exits",
 	}
-	fieldVisitors = field{
+
+	// FieldVisitors is a query result column.
+	FieldVisitors = Field{
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
 		name:           "visitors",
 	}
-	fieldRelativeVisitors = field{
+
+	// FieldRelativeVisitors is a query result column.
+	FieldRelativeVisitors = Field{
 		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
 		name:           "relative_visitors",
 	}
-	fieldCR = field{
+
+	// FieldCR is a query result column.
+	FieldCR = Field{
 		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
 		name:           "cr",
 	}
-	fieldSessions = field{
+
+	// FieldSessions is a query result column.
+	FieldSessions = Field{
 		querySessions:  "uniq(visitor_id, session_id)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
 		name:           "sessions",
 	}
-	fieldViews = field{
+
+	// FieldViews is a query result column.
+	FieldViews = Field{
 		querySessions:  "sum(page_views*sign)",
 		queryPageViews: "count(1)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
 		name:           "views",
 	}
-	fieldRelativeViews = field{
+
+	// FieldRelativeViews is a query result column.
+	FieldRelativeViews = Field{
 		querySessions:  "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
 		queryPageViews: "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
 		name:           "relative_views",
 	}
-	fieldBounces = field{
+
+	// FieldBounces is a query result column.
+	FieldBounces = Field{
 		querySessions:  "sum(is_bounce*sign)",
 		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		name:           "bounces",
 	}
-	fieldBounceRate = field{
+
+	// FieldBounceRate is a query result column.
+	FieldBounceRate = Field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
 		queryPeriod:    "avg(bounce_rate)",
 		queryDirection: "DESC",
 		name:           "bounce_rate",
 	}
-	fieldReferrer = field{
+
+	// FieldReferrer is a query result column.
+	FieldReferrer = Field{
 		querySessions:  "referrer",
 		queryPageViews: "referrer",
 		queryDirection: "ASC",
 		name:           "referrer",
 	}
-	fieldAnyReferrer = field{
+
+	// FieldAnyReferrer is a query result column.
+	FieldAnyReferrer = Field{
 		querySessions:  "any(referrer)",
 		queryPageViews: "any(referrer)",
 		queryDirection: "ASC",
 		name:           "referrer",
 	}
-	fieldReferrerName = field{
+
+	// FieldReferrerName is a query result column.
+	FieldReferrerName = Field{
 		querySessions:  "referrer_name",
 		queryPageViews: "referrer_name",
 		queryDirection: "ASC",
 		name:           "referrer_name",
 	}
-	fieldReferrerIcon = field{
+
+	// FieldReferrerIcon is a query result column.
+	FieldReferrerIcon = Field{
 		querySessions:  "any(referrer_icon)",
 		queryPageViews: "any(referrer_icon)",
 		queryDirection: "ASC",
 		name:           "referrer_icon",
 	}
-	fieldLanguage = field{
+
+	// FieldLanguage is a query result column.
+	FieldLanguage = Field{
 		querySessions:  "language",
 		queryPageViews: "language",
 		queryDirection: "ASC",
 		name:           "language",
 	}
-	fieldCountry = field{
+
+	// FieldCountry is a query result column.
+	FieldCountry = Field{
 		querySessions:  "country_code",
 		queryPageViews: "country_code",
 		queryDirection: "ASC",
 		name:           "country_code",
 	}
-	fieldCity = field{
+
+	// FieldCity is a query result column.
+	FieldCity = Field{
 		querySessions:  "city",
 		queryPageViews: "city",
 		queryDirection: "ASC",
 		name:           "city",
 	}
-	fieldBrowser = field{
+
+	// FieldBrowser is a query result column.
+	FieldBrowser = Field{
 		querySessions:  "browser",
 		queryPageViews: "browser",
 		queryDirection: "ASC",
 		name:           "browser",
 	}
-	fieldBrowserVersion = field{
+
+	// FieldBrowserVersion is a query result column.
+	FieldBrowserVersion = Field{
 		querySessions:  "browser_version",
 		queryPageViews: "browser_version",
 		queryDirection: "ASC",
 		name:           "browser_version",
 	}
-	fieldOS = field{
+
+	// FieldOS is a query result column.
+	FieldOS = Field{
 		querySessions:  "os",
 		queryPageViews: "os",
 		queryDirection: "ASC",
 		name:           "os",
 	}
-	fieldOSVersion = field{
+
+	// FieldOSVersion is a query result column.
+	FieldOSVersion = Field{
 		querySessions:  "os_version",
 		queryPageViews: "os_version",
 		queryDirection: "ASC",
 		name:           "os_version",
 	}
-	fieldScreenClass = field{
+
+	// FieldScreenClass is a query result column.
+	FieldScreenClass = Field{
 		querySessions:  "screen_class",
 		queryPageViews: "screen_class",
 		queryDirection: "ASC",
 		name:           "screen_class",
 	}
-	fieldUTMSource = field{
+
+	// FieldUTMSource is a query result column.
+	FieldUTMSource = Field{
 		querySessions:  "utm_source",
 		queryPageViews: "utm_source",
 		queryDirection: "ASC",
 		name:           "utm_source",
 	}
-	fieldUTMMedium = field{
+
+	// FieldUTMMedium is a query result column.
+	FieldUTMMedium = Field{
 		querySessions:  "utm_medium",
 		queryPageViews: "utm_medium",
 		queryDirection: "ASC",
 		name:           "utm_medium",
 	}
-	fieldUTMCampaign = field{
+
+	// FieldUTMCampaign is a query result column.
+	FieldUTMCampaign = Field{
 		querySessions:  "utm_campaign",
 		queryPageViews: "utm_campaign",
 		queryDirection: "ASC",
 		name:           "utm_campaign",
 	}
-	fieldUTMContent = field{
+
+	// FieldUTMContent is a query result column.
+	FieldUTMContent = Field{
 		querySessions:  "utm_content",
 		queryPageViews: "utm_content",
 		queryDirection: "ASC",
 		name:           "utm_content",
 	}
-	fieldUTMTerm = field{
+
+	// FieldUTMTerm is a query result column.
+	FieldUTMTerm = Field{
 		querySessions:  "utm_term",
 		queryPageViews: "utm_term",
 		queryDirection: "ASC",
 		name:           "utm_term",
 	}
-	fieldTitle = field{
+
+	// FieldTitle is a query result column.
+	FieldTitle = Field{
 		querySessions:  "title",
 		queryPageViews: "title",
 		queryDirection: "ASC",
 		name:           "title",
 	}
-	fieldEntryTitle = field{
+
+	// FieldEntryTitle is a query result column.
+	FieldEntryTitle = Field{
 		querySessions:  "entry_title",
 		queryPageViews: "entry_title",
 		queryDirection: "ASC",
 		name:           "title",
 	}
-	fieldExitTitle = field{
+
+	// FieldExitTitle is a query result column.
+	FieldExitTitle = Field{
 		querySessions:  "exit_title",
 		queryPageViews: "exit_title",
 		queryDirection: "ASC",
 		name:           "title",
 	}
-	fieldDay = field{
+
+	// FieldDay is a query result column.
+	FieldDay = Field{
 		querySessions:  "toDate(time, '%s')",
 		queryPageViews: "toDate(time, '%s')",
 		queryDirection: "ASC",
@@ -221,7 +290,9 @@ var (
 		timezone:       true,
 		name:           "day",
 	}
-	fieldHour = field{
+
+	// FieldHour is a query result column.
+	FieldHour = Field{
 		querySessions:  "toHour(time, '%s')",
 		queryPageViews: "toHour(time, '%s')",
 		queryDirection: "ASC",
@@ -229,13 +300,17 @@ var (
 		timezone:       true,
 		name:           "hour",
 	}
-	fieldEventName = field{
+
+	// FieldEventName is a query result column.
+	FieldEventName = Field{
 		querySessions:  "event_name",
 		queryPageViews: "event_name",
 		name:           "event_name",
 		queryDirection: "ASC",
 	}
-	fieldEventMeta = field{
+
+	// FieldEventMeta is a query result column.
+	FieldEventMeta = Field{
 		// TODO optimize once maps are supported in the driver (v2)
 		/*querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
 		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
@@ -243,24 +318,31 @@ var (
 		queryPageViews: "arrayZip(event_meta_keys, event_meta_values)",
 		name:           "meta",
 	}
-	fieldEventMetaKeys = field{
+
+	// FieldEventMetaKeys is a query result column.
+	FieldEventMetaKeys = Field{
 		querySessions:  "groupUniqArrayArray(event_meta_keys)",
 		queryPageViews: "groupUniqArrayArray(event_meta_keys)",
 		name:           "meta_keys",
 	}
-	fieldEventMetaValues = field{
+
+	// FieldEventMetaValues is a query result column.
+	FieldEventMetaValues = Field{
 		querySessions:  "event_meta_values[indexOf(event_meta_keys, ?)]",
 		queryPageViews: "event_meta_values[indexOf(event_meta_keys, ?)]",
 		name:           "meta_value",
 	}
-	fieldEventTimeSpent = field{
+
+	// FieldEventTimeSpent is a query result column.
+	FieldEventTimeSpent = Field{
 		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		name:           "average_time_spent_seconds",
 	}
 )
 
-type field struct {
+// Field is a column for a query.
+type Field struct {
 	querySessions  string
 	queryPageViews string
 	queryPeriod    string

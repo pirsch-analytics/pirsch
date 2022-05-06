@@ -32,9 +32,19 @@ const (
 	// Unknown filters for an unknown (empty) value.
 	// This is a synonym for "null".
 	Unknown = "null"
+
+	// DirectionASC sorts results in ascending order.
+	DirectionASC = "ASC"
+
+	// DirectionDESC sorts results in descending order.
+	DirectionDESC = "DESC"
 )
 
+// Period is used to group results.
 type Period int
+
+// Direction is used to sort results.
+type Direction string
 
 // NullClient is a placeholder for no client (0).
 var NullClient = int64(0)
@@ -148,6 +158,10 @@ type Filter struct {
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
 
+	// OrderBy sorts the results.
+	// This will overwrite the default order provided by the Analyzer.
+	OrderBy []OrderBy
+
 	// Offset limits the number of results. Less or equal to zero means no offset.
 	Offset int
 
@@ -167,6 +181,12 @@ type Filter struct {
 
 	eventFilter bool
 	minIsBot    uint8
+}
+
+// OrderBy sorts a results by a field and direction.
+type OrderBy struct {
+	Field     Field
+	Direction Direction
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -221,16 +241,16 @@ func (filter *Filter) validate() {
 	}
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, string) {
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
 	table := filter.table()
 	args := make([]any, 0)
 	var query strings.Builder
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, fieldDay.name) {
+	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.name) {
 		query.WriteString(`SELECT `)
 
 		for i := range fields {
-			if fields[i] != fieldDay {
+			if fields[i] != FieldDay {
 				query.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPeriod, fields[i].name))
 			}
 		}
@@ -245,7 +265,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, strin
 		}
 	}
 
-	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, fieldPath.name) {
+	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, FieldPath.name) {
 		if table == "session" {
 			table = "page_view"
 		}
@@ -255,10 +275,10 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, strin
 		if filter.minIsBot > 0 ||
 			filter.EntryPath != "" ||
 			filter.ExitPath != "" ||
-			filter.fieldsContain(fields, fieldBounces.name) ||
-			filter.fieldsContain(fields, fieldViews.name) ||
-			filter.fieldsContain(fields, fieldEntryPath.name) ||
-			filter.fieldsContain(fields, fieldExitPath.name) {
+			filter.fieldsContain(fields, FieldBounces.name) ||
+			filter.fieldsContain(fields, FieldViews.name) ||
+			filter.fieldsContain(fields, FieldEntryPath.name) ||
+			filter.fieldsContain(fields, FieldExitPath.name) {
 			filterArgs, filterQuery := filter.joinSessions(table, fields)
 			args = append(args, filterArgs...)
 			query.WriteString(filterQuery)
@@ -294,7 +314,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, strin
 		}
 	}
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, fieldDay.name) {
+	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.name) {
 		switch filter.Period {
 		case PeriodWeek:
 			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
@@ -309,7 +329,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []field) ([]any, strin
 	return args, query.String()
 }
 
-func (filter *Filter) joinPageViewFields(args *[]any, fields []field) string {
+func (filter *Filter) joinPageViewFields(args *[]any, fields []Field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -331,7 +351,7 @@ func (filter *Filter) joinPageViewFields(args *[]any, fields []field) string {
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinSessionFields(args *[]any, fields []field) string {
+func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -350,7 +370,7 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []field) string {
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinSessions(table string, fields []field) ([]any, string) {
+func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string) {
 	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
 	filterArgs, filterQuery := filter.query(true)
@@ -358,31 +378,31 @@ func (filter *Filter) joinSessions(table string, fields []field) ([]any, string)
 	sessionFields := make([]string, 0, 6)
 	groupBy := make([]string, 0, 4)
 
-	if filter.fieldsContain(fields, fieldEntryPath.name) {
-		sessionFields = append(sessionFields, fieldEntryPath.name)
-		groupBy = append(groupBy, fieldEntryPath.name)
+	if filter.fieldsContain(fields, FieldEntryPath.name) {
+		sessionFields = append(sessionFields, FieldEntryPath.name)
+		groupBy = append(groupBy, FieldEntryPath.name)
 	}
 
-	if filter.fieldsContain(fields, fieldExitPath.name) {
-		sessionFields = append(sessionFields, fieldExitPath.name)
-		groupBy = append(groupBy, fieldExitPath.name)
+	if filter.fieldsContain(fields, FieldExitPath.name) {
+		sessionFields = append(sessionFields, FieldExitPath.name)
+		groupBy = append(groupBy, FieldExitPath.name)
 	}
 
-	if filter.fieldsContainByQuerySession(fields, fieldEntryTitle.querySessions) {
-		sessionFields = append(sessionFields, fieldEntryTitle.querySessions)
-		groupBy = append(groupBy, fieldEntryTitle.querySessions)
+	if filter.fieldsContainByQuerySession(fields, FieldEntryTitle.querySessions) {
+		sessionFields = append(sessionFields, FieldEntryTitle.querySessions)
+		groupBy = append(groupBy, FieldEntryTitle.querySessions)
 	}
 
-	if filter.fieldsContainByQuerySession(fields, fieldExitTitle.querySessions) {
-		sessionFields = append(sessionFields, fieldExitTitle.querySessions)
-		groupBy = append(groupBy, fieldExitTitle.querySessions)
+	if filter.fieldsContainByQuerySession(fields, FieldExitTitle.querySessions) {
+		sessionFields = append(sessionFields, FieldExitTitle.querySessions)
+		groupBy = append(groupBy, FieldExitTitle.querySessions)
 	}
 
-	if filter.fieldsContain(fields, fieldBounces.name) {
+	if filter.fieldsContain(fields, FieldBounces.name) {
 		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
 	}
 
-	if filter.fieldsContain(fields, fieldViews.name) {
+	if filter.fieldsContain(fields, FieldViews.name) {
 		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
 	}
 
@@ -419,7 +439,7 @@ func (filter *Filter) joinSessions(table string, fields []field) ([]any, string)
 	return filterArgs, query
 }
 
-func (filter *Filter) joinGroupBy(fields []field) string {
+func (filter *Filter) joinGroupBy(fields []Field) string {
 	var out strings.Builder
 
 	for i := range fields {
@@ -430,8 +450,17 @@ func (filter *Filter) joinGroupBy(fields []field) string {
 	return str[:len(str)-1]
 }
 
-func (filter *Filter) joinOrderBy(args *[]any, fields []field) string {
+func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
 	var out strings.Builder
+
+	if len(filter.OrderBy) > 0 {
+		fields = make([]Field, 0, len(filter.OrderBy))
+
+		for i := range filter.OrderBy {
+			filter.OrderBy[i].Field.queryDirection = string(filter.OrderBy[i].Direction)
+			fields = append(fields, filter.OrderBy[i].Field)
+		}
+	}
 
 	for i := range fields {
 		if fields[i].queryWithFill != "" {
@@ -625,7 +654,7 @@ func (filter *Filter) appendField(fields *[]string, field, value string) {
 	}
 }
 
-func (filter *Filter) fieldsContain(haystack []field, needle string) bool {
+func (filter *Filter) fieldsContain(haystack []Field, needle string) bool {
 	for i := range haystack {
 		if haystack[i].name == needle {
 			return true
@@ -635,7 +664,7 @@ func (filter *Filter) fieldsContain(haystack []field, needle string) bool {
 	return false
 }
 
-func (filter *Filter) fieldsContainByQuerySession(haystack []field, needle string) bool {
+func (filter *Filter) fieldsContainByQuerySession(haystack []Field, needle string) bool {
 	for i := range haystack {
 		if haystack[i].querySessions == needle {
 			return true

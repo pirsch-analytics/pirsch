@@ -2,7 +2,11 @@
 
 ## 3.8.0
 
-* added offset to `Filter`
+* added `Offset` to `Filter`
+* added `OrderBy` to `Filter` and exposed fields
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
 
 ## 3.7.8
 
