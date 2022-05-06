@@ -148,6 +148,9 @@ type Filter struct {
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
 
+	// Offset limits the number of results. Less or equal to zero means no offset.
+	Offset int
+
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
@@ -207,6 +210,10 @@ func (filter *Filter) validate() {
 
 	if filter.Path != "" && filter.PathPattern != "" {
 		filter.PathPattern = ""
+	}
+
+	if filter.Offset < 0 {
+		filter.Offset = 0
 	}
 
 	if filter.Limit < 0 {
@@ -649,7 +656,9 @@ func (filter *Filter) withFill() ([]any, string) {
 }
 
 func (filter *Filter) withLimit() string {
-	if filter.Limit > 0 {
+	if filter.Limit > 0 && filter.Offset > 0 {
+		return fmt.Sprintf("LIMIT %d OFFSET %d ", filter.Limit, filter.Offset)
+	} else if filter.Limit > 0 {
 		return fmt.Sprintf("LIMIT %d ", filter.Limit)
 	}
 

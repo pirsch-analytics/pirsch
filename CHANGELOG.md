@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.0
+
+* added offset to `Filter`
+
 ## 3.7.8
 
 * replace `substr` with `substring` in scripts

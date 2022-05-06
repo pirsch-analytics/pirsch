@@ -426,6 +426,8 @@ func TestFilter_WithLimit(t *testing.T) {
 	assert.Empty(t, filter.withLimit())
 	filter.Limit = 42
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
+	filter.Offset = 9
+	assert.Equal(t, "LIMIT 42 OFFSET 9 ", filter.withLimit())
 }
 
 func TestFilter_Fields(t *testing.T) {
