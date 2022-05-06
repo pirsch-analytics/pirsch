@@ -53,7 +53,6 @@ type TrackerConfig struct {
 	SessionMaxAge time.Duration
 
 	// MinDelay see HitOptions.MinDelay.
-	// Will be set to 30 milliseconds by default.
 	MinDelay int64
 
 	// IsBotThreshold see HitOptions.IsBotThreshold.

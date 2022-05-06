@@ -275,7 +275,6 @@ func TestTracker_HitIsBot(t *testing.T) {
 		WorkerBufferSize: 5,
 		WorkerTimeout:    time.Second * 2,
 		SessionCache:     cache,
-		IsBotThreshold:   5,
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
