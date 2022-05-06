@@ -5,6 +5,7 @@
 * added `Search` to `Filter`
 * added `Sort` to `Filter`
 * added `Offset` to `Filter`
+* changed min delay for flagging bots to 50ms
 * updated referrer blacklist
 * updated referrer mapping
 * updated dependencies

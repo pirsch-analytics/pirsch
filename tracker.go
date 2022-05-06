@@ -15,7 +15,7 @@ const (
 	defaultWorkerBufferSize = 100
 	defaultWorkerTimeout    = time.Second * 3
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelayMS       = 200
+	defaultMinDelayMS       = 50
 	defaultIsBotThreshold   = 5
 )
 
