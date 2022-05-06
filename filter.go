@@ -158,9 +158,12 @@ type Filter struct {
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
 
-	// OrderBy sorts the results.
+	// Search searches the results for given fields and inputs.
+	Search []Search
+
+	// Sort sorts the results.
 	// This will overwrite the default order provided by the Analyzer.
-	OrderBy []OrderBy
+	Sort []Sort
 
 	// Offset limits the number of results. Less or equal to zero means no offset.
 	Offset int
@@ -183,8 +186,15 @@ type Filter struct {
 	minIsBot    uint8
 }
 
-// OrderBy sorts a results by a field and direction.
-type OrderBy struct {
+// Search filters results by searching for the given input for given field.
+// The field needs to contain the search string and is performed case-insensitively.
+type Search struct {
+	Field Field
+	Input string
+}
+
+// Sort sorts results by a field and direction.
+type Sort struct {
 	Field     Field
 	Direction Direction
 }
@@ -230,6 +240,10 @@ func (filter *Filter) validate() {
 
 	if filter.Path != "" && filter.PathPattern != "" {
 		filter.PathPattern = ""
+	}
+
+	for i := 0; i < len(filter.Search); i++ {
+		filter.Search[i].Input = strings.TrimSpace(filter.Search[i].Input)
 	}
 
 	if filter.Offset < 0 {
@@ -451,12 +465,12 @@ func (filter *Filter) joinGroupBy(fields []Field) string {
 }
 
 func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
-	if len(filter.OrderBy) > 0 {
-		fields = make([]Field, 0, len(filter.OrderBy))
+	if len(filter.Sort) > 0 {
+		fields = make([]Field, 0, len(filter.Sort))
 
-		for i := range filter.OrderBy {
-			filter.OrderBy[i].Field.queryDirection = string(filter.OrderBy[i].Direction)
-			fields = append(fields, filter.OrderBy[i].Field)
+		for i := range filter.Sort {
+			filter.Sort[i].Field.queryDirection = string(filter.Sort[i].Direction)
+			fields = append(fields, filter.Sort[i].Field)
 		}
 	}
 
@@ -527,7 +541,7 @@ func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
 }
 
 func (filter *Filter) queryFields() ([]any, string) {
-	n := 25 + len(filter.EventMeta) // maximum number of fields + one for bot filter + meta data fields
+	n := 25 + len(filter.EventMeta) + len(filter.Search) // maximum number of fields + one for bot filter + metadata fields + search fields
 	args := make([]any, 0, n)
 	queryFields := make([]string, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
@@ -555,6 +569,11 @@ func (filter *Filter) queryFields() ([]any, string) {
 	filter.queryPlatform(&queryFields)
 	filter.queryPathPattern(&queryFields, &args)
 	filter.appendQueryMeta(&queryFields, &args, filter.EventMeta)
+
+	for i := range filter.Search {
+		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.name, filter.Search[i].Input)
+	}
+
 	return args, strings.Join(queryFields, "AND ")
 }
 
@@ -729,6 +748,20 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]any, field, val
 		}
 
 		*args = append(*args, filter.nullValue(value))
+		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+	}
+}
+
+func (filter *Filter) appendQuerySearch(queryFields *[]string, args *[]any, field, value string) {
+	if value != "" {
+		comparator := "ilike(%s, ?) = TRUE "
+
+		if strings.HasPrefix(value, "!") {
+			value = value[1:]
+			comparator = "ilike(%s, ?) = FALSE "
+		}
+
+		*args = append(*args, fmt.Sprintf("%%%s%%", value))
 		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 	}
 }

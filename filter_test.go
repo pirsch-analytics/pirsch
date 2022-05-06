@@ -407,6 +407,30 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	assert.Equal(t, `match("path", ?) = 0`, query)
 }
 
+func TestFilter_QueryFieldsSearch(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Search = []Search{
+		{
+			Field: FieldPath,
+			Input: "/blog",
+		},
+		{
+			Field: FieldBrowser,
+			Input: "!fox",
+		},
+		{
+			Field: FieldOS,
+			Input: " ",
+		},
+	}
+	filter.validate()
+	args, query := filter.queryFields()
+	assert.Len(t, args, 2)
+	assert.Equal(t, "%/blog%", args[0])
+	assert.Equal(t, "%fox%", args[1])
+	assert.Equal(t, "ilike(path, ?) = TRUE AND ilike(browser, ?) = FALSE ", query)
+}
+
 func TestFilter_WithFill(t *testing.T) {
 	filter := NewFilter(NullClient)
 	args, query := filter.withFill()
@@ -477,7 +501,7 @@ func TestFilter_JoinOrderBy(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ,visitors DESC", query)
 	args = make([]any, 0)
-	filter.OrderBy = []OrderBy{
+	filter.Sort = []Sort{
 		{
 			Field:     FieldPath,
 			Direction: DirectionDESC,
