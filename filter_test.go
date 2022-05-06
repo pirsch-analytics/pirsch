@@ -67,7 +67,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 
 	// no filter (from page views)
 	analyzer := NewAnalyzer(dbClient, nil)
-	args, query := analyzer.getFilter(nil).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldVisitors, fieldPath})
+	args, query := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldVisitors, FieldPath})
 	var stats []PageStats
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
@@ -79,7 +79,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join (from page views)
-	args, query = analyzer.getFilter(&Filter{EntryPath: "/"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = analyzer.getFilter(&Filter{EntryPath: "/"}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 3)
@@ -91,7 +91,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join and filter (from page views)
-	args, query = analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = analyzer.getFilter(&Filter{EntryPath: "/", Path: "/foo"}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -99,7 +99,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 
 	// filter (from page views)
-	args, query = analyzer.getFilter(&Filter{Path: "/foo"}).buildQuery([]field{fieldPath, fieldVisitors}, []field{fieldPath}, []field{fieldPath})
+	args, query = analyzer.getFilter(&Filter{Path: "/foo"}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
 	assert.NoError(t, dbClient.Select(&stats, query, args...))
 	assert.Len(t, stats, 1)
@@ -107,7 +107,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 2, stats[0].Visitors)
 
 	// no filter (from sessions)
-	args, query = analyzer.getFilter(nil).buildQuery([]field{fieldVisitors, fieldSessions, fieldViews, fieldBounces, fieldBounceRate}, nil, nil)
+	args, query = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil)
 	var vstats PageStats
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 2, vstats.Visitors)
@@ -117,7 +117,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 
 	// filter (from page views)
-	args, query = analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}).buildQuery([]field{fieldVisitors, fieldRelativeVisitors, fieldSessions, fieldViews, fieldRelativeViews, fieldBounces, fieldBounceRate}, nil, nil)
+	args, query = analyzer.getFilter(&Filter{Path: "/foo", EntryPath: "/"}).buildQuery([]Field{FieldVisitors, FieldRelativeVisitors, FieldSessions, FieldViews, FieldRelativeViews, FieldBounces, FieldBounceRate}, nil, nil)
 	assert.NoError(t, dbClient.Get(&vstats, query, args...))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
@@ -128,7 +128,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 
 	// filter period
-	args, query = analyzer.getFilter(&Filter{Period: PeriodWeek}).buildQuery([]field{fieldDay, fieldVisitors}, []field{fieldDay}, []field{fieldDay})
+	args, query = analyzer.getFilter(&Filter{Period: PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
 	var visitors []VisitorStats
 	assert.NoError(t, dbClient.Select(&visitors, query, args...))
 	assert.Len(t, visitors, 1)
@@ -407,6 +407,30 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	assert.Equal(t, `match("path", ?) = 0`, query)
 }
 
+func TestFilter_QueryFieldsSearch(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.Search = []Search{
+		{
+			Field: FieldPath,
+			Input: "/blog",
+		},
+		{
+			Field: FieldBrowser,
+			Input: "!fox",
+		},
+		{
+			Field: FieldOS,
+			Input: " ",
+		},
+	}
+	filter.validate()
+	args, query := filter.queryFields()
+	assert.Len(t, args, 2)
+	assert.Equal(t, "%/blog%", args[0])
+	assert.Equal(t, "%fox%", args[1])
+	assert.Equal(t, "ilike(path, ?) = TRUE AND ilike(browser, ?) = FALSE ", query)
+}
+
 func TestFilter_WithFill(t *testing.T) {
 	filter := NewFilter(NullClient)
 	args, query := filter.withFill()
@@ -426,6 +450,8 @@ func TestFilter_WithLimit(t *testing.T) {
 	assert.Empty(t, filter.withLimit())
 	filter.Limit = 42
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
+	filter.Offset = 9
+	assert.Equal(t, "LIMIT 42 OFFSET 9 ", filter.withLimit())
 }
 
 func TestFilter_Fields(t *testing.T) {
@@ -463,18 +489,37 @@ func TestFilter_Fields(t *testing.T) {
 	assert.Equal(t, "path,entry_path,exit_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile,event_meta_keys,event_meta_values", filter.fields())
 }
 
+func TestFilter_JoinOrderBy(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.From = pastDay(1)
+	filter.To = Today()
+	args := make([]any, 0)
+	query := filter.joinOrderBy(&args, []Field{
+		FieldDay,
+		FieldVisitors,
+	})
+	assert.Len(t, args, 2)
+	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ,visitors DESC", query)
+	args = make([]any, 0)
+	filter.Sort = []Sort{
+		{
+			Field:     FieldPath,
+			Direction: DirectionDESC,
+		},
+		{
+			Field:     FieldVisitors,
+			Direction: DirectionASC,
+		},
+	}
+	query = filter.joinOrderBy(&args, []Field{
+		FieldDay,
+		FieldVisitors,
+	})
+	assert.Len(t, args, 0)
+	assert.Equal(t, "path DESC,visitors ASC", query)
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
-}
-
-func pastWeek(n int) int {
-	date := pastDay(n * 7)
-	_, week := date.ISOWeek()
-	return week
-}
-
-func pastMonth(n int) time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month()-time.Month(n), 1, 0, 0, 0, 0, time.UTC)
 }

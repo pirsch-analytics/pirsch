@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.8.0
+
+* added `Search` to `Filter`
+* added `Sort` to `Filter` and exposed fields
+* added `Offset` to `Filter`
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 3.7.8
 
 * replace `substr` with `substring` in scripts
