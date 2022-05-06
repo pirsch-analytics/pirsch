@@ -451,8 +451,6 @@ func (filter *Filter) joinGroupBy(fields []Field) string {
 }
 
 func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
-	var out strings.Builder
-
 	if len(filter.OrderBy) > 0 {
 		fields = make([]Field, 0, len(filter.OrderBy))
 
@@ -461,6 +459,8 @@ func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
 			fields = append(fields, filter.OrderBy[i].Field)
 		}
 	}
+
+	var out strings.Builder
 
 	for i := range fields {
 		if fields[i].queryWithFill != "" {

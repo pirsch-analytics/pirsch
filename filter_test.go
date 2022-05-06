@@ -465,18 +465,37 @@ func TestFilter_Fields(t *testing.T) {
 	assert.Equal(t, "path,entry_path,exit_path,language,country_code,city,referrer,referrer_name,os,os_version,browser,browser_version,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,event_name,desktop,mobile,event_meta_keys,event_meta_values", filter.fields())
 }
 
+func TestFilter_JoinOrderBy(t *testing.T) {
+	filter := NewFilter(NullClient)
+	filter.From = pastDay(1)
+	filter.To = Today()
+	args := make([]any, 0)
+	query := filter.joinOrderBy(&args, []Field{
+		FieldDay,
+		FieldVisitors,
+	})
+	assert.Len(t, args, 2)
+	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ,visitors DESC", query)
+	args = make([]any, 0)
+	filter.OrderBy = []OrderBy{
+		{
+			Field:     FieldPath,
+			Direction: DirectionDESC,
+		},
+		{
+			Field:     FieldVisitors,
+			Direction: DirectionASC,
+		},
+	}
+	query = filter.joinOrderBy(&args, []Field{
+		FieldDay,
+		FieldVisitors,
+	})
+	assert.Len(t, args, 0)
+	assert.Equal(t, "path DESC,visitors ASC", query)
+}
+
 func pastDay(n int) time.Time {
 	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
-}
-
-func pastWeek(n int) int {
-	date := pastDay(n * 7)
-	_, week := date.ISOWeek()
-	return week
-}
-
-func pastMonth(n int) time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month()-time.Month(n), 1, 0, 0, 0, 0, time.UTC)
 }

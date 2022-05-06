@@ -2474,7 +2474,8 @@ func saveSessions(t *testing.T, sessions [][]Session) {
 	}
 }
 
-func getWeek(t time.Time) int {
+// TODO see TestAnalyzer_VisitorsAvgSessionDurationAvgTimeOnPagePeriod
+/*func getWeek(t time.Time) int {
 	_, week := t.ISOWeek()
 	return week
-}
+}*/
