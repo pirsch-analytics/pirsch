@@ -428,7 +428,7 @@ func TestFilter_QueryFieldsSearch(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, "%/blog%", args[0])
 	assert.Equal(t, "%fox%", args[1])
-	assert.Equal(t, "ilike(path, ?) = TRUE AND ilike(browser, ?) = FALSE ", query)
+	assert.Equal(t, "ilike(path, ?) = 1 AND ilike(browser, ?) = 0 ", query)
 }
 
 func TestFilter_WithFill(t *testing.T) {

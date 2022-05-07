@@ -387,8 +387,11 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string) {
 	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
+	search := filter.Search
+	filter.Search = nil
 	filterArgs, filterQuery := filter.query(true)
 	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
+	filter.Search = search
 	sessionFields := make([]string, 0, 6)
 	groupBy := make([]string, 0, 4)
 
@@ -754,11 +757,11 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]any, field, val
 
 func (filter *Filter) appendQuerySearch(queryFields *[]string, args *[]any, field, value string) {
 	if value != "" {
-		comparator := "ilike(%s, ?) = TRUE "
+		comparator := "ilike(%s, ?) = 1 "
 
 		if strings.HasPrefix(value, "!") {
 			value = value[1:]
-			comparator = "ilike(%s, ?) = FALSE "
+			comparator = "ilike(%s, ?) = 0 "
 		}
 
 		*args = append(*args, fmt.Sprintf("%%%s%%", value))

@@ -673,31 +673,26 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 2, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
-
 	assert.Equal(t, 2, visitors[3].Views)
 	assert.Equal(t, 1, visitors[4].Views)
 	assert.Equal(t, 2, visitors[5].Views)
 	assert.Equal(t, 2, visitors[8].Views)
 	assert.Equal(t, 1, visitors[10].Views)
-
 	assert.Equal(t, 1, visitors[3].Sessions)
 	assert.Equal(t, 1, visitors[4].Sessions)
 	assert.Equal(t, 2, visitors[5].Sessions)
 	assert.Equal(t, 2, visitors[8].Sessions)
 	assert.Equal(t, 1, visitors[10].Sessions)
-
 	assert.Equal(t, 0, visitors[3].Bounces)
 	assert.Equal(t, 1, visitors[4].Bounces)
 	assert.Equal(t, 2, visitors[5].Bounces)
 	assert.Equal(t, 2, visitors[8].Bounces)
 	assert.Equal(t, 1, visitors[10].Bounces)
-
 	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
-
 	visitors, err = analyzer.VisitorHours(&Filter{From: pastDay(1), To: Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
@@ -705,27 +700,22 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 1, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
-
 	assert.Equal(t, 1, visitors[4].Views)
 	assert.Equal(t, 2, visitors[5].Views)
 	assert.Equal(t, 1, visitors[8].Views)
 	assert.Equal(t, 1, visitors[10].Views)
-
 	assert.Equal(t, 1, visitors[4].Sessions)
 	assert.Equal(t, 2, visitors[5].Sessions)
 	assert.Equal(t, 1, visitors[8].Sessions)
 	assert.Equal(t, 1, visitors[10].Sessions)
-
 	assert.Equal(t, 1, visitors[4].Bounces)
 	assert.Equal(t, 2, visitors[5].Bounces)
 	assert.Equal(t, 1, visitors[8].Bounces)
 	assert.Equal(t, 1, visitors[10].Bounces)
-
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
-
 	_, err = analyzer.VisitorHours(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.VisitorHours(getMaxFilter("event"))
@@ -844,6 +834,18 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	_, err = analyzer.Pages(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Pages(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.Pages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldPath,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldPath,
+			Input: "/",
+		},
+	}})
 	assert.NoError(t, err)
 	_, err = analyzer.totalTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -1001,6 +1003,18 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.EntryPages(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.EntryPages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldEntryPath,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldEntryPath,
+			Input: "/",
+		},
+	}})
+	assert.NoError(t, err)
 	exits, err := analyzer.ExitPages(nil)
 	assert.NoError(t, err)
 	assert.Len(t, exits, 3)
@@ -1047,6 +1061,18 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = analyzer.ExitPages(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.ExitPages(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.ExitPages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldExitPath,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldExitPath,
+			Input: "/",
+		},
+	}})
 	assert.NoError(t, err)
 }
 
@@ -1206,6 +1232,18 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Empty(t, stats)
 	_, err = analyzer.Events(getMaxFilter(""))
 	assert.NoError(t, err)
+	_, err = analyzer.Events(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldEventName,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldEventName,
+			Input: "event",
+		},
+	}})
+	assert.NoError(t, err)
 	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "status"})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
@@ -1338,6 +1376,18 @@ func TestAnalyzer_EventList(t *testing.T) {
 	stats, err = analyzer.EventList(&Filter{EventMeta: map[string]string{"a": "no", "b": "result"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 0)
+	_, err = analyzer.EventList(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldEventName,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldEventName,
+			Input: "event",
+		},
+	}})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Referrer(t *testing.T) {
@@ -1381,6 +1431,18 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	visitors, err = analyzer.Referrer(&Filter{Limit: 1})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
+	_, err = analyzer.Referrer(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldReferrer,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldReferrer,
+			Input: "ref",
+		},
+	}})
+	assert.NoError(t, err)
 
 	// filter for referrer name
 	visitors, err = analyzer.Referrer(&Filter{ReferrerName: "Ref1"})
@@ -1530,6 +1592,18 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Languages(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.Languages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldLanguage,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldLanguage,
+			Input: "en",
+		},
+	}})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Countries(t *testing.T) {
@@ -1565,6 +1639,18 @@ func TestAnalyzer_Countries(t *testing.T) {
 	_, err = analyzer.Countries(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Countries(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.Countries(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldCountry,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldCountry,
+			Input: "en",
+		},
+	}})
 	assert.NoError(t, err)
 }
 
@@ -1605,6 +1691,18 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Cities(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.Cities(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldCity,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldCity,
+			Input: "New York",
+		},
+	}})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
@@ -1640,6 +1738,18 @@ func TestAnalyzer_Browser(t *testing.T) {
 	_, err = analyzer.Browser(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Browser(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.Browser(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldBrowser,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldBrowser,
+			Input: "Firefox",
+		},
+	}})
 	assert.NoError(t, err)
 }
 
@@ -1693,6 +1803,18 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.BrowserVersion(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.BrowserVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldBrowserVersion,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldBrowserVersion,
+			Input: "100.0",
+		},
+	}})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_OS(t *testing.T) {
@@ -1728,6 +1850,18 @@ func TestAnalyzer_OS(t *testing.T) {
 	_, err = analyzer.OS(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.OS(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.OS(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldOS,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldOS,
+			Input: "Windows",
+		},
+	}})
 	assert.NoError(t, err)
 }
 
@@ -1780,6 +1914,18 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	_, err = analyzer.OSVersion(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.OSVersion(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.OSVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldOSVersion,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldOSVersion,
+			Input: "10.0",
+		},
+	}})
 	assert.NoError(t, err)
 }
 
@@ -1920,6 +2066,66 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMTerm(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.UTMTerm(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.UTMMedium(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldUTMMedium,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldUTMMedium,
+			Input: "medium",
+		},
+	}})
+	assert.NoError(t, err)
+	_, err = analyzer.UTMCampaign(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldUTMCampaign,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldUTMCampaign,
+			Input: "campaign",
+		},
+	}})
+	assert.NoError(t, err)
+	_, err = analyzer.UTMSource(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldUTMSource,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldUTMSource,
+			Input: "source",
+		},
+	}})
+	assert.NoError(t, err)
+	_, err = analyzer.UTMTerm(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldUTMTerm,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldUTMTerm,
+			Input: "term",
+		},
+	}})
+	assert.NoError(t, err)
+	_, err = analyzer.UTMContent(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldUTMContent,
+			Direction: DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldUTMContent,
+			Input: "content",
+		},
+	}})
 	assert.NoError(t, err)
 }
 

@@ -653,7 +653,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		FieldReferrerName,
 	}
 
-	if filter.Referrer != "" || filter.ReferrerName != "" {
+	if filter.Referrer != "" || filter.ReferrerName != "" || len(filter.Search) > 0 || len(filter.Sort) > 0 {
 		fields = append(fields, FieldReferrer)
 		groupBy = append(groupBy, FieldReferrer)
 		orderBy = append(orderBy, FieldReferrer)
