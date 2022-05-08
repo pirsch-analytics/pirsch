@@ -2,9 +2,7 @@
 
 ## 3.8.0
 
-* added `Search` to `Filter`
-* added `Sort` to `Filter`
-* added `Offset` to `Filter`
+* added `Search`, `Sort`, and `Offset` to `Filter`
 * changed min delay for flagging bots to 50ms
 * updated referrer blacklist
 * updated referrer mapping
