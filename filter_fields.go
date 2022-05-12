@@ -5,7 +5,7 @@ var (
 	FieldCount = Field{
 		querySessions:  "count(*)",
 		queryPageViews: "count(*)",
-		name:           "count",
+		Name:           "count",
 		queryDirection: "DESC",
 	}
 
@@ -14,7 +14,7 @@ var (
 		querySessions:  "path",
 		queryPageViews: "path",
 		queryDirection: "ASC",
-		name:           "path",
+		Name:           "path",
 	}
 
 	// FieldEntryPath is a query result column.
@@ -22,7 +22,7 @@ var (
 		querySessions:  "entry_path",
 		queryPageViews: "entry_path",
 		queryDirection: "ASC",
-		name:           "entry_path",
+		Name:           "entry_path",
 	}
 
 	// FieldEntries is a query result column.
@@ -30,7 +30,7 @@ var (
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryDirection: "DESC",
-		name:           "entries",
+		Name:           "entries",
 	}
 
 	// FieldExitPath is a query result column.
@@ -38,7 +38,7 @@ var (
 		querySessions:  "exit_path",
 		queryPageViews: "exit_path",
 		queryDirection: "ASC",
-		name:           "exit_path",
+		Name:           "exit_path",
 	}
 
 	// FieldExits is a query result column.
@@ -46,7 +46,7 @@ var (
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryDirection: "DESC",
-		name:           "exits",
+		Name:           "exits",
 	}
 
 	// FieldVisitors is a query result column.
@@ -55,7 +55,7 @@ var (
 		queryPageViews: "uniq(visitor_id)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
-		name:           "visitors",
+		Name:           "visitors",
 	}
 
 	// FieldRelativeVisitors is a query result column.
@@ -64,7 +64,7 @@ var (
 		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
-		name:           "relative_visitors",
+		Name:           "relative_visitors",
 	}
 
 	// FieldCR is a query result column.
@@ -73,7 +73,7 @@ var (
 		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
-		name:           "cr",
+		Name:           "cr",
 	}
 
 	// FieldSessions is a query result column.
@@ -82,7 +82,7 @@ var (
 		queryPageViews: "uniq(visitor_id, session_id)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
-		name:           "sessions",
+		Name:           "sessions",
 	}
 
 	// FieldViews is a query result column.
@@ -91,7 +91,7 @@ var (
 		queryPageViews: "count(1)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
-		name:           "views",
+		Name:           "views",
 	}
 
 	// FieldRelativeViews is a query result column.
@@ -100,7 +100,7 @@ var (
 		queryPageViews: "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
 		queryDirection: "DESC",
 		filterTime:     true,
-		name:           "relative_views",
+		Name:           "relative_views",
 	}
 
 	// FieldBounces is a query result column.
@@ -109,7 +109,7 @@ var (
 		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
-		name:           "bounces",
+		Name:           "bounces",
 	}
 
 	// FieldBounceRate is a query result column.
@@ -118,7 +118,7 @@ var (
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
 		queryPeriod:    "avg(bounce_rate)",
 		queryDirection: "DESC",
-		name:           "bounce_rate",
+		Name:           "bounce_rate",
 	}
 
 	// FieldReferrer is a query result column.
@@ -126,7 +126,7 @@ var (
 		querySessions:  "referrer",
 		queryPageViews: "referrer",
 		queryDirection: "ASC",
-		name:           "referrer",
+		Name:           "referrer",
 	}
 
 	// FieldAnyReferrer is a query result column.
@@ -134,7 +134,7 @@ var (
 		querySessions:  "any(referrer)",
 		queryPageViews: "any(referrer)",
 		queryDirection: "ASC",
-		name:           "referrer",
+		Name:           "referrer",
 	}
 
 	// FieldReferrerName is a query result column.
@@ -142,7 +142,7 @@ var (
 		querySessions:  "referrer_name",
 		queryPageViews: "referrer_name",
 		queryDirection: "ASC",
-		name:           "referrer_name",
+		Name:           "referrer_name",
 	}
 
 	// FieldReferrerIcon is a query result column.
@@ -150,7 +150,7 @@ var (
 		querySessions:  "any(referrer_icon)",
 		queryPageViews: "any(referrer_icon)",
 		queryDirection: "ASC",
-		name:           "referrer_icon",
+		Name:           "referrer_icon",
 	}
 
 	// FieldLanguage is a query result column.
@@ -158,7 +158,7 @@ var (
 		querySessions:  "language",
 		queryPageViews: "language",
 		queryDirection: "ASC",
-		name:           "language",
+		Name:           "language",
 	}
 
 	// FieldCountry is a query result column.
@@ -166,7 +166,7 @@ var (
 		querySessions:  "country_code",
 		queryPageViews: "country_code",
 		queryDirection: "ASC",
-		name:           "country_code",
+		Name:           "country_code",
 	}
 
 	// FieldCity is a query result column.
@@ -174,7 +174,7 @@ var (
 		querySessions:  "city",
 		queryPageViews: "city",
 		queryDirection: "ASC",
-		name:           "city",
+		Name:           "city",
 	}
 
 	// FieldBrowser is a query result column.
@@ -182,7 +182,7 @@ var (
 		querySessions:  "browser",
 		queryPageViews: "browser",
 		queryDirection: "ASC",
-		name:           "browser",
+		Name:           "browser",
 	}
 
 	// FieldBrowserVersion is a query result column.
@@ -190,7 +190,7 @@ var (
 		querySessions:  "browser_version",
 		queryPageViews: "browser_version",
 		queryDirection: "ASC",
-		name:           "browser_version",
+		Name:           "browser_version",
 	}
 
 	// FieldOS is a query result column.
@@ -198,7 +198,7 @@ var (
 		querySessions:  "os",
 		queryPageViews: "os",
 		queryDirection: "ASC",
-		name:           "os",
+		Name:           "os",
 	}
 
 	// FieldOSVersion is a query result column.
@@ -206,7 +206,7 @@ var (
 		querySessions:  "os_version",
 		queryPageViews: "os_version",
 		queryDirection: "ASC",
-		name:           "os_version",
+		Name:           "os_version",
 	}
 
 	// FieldScreenClass is a query result column.
@@ -214,7 +214,7 @@ var (
 		querySessions:  "screen_class",
 		queryPageViews: "screen_class",
 		queryDirection: "ASC",
-		name:           "screen_class",
+		Name:           "screen_class",
 	}
 
 	// FieldUTMSource is a query result column.
@@ -222,7 +222,7 @@ var (
 		querySessions:  "utm_source",
 		queryPageViews: "utm_source",
 		queryDirection: "ASC",
-		name:           "utm_source",
+		Name:           "utm_source",
 	}
 
 	// FieldUTMMedium is a query result column.
@@ -230,7 +230,7 @@ var (
 		querySessions:  "utm_medium",
 		queryPageViews: "utm_medium",
 		queryDirection: "ASC",
-		name:           "utm_medium",
+		Name:           "utm_medium",
 	}
 
 	// FieldUTMCampaign is a query result column.
@@ -238,7 +238,7 @@ var (
 		querySessions:  "utm_campaign",
 		queryPageViews: "utm_campaign",
 		queryDirection: "ASC",
-		name:           "utm_campaign",
+		Name:           "utm_campaign",
 	}
 
 	// FieldUTMContent is a query result column.
@@ -246,7 +246,7 @@ var (
 		querySessions:  "utm_content",
 		queryPageViews: "utm_content",
 		queryDirection: "ASC",
-		name:           "utm_content",
+		Name:           "utm_content",
 	}
 
 	// FieldUTMTerm is a query result column.
@@ -254,7 +254,7 @@ var (
 		querySessions:  "utm_term",
 		queryPageViews: "utm_term",
 		queryDirection: "ASC",
-		name:           "utm_term",
+		Name:           "utm_term",
 	}
 
 	// FieldTitle is a query result column.
@@ -262,7 +262,7 @@ var (
 		querySessions:  "title",
 		queryPageViews: "title",
 		queryDirection: "ASC",
-		name:           "title",
+		Name:           "title",
 	}
 
 	// FieldEntryTitle is a query result column.
@@ -270,7 +270,7 @@ var (
 		querySessions:  "entry_title",
 		queryPageViews: "entry_title",
 		queryDirection: "ASC",
-		name:           "title",
+		Name:           "title",
 	}
 
 	// FieldExitTitle is a query result column.
@@ -278,7 +278,7 @@ var (
 		querySessions:  "exit_title",
 		queryPageViews: "exit_title",
 		queryDirection: "ASC",
-		name:           "title",
+		Name:           "title",
 	}
 
 	// FieldDay is a query result column.
@@ -288,7 +288,7 @@ var (
 		queryDirection: "ASC",
 		withFill:       true,
 		timezone:       true,
-		name:           "day",
+		Name:           "day",
 	}
 
 	// FieldHour is a query result column.
@@ -298,14 +298,14 @@ var (
 		queryDirection: "ASC",
 		queryWithFill:  "WITH FILL FROM 0 TO 24",
 		timezone:       true,
-		name:           "hour",
+		Name:           "hour",
 	}
 
 	// FieldEventName is a query result column.
 	FieldEventName = Field{
 		querySessions:  "event_name",
 		queryPageViews: "event_name",
-		name:           "event_name",
+		Name:           "event_name",
 		queryDirection: "ASC",
 	}
 
@@ -316,28 +316,28 @@ var (
 		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
 		querySessions:  "arrayZip(event_meta_keys, event_meta_values)",
 		queryPageViews: "arrayZip(event_meta_keys, event_meta_values)",
-		name:           "meta",
+		Name:           "meta",
 	}
 
 	// FieldEventMetaKeys is a query result column.
 	FieldEventMetaKeys = Field{
 		querySessions:  "groupUniqArrayArray(event_meta_keys)",
 		queryPageViews: "groupUniqArrayArray(event_meta_keys)",
-		name:           "meta_keys",
+		Name:           "meta_keys",
 	}
 
 	// FieldEventMetaValues is a query result column.
 	FieldEventMetaValues = Field{
 		querySessions:  "event_meta_values[indexOf(event_meta_keys, ?)]",
 		queryPageViews: "event_meta_values[indexOf(event_meta_keys, ?)]",
-		name:           "meta_value",
+		Name:           "meta_value",
 	}
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
 		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
-		name:           "average_time_spent_seconds",
+		Name:           "average_time_spent_seconds",
 	}
 )
 
@@ -351,5 +351,5 @@ type Field struct {
 	withFill       bool
 	timezone       bool
 	filterTime     bool
-	name           string
+	Name           string
 }

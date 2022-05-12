@@ -260,12 +260,12 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 	args := make([]any, 0)
 	var query strings.Builder
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.name) {
+	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.Name) {
 		query.WriteString(`SELECT `)
 
 		for i := range fields {
 			if fields[i] != FieldDay {
-				query.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPeriod, fields[i].name))
+				query.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPeriod, fields[i].Name))
 			}
 		}
 
@@ -279,7 +279,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 		}
 	}
 
-	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, FieldPath.name) {
+	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, FieldPath.Name) {
 		if table == "session" {
 			table = "page_view"
 		}
@@ -289,10 +289,10 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 		if filter.minIsBot > 0 ||
 			filter.EntryPath != "" ||
 			filter.ExitPath != "" ||
-			filter.fieldsContain(fields, FieldBounces.name) ||
-			filter.fieldsContain(fields, FieldViews.name) ||
-			filter.fieldsContain(fields, FieldEntryPath.name) ||
-			filter.fieldsContain(fields, FieldExitPath.name) {
+			filter.fieldsContain(fields, FieldBounces.Name) ||
+			filter.fieldsContain(fields, FieldViews.Name) ||
+			filter.fieldsContain(fields, FieldEntryPath.Name) ||
+			filter.fieldsContain(fields, FieldExitPath.Name) {
 			filterArgs, filterQuery := filter.joinSessions(table, fields)
 			args = append(args, filterArgs...)
 			query.WriteString(filterQuery)
@@ -328,7 +328,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 		}
 	}
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.name) {
+	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.Name) {
 		switch filter.Period {
 		case PeriodWeek:
 			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
@@ -350,14 +350,14 @@ func (filter *Filter) joinPageViewFields(args *[]any, fields []Field) string {
 		if fields[i].filterTime {
 			timeArgs, timeQuery := filter.queryTime(false)
 			*args = append(*args, timeArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
 		} else if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].name))
-		} else if fields[i].name == "meta_value" {
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].Name))
+		} else if fields[i].Name == "meta_value" {
 			*args = append(*args, filter.EventMetaKey)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
 		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
 		}
 	}
 
@@ -372,11 +372,11 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 		if fields[i].filterTime {
 			timeArgs, timeQuery := filter.queryTime(false)
 			*args = append(*args, timeArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
 		} else if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].Name))
 		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].Name))
 		}
 	}
 
@@ -395,14 +395,14 @@ func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string)
 	sessionFields := make([]string, 0, 6)
 	groupBy := make([]string, 0, 4)
 
-	if filter.fieldsContain(fields, FieldEntryPath.name) {
-		sessionFields = append(sessionFields, FieldEntryPath.name)
-		groupBy = append(groupBy, FieldEntryPath.name)
+	if filter.fieldsContain(fields, FieldEntryPath.Name) {
+		sessionFields = append(sessionFields, FieldEntryPath.Name)
+		groupBy = append(groupBy, FieldEntryPath.Name)
 	}
 
-	if filter.fieldsContain(fields, FieldExitPath.name) {
-		sessionFields = append(sessionFields, FieldExitPath.name)
-		groupBy = append(groupBy, FieldExitPath.name)
+	if filter.fieldsContain(fields, FieldExitPath.Name) {
+		sessionFields = append(sessionFields, FieldExitPath.Name)
+		groupBy = append(groupBy, FieldExitPath.Name)
 	}
 
 	if filter.fieldsContainByQuerySession(fields, FieldEntryTitle.querySessions) {
@@ -415,11 +415,11 @@ func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string)
 		groupBy = append(groupBy, FieldExitTitle.querySessions)
 	}
 
-	if filter.fieldsContain(fields, FieldBounces.name) {
+	if filter.fieldsContain(fields, FieldBounces.Name) {
 		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
 	}
 
-	if filter.fieldsContain(fields, FieldViews.name) {
+	if filter.fieldsContain(fields, FieldViews.Name) {
 		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
 	}
 
@@ -460,7 +460,7 @@ func (filter *Filter) joinGroupBy(fields []Field) string {
 	var out strings.Builder
 
 	for i := range fields {
-		out.WriteString(fields[i].name + ",")
+		out.WriteString(fields[i].Name + ",")
 	}
 
 	str := out.String()
@@ -481,13 +481,13 @@ func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
 
 	for i := range fields {
 		if fields[i].queryWithFill != "" {
-			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fields[i].queryWithFill))
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].Name, fields[i].queryDirection, fields[i].queryWithFill))
 		} else if fields[i].withFill {
 			fillArgs, fillQuery := filter.withFill()
 			*args = append(*args, fillArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].name, fields[i].queryDirection, fillQuery))
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].Name, fields[i].queryDirection, fillQuery))
 		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].name, fields[i].queryDirection))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].Name, fields[i].queryDirection))
 		}
 	}
 
@@ -574,7 +574,7 @@ func (filter *Filter) queryFields() ([]any, string) {
 	filter.appendQueryMeta(&queryFields, &args, filter.EventMeta)
 
 	for i := range filter.Search {
-		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.name, filter.Search[i].Input)
+		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.Name, filter.Search[i].Input)
 	}
 
 	return args, strings.Join(queryFields, "AND ")
@@ -678,7 +678,7 @@ func (filter *Filter) appendField(fields *[]string, field, value string) {
 
 func (filter *Filter) fieldsContain(haystack []Field, needle string) bool {
 	for i := range haystack {
-		if haystack[i].name == needle {
+		if haystack[i].Name == needle {
 			return true
 		}
 	}
