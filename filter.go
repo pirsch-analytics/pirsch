@@ -34,10 +34,10 @@ const (
 	Unknown = "null"
 
 	// DirectionASC sorts results in ascending order.
-	DirectionASC = "ASC"
+	DirectionASC = Direction("ASC")
 
 	// DirectionDESC sorts results in descending order.
-	DirectionDESC = "DESC"
+	DirectionDESC = Direction("DESC")
 )
 
 // Period is used to group results.
