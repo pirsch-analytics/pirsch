@@ -653,7 +653,7 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 		FieldReferrerName,
 	}
 
-	if filter.Referrer != "" || filter.ReferrerName != "" || len(filter.Search) > 0 || len(filter.Sort) > 0 {
+	if filter.Referrer != "" || filter.ReferrerName != "" {
 		fields = append(fields, FieldReferrer)
 		groupBy = append(groupBy, FieldReferrer)
 		orderBy = append(orderBy, FieldReferrer)
@@ -1310,6 +1310,7 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 		return []avgTimeSpentStats{}, nil
 	}
 
+	filter.Search, filter.Sort, filter.Offset, filter.Limit = nil, nil, 0, 0
 	timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
 

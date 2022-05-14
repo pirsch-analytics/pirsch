@@ -1433,12 +1433,12 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	_, err = analyzer.Referrer(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
-			Field:     FieldReferrer,
+			Field:     FieldReferrerName,
 			Direction: DirectionASC,
 		},
 	}, Search: []Search{
 		{
-			Field: FieldReferrer,
+			Field: FieldReferrerName,
 			Input: "ref",
 		},
 	}})

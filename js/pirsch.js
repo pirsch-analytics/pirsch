@@ -35,7 +35,7 @@
 
     for(let i = 0; i < attributes.length; i++) {
         if(attributes[i].toLowerCase().startsWith("data-param-")) {
-            params += "&"+attributes[i].substr("data-param-".length)+"="+script.getAttribute(attributes[i]);
+            params += "&"+attributes[i].substring("data-param-".length)+"="+script.getAttribute(attributes[i]);
         }
     }
 
