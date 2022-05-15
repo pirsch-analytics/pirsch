@@ -757,14 +757,28 @@ func (filter *Filter) appendQuery(queryFields *[]string, args *[]any, field, val
 
 func (filter *Filter) appendQuerySearch(queryFields *[]string, args *[]any, field, value string) {
 	if value != "" {
-		comparator := "ilike(%s, ?) = 1 "
+		comparator := ""
 
-		if strings.HasPrefix(value, "!") {
-			value = value[1:]
-			comparator = "ilike(%s, ?) = 0 "
+		if field == FieldLanguage.Name || field == FieldCountry.Name {
+			comparator = "has(splitByChar(',', ?), %s) = 1 "
+
+			if strings.HasPrefix(value, "!") {
+				value = value[1:]
+				comparator = "has(splitByChar(',', ?), %s) = 0 "
+			}
+
+			*args = append(*args, value)
+		} else {
+			comparator = "ilike(%s, ?) = 1 "
+
+			if strings.HasPrefix(value, "!") {
+				value = value[1:]
+				comparator = "ilike(%s, ?) = 0 "
+			}
+
+			*args = append(*args, fmt.Sprintf("%%%s%%", value))
 		}
 
-		*args = append(*args, fmt.Sprintf("%%%s%%", value))
 		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
 	}
 }

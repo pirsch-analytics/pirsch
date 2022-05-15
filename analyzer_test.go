@@ -1592,7 +1592,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Languages(getMaxFilter("event"))
 	assert.NoError(t, err)
-	_, err = analyzer.Languages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+	visitors, err = analyzer.Languages(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldLanguage,
 			Direction: DirectionASC,
@@ -1600,10 +1600,11 @@ func TestAnalyzer_Languages(t *testing.T) {
 	}, Search: []Search{
 		{
 			Field: FieldLanguage,
-			Input: "en",
+			Input: "en,jp",
 		},
 	}})
 	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
 }
 
 func TestAnalyzer_Countries(t *testing.T) {
@@ -1640,7 +1641,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Countries(getMaxFilter("event"))
 	assert.NoError(t, err)
-	_, err = analyzer.Countries(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+	visitors, err = analyzer.Countries(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldCountry,
 			Direction: DirectionASC,
@@ -1648,10 +1649,11 @@ func TestAnalyzer_Countries(t *testing.T) {
 	}, Search: []Search{
 		{
 			Field: FieldCountry,
-			Input: "en",
+			Input: "en,jp",
 		},
 	}})
 	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
 }
 
 func TestAnalyzer_Cities(t *testing.T) {
