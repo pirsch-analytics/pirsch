@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.1
+
+* fixed statistics when using a different period other than "day"
+
 ## 3.8.0
 
 * added `Search`, `Sort`, and `Offset` to `Filter`

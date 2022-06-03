@@ -442,7 +442,7 @@ func TestFilter_WithFill(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, filter.From, args[0])
 	assert.Equal(t, filter.To, args[1])
-	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ", query)
+	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 STEP INTERVAL 1 DAY ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {
@@ -499,7 +499,7 @@ func TestFilter_JoinOrderBy(t *testing.T) {
 		FieldVisitors,
 	})
 	assert.Len(t, args, 2)
-	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 ,visitors DESC", query)
+	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 STEP INTERVAL 1 DAY ,visitors DESC", query)
 	args = make([]any, 0)
 	filter.Sort = []Sort{
 		{
