@@ -715,20 +715,19 @@ func (filter *Filter) fieldsContainByQuerySession(haystack []Field, needle strin
 func (filter *Filter) withFill() ([]any, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
 		tz := filter.Timezone.String()
-		step := "STEP INTERVAL 1 "
+		query := ""
 
 		switch filter.Period {
 		case PeriodDay:
-			step += "DAY"
+			query = fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 STEP INTERVAL 1 DAY ", tz, tz)
 		case PeriodWeek:
-			step += "WEEK"
+			query = fmt.Sprintf("WITH FILL FROM toStartOfWeek(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 WEEK ", tz, tz)
 		case PeriodMonth:
-			step += "MONTH"
+			query = fmt.Sprintf("WITH FILL FROM toStartOfMonth(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 MONTH ", tz, tz)
 		case PeriodYear:
-			step += "YEAR"
+			query = fmt.Sprintf("WITH FILL FROM toStartOfYear(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 YEAR ", tz, tz)
 		}
 
-		query := fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 %s ", tz, tz, step)
 		return []any{filter.From, filter.To}, query
 	}
 
