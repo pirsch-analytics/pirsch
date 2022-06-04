@@ -260,25 +260,6 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 	args := make([]any, 0)
 	var query strings.Builder
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.Name) {
-		query.WriteString(`SELECT `)
-
-		for i := range fields {
-			if fields[i] != FieldDay {
-				query.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPeriod, fields[i].Name))
-			}
-		}
-
-		switch filter.Period {
-		case PeriodWeek:
-			query.WriteString(`toStartOfWeek(day) week FROM (`)
-		case PeriodMonth:
-			query.WriteString(`toStartOfMonth(day) month FROM (`)
-		case PeriodYear:
-			query.WriteString(`toStartOfYear(day) year FROM (`)
-		}
-	}
-
 	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, FieldPath.Name) {
 		if table == "session" {
 			table = "page_view"
@@ -328,17 +309,6 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 		}
 	}
 
-	if filter.Period != PeriodDay && filter.fieldsContain(fields, FieldDay.Name) {
-		switch filter.Period {
-		case PeriodWeek:
-			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
-		case PeriodMonth:
-			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
-		case PeriodYear:
-			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
-		}
-	}
-
 	query.WriteString(filter.withLimit())
 	return args, query.String()
 }
@@ -352,7 +322,18 @@ func (filter *Filter) joinPageViewFields(args *[]any, fields []Field) string {
 			*args = append(*args, timeArgs...)
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
 		} else if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].Name))
+			if fields[i].Name == "day" && filter.Period != PeriodDay {
+				switch filter.Period {
+				case PeriodWeek:
+					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s) week,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
+				case PeriodMonth:
+					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
+				case PeriodYear:
+					out.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
+				}
+			} else {
+				out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].Name))
+			}
 		} else if fields[i].Name == "meta_value" {
 			*args = append(*args, filter.EventMetaKey)
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
@@ -374,7 +355,18 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 			*args = append(*args, timeArgs...)
 			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
 		} else if fields[i].timezone {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].Name))
+			if fields[i].Name == "day" && filter.Period != PeriodDay {
+				switch filter.Period {
+				case PeriodWeek:
+					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s) week,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
+				case PeriodMonth:
+					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
+				case PeriodYear:
+					out.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
+				}
+			} else {
+				out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].Name))
+			}
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].Name))
 		}
@@ -460,7 +452,18 @@ func (filter *Filter) joinGroupBy(fields []Field) string {
 	var out strings.Builder
 
 	for i := range fields {
-		out.WriteString(fields[i].Name + ",")
+		if fields[i].Name == "day" && filter.Period != PeriodDay {
+			switch filter.Period {
+			case PeriodWeek:
+				out.WriteString("week,")
+			case PeriodMonth:
+				out.WriteString("month,")
+			case PeriodYear:
+				out.WriteString("year,")
+			}
+		} else {
+			out.WriteString(fields[i].Name + ",")
+		}
 	}
 
 	str := out.String()
@@ -485,7 +488,20 @@ func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
 		} else if fields[i].withFill {
 			fillArgs, fillQuery := filter.withFill()
 			*args = append(*args, fillArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].Name, fields[i].queryDirection, fillQuery))
+			name := fields[i].Name
+
+			if fields[i].Name == "day" && filter.Period != PeriodDay {
+				switch filter.Period {
+				case PeriodWeek:
+					name = "week"
+				case PeriodMonth:
+					name = "month"
+				case PeriodYear:
+					name = "year"
+				}
+			}
+
+			out.WriteString(fmt.Sprintf(`%s %s %s,`, name, fields[i].queryDirection, fillQuery))
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].Name, fields[i].queryDirection))
 		}
@@ -699,7 +715,20 @@ func (filter *Filter) fieldsContainByQuerySession(haystack []Field, needle strin
 func (filter *Filter) withFill() ([]any, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
 		tz := filter.Timezone.String()
-		query := fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 ", tz, tz)
+		step := "STEP INTERVAL 1 "
+
+		switch filter.Period {
+		case PeriodDay:
+			step += "DAY"
+		case PeriodWeek:
+			step += "WEEK"
+		case PeriodMonth:
+			step += "MONTH"
+		case PeriodYear:
+			step += "YEAR"
+		}
+
+		query := fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 %s ", tz, tz, step)
 		return []any{filter.From, filter.To}, query
 	}
 

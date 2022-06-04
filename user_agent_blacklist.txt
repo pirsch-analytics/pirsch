@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-03-24)
+# custom (last update: 2022-06-03)
 ://
 bot
 crawler
@@ -154,6 +154,50 @@ pa11y
 topic-clusters-ui
 tutorial
 yst1upwya0rmlbx
+lorem
+ipsum
+adobeuxtech
+amazon
+anchor
+avant
+bonecho
+c1647ea35c6eb53d6a562328ec47e
+camino
+cisco
+cometbird
+crowsnest
+deno
+giex
+handshake
+hyperbeam
+ltmetadataservice
+loadster
+manictime
+minefield
+orion
+privacybrowser
+swisscows
+tomthepeeper
+wfuzz
+zapier
+aezakmi
+affiliatewindow
+asusrouter
+builtwith
+clinicsoftware
+foodient
+podcast
+msray
+netdisk
+node.js
+operat
+pika.style
+portalmmm
+prolog/ragno
+testtest
+webpage-inspector
+wii libnup
+willnorris
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
@@ -453,7 +497,6 @@ addthis
 admuncher
 ahc
 alertra
-amazon cloudfront
 amiga
 amiga-aweb
 amigavoyager

@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.8.1
+
+* fixed statistics when using a different period other than "day"
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 3.8.0
 
 * added `Search`, `Sort`, and `Offset` to `Filter`
