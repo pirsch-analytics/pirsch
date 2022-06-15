@@ -78,17 +78,17 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 		u.Path = ""
 	}
 
-	hostname := u.Hostname()
+	hostname := strings.ToLower(u.Hostname())
 
 	if isIP(hostname) {
 		return "", "", ""
 	}
 
-	name := referrerGroups[strings.ToLower(hostname)+u.Path]
+	name := referrerGroups[hostname+u.Path]
 
 	if name == "" {
 		// try again without path
-		name = referrerGroups[strings.ToLower(hostname)]
+		name = referrerGroups[hostname]
 	}
 
 	if ignoreSubdomain {
@@ -104,6 +104,7 @@ func getReferrer(r *http.Request, ref string, domainBlacklist []string, ignoreSu
 	}
 
 	// remove query parameters and anchor
+	u.Host = strings.ToLower(u.Host)
 	u.RawQuery = ""
 	u.Fragment = ""
 	return u.String(), name, ""

@@ -2,6 +2,7 @@
 
 ## 3.8.2
 
+* always return referrer URL in lower-case
 * updated dependencies
 
 ## 3.8.1

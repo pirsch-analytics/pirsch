@@ -47,6 +47,7 @@ func TestGetReferrer(t *testing.T) {
 		{"https://www.google.pl/products", nil, false},
 		{"https://t.co/asdf", nil, false},
 		{"https://t.co", nil, false},
+		{"HTTPS://T.CO", nil, false},
 	}
 	expected := []struct {
 		referrer string
@@ -85,6 +86,7 @@ func TestGetReferrer(t *testing.T) {
 		{"https://google.bf", "Google"},
 		{"https://www.google.pl/products", "Google Product Search"},
 		{"https://t.co/asdf", "Twitter"},
+		{"https://t.co", "Twitter"},
 		{"https://t.co", "Twitter"},
 	}
 
