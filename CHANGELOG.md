@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.2
+
+* updated dependencies
+
 ## 3.8.1
 
 * fixed statistics when using a different period other than "day"
