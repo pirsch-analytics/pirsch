@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.3
+
+* fixed passing dates without timezone
+
 ## 3.8.2
 
 * always return referrer URL in lower-case

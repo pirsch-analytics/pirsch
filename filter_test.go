@@ -151,15 +151,15 @@ func TestFilter_QueryTime(t *testing.T) {
 	args, query := filter.queryTime(false)
 	assert.Len(t, args, 3)
 	assert.Equal(t, NullClient, args[0])
-	assert.Equal(t, filter.From, args[1])
-	assert.Equal(t, filter.To, args[2])
+	assert.Equal(t, filter.From.Format(dateFormat), args[1])
+	assert.Equal(t, filter.To.Format(dateFormat), args[2])
 	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ", query)
 	filter.From = pastDay(2)
 	filter.validate()
 	args, query = filter.queryTime(false)
 	assert.Len(t, args, 2)
 	assert.Equal(t, NullClient, args[0])
-	assert.Equal(t, filter.From, args[1])
+	assert.Equal(t, filter.From.Format(dateFormat), args[1])
 	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') = toDate(?) ", query)
 	filter.IncludeTime = true
 	filter.From = filter.From.Add(time.Hour * 5)
@@ -440,9 +440,9 @@ func TestFilter_WithFill(t *testing.T) {
 	filter.To = pastDay(5)
 	args, query = filter.withFill()
 	assert.Len(t, args, 2)
-	assert.Equal(t, filter.From, args[0])
-	assert.Equal(t, filter.To, args[1])
-	assert.Equal(t, "WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 STEP INTERVAL 1 DAY ", query)
+	assert.Equal(t, filter.From.Format(dateFormat), args[0])
+	assert.Equal(t, filter.To.Format(dateFormat), args[1])
+	assert.Equal(t, "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ", query)
 }
 
 func TestFilter_WithLimit(t *testing.T) {
@@ -499,7 +499,7 @@ func TestFilter_JoinOrderBy(t *testing.T) {
 		FieldVisitors,
 	})
 	assert.Len(t, args, 2)
-	assert.Equal(t, "day ASC WITH FILL FROM toDate(?, 'UTC') TO toDate(?, 'UTC')+1 STEP INTERVAL 1 DAY ,visitors DESC", query)
+	assert.Equal(t, "day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC", query)
 	args = make([]any, 0)
 	filter.Sort = []Sort{
 		{

@@ -38,6 +38,8 @@ const (
 
 	// DirectionDESC sorts results in descending order.
 	DirectionDESC = Direction("DESC")
+
+	dateFormat = "2006-01-02"
 )
 
 // Period is used to group results.
@@ -527,25 +529,25 @@ func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
 	tz := filter.Timezone.String()
 
 	if !filter.From.IsZero() && !filter.To.IsZero() && filter.From.Equal(filter.To) {
-		args = append(args, filter.From)
+		args = append(args, filter.From.Format(dateFormat))
 		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
 	} else {
 		if !filter.From.IsZero() {
-			args = append(args, filter.From)
-
 			if filter.IncludeTime {
+				args = append(args, filter.From)
 				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
 			} else {
+				args = append(args, filter.From.Format(dateFormat))
 				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
 			}
 		}
 
 		if !filter.To.IsZero() {
-			args = append(args, filter.To)
-
 			if filter.IncludeTime {
+				args = append(args, filter.To)
 				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
 			} else {
+				args = append(args, filter.To.Format(dateFormat))
 				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
 			}
 		}
@@ -714,21 +716,20 @@ func (filter *Filter) fieldsContainByQuerySession(haystack []Field, needle strin
 
 func (filter *Filter) withFill() ([]any, string) {
 	if !filter.From.IsZero() && !filter.To.IsZero() {
-		tz := filter.Timezone.String()
 		query := ""
 
 		switch filter.Period {
 		case PeriodDay:
-			query = fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s')+1 STEP INTERVAL 1 DAY ", tz, tz)
+			query = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
 		case PeriodWeek:
-			query = fmt.Sprintf("WITH FILL FROM toStartOfWeek(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 WEEK ", tz, tz)
+			query = "WITH FILL FROM toStartOfWeek(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
 		case PeriodMonth:
-			query = fmt.Sprintf("WITH FILL FROM toStartOfMonth(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 MONTH ", tz, tz)
+			query = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
 		case PeriodYear:
-			query = fmt.Sprintf("WITH FILL FROM toStartOfYear(toDate(?, '%s')) TO toDate(?, '%s')+1 STEP INTERVAL 1 YEAR ", tz, tz)
+			query = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
 		}
 
-		return []any{filter.From, filter.To}, query
+		return []any{filter.From.Format(dateFormat), filter.To.Format(dateFormat)}, query
 	}
 
 	return nil, ""
