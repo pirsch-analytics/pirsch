@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.4
+
+* use the rightmost IP from X-Forwarded-For and Forwarded headers
+* check if the visitor IP address is valid
+
 ## 3.8.3
 
 * fixed passing dates without timezone
