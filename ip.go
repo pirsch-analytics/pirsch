@@ -6,24 +6,41 @@ import (
 	"strings"
 )
 
-// Headers and corresponding parser to look up the real client IP.
-// They will be check in order, the first non-empty one will be picked,
-// or else the remote address is selected.
-// CF-Connecting-IP is a header added by Cloudflare: https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
-var ipHeaders = []IPHeader{
-	{"CF-Connecting-IP", ParseXForwardedForHeader},
-	{"True-Client-IP", ParseXForwardedForHeader},
-	{"X-Forwarded-For", ParseXForwardedForHeader},
-	{"Forwarded", ParseForwardedHeader},
-	{"X-Real-IP", ParseXRealIPHeader},
-}
+var (
+	// CFConnectingIP is an HeaderParser.
+	// https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
+	CFConnectingIP = HeaderParser{"CF-Connecting-IP", ParseXForwardedForHeader}
+
+	// TrueClientIP is an HeaderParser.
+	TrueClientIP = HeaderParser{"True-Client-IP", ParseXForwardedForHeader}
+
+	// XForwardedFor is an HeaderParser.
+	XForwardedFor = HeaderParser{"X-Forwarded-For", ParseXForwardedForHeader}
+
+	// Forwarded is an HeaderParser.
+	Forwarded = HeaderParser{"Forwarded", ParseForwardedHeader}
+
+	// XRealIP is an HeaderParser.
+	XRealIP = HeaderParser{"X-Real-IP", ParseXRealIPHeader}
+
+	// Headers and corresponding parser to look up the real client IP.
+	// They will be check in order, the first non-empty one will be picked,
+	// or else the remote address is selected.
+	defaultHeaderParser = []HeaderParser{
+		CFConnectingIP,
+		TrueClientIP,
+		XForwardedFor,
+		Forwarded,
+		XRealIP,
+	}
+)
 
 // ParseHeaderFunc parses and validates an IP address from a header.
 // It must return an empty string if the header or contained IP address is invalid.
 type ParseHeaderFunc func(string) string
 
-// IPHeader parses a header to extract the real client IP address.
-type IPHeader struct {
+// HeaderParser parses a header to extract the real client IP address.
+type HeaderParser struct {
 	Header string
 	Parser ParseHeaderFunc
 }
@@ -78,7 +95,7 @@ func ParseXRealIPHeader(value string) string {
 func getIP(r *http.Request) string {
 	ip := r.RemoteAddr
 
-	for _, header := range ipHeaders {
+	for _, header := range defaultHeaderParser {
 		value := r.Header.Get(header.Header)
 
 		if value != "" {
