@@ -9,24 +9,24 @@ import (
 var (
 	// CFConnectingIP is an HeaderParser.
 	// https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
-	CFConnectingIP = HeaderParser{"CF-Connecting-IP", ParseXForwardedForHeader}
+	CFConnectingIP = HeaderParser{"CF-Connecting-IP", parseXForwardedForHeader}
 
 	// TrueClientIP is an HeaderParser.
-	TrueClientIP = HeaderParser{"True-Client-IP", ParseXForwardedForHeader}
+	TrueClientIP = HeaderParser{"True-Client-IP", parseXForwardedForHeader}
 
 	// XForwardedFor is an HeaderParser.
-	XForwardedFor = HeaderParser{"X-Forwarded-For", ParseXForwardedForHeader}
+	XForwardedFor = HeaderParser{"X-Forwarded-For", parseXForwardedForHeader}
 
 	// Forwarded is an HeaderParser.
-	Forwarded = HeaderParser{"Forwarded", ParseForwardedHeader}
+	Forwarded = HeaderParser{"Forwarded", parseForwardedHeader}
 
 	// XRealIP is an HeaderParser.
-	XRealIP = HeaderParser{"X-Real-IP", ParseXRealIPHeader}
+	XRealIP = HeaderParser{"X-Real-IP", parseXRealIPHeader}
 
-	// Headers and corresponding parser to look up the real client IP.
+	// DefaultHeaderParser is a list of headers and corresponding parsers to look up the real client IP.
 	// They will be check in order, the first non-empty one will be picked,
 	// or else the remote address is selected.
-	defaultHeaderParser = []HeaderParser{
+	DefaultHeaderParser = []HeaderParser{
 		CFConnectingIP,
 		TrueClientIP,
 		XForwardedFor,
@@ -45,57 +45,12 @@ type HeaderParser struct {
 	Parser ParseHeaderFunc
 }
 
-// ParseForwardedHeader parses the Forwarded header to extract the real client IP.
-func ParseForwardedHeader(value string) string {
-	parts := strings.Split(value, ",")
-
-	if len(parts) > 0 {
-		parts = strings.Split(parts[len(parts)-1], ";")
-
-		for _, part := range parts {
-			k, ip, found := strings.Cut(part, "=")
-
-			if found && strings.TrimSpace(k) == "for" {
-				if isValidIP(ip) {
-					return ip
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
-// ParseXForwardedForHeader parses the X-Forwarded-For header to extract the real client IP.
-func ParseXForwardedForHeader(value string) string {
-	parts := strings.Split(value, ",")
-
-	if len(parts) > 0 {
-		ip := strings.TrimSpace(parts[len(parts)-1])
-
-		if isValidIP(ip) {
-			return ip
-		}
-	}
-
-	return ""
-}
-
-// ParseXRealIPHeader parses the X-Real-IP header to extract the real client IP.
-func ParseXRealIPHeader(value string) string {
-	if isValidIP(value) {
-		return strings.TrimSpace(value)
-	}
-
-	return ""
-}
-
 // getIP returns the IP from given request.
 // It will try to extract the real client IP from headers if possible.
-func getIP(r *http.Request) string {
+func getIP(r *http.Request, parser []HeaderParser) string {
 	ip := r.RemoteAddr
 
-	for _, header := range defaultHeaderParser {
+	for _, header := range parser {
 		value := r.Header.Get(header.Header)
 
 		if value != "" {
@@ -119,6 +74,51 @@ func getIP(r *http.Request) string {
 	}
 
 	return ip
+}
+
+// parseForwardedHeader parses the Forwarded header to extract the real client IP.
+func parseForwardedHeader(value string) string {
+	parts := strings.Split(value, ",")
+
+	if len(parts) > 0 {
+		parts = strings.Split(parts[len(parts)-1], ";")
+
+		for _, part := range parts {
+			k, ip, found := strings.Cut(part, "=")
+
+			if found && strings.TrimSpace(k) == "for" {
+				if isValidIP(ip) {
+					return ip
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// parseXForwardedForHeader parses the X-Forwarded-For header to extract the real client IP.
+func parseXForwardedForHeader(value string) string {
+	parts := strings.Split(value, ",")
+
+	if len(parts) > 0 {
+		ip := strings.TrimSpace(parts[len(parts)-1])
+
+		if isValidIP(ip) {
+			return ip
+		}
+	}
+
+	return ""
+}
+
+// parseXRealIPHeader parses the X-Real-IP header to extract the real client IP.
+func parseXRealIPHeader(value string) string {
+	if isValidIP(value) {
+		return strings.TrimSpace(value)
+	}
+
+	return ""
 }
 
 func isValidIP(value string) bool {

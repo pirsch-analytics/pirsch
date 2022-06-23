@@ -4,6 +4,7 @@
 
 * use the rightmost IP from X-Forwarded-For and Forwarded headers
 * check if the visitor IP address is valid
+* overwrite the default header parser list for the `Tracker` and allow no header usage at all
 
 ## 3.8.3
 

@@ -52,6 +52,10 @@ type TrackerConfig struct {
 	// SessionMaxAge see HitOptions.SessionMaxAge.
 	SessionMaxAge time.Duration
 
+	// HeaderParser see HitOptions.HeaderParser.
+	// Set it to nil to use the DefaultHeaderParser list.
+	HeaderParser []HeaderParser
+
 	// MinDelay see HitOptions.MinDelay.
 	MinDelay int64
 
@@ -127,6 +131,7 @@ type Tracker struct {
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
 	sessionMaxAge                             time.Duration
+	headerParser                              []HeaderParser
 	minDelay                                  int64
 	isBotThreshold                            uint8
 	geoDB                                     *GeoDB
@@ -148,6 +153,10 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		config.SessionCache = NewSessionCacheMem(client, config.MaxSessions)
 	}
 
+	if config.HeaderParser == nil {
+		config.HeaderParser = DefaultHeaderParser
+	}
+
 	tracker := &Tracker{
 		store:                   client,
 		sessionCache:            config.SessionCache,
@@ -163,6 +172,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
 		sessionMaxAge:  config.SessionMaxAge,
+		headerParser:   config.HeaderParser,
 		minDelay:       config.MinDelay,
 		isBotThreshold: config.IsBotThreshold,
 		geoDB:          config.GeoDB,
@@ -198,6 +208,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.HeaderParser = tracker.headerParser
 		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
@@ -235,6 +246,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.HeaderParser = tracker.headerParser
 		options.event = true
 		metaKeys, metaValues := eventOptions.getMetaData()
 		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
@@ -284,6 +296,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
 		ClientID:      clientID,
 		SessionCache:  tracker.sessionCache,
 		SessionMaxAge: tracker.sessionMaxAge,
+		HeaderParser:  tracker.headerParser,
 	})
 }
 

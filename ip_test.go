@@ -31,7 +31,7 @@ func TestParseForwardedHeader(t *testing.T) {
 	}
 
 	for i, head := range header {
-		assert.Equal(t, expected[i], ParseForwardedHeader(head))
+		assert.Equal(t, expected[i], parseForwardedHeader(head))
 	}
 }
 
@@ -54,7 +54,7 @@ func TestParseXForwardedForHeader(t *testing.T) {
 	}
 
 	for i, head := range header {
-		assert.Equal(t, expected[i], ParseXForwardedForHeader(head))
+		assert.Equal(t, expected[i], parseXForwardedForHeader(head))
 	}
 }
 
@@ -75,7 +75,7 @@ func TestParseXRealIPHeader(t *testing.T) {
 	}
 
 	for i, head := range header {
-		assert.Equal(t, expected[i], ParseXRealIPHeader(head))
+		assert.Equal(t, expected[i], parseXRealIPHeader(head))
 	}
 }
 
@@ -84,25 +84,29 @@ func TestGetIP(t *testing.T) {
 	r.RemoteAddr = "123.456.789.012:29302"
 
 	// no header, default
-	assert.Equal(t, "123.456.789.012", getIP(r))
+	assert.Equal(t, "123.456.789.012", getIP(r, DefaultHeaderParser))
 
 	// X-Real-IP
 	r.Header.Set("X-Real-IP", "103.0.53.43")
-	assert.Equal(t, "103.0.53.43", getIP(r))
+	assert.Equal(t, "103.0.53.43", getIP(r, DefaultHeaderParser))
 
 	// Forwarded
 	r.Header.Set("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43")
-	assert.Equal(t, "192.0.2.60", getIP(r))
+	assert.Equal(t, "192.0.2.60", getIP(r, DefaultHeaderParser))
 
 	// X-Forwarded-For
 	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
 
 	// True-Client-IP
 	r.Header.Set("True-Client-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
 
 	// CF-Connecting-IP
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
+
+	// no parser
+	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "123.456.789.012", getIP(r, nil))
 }

@@ -40,6 +40,9 @@ type HitOptions struct {
 	// SessionCache is the cache to look up sessions.
 	SessionCache SessionCache
 
+	// HeaderParser is an (optional) list of parsers to extract the real client IP from request headers.
+	HeaderParser []HeaderParser
+
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID uint64
 
@@ -108,7 +111,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt)
+	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
 	defer m.Unlock()
@@ -175,7 +178,7 @@ func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 		return
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt)
+	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser)
 	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 	if session != nil {
@@ -265,7 +268,7 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 	countryCode, city := "", ""
 
 	if options.geoDB != nil {
-		countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r))
+		countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r, options.HeaderParser))
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {
