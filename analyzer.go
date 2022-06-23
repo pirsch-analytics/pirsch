@@ -733,30 +733,30 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		args = append(args, filterArgs...)
 		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
-		query = fmt.Sprintf(`SELECT (
+		query = fmt.Sprintf(`SELECT toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 1
 				AND mobile = 0
-			) platform_desktop,
-			(
+			)) platform_desktop,
+			toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 1
-			) platform_mobile,
-			(
+			)) platform_mobile,
+			toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 0
-			) platform_unknown,
+			)) platform_unknown,
 			"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 			"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 			"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown `,

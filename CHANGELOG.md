@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.4
+
+* changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
+* updated ClickHouse driver to v2
+
 ## 3.8.3
 
 * fixed passing dates without timezone

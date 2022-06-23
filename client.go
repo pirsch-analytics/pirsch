@@ -2,7 +2,7 @@ package pirsch
 
 import (
 	// ClickHouse is an essential part of Pirsch.
-	_ "github.com/ClickHouse/clickhouse-go"
+	_ "github.com/ClickHouse/clickhouse-go/v2"
 
 	"database/sql"
 	"github.com/jmoiron/sqlx"
@@ -153,7 +153,7 @@ func (client *Client) SaveSessions(sessions []Session) error {
 			session.EntryPath,
 			session.ExitPath,
 			session.PageViews,
-			session.IsBounce,
+			client.boolean(session.IsBounce),
 			session.EntryTitle,
 			session.ExitTitle,
 			session.Language,
