@@ -1,7 +1,11 @@
 package pirsch
 
 import (
+	"crypto/tls"
 	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -10,6 +14,27 @@ import (
 
 // ClientConfig is the optional configuration for the Client.
 type ClientConfig struct {
+	// Hostname is the database hostname.
+	Hostname string
+
+	// Port is the database port.
+	Port int
+
+	// Database is the database schema.
+	Database string
+
+	// Username is the database user.
+	Username string
+
+	// Password is the database password.
+	Password string
+
+	// Secure enables TLS encryption.
+	Secure bool
+
+	// SSLSkipVerify skips the SSL verification if set to true.
+	SSLSkipVerify bool
+
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *log.Logger
@@ -33,17 +58,32 @@ type Client struct {
 
 // NewClient returns a new client for given database connection string.
 // Pass nil for the config to use the defaults.
-func NewClient(connection string, config *ClientConfig) (*Client, error) {
+func NewClient(config *ClientConfig) (*Client, error) {
 	if config == nil {
-		config = new(ClientConfig)
+		return nil, errors.New("configuration missing")
 	}
 
 	config.validate()
-	c, err := sqlx.Open("clickhouse", connection)
+	var tlsConn *tls.Config
 
-	if err != nil {
-		return nil, err
+	if config.Secure {
+		tlsConn = &tls.Config{
+			InsecureSkipVerify: config.SSLSkipVerify,
+		}
 	}
+
+	db := clickhouse.OpenDB(&clickhouse.Options{
+		Addr: []string{fmt.Sprintf("%s:%d", config.Hostname, config.Port)},
+		Auth: clickhouse.Auth{
+			Database: config.Database,
+			Username: config.Username,
+			Password: config.Password,
+		},
+		TLS:         tlsConn,
+		DialTimeout: time.Second * 30,
+		Debug:       config.Debug,
+	})
+	c := sqlx.NewDb(db, "clickhouse")
 
 	if err := c.Ping(); err != nil {
 		return nil, err

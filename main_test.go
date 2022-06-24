@@ -9,13 +9,19 @@ import (
 var dbClient *Client
 
 func TestMain(m *testing.M) {
-	if err := Migrate("tcp://127.0.0.1:9000/pirschtest"); err != nil {
+	dbConfig := &ClientConfig{
+		Hostname:      "127.0.0.1",
+		Port:          9000,
+		Database:      "pirschtest",
+		SSLSkipVerify: true,
+		Debug:         true,
+	}
+
+	if err := Migrate(dbConfig); err != nil {
 		panic(err)
 	}
 
-	c, err := NewClient("tcp://127.0.0.1:9000/pirschtest", &ClientConfig{
-		Debug: true,
-	})
+	c, err := NewClient(dbConfig)
 
 	if err != nil {
 		panic(err)

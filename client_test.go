@@ -8,7 +8,13 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	client, err := NewClient("tcp://127.0.0.1:9000", nil)
+	client, err := NewClient(&ClientConfig{
+		Hostname:      "127.0.0.1",
+		Port:          9000,
+		Database:      "pirschtest",
+		SSLSkipVerify: true,
+		Debug:         true,
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 	assert.NoError(t, client.DB.Ping())

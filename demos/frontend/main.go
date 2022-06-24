@@ -15,11 +15,19 @@ func main() {
 	// Set the key for SipHash.
 	pirsch.SetFingerprintKeys(42, 123)
 
-	if err := pirsch.Migrate("clickhouse://127.0.0.1:9000"); err != nil {
+	db := &pirsch.ClientConfig{
+		Hostname:      "127.0.0.1",
+		Port:          9000,
+		Database:      "pirschtest",
+		SSLSkipVerify: true,
+		Debug:         true,
+	}
+
+	if err := pirsch.Migrate(db); err != nil {
 		panic(err)
 	}
 
-	store, err := pirsch.NewClient("tcp://127.0.0.1:9000", nil)
+	store, err := pirsch.NewClient(db)
 
 	if err != nil {
 		panic(err)

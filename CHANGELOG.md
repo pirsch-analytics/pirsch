@@ -4,6 +4,7 @@
 
 * changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
 * updated ClickHouse driver to v2
+* moved database configuration from connection string to struct
 * added a custom schema migrator and removed golang-migrate/migrate
 * use the rightmost IP from X-Forwarded-For and Forwarded headers
 * check if the visitor IP address is valid

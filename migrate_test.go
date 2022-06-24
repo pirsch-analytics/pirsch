@@ -7,21 +7,14 @@ import (
 
 func TestMigrate(t *testing.T) {
 	dropDB()
-	assert.NotNil(t, Migrate(""))
-	assert.Equal(t, "the database name must be set", Migrate("tcp://127.0.0.1:9000").Error())
-	assert.NoError(t, Migrate("tcp://127.0.0.1:9000/pirschtest"))
-}
-
-func TestGetDatabaseName(t *testing.T) {
-	name, err := getDatabaseName("")
-	assert.Equal(t, "the database name must be set", err.Error())
-	assert.Empty(t, name)
-	name, err = getDatabaseName("tcp://127.0.0.1:9000")
-	assert.Equal(t, "the database name must be set", err.Error())
-	assert.Empty(t, name)
-	name, err = getDatabaseName("tcp://127.0.0.1:9000/pirschtest")
-	assert.Nil(t, err)
-	assert.Equal(t, "pirschtest", name)
+	assert.NotNil(t, Migrate(nil))
+	assert.NoError(t, Migrate(&ClientConfig{
+		Hostname:      "127.0.0.1",
+		Port:          9000,
+		Database:      "pirschtest",
+		SSLSkipVerify: true,
+		Debug:         true,
+	}))
 }
 
 func TestParseVersion(t *testing.T) {

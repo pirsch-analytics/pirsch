@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -23,20 +22,10 @@ type migration struct {
 
 // Migrate runs the database migration for given connection string.
 // This will use the embedded schema migration scripts.
-func Migrate(connection string) error {
-	client, err := NewClient(connection, nil)
+func Migrate(config *ClientConfig) error {
+	client, err := NewClient(config)
 
 	if err != nil {
-		return err
-	}
-
-	database, err := getDatabaseName(connection)
-
-	if err != nil {
-		return err
-	}
-
-	if _, err := client.DB.Exec(fmt.Sprintf("USE %s", database)); err != nil {
 		return err
 	}
 
@@ -55,22 +44,6 @@ func Migrate(connection string) error {
 	}
 
 	return client.Close()
-}
-
-func getDatabaseName(connection string) (string, error) {
-	u, err := url.Parse(connection)
-
-	if err != nil {
-		return "", err
-	}
-
-	schema := strings.TrimLeft(u.Path, "/")
-
-	if schema == "" {
-		return "", errors.New("the database name must be set")
-	}
-
-	return schema, nil
 }
 
 func createMigrationsTable(client *Client) error {
