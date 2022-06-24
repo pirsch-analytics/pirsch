@@ -2,6 +2,7 @@ package pirsch
 
 import (
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -42,6 +43,9 @@ type HitOptions struct {
 
 	// HeaderParser is an (optional) list of parsers to extract the real client IP from request headers.
 	HeaderParser []HeaderParser
+
+	// AllowedProxySubnets is an (optional) list of subnets to trust when extracting the real client IP from request headers.
+	AllowedProxySubnets []*net.IPNet
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID uint64
@@ -111,7 +115,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser)
+	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser, options.AllowedProxySubnets)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
 	defer m.Unlock()
@@ -178,7 +182,7 @@ func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 		return
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser)
+	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser, options.AllowedProxySubnets)
 	session := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
 
 	if session != nil {
@@ -268,7 +272,7 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 	countryCode, city := "", ""
 
 	if options.geoDB != nil {
-		countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r, options.HeaderParser))
+		countryCode, city = options.geoDB.CountryCodeAndCity(getIP(r, options.HeaderParser, options.AllowedProxySubnets))
 	}
 
 	if options.ScreenWidth <= 0 || options.ScreenHeight <= 0 {

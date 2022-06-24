@@ -45,10 +45,46 @@ type HeaderParser struct {
 	Parser ParseHeaderFunc
 }
 
+// cleanIP returns the ip without port, if any.
+func cleanIP(ip string) string {
+	if strings.Contains(ip, ":") {
+		host, _, err := net.SplitHostPort(ip)
+
+		if err != nil {
+			return ip
+		}
+
+		return host
+	}
+
+	return ip
+}
+
+// validProxySource returns whether the IP is in the allowed proxy subnet list.
+func validProxySource(address string, allowed []*net.IPNet) bool {
+	ip := net.ParseIP(address)
+
+	if ip == nil {
+		return false
+	}
+
+	for _, from := range allowed {
+		if from.Contains(ip) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // getIP returns the IP from given request.
 // It will try to extract the real client IP from headers if possible.
-func getIP(r *http.Request, parser []HeaderParser) string {
-	ip := r.RemoteAddr
+func getIP(r *http.Request, parser []HeaderParser, allowed []*net.IPNet) string {
+	ip := cleanIP(r.RemoteAddr)
+
+	if allowed != nil && !validProxySource(ip, allowed) {
+		return ip
+	}
 
 	for _, header := range parser {
 		value := r.Header.Get(header.Header)
@@ -61,16 +97,6 @@ func getIP(r *http.Request, parser []HeaderParser) string {
 				break
 			}
 		}
-	}
-
-	if strings.Contains(ip, ":") {
-		host, _, err := net.SplitHostPort(ip)
-
-		if err != nil {
-			return ip
-		}
-
-		return host
 	}
 
 	return ip
