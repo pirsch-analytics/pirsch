@@ -1,9 +1,10 @@
 # Changelog
 
-## 3.8.4
+## 3.9.0
 
 * changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
 * updated ClickHouse driver to v2
+* added a custom schema migrator and removed golang-migrate/migrate
 
 ## 3.8.3
 

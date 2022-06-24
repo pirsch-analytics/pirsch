@@ -41,7 +41,7 @@ All timestamps are stored as UTC. Starting with version 2.1, the results can be 
 
 ## Usage
 
-To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be run manually be executing the migrations steps in `schema` or by using the automatic migration (make sure you set `x-multi-statement` to `true`).
+To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be run manually be executing the migrations steps in `schema` or by using the automatic migration.
 
 **Make sure you read the changelog before upgrading! There are sometimes manual steps required to migrate the data to the new version.**
 
@@ -54,10 +54,10 @@ Here is a quick demo on how to use the library:
 pirsch.SetFingerprintKeys(42, 123)
 
 // Migrate the database.
-pirsch.Migrate("clickhouse://127.0.0.1:9000?x-multi-statement=true")
+pirsch.Migrate("tcp://127.0.0.1:9000/database")
 
 // Create a new ClickHouse client to save hits.
-store, _ := pirsch.NewClient("tcp://127.0.0.1:9000", nil)
+store, _ := pirsch.NewClient("tcp://127.0.0.1:9000/database", nil)
 
 // Set up a default tracker with a salt.
 // This will buffer and store hits and generate sessions by default.

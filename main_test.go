@@ -9,11 +9,11 @@ import (
 var dbClient *Client
 
 func TestMain(m *testing.M) {
-	if err := Migrate("tcp://127.0.0.1:9000?database=pirschtest"); err != nil {
+	if err := Migrate("tcp://127.0.0.1:9000/pirschtest"); err != nil {
 		panic(err)
 	}
 
-	c, err := NewClient("tcp://127.0.0.1:9000?database=pirschtest", &ClientConfig{
+	c, err := NewClient("tcp://127.0.0.1:9000/pirschtest", &ClientConfig{
 		Debug: true,
 	})
 
@@ -36,4 +36,12 @@ func cleanupDB() {
 	dbClient.MustExec(`ALTER TABLE "event" DELETE WHERE 1=1`)
 	dbClient.MustExec(`ALTER TABLE "user_agent" DELETE WHERE 1=1`)
 	time.Sleep(time.Millisecond * 20)
+}
+
+func dropDB() {
+	dbClient.MustExec(`DROP TABLE IF EXISTS "page_view"`)
+	dbClient.MustExec(`DROP TABLE IF EXISTS "session"`)
+	dbClient.MustExec(`DROP TABLE IF EXISTS "event"`)
+	dbClient.MustExec(`DROP TABLE IF EXISTS "user_agent"`)
+	dbClient.MustExec(`DROP TABLE IF EXISTS "schema_migrations"`)
 }
