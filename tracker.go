@@ -59,7 +59,7 @@ type TrackerConfig struct {
 
 	// AllowedProxySubnets see HitOptions.AllowedProxySubnets.
 	// Set it to nil to allow any IP.
-	AllowedProxySubnets []*net.IPNet
+	AllowedProxySubnets []net.IPNet
 
 	// MinDelay see HitOptions.MinDelay.
 	MinDelay int64
@@ -137,7 +137,7 @@ type Tracker struct {
 	referrerDomainBlacklistIncludesSubdomains bool
 	sessionMaxAge                             time.Duration
 	headerParser                              []HeaderParser
-	allowedProxySubnets                       []*net.IPNet
+	allowedProxySubnets                       []net.IPNet
 	minDelay                                  int64
 	isBotThreshold                            uint8
 	geoDB                                     *GeoDB

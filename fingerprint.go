@@ -14,7 +14,7 @@ var (
 
 // Fingerprint returns a hash for given request and salt.
 // The hash is unique for the visitor.
-func Fingerprint(r *http.Request, salt string, headerParser []HeaderParser, allowed []*net.IPNet) uint64 {
+func Fingerprint(r *http.Request, salt string, headerParser []HeaderParser, allowed []net.IPNet) uint64 {
 	var sb strings.Builder
 	sb.WriteString(r.Header.Get("User-Agent"))
 	sb.WriteString(getIP(r, headerParser, allowed))

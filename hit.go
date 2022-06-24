@@ -45,7 +45,7 @@ type HitOptions struct {
 	HeaderParser []HeaderParser
 
 	// AllowedProxySubnets is an (optional) list of subnets to trust when extracting the real client IP from request headers.
-	AllowedProxySubnets []*net.IPNet
+	AllowedProxySubnets []net.IPNet
 
 	// ClientID is optionally saved with a hit to split the data between multiple clients.
 	ClientID uint64

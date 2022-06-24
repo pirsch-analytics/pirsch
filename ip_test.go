@@ -115,14 +115,16 @@ func TestGetIP(t *testing.T) {
 
 func TestGetIPWithProxy(t *testing.T) {
 	allowedProxySubnetList := []string{"10.0.0.0/8"}
-	allowedProxySubnets := make([]*net.IPNet, 0)
+	allowedProxySubnets := make([]net.IPNet, 0)
 
 	for _, v := range allowedProxySubnetList {
 		_, cidr, err := net.ParseCIDR(v)
+
 		if err != nil {
 			continue
 		}
-		allowedProxySubnets = append(allowedProxySubnets, cidr)
+
+		allowedProxySubnets = append(allowedProxySubnets, *cidr)
 	}
 
 	r := httptest.NewRequest("GET", "/", nil)
