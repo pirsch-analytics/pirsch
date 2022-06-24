@@ -399,6 +399,13 @@ var userAgentsSafari = []testUserAgent{
 		os:             OSiOS,
 		osVersion:      "14.4",
 	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1",
+		browser:        BrowserSafari,
+		browserVersion: "15.4",
+		os:             OSiOS,
+		osVersion:      "15.4",
+	},
 }
 
 var userAgentsIE = []testUserAgent{

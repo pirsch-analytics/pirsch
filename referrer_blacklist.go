@@ -7,7 +7,7 @@ var referrerBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-05-06)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-06-24)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},

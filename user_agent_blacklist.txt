@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-06-03)
+# custom (last update: 2022-06-24)
 ://
 bot
 crawler
@@ -198,6 +198,23 @@ testtest
 webpage-inspector
 wii libnup
 willnorris
+74eb044d588799dd5f74d1e70c33a661
+acumatica
+alwayson
+amazon music podcast
+awesometechstack
+doximity-pipeline
+gaspedaal
+netscape
+openwave
+peach
+pixalate
+puppeteeragent
+r (4.2.0 x86_64-pc-linux-gnu x86_64 linux-gnu)
+sprout social
+candroid
+ivoox
+laks
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
