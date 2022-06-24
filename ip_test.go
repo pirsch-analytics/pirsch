@@ -1,9 +1,11 @@
 package pirsch
 
 import (
-	"github.com/stretchr/testify/assert"
+	"net"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseForwardedHeader(t *testing.T) {
@@ -84,29 +86,77 @@ func TestGetIP(t *testing.T) {
 	r.RemoteAddr = "123.456.789.012:29302"
 
 	// no header, default
-	assert.Equal(t, "123.456.789.012", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "123.456.789.012", getIP(r, DefaultHeaderParser, nil))
 
 	// X-Real-IP
 	r.Header.Set("X-Real-IP", "103.0.53.43")
-	assert.Equal(t, "103.0.53.43", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "103.0.53.43", getIP(r, DefaultHeaderParser, nil))
 
 	// Forwarded
 	r.Header.Set("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43")
-	assert.Equal(t, "192.0.2.60", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "192.0.2.60", getIP(r, DefaultHeaderParser, nil))
 
 	// X-Forwarded-For
 	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, nil))
 
 	// True-Client-IP
 	r.Header.Set("True-Client-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, nil))
 
 	// CF-Connecting-IP
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser))
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, nil))
 
 	// no parser
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
-	assert.Equal(t, "123.456.789.012", getIP(r, nil))
+	assert.Equal(t, "123.456.789.012", getIP(r, nil, nil))
+}
+
+func TestGetIPWithProxy(t *testing.T) {
+	allowedProxySubnetList := []string{"10.0.0.0/8"}
+	allowedProxySubnets := make([]*net.IPNet, 0)
+
+	for _, v := range allowedProxySubnetList {
+		_, cidr, err := net.ParseCIDR(v)
+		if err != nil {
+			continue
+		}
+		allowedProxySubnets = append(allowedProxySubnets, cidr)
+	}
+
+	r := httptest.NewRequest("GET", "/", nil)
+	r.RemoteAddr = "10.0.0.8:29302"
+
+	// no header, default
+	assert.Equal(t, "10.0.0.8", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// X-Real-IP
+	r.Header.Set("X-Real-IP", "103.0.53.43")
+	assert.Equal(t, "103.0.53.43", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// Forwarded
+	r.Header.Set("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43")
+	assert.Equal(t, "192.0.2.60", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// X-Forwarded-For
+	r.Header.Set("X-Forwarded-For", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// True-Client-IP
+	r.Header.Set("True-Client-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// CF-Connecting-IP
+	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "65.182.89.102", getIP(r, DefaultHeaderParser, allowedProxySubnets))
+
+	// no parser
+	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "10.0.0.8", getIP(r, nil, allowedProxySubnets))
+
+	// invalid remote IP
+	r.RemoteAddr = "1.1.1.1"
+	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
+	assert.Equal(t, "1.1.1.1", getIP(r, DefaultHeaderParser, allowedProxySubnets))
 }
