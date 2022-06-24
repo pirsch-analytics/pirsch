@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.0
+
+* use the rightmost IP from X-Forwarded-For and Forwarded headers
+* check if the visitor IP address is valid
+* overwrite the default header parser list for the `Tracker` and allow no header usage at all
+* configure valid proxy IP address ranges for IP headers 
+
 ## 3.8.3
 
 * fixed passing dates without timezone
