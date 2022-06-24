@@ -3,6 +3,7 @@ package pirsch
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"runtime"
 	"strings"
@@ -51,6 +52,14 @@ type TrackerConfig struct {
 
 	// SessionMaxAge see HitOptions.SessionMaxAge.
 	SessionMaxAge time.Duration
+
+	// HeaderParser see HitOptions.HeaderParser.
+	// Set it to nil to use the DefaultHeaderParser list.
+	HeaderParser []HeaderParser
+
+	// AllowedProxySubnets see HitOptions.AllowedProxySubnets.
+	// Set it to nil to allow any IP.
+	AllowedProxySubnets []net.IPNet
 
 	// MinDelay see HitOptions.MinDelay.
 	MinDelay int64
@@ -127,6 +136,8 @@ type Tracker struct {
 	referrerDomainBlacklist                   []string
 	referrerDomainBlacklistIncludesSubdomains bool
 	sessionMaxAge                             time.Duration
+	headerParser                              []HeaderParser
+	allowedProxySubnets                       []net.IPNet
 	minDelay                                  int64
 	isBotThreshold                            uint8
 	geoDB                                     *GeoDB
@@ -148,6 +159,10 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		config.SessionCache = NewSessionCacheMem(client, config.MaxSessions)
 	}
 
+	if config.HeaderParser == nil {
+		config.HeaderParser = DefaultHeaderParser
+	}
+
 	tracker := &Tracker{
 		store:                   client,
 		sessionCache:            config.SessionCache,
@@ -162,11 +177,13 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		workerDone:              make(chan bool),
 		referrerDomainBlacklist: config.ReferrerDomainBlacklist,
 		referrerDomainBlacklistIncludesSubdomains: config.ReferrerDomainBlacklistIncludesSubdomains,
-		sessionMaxAge:  config.SessionMaxAge,
-		minDelay:       config.MinDelay,
-		isBotThreshold: config.IsBotThreshold,
-		geoDB:          config.GeoDB,
-		logger:         config.Logger,
+		sessionMaxAge:       config.SessionMaxAge,
+		headerParser:        config.HeaderParser,
+		allowedProxySubnets: config.AllowedProxySubnets,
+		minDelay:            config.MinDelay,
+		isBotThreshold:      config.IsBotThreshold,
+		geoDB:               config.GeoDB,
+		logger:              config.Logger,
 	}
 	tracker.startWorker()
 	return tracker
@@ -198,6 +215,8 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.HeaderParser = tracker.headerParser
+		options.AllowedProxySubnets = tracker.allowedProxySubnets
 		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
@@ -235,6 +254,8 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		}
 
 		options.SessionCache = tracker.sessionCache
+		options.HeaderParser = tracker.headerParser
+		options.AllowedProxySubnets = tracker.allowedProxySubnets
 		options.event = true
 		metaKeys, metaValues := eventOptions.getMetaData()
 		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
@@ -281,9 +302,11 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 // This function does not store a hit or event in database.
 func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
 	ExtendSession(r, tracker.salt, &HitOptions{
-		ClientID:      clientID,
-		SessionCache:  tracker.sessionCache,
-		SessionMaxAge: tracker.sessionMaxAge,
+		ClientID:            clientID,
+		SessionCache:        tracker.sessionCache,
+		SessionMaxAge:       tracker.sessionMaxAge,
+		HeaderParser:        tracker.headerParser,
+		AllowedProxySubnets: tracker.allowedProxySubnets,
 	})
 }
 

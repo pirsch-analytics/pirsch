@@ -38,6 +38,15 @@ func TestTrackerConfig_Validate(t *testing.T) {
 	assert.Equal(t, maxWorkerTimeout, cfg.WorkerTimeout)
 }
 
+func TestNewTracker(t *testing.T) {
+	tracker := NewTracker(nil, "", nil)
+	assert.Len(t, tracker.headerParser, len(DefaultHeaderParser))
+	tracker = NewTracker(nil, "", &TrackerConfig{
+		HeaderParser: []HeaderParser{},
+	})
+	assert.Len(t, tracker.headerParser, 0)
+}
+
 func TestTracker_HitTimeout(t *testing.T) {
 	uaString1 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0"
 	uaString2 := "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/88.0"

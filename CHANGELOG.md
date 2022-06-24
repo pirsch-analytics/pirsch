@@ -5,6 +5,10 @@
 * changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
 * updated ClickHouse driver to v2
 * added a custom schema migrator and removed golang-migrate/migrate
+* use the rightmost IP from X-Forwarded-For and Forwarded headers
+* check if the visitor IP address is valid
+* overwrite the default header parser list for the `Tracker` and allow no header usage at all
+* configure valid proxy IP address ranges for IP headers
 
 ## 3.8.3
 
