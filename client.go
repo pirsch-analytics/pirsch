@@ -1,10 +1,8 @@
 package pirsch
 
 import (
-	// ClickHouse is an essential part of Pirsch.
-	_ "github.com/ClickHouse/clickhouse-go/v2"
-
 	"database/sql"
+	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"time"
