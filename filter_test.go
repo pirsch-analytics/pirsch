@@ -48,20 +48,20 @@ func TestFilter_BuildQuery(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/", PageViews: 1},
-			{Sign: 1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/", PageViews: 1},
-			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute * 2), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
-			{Sign: -1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
-			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second * 16), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 1, Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 2, Time: Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second * 16), Start: time.Now(), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Minute * 2), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
-			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*23), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
-			{Sign: -1, VisitorID: 2, Time: Today().Add(time.Second * 16), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
-			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second*16 + time.Second*8), EntryPath: "/bar", ExitPath: "/", PageViews: 3},
+			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Minute * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Minute*2 + time.Second*23), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
+			{Sign: -1, VisitorID: 2, Time: Today().Add(time.Second * 16), Start: time.Now(), EntryPath: "/bar", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Second*16 + time.Second*8), Start: time.Now(), EntryPath: "/bar", ExitPath: "/", PageViews: 3},
 		},
 	})
 

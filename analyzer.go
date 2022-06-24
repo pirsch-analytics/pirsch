@@ -619,17 +619,6 @@ func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 		return nil, err
 	}
 
-	// TODO optimize once maps are supported in the driver (v2)
-	for i := range stats {
-		stats[i].Meta = make(map[string]string)
-
-		for j := range stats[i].Metadata {
-			key := stats[i].Metadata[j][0].(string)
-			value := stats[i].Metadata[j][1].(string)
-			stats[i].Meta[key] = value
-		}
-	}
-
 	return stats, nil
 }
 
@@ -733,30 +722,30 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 		args = append(args, filterArgs...)
 		args = append(args, innerArgs...)
 		args = append(args, filterArgs...)
-		query = fmt.Sprintf(`SELECT (
+		query = fmt.Sprintf(`SELECT toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 1
 				AND mobile = 0
-			) platform_desktop,
-			(
+			)) platform_desktop,
+			toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 1
-			) platform_mobile,
-			(
+			)) platform_mobile,
+			toInt64OrDefault((
 				SELECT uniq(visitor_id)
 				FROM event v
 				%s
 				WHERE %s
 				AND desktop = 0
 				AND mobile = 0
-			) platform_unknown,
+			)) platform_unknown,
 			"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 			"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 			"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown `,

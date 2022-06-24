@@ -19,18 +19,18 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25)},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now()},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25)},
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15)},
-			{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3)},
-			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5)},
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now()},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Start: time.Now()},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Start: time.Now()},
+			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now()},
 		},
 		{
-			{Sign: -1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5)},
-			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3)},
-			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute)},
+			{Sign: -1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now()},
+			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Start: time.Now()},
+			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), Start: time.Now()},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -71,25 +71,25 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
-			{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 7, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -149,25 +149,25 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 5), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
-			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
-			{Sign: 1, VisitorID: 7, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 8, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 9, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 7, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: Today(), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -320,25 +320,25 @@ func TestAnalyzer_Growth(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(9).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 2, Time: pastDay(9), ExitPath: "/", PageViews: 5, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Minute * 15), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(9).Add(time.Minute * 15), Start: time.Now(), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: pastDay(9), Start: time.Now(), ExitPath: "/", PageViews: 5, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Minute * 15), Start: time.Now(), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 5), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 6, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: pastDay(3), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Minute * 10), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 8, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 9, Time: pastDay(3), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Minute * 5), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 11, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 12, Time: pastDay(2), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 13, Time: Today(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Minute * 5), Start: time.Now(), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: pastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: pastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 11, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 12, Time: pastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 13, Time: Today(), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -371,15 +371,15 @@ func TestAnalyzer_Growth(t *testing.T) {
 func TestAnalyzer_GrowthDay(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: pastDay(8).Add(time.Hour * 5)},
-		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 3)},
-		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 9)},
-		{Sign: 1, VisitorID: 5, Time: Today().Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 9)},
-		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 12)},
-		{Sign: 1, VisitorID: 8, Time: Today().Add(time.Hour * 17)},
-		{Sign: 1, VisitorID: 9, Time: Today().Add(time.Hour * 21)},
+		{Sign: 1, VisitorID: 1, Time: pastDay(8).Add(time.Hour * 5), Start: time.Now()},
+		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 3), Start: time.Now()},
+		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), Start: time.Now()},
+		{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 9), Start: time.Now()},
+		{Sign: 1, VisitorID: 5, Time: Today().Add(time.Hour * 4), Start: time.Now()},
+		{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 9), Start: time.Now()},
+		{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 12), Start: time.Now()},
+		{Sign: 1, VisitorID: 8, Time: Today().Add(time.Hour * 17), Start: time.Now()},
+		{Sign: 1, VisitorID: 9, Time: Today().Add(time.Hour * 21), Start: time.Now()},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -399,9 +399,9 @@ func TestAnalyzer_GrowthDay(t *testing.T) {
 func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: pastDay(1)},
-		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 4)},
-		{Sign: 1, VisitorID: 3, Time: Today()},
+		{Sign: 1, VisitorID: 1, Time: pastDay(1), Start: time.Now()},
+		{Sign: 1, VisitorID: 2, Time: pastDay(1).Add(time.Hour * 4), Start: time.Now()},
+		{Sign: 1, VisitorID: 3, Time: Today(), Start: time.Now()},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -436,38 +436,38 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
-			{Sign: -1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 12, Time: pastDay(9).Add(time.Second * 5), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 13, SessionID: 3, Time: pastDay(9).Add(time.Second * 6), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 13, SessionID: 31, Time: pastDay(9).Add(time.Minute * 10), EntryPath: "/bar", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 14, Time: pastDay(9).Add(time.Second * 7), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 15, Time: pastDay(9).Add(time.Second * 8), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 12, SessionID: 3, Time: pastDay(9).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 12, Time: pastDay(9).Add(time.Second * 5), EntryPath: "/", Start: time.Now(), ExitPath: "/"},
+			{Sign: 1, VisitorID: 13, SessionID: 3, Time: pastDay(9).Add(time.Second * 6), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 13, SessionID: 31, Time: pastDay(9).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 14, Time: pastDay(9).Add(time.Second * 7), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 15, Time: pastDay(9).Add(time.Second * 8), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 
-			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
-			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 15), EntryPath: "/", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Second * 2), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
-			{Sign: -1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Second * 5), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 5, SessionID: 3, Time: pastDay(3).Add(time.Second * 6), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 5, SessionID: 31, Time: pastDay(3).Add(time.Minute * 10), EntryPath: "/bar", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Second * 7), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Second * 8), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
-			{Sign: -1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Minute * 5), EntryPath: "/", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 9, Time: pastDay(2).Add(time.Second * 10), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Second * 11), EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 11, Time: Today().Add(time.Second * 12), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(-time.Second), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: pastDay(4).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Second * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: pastDay(3).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(3).Add(time.Second * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 3, Time: pastDay(3).Add(time.Second * 6), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 5, SessionID: 31, Time: pastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(3).Add(time.Second * 7), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 7, Time: pastDay(3).Add(time.Second * 8), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: -1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Second * 9), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 8, SessionID: 2, Time: pastDay(2).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 9, Time: pastDay(2).Add(time.Second * 10), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 10, Time: pastDay(2).Add(time.Second * 11), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 11, Time: Today().Add(time.Second * 12), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
@@ -534,17 +534,17 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Start: time.Now(), ExitPath: "/foo", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/foo", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), ExitPath: "/", PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Start: time.Now(), ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Hour * 3), Start: time.Now(), ExitPath: "/", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: pastDay(2).Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: Today().Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: Today().Add(time.Hour * 10), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -638,22 +638,22 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
-			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Hour), SessionID: 41, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2},
-			{Sign: 1, VisitorID: 3, Time: pastDay(4), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 4, Time: pastDay(4), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Minute * 3), Start: time.Now(), SessionID: 4, DurationSeconds: 180, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: pastDay(4).Add(time.Hour), Start: time.Now(), SessionID: 41, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: pastDay(4).Add(time.Minute * 2), Start: time.Now(), SessionID: 4, DurationSeconds: 120, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 3, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 4, Time: pastDay(4), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 4, Time: pastDay(4), SessionID: 4, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), SessionID: 21, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2},
-			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
-			{Sign: 1, VisitorID: 7, Time: pastDay(2), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 8, Time: pastDay(2), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 9, Time: Today(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: -1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 4, Time: pastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 5, Time: pastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 21, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, DurationSeconds: 600, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 6, Time: pastDay(2).Add(time.Minute * 21), Start: time.Now(), SessionID: 21, DurationSeconds: 600, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 7, Time: pastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 8, Time: pastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 9, Time: Today(), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -762,13 +762,13 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(2), SessionID: 1, ExitPath: "/foo", EntryTitle: "Foo"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2), Start: time.Now(), SessionID: 1, ExitPath: "/foo", EntryTitle: "Foo"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(2), SessionID: 1, ExitPath: "/foo", EntryTitle: "Foo"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(2), SessionID: 1, ExitPath: "/", EntryTitle: "Home 1"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(1), SessionID: 2, ExitPath: "/", EntryTitle: "Home 2", DurationSeconds: 42},
-			{Sign: 1, VisitorID: 2, Time: Today(), SessionID: 3, ExitPath: "/foo", EntryTitle: "Foo"},
+			{Sign: -1, VisitorID: 1, Time: pastDay(2), Start: time.Now(), SessionID: 1, ExitPath: "/foo", EntryTitle: "Foo"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2), Start: time.Now(), SessionID: 1, ExitPath: "/", EntryTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(1), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home 2", DurationSeconds: 42},
+			{Sign: 1, VisitorID: 2, Time: Today(), Start: time.Now(), SessionID: 3, ExitPath: "/foo", EntryTitle: "Foo"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -788,12 +788,12 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: pastDay(2), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
-			{Sign: 1, VisitorID: 2, SessionID: 3, Time: pastDay(1), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
+			{Sign: 1, VisitorID: 2, SessionID: 3, Time: pastDay(1), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
@@ -832,19 +832,19 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 1, DurationSeconds: 10, EntryPath: "/bar", ExitPath: "/foo", EntryTitle: "Bar", ExitTitle: "Foo"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), Start: time.Now(), SessionID: 1, DurationSeconds: 10, EntryPath: "/bar", ExitPath: "/foo", EntryTitle: "Bar", ExitTitle: "Foo"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 1, DurationSeconds: 10, EntryPath: "/bar", ExitPath: "/foo", EntryTitle: "Bar", ExitTitle: "Foo"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 1, DurationSeconds: 10, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, EntryPath: "/", ExitPath: "/foo", EntryTitle: "Home", ExitTitle: "Foo"},
-			{Sign: 1, VisitorID: 2, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
-			{Sign: 1, VisitorID: 3, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
-			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), SessionID: 1, DurationSeconds: 20, EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar"},
-			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), SessionID: 1, DurationSeconds: 40, EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar"},
-			{Sign: 1, VisitorID: 6, Time: pastDay(1), SessionID: 1, EntryPath: "/bar", ExitPath: "/bar", EntryTitle: "Bar", ExitTitle: "Bar"},
-			{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 1, EntryPath: "/bar", ExitPath: "/bar", EntryTitle: "Bar", ExitTitle: "Bar"},
-			{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
+			{Sign: -1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), Start: time.Now(), SessionID: 1, DurationSeconds: 10, EntryPath: "/bar", ExitPath: "/foo", EntryTitle: "Bar", ExitTitle: "Foo"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), Start: time.Now(), SessionID: 1, DurationSeconds: 10, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2).Add(time.Second * 10), Start: time.Now(), SessionID: 2, DurationSeconds: 10, EntryPath: "/", ExitPath: "/foo", EntryTitle: "Home", ExitTitle: "Foo"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(2), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(2), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(1).Add(time.Second * 20), Start: time.Now(), SessionID: 1, DurationSeconds: 20, EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar"},
+			{Sign: 1, VisitorID: 5, Time: pastDay(1).Add(time.Second * 40), Start: time.Now(), SessionID: 1, DurationSeconds: 40, EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(1), Start: time.Now(), SessionID: 1, EntryPath: "/bar", ExitPath: "/bar", EntryTitle: "Bar", ExitTitle: "Bar"},
+			{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), Start: time.Now(), SessionID: 1, EntryPath: "/bar", ExitPath: "/bar", EntryTitle: "Bar", ExitTitle: "Bar"},
+			{Sign: 1, VisitorID: 7, Time: pastDay(1).Add(time.Minute), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -974,13 +974,13 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: Today(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Second), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second * 2), SessionID: 1, EntryPath: "/", ExitPath: "/bar"},
+			{Sign: -1, VisitorID: 1, Time: Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, Time: Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 1, Time: Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar"},
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents([]Event{
@@ -1016,15 +1016,15 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/foo", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today(), ExitPath: "/foo", PageViews: 1},
-			{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/", PageViews: 2},
-			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), ExitPath: "/simple/page", PageViews: 1},
-			{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/", PageViews: 1},
-			{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), ExitPath: "/siMple/page/", PageViews: 2},
-			{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
+			{Sign: -1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/", PageViews: 2},
+			{Sign: 1, VisitorID: 2, Time: Today().Add(time.Minute), Start: time.Now(), ExitPath: "/simple/page", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: Today(), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: Today().Add(time.Minute), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 2},
+			{Sign: 1, VisitorID: 4, Time: Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1055,11 +1055,11 @@ func TestAnalyzer_Events(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveSessions(t, [][]Session{
 			{
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: -1, VisitorID: uint64(i), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
 			},
 		})
 	}
@@ -1205,11 +1205,11 @@ func TestAnalyzer_EventList(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		saveSessions(t, [][]Session{
 			{
-				{Sign: 1, VisitorID: uint64(i + 1), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i + 1), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i + 1), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i + 1), Time: Today(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: -1, VisitorID: uint64(i + 1), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i + 1), Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
 			},
 		})
 	}
@@ -1288,14 +1288,14 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), ExitPath: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute), ExitPath: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), ExitPath: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute), Start: time.Now(), ExitPath: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1378,15 +1378,15 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/exit", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), SessionID: 1, ExitPath: "/exit", PageViews: 3, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/exit", PageViews: 3, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute * 2), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 3, Time: time.Now().Add(time.Minute), SessionID: 3, ExitPath: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), SessionID: 1, ExitPath: "/exit", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), SessionID: 1, ExitPath: "/", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 3, Time: time.Now().Add(time.Minute), Start: time.Now(), SessionID: 3, ExitPath: "/bar", Referrer: "ref3", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1416,16 +1416,16 @@ func TestAnalyzer_Platform(t *testing.T) {
 	saveSessions(t, [][]Session{
 		{
 			// set mobile which we overwrite with desktop to be sure the results get collapsed
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Mobile: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Mobile: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Mobile: true},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Desktop: true},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Mobile: true},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Mobile: true},
-			{Sign: 1, VisitorID: 4, Time: time.Now()},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Desktop: true},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Desktop: true},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Mobile: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Desktop: true},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Mobile: true},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Mobile: true},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now()},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Desktop: true},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Desktop: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1456,16 +1456,16 @@ func TestAnalyzer_Languages(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Language: "ru"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Language: "ru"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Language: "ru"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Language: "en"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Language: "de"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Language: "de"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Language: "jp"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Language: "en"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Language: "en"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Language: "ru"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Language: "en"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Language: "de"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Language: "de"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Language: "jp"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Language: "en"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Language: "en"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1505,16 +1505,16 @@ func TestAnalyzer_Countries(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "ru"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "ru"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), CountryCode: "ru"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "en"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), CountryCode: "de"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), CountryCode: "de"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), CountryCode: "jp"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), CountryCode: "en"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), CountryCode: "en"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "ru"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "en"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "de"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "de"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "jp"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "en"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "en"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1554,16 +1554,16 @@ func TestAnalyzer_Cities(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "no", City: "Oslo"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), CountryCode: "no", City: "Oslo"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), CountryCode: "gb", City: "London"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), CountryCode: "de", City: "Berlin"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), CountryCode: "de", City: "Berlin"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), CountryCode: "jp", City: "Tokyo"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), CountryCode: "gb", City: "London"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "no", City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "de", City: "Berlin"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "jp", City: "Tokyo"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: "London"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: "London"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1605,16 +1605,16 @@ func TestAnalyzer_Browser(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserEdge},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserChrome},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Browser: BrowserFirefox},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Browser: BrowserSafari},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Browser: BrowserChrome},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Browser: BrowserChrome},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserEdge},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: BrowserFirefox},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: BrowserFirefox},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: BrowserSafari},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1653,17 +1653,17 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge, BrowserVersion: "85.0"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserEdge, BrowserVersion: "85.0"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Browser: BrowserEdge, BrowserVersion: "85.0"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
-			{Sign: 1, VisitorID: 7, Time: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserEdge, BrowserVersion: "85.0"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.0"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: BrowserFirefox, BrowserVersion: "89.0.1"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: BrowserSafari, BrowserVersion: "14.1.2"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome, BrowserVersion: "87.2"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: BrowserChrome, BrowserVersion: "86.0"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1717,16 +1717,16 @@ func TestAnalyzer_OS(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSLinux},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSLinux},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), OS: OSLinux},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSWindows},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), OS: OSMac},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), OS: OSMac},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), OS: OSAndroid},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), OS: OSWindows},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), OS: OSWindows},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSLinux},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSWindows},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: OSMac},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: OSMac},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: OSAndroid},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: OSWindows},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: OSWindows},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1765,17 +1765,17 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSLinux, OSVersion: "1"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSLinux, OSVersion: "1"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), OS: OSLinux, OSVersion: "1"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), OS: OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), OS: OSLinux},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), OS: OSWindows, OSVersion: "9"},
-			{Sign: 1, VisitorID: 7, Time: time.Now(), OS: OSWindows, OSVersion: "8"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSLinux, OSVersion: "1"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: OSMac, OSVersion: "14.0.0"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: OSMac, OSVersion: "13.1.0"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: OSLinux},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: OSWindows, OSVersion: "9"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), OS: OSWindows, OSVersion: "8"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1829,16 +1829,16 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), ScreenClass: "L", ScreenWidth: 1980, ScreenHeight: 1080},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ScreenClass: "L", ScreenWidth: 1980, ScreenHeight: 1080},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -1877,16 +1877,16 @@ func TestAnalyzer_UTM(t *testing.T) {
 	cleanupDB()
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), UTMSource: "sourceX", UTMMedium: "mediumX", UTMCampaign: "campaignX", UTMContent: "contentX", UTMTerm: "termX"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), UTMSource: "sourceX", UTMMedium: "mediumX", UTMCampaign: "campaignX", UTMContent: "contentX", UTMTerm: "termX"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), UTMSource: "sourceX", UTMMedium: "mediumX", UTMCampaign: "campaignX", UTMContent: "contentX", UTMTerm: "termX"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), UTMSource: "sourceX", UTMMedium: "mediumX", UTMCampaign: "campaignX", UTMContent: "contentX", UTMTerm: "termX"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), UTMSource: "source2", UTMMedium: "medium2", UTMCampaign: "campaign2", UTMContent: "content2", UTMTerm: "term2"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), UTMSource: "source3", UTMMedium: "medium3", UTMCampaign: "campaign3", UTMContent: "content3", UTMTerm: "term3"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -2043,16 +2043,16 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(3), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 2, Time: pastDay(3), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 3, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 4, Time: pastDay(2), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 5, Time: pastDay(1), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 6, Time: pastDay(1), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: -1, VisitorID: 1, Time: pastDay(3), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: pastDay(3), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 2, Time: pastDay(3), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 3, Time: pastDay(2), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 4, Time: pastDay(2), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 5, Time: pastDay(1), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
+			{Sign: 1, VisitorID: 6, Time: pastDay(1), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -2114,9 +2114,9 @@ func TestAnalyzer_CalculateGrowthFloat64(t *testing.T) {
 func TestAnalyzer_Timezone(t *testing.T) {
 	cleanupDB()
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), ExitPath: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
-		{Sign: 1, VisitorID: 2, Time: pastDay(2), ExitPath: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
-		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), ExitPath: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
+		{Sign: 1, VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), Start: time.Now(), ExitPath: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
+		{Sign: 1, VisitorID: 2, Time: pastDay(2), Start: time.Now(), ExitPath: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
+		{Sign: 1, VisitorID: 3, Time: pastDay(1).Add(time.Hour * 19), Start: time.Now(), ExitPath: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: pastDay(3).Add(time.Hour * 18), Path: "/"}, // 18:00 UTC -> 03:00 Asia/Tokyo
@@ -2161,14 +2161,14 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/exit"},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/exit"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today(), ExitPath: "/exit"},
-			{Sign: 1, VisitorID: 1, Time: Today(), ExitPath: "/"},
-			{Sign: 1, VisitorID: 2, Time: Today(), ExitPath: "/simple/page"},
-			{Sign: 1, VisitorID: 3, Time: Today(), ExitPath: "/siMple/page/"},
-			{Sign: 1, VisitorID: 4, Time: Today(), ExitPath: "/simple/page/with/many/slashes"},
+			{Sign: -1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/exit"},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), ExitPath: "/"},
+			{Sign: 1, VisitorID: 2, Time: Today(), Start: time.Now(), ExitPath: "/simple/page"},
+			{Sign: 1, VisitorID: 3, Time: Today(), Start: time.Now(), ExitPath: "/siMple/page/"},
+			{Sign: 1, VisitorID: 4, Time: Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -2200,11 +2200,11 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), DurationSeconds: 7, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -2243,12 +2243,12 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), ExitPath: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
-			{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today().Add(time.Second * 20), Start: time.Now(), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -2428,12 +2428,12 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{VisitorID: 3, SessionID: 1, Time: Today(), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveSessions([]Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today()},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: Today()},
-		{Sign: 1, VisitorID: 2, SessionID: 1, Time: Today()},
-		{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today()},
-		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today()},
-		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today()},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: Today(), Start: time.Now()},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: Today(), Start: time.Now()},
+		{Sign: 1, VisitorID: 2, SessionID: 1, Time: Today(), Start: time.Now()},
+		{Sign: 1, VisitorID: 2, SessionID: 2, Time: Today(), Start: time.Now()},
+		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today(), Start: time.Now()},
+		{Sign: 1, VisitorID: 3, SessionID: 1, Time: Today(), Start: time.Now()},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -2476,12 +2476,12 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	}))
 	saveSessions(t, [][]Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: Today(), EntryPath: "/bar", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, Time: Today(), EntryPath: "/", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 2, Time: Today(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: -1, VisitorID: 1, Time: Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 2, Time: Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)

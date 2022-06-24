@@ -60,8 +60,8 @@ var (
 
 	// FieldRelativeVisitors is a query result column.
 	FieldRelativeVisitors = Field{
-		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
-		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -69,8 +69,8 @@ var (
 
 	// FieldCR is a query result column.
 	FieldCR = Field{
-		querySessions:  "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
-		queryPageViews: "visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1)",
+		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",
@@ -96,8 +96,8 @@ var (
 
 	// FieldRelativeViews is a query result column.
 	FieldRelativeViews = Field{
-		querySessions:  "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
-		queryPageViews: "views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1)",
+		querySessions:  "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
+		queryPageViews: "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",
@@ -311,11 +311,8 @@ var (
 
 	// FieldEventMeta is a query result column.
 	FieldEventMeta = Field{
-		// TODO optimize once maps are supported in the driver (v2)
-		/*querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
-		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
-		querySessions:  "arrayZip(event_meta_keys, event_meta_values)",
-		queryPageViews: "arrayZip(event_meta_keys, event_meta_values)",
+		querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
+		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
 		Name:           "meta",
 	}
 
