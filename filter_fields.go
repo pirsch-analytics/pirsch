@@ -311,11 +311,8 @@ var (
 
 	// FieldEventMeta is a query result column.
 	FieldEventMeta = Field{
-		// TODO optimize once maps are supported in the driver (v2)
-		/*querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
-		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",*/
-		querySessions:  "arrayZip(event_meta_keys, event_meta_values)",
-		queryPageViews: "arrayZip(event_meta_keys, event_meta_values)",
+		querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
+		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
 		Name:           "meta",
 	}
 

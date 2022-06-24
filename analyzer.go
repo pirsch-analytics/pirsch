@@ -619,17 +619,6 @@ func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 		return nil, err
 	}
 
-	// TODO optimize once maps are supported in the driver (v2)
-	for i := range stats {
-		stats[i].Meta = make(map[string]string)
-
-		for j := range stats[i].Metadata {
-			key := stats[i].Metadata[j][0].(string)
-			value := stats[i].Metadata[j][1].(string)
-			stats[i].Meta[key] = value
-		}
-	}
-
 	return stats, nil
 }
 

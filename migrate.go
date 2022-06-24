@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -77,7 +76,6 @@ func getDatabaseName(connection string) (string, error) {
 func createMigrationsTable(client *Client) error {
 	table := ""
 	err := client.DB.Get(&table, "SHOW TABLES LIKE 'schema_migrations'")
-	log.Println(table, err)
 
 	if err != nil && err != sql.ErrNoRows {
 		return err
