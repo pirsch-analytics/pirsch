@@ -61,8 +61,7 @@ func getIP(r *http.Request, parser []HeaderParser, allowed []net.IPNet) string {
 			parsedIP := header.Parser(value)
 
 			if parsedIP != "" {
-				ip = parsedIP
-				break
+				return parsedIP
 			}
 		}
 	}
@@ -113,6 +112,8 @@ func parseForwardedHeader(value string) string {
 			k, ip, found := strings.Cut(part, "=")
 
 			if found && strings.TrimSpace(k) == "for" {
+				ip = cleanIP(ip)
+
 				if isValidIP(ip) {
 					return ip
 				}
@@ -128,7 +129,7 @@ func parseXForwardedForHeader(value string) string {
 	parts := strings.Split(value, ",")
 
 	if len(parts) > 0 {
-		ip := strings.TrimSpace(parts[len(parts)-1])
+		ip := cleanIP(strings.TrimSpace(parts[len(parts)-1]))
 
 		if isValidIP(ip) {
 			return ip
@@ -140,8 +141,10 @@ func parseXForwardedForHeader(value string) string {
 
 // parseXRealIPHeader parses the X-Real-IP header to extract the real client IP.
 func parseXRealIPHeader(value string) string {
+	value = cleanIP(strings.TrimSpace(value))
+
 	if isValidIP(value) {
-		return strings.TrimSpace(value)
+		return value
 	}
 
 	return ""

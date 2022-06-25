@@ -162,3 +162,12 @@ func TestGetIPWithProxy(t *testing.T) {
 	r.Header.Set("CF-Connecting-IP", "127.0.0.1, 23.21.45.67, 65.182.89.102")
 	assert.Equal(t, "1.1.1.1", getIP(r, DefaultHeaderParser, allowedProxySubnets))
 }
+
+func TestIsValidIP(t *testing.T) {
+	assert.False(t, isValidIP("invalid"))
+	assert.False(t, isValidIP(""))
+	assert.False(t, isValidIP("  "))
+	assert.False(t, isValidIP("127.0.0.1"))
+	assert.False(t, isValidIP("0.0.0.0"))
+	assert.True(t, isValidIP("1.2.3.4"))
+}

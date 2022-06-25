@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.9.1
+
+* always return clean IP from `getIP`
+
 ## 3.9.0
 
 * changed `session.is_bounce` type to `Int8`, so that it is the same for all booleans
