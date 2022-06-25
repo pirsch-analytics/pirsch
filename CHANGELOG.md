@@ -3,6 +3,7 @@
 ## 3.9.1
 
 * always return clean IP from `getIP`
+* allow overwriting parser using `HitOptions`
 
 ## 3.9.0
 

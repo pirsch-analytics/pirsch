@@ -214,8 +214,11 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 			tracker.geoDBMutex.RUnlock()
 		}
 
+		if options.HeaderParser == nil {
+			options.HeaderParser = tracker.headerParser
+		}
+
 		options.SessionCache = tracker.sessionCache
-		options.HeaderParser = tracker.headerParser
 		options.AllowedProxySubnets = tracker.allowedProxySubnets
 		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
@@ -253,8 +256,11 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 			tracker.geoDBMutex.RUnlock()
 		}
 
+		if options.HeaderParser == nil {
+			options.HeaderParser = tracker.headerParser
+		}
+
 		options.SessionCache = tracker.sessionCache
-		options.HeaderParser = tracker.headerParser
 		options.AllowedProxySubnets = tracker.allowedProxySubnets
 		options.event = true
 		metaKeys, metaValues := eventOptions.getMetaData()
@@ -300,12 +306,20 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 
 // ExtendSession looks up and extends the session for given request and client ID (optional).
 // This function does not store a hit or event in database.
-func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
+func (tracker *Tracker) ExtendSession(r *http.Request, options *HitOptions) {
+	if options == nil {
+		options = &HitOptions{}
+	}
+
+	if options.HeaderParser == nil {
+		options.HeaderParser = tracker.headerParser
+	}
+
 	ExtendSession(r, tracker.salt, &HitOptions{
-		ClientID:            clientID,
+		ClientID:            options.ClientID,
 		SessionCache:        tracker.sessionCache,
 		SessionMaxAge:       tracker.sessionMaxAge,
-		HeaderParser:        tracker.headerParser,
+		HeaderParser:        options.HeaderParser,
 		AllowedProxySubnets: tracker.allowedProxySubnets,
 	})
 }

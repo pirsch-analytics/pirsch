@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 		Port:          9000,
 		Database:      "pirschtest",
 		SSLSkipVerify: true,
-		Debug:         true,
+		Debug:         false,
 	}
 
 	if err := Migrate(dbConfig); err != nil {

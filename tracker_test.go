@@ -531,7 +531,7 @@ func TestTracker_ExtendSession(t *testing.T) {
 	at := client.Sessions[0].Time
 	fingerprint := client.Sessions[0].VisitorID
 	time.Sleep(time.Millisecond * 20)
-	tracker.ExtendSession(req, 0)
+	tracker.ExtendSession(req, nil)
 	tracker.Flush()
 	assert.Len(t, client.Sessions, 1)
 	hit := sessionCache.Get(0, fingerprint, time.Now().UTC().Add(-time.Second))
