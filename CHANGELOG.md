@@ -3,7 +3,7 @@
 ## 3.10.0
 
 * added database connection configuration and defaults
-* removed jmoiron/sql
+* removed jmoiron/sql and optimized reading results
 * updated dependencies
 
 ## 3.9.1

@@ -9,7 +9,6 @@ require (
 	github.com/emvi/null v1.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.5.1
-	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.6
 	github.com/oschwald/maxminddb-golang v1.9.0
 	github.com/stretchr/testify v1.8.0
@@ -24,7 +23,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.10 // indirect
 	github.com/paulmach/orb v0.7.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

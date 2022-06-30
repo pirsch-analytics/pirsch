@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// TODO
-/*
 func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	cleanupDB(t)
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
@@ -2086,30 +2084,25 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 }
 
 func TestAnalyzer_CalculateGrowth(t *testing.T) {
-	analyzer := NewAnalyzer(dbClient, nil)
-	growth := analyzer.calculateGrowth(0, 0)
+	growth := calculateGrowth(0, 0)
 	assert.InDelta(t, 0, growth, 0.001)
-	growth = analyzer.calculateGrowth(1000, 0)
+	growth = calculateGrowth(1000, 0)
 	assert.InDelta(t, 1, growth, 0.001)
-	growth = analyzer.calculateGrowth(0, 1000)
+	growth = calculateGrowth(0, 1000)
 	assert.InDelta(t, -1, growth, 0.001)
-	growth = analyzer.calculateGrowth(100, 50)
+	growth = calculateGrowth(100, 50)
 	assert.InDelta(t, 1, growth, 0.001)
-	growth = analyzer.calculateGrowth(50, 100)
+	growth = calculateGrowth(50, 100)
 	assert.InDelta(t, -0.5, growth, 0.001)
-}
-
-func TestAnalyzer_CalculateGrowthFloat64(t *testing.T) {
-	analyzer := NewAnalyzer(dbClient, nil)
-	growth := analyzer.calculateGrowthFloat64(0, 0)
+	growth = calculateGrowth(0.0, 0.0)
 	assert.InDelta(t, 0, growth, 0.001)
-	growth = analyzer.calculateGrowthFloat64(1000, 0)
+	growth = calculateGrowth(1000.0, 0.0)
 	assert.InDelta(t, 1, growth, 0.001)
-	growth = analyzer.calculateGrowthFloat64(0, 1000)
+	growth = calculateGrowth(0.0, 1000.0)
 	assert.InDelta(t, -1, growth, 0.001)
-	growth = analyzer.calculateGrowthFloat64(100, 50)
+	growth = calculateGrowth(100.0, 50.0)
 	assert.InDelta(t, 1, growth, 0.001)
-	growth = analyzer.calculateGrowthFloat64(50, 100)
+	growth = calculateGrowth(50.0, 100.0)
 	assert.InDelta(t, -0.5, growth, 0.001)
 }
 
@@ -2570,7 +2563,6 @@ func getMaxFilter(eventName string) *Filter {
 		Limit:          42,
 	}
 }
-*/
 
 func saveSessions(t *testing.T, sessions [][]Session) {
 	for _, entries := range sessions {

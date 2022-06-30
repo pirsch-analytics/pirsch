@@ -475,10 +475,9 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 
 // Count implements the Store interface.
 func (client *Client) Count(query string, args ...any) (int, error) {
-	count := 0
-	err := client.QueryRow(query, args...).Scan(&count)
+	var count int
 
-	if err != nil {
+	if err := client.QueryRow(query, args...).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
 		} else {
@@ -490,10 +489,851 @@ func (client *Client) Count(query string, args ...any) (int, error) {
 	return count, nil
 }
 
+// SelectActiveVisitorStats implements the Store interface.
+func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, args ...any) ([]ActiveVisitorStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []ActiveVisitorStats
+
+	if includeTitle {
+		for rows.Next() {
+			var result ActiveVisitorStats
+
+			if err := rows.Scan(&result.Path, &result.Title, &result.Visitors); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	} else {
+		for rows.Next() {
+			var result ActiveVisitorStats
+
+			if err := rows.Scan(&result.Path, &result.Visitors); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// GetTotalVisitorStats implements the Store interface.
+func (client *Client) GetTotalVisitorStats(query string, args ...any) (*TotalVisitorStats, error) {
+	result := new(TotalVisitorStats)
+
+	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+		&result.Sessions,
+		&result.Views,
+		&result.Bounces,
+		&result.BounceRate); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// SelectVisitorStats implements the Store interface.
+func (client *Client) SelectVisitorStats(query string, args ...any) ([]VisitorStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []VisitorStats
+
+	for rows.Next() {
+		var result VisitorStats
+
+		if err := rows.Scan(&result.Day,
+			&result.Visitors,
+			&result.Sessions,
+			&result.Views,
+			&result.Bounces,
+			&result.BounceRate); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectTimeSpentStats implements the Store interface.
+func (client *Client) SelectTimeSpentStats(period Period, query string, args ...any) ([]TimeSpentStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []TimeSpentStats
+
+	switch period {
+	case PeriodWeek:
+		for rows.Next() {
+			var result TimeSpentStats
+
+			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Week); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	case PeriodMonth:
+		for rows.Next() {
+			var result TimeSpentStats
+
+			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Month); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	case PeriodYear:
+		for rows.Next() {
+			var result TimeSpentStats
+
+			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Year); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	default:
+		for rows.Next() {
+			var result TimeSpentStats
+
+			if err := rows.Scan(&result.Day, &result.AverageTimeSpentSeconds); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// GetGrowthStats implements the Store interface.
+func (client *Client) GetGrowthStats(query string, args ...any) (*GrowthStats, error) {
+	result := new(GrowthStats)
+
+	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+		&result.Sessions,
+		&result.Views,
+		&result.Bounces,
+		&result.BounceRate); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// SelectVisitorHourStats implements the Store interface.
+func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]VisitorHourStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []VisitorHourStats
+
+	for rows.Next() {
+		var result VisitorHourStats
+
+		if err := rows.Scan(&result.Hour,
+			&result.Visitors,
+			&result.Sessions,
+			&result.Views,
+			&result.Bounces,
+			&result.BounceRate); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectPageStats implements the Store interface.
+func (client *Client) SelectPageStats(includeTitle, includeEvent bool, query string, args ...any) ([]PageStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []PageStats
+
+	if includeTitle {
+		if includeEvent {
+			for rows.Next() {
+				var result PageStats
+
+				if err := rows.Scan(&result.Path,
+					&result.Visitors,
+					&result.Sessions,
+					&result.RelativeVisitors,
+					&result.Views,
+					&result.RelativeViews,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.Title,
+					&result.AverageTimeSpentSeconds); err != nil {
+					return nil, err
+				}
+
+				results = append(results, result)
+			}
+		} else {
+			for rows.Next() {
+				var result PageStats
+
+				if err := rows.Scan(&result.Path,
+					&result.Visitors,
+					&result.Sessions,
+					&result.RelativeVisitors,
+					&result.Views,
+					&result.RelativeViews,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.Title); err != nil {
+					return nil, err
+				}
+
+				results = append(results, result)
+			}
+		}
+	} else {
+		if includeEvent {
+			for rows.Next() {
+				var result PageStats
+
+				if err := rows.Scan(&result.Path,
+					&result.Visitors,
+					&result.Sessions,
+					&result.RelativeVisitors,
+					&result.Views,
+					&result.RelativeViews,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.AverageTimeSpentSeconds); err != nil {
+					return nil, err
+				}
+
+				results = append(results, result)
+			}
+		} else {
+			for rows.Next() {
+				var result PageStats
+
+				if err := rows.Scan(&result.Path,
+					&result.Visitors,
+					&result.Sessions,
+					&result.RelativeVisitors,
+					&result.Views,
+					&result.RelativeViews,
+					&result.Bounces,
+					&result.BounceRate); err != nil {
+					return nil, err
+				}
+
+				results = append(results, result)
+			}
+		}
+	}
+
+	return results, nil
+}
+
+// SelectAvgTimeSpentStats implements the Store interface.
+func (client *Client) SelectAvgTimeSpentStats(query string, args ...any) ([]AvgTimeSpentStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []AvgTimeSpentStats
+
+	for rows.Next() {
+		var result AvgTimeSpentStats
+
+		if err := rows.Scan(&result.Path, &result.AverageTimeSpentSeconds); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectEntryStats implements the Store interface.
+func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...any) ([]EntryStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []EntryStats
+
+	if includeTitle {
+		for rows.Next() {
+			var result EntryStats
+
+			if err := rows.Scan(&result.Path, &result.Entries, &result.Title); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	} else {
+		for rows.Next() {
+			var result EntryStats
+
+			if err := rows.Scan(&result.Path, &result.Entries); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// SelectExitStats implements the Store interface.
+func (client *Client) SelectExitStats(includeTitle bool, query string, args ...any) ([]ExitStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []ExitStats
+
+	if includeTitle {
+		for rows.Next() {
+			var result ExitStats
+
+			if err := rows.Scan(&result.Path, &result.Exits, &result.Title); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	} else {
+		for rows.Next() {
+			var result ExitStats
+
+			if err := rows.Scan(&result.Path, &result.Exits); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// SelectTotalVisitorSessionStats implements the Store interface.
+func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) ([]TotalVisitorSessionStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []TotalVisitorSessionStats
+
+	for rows.Next() {
+		var result TotalVisitorSessionStats
+
+		if err := rows.Scan(&result.Path, &result.Visitors, &result.Sessions, &result.Views); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// GetPageConversionsStats implements the Store interface.
+func (client *Client) GetPageConversionsStats(query string, args ...any) (*PageConversionsStats, error) {
+	result := new(PageConversionsStats)
+
+	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+		&result.Views,
+		&result.CR); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// SelectEventStats implements the Store interface.
+func (client *Client) SelectEventStats(breakdown bool, query string, args ...any) ([]EventStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []EventStats
+
+	if breakdown {
+		for rows.Next() {
+			var result EventStats
+
+			if err := rows.Scan(&result.Name,
+				&result.Visitors,
+				&result.Views,
+				&result.CR,
+				&result.AverageDurationSeconds,
+				&result.MetaValue); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	} else {
+		for rows.Next() {
+			var result EventStats
+
+			if err := rows.Scan(&result.Name,
+				&result.Visitors,
+				&result.Views,
+				&result.CR,
+				&result.AverageDurationSeconds,
+				&result.MetaKeys); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// SelectEventListStats implements the Store interface.
+func (client *Client) SelectEventListStats(query string, args ...any) ([]EventListStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []EventListStats
+
+	for rows.Next() {
+		var result EventListStats
+
+		if err := rows.Scan(&result.Name, &result.Meta, &result.Visitors, &result.Count); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectReferrerStats implements the Store interface.
+func (client *Client) SelectReferrerStats(query string, args ...any) ([]ReferrerStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []ReferrerStats
+
+	for rows.Next() {
+		var result ReferrerStats
+
+		if err := rows.Scan(&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.Visitors,
+			&result.Sessions,
+			&result.RelativeVisitors,
+			&result.Bounces,
+			&result.BounceRate,
+			&result.Referrer); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// GetPlatformStats implements the Store interface.
+func (client *Client) GetPlatformStats(query string, args ...any) (*PlatformStats, error) {
+	result := new(PlatformStats)
+
+	if err := client.QueryRow(query, args...).Scan(&result.PlatformDesktop,
+		&result.PlatformMobile,
+		&result.PlatformUnknown,
+		&result.RelativePlatformDesktop,
+		&result.RelativePlatformMobile,
+		&result.RelativePlatformUnknown); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// SelectLanguageStats implements the Store interface.
+func (client *Client) SelectLanguageStats(query string, args ...any) ([]LanguageStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []LanguageStats
+
+	for rows.Next() {
+		var result LanguageStats
+
+		if err := rows.Scan(&result.Language, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectCountryStats implements the Store interface.
+func (client *Client) SelectCountryStats(query string, args ...any) ([]CountryStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []CountryStats
+
+	for rows.Next() {
+		var result CountryStats
+
+		if err := rows.Scan(&result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectCityStats implements the Store interface.
+func (client *Client) SelectCityStats(query string, args ...any) ([]CityStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []CityStats
+
+	for rows.Next() {
+		var result CityStats
+
+		if err := rows.Scan(&result.City, &result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectBrowserStats implements the Store interface.
+func (client *Client) SelectBrowserStats(query string, args ...any) ([]BrowserStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []BrowserStats
+
+	for rows.Next() {
+		var result BrowserStats
+
+		if err := rows.Scan(&result.Browser, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectOSStats implements the Store interface.
+func (client *Client) SelectOSStats(query string, args ...any) ([]OSStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []OSStats
+
+	for rows.Next() {
+		var result OSStats
+
+		if err := rows.Scan(&result.OS, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectScreenClassStats implements the Store interface.
+func (client *Client) SelectScreenClassStats(query string, args ...any) ([]ScreenClassStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []ScreenClassStats
+
+	for rows.Next() {
+		var result ScreenClassStats
+
+		if err := rows.Scan(&result.ScreenClass, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectUTMSourceStats implements the Store interface.
+func (client *Client) SelectUTMSourceStats(query string, args ...any) ([]UTMSourceStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []UTMSourceStats
+
+	for rows.Next() {
+		var result UTMSourceStats
+
+		if err := rows.Scan(&result.UTMSource, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectUTMMediumStats implements the Store interface.
+func (client *Client) SelectUTMMediumStats(query string, args ...any) ([]UTMMediumStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []UTMMediumStats
+
+	for rows.Next() {
+		var result UTMMediumStats
+
+		if err := rows.Scan(&result.UTMMedium, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectUTMCampaignStats implements the Store interface.
+func (client *Client) SelectUTMCampaignStats(query string, args ...any) ([]UTMCampaignStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []UTMCampaignStats
+
+	for rows.Next() {
+		var result UTMCampaignStats
+
+		if err := rows.Scan(&result.UTMCampaign, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectUTMContentStats implements the Store interface.
+func (client *Client) SelectUTMContentStats(query string, args ...any) ([]UTMContentStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []UTMContentStats
+
+	for rows.Next() {
+		var result UTMContentStats
+
+		if err := rows.Scan(&result.UTMContent, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectUTMTermStats implements the Store interface.
+func (client *Client) SelectUTMTermStats(query string, args ...any) ([]UTMTermStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []UTMTermStats
+
+	for rows.Next() {
+		var result UTMTermStats
+
+		if err := rows.Scan(&result.UTMTerm, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectOSVersionStats implements the Store interface.
+func (client *Client) SelectOSVersionStats(query string, args ...any) ([]OSVersionStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []OSVersionStats
+
+	for rows.Next() {
+		var result OSVersionStats
+
+		if err := rows.Scan(&result.OS, &result.OSVersion, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectBrowserVersionStats implements the Store interface.
+func (client *Client) SelectBrowserVersionStats(query string, args ...any) ([]BrowserVersionStats, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []BrowserVersionStats
+
+	for rows.Next() {
+		var result BrowserVersionStats
+
+		if err := rows.Scan(&result.Browser, &result.BrowserVersion, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1
 	}
 
 	return 0
+}
+
+func (client *Client) closeRows(rows *sql.Rows) {
+	if err := rows.Close(); err != nil {
+		client.logger.Printf("error closing rows: %s", err)
+	}
 }
