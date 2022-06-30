@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+const (
+	defaultMaxOpenConnections    = 20
+	defaultMaxConnectionLifetime = 1800
+	defaultMaxIdleConnections    = 5
+	defaultMaxConnectionIdleTime = 300
+)
+
 // ClientConfig is the optional configuration for the Client.
 type ClientConfig struct {
 	// Hostname is the database hostname.
@@ -35,6 +42,22 @@ type ClientConfig struct {
 	// SSLSkipVerify skips the SSL verification if set to true.
 	SSLSkipVerify bool
 
+	// MaxOpenConnections sets the number of maximum open connections.
+	// If set to <= 0, the default value of 20 will be used.
+	MaxOpenConnections int
+
+	// MaxConnectionLifetimeSeconds sets the maximum amount of time a connection will be reused.
+	// If set to <= 0, the default value of 1800 will be used.
+	MaxConnectionLifetimeSeconds int
+
+	// MaxIdleConnections sets the number of maximum idle connections.
+	// If set to <= 0, the default value of 5 will be used.
+	MaxIdleConnections int
+
+	// MaxConnectionIdleTimeSeconds sets the maximum amount of time a connection can be idle.
+	// If set to <= 0, the default value of 300 will be used.
+	MaxConnectionIdleTimeSeconds int
+
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *log.Logger
@@ -44,6 +67,22 @@ type ClientConfig struct {
 }
 
 func (config *ClientConfig) validate() {
+	if config.MaxOpenConnections <= 0 {
+		config.MaxOpenConnections = defaultMaxOpenConnections
+	}
+
+	if config.MaxConnectionLifetimeSeconds <= 0 {
+		config.MaxConnectionLifetimeSeconds = defaultMaxConnectionLifetime
+	}
+
+	if config.MaxIdleConnections <= 0 {
+		config.MaxIdleConnections = defaultMaxIdleConnections
+	}
+
+	if config.MaxConnectionIdleTimeSeconds <= 0 {
+		config.MaxConnectionIdleTimeSeconds = defaultMaxConnectionIdleTime
+	}
+
 	if config.Logger == nil {
 		config.Logger = logger
 	}
@@ -83,6 +122,10 @@ func NewClient(config *ClientConfig) (*Client, error) {
 		DialTimeout: time.Second * 30,
 		Debug:       config.Debug,
 	})
+	db.SetMaxOpenConns(config.MaxOpenConnections)
+	db.SetConnMaxLifetime(time.Duration(config.MaxConnectionLifetimeSeconds) * time.Second)
+	db.SetMaxIdleConns(config.MaxIdleConnections)
+	db.SetConnMaxIdleTime(time.Duration(config.MaxConnectionIdleTimeSeconds) * time.Second)
 	c := sqlx.NewDb(db, "clickhouse")
 
 	if err := c.Ping(); err != nil {

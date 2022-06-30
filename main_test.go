@@ -10,11 +10,12 @@ var dbClient *Client
 
 func TestMain(m *testing.M) {
 	dbConfig := &ClientConfig{
-		Hostname:      "127.0.0.1",
-		Port:          9000,
-		Database:      "pirschtest",
-		SSLSkipVerify: true,
-		Debug:         false,
+		Hostname:           "127.0.0.1",
+		Port:               9000,
+		Database:           "pirschtest",
+		SSLSkipVerify:      true,
+		Debug:              false,
+		MaxOpenConnections: 1,
 	}
 
 	if err := Migrate(dbConfig); err != nil {

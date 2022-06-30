@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.2
+
+* added database connection configuration and defaults
+* updated dependencies
+
 ## 3.9.1
 
 * always return clean IP from `getIP`
