@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/jmoiron/sqlx"
 	"log"
 	"time"
 )
@@ -90,7 +89,7 @@ func (config *ClientConfig) validate() {
 
 // Client is a ClickHouse database client.
 type Client struct {
-	sqlx.DB
+	*sql.DB
 	logger *log.Logger
 	debug  bool
 }
@@ -126,14 +125,13 @@ func NewClient(config *ClientConfig) (*Client, error) {
 	db.SetConnMaxLifetime(time.Duration(config.MaxConnectionLifetimeSeconds) * time.Second)
 	db.SetMaxIdleConns(config.MaxIdleConnections)
 	db.SetConnMaxIdleTime(time.Duration(config.MaxConnectionIdleTimeSeconds) * time.Second)
-	c := sqlx.NewDb(db, "clickhouse")
 
-	if err := c.Ping(); err != nil {
+	if err := db.Ping(); err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		*c,
+		db,
 		config.Logger,
 		config.Debug,
 	}, nil
@@ -141,7 +139,7 @@ func NewClient(config *ClientConfig) (*Client, error) {
 
 // SavePageViews implements the Store interface.
 func (client *Client) SavePageViews(pageViews []PageView) error {
-	tx, err := client.Beginx()
+	tx, err := client.Begin()
 
 	if err != nil {
 		return err
@@ -207,7 +205,7 @@ func (client *Client) SavePageViews(pageViews []PageView) error {
 
 // SaveSessions implements the Store interface.
 func (client *Client) SaveSessions(sessions []Session) error {
-	tx, err := client.Beginx()
+	tx, err := client.Begin()
 
 	if err != nil {
 		return err
@@ -281,7 +279,7 @@ func (client *Client) SaveSessions(sessions []Session) error {
 
 // SaveEvents implements the Store interface.
 func (client *Client) SaveEvents(events []Event) error {
-	tx, err := client.Beginx()
+	tx, err := client.Begin()
 
 	if err != nil {
 		return err
@@ -350,7 +348,7 @@ func (client *Client) SaveEvents(events []Event) error {
 
 // SaveUserAgents implements the Store interface.
 func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
-	tx, err := client.Beginx()
+	tx, err := client.Begin()
 
 	if err != nil {
 		return err
@@ -387,14 +385,89 @@ func (client *Client) SaveUserAgents(userAgents []UserAgent) error {
 
 // Session implements the Store interface.
 func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*Session, error) {
-	query := `SELECT * FROM session WHERE client_id = ? AND visitor_id = ? AND time > ? ORDER BY time DESC LIMIT 1`
+	query := `SELECT sign,
+        client_id,
+		visitor_id,
+		session_id,
+		time,
+		start,
+		duration_seconds,
+		entry_path,
+		exit_path,
+		page_views,
+		is_bounce,
+		entry_title,
+		exit_title,
+		language,
+		country_code,
+		city,
+		referrer,
+		referrer_name,
+		referrer_icon,
+		os,
+		os_version,
+		browser,
+		browser_version,
+		desktop,
+		mobile,
+		screen_width,
+		screen_height,
+		screen_class,
+		utm_source,
+		utm_medium,
+		utm_campaign,
+		utm_content,
+		utm_term,
+		is_bot
+		FROM session
+		WHERE client_id = ?
+		AND visitor_id = ?
+		AND time > ?
+		ORDER BY time DESC
+		LIMIT 1`
 	session := new(Session)
+	err := client.QueryRow(query, clientID, fingerprint, maxAge).Scan(&session.Sign,
+		&session.ClientID,
+		&session.VisitorID,
+		&session.SessionID,
+		&session.Time,
+		&session.Start,
+		&session.DurationSeconds,
+		&session.EntryPath,
+		&session.ExitPath,
+		&session.PageViews,
+		&session.IsBounce,
+		&session.EntryTitle,
+		&session.ExitTitle,
+		&session.Language,
+		&session.CountryCode,
+		&session.City,
+		&session.Referrer,
+		&session.ReferrerName,
+		&session.ReferrerIcon,
+		&session.OS,
+		&session.OSVersion,
+		&session.Browser,
+		&session.BrowserVersion,
+		&session.Desktop,
+		&session.Mobile,
+		&session.ScreenWidth,
+		&session.ScreenHeight,
+		&session.ScreenClass,
+		&session.UTMSource,
+		&session.UTMMedium,
+		&session.UTMCampaign,
+		&session.UTMContent,
+		&session.UTMTerm,
+		&session.IsBot)
 
-	if err := client.DB.Get(session, query, clientID, fingerprint, maxAge); err != nil && err != sql.ErrNoRows {
-		client.logger.Printf("error reading session: %s", err)
-		return nil, err
-	} else if err == sql.ErrNoRows {
-		return nil, nil
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			client.logger.Printf("error reading session: %s", err)
+			return nil, err
+		}
 	}
 
 	return session, nil
@@ -403,34 +476,18 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 // Count implements the Store interface.
 func (client *Client) Count(query string, args ...any) (int, error) {
 	count := 0
+	err := client.QueryRow(query, args...).Scan(&count)
 
-	if err := client.DB.Get(&count, query, args...); err != nil {
-		client.logger.Printf("error counting results: %s", err)
-		return 0, err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		} else {
+			client.logger.Printf("error counting results: %s", err)
+			return 0, err
+		}
 	}
 
 	return count, nil
-}
-
-// Get implements the Store interface.
-func (client *Client) Get(result any, query string, args ...any) error {
-	// don't return an error if nothing was found
-	if err := client.DB.Get(result, query, args...); err != nil && err != sql.ErrNoRows {
-		client.logger.Printf("error getting result: %s", err)
-		return err
-	}
-
-	return nil
-}
-
-// Select implements the Store interface.
-func (client *Client) Select(results any, query string, args ...any) error {
-	if err := client.DB.Select(results, query, args...); err != nil {
-		client.logger.Printf("error selecting results: %s", err)
-		return err
-	}
-
-	return nil
 }
 
 func (client *Client) boolean(b bool) int8 {

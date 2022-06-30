@@ -6,7 +6,7 @@ import (
 )
 
 func TestMigrate(t *testing.T) {
-	dropDB()
+	dropDB(t)
 	assert.NotNil(t, Migrate(nil))
 	assert.NoError(t, Migrate(&ClientConfig{
 		Hostname:      "127.0.0.1",

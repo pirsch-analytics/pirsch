@@ -12,7 +12,7 @@ import (
 )
 
 func TestHitFromRequest(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar&utm_source=test+source&utm_medium=email&utm_campaign=newsletter&utm_content=signup&utm_term=keywords", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
@@ -85,7 +85,7 @@ func TestHitFromRequest(t *testing.T) {
 }
 
 func TestHitFromRequestSession(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
@@ -142,7 +142,7 @@ func TestHitFromRequestSession(t *testing.T) {
 }
 
 func TestHitFromRequestBounces(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path?query=param&foo=bar#anchor", nil)
@@ -252,7 +252,7 @@ func TestHitFromRequestCountryCodeCity(t *testing.T) {
 }
 
 func TestHitFromRequestResetSessionReferrer(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	cache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
@@ -284,7 +284,7 @@ func TestHitFromRequestResetSessionReferrer(t *testing.T) {
 }
 
 func TestHitFromRequestResetSessionUTM(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	cache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test?utm_source=source&utm_medium=medium&utm_campaign=campaign&utm_content=content&utm_term=term", nil)
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.6,nb;q=0.5,la;q=0.4")
@@ -321,7 +321,7 @@ func TestHitFromRequestResetSessionUTM(t *testing.T) {
 }
 
 func TestHitFromRequestIsBot(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	cache := NewSessionCacheMem(dbClient, 100)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	options := &HitOptions{
@@ -354,7 +354,7 @@ func TestHitFromRequestIsBot(t *testing.T) {
 }
 
 func TestExtendSession(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)

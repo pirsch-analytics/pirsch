@@ -176,7 +176,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*PageVie
 }
 
 // ExtendSession looks up and extends the session for given request.
-// This function does not store a hit or event in database.
+// This function does not Store a hit or event in database.
 func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 	if options == nil {
 		return

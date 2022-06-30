@@ -23,12 +23,4 @@ type Store interface {
 
 	// Count returns the number of results for given query.
 	Count(string, ...any) (int, error)
-
-	// Get returns a single result for given query.
-	// The result must be a pointer.
-	Get(any, string, ...any) error
-
-	// Select returns the results for given query.
-	// The results must be a pointer to a slice.
-	Select(any, string, ...any) error
 }

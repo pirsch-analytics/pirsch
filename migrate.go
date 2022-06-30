@@ -48,13 +48,13 @@ func Migrate(config *ClientConfig) error {
 
 func createMigrationsTable(client *Client) error {
 	table := ""
-	err := client.DB.Get(&table, "SHOW TABLES LIKE 'schema_migrations'")
+	err := client.QueryRow("SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
 
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 
-	if err != nil {
+	if table == "" {
 		if _, err := client.DB.Exec("CREATE TABLE schema_migrations (version Int64, dirty UInt8, sequence UInt64) Engine=TinyLog"); err != nil {
 			return err
 		}
@@ -64,20 +64,21 @@ func createMigrationsTable(client *Client) error {
 }
 
 func getMigrationVersion(client *Client) (int, error) {
-	version := struct {
+	migration := struct {
 		Version int
 		Dirty   bool
 	}{}
+	err := client.QueryRow("SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1").Scan(&migration.Version, &migration.Dirty)
 
-	if err := client.DB.Get(&version, "SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1"); err != nil && err != sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
-	if version.Dirty {
+	if migration.Dirty {
 		return 0, errors.New("database dirty")
 	}
 
-	return version.Version, nil
+	return migration.Version, nil
 }
 
 func setMigrationVersion(client *Client, version int, dirty bool) error {

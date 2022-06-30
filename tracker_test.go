@@ -230,7 +230,7 @@ func TestTracker_HitIgnoreSubdomain(t *testing.T) {
 }
 
 func TestTracker_HitConcurrency(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	cache := NewSessionCacheRedis(time.Second*60, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
@@ -264,17 +264,17 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	}
 
 	var session Session
-	assert.NoError(t, dbClient.Get(&session, `SELECT entry_path, exit_path, max(page_views) page_views
+	assert.NoError(t, dbClient.QueryRow(`SELECT entry_path, exit_path, max(page_views) page_views
 		FROM session
 		GROUP BY entry_path, exit_path
-		HAVING sum(sign) > 0`))
+		HAVING sum(sign) > 0`).Scan(&session.EntryPath, &session.ExitPath, &session.PageViews))
 	assert.Equal(t, 100, int(session.PageViews))
 	assert.Equal(t, "/page/1", session.EntryPath)
 	assert.Equal(t, "/page/100", session.ExitPath)
 }
 
 func TestTracker_HitIsBot(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	cache := NewSessionCacheRedis(time.Second*60, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
@@ -296,10 +296,10 @@ func TestTracker_HitIsBot(t *testing.T) {
 
 	tracker.Stop()
 	var session Session
-	assert.NoError(t, dbClient.Get(&session, `SELECT entry_path, exit_path, max(page_views) page_views, max(is_bot) is_bot
+	assert.NoError(t, dbClient.QueryRow(`SELECT entry_path, exit_path, max(page_views) page_views, max(is_bot) is_bot
 		FROM session
 		GROUP BY entry_path, exit_path
-		HAVING sum(sign) > 0`))
+		HAVING sum(sign) > 0`).Scan(&session.EntryPath, &session.ExitPath, &session.PageViews, &session.IsBot))
 	assert.Equal(t, uint8(5), session.IsBot)
 	assert.Equal(t, 6, int(session.PageViews))
 	assert.Equal(t, "/page/0", session.EntryPath)
@@ -313,7 +313,7 @@ func TestTracker_Event(t *testing.T) {
 	tracker := NewTracker(client, "salt", nil)
 	tracker.Event(req, EventOptions{Name: "  "}, nil)                                                                                // ignore (invalid name)
 	tracker.Event(req, EventOptions{Name: ""}, nil)                                                                                  // ignore (invalid name)
-	tracker.Event(req, EventOptions{Name: " event  ", Duration: 42, Meta: map[string]string{"hello": "world", "meta": "data"}}, nil) // store duration and meta data
+	tracker.Event(req, EventOptions{Name: " event  ", Duration: 42, Meta: map[string]string{"hello": "world", "meta": "data"}}, nil) // Store duration and meta data
 	tracker.Stop()
 	assert.Len(t, client.Events, 1)
 	assert.Equal(t, "event", client.Events[0].Name)
@@ -515,7 +515,7 @@ func TestTracker_EventUpdateSession(t *testing.T) {
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := NewSessionCacheMem(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)

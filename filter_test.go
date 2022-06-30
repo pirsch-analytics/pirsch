@@ -34,8 +34,9 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Equal(t, "pattern", filter.PathPattern)
 }
 
-func TestFilter_BuildQuery(t *testing.T) {
-	cleanupDB()
+// TODO
+/*func TestFilter_BuildQuery(t *testing.T) {
+	cleanupDB(t)
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{VisitorID: 1, Time: Today(), Path: "/"},
 		{VisitorID: 1, Time: Today().Add(time.Minute * 2), Path: "/foo"},
@@ -132,7 +133,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	var visitors []VisitorStats
 	assert.NoError(t, dbClient.Select(&visitors, query, args...))
 	assert.Len(t, visitors, 1)
-}
+}*/
 
 func TestFilter_Table(t *testing.T) {
 	filter := NewFilter(NullClient)
