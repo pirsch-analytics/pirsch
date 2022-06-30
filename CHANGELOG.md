@@ -3,6 +3,7 @@
 ## 3.10.0
 
 * added database connection configuration and defaults
+* added whitelisting pages
 * removed jmoiron/sql and optimized reading results
 * updated dependencies
 

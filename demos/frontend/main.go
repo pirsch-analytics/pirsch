@@ -20,7 +20,7 @@ func main() {
 		Port:          9000,
 		Database:      "pirschtest",
 		SSLSkipVerify: true,
-		Debug:         true,
+		Debug:         false,
 	}
 
 	if err := pirsch.Migrate(db); err != nil {

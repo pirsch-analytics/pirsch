@@ -1,14 +1,14 @@
-(function() {
+(function () {
     "use strict";
 
     // add a dummy function for local development
     window.pirsch = (name, options) => {
-        console.log(`Pirsch event: ${name}${options ? " "+JSON.stringify(options) : ""}`);
+        console.log(`Pirsch event: ${name}${options ? " " + JSON.stringify(options) : ""}`);
         return Promise.resolve(null);
     };
 
     // respect Do-Not-Track
-    if(navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
+    if (navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
         return;
     }
 
@@ -16,9 +16,32 @@
     const script = document.querySelector("#pirscheventsjs");
     const dev = script.getAttribute("data-dev");
 
-    if(!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
+    if (!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
         console.warn("Pirsch ignores events on localhost. You can enable it by adding the data-dev attribute.");
         return;
+    }
+
+    // include pages
+    try {
+        const include = script.getAttribute("data-include");
+        const paths = include ? include.split(",") : [];
+
+        if (paths.length) {
+            let found = false;
+
+            for (let i = 0; i < paths.length; i++) {
+                if (new RegExp(paths[i]).test(location.pathname)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                return;
+            }
+        }
+    } catch (e) {
+        console.error(e);
     }
 
     // exclude pages
@@ -31,7 +54,7 @@
                 return;
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 
@@ -39,30 +62,30 @@
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch-event";
     const clientID = script.getAttribute("data-client-id");
     const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
-    window.pirsch = function(name, options) {
-        if(typeof name !== "string" || !name) {
+    window.pirsch = function (name, options) {
+        if (typeof name !== "string" || !name) {
             return Promise.reject("The event name for Pirsch is invalid (must be a non-empty string)! Usage: pirsch('event name', {duration: 42, meta: {key: 'value'}})");
         }
 
         return new Promise((resolve, reject) => {
             const meta = options && options.meta ? options.meta : {};
 
-            for(let key in meta) {
-                if(meta.hasOwnProperty(key)) {
+            for (let key in meta) {
+                if (meta.hasOwnProperty(key)) {
                     meta[key] = String(meta[key]);
                 }
             }
 
             sendEvent(null, name, options, meta, resolve, reject);
 
-            for(let i = 0; i < domains.length; i++) {
+            for (let i = 0; i < domains.length; i++) {
                 sendEvent(domains[i], name, options, meta, resolve, reject);
             }
         });
     }
 
     function sendEvent(hostname, name, options, meta, resolve, reject) {
-        if(!hostname) {
+        if (!hostname) {
             hostname = location.href;
         } else {
             hostname = location.href.replace(location.hostname, hostname);
@@ -72,7 +95,7 @@
         req.open("POST", endpoint);
         req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         req.onload = () => {
-            if(req.status >= 200 && req.status < 300) {
+            if (req.status >= 200 && req.status < 300) {
                 resolve(req.response);
             } else {
                 reject(req.statusText);

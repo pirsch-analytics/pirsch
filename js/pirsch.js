@@ -1,8 +1,8 @@
-(function() {
+(function () {
     "use strict";
 
     // respect Do-Not-Track
-    if(navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
+    if (navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch")) {
         return;
     }
 
@@ -10,9 +10,32 @@
     const script = document.querySelector("#pirschjs");
     const dev = script.hasAttribute("data-dev");
 
-    if(!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
+    if (!dev && (/^localhost(.*)$|^127(\.[0-9]{1,3}){3}$/is.test(location.hostname) || location.protocol === "file:")) {
         console.warn("Pirsch ignores hits on localhost. You can enable it by adding the data-dev attribute.");
         return;
+    }
+
+    // include pages
+    try {
+        const include = script.getAttribute("data-include");
+        const paths = include ? include.split(",") : [];
+
+        if (paths.length) {
+            let found = false;
+
+            for (let i = 0; i < paths.length; i++) {
+                if (new RegExp(paths[i]).test(location.pathname)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                return;
+            }
+        }
+    } catch (e) {
+        console.error(e);
     }
 
     // exclude pages
@@ -25,7 +48,7 @@
                 return;
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 
@@ -33,9 +56,9 @@
     const attributes = script.getAttributeNames();
     let params = "";
 
-    for(let i = 0; i < attributes.length; i++) {
-        if(attributes[i].toLowerCase().startsWith("data-param-")) {
-            params += "&"+attributes[i].substring("data-param-".length)+"="+script.getAttribute(attributes[i]);
+    for (let i = 0; i < attributes.length; i++) {
+        if (attributes[i].toLowerCase().startsWith("data-param-")) {
+            params += "&" + attributes[i].substring("data-param-".length) + "=" + script.getAttribute(attributes[i]);
         }
     }
 
@@ -47,36 +70,36 @@
     function hit() {
         sendHit();
 
-        for(let i = 0; i < domains.length; i++) {
+        for (let i = 0; i < domains.length; i++) {
             sendHit(domains[i]);
         }
     }
 
     function sendHit(hostname) {
-        if(!hostname) {
+        if (!hostname) {
             hostname = location.href;
         } else {
             hostname = location.href.replace(location.hostname, hostname);
         }
 
-        const url = endpoint+
-            "?nc="+ new Date().getTime()+
-            "&client_id="+clientID+
-            "&url="+encodeURIComponent(hostname.substring(0, 1800))+
-            "&t="+encodeURIComponent(document.title)+
-            "&ref="+encodeURIComponent(document.referrer)+
-            "&w="+screen.width+
-            "&h="+screen.height+
+        const url = endpoint +
+            "?nc=" + new Date().getTime() +
+            "&client_id=" + clientID +
+            "&url=" + encodeURIComponent(hostname.substring(0, 1800)) +
+            "&t=" + encodeURIComponent(document.title) +
+            "&ref=" + encodeURIComponent(document.referrer) +
+            "&w=" + screen.width +
+            "&h=" + screen.height +
             params;
         const req = new XMLHttpRequest();
         req.open("GET", url);
         req.send();
     }
 
-    if(history.pushState) {
+    if (history.pushState) {
         const pushState = history["pushState"];
 
-        history.pushState = function() {
+        history.pushState = function () {
             pushState.apply(this, arguments);
             hit();
         }
@@ -84,7 +107,7 @@
         window.addEventListener("popstate", hit);
     }
 
-    if(!document.body) {
+    if (!document.body) {
         window.addEventListener("DOMContentLoaded", hit);
     } else {
         hit();
