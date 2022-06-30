@@ -21,7 +21,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_SavePageViews(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	assert.NoError(t, dbClient.SavePageViews([]PageView{
 		{
 			ClientID:        1,
@@ -56,7 +56,7 @@ func TestClient_SavePageViews(t *testing.T) {
 }
 
 func TestClient_SaveSessions(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{
 			Sign:            1,
@@ -100,7 +100,7 @@ func TestClient_SaveSessions(t *testing.T) {
 }
 
 func TestClient_SaveSessionsBatch(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	sessions := make([]Session, 0, 101)
 
 	for i := 0; i < 50; i++ {
@@ -141,13 +141,13 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 	})
 
 	assert.NoError(t, dbClient.SaveSessions(sessions))
-	var insertedSessions []Session
-	assert.NoError(t, dbClient.Select(&insertedSessions, `SELECT page_views FROM "session" GROUP BY page_views HAVING sum(sign) > 0`))
-	assert.Len(t, insertedSessions, 1)
+	count := 0
+	assert.NoError(t, dbClient.QueryRow(`SELECT count(*) FROM "session" GROUP BY page_views HAVING sum(sign) > 0`).Scan(&count))
+	assert.Equal(t, 1, count)
 }
 
 func TestClient_SaveEvents(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	assert.NoError(t, dbClient.SaveEvents([]Event{
 		{
 			ClientID:        1,
@@ -186,7 +186,7 @@ func TestClient_SaveEvents(t *testing.T) {
 }
 
 func TestClient_SaveUserAgents(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	assert.NoError(t, dbClient.SaveUserAgents([]UserAgent{
 		{
 			Time:      time.Now(),
@@ -200,7 +200,7 @@ func TestClient_SaveUserAgents(t *testing.T) {
 }
 
 func TestClient_Session(t *testing.T) {
-	cleanupDB()
+	cleanupDB(t)
 	now := time.Now().UTC().Add(-time.Second * 20)
 	assert.NoError(t, dbClient.SaveSessions([]Session{
 		{
@@ -249,7 +249,8 @@ func TestClient_Session(t *testing.T) {
 }
 
 func TestClient_GetNoError(t *testing.T) {
-	cleanupDB()
-	var session Session
-	assert.NoError(t, dbClient.Get(&session, `SELECT * FROM "session" LIMIT 1`))
+	cleanupDB(t)
+	var sessions int
+	assert.NoError(t, dbClient.QueryRow(`SELECT count(*) FROM "session" LIMIT 1`).Scan(&sessions))
+	assert.Equal(t, 0, sessions)
 }

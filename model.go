@@ -356,3 +356,26 @@ type UTMTermStats struct {
 	MetaStats
 	UTMTerm string `db:"utm_term" json:"utm_term"`
 }
+
+// GrowthStats is the sum to calculate the growth rate.
+type GrowthStats struct {
+	Visitors   int
+	Views      int
+	Sessions   int
+	Bounces    int
+	BounceRate float64 `db:"bounce_rate"`
+}
+
+// TotalVisitorSessionStats are the total amount of visitors, views, and sessions for a page.
+type TotalVisitorSessionStats struct {
+	Path     string
+	Visitors int
+	Views    int
+	Sessions int
+}
+
+// AvgTimeSpentStats is the average time spent on a page.
+type AvgTimeSpentStats struct {
+	Path                    string
+	AverageTimeSpentSeconds int `db:"average_time_spent_seconds"`
+}

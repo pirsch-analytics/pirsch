@@ -305,7 +305,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 }
 
 // ExtendSession looks up and extends the session for given request and client ID (optional).
-// This function does not store a hit or event in database.
+// This function does not Store a hit or event in database.
 func (tracker *Tracker) ExtendSession(r *http.Request, options *HitOptions) {
 	if options == nil {
 		options = &HitOptions{}

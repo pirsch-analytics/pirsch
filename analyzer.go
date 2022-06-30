@@ -12,26 +12,6 @@ var (
 	ErrNoPeriodOrDay = errors.New("no period or day specified")
 )
 
-type growthStats struct {
-	Visitors   int
-	Views      int
-	Sessions   int
-	Bounces    int
-	BounceRate float64 `db:"bounce_rate"`
-}
-
-type totalVisitorSessionStats struct {
-	Path     string
-	Visitors int
-	Views    int
-	Sessions int
-}
-
-type avgTimeSpentStats struct {
-	Path                    string
-	AverageTimeSpentSeconds int `db:"average_time_spent_seconds"`
-}
-
 // AnalyzerConfig is the optional configuration for the Analyzer.
 type AnalyzerConfig struct {
 	// IsBotThreshold see HitOptions.IsBotThreshold.
@@ -108,9 +88,9 @@ func (analyzer *Analyzer) ActiveVisitors(filter *Filter, duration time.Duration)
 		GROUP BY path %s
 		ORDER BY visitors DESC, path
 		%s`, filterQuery, title, filter.withLimit()))
-	var stats []ActiveVisitorStats
+	stats, err := analyzer.store.SelectActiveVisitorStats(title != "", query.String(), args...)
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err != nil {
 		return nil, 0, err
 	}
 
@@ -151,9 +131,9 @@ func (analyzer *Analyzer) TotalVisitors(filter *Filter) (*TotalVisitorStats, err
 		FieldBounces,
 		FieldBounceRate,
 	}, nil, nil)
-	stats := new(TotalVisitorStats)
+	stats, err := analyzer.store.GetTotalVisitorStats(query, args...)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -176,9 +156,9 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		FieldDay,
 		FieldVisitors,
 	})
-	var stats []VisitorStats
+	stats, err := analyzer.store.SelectVisitorStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -204,14 +184,13 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 		FieldBounceRate,
 	}
 	args, query := filter.buildQuery(fields, nil, nil)
-	current := new(growthStats)
+	current, err := analyzer.store.GetGrowthStats(query, args...)
 
-	if err := analyzer.store.Get(current, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	var currentTimeSpent int
-	var err error
 
 	if filter.EventName != "" {
 		currentTimeSpent, err = analyzer.totalEventDuration(filter)
@@ -248,9 +227,9 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	args, query = filter.buildQuery(fields, nil, nil)
-	previous := new(growthStats)
+	previous, err := analyzer.store.GetGrowthStats(query, args...)
 
-	if err := analyzer.store.Get(previous, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -269,11 +248,11 @@ func (analyzer *Analyzer) Growth(filter *Filter) (*Growth, error) {
 	}
 
 	return &Growth{
-		VisitorsGrowth:  analyzer.calculateGrowth(current.Visitors, previous.Visitors),
-		ViewsGrowth:     analyzer.calculateGrowth(current.Views, previous.Views),
-		SessionsGrowth:  analyzer.calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:   analyzer.calculateGrowthFloat64(current.BounceRate, previous.BounceRate),
-		TimeSpentGrowth: analyzer.calculateGrowth(currentTimeSpent, previousTimeSpent),
+		VisitorsGrowth:  calculateGrowth(current.Visitors, previous.Visitors),
+		ViewsGrowth:     calculateGrowth(current.Views, previous.Views),
+		SessionsGrowth:  calculateGrowth(current.Sessions, previous.Sessions),
+		BouncesGrowth:   calculateGrowth(current.BounceRate, previous.BounceRate),
+		TimeSpentGrowth: calculateGrowth(currentTimeSpent, previousTimeSpent),
 	}, nil
 }
 
@@ -292,9 +271,9 @@ func (analyzer *Analyzer) VisitorHours(filter *Filter) ([]VisitorHourStats, erro
 		FieldHour,
 		FieldVisitors,
 	})
-	var stats []VisitorHourStats
+	stats, err := analyzer.store.SelectVisitorHourStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -333,9 +312,9 @@ func (analyzer *Analyzer) Pages(filter *Filter) ([]PageStats, error) {
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	var stats []PageStats
+	stats, err := analyzer.store.SelectPageStats(filter.IncludeTitle, filter.table() == "event", query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -394,9 +373,9 @@ func (analyzer *Analyzer) EntryPages(filter *Filter) ([]EntryStats, error) {
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	var stats []EntryStats
+	stats, err := analyzer.store.SelectEntryStats(filter.IncludeTitle, query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -474,9 +453,9 @@ func (analyzer *Analyzer) ExitPages(filter *Filter) ([]ExitStats, error) {
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	var stats []ExitStats
+	stats, err := analyzer.store.SelectExitStats(filter.IncludeTitle, query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -530,9 +509,9 @@ func (analyzer *Analyzer) PageConversions(filter *Filter) (*PageConversionsStats
 	}, nil, []Field{
 		FieldVisitors,
 	})
-	stats := new(PageConversionsStats)
+	stats, err := analyzer.store.GetPageConversionsStats(query, args...)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -556,9 +535,9 @@ func (analyzer *Analyzer) Events(filter *Filter) ([]EventStats, error) {
 		FieldVisitors,
 		FieldEventName,
 	})
-	var stats []EventStats
+	stats, err := analyzer.store.SelectEventStats(false, query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -588,9 +567,9 @@ func (analyzer *Analyzer) EventBreakdown(filter *Filter) ([]EventStats, error) {
 		FieldVisitors,
 		FieldEventMetaValues,
 	})
-	var stats []EventStats
+	stats, err := analyzer.store.SelectEventStats(true, query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -613,9 +592,9 @@ func (analyzer *Analyzer) EventList(filter *Filter) ([]EventListStats, error) {
 		FieldCount,
 		FieldEventName,
 	})
-	var stats []EventListStats
+	stats, err := analyzer.store.SelectEventListStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -651,9 +630,9 @@ func (analyzer *Analyzer) Referrer(filter *Filter) ([]ReferrerStats, error) {
 	}
 
 	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	var stats []ReferrerStats
+	stats, err := analyzer.store.SelectReferrerStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -752,9 +731,9 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 			innerQuery, filterQuery, innerQuery, filterQuery, innerQuery, filterQuery)
 	}
 
-	stats := new(PlatformStats)
+	stats, err := analyzer.store.GetPlatformStats(query, args...)
 
-	if err := analyzer.store.Get(stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -763,123 +742,68 @@ func (analyzer *Analyzer) Platform(filter *Filter) (*PlatformStats, error) {
 
 // Languages returns the visitor count grouped by language.
 func (analyzer *Analyzer) Languages(filter *Filter) ([]LanguageStats, error) {
-	var stats []LanguageStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldLanguage); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldLanguage)
+	return analyzer.store.SelectLanguageStats(query, args...)
 }
 
 // Countries returns the visitor count grouped by country.
 func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
-	var stats []CountryStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldCountry); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldCountry)
+	return analyzer.store.SelectCountryStats(query, args...)
 }
 
 // Cities returns the visitor count grouped by city.
 func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
-	var stats []CityStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldCity, FieldCountry); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldCity, FieldCountry)
+	return analyzer.store.SelectCityStats(query, args...)
 }
 
 // Browser returns the visitor count grouped by browser.
 func (analyzer *Analyzer) Browser(filter *Filter) ([]BrowserStats, error) {
-	var stats []BrowserStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldBrowser); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldBrowser)
+	return analyzer.store.SelectBrowserStats(query, args...)
 }
 
 // OS returns the visitor count grouped by operating system.
 func (analyzer *Analyzer) OS(filter *Filter) ([]OSStats, error) {
-	var stats []OSStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldOS); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldOS)
+	return analyzer.store.SelectOSStats(query, args...)
 }
 
 // ScreenClass returns the visitor count grouped by screen class.
 func (analyzer *Analyzer) ScreenClass(filter *Filter) ([]ScreenClassStats, error) {
-	var stats []ScreenClassStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldScreenClass); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldScreenClass)
+	return analyzer.store.SelectScreenClassStats(query, args...)
 }
 
 // UTMSource returns the visitor count grouped by utm source.
 func (analyzer *Analyzer) UTMSource(filter *Filter) ([]UTMSourceStats, error) {
-	var stats []UTMSourceStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMSource); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldUTMSource)
+	return analyzer.store.SelectUTMSourceStats(query, args...)
 }
 
 // UTMMedium returns the visitor count grouped by utm medium.
 func (analyzer *Analyzer) UTMMedium(filter *Filter) ([]UTMMediumStats, error) {
-	var stats []UTMMediumStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMMedium); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldUTMMedium)
+	return analyzer.store.SelectUTMMediumStats(query, args...)
 }
 
 // UTMCampaign returns the visitor count grouped by utm source.
 func (analyzer *Analyzer) UTMCampaign(filter *Filter) ([]UTMCampaignStats, error) {
-	var stats []UTMCampaignStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMCampaign); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldUTMCampaign)
+	return analyzer.store.SelectUTMCampaignStats(query, args...)
 }
 
 // UTMContent returns the visitor count grouped by utm source.
 func (analyzer *Analyzer) UTMContent(filter *Filter) ([]UTMContentStats, error) {
-	var stats []UTMContentStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMContent); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldUTMContent)
+	return analyzer.store.SelectUTMContentStats(query, args...)
 }
 
 // UTMTerm returns the visitor count grouped by utm source.
 func (analyzer *Analyzer) UTMTerm(filter *Filter) ([]UTMTermStats, error) {
-	var stats []UTMTermStats
-
-	if err := analyzer.selectByAttribute(&stats, filter, FieldUTMTerm); err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	args, query := analyzer.selectByAttribute(filter, FieldUTMTerm)
+	return analyzer.store.SelectUTMTermStats(query, args...)
 }
 
 // OSVersion returns the visitor count grouped by operating systems and version.
@@ -897,9 +821,9 @@ func (analyzer *Analyzer) OSVersion(filter *Filter) ([]OSVersionStats, error) {
 		FieldOS,
 		FieldOSVersion,
 	})
-	var stats []OSVersionStats
+	stats, err := analyzer.store.SelectOSVersionStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -921,9 +845,9 @@ func (analyzer *Analyzer) BrowserVersion(filter *Filter) ([]BrowserVersionStats,
 		FieldBrowser,
 		FieldBrowserVersion,
 	})
-	var stats []BrowserVersionStats
+	stats, err := analyzer.store.SelectBrowserVersionStats(query, args...)
 
-	if err := analyzer.store.Select(&stats, query, args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -996,9 +920,9 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 		}
 	}
 
-	var stats []TimeSpentStats
+	stats, err := analyzer.store.SelectTimeSpentStats(filter.Period, query.String(), args...)
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -1094,18 +1018,18 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 		}
 	}
 
-	var stats []TimeSpentStats
+	stats, err := analyzer.store.SelectTimeSpentStats(filter.Period, query.String(), args...)
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	return stats, nil
 }
 
-func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) ([]totalVisitorSessionStats, error) {
+func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) ([]TotalVisitorSessionStats, error) {
 	if len(paths) == 0 {
-		return []totalVisitorSessionStats{}, nil
+		return []TotalVisitorSessionStats{}, nil
 	}
 
 	filter = analyzer.getFilter(filter)
@@ -1151,9 +1075,9 @@ func (analyzer *Analyzer) totalVisitorsSessions(filter *Filter, paths []string) 
 			%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
 	}
 
-	var stats []totalVisitorSessionStats
+	stats, err := analyzer.store.SelectTotalVisitorSessionStats(query, filterArgs...)
 
-	if err := analyzer.store.Select(&stats, query, filterArgs...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -1187,9 +1111,9 @@ func (analyzer *Analyzer) totalSessionDuration(filter *Filter) (int, error) {
 			GROUP BY visitor_id, session_id
 			HAVING sum(sign) > 0
 		)`, filterQuery))
-	var averageTimeSpentSeconds int
+	averageTimeSpentSeconds, err := analyzer.store.Count(query.String(), args...)
 
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query.String(), args...); err != nil {
+	if err != nil {
 		return 0, err
 	}
 
@@ -1218,9 +1142,9 @@ func (analyzer *Analyzer) totalEventDuration(filter *Filter) (int, error) {
 		query = fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
 	}
 
-	var averageTimeSpentSeconds int
+	averageTimeSpentSeconds, err := analyzer.store.Count(query, filterArgs...)
 
-	if err := analyzer.store.Get(&averageTimeSpentSeconds, query, filterArgs...); err != nil {
+	if err != nil {
 		return 0, err
 	}
 
@@ -1277,26 +1201,24 @@ func (analyzer *Analyzer) totalTimeOnPage(filter *Filter) (int, error) {
 			AND time_on_page > 0
 			%s
 		)`, timeQuery, fieldsQuery, fieldQuery))
-	stats := new(struct {
-		AverageTimeSpentSeconds int `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
-	})
+	averageTimeSpentSeconds, err := analyzer.store.Count(query.String(), args...)
 
-	if err := analyzer.store.Get(stats, query.String(), args...); err != nil {
+	if err != nil {
 		return 0, err
 	}
 
-	return stats.AverageTimeSpentSeconds, nil
+	return averageTimeSpentSeconds, nil
 }
 
-func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTimeSpentStats, error) {
+func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]AvgTimeSpentStats, error) {
 	if len(paths) == 0 {
-		return []avgTimeSpentStats{}, nil
+		return []AvgTimeSpentStats{}, nil
 	}
 
 	filter = analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
-		return []avgTimeSpentStats{}, nil
+		return []AvgTimeSpentStats{}, nil
 	}
 
 	filter.Search, filter.Sort, filter.Offset, filter.Limit = nil, nil, 0, 0
@@ -1360,9 +1282,9 @@ func (analyzer *Analyzer) avgTimeOnPage(filter *Filter, paths []string) ([]avgTi
 			%s
 		)
 		GROUP BY path`, timeQuery, pathQuery[:len(pathQuery)-1], fieldQuery))
-	var stats []avgTimeSpentStats
+	stats, err := analyzer.store.SelectAvgTimeSpentStats(query.String(), args...)
 
-	if err := analyzer.store.Select(&stats, query.String(), args...); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -1379,39 +1301,14 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(results any, filter *Filter, attr ...Field) error {
+func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) ([]any, string) {
 	fields := make([]Field, 0, len(attr)+2)
 	fields = append(fields, attr...)
 	fields = append(fields, FieldVisitors, FieldRelativeVisitors)
 	orderBy := make([]Field, 0, len(attr)+1)
 	orderBy = append(orderBy, FieldVisitors)
 	orderBy = append(orderBy, attr...)
-	args, query := analyzer.getFilter(filter).buildQuery(fields, attr, orderBy)
-	return analyzer.store.Select(results, query, args...)
-}
-
-func (analyzer *Analyzer) calculateGrowth(current, previous int) float64 {
-	if current == 0 && previous == 0 {
-		return 0
-	} else if previous == 0 {
-		return 1
-	}
-
-	c := float64(current)
-	p := float64(previous)
-	return (c - p) / p
-}
-
-func (analyzer *Analyzer) calculateGrowthFloat64(current, previous float64) float64 {
-	if current == 0 && previous == 0 {
-		return 0
-	} else if previous == 0 {
-		return 1
-	}
-
-	c := current
-	p := previous
-	return (c - p) / p
+	return analyzer.getFilter(filter).buildQuery(fields, attr, orderBy)
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
@@ -1427,4 +1324,16 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 
 	filterCopy := *filter
 	return &filterCopy
+}
+
+func calculateGrowth[T int | float64](current, previous T) float64 {
+	if current == 0 && previous == 0 {
+		return 0
+	} else if previous == 0 {
+		return 1
+	}
+
+	c := float64(current)
+	p := float64(previous)
+	return (c - p) / p
 }
