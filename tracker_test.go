@@ -236,7 +236,7 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	})
 	cache.Clear()
 	config := &TrackerConfig{
-		Worker:              4,
+		Worker:              3,
 		WorkerBufferSize:    5,
 		WorkerTimeout:       time.Second * 2,
 		SessionCache:        cache,
@@ -254,20 +254,34 @@ func TestTracker_HitConcurrency(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
 		go tracker[i%10].Hit(req, nil)
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 5)
 	}
 
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second)
 
 	for i := 0; i < 10; i++ {
 		tracker[i].Stop()
 	}
 
+	rows, err := dbClient.Query("SELECT path FROM page_view ORDER BY time")
+	assert.NoError(t, err)
+	defer rows.Close()
+	i := 1
+
+	for rows.Next() {
+		var pv PageView
+		assert.NoError(t, rows.Scan(&pv.Path))
+		assert.Equal(t, fmt.Sprintf("/page/%d", i), pv.Path)
+		i++
+	}
+
 	var session Session
-	assert.NoError(t, dbClient.QueryRow(`SELECT entry_path, exit_path, max(page_views) page_views
-		FROM session
-		GROUP BY entry_path, exit_path
-		HAVING sum(sign) > 0`).Scan(&session.EntryPath, &session.ExitPath, &session.PageViews))
+	assert.NoError(t, dbClient.QueryRow(`SELECT time, entry_path, exit_path, max(page_views) page_views
+		FROM session FINAL
+		GROUP BY time, entry_path, exit_path
+		HAVING sum(sign) > 0
+		ORDER BY time DESC
+		LIMIT 1`).Scan(&session.Time, &session.EntryPath, &session.ExitPath, &session.PageViews))
 	assert.Equal(t, 100, int(session.PageViews))
 	assert.Equal(t, "/page/1", session.EntryPath)
 	assert.Equal(t, "/page/100", session.ExitPath)
@@ -346,22 +360,24 @@ func TestTracker_EventTimeout(t *testing.T) {
 }
 
 func TestTracker_EventLimit(t *testing.T) {
-	client := NewMockClient()
-	tracker := NewTracker(client, "salt", &TrackerConfig{
-		Worker:           1,
-		WorkerBufferSize: 10,
-	})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
-
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 10; i++ {
+		client := NewMockClient()
+		tracker := NewTracker(client, "salt", &TrackerConfig{
+			Worker:           1,
+			WorkerBufferSize: 10,
+		})
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
-		tracker.Event(req, EventOptions{Name: "event"}, nil)
-	}
 
-	tracker.Stop()
-	assert.Len(t, client.Events, 7)
+		for i := 0; i < 7; i++ {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+			tracker.Event(req, EventOptions{Name: "event"}, nil)
+		}
+
+		tracker.Stop()
+		assert.Len(t, client.Events, 7)
+	}
 }
 
 func TestTracker_EventDiscard(t *testing.T) {

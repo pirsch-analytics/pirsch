@@ -5,7 +5,9 @@
 * added database connection configuration and defaults
 * added whitelisting pages
 * removed jmoiron/sql and optimized reading results
+* saving page views, events, or sessions will now panic on error
 * fixed grouping cities and countries when city is unknown
+* refactored `Tracker`
 * updated dependencies
 
 ## 3.9.1

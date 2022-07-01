@@ -117,16 +117,20 @@ func (config *TrackerConfig) validate() {
 	}
 }
 
+type data struct {
+	session  SessionState
+	pageView *PageView
+	event    *Event
+	ua       *UserAgent
+}
+
 // Tracker provides methods to track requests.
 // Make sure you call Stop to make sure the hits get stored before shutting down the server.
 type Tracker struct {
 	store                                     Store
 	sessionCache                              SessionCache
 	salt                                      string
-	pageViews                                 chan PageView
-	sessions                                  chan SessionState
-	events                                    chan Event
-	userAgents                                chan UserAgent
+	data                                      chan data
 	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
@@ -167,10 +171,7 @@ func NewTracker(client Store, salt string, config *TrackerConfig) *Tracker {
 		store:                   client,
 		sessionCache:            config.SessionCache,
 		salt:                    salt,
-		pageViews:               make(chan PageView, config.Worker*config.WorkerBufferSize),
-		sessions:                make(chan SessionState, config.Worker*config.WorkerBufferSize),
-		events:                  make(chan Event, config.Worker*config.WorkerBufferSize),
-		userAgents:              make(chan UserAgent, config.Worker*config.WorkerBufferSize),
+		data:                    make(chan data, config.Worker*config.WorkerBufferSize),
 		worker:                  config.Worker,
 		workerBufferSize:        config.WorkerBufferSize,
 		workerTimeout:           config.WorkerTimeout,
@@ -223,12 +224,11 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
-			tracker.pageViews <- *pageView
-			tracker.sessions <- sessionState
-		}
-
-		if ua != nil {
-			tracker.userAgents <- *ua
+			tracker.data <- data{
+				session:  sessionState,
+				pageView: pageView,
+				ua:       ua,
+			}
 		}
 	}
 }
@@ -267,38 +267,40 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
-			tracker.sessions <- sessionState
-			tracker.events <- Event{
-				ClientID:        pageView.ClientID,
-				VisitorID:       pageView.VisitorID,
-				Time:            pageView.Time,
-				SessionID:       pageView.SessionID,
-				DurationSeconds: eventOptions.Duration,
-				Name:            strings.TrimSpace(eventOptions.Name),
-				MetaKeys:        metaKeys,
-				MetaValues:      metaValues,
-				Path:            pageView.Path,
-				Title:           options.Title,
-				Language:        pageView.Language,
-				CountryCode:     pageView.CountryCode,
-				City:            pageView.City,
-				Referrer:        pageView.Referrer,
-				ReferrerName:    pageView.ReferrerName,
-				ReferrerIcon:    pageView.ReferrerIcon,
-				OS:              pageView.OS,
-				OSVersion:       pageView.OSVersion,
-				Browser:         pageView.Browser,
-				BrowserVersion:  pageView.BrowserVersion,
-				Desktop:         pageView.Desktop,
-				Mobile:          pageView.Mobile,
-				ScreenWidth:     pageView.ScreenWidth,
-				ScreenHeight:    pageView.ScreenHeight,
-				ScreenClass:     pageView.ScreenClass,
-				UTMSource:       pageView.UTMSource,
-				UTMMedium:       pageView.UTMMedium,
-				UTMCampaign:     pageView.UTMCampaign,
-				UTMContent:      pageView.UTMContent,
-				UTMTerm:         pageView.UTMTerm,
+			tracker.data <- data{
+				session: sessionState,
+				event: &Event{
+					ClientID:        pageView.ClientID,
+					VisitorID:       pageView.VisitorID,
+					Time:            pageView.Time,
+					SessionID:       pageView.SessionID,
+					DurationSeconds: eventOptions.Duration,
+					Name:            strings.TrimSpace(eventOptions.Name),
+					MetaKeys:        metaKeys,
+					MetaValues:      metaValues,
+					Path:            pageView.Path,
+					Title:           options.Title,
+					Language:        pageView.Language,
+					CountryCode:     pageView.CountryCode,
+					City:            pageView.City,
+					Referrer:        pageView.Referrer,
+					ReferrerName:    pageView.ReferrerName,
+					ReferrerIcon:    pageView.ReferrerIcon,
+					OS:              pageView.OS,
+					OSVersion:       pageView.OSVersion,
+					Browser:         pageView.Browser,
+					BrowserVersion:  pageView.BrowserVersion,
+					Desktop:         pageView.Desktop,
+					Mobile:          pageView.Mobile,
+					ScreenWidth:     pageView.ScreenWidth,
+					ScreenHeight:    pageView.ScreenHeight,
+					ScreenClass:     pageView.ScreenClass,
+					UTMSource:       pageView.UTMSource,
+					UTMMedium:       pageView.UTMMedium,
+					UTMCampaign:     pageView.UTMCampaign,
+					UTMContent:      pageView.UTMContent,
+					UTMTerm:         pageView.UTMTerm,
+				},
 			}
 		}
 	}
@@ -336,10 +338,7 @@ func (tracker *Tracker) Stop() {
 	if atomic.LoadInt32(&tracker.stopped) == 0 {
 		atomic.StoreInt32(&tracker.stopped, 1)
 		tracker.stopWorker()
-		tracker.flushPageViews()
-		tracker.flushSessions()
-		tracker.flushEvents()
-		tracker.flushUserAgents()
+		tracker.flushData()
 	}
 }
 
@@ -362,99 +361,59 @@ func (tracker *Tracker) startWorker() {
 	tracker.workerCancel = cancelFunc
 
 	for i := 0; i < tracker.worker; i++ {
-		go tracker.aggregatePageViews(ctx)
-		go tracker.aggregateSessions(ctx)
-		go tracker.aggregateEvents(ctx)
-		go tracker.aggregateUserAgents(ctx)
+		go tracker.aggregateData(ctx)
 	}
 }
 
 func (tracker *Tracker) stopWorker() {
 	tracker.workerCancel()
 
-	for i := 0; i < tracker.worker*4; i++ {
+	for i := 0; i < tracker.worker; i++ {
 		<-tracker.workerDone
 	}
 }
 
-func (tracker *Tracker) flushPageViews() {
+func (tracker *Tracker) flushData() {
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
 	pageViews := make([]PageView, 0, tracker.workerBufferSize)
+	events := make([]Event, 0, tracker.workerBufferSize)
+	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
 
 	for {
 		stop := false
 
 		select {
-		case pageView := <-tracker.pageViews:
-			pageViews = append(pageViews, pageView)
+		case data := <-tracker.data:
+			sessions = append(sessions, data.session.State)
 
-			if len(pageViews) >= tracker.workerBufferSize {
-				tracker.savePageViews(pageViews)
-				pageViews = pageViews[:0]
+			if data.session.Cancel != nil {
+				sessions = append(sessions, data.session.State)
 			}
-		default:
-			stop = true
-		}
 
-		if stop {
-			break
-		}
-	}
-
-	tracker.savePageViews(pageViews)
-}
-
-func (tracker *Tracker) aggregatePageViews(ctx context.Context) {
-	pageViews := make([]PageView, 0, tracker.workerBufferSize)
-	timer := time.NewTimer(tracker.workerTimeout)
-	defer timer.Stop()
-
-	for {
-		timer.Reset(tracker.workerTimeout)
-
-		select {
-		case pageView := <-tracker.pageViews:
-			pageViews = append(pageViews, pageView)
-
-			if len(pageViews) >= tracker.workerBufferSize {
-				tracker.savePageViews(pageViews)
-				pageViews = pageViews[:0]
+			if data.pageView != nil {
+				pageViews = append(pageViews, *data.pageView)
 			}
-		case <-timer.C:
-			tracker.savePageViews(pageViews)
-			pageViews = pageViews[:0]
-		case <-ctx.Done():
-			tracker.savePageViews(pageViews)
-			tracker.workerDone <- true
-			return
-		}
-	}
-}
 
-func (tracker *Tracker) savePageViews(pageViews []PageView) {
-	if len(pageViews) > 0 {
-		if err := tracker.store.SavePageViews(pageViews); err != nil {
-			tracker.logger.Printf("error saving page views: %s", err)
-		}
-	}
-}
+			if data.event != nil {
+				events = append(events, *data.event)
+			}
 
-func (tracker *Tracker) flushSessions() {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+			if data.ua != nil {
+				userAgents = append(userAgents, *data.ua)
+			}
 
-	for {
-		stop := false
-
-		select {
-		case session := <-tracker.sessions:
-			if len(sessions)+2 >= tracker.workerBufferSize {
+			if len(sessions)+1 >= tracker.workerBufferSize ||
+				len(pageViews)+2 >= tracker.workerBufferSize*2 ||
+				len(events)+1 >= tracker.workerBufferSize ||
+				len(userAgents)+1 >= tracker.workerBufferSize {
 				tracker.saveSessions(sessions)
+				tracker.savePageViews(pageViews)
+				tracker.saveEvents(events)
+				tracker.saveUserAgents(userAgents)
 				sessions = sessions[:0]
-			}
-
-			sessions = append(sessions, session.State)
-
-			if session.Cancel != nil {
-				sessions = append(sessions, *session.Cancel)
+				pageViews = pageViews[:0]
+				events = events[:0]
+				userAgents = userAgents[:0]
 			}
 		default:
 			stop = true
@@ -466,10 +425,16 @@ func (tracker *Tracker) flushSessions() {
 	}
 
 	tracker.saveSessions(sessions)
+	tracker.savePageViews(pageViews)
+	tracker.saveEvents(events)
+	tracker.saveUserAgents(userAgents)
 }
 
-func (tracker *Tracker) aggregateSessions(ctx context.Context) {
-	sessions := make([]Session, 0, tracker.workerBufferSize)
+func (tracker *Tracker) aggregateData(ctx context.Context) {
+	sessions := make([]Session, 0, tracker.workerBufferSize*2)
+	pageViews := make([]PageView, 0, tracker.workerBufferSize)
+	events := make([]Event, 0, tracker.workerBufferSize)
+	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
 	timer := time.NewTimer(tracker.workerTimeout)
 	defer timer.Stop()
 
@@ -477,24 +442,62 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 		timer.Reset(tracker.workerTimeout)
 
 		select {
-		case session := <-tracker.sessions:
-			if len(sessions)+2 >= tracker.workerBufferSize {
+		case data := <-tracker.data:
+			if data.session.Cancel != nil {
+				sessions = append(sessions, *data.session.Cancel)
+			}
+
+			sessions = append(sessions, data.session.State)
+
+			if data.pageView != nil {
+				pageViews = append(pageViews, *data.pageView)
+			}
+
+			if data.event != nil {
+				events = append(events, *data.event)
+			}
+
+			if data.ua != nil {
+				userAgents = append(userAgents, *data.ua)
+			}
+
+			if len(sessions)+1 >= tracker.workerBufferSize ||
+				len(pageViews)+2 >= tracker.workerBufferSize*2 ||
+				len(events)+1 >= tracker.workerBufferSize ||
+				len(userAgents)+1 >= tracker.workerBufferSize {
 				tracker.saveSessions(sessions)
+				tracker.savePageViews(pageViews)
+				tracker.saveEvents(events)
+				tracker.saveUserAgents(userAgents)
 				sessions = sessions[:0]
+				pageViews = pageViews[:0]
+				events = events[:0]
+				userAgents = userAgents[:0]
 			}
-
-			if session.Cancel != nil {
-				sessions = append(sessions, *session.Cancel)
-			}
-
-			sessions = append(sessions, session.State)
 		case <-timer.C:
 			tracker.saveSessions(sessions)
+			tracker.savePageViews(pageViews)
+			tracker.saveEvents(events)
+			tracker.saveUserAgents(userAgents)
 			sessions = sessions[:0]
+			pageViews = pageViews[:0]
+			events = events[:0]
+			userAgents = userAgents[:0]
 		case <-ctx.Done():
 			tracker.saveSessions(sessions)
+			tracker.savePageViews(pageViews)
+			tracker.saveEvents(events)
+			tracker.saveUserAgents(userAgents)
 			tracker.workerDone <- true
 			return
+		}
+	}
+}
+
+func (tracker *Tracker) savePageViews(pageViews []PageView) {
+	if len(pageViews) > 0 {
+		if err := tracker.store.SavePageViews(pageViews); err != nil {
+			log.Panicf("error saving page views: %s", err)
 		}
 	}
 }
@@ -502,60 +505,7 @@ func (tracker *Tracker) aggregateSessions(ctx context.Context) {
 func (tracker *Tracker) saveSessions(sessions []Session) {
 	if len(sessions) > 0 {
 		if err := tracker.store.SaveSessions(sessions); err != nil {
-			tracker.logger.Printf("error saving sessions: %s", err)
-		}
-	}
-}
-
-func (tracker *Tracker) flushEvents() {
-	events := make([]Event, 0, tracker.workerBufferSize)
-
-	for {
-		stop := false
-
-		select {
-		case event := <-tracker.events:
-			events = append(events, event)
-
-			if len(events) >= tracker.workerBufferSize {
-				tracker.saveEvents(events)
-				events = events[:0]
-			}
-		default:
-			stop = true
-		}
-
-		if stop {
-			break
-		}
-	}
-
-	tracker.saveEvents(events)
-}
-
-func (tracker *Tracker) aggregateEvents(ctx context.Context) {
-	events := make([]Event, 0, tracker.workerBufferSize)
-	timer := time.NewTimer(tracker.workerTimeout)
-	defer timer.Stop()
-
-	for {
-		timer.Reset(tracker.workerTimeout)
-
-		select {
-		case event := <-tracker.events:
-			events = append(events, event)
-
-			if len(events) >= tracker.workerBufferSize {
-				tracker.saveEvents(events)
-				events = events[:0]
-			}
-		case <-timer.C:
-			tracker.saveEvents(events)
-			events = events[:0]
-		case <-ctx.Done():
-			tracker.saveEvents(events)
-			tracker.workerDone <- true
-			return
+			log.Panicf("error saving sessions: %s", err)
 		}
 	}
 }
@@ -563,60 +513,7 @@ func (tracker *Tracker) aggregateEvents(ctx context.Context) {
 func (tracker *Tracker) saveEvents(events []Event) {
 	if len(events) > 0 {
 		if err := tracker.store.SaveEvents(events); err != nil {
-			tracker.logger.Printf("error saving events: %s", err)
-		}
-	}
-}
-
-func (tracker *Tracker) flushUserAgents() {
-	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
-
-	for {
-		stop := false
-
-		select {
-		case ua := <-tracker.userAgents:
-			userAgents = append(userAgents, ua)
-
-			if len(userAgents) == tracker.workerBufferSize {
-				tracker.saveUserAgents(userAgents)
-				userAgents = userAgents[:0]
-			}
-		default:
-			stop = true
-		}
-
-		if stop {
-			break
-		}
-	}
-
-	tracker.saveUserAgents(userAgents)
-}
-
-func (tracker *Tracker) aggregateUserAgents(ctx context.Context) {
-	userAgents := make([]UserAgent, 0, tracker.workerBufferSize)
-	timer := time.NewTimer(tracker.workerTimeout)
-	defer timer.Stop()
-
-	for {
-		timer.Reset(tracker.workerTimeout)
-
-		select {
-		case ua := <-tracker.userAgents:
-			userAgents = append(userAgents, ua)
-
-			if len(userAgents) == tracker.workerBufferSize {
-				tracker.saveUserAgents(userAgents)
-				userAgents = userAgents[:0]
-			}
-		case <-timer.C:
-			tracker.saveUserAgents(userAgents)
-			userAgents = userAgents[:0]
-		case <-ctx.Done():
-			tracker.saveUserAgents(userAgents)
-			tracker.workerDone <- true
-			return
+			log.Panicf("error saving events: %s", err)
 		}
 	}
 }
