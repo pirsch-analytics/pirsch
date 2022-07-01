@@ -5,6 +5,7 @@
 * added database connection configuration and defaults
 * added whitelisting pages
 * removed jmoiron/sql and optimized reading results
+* fixed grouping cities and countries when city is unknown
 * updated dependencies
 
 ## 3.9.1

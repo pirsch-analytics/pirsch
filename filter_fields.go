@@ -161,6 +161,15 @@ var (
 		Name:           "language",
 	}
 
+	// FieldCountryCity is a query result column.
+	// This field can only be used in combination with the FieldCity.
+	FieldCountryCity = Field{
+		querySessions:  "if(city = '', '', country_code)",
+		queryPageViews: "if(city = '', '', country_code)",
+		queryDirection: "ASC",
+		Name:           "country_code",
+	}
+
 	// FieldCountry is a query result column.
 	FieldCountry = Field{
 		querySessions:  "country_code",

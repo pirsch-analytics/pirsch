@@ -754,7 +754,7 @@ func (analyzer *Analyzer) Countries(filter *Filter) ([]CountryStats, error) {
 
 // Cities returns the visitor count grouped by city.
 func (analyzer *Analyzer) Cities(filter *Filter) ([]CityStats, error) {
-	args, query := analyzer.selectByAttribute(filter, FieldCity, FieldCountry)
+	args, query := analyzer.selectByAttribute(filter, FieldCity, FieldCountryCity)
 	return analyzer.store.SelectCityStats(query, args...)
 }
 
