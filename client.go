@@ -541,7 +541,7 @@ func (client *Client) GetTotalVisitorStats(query string, args ...any) (*TotalVis
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *Client) SelectVisitorStats(query string, args ...any) ([]VisitorStats, error) {
+func (client *Client) SelectVisitorStats(period Period, query string, args ...any) ([]VisitorStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -551,19 +551,67 @@ func (client *Client) SelectVisitorStats(query string, args ...any) ([]VisitorSt
 	defer client.closeRows(rows)
 	var results []VisitorStats
 
-	for rows.Next() {
-		var result VisitorStats
+	switch period {
+	case PeriodWeek:
+		for rows.Next() {
+			var result VisitorStats
 
-		if err := rows.Scan(&result.Day,
-			&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil {
-			return nil, err
+			if err := rows.Scan(&result.Week,
+				&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
 		}
+	case PeriodMonth:
+		for rows.Next() {
+			var result VisitorStats
 
-		results = append(results, result)
+			if err := rows.Scan(&result.Month,
+				&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	case PeriodYear:
+		for rows.Next() {
+			var result VisitorStats
+
+			if err := rows.Scan(&result.Year,
+				&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	default:
+		for rows.Next() {
+			var result VisitorStats
+
+			if err := rows.Scan(&result.Day,
+				&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
 	}
 
 	return results, nil

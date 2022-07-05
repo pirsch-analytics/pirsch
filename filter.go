@@ -327,7 +327,7 @@ func (filter *Filter) joinPageViewFields(args *[]any, fields []Field) string {
 			if fields[i].Name == "day" && filter.Period != PeriodDay {
 				switch filter.Period {
 				case PeriodWeek:
-					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s) week,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
+					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
 				case PeriodMonth:
 					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
 				case PeriodYear:
@@ -360,7 +360,7 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 			if fields[i].Name == "day" && filter.Period != PeriodDay {
 				switch filter.Period {
 				case PeriodWeek:
-					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s) week,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
+					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
 				case PeriodMonth:
 					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
 				case PeriodYear:
@@ -722,7 +722,7 @@ func (filter *Filter) withFill() ([]any, string) {
 		case PeriodDay:
 			query = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
 		case PeriodWeek:
-			query = "WITH FILL FROM toStartOfWeek(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
+			query = "WITH FILL FROM toStartOfWeek(toDate(?), 1) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
 		case PeriodMonth:
 			query = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
 		case PeriodYear:

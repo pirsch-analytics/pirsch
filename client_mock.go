@@ -82,7 +82,7 @@ func (client *ClientMock) GetTotalVisitorStats(string, ...any) (*TotalVisitorSta
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *ClientMock) SelectVisitorStats(string, ...any) ([]VisitorStats, error) {
+func (client *ClientMock) SelectVisitorStats(Period, string, ...any) ([]VisitorStats, error) {
 	return nil, nil
 }
 

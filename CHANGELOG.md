@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.10.1
+
+* changed weekly timescale to start on Monday
+* fixed visitor statistics having the right date set depending on the timescale
+* updated dependencies
+
 ## 3.10.0
 
 * added database connection configuration and defaults

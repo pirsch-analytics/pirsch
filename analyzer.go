@@ -156,7 +156,7 @@ func (analyzer *Analyzer) Visitors(filter *Filter) ([]VisitorStats, error) {
 		FieldDay,
 		FieldVisitors,
 	})
-	stats, err := analyzer.store.SelectVisitorStats(query, args...)
+	stats, err := analyzer.store.SelectVisitorStats(filter.Period, query, args...)
 
 	if err != nil {
 		return nil, err
@@ -871,7 +871,7 @@ func (analyzer *Analyzer) AvgSessionDuration(filter *Filter) ([]TimeSpentStats, 
 	if filter.Period != PeriodDay {
 		switch filter.Period {
 		case PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day) week FROM (`)
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
 		case PeriodMonth:
 			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
 		case PeriodYear:
@@ -957,7 +957,7 @@ func (analyzer *Analyzer) AvgTimeOnPage(filter *Filter) ([]TimeSpentStats, error
 	if filter.Period != PeriodDay {
 		switch filter.Period {
 		case PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day) week FROM (`)
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
 		case PeriodMonth:
 			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
 		case PeriodYear:

@@ -31,7 +31,7 @@ type Store interface {
 	GetTotalVisitorStats(string, ...any) (*TotalVisitorStats, error)
 
 	// SelectVisitorStats selects VisitorStats.
-	SelectVisitorStats(string, ...any) ([]VisitorStats, error)
+	SelectVisitorStats(Period, string, ...any) ([]VisitorStats, error)
 
 	// SelectTimeSpentStats selects TimeSpentStats.
 	SelectTimeSpentStats(Period, string, ...any) ([]TimeSpentStats, error)
