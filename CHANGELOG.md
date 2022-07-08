@@ -3,6 +3,7 @@
 ## 3.10.2
 
 * fixed missing spaces in query builder
+* updated dependencies
 
 ## 3.10.1
 
