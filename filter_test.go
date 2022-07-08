@@ -435,7 +435,7 @@ func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
-	assert.Equal(t, `match("path", ?) = 1`, query)
+	assert.Equal(t, `match("path", ?) = 1 `, query)
 }
 
 func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
@@ -444,7 +444,7 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
-	assert.Equal(t, `match("path", ?) = 0`, query)
+	assert.Equal(t, `match("path", ?) = 0 `, query)
 }
 
 func TestFilter_QueryFieldsSearch(t *testing.T) {

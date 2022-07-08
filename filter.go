@@ -626,10 +626,10 @@ func (filter Filter) queryPathPattern(queryFields *[]string, args *[]any) {
 	if filter.PathPattern != "" {
 		if strings.HasPrefix(filter.PathPattern, "!") {
 			*args = append(*args, filter.PathPattern[1:])
-			*queryFields = append(*queryFields, `match("path", ?) = 0`)
+			*queryFields = append(*queryFields, `match("path", ?) = 0 `)
 		} else {
 			*args = append(*args, filter.PathPattern)
-			*queryFields = append(*queryFields, `match("path", ?) = 1`)
+			*queryFields = append(*queryFields, `match("path", ?) = 1 `)
 		}
 	}
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.10.2
+
+* fixed missing spaces in query builder
+
 ## 3.10.1
 
 * changed weekly timescale to start on Monday
