@@ -3,6 +3,10 @@
 ## 4.0.0
 
 * refactored code into modules
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
 
 ## 3.10.2
 
