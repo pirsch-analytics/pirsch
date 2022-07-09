@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.0
+
+* refactored code into modules
+
 ## 3.10.2
 
 * fixed missing spaces in query builder

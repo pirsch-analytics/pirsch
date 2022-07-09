@@ -1,17 +1,21 @@
 package main
 
+// TODO
+/*
 import (
 	_ "github.com/lib/pq"
-	"github.com/pirsch-analytics/pirsch/v3"
+	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v4/tracker"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"log"
 	"net/http"
 )
 
 func main() {
 	// Set the key for SipHash.
-	pirsch.SetFingerprintKeys(42, 123)
+	tracker.SetFingerprintKeys(42, 123)
 
-	db := &pirsch.ClientConfig{
+	db := &db.ClientConfig{
 		Hostname:      "127.0.0.1",
 		Port:          9000,
 		Database:      "pirschtest",
@@ -19,12 +23,12 @@ func main() {
 		Debug:         false,
 	}
 
-	if err := pirsch.Migrate(db); err != nil {
+	if err := db.Migrate(db); err != nil {
 		panic(err)
 	}
 
 	// Create a new ClickHouse client to save hits.
-	store, err := pirsch.NewClient(db)
+	store, err := db.NewClient(db)
 
 	if err != nil {
 		panic(err)
@@ -32,8 +36,8 @@ func main() {
 
 	// Set up a default tracker with a salt.
 	// This will buffer and store hits and generate sessions by default.
-	tracker := pirsch.NewTracker(store, "salt", &pirsch.TrackerConfig{
-		SessionCache: pirsch.NewSessionCacheMem(store, 100),
+	tracker := tracker.NewTracker(store, "salt", &tracker.Config{
+		SessionCache: session.NewMemCache(store, 100),
 	})
 
 	// Create a handler to serve traffic.
@@ -54,3 +58,4 @@ func main() {
 	log.Println("Starting server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+*/

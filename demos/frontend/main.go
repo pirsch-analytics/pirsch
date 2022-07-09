@@ -1,8 +1,12 @@
 package main
 
+// TODO
+/*
 import (
 	_ "github.com/lib/pq"
-	"github.com/pirsch-analytics/pirsch/v3"
+	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v4/tracker"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"log"
 	"net/http"
 	"os"
@@ -13,9 +17,9 @@ func main() {
 	copyPirschJs()
 
 	// Set the key for SipHash.
-	pirsch.SetFingerprintKeys(42, 123)
+	tracker.SetFingerprintKeys(42, 123)
 
-	db := &pirsch.ClientConfig{
+	db := &db.ClientConfig{
 		Hostname:      "127.0.0.1",
 		Port:          9000,
 		Database:      "pirschtest",
@@ -23,18 +27,18 @@ func main() {
 		Debug:         false,
 	}
 
-	if err := pirsch.Migrate(db); err != nil {
+	if err := db.Migrate(db); err != nil {
 		panic(err)
 	}
 
-	store, err := pirsch.NewClient(db)
+	store, err := db.NewClient(db)
 
 	if err != nil {
 		panic(err)
 	}
 
-	tracker := pirsch.NewTracker(store, "salt", &pirsch.TrackerConfig{
-		SessionCache: pirsch.NewSessionCacheMem(store, 100),
+	tracker := tracker.NewTracker(store, "salt", &tracker.Config{
+		SessionCache: session.NewMemCache(store, 100),
 	})
 
 	// Create an endpoint to handle client tracking requests.
@@ -43,7 +47,7 @@ func main() {
 	http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// We don't need to call Hit in a new goroutine, as this is the only call in the handler
 		// (running in its own goroutine already).
-		tracker.Hit(r, pirsch.HitOptionsFromRequest(r))
+		tracker.Hit(r, tracker.HitOptionsFromRequest(r))
 		log.Println("Counted one hit")
 	}))
 
@@ -65,3 +69,4 @@ func copyPirschJs() {
 		panic(err)
 	}
 }
+*/

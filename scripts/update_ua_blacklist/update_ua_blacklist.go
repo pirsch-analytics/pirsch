@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-// run this script from the root directory to update the user_agent_blacklist.go
+// run this script from the root directory to update the blacklist.go
 func main() {
 	log.Println("Updating User-Agent blacklist")
-	list, err := os.Open("user_agent_blacklist.txt")
+	list, err := os.Open("blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -55,7 +55,7 @@ var userAgentBlacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("user_agent_blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

@@ -2,5 +2,5 @@
 js/node_modules/
 js/pirsch.min.js
 js/pirsch-events.min.js
-geodb/GeoLite2-Country.mmdb
+tracker/geodb/GeoLite2-Country.mmdb
 demos/frontend/pirsch.js
