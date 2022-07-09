@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-06-24)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-07-09)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -88,7 +88,7 @@ var blacklist = map[string]struct{}{
 	"acads.net":                            {},
 	"acarreo.ru":                           {},
 	"account-my1.xyz":                      {},
-	"accs-Store.ru":                        {},
+	"accs-store.ru":                        {},
 	"actualremont.ru":                      {},
 	"acunetix-referrer.com":                {},
 	"adanih.com":                           {},
@@ -867,7 +867,7 @@ var blacklist = map[string]struct{}{
 	"humanorightswatch.org":                {},
 	"hundejo.com":                          {},
 	"huntdown.info":                        {},
-	"hvd-Store.com":                        {},
+	"hvd-store.com":                        {},
 	"hydra-2019.ru":                        {},
 	"hydra-2020.online":                    {},
 	"hydra-2020.ru":                        {},
@@ -1136,7 +1136,7 @@ var blacklist = map[string]struct{}{
 	"luton-invest.ru":                      {},
 	"luxup.ru":                             {},
 	"luxurybet.ru":                         {},
-	"magicart.Store":                       {},
+	"magicart.store":                       {},
 	"magicdiet.gq":                         {},
 	"magnetic-bracelets.ru":                {},
 	"mainhunter.com":                       {},
@@ -1743,7 +1743,7 @@ var blacklist = map[string]struct{}{
 	"stomatologi.moscow":                   {},
 	"stop-nark.ru":                         {},
 	"stop-zavisimost.com":                  {},
-	"Store-rx.com":                         {},
+	"store-rx.com":                         {},
 	"strady.org.ua":                        {},
 	"stream-tds.com":                       {},
 	"stroi-24.ru":                          {},

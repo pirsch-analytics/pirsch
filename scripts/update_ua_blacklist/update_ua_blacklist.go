@@ -13,7 +13,7 @@ import (
 // run this script from the root directory to update the blacklist.go
 func main() {
 	log.Println("Updating User-Agent blacklist")
-	list, err := os.Open("blacklist.txt")
+	list, err := os.Open("tracker/ua/blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -44,9 +44,10 @@ func main() {
 
 	sort.Strings(ua)
 	var out strings.Builder
-	out.WriteString(`package pirsch
+	out.WriteString(`package ua
 
-var userAgentBlacklist = []string{
+// Blacklist is a list of User-Agents to ignore.
+var Blacklist = []string{
 `)
 
 	for _, entry := range ua {
@@ -55,7 +56,7 @@ var userAgentBlacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("tracker/ua/blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

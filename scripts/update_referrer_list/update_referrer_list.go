@@ -41,10 +41,10 @@ func main() {
 
 	log.Println("Writing list")
 	var out strings.Builder
-	out.WriteString(`package pirsch
+	out.WriteString(`package referrer
 
 var (
-	referrerGroups = map[string]string{
+	groups = map[string]string{
 `)
 
 	for key := range db {
@@ -59,7 +59,7 @@ var (
 	out.WriteString(`}
 )`)
 
-	if err := os.WriteFile("list.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("tracker/referrer/list.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

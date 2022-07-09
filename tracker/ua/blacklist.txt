@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-06-24)
+# custom (last update: 2022-07-09)
 ://
 bot
 crawler
@@ -215,6 +215,16 @@ sprout social
 candroid
 ivoox
 laks
+<title>
+hello-world
+jusprogdns
+testingus
+dataaccessd
+internetwache
+joxypoxy
+neoload
+whatever
+xx032_bo9vs83_2a
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
