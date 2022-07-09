@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Params groups UTM query parameters.
 type Params struct {
 	Source   string
 	Medium   string

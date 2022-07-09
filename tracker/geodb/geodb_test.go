@@ -1,6 +1,7 @@
 package geodb
 
 import (
+	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ func TestGet(t *testing.T) {
 	}
 
 	assert.NoError(t, Get("geodb", licenseKey))
-	_, err := os.Stat(GeoLite2Filename)
+	_, err := os.Stat(pirsch.GeoLite2Filename)
 	assert.NoError(t, err)
 	_, err = os.Stat(geoLite2TarGzFilename)
 	assert.True(t, os.IsNotExist(err))

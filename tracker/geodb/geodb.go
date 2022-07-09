@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"github.com/oschwald/maxminddb-golang"
+	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"io"
 	"log"
@@ -18,9 +19,6 @@ const (
 	geoLite2Permalink     = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=LICENSE_KEY&suffix=tar.gz"
 	geoLite2LicenseKey    = "LICENSE_KEY"
 	geoLite2TarGzFilename = "GeoLite2-City.tar.gz"
-
-	// GeoLite2Filename is the default filename of the GeoLite2 database.
-	GeoLite2Filename = "GeoLite2-City.mmdb"
 )
 
 // Config is the configuration for the GeoDB.
@@ -179,8 +177,8 @@ func unpack(path string) error {
 			return err
 		}
 
-		if filepath.Base(header.Name) == GeoLite2Filename {
-			out, err := os.Create(filepath.Join(path, GeoLite2Filename))
+		if filepath.Base(header.Name) == pirsch.GeoLite2Filename {
+			out, err := os.Create(filepath.Join(path, pirsch.GeoLite2Filename))
 
 			if err != nil {
 				return err

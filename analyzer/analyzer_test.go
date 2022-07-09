@@ -737,7 +737,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	_, err = analyzer.Pages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldPath,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -905,7 +905,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = analyzer.EntryPages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEntryPath,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -964,7 +964,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = analyzer.ExitPages(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldExitPath,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1134,7 +1134,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	_, err = analyzer.Events(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEventName,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1278,7 +1278,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 	_, err = analyzer.EventList(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEventName,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1333,7 +1333,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	_, err = analyzer.Referrer(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldReferrerName,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1396,7 +1396,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	visitors, err := analyzer.Referrer(&Filter{Referrer: Unknown})
+	visitors, err := analyzer.Referrer(&Filter{Referrer: pirsch.Unknown})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Referrer)
@@ -1494,7 +1494,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	visitors, err = analyzer.Languages(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldLanguage,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1543,7 +1543,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	visitors, err = analyzer.Countries(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldCountry,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1599,7 +1599,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 	_, err = analyzer.Cities(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldCity,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1647,7 +1647,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 	_, err = analyzer.Browser(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldBrowser,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1711,7 +1711,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	_, err = analyzer.BrowserVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldBrowserVersion,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1759,7 +1759,7 @@ func TestAnalyzer_OS(t *testing.T) {
 	_, err = analyzer.OS(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldOS,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1823,7 +1823,7 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	_, err = analyzer.OSVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldOSVersion,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1975,7 +1975,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMMedium(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMMedium,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1987,7 +1987,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMCampaign(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMCampaign,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -1999,7 +1999,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMSource(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMSource,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -2011,7 +2011,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMTerm(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMTerm,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -2023,7 +2023,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTMContent(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMContent,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -2561,7 +2561,7 @@ func getMaxFilter(eventName string) *Filter {
 		OSVersion:      "10",
 		Browser:        pirsch.BrowserChrome,
 		BrowserVersion: "90",
-		Platform:       PlatformDesktop,
+		Platform:       pirsch.PlatformDesktop,
 		ScreenClass:    "XL",
 		UTMSource:      "source",
 		UTMMedium:      "medium",

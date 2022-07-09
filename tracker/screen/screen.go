@@ -5,9 +5,7 @@ type class struct {
 	class    string
 }
 
-// Classes is a list of typical screen sizes used to group resolutions.
-// Everything below is considered "XS" (tiny).
-var Classes = []class{
+var classes = []class{
 	{5120, "UHD 5K"},
 	{3840, "UHD 4K"},
 	{2560, "WQHD"},
@@ -25,7 +23,7 @@ func GetClass(width uint16) string {
 		return ""
 	}
 
-	for _, class := range Classes {
+	for _, class := range classes {
 		if width >= class.minWidth {
 			return class.class
 		}

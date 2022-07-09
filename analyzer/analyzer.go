@@ -1321,7 +1321,7 @@ func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) ([]an
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
-		filter = NewFilter(NullClient)
+		filter = NewFilter(pirsch.NullClient)
 	}
 
 	filter.validate()

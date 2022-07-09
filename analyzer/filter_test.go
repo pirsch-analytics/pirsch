@@ -11,7 +11,7 @@ import (
 )
 
 func TestFilter_Validate(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.validate()
 	assert.NotNil(t, filter)
 	assert.NotNil(t, filter.Timezone)
@@ -179,7 +179,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 }
 
 func TestFilter_Table(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	assert.Equal(t, "session", filter.table())
 	filter.eventFilter = true
 	assert.Equal(t, "event", filter.table())
@@ -189,12 +189,12 @@ func TestFilter_Table(t *testing.T) {
 }
 
 func TestFilter_QueryTime(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.From = pastDay(5)
 	filter.To = pastDay(2)
 	args, query := filter.queryTime(false)
 	assert.Len(t, args, 3)
-	assert.Equal(t, NullClient, args[0])
+	assert.Equal(t, pirsch.NullClient, args[0])
 	assert.Equal(t, filter.From.Format(dateFormat), args[1])
 	assert.Equal(t, filter.To.Format(dateFormat), args[2])
 	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ", query)
@@ -202,7 +202,7 @@ func TestFilter_QueryTime(t *testing.T) {
 	filter.validate()
 	args, query = filter.queryTime(false)
 	assert.Len(t, args, 2)
-	assert.Equal(t, NullClient, args[0])
+	assert.Equal(t, pirsch.NullClient, args[0])
 	assert.Equal(t, filter.From.Format(dateFormat), args[1])
 	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') = toDate(?) ", query)
 	filter.IncludeTime = true
@@ -211,14 +211,14 @@ func TestFilter_QueryTime(t *testing.T) {
 	filter.validate()
 	args, query = filter.queryTime(false)
 	assert.Len(t, args, 3)
-	assert.Equal(t, NullClient, args[0])
+	assert.Equal(t, pirsch.NullClient, args[0])
 	assert.Equal(t, filter.From, args[1])
 	assert.Equal(t, filter.To, args[2])
 	assert.Equal(t, "client_id = ? AND toDateTime(time, 'UTC') >= toDateTime(?, 'UTC') AND toDateTime(time, 'UTC') <= toDateTime(?, 'UTC') ", query)
 }
 
 func TestFilter_QueryFields(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Path = "/"
 	filter.EntryPath = "/entry"
 	filter.ExitPath = "/exit"
@@ -232,7 +232,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	filter.OSVersion = "10"
 	filter.Browser = pirsch.BrowserEdge
 	filter.BrowserVersion = "89"
-	filter.Platform = PlatformUnknown
+	filter.Platform = pirsch.PlatformUnknown
 	filter.ScreenClass = "XXL"
 	filter.ScreenWidth = "1920"
 	filter.ScreenHeight = "1080"
@@ -277,7 +277,7 @@ func TestFilter_QueryFields(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsInvert(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Path = "!/"
 	filter.EntryPath = "!/entry"
 	filter.ExitPath = "!/exit"
@@ -291,7 +291,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	filter.OSVersion = "!10"
 	filter.Browser = "!" + pirsch.BrowserEdge
 	filter.BrowserVersion = "!89"
-	filter.Platform = "!" + PlatformUnknown
+	filter.Platform = "!" + pirsch.PlatformUnknown
 	filter.ScreenClass = "!XXL"
 	filter.ScreenWidth = "!1920"
 	filter.ScreenHeight = "!1080"
@@ -336,7 +336,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsNull(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Path = "null"
 	filter.EntryPath = "null"
 	filter.ExitPath = "null"
@@ -384,18 +384,18 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
-	filter := NewFilter(NullClient)
-	filter.Platform = PlatformDesktop
+	filter := NewFilter(pirsch.NullClient)
+	filter.Platform = pirsch.PlatformDesktop
 	args, query := filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 1 ", query)
-	filter = NewFilter(NullClient)
-	filter.Platform = PlatformMobile
+	filter = NewFilter(pirsch.NullClient)
+	filter.Platform = pirsch.PlatformMobile
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "mobile = 1 ", query)
-	filter = NewFilter(NullClient)
-	filter.Platform = PlatformUnknown
+	filter = NewFilter(pirsch.NullClient)
+	filter.Platform = pirsch.PlatformUnknown
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
@@ -404,18 +404,18 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
-	filter := NewFilter(NullClient)
-	filter.Platform = "!" + PlatformDesktop
+	filter := NewFilter(pirsch.NullClient)
+	filter.Platform = "!" + pirsch.PlatformDesktop
 	args, query := filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "desktop != 1 ", query)
-	filter = NewFilter(NullClient)
-	filter.Platform = "!" + PlatformMobile
+	filter = NewFilter(pirsch.NullClient)
+	filter.Platform = "!" + pirsch.PlatformMobile
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "mobile != 1 ", query)
-	filter = NewFilter(NullClient)
-	filter.Platform = "!" + PlatformUnknown
+	filter = NewFilter(pirsch.NullClient)
+	filter.Platform = "!" + pirsch.PlatformUnknown
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
 	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
@@ -424,7 +424,7 @@ func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
 }
 
 func TestFilter_QueryIsBot(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Path = "/path"
 	filter.minIsBot = 5
 	args, query := filter.query(true)
@@ -434,7 +434,7 @@ func TestFilter_QueryIsBot(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.PathPattern = "/some/pattern"
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
@@ -443,7 +443,7 @@ func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.PathPattern = "!/some/pattern"
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
@@ -452,7 +452,7 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 }
 
 func TestFilter_QueryFieldsSearch(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Search = []Search{
 		{
 			Field: FieldPath,
@@ -476,7 +476,7 @@ func TestFilter_QueryFieldsSearch(t *testing.T) {
 }
 
 func TestFilter_WithFill(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	args, query := filter.withFill()
 	assert.Len(t, args, 0)
 	assert.Empty(t, query)
@@ -490,7 +490,7 @@ func TestFilter_WithFill(t *testing.T) {
 }
 
 func TestFilter_WithLimit(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	assert.Empty(t, filter.withLimit())
 	filter.Limit = 42
 	assert.Equal(t, "LIMIT 42 ", filter.withLimit())
@@ -499,7 +499,7 @@ func TestFilter_WithLimit(t *testing.T) {
 }
 
 func TestFilter_Fields(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.Path = "/"
 	filter.EntryPath = "/entry"
 	filter.ExitPath = "/exit"
@@ -513,7 +513,7 @@ func TestFilter_Fields(t *testing.T) {
 	filter.OSVersion = "10"
 	filter.Browser = pirsch.BrowserEdge
 	filter.BrowserVersion = "89"
-	filter.Platform = PlatformUnknown
+	filter.Platform = pirsch.PlatformUnknown
 	filter.ScreenClass = "XXL"
 	filter.UTMSource = "source"
 	filter.UTMMedium = "medium"
@@ -534,7 +534,7 @@ func TestFilter_Fields(t *testing.T) {
 }
 
 func TestFilter_JoinOrderBy(t *testing.T) {
-	filter := NewFilter(NullClient)
+	filter := NewFilter(pirsch.NullClient)
 	filter.From = pastDay(1)
 	filter.To = util.Today()
 	args := make([]any, 0)
@@ -548,11 +548,11 @@ func TestFilter_JoinOrderBy(t *testing.T) {
 	filter.Sort = []Sort{
 		{
 			Field:     FieldPath,
-			Direction: DirectionDESC,
+			Direction: pirsch.DirectionDESC,
 		},
 		{
 			Field:     FieldVisitors,
-			Direction: DirectionASC,
+			Direction: pirsch.DirectionASC,
 		},
 	}
 	query = filter.joinOrderBy(&args, []Field{

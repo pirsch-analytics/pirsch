@@ -10,33 +10,8 @@ import (
 )
 
 const (
-	// PlatformDesktop filters for everything on desktops.
-	PlatformDesktop = "desktop"
-
-	// PlatformMobile filters for everything on mobile devices.
-	PlatformMobile = "mobile"
-
-	// PlatformUnknown filters for everything where the platform is unspecified.
-	PlatformUnknown = "unknown"
-
-	// Unknown filters for an unknown (empty) value.
-	// This is a synonym for "null".
-	Unknown = "null"
-
-	// DirectionASC sorts results in ascending order.
-	DirectionASC = Direction("ASC")
-
-	// DirectionDESC sorts results in descending order.
-	DirectionDESC = Direction("DESC")
-
 	dateFormat = "2006-01-02"
 )
-
-// Direction is used to sort results.
-type Direction string
-
-// NullClient is a placeholder for no client (0).
-var NullClient = int64(0)
 
 // Filter are all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
@@ -185,7 +160,7 @@ type Search struct {
 // Sort sorts results by a field and direction.
 type Sort struct {
 	Field     Field
-	Direction Direction
+	Direction pirsch.Direction
 }
 
 // NewFilter creates a new filter for given client ID.
@@ -590,17 +565,17 @@ func (filter *Filter) queryPlatform(queryFields *[]string) {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
-			if platform == PlatformDesktop {
+			if platform == pirsch.PlatformDesktop {
 				*queryFields = append(*queryFields, "desktop != 1 ")
-			} else if platform == PlatformMobile {
+			} else if platform == pirsch.PlatformMobile {
 				*queryFields = append(*queryFields, "mobile != 1 ")
 			} else {
 				*queryFields = append(*queryFields, "(desktop = 1 OR mobile = 1) ")
 			}
 		} else {
-			if filter.Platform == PlatformDesktop {
+			if filter.Platform == pirsch.PlatformDesktop {
 				*queryFields = append(*queryFields, "desktop = 1 ")
-			} else if filter.Platform == PlatformMobile {
+			} else if filter.Platform == pirsch.PlatformMobile {
 				*queryFields = append(*queryFields, "mobile = 1 ")
 			} else {
 				*queryFields = append(*queryFields, "desktop = 0 AND mobile = 0 ")
@@ -652,9 +627,9 @@ func (filter *Filter) fields() string {
 			platform = filter.Platform[1:]
 		}
 
-		if platform == PlatformDesktop {
+		if platform == pirsch.PlatformDesktop {
 			fields = append(fields, "desktop")
-		} else if platform == PlatformMobile {
+		} else if platform == pirsch.PlatformMobile {
 			fields = append(fields, "mobile")
 		} else {
 			fields = append(fields, "desktop")
