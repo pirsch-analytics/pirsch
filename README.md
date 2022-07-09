@@ -51,24 +51,31 @@ Here is a quick demo on how to use the library:
 
 ```Go
 // Set the key for SipHash. This should be called on startup (before generating the first fingerprint) and is NOT concurrency save.
-pirsch.SetFingerprintKeys(42, 123)
+tracker.SetFingerprintKeys(42, 123)
+
+dbConfig := &db.ClientConfig{
+    Hostname:      "127.0.0.1",
+    Port:          9000,
+}
 
 // Migrate the database.
-pirsch.Migrate("tcp://127.0.0.1:9000/database")
+db.Migrate(dbConfig)
 
-// Create a new ClickHouse client to save hits.
-store, _ := pirsch.NewClient("tcp://127.0.0.1:9000/database", nil)
+// Create a new ClickHouse client to store data.
+store, _ := db.NewClient(dbConfig)
 
 // Set up a default tracker with a salt.
 // This will buffer and store hits and generate sessions by default.
-tracker := pirsch.NewTracker(store, "salt", nil)
+pirschTracker := tracker.NewTracker(store, "salt", &tracker.Config{
+    SessionCache: session.NewMemCache(store, 100),
+})
 
 // Create a handler to serve traffic.
 // We prevent tracking resources by checking the path. So a file on /my-file.txt won't create a new hit
 // but all page calls will be tracked.
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
-        go tracker.Hit(r, nil)
+        go pirschTracker.Hit(r, nil)
     }
 
     w.Write([]byte("<h1>Hello World!</h1>"))
@@ -87,12 +94,12 @@ To analyze hits and processed data you can use the `Analyzer`, which provides co
 
 ```Go
 // This also needs access to the store.
-analyzer := pirsch.NewAnalyzer(store)
+pirschAnalyzer := analyzer.NewAnalyzer(store)
 
 // As an example, lets extract the total number of visitors.
 // The filter is used to specify the time frame you're looking at (days) and is optional.
 // If you pass nil, the Analyzer returns statistics for all hits (be careful about that!).
-visitors, err := analyzer.Visitors(&pirsch.Filter{
+visitors, err := pirschAnalyzer.Visitors(&analyzer.Filter{
     From: yesterday(),
     To: today()
 })
@@ -133,7 +140,7 @@ To track the hits you need to call `Hit` from the endpoint that you configured f
 // HitOptionsFromRequest is a utility function to process the required parameters.
 // You might want to additional checks, like for the client ID.
 http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    tracker.Hit(r, pirsch.HitOptionsFromRequest(r))
+    trackerTracker.Hit(r, tracker.HitOptionsFromRequest(r))
 }))
 ```
 
@@ -147,7 +154,7 @@ Custom events are conceptually the same as hits, except that they have a name an
 http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
     	// The name in the options is required!
-		options := pirsch.EventOptions{
+		options := tracker.EventOptions{
             Name: "my-event",
             Duration: 42, // optional field to save a duration, this will be used to calculate an average time when using the analyzer
             Meta: map[string]string{ // optional metadata, the results can be filtered by them
@@ -155,7 +162,7 @@ http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
                 "product_id": "123",
             },
         }
-        go tracker.Event(r, options, nil)
+        go pirschTracker.Event(r, options, nil)
     }
 
     w.Write([]byte("<h1>Hello World!</h1>"))
@@ -170,7 +177,7 @@ Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/)
 
 1. create an account at MaxMind
 2. generate a new license key
-3. call `GetGeoLite2` with the path you would like to extract the tarball to and pass your license key
+3. call `geodb.Get` with the path you would like to extract the tarball to and pass your license key
 4. create a new GeoDB by using `NewGeoDB` and the file you downloaded and extracted using the step before
 
 The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeoDB` to update the GeoDB at runtime (thread-safe).
