@@ -1,7 +1,5 @@
 package main
 
-// TODO
-/*
 import (
 	_ "github.com/lib/pq"
 	"github.com/pirsch-analytics/pirsch/v4/db"
@@ -15,7 +13,7 @@ func main() {
 	// Set the key for SipHash.
 	tracker.SetFingerprintKeys(42, 123)
 
-	db := &db.ClientConfig{
+	dbConfig := &db.ClientConfig{
 		Hostname:      "127.0.0.1",
 		Port:          9000,
 		Database:      "pirschtest",
@@ -23,12 +21,12 @@ func main() {
 		Debug:         false,
 	}
 
-	if err := db.Migrate(db); err != nil {
+	if err := db.Migrate(dbConfig); err != nil {
 		panic(err)
 	}
 
 	// Create a new ClickHouse client to save hits.
-	store, err := db.NewClient(db)
+	store, err := db.NewClient(dbConfig)
 
 	if err != nil {
 		panic(err)
@@ -36,7 +34,7 @@ func main() {
 
 	// Set up a default tracker with a salt.
 	// This will buffer and store hits and generate sessions by default.
-	tracker := tracker.NewTracker(store, "salt", &tracker.Config{
+	pirschTracker := tracker.NewTracker(store, "salt", &tracker.Config{
 		SessionCache: session.NewMemCache(store, 100),
 	})
 
@@ -44,7 +42,7 @@ func main() {
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// You can make sure only page calls get counted by checking the path: if r.URL.Path == "/" {...
 		if r.URL.Path != "/favicon.ico" {
-			go tracker.Hit(r, nil)
+			go pirschTracker.Hit(r, nil)
 		}
 
 		// Send response.
@@ -58,4 +56,3 @@ func main() {
 	log.Println("Starting server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
-*/

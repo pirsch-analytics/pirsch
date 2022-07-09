@@ -9,6 +9,7 @@ require (
 	github.com/emvi/null v1.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.5.1
+	github.com/lib/pq v1.10.6
 	github.com/oschwald/maxminddb-golang v1.9.0
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129
