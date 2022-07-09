@@ -1,4 +1,4 @@
-package tracker
+package util
 
 import (
 	"math/rand"
@@ -6,6 +6,5 @@ import (
 )
 
 func init() {
-	// TODO
 	rand.Seed(time.Now().UnixNano())
 }

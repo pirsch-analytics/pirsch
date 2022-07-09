@@ -11,7 +11,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/utm"
-	"math/rand"
+	"github.com/pirsch-analytics/pirsch/v4/util"
 	"net"
 	"net/http"
 	"net/url"
@@ -294,7 +294,7 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 		Sign:           1,
 		ClientID:       options.ClientID,
 		VisitorID:      fingerprint,
-		SessionID:      rand.Uint32(),
+		SessionID:      util.RandUint32(),
 		Time:           now,
 		Start:          now,
 		EntryPath:      path,

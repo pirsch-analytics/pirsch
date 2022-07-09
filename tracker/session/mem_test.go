@@ -3,8 +3,8 @@ package session
 import (
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v4/util"
 	"github.com/stretchr/testify/assert"
-	"math/rand"
 	"testing"
 	"time"
 )
@@ -16,7 +16,7 @@ func TestMemCache(t *testing.T) {
 	assert.Nil(t, session)
 	client.ReturnSession = &model.Session{
 		Time:      time.Now().Add(-time.Second * 15),
-		SessionID: rand.Uint32(),
+		SessionID: util.RandUint32(),
 		ExitPath:  "/",
 		EntryPath: "/entry",
 		PageViews: 3,
@@ -45,14 +45,14 @@ func TestMemCache(t *testing.T) {
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
 		Time:      time.Now().Add(-time.Second * 21),
-		SessionID: rand.Uint32(),
+		SessionID: util.RandUint32(),
 	})
 	session = cache.Get(1, 1, time.Now().Add(-time.Second*20))
 	assert.Nil(t, session)
 
 	for i := 0; i < 9; i++ {
 		cache.Put(1, uint64(i+2), &model.Session{
-			SessionID: rand.Uint32(),
+			SessionID: util.RandUint32(),
 			Time:      time.Now(),
 			ExitPath:  "/foo",
 			EntryPath: "/bar",
@@ -69,7 +69,7 @@ func TestMemCache(t *testing.T) {
 		EntryPath: "/bar",
 		PageViews: 42,
 		Time:      time.Now(),
-		SessionID: rand.Uint32(),
+		SessionID: util.RandUint32(),
 	})
 	assert.Len(t, cache.sessions, 1)
 	session = cache.Get(1, 1, time.Now().Add(-time.Minute))

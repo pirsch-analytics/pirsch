@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v4/util"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
@@ -28,7 +29,7 @@ func TestClient_SavePageViews(t *testing.T) {
 			ClientID:        1,
 			VisitorID:       1,
 			Time:            time.Now(),
-			SessionID:       rand.Uint32(),
+			SessionID:       util.RandUint32(),
 			DurationSeconds: 42,
 			Path:            "/path",
 			Title:           "title",
@@ -65,7 +66,7 @@ func TestClient_SaveSessions(t *testing.T) {
 			VisitorID:       1,
 			Time:            time.Now(),
 			Start:           time.Now(),
-			SessionID:       rand.Uint32(),
+			SessionID:       util.RandUint32(),
 			DurationSeconds: 42,
 			EntryPath:       "/entry-path",
 			ExitPath:        "/exit-path",
@@ -154,7 +155,7 @@ func TestClient_SaveEvents(t *testing.T) {
 			ClientID:        1,
 			VisitorID:       1,
 			Time:            time.Now(),
-			SessionID:       rand.Uint32(),
+			SessionID:       util.RandUint32(),
 			Name:            "event_name",
 			MetaKeys:        []string{"meta", "keys"},
 			MetaValues:      []string{"some", "values"},
@@ -210,7 +211,7 @@ func TestClient_Session(t *testing.T) {
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 20),
 			Start:     time.Now(),
-			SessionID: rand.Uint32(),
+			SessionID: util.RandUint32(),
 			ExitPath:  "/path1",
 			EntryPath: "/entry1",
 			PageViews: 2,
@@ -233,7 +234,7 @@ func TestClient_Session(t *testing.T) {
 			VisitorID: 1,
 			Time:      now.Add(-time.Second * 10),
 			Start:     time.Now(),
-			SessionID: rand.Uint32(),
+			SessionID: util.RandUint32(),
 			ExitPath:  "/path3",
 			EntryPath: "/entry3",
 			PageViews: 4,
