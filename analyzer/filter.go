@@ -754,6 +754,14 @@ func (filter *Filter) appendQuery(queryFields *[][]string, args *[]any, field st
 			} else if not {
 				v = v[1:]
 				comparator = "%s != ? "
+			} else if strings.HasPrefix(v, "~") {
+				if field == FieldLanguage.Name || field == FieldCountry.Name {
+					v = v[1:]
+					comparator = "has(splitByChar(',', ?), %s) = 1 "
+				} else {
+					v = fmt.Sprintf("%%%s%%", v[1:])
+					comparator = "ilike(%s, ?) = 1 "
+				}
 			}
 
 			*args = append(*args, filter.nullValue(v))
@@ -832,6 +840,9 @@ func (filter *Filter) appendQueryMeta(queryFields *[][]string, args *[]any, kv m
 			if strings.HasPrefix(v, "!") {
 				v = v[1:]
 				comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+			} else if strings.HasPrefix(v, "~") {
+				v = fmt.Sprintf("%%%s%%", v[1:])
+				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, '%s')], ?) = 1 "
 			}
 
 			*args = append(*args, filter.nullValue(v))

@@ -338,6 +338,65 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	assert.Equal(t, "(path != ? ) AND (entry_path != ? ) AND (exit_path != ? ) AND (language != ? ) AND (country_code != ? ) AND (city != ? ) AND (referrer != ? ) AND (referrer_name != ? ) AND (os != ? ) AND (os_version != ? ) AND (browser != ? ) AND (browser_version != ? ) AND (screen_class != ? ) AND (screen_width != ? ) AND (screen_height != ? ) AND (utm_source != ? ) AND (utm_medium != ? ) AND (utm_campaign != ? ) AND (utm_content != ? ) AND (utm_term != ? ) AND (event_name != ? ) AND ((desktop = 1 OR mobile = 1) ) AND (event_meta_values[indexOf(event_meta_keys, 'foo')] != ? ) ", query)
 }
 
+func TestFilter_QueryFieldsContains(t *testing.T) {
+	filter := NewFilter(pirsch.NullClient)
+	filter.Path = []string{"~/"}
+	filter.EntryPath = []string{"~/entry"}
+	filter.ExitPath = []string{"~/exit"}
+	filter.PathPattern = []string{"~pattern"}
+	filter.Language = []string{"~en"}
+	filter.Country = []string{"~jp"}
+	filter.City = []string{"~Tokyo"}
+	filter.Referrer = []string{"~ref"}
+	filter.ReferrerName = []string{"~refname"}
+	filter.OS = []string{"~" + pirsch.OSWindows}
+	filter.OSVersion = []string{"~10"}
+	filter.Browser = []string{"~" + pirsch.BrowserEdge}
+	filter.BrowserVersion = []string{"~89"}
+	filter.Platform = "~" + pirsch.PlatformUnknown
+	filter.ScreenClass = []string{"~XXL"}
+	filter.ScreenWidth = []string{"1920"}
+	filter.ScreenHeight = []string{"1080"}
+	filter.UTMSource = []string{"~source"}
+	filter.UTMMedium = []string{"~medium"}
+	filter.UTMCampaign = []string{"~campaign"}
+	filter.UTMContent = []string{"~content"}
+	filter.UTMTerm = []string{"~term"}
+	filter.EventMeta = map[string]string{
+		"foo": "~bar",
+	}
+	filter.validate()
+	args, query := filter.queryFields()
+	assert.Len(t, args, 21)
+	assert.Equal(t, "%/%", args[0])
+	assert.Equal(t, "%/entry%", args[1])
+	assert.Equal(t, "%/exit%", args[2])
+	assert.Equal(t, "en", args[3])
+	assert.Equal(t, "jp", args[4])
+	assert.Equal(t, "%Tokyo%", args[5])
+	assert.Equal(t, "%ref%", args[6])
+	assert.Equal(t, "%refname%", args[7])
+	assert.Equal(t, "%"+pirsch.OSWindows+"%", args[8])
+	assert.Equal(t, "%10%", args[9])
+	assert.Equal(t, "%"+pirsch.BrowserEdge+"%", args[10])
+	assert.Equal(t, "%89%", args[11])
+	assert.Equal(t, "%XXL%", args[12])
+	assert.Equal(t, uint16(1920), args[13])
+	assert.Equal(t, uint16(1080), args[14])
+	assert.Equal(t, "%source%", args[15])
+	assert.Equal(t, "%medium%", args[16])
+	assert.Equal(t, "%campaign%", args[17])
+	assert.Equal(t, "%content%", args[18])
+	assert.Equal(t, "%term%", args[19])
+	assert.Equal(t, "%bar%", args[20])
+	assert.Equal(t, "(ilike(path, ?) = 1 ) AND (ilike(entry_path, ?) = 1 ) AND (ilike(exit_path, ?) = 1 ) AND (has(splitByChar(',', ?), language) = 1 ) AND (has(splitByChar(',', ?), country_code) = 1 ) AND (ilike(city, ?) = 1 ) AND (ilike(referrer, ?) = 1 ) AND (ilike(referrer_name, ?) = 1 ) AND (ilike(os, ?) = 1 ) AND (ilike(os_version, ?) = 1 ) AND (ilike(browser, ?) = 1 ) AND (ilike(browser_version, ?) = 1 ) AND (ilike(screen_class, ?) = 1 ) AND (screen_width = ? ) AND (screen_height = ? ) AND (ilike(utm_source, ?) = 1 ) AND (ilike(utm_medium, ?) = 1 ) AND (ilike(utm_campaign, ?) = 1 ) AND (ilike(utm_content, ?) = 1 ) AND (ilike(utm_term, ?) = 1 ) AND (desktop = 0 AND mobile = 0 ) AND (ilike(event_meta_values[indexOf(event_meta_keys, 'foo')], ?) = 1 ) ", query)
+	filter.EventName = []string{"~event"}
+	args, query = filter.queryFields()
+	assert.Len(t, args, 22)
+	assert.Equal(t, "%event%", args[20])
+	assert.Equal(t, "(ilike(path, ?) = 1 ) AND (ilike(entry_path, ?) = 1 ) AND (ilike(exit_path, ?) = 1 ) AND (has(splitByChar(',', ?), language) = 1 ) AND (has(splitByChar(',', ?), country_code) = 1 ) AND (ilike(city, ?) = 1 ) AND (ilike(referrer, ?) = 1 ) AND (ilike(referrer_name, ?) = 1 ) AND (ilike(os, ?) = 1 ) AND (ilike(os_version, ?) = 1 ) AND (ilike(browser, ?) = 1 ) AND (ilike(browser_version, ?) = 1 ) AND (ilike(screen_class, ?) = 1 ) AND (screen_width = ? ) AND (screen_height = ? ) AND (ilike(utm_source, ?) = 1 ) AND (ilike(utm_medium, ?) = 1 ) AND (ilike(utm_campaign, ?) = 1 ) AND (ilike(utm_content, ?) = 1 ) AND (ilike(utm_term, ?) = 1 ) AND (ilike(event_name, ?) = 1 ) AND (desktop = 0 AND mobile = 0 ) AND (ilike(event_meta_values[indexOf(event_meta_keys, 'foo')], ?) = 1 ) ", query)
+}
+
 func TestFilter_QueryFieldsNull(t *testing.T) {
 	filter := NewFilter(pirsch.NullClient)
 	filter.Path = []string{"null"}

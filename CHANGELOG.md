@@ -3,6 +3,7 @@
 ## 4.0.0
 
 * added multiple filters for the same field connected with OR
+* added support for "contains" for filter fields
 * refactored code into modules
 * updated User-Agent blacklist
 * updated referrer blacklist
