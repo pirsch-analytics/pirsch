@@ -52,7 +52,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
-	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: "/bar"}, time.Minute*30)
+	visitors, count, err = analyzer.ActiveVisitors(&Filter{Path: []string{"/bar"}}, time.Minute*30)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, count)
 	assert.Len(t, visitors, 1)
@@ -223,7 +223,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
-	visitors, err = analyzer.Visitors(&Filter{Path: "/", From: pastDay(4), To: util.Today()})
+	visitors, err = analyzer.Visitors(&Filter{Path: []string{"/"}, From: pastDay(4), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 5)
 	assert.Equal(t, 4, visitors[0].Visitors)
@@ -294,7 +294,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	_, err = analyzer.Visitors(&Filter{
 		From:        pastDay(90),
 		To:          util.Today(),
-		PathPattern: "(?i)^/bar",
+		PathPattern: []string{"(?i)^/bar"},
 	})
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors(getMaxFilter(""))
@@ -310,7 +310,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	_, err = analyzer.AvgSessionDuration(&Filter{
 		From:        pastDay(90),
 		To:          util.Today(),
-		PathPattern: "(?i)^/bar",
+		PathPattern: []string{"(?i)^/bar"},
 	})
 	assert.NoError(t, err)
 	_, err = analyzer.AvgSessionDuration(getMaxFilter(""))
@@ -507,7 +507,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	growth, err := analyzer.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
-	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2), EventName: "event1"})
+	growth, err = analyzer.Growth(&Filter{From: pastDay(2), To: pastDay(2), EventName: []string{"event1"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 0.5, growth.VisitorsGrowth, 0.001)
@@ -517,14 +517,14 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	analyzer = NewAnalyzer(dbClient, &Config{
 		DisableBotFilter: true,
 	})
-	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1"})
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: []string{"event1"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
-	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: "event1", Path: "/bar"})
+	growth, err = analyzer.Growth(&Filter{From: pastDay(3), To: pastDay(2), EventName: []string{"event1"}, Path: []string{"/bar"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1, growth.VisitorsGrowth, 0.001)
@@ -808,7 +808,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	visitors, err := analyzer.Pages(&Filter{EventName: "event", IncludeTitle: true, IncludeTimeOnPage: true})
+	visitors, err := analyzer.Pages(&Filter{EventName: []string{"event"}, IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	assert.Equal(t, "Home 1", visitors[0].Title)
@@ -888,7 +888,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.5, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
-	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: util.Today(), EntryPath: "/", IncludeTimeOnPage: true})
+	entries, err = analyzer.EntryPages(&Filter{From: pastDay(1), To: util.Today(), EntryPath: []string{"/"}, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
@@ -896,7 +896,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 3, entries[0].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	assert.Equal(t, 30, entries[0].AverageTimeSpentSeconds)
-	_, err = analyzer.EntryPages(&Filter{Path: "/bar", IncludeTitle: true})
+	_, err = analyzer.EntryPages(&Filter{Path: []string{"/bar"}, IncludeTitle: true})
 	assert.NoError(t, err)
 	_, err = analyzer.EntryPages(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -948,14 +948,14 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 1, exits[1].Exits)
 	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.33, exits[1].ExitRate, 0.01)
-	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: util.Today(), ExitPath: "/"})
+	exits, err = analyzer.ExitPages(&Filter{From: pastDay(1), To: util.Today(), ExitPath: []string{"/"}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
 	assert.Equal(t, "/", exits[0].Path)
 	assert.Equal(t, 3, exits[0].Visitors)
 	assert.Equal(t, 1, exits[0].Exits)
 	assert.InDelta(t, 0.3333, exits[0].ExitRate, 0.01)
-	_, err = analyzer.ExitPages(&Filter{Path: "/bar", IncludeTitle: true})
+	_, err = analyzer.ExitPages(&Filter{Path: []string{"/bar"}, IncludeTitle: true})
 	assert.NoError(t, err)
 	_, err = analyzer.ExitPages(getMaxFilter(""))
 	assert.NoError(t, err)
@@ -993,12 +993,12 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	entries, err := analyzer.EntryPages(&Filter{EventName: "event"})
+	entries, err := analyzer.EntryPages(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, 1, entries[0].Entries)
-	exits, err := analyzer.ExitPages(&Filter{EventName: "event"})
+	exits, err := analyzer.ExitPages(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
 	assert.Equal(t, "/bar", exits[0].Path)
@@ -1037,12 +1037,12 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	stats, err := analyzer.PageConversions(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, stats)
-	stats, err = analyzer.PageConversions(&Filter{PathPattern: ".*"})
+	stats, err = analyzer.PageConversions(&Filter{PathPattern: []string{".*"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
 	assert.Equal(t, 6, stats.Views)
 	assert.InDelta(t, 1, stats.CR, 0.01)
-	stats, err = analyzer.PageConversions(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
+	stats, err = analyzer.PageConversions(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
@@ -1099,10 +1099,10 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
 	assert.Len(t, stats[0].MetaKeys, 3)
 	assert.Len(t, stats[1].MetaKeys, 2)
-	stats, err = analyzer.Events(&Filter{EntryPath: "/exit"})
+	stats, err = analyzer.Events(&Filter{EntryPath: []string{"/exit"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 0)
-	stats, err = analyzer.Events(&Filter{EntryPath: "/", ExitPath: "/exit"})
+	stats, err = analyzer.Events(&Filter{EntryPath: []string{"/"}, ExitPath: []string{"/exit"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -1117,7 +1117,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 5, stats[1].AverageDurationSeconds, 0.001)
 	assert.Len(t, stats[0].MetaKeys, 3)
 	assert.Len(t, stats[1].MetaKeys, 2)
-	stats, err = analyzer.Events(&Filter{EventName: "event2"})
+	stats, err = analyzer.Events(&Filter{EventName: []string{"event2"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -1126,7 +1126,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
 	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
 	assert.Len(t, stats[0].MetaKeys, 3)
-	stats, err = analyzer.Events(&Filter{EventName: "does-not-exist"})
+	stats, err = analyzer.Events(&Filter{EventName: []string{"does-not-exist"}})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
 	_, err = analyzer.Events(getMaxFilter(""))
@@ -1143,7 +1143,7 @@ func TestAnalyzer_Events(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "status"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event1"}, EventMetaKey: []string{"status"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event1", stats[0].Name)
@@ -1158,7 +1158,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 8, stats[1].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "in", stats[0].MetaValue)
 	assert.Equal(t, "out", stats[1].MetaValue)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "status"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event2"}, EventMetaKey: []string{"status"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -1167,7 +1167,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 8, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "in", stats[0].MetaValue)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "price"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event2"}, EventMetaKey: []string{"price"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -1182,7 +1182,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 9, stats[1].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "34.56", stats[0].MetaValue)
 	assert.Equal(t, "13.74", stats[1].MetaValue)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event2", EventMetaKey: "third"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event2"}, EventMetaKey: []string{"third"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
@@ -1191,10 +1191,10 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
 	assert.InDelta(t, 9, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "param", stats[0].MetaValue)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "does-not-exist", EventMetaKey: "status"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"does-not-exist"}, EventMetaKey: []string{"status"}})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
-	stats, err = analyzer.EventBreakdown(&Filter{EventName: "event1", EventMetaKey: "does-not-exist"})
+	stats, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event1"}, EventMetaKey: []string{"does-not-exist"}})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)
 	_, err = analyzer.EventBreakdown(getMaxFilter(""))
@@ -1247,14 +1247,14 @@ func TestAnalyzer_EventList(t *testing.T) {
 	assert.Equal(t, "42", stats[2].Meta["b"])
 	assert.Equal(t, "foo", stats[3].Meta["a"])
 	assert.Equal(t, "56", stats[3].Meta["b"])
-	stats, err = analyzer.EventList(&Filter{EventName: "event1", Path: "/foo"})
+	stats, err = analyzer.EventList(&Filter{EventName: []string{"event1"}, Path: []string{"/foo"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event1", stats[0].Name)
 	assert.Equal(t, 1, stats[0].Count)
 	assert.Equal(t, "foo", stats[0].Meta["a"])
 	assert.Equal(t, "42", stats[0].Meta["b"])
-	stats, err = analyzer.EventList(&Filter{Path: "/foo"})
+	stats, err = analyzer.EventList(&Filter{Path: []string{"/foo"}})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
 	assert.Equal(t, "event1", stats[0].Name)
@@ -1344,7 +1344,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// filter for referrer name
-	visitors, err = analyzer.Referrer(&Filter{ReferrerName: "Ref1"})
+	visitors, err = analyzer.Referrer(&Filter{ReferrerName: []string{"Ref1"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 2)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
@@ -1359,7 +1359,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
 
 	// filter for full referrer
-	visitors, err = analyzer.Referrer(&Filter{Referrer: "ref1/foo"})
+	visitors, err = analyzer.Referrer(&Filter{Referrer: []string{"ref1/foo"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
@@ -1369,7 +1369,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 
 	// filter for referrer name and full referrer
-	visitors, err = analyzer.Referrer(&Filter{ReferrerName: "Ref1", Referrer: "ref1/foo"})
+	visitors, err = analyzer.Referrer(&Filter{ReferrerName: []string{"Ref1"}, Referrer: []string{"ref1/foo"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "Ref1", visitors[0].ReferrerName)
@@ -1396,7 +1396,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	visitors, err := analyzer.Referrer(&Filter{Referrer: pirsch.Unknown})
+	visitors, err := analyzer.Referrer(&Filter{Referrer: []string{pirsch.Unknown}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Referrer)
@@ -1443,7 +1443,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-	platform, err = analyzer.Platform(&Filter{Path: "/foo"})
+	platform, err = analyzer.Platform(&Filter{Path: []string{"/foo"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, platform.PlatformDesktop)
 	assert.Equal(t, 0, platform.PlatformMobile)
@@ -1864,13 +1864,13 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	visitors, err = analyzer.ScreenClass(&Filter{ScreenWidth: "2560"})
+	visitors, err = analyzer.ScreenClass(&Filter{ScreenWidth: []string{"2560"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "XL", visitors[0].ScreenClass)
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
-	visitors, err = analyzer.ScreenClass(&Filter{ScreenHeight: "1080"})
+	visitors, err = analyzer.ScreenClass(&Filter{ScreenHeight: []string{"1080"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "L", visitors[0].ScreenClass)
@@ -2066,14 +2066,14 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: "/", From: pastDay(3), To: util.Today()})
+	byDay, err := analyzer.AvgTimeOnPage(&Filter{Path: []string{"/"}, From: pastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 4)
 	assert.Equal(t, 8, byDay[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
-	byDay, err = analyzer.AvgTimeOnPage(&Filter{Path: "/foo", From: pastDay(3), To: util.Today()})
+	byDay, err = analyzer.AvgTimeOnPage(&Filter{Path: []string{"/foo"}, From: pastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 4)
 	assert.Equal(t, 0, byDay[0].AverageTimeSpentSeconds)
@@ -2180,16 +2180,16 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 	visitors, err := analyzer.Pages(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 4)
-	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+$"})
+	visitors, err = analyzer.Pages(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+$"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
-	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+/.*"})
+	visitors, err = analyzer.Pages(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 2)
-	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/[^/]+/slashes$"})
+	visitors, err = analyzer.Pages(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/slashes$"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 0)
-	visitors, err = analyzer.Pages(&Filter{PathPattern: "(?i)^/simple/.+/slashes$"})
+	visitors, err = analyzer.Pages(&Filter{PathPattern: []string{"(?i)^/simple/.+/slashes$"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 }
@@ -2214,7 +2214,7 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
 	filter := &Filter{
-		Path:  "/account/billing/",
+		Path:  []string{"/account/billing/"},
 		Limit: 11,
 	}
 	entry, err := analyzer.EntryPages(filter)
@@ -2288,7 +2288,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[1].Exits)
 
 	// filter for a path
-	filter := &Filter{Path: "/bar"}
+	filter := &Filter{Path: []string{"/bar"}}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 1)
@@ -2311,8 +2311,8 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[1].Exits)
 
 	// filter entry page
-	filter.Path = ""
-	filter.EntryPath = "/bar"
+	filter.Path = []string{}
+	filter.EntryPath = []string{"/bar"}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 0)
@@ -2323,7 +2323,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, exitPages, 0)
 
-	filter.EntryPath = "/"
+	filter.EntryPath = []string{"/"}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 4)
@@ -2352,7 +2352,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[1].Exits)
 
 	// filter entry + exit page
-	filter.ExitPath = "/bar"
+	filter.ExitPath = []string{"/bar"}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 0)
@@ -2363,7 +2363,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, exitPages, 0)
 
-	filter.ExitPath = "/exit"
+	filter.ExitPath = []string{"/exit"}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 4)
@@ -2389,7 +2389,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[0].Exits)
 
 	// filter entry + exit page + page
-	filter.Path = "/bar"
+	filter.Path = []string{"/bar"}
 	pages, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	assert.Len(t, pages, 1)
@@ -2409,7 +2409,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[0].Exits)
 
 	// filter conversion goal
-	filter = &Filter{PathPattern: "(?i)^/bar$"}
+	filter = &Filter{PathPattern: []string{"(?i)^/bar$"}}
 	_, err = analyzer.Pages(filter)
 	assert.NoError(t, err)
 	_, err = analyzer.EntryPages(filter)
@@ -2526,7 +2526,7 @@ func TestAnalyzer_NoData(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Events(nil)
 	assert.NoError(t, err)
-	_, err = analyzer.EventBreakdown(&Filter{EventName: "event"})
+	_, err = analyzer.EventBreakdown(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
 	_, err = analyzer.Referrer(nil)
 	assert.NoError(t, err)
@@ -2545,30 +2545,36 @@ func TestAnalyzer_NoData(t *testing.T) {
 }
 
 func getMaxFilter(eventName string) *Filter {
+	events := []string{}
+
+	if eventName != "" {
+		events = append(events, eventName)
+	}
+
 	return &Filter{
 		ClientID:       42,
 		From:           pastDay(5),
 		To:             pastDay(2),
-		Path:           "/path",
-		EntryPath:      "/entry",
-		ExitPath:       "/exit",
-		Language:       "en",
-		Country:        "en",
-		City:           "London",
-		Referrer:       "ref",
-		ReferrerName:   "refname",
-		OS:             pirsch.OSWindows,
-		OSVersion:      "10",
-		Browser:        pirsch.BrowserChrome,
-		BrowserVersion: "90",
+		Path:           []string{"/path"},
+		EntryPath:      []string{"/entry"},
+		ExitPath:       []string{"/exit"},
+		Language:       []string{"en"},
+		Country:        []string{"en"},
+		City:           []string{"London"},
+		Referrer:       []string{"ref"},
+		ReferrerName:   []string{"refname"},
+		OS:             []string{pirsch.OSWindows},
+		OSVersion:      []string{"10"},
+		Browser:        []string{pirsch.BrowserChrome},
+		BrowserVersion: []string{"90"},
 		Platform:       pirsch.PlatformDesktop,
-		ScreenClass:    "XL",
-		UTMSource:      "source",
-		UTMMedium:      "medium",
-		UTMCampaign:    "campaign",
-		UTMContent:     "content",
-		UTMTerm:        "term",
-		EventName:      eventName,
+		ScreenClass:    []string{"XL"},
+		UTMSource:      []string{"source"},
+		UTMMedium:      []string{"medium"},
+		UTMCampaign:    []string{"campaign"},
+		UTMContent:     []string{"content"},
+		UTMTerm:        []string{"term"},
+		EventName:      events,
 		Limit:          42,
 	}
 }

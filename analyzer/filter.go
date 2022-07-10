@@ -41,13 +41,13 @@ type Filter struct {
 
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
-	Path string
+	Path []string
 
 	// EntryPath filters for the entry page.
-	EntryPath string
+	EntryPath []string
 
 	// ExitPath filters for the exit page.
-	ExitPath string
+	ExitPath []string
 
 	// PathPattern filters for the path using a (ClickHouse supported) regex pattern.
 	// Note that if this and Path are both set, Path will be preferred.
@@ -56,68 +56,68 @@ type Filter struct {
 	//  (?i)^/path/[^/]+/.* // matches /path/*/**
 	//  (?i)^/path/[^/]+/slashes$ // matches /path/*/slashes
 	//  (?i)^/path/.+/slashes$ // matches /path/**/slashes
-	PathPattern string
+	PathPattern []string
 
 	// Language filters for the ISO language code.
-	Language string
+	Language []string
 
 	// Country filters for the ISO country code.
-	Country string
+	Country []string
 
 	// City filters for the city name.
-	City string
+	City []string
 
 	// Referrer filters for the full referrer.
-	Referrer string
+	Referrer []string
 
 	// ReferrerName filters for the referrer name.
-	ReferrerName string
+	ReferrerName []string
 
 	// OS filters for the operating system.
-	OS string
+	OS []string
 
 	// OSVersion filters for the operating system version.
-	OSVersion string
+	OSVersion []string
 
 	// Browser filters for the browser.
-	Browser string
+	Browser []string
 
 	// BrowserVersion filters for the browser version.
-	BrowserVersion string
+	BrowserVersion []string
 
 	// Platform filters for the platform (desktop, mobile, unknown).
 	Platform string
 
 	// ScreenClass filters for the screen class.
-	ScreenClass string
+	ScreenClass []string
 
 	// ScreenWidth filters for the screen width.
-	ScreenWidth string
+	ScreenWidth []string
 
 	// ScreenHeight filters for the screen width.
-	ScreenHeight string
+	ScreenHeight []string
 
 	// UTMSource filters for the utm_source query parameter.
-	UTMSource string
+	UTMSource []string
 
 	// UTMMedium filters for the utm_medium query parameter.
-	UTMMedium string
+	UTMMedium []string
 
 	// UTMCampaign filters for the utm_campaign query parameter.
-	UTMCampaign string
+	UTMCampaign []string
 
 	// UTMContent filters for the utm_content query parameter.
-	UTMContent string
+	UTMContent []string
 
 	// UTMTerm filters for the utm_term query parameter.
-	UTMTerm string
+	UTMTerm []string
 
 	// EventName filters for an event by its name.
-	EventName string
+	EventName []string
 
 	// EventMetaKey filters for an event meta key.
 	// This must be used together with an EventName.
-	EventMetaKey string
+	EventMetaKey []string
 
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
@@ -202,8 +202,8 @@ func (filter *Filter) validate() {
 		filter.To = tomorrow
 	}
 
-	if filter.Path != "" && filter.PathPattern != "" {
-		filter.PathPattern = ""
+	if len(filter.Path) != 0 && len(filter.PathPattern) != 0 {
+		filter.PathPattern = []string{}
 	}
 
 	for i := 0; i < len(filter.Search); i++ {
@@ -224,7 +224,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 	args := make([]any, 0)
 	var query strings.Builder
 
-	if table == "event" || filter.Path != "" || filter.PathPattern != "" || filter.fieldsContain(fields, FieldPath.Name) {
+	if table == "event" || len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
 		if table == "session" {
 			table = "page_view"
 		}
@@ -232,8 +232,8 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, filter.joinPageViewFields(&args, fields), table))
 
 		if filter.minIsBot > 0 ||
-			filter.EntryPath != "" ||
-			filter.ExitPath != "" ||
+			len(filter.EntryPath) != 0 ||
+			len(filter.ExitPath) != 0 ||
 			filter.fieldsContain(fields, FieldBounces.Name) ||
 			filter.fieldsContain(fields, FieldViews.Name) ||
 			filter.fieldsContain(fields, FieldEntryPath.Name) ||
@@ -243,7 +243,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 			query.WriteString(filterQuery)
 		}
 
-		filter.EntryPath, filter.ExitPath = "", ""
+		filter.EntryPath, filter.ExitPath = []string{}, []string{}
 		filterArgs, filterQuery := filter.query(false)
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
@@ -342,7 +342,7 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 
 func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string) {
 	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = "", "", "", "", nil
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = []string{}, []string{}, []string{}, []string{}, nil
 	search := filter.Search
 	filter.Search = nil
 	filterArgs, filterQuery := filter.query(true)
@@ -476,7 +476,7 @@ func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
 }
 
 func (filter *Filter) table() string {
-	if filter.EventName != "" || filter.eventFilter {
+	if len(filter.EventName) != 0 || filter.eventFilter {
 		return "event"
 	}
 
@@ -526,7 +526,7 @@ func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
 func (filter *Filter) queryFields() ([]any, string) {
 	n := 25 + len(filter.EventMeta) + len(filter.Search) // maximum number of fields + one for bot filter + metadata fields + search fields
 	args := make([]any, 0, n)
-	queryFields := make([]string, 0, n)
+	queryFields := make([][]string, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -557,42 +557,54 @@ func (filter *Filter) queryFields() ([]any, string) {
 		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.Name, filter.Search[i].Input)
 	}
 
-	return args, strings.Join(queryFields, "AND ")
+	or := make([]string, 0, len(queryFields))
+
+	for _, fields := range queryFields {
+		or = append(or, fmt.Sprintf("(%s) ", strings.Join(fields, "OR ")))
+	}
+
+	return args, strings.Join(or, "AND ")
 }
 
-func (filter *Filter) queryPlatform(queryFields *[]string) {
+func (filter *Filter) queryPlatform(queryFields *[][]string) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
 			if platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, "desktop != 1 ")
+				*queryFields = append(*queryFields, []string{"desktop != 1 "})
 			} else if platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, "mobile != 1 ")
+				*queryFields = append(*queryFields, []string{"mobile != 1 "})
 			} else {
-				*queryFields = append(*queryFields, "(desktop = 1 OR mobile = 1) ")
+				*queryFields = append(*queryFields, []string{"(desktop = 1 OR mobile = 1) "})
 			}
 		} else {
 			if filter.Platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, "desktop = 1 ")
+				*queryFields = append(*queryFields, []string{"desktop = 1 "})
 			} else if filter.Platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, "mobile = 1 ")
+				*queryFields = append(*queryFields, []string{"mobile = 1 "})
 			} else {
-				*queryFields = append(*queryFields, "desktop = 0 AND mobile = 0 ")
+				*queryFields = append(*queryFields, []string{"desktop = 0 AND mobile = 0 "})
 			}
 		}
 	}
 }
 
-func (filter Filter) queryPathPattern(queryFields *[]string, args *[]any) {
-	if filter.PathPattern != "" {
-		if strings.HasPrefix(filter.PathPattern, "!") {
-			*args = append(*args, filter.PathPattern[1:])
-			*queryFields = append(*queryFields, `match("path", ?) = 0 `)
-		} else {
-			*args = append(*args, filter.PathPattern)
-			*queryFields = append(*queryFields, `match("path", ?) = 1 `)
+func (filter Filter) queryPathPattern(queryFields *[][]string, args *[]any) {
+	if len(filter.PathPattern) != 0 {
+		group := make([]string, 0, len(filter.PathPattern))
+
+		for _, pattern := range filter.PathPattern {
+			if strings.HasPrefix(pattern, "!") {
+				*args = append(*args, pattern[1:])
+				group = append(group, `match("path", ?) = 0 `)
+			} else {
+				*args = append(*args, pattern)
+				group = append(group, `match("path", ?) = 1 `)
+			}
 		}
+
+		*queryFields = append(*queryFields, group)
 	}
 }
 
@@ -637,7 +649,7 @@ func (filter *Filter) fields() string {
 		}
 	}
 
-	if filter.Path == "" && filter.PathPattern != "" {
+	if len(filter.Path) == 0 && len(filter.PathPattern) != 0 {
 		fields = append(fields, "path")
 	}
 
@@ -650,8 +662,8 @@ func (filter *Filter) fields() string {
 	return strings.Join(fields, ",")
 }
 
-func (filter *Filter) appendField(fields *[]string, field, value string) {
-	if value != "" {
+func (filter *Filter) appendField(fields *[]string, field string, value []string) {
+	if len(value) != 0 {
 		*fields = append(*fields, field)
 	}
 }
@@ -724,29 +736,35 @@ func (filter *Filter) query(filterBots bool) ([]any, string) {
 	return args, query
 }
 
-func (filter *Filter) appendQuery(queryFields *[]string, args *[]any, field, value string) {
-	if value != "" {
-		comparator := "%s = ? "
-		not := strings.HasPrefix(value, "!")
+func (filter *Filter) appendQuery(queryFields *[][]string, args *[]any, field string, value []string) {
+	if len(value) != 0 {
+		group := make([]string, 0, len(value))
 
-		if field == "event_meta_keys" {
-			if not {
-				value = value[1:]
-				comparator = "!has(%s, ?) "
-			} else {
-				comparator = "has(%s, ?) "
+		for _, v := range value {
+			comparator := "%s = ? "
+			not := strings.HasPrefix(v, "!")
+
+			if field == "event_meta_keys" {
+				if not {
+					v = v[1:]
+					comparator = "!has(%s, ?) "
+				} else {
+					comparator = "has(%s, ?) "
+				}
+			} else if not {
+				v = v[1:]
+				comparator = "%s != ? "
 			}
-		} else if not {
-			value = value[1:]
-			comparator = "%s != ? "
+
+			*args = append(*args, filter.nullValue(v))
+			group = append(group, fmt.Sprintf(comparator, field))
 		}
 
-		*args = append(*args, filter.nullValue(value))
-		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+		*queryFields = append(*queryFields, group)
 	}
 }
 
-func (filter *Filter) appendQuerySearch(queryFields *[]string, args *[]any, field, value string) {
+func (filter *Filter) appendQuerySearch(queryFields *[][]string, args *[]any, field, value string) {
 	if value != "" {
 		comparator := ""
 
@@ -770,45 +788,57 @@ func (filter *Filter) appendQuerySearch(queryFields *[]string, args *[]any, fiel
 			*args = append(*args, fmt.Sprintf("%%%s%%", value))
 		}
 
-		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+		*queryFields = append(*queryFields, []string{fmt.Sprintf(comparator, field)})
 	}
 }
 
-func (filter *Filter) appendQueryUInt16(queryFields *[]string, args *[]any, field, value string) {
-	if value != "" {
-		comparator := "%s = ? "
+func (filter *Filter) appendQueryUInt16(queryFields *[][]string, args *[]any, field string, value []string) {
+	if len(value) != 0 {
+		group := make([]string, 0, len(value))
 
-		if strings.HasPrefix(value, "!") {
-			value = value[1:]
-			comparator = "%s != ? "
-		}
+		for _, v := range value {
+			comparator := "%s = ? "
 
-		var valueInt uint16
-
-		if strings.ToLower(value) != "null" {
-			i, err := strconv.ParseUint(value, 10, 16)
-
-			if err == nil {
-				valueInt = uint16(i)
+			if strings.HasPrefix(v, "!") {
+				v = v[1:]
+				comparator = "%s != ? "
 			}
+
+			var valueInt uint16
+
+			if strings.ToLower(v) != "null" {
+				i, err := strconv.ParseUint(v, 10, 16)
+
+				if err == nil {
+					valueInt = uint16(i)
+				}
+			}
+
+			*args = append(*args, valueInt)
+			group = append(group, fmt.Sprintf(comparator, field))
 		}
 
-		*args = append(*args, valueInt)
-		*queryFields = append(*queryFields, fmt.Sprintf(comparator, field))
+		*queryFields = append(*queryFields, group)
 	}
 }
 
-func (filter *Filter) appendQueryMeta(queryFields *[]string, args *[]any, kv map[string]string) {
-	for k, v := range kv {
-		comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+func (filter *Filter) appendQueryMeta(queryFields *[][]string, args *[]any, kv map[string]string) {
+	if len(kv) != 0 {
+		group := make([]string, 0, len(kv))
 
-		if strings.HasPrefix(v, "!") {
-			v = v[1:]
-			comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+		for k, v := range kv {
+			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+
+			if strings.HasPrefix(v, "!") {
+				v = v[1:]
+				comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+			}
+
+			*args = append(*args, filter.nullValue(v))
+			group = append(group, fmt.Sprintf(comparator, k))
 		}
 
-		*args = append(*args, filter.nullValue(v))
-		*queryFields = append(*queryFields, fmt.Sprintf(comparator, k))
+		*queryFields = append(*queryFields, []string{strings.Join(group, "AND ")})
 	}
 }
 
