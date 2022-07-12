@@ -34,7 +34,7 @@ type Filter struct {
 	IncludeTime bool
 
 	// Period sets the period to group results.
-	// This is only used by Analyzer.Visitors, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
+	// This is only used by Analyzer.ByPeriod, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
 	// Using it for other queries leads to wrong results and might return an error.
 	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
 	Period pirsch.Period
@@ -135,10 +135,10 @@ type Filter struct {
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
-	// IncludeTitle indicates that the Analyzer.Pages, Analyzer.EntryPages, and Analyzer.ExitPages should contain the page title.
+	// IncludeTitle indicates that the Analyzer.ByPath, Analyzer.Entry, and Analyzer.Exit should contain the page title.
 	IncludeTitle bool
 
-	// IncludeTimeOnPage indicates that the Analyzer.Pages and Analyzer.EntryPages should contain the average time on page.
+	// IncludeTimeOnPage indicates that the Analyzer.ByPath and Analyzer.Entry should contain the average time on page.
 	IncludeTimeOnPage bool
 
 	// MaxTimeOnPageSeconds is an optional maximum for the time spent on page.

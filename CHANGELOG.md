@@ -5,6 +5,7 @@
 * added multiple filters for the same field connected with OR
 * added support for "contains" for filter fields
 * refactored code into modules
+* refactored `Analyzer` to group methods
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping
