@@ -15,6 +15,7 @@ type Analyzer struct {
 	UTM          UTM
 	Events       Events
 	Time         Time
+	Options      FilterOptions
 	minIsBot     uint8
 }
 
@@ -53,6 +54,10 @@ func NewAnalyzer(store db.Store, config *Config) *Analyzer {
 		store:    store,
 	}
 	analyzer.Time = Time{
+		analyzer: analyzer,
+		store:    store,
+	}
+	analyzer.Options = FilterOptions{
 		analyzer: analyzer,
 		store:    store,
 	}

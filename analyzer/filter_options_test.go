@@ -1,0 +1,192 @@
+package analyzer
+
+import (
+	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
+)
+
+func TestFilterOptions_Pages(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, SessionID: 1, Time: pastDay(4), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: pastDay(2), Path: "/foo"},
+		{VisitorID: 1, SessionID: 2, Time: pastDay(2), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: pastDay(1), Path: "/bar"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.Pages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "/", options[0])
+	assert.Equal(t, "/bar", options[1])
+	assert.Equal(t, "/foo", options[2])
+	options, err = analyzer.Options.Pages(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "/bar", options[0])
+	assert.Equal(t, "/foo", options[1])
+}
+
+func TestFilterOptions_UTM(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), UTMSource: "source", UTMMedium: "medium", UTMCampaign: "campaign", UTMContent: "content", UTMTerm: "term"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), UTMSource: "bar", UTMMedium: "bar", UTMCampaign: "bar", UTMContent: "bar", UTMTerm: "bar"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	utmSource, err := analyzer.Options.UTMSource(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmSource, 3)
+	assert.Equal(t, "bar", utmSource[0])
+	assert.Equal(t, "foo", utmSource[1])
+	assert.Equal(t, "source", utmSource[2])
+	utmSource, err = analyzer.Options.UTMSource(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmSource, 2)
+	assert.Equal(t, "bar", utmSource[0])
+	assert.Equal(t, "foo", utmSource[1])
+	utmMedium, err := analyzer.Options.UTMMedium(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmMedium, 3)
+	assert.Equal(t, "bar", utmMedium[0])
+	assert.Equal(t, "foo", utmMedium[1])
+	assert.Equal(t, "medium", utmMedium[2])
+	utmMedium, err = analyzer.Options.UTMMedium(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmMedium, 2)
+	assert.Equal(t, "bar", utmMedium[0])
+	assert.Equal(t, "foo", utmMedium[1])
+	utmCampaign, err := analyzer.Options.UTMCampaign(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmCampaign, 3)
+	assert.Equal(t, "bar", utmCampaign[0])
+	assert.Equal(t, "campaign", utmCampaign[1])
+	assert.Equal(t, "foo", utmCampaign[2])
+	utmCampaign, err = analyzer.Options.UTMCampaign(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmCampaign, 2)
+	assert.Equal(t, "bar", utmCampaign[0])
+	assert.Equal(t, "foo", utmCampaign[1])
+	utmContent, err := analyzer.Options.UTMContent(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmContent, 3)
+	assert.Equal(t, "bar", utmContent[0])
+	assert.Equal(t, "content", utmContent[1])
+	assert.Equal(t, "foo", utmContent[2])
+	utmContent, err = analyzer.Options.UTMContent(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmContent, 2)
+	assert.Equal(t, "bar", utmContent[0])
+	assert.Equal(t, "foo", utmContent[1])
+	utmTerm, err := analyzer.Options.UTMTerm(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmTerm, 3)
+	assert.Equal(t, "bar", utmTerm[0])
+	assert.Equal(t, "foo", utmTerm[1])
+	assert.Equal(t, "term", utmTerm[2])
+	utmTerm, err = analyzer.Options.UTMTerm(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmTerm, 2)
+	assert.Equal(t, "bar", utmTerm[0])
+	assert.Equal(t, "foo", utmTerm[1])
+}
+
+func TestFilterOptions_Events(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 1, Time: pastDay(4), Name: "event"},
+		{VisitorID: 1, SessionID: 1, Time: pastDay(2), Name: "foo"},
+		{VisitorID: 1, SessionID: 2, Time: pastDay(2), Name: "foo"},
+		{VisitorID: 1, SessionID: 1, Time: pastDay(1), Name: "bar"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.Events(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "bar", options[0])
+	assert.Equal(t, "event", options[1])
+	assert.Equal(t, "foo", options[2])
+	options, err = analyzer.Options.Events(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "bar", options[0])
+	assert.Equal(t, "foo", options[1])
+}
+
+func TestFilterOptions_Countries(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), CountryCode: "us"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), CountryCode: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), CountryCode: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), CountryCode: "de"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.Countries(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "de", options[0])
+	assert.Equal(t, "ja", options[1])
+	assert.Equal(t, "us", options[2])
+	options, err = analyzer.Options.Countries(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "de", options[0])
+	assert.Equal(t, "ja", options[1])
+}
+
+func TestFilterOptions_Cities(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), City: "Boston"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), City: "Tokio"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), City: "Tokio"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), City: "Berlin"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.Cities(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "Berlin", options[0])
+	assert.Equal(t, "Boston", options[1])
+	assert.Equal(t, "Tokio", options[2])
+	options, err = analyzer.Options.Cities(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "Berlin", options[0])
+	assert.Equal(t, "Tokio", options[1])
+}
+
+func TestFilterOptions_Languages(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), Language: "en"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), Language: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), Language: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), Language: "de"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	utmSource, err := analyzer.Options.Languages(nil)
+	assert.NoError(t, err)
+	assert.Len(t, utmSource, 3)
+	assert.Equal(t, "de", utmSource[0])
+	assert.Equal(t, "en", utmSource[1])
+	assert.Equal(t, "ja", utmSource[2])
+	utmSource, err = analyzer.Options.Languages(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, utmSource, 2)
+	assert.Equal(t, "de", utmSource[0])
+	assert.Equal(t, "ja", utmSource[1])
+}

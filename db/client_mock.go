@@ -217,3 +217,8 @@ func (client *ClientMock) SelectOSVersionStats(string, ...any) ([]model.OSVersio
 func (client *ClientMock) SelectBrowserVersionStats(string, ...any) ([]model.BrowserVersionStats, error) {
 	return nil, nil
 }
+
+// SelectOptions implements the Store interface.
+func (client *ClientMock) SelectOptions(string, ...any) ([]string, error) {
+	return nil, nil
+}

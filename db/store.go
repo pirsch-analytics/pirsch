@@ -112,4 +112,7 @@ type Store interface {
 
 	// SelectBrowserVersionStats selects BrowserVersionStats.
 	SelectBrowserVersionStats(string, ...any) ([]model.BrowserVersionStats, error)
+
+	// SelectOptions selects a list of filter options.
+	SelectOptions(string, ...any) ([]string, error)
 }

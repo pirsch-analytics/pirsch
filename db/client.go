@@ -1375,6 +1375,30 @@ func (client *Client) SelectBrowserVersionStats(query string, args ...any) ([]mo
 	return results, nil
 }
 
+// SelectOptions implements the Store interface.
+func (client *Client) SelectOptions(query string, args ...any) ([]string, error) {
+	rows, err := client.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []string
+
+	for rows.Next() {
+		var result string
+
+		if err := rows.Scan(&result); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1
