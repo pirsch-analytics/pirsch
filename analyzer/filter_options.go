@@ -24,6 +24,11 @@ func (options *FilterOptions) Referrer(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "referrer", "session")
 }
 
+// ReferrerName returns all referrer names.
+func (options *FilterOptions) ReferrerName(filter *Filter) ([]string, error) {
+	return options.selectFilterOptions(filter, "referrer_name", "session")
+}
+
 // UTMSource returns all UTM sources.
 func (options *FilterOptions) UTMSource(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "utm_source", "session")

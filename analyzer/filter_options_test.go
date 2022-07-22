@@ -32,6 +32,40 @@ func TestFilterOptions_Pages(t *testing.T) {
 	assert.Equal(t, "/foo", options[1])
 }
 
+func TestFilterOptions_Referrer(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), Referrer: "https://google.com", ReferrerName: "Google"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), Referrer: "https://twitter.com", ReferrerName: "Twitter"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.Referrer(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "https://google.com", options[0])
+	assert.Equal(t, "https://pirsch.io", options[1])
+	assert.Equal(t, "https://twitter.com", options[2])
+	options, err = analyzer.Options.Referrer(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "https://pirsch.io", options[0])
+	assert.Equal(t, "https://twitter.com", options[1])
+	options, err = analyzer.Options.ReferrerName(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "Google", options[0])
+	assert.Equal(t, "Pirsch", options[1])
+	assert.Equal(t, "Twitter", options[2])
+	options, err = analyzer.Options.ReferrerName(&Filter{From: pastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "Pirsch", options[0])
+	assert.Equal(t, "Twitter", options[1])
+}
+
 func TestFilterOptions_UTM(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
