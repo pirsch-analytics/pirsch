@@ -33,11 +33,29 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Len(t, filter.Path, 1)
 	assert.Equal(t, "/path", filter.Path[0])
 	assert.Empty(t, filter.PathPattern)
-	filter = &Filter{Limit: -42, PathPattern: []string{"pattern"}}
+	filter = &Filter{Limit: -42, PathPattern: []string{"pattern", "pattern"}}
 	filter.validate()
 	assert.Empty(t, filter.Path)
 	assert.Len(t, filter.PathPattern, 1)
 	assert.Equal(t, "pattern", filter.PathPattern[0])
+}
+
+func TestFilter_RemoveDuplicates(t *testing.T) {
+	filter := NewFilter(pirsch.NullClient)
+	filter.Path = []string{
+		"/",
+		"/",
+		"/foo",
+		"/Foo",
+		"/bar",
+		"/foo",
+	}
+	filter.validate()
+	assert.Len(t, filter.Path, 4)
+	assert.Equal(t, "/", filter.Path[0])
+	assert.Equal(t, "/foo", filter.Path[1])
+	assert.Equal(t, "/Foo", filter.Path[2])
+	assert.Equal(t, "/bar", filter.Path[3])
 }
 
 func TestFilter_BuildQuery(t *testing.T) {

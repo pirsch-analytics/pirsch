@@ -217,6 +217,48 @@ func (filter *Filter) validate() {
 	if filter.Limit < 0 {
 		filter.Limit = 0
 	}
+
+	filter.Path = filter.removeDuplicates(filter.Path)
+	filter.EntryPath = filter.removeDuplicates(filter.EntryPath)
+	filter.ExitPath = filter.removeDuplicates(filter.ExitPath)
+	filter.PathPattern = filter.removeDuplicates(filter.PathPattern)
+	filter.Language = filter.removeDuplicates(filter.Language)
+	filter.Country = filter.removeDuplicates(filter.Country)
+	filter.City = filter.removeDuplicates(filter.City)
+	filter.Referrer = filter.removeDuplicates(filter.Referrer)
+	filter.ReferrerName = filter.removeDuplicates(filter.ReferrerName)
+	filter.OS = filter.removeDuplicates(filter.OS)
+	filter.OSVersion = filter.removeDuplicates(filter.OSVersion)
+	filter.Browser = filter.removeDuplicates(filter.Browser)
+	filter.BrowserVersion = filter.removeDuplicates(filter.BrowserVersion)
+	filter.ScreenClass = filter.removeDuplicates(filter.ScreenClass)
+	filter.ScreenWidth = filter.removeDuplicates(filter.ScreenWidth)
+	filter.ScreenHeight = filter.removeDuplicates(filter.ScreenHeight)
+	filter.UTMSource = filter.removeDuplicates(filter.UTMSource)
+	filter.UTMMedium = filter.removeDuplicates(filter.UTMMedium)
+	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)
+	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
+	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
+	filter.EventName = filter.removeDuplicates(filter.EventName)
+	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
+}
+
+func (filter *Filter) removeDuplicates(in []string) []string {
+	if len(in) == 0 {
+		return []string{}
+	}
+
+	keys := make(map[string]struct{})
+	list := make([]string, 0, len(in))
+
+	for _, item := range in {
+		if _, value := keys[item]; !value {
+			keys[item] = struct{}{}
+			list = append(list, item)
+		}
+	}
+
+	return list
 }
 
 func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
