@@ -125,6 +125,13 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	if filter.table() != "event" {
+		totalSessions, err := pages.totalSessions(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		totalSessionsFloat64 := float64(totalSessions)
 		total, err := pages.totalVisitorsSessions(filter, pathList)
 
 		if err != nil {
@@ -136,7 +143,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 				if stats[i].Path == total[j].Path {
 					stats[i].Visitors = total[j].Visitors
 					stats[i].Sessions = total[j].Sessions
-					stats[i].EntryRate = float64(stats[i].Entries) / float64(total[j].Sessions)
+					stats[i].EntryRate = float64(stats[i].Entries) / totalSessionsFloat64
 					break
 				}
 			}
@@ -205,6 +212,13 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 			pathList = append(pathList, path)
 		}
 
+		totalSessions, err := pages.totalSessions(filter)
+
+		if err != nil {
+			return nil, err
+		}
+
+		totalSessionsFloat64 := float64(totalSessions)
 		total, err := pages.totalVisitorsSessions(filter, pathList)
 
 		if err != nil {
@@ -216,7 +230,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 				if stats[i].Path == total[j].Path {
 					stats[i].Visitors = total[j].Visitors
 					stats[i].Sessions = total[j].Sessions
-					stats[i].ExitRate = float64(stats[i].Exits) / float64(total[j].Sessions)
+					stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
 					break
 				}
 			}
@@ -246,6 +260,23 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 
 	if err != nil {
 		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (pages *Pages) totalSessions(filter *Filter) (int, error) {
+	filter = pages.analyzer.getFilter(filter)
+	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = []string{}, []string{}, []string{}, []string{}
+	filterArgs, filterQuery := filter.queryTime(pages.analyzer.minIsBot > 0)
+	query := fmt.Sprintf(`SELECT uniq(visitor_id, session_id)
+		FROM session
+		WHERE %s
+		HAVING sum(sign) > 0`, filterQuery)
+	stats, err := pages.store.SelectTotalSessions(query, filterArgs...)
+
+	if err != nil {
+		return 0, err
 	}
 
 	return stats, nil

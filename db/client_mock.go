@@ -123,6 +123,11 @@ func (client *ClientMock) SelectExitStats(bool, string, ...any) ([]model.ExitSta
 	return nil, nil
 }
 
+// SelectTotalSessions implements the Store interface.
+func (client *ClientMock) SelectTotalSessions(string, ...any) (int, error) {
+	return 0, nil
+}
+
 // SelectTotalVisitorSessionStats implements the Store interface.
 func (client *ClientMock) SelectTotalVisitorSessionStats(string, ...any) ([]model.TotalVisitorSessionStats, error) {
 	return nil, nil

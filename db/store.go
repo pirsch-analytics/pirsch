@@ -56,6 +56,9 @@ type Store interface {
 	// SelectExitStats selects ExitStats.
 	SelectExitStats(bool, string, ...any) ([]model.ExitStats, error)
 
+	// SelectTotalSessions returns the total number of unique sessions.
+	SelectTotalSessions(string, ...any) (int, error)
+
 	// SelectTotalVisitorSessionStats selects TotalVisitorSessionStats.
 	SelectTotalVisitorSessionStats(string, ...any) ([]model.TotalVisitorSessionStats, error)
 

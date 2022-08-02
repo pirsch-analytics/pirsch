@@ -7,6 +7,7 @@
 * added reading filter options using the `Analyzer`
 * refactored code into modules
 * refactored `Analyzer` to group methods
+* fixed entry/exit rate calculation
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping

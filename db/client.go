@@ -909,6 +909,17 @@ func (client *Client) SelectExitStats(includeTitle bool, query string, args ...a
 	return results, nil
 }
 
+// SelectTotalSessions implements the Store interface.
+func (client *Client) SelectTotalSessions(query string, args ...any) (int, error) {
+	var result int
+
+	if err := client.QueryRow(query, args...).Scan(&result); err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+
+	return result, nil
+}
+
 // SelectTotalVisitorSessionStats implements the Store interface.
 func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) ([]model.TotalVisitorSessionStats, error) {
 	rows, err := client.Query(query, args...)
