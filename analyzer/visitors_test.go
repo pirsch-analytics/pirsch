@@ -111,6 +111,9 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		{VisitorID: 8, Time: pastDay(2), Path: "/"},
 		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
 	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 4, Time: pastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
 	analyzer := NewAnalyzer(dbClient, nil)
 	visitors, err := analyzer.Visitors.Total(&Filter{From: pastDay(4), To: util.Today()})
 	assert.NoError(t, err)
@@ -147,6 +150,26 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 1, visitors.Views)
 	assert.Equal(t, 1, visitors.Bounces)
 	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:      pastDay(4),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"foo": "val0"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 0, visitors.Bounces)
+	assert.InDelta(t, 0, visitors.BounceRate, 0.01)
+
+	// ignore metadata when event name is not set
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:      pastDay(4),
+		To:        util.Today(),
+		EventMeta: map[string]string{"foo": "val0"},
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {

@@ -240,7 +240,13 @@ func (filter *Filter) validate() {
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
-	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
+
+	if len(filter.EventName) > 0 || filter.eventFilter {
+		filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
+	} else {
+		filter.EventMetaKey = nil
+		filter.EventMeta = nil
+	}
 }
 
 func (filter *Filter) removeDuplicates(in []string) []string {

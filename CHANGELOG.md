@@ -7,6 +7,7 @@
 * added reading filter options using the `Analyzer`
 * refactored code into modules
 * refactored `Analyzer` to group methods
+* ignore event metadata when event name is not set
 * fixed entry/exit rate calculation
 * updated User-Agent blacklist
 * updated referrer blacklist
