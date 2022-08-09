@@ -632,7 +632,7 @@ func (filter *Filter) queryPlatform(queryFields *[][]string) {
 	}
 }
 
-func (filter Filter) queryPathPattern(queryFields *[][]string, args *[]any) {
+func (filter *Filter) queryPathPattern(queryFields *[][]string, args *[]any) {
 	if len(filter.PathPattern) != 0 {
 		group := make([]string, 0, len(filter.PathPattern))
 
