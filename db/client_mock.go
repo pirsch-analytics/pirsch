@@ -9,10 +9,10 @@ import (
 
 // ClientMock is a mock Store implementation.
 type ClientMock struct {
-	PageViews     []model.PageView
-	Sessions      []model.Session
-	Events        []model.Event
-	UserAgents    []model.UserAgent
+	pageViews     []model.PageView
+	sessions      []model.Session
+	events        []model.Event
+	userAgents    []model.UserAgent
 	ReturnSession *model.Session
 	m             sync.Mutex
 }
@@ -20,18 +20,54 @@ type ClientMock struct {
 // NewMockClient returns a new mock client.
 func NewMockClient() *ClientMock {
 	return &ClientMock{
-		PageViews:  make([]model.PageView, 0),
-		Sessions:   make([]model.Session, 0),
-		Events:     make([]model.Event, 0),
-		UserAgents: make([]model.UserAgent, 0),
+		pageViews:  make([]model.PageView, 0),
+		sessions:   make([]model.Session, 0),
+		events:     make([]model.Event, 0),
+		userAgents: make([]model.UserAgent, 0),
 	}
+}
+
+// GetPageViews returns a copy of the page views slice.
+func (client *ClientMock) GetPageViews() []model.PageView {
+	client.m.Lock()
+	defer client.m.Unlock()
+	data := make([]model.PageView, len(client.pageViews))
+	copy(data, client.pageViews)
+	return data
+}
+
+// GetSessions returns a copy of the sessions slice.
+func (client *ClientMock) GetSessions() []model.Session {
+	client.m.Lock()
+	defer client.m.Unlock()
+	data := make([]model.Session, len(client.sessions))
+	copy(data, client.sessions)
+	return data
+}
+
+// GetEvents returns a copy of the events slice.
+func (client *ClientMock) GetEvents() []model.Event {
+	client.m.Lock()
+	defer client.m.Unlock()
+	data := make([]model.Event, len(client.events))
+	copy(data, client.events)
+	return data
+}
+
+// GetUserAgents returns a copy of the user agents slice.
+func (client *ClientMock) GetUserAgents() []model.UserAgent {
+	client.m.Lock()
+	defer client.m.Unlock()
+	data := make([]model.UserAgent, len(client.userAgents))
+	copy(data, client.userAgents)
+	return data
 }
 
 // SavePageViews implements the Store interface.
 func (client *ClientMock) SavePageViews(pageViews []model.PageView) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.PageViews = append(client.PageViews, pageViews...)
+	client.pageViews = append(client.pageViews, pageViews...)
 	return nil
 }
 
@@ -39,7 +75,7 @@ func (client *ClientMock) SavePageViews(pageViews []model.PageView) error {
 func (client *ClientMock) SaveSessions(sessions []model.Session) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.Sessions = append(client.Sessions, sessions...)
+	client.sessions = append(client.sessions, sessions...)
 	return nil
 }
 
@@ -47,7 +83,7 @@ func (client *ClientMock) SaveSessions(sessions []model.Session) error {
 func (client *ClientMock) SaveEvents(events []model.Event) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.Events = append(client.Events, events...)
+	client.events = append(client.events, events...)
 	return nil
 }
 
@@ -55,7 +91,7 @@ func (client *ClientMock) SaveEvents(events []model.Event) error {
 func (client *ClientMock) SaveUserAgents(userAgents []model.UserAgent) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.UserAgents = append(client.UserAgents, userAgents...)
+	client.userAgents = append(client.userAgents, userAgents...)
 	return nil
 }
 

@@ -9,6 +9,7 @@
 * refactored `Analyzer` to group methods
 * ignore event metadata when event name is not set
 * fixed entry/exit rate calculation
+* fixed some concurrency issues
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping

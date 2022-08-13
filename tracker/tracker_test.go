@@ -65,18 +65,20 @@ func TestTracker_HitTimeout(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	time.Sleep(time.Millisecond * 210)
-	assert.Len(t, client.Sessions, 2)
-	assert.Len(t, client.UserAgents, 2)
+	sessions := client.GetSessions()
+	userAgents := client.GetUserAgents()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, userAgents, 2)
 
 	// ignore order...
-	if client.Sessions[0].ExitPath != "/" && client.Sessions[0].ExitPath != "/hello-world" ||
-		client.Sessions[1].ExitPath != "/" && client.Sessions[1].ExitPath != "/hello-world" {
-		t.Fatalf("Sessions not as expected: %v %v", client.Sessions[0], client.Sessions[1])
+	if sessions[0].ExitPath != "/" && sessions[0].ExitPath != "/hello-world" ||
+		sessions[1].ExitPath != "/" && sessions[1].ExitPath != "/hello-world" {
+		t.Fatalf("Sessions not as expected: %v %v", sessions[0], sessions[1])
 	}
 
-	if client.UserAgents[0].UserAgent != uaString1 && client.UserAgents[0].UserAgent != uaString2 ||
-		client.UserAgents[1].UserAgent != uaString1 && client.UserAgents[1].UserAgent != uaString2 {
-		t.Fatalf("UserAgents not as expected: %v %v", client.UserAgents[0], client.UserAgents[1])
+	if userAgents[0].UserAgent != uaString1 && userAgents[0].UserAgent != uaString2 ||
+		userAgents[1].UserAgent != uaString1 && userAgents[1].UserAgent != uaString2 {
+		t.Fatalf("UserAgents not as expected: %v %v", userAgents[0], userAgents[1])
 	}
 
 	tracker.ClearSessionCache()
@@ -98,9 +100,9 @@ func TestTracker_HitLimit(t *testing.T) {
 	}
 
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 7)
-	assert.Len(t, client.Sessions, 13)
-	assert.Len(t, client.UserAgents, 1)
+	assert.Len(t, client.GetPageViews(), 7)
+	assert.Len(t, client.GetSessions(), 13)
+	assert.Len(t, client.GetUserAgents(), 1)
 }
 
 func TestTracker_HitDiscard(t *testing.T) {
@@ -120,9 +122,9 @@ func TestTracker_HitDiscard(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, client.PageViews, 5)
-	assert.Len(t, client.Sessions, 9)
-	assert.Len(t, client.UserAgents, 1)
+	assert.Len(t, client.GetPageViews(), 5)
+	assert.Len(t, client.GetSessions(), 9)
+	assert.Len(t, client.GetUserAgents(), 1)
 }
 
 func TestTracker_HitCountryCode(t *testing.T) {
@@ -144,13 +146,14 @@ func TestTracker_HitCountryCode(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 2)
-	assert.Len(t, client.Sessions, 2)
-	assert.Len(t, client.UserAgents, 2)
+	sessions := client.GetSessions()
+	assert.Len(t, client.GetPageViews(), 2)
+	assert.Len(t, sessions, 2)
+	assert.Len(t, client.GetUserAgents(), 2)
 	foundGB := false
 	foundEmpty := false
 
-	for _, hit := range client.Sessions {
+	for _, hit := range sessions {
 		if hit.CountryCode == "gb" {
 			foundGB = true
 		} else if hit.CountryCode == "" {
@@ -174,10 +177,11 @@ func TestTracker_HitSession(t *testing.T) {
 	tracker.Hit(req1, nil)
 	tracker.Hit(req2, nil)
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 2)
-	assert.Len(t, client.Sessions, 3)
-	assert.Len(t, client.UserAgents, 1)
-	assert.Equal(t, client.Sessions[0].SessionID, client.Sessions[1].SessionID)
+	sessions := client.GetSessions()
+	assert.Len(t, client.GetPageViews(), 2)
+	assert.Len(t, sessions, 3)
+	assert.Len(t, client.GetUserAgents(), 1)
+	assert.Equal(t, sessions[0].SessionID, sessions[1].SessionID)
 }
 
 func TestTracker_HitTitle(t *testing.T) {
@@ -191,12 +195,14 @@ func TestTracker_HitTitle(t *testing.T) {
 		Title: "title",
 	})
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 1)
-	assert.Len(t, client.Sessions, 1)
-	assert.Len(t, client.UserAgents, 1)
-	assert.Equal(t, "title", client.Sessions[0].EntryTitle)
-	assert.Equal(t, "title", client.Sessions[0].ExitTitle)
-	assert.Equal(t, "title", client.PageViews[0].Title)
+	pageViews := client.GetPageViews()
+	sessions := client.GetSessions()
+	assert.Len(t, pageViews, 1)
+	assert.Len(t, sessions, 1)
+	assert.Len(t, client.GetUserAgents(), 1)
+	assert.Equal(t, "title", sessions[0].EntryTitle)
+	assert.Equal(t, "title", sessions[0].ExitTitle)
+	assert.Equal(t, "title", pageViews[0].Title)
 }
 
 func TestTracker_HitIgnoreSubdomain(t *testing.T) {
@@ -225,11 +231,12 @@ func TestTracker_HitIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 4)
-	assert.Len(t, client.Sessions, 7)
-	assert.Len(t, client.UserAgents, 1)
+	sessions := client.GetSessions()
+	assert.Len(t, client.GetPageViews(), 4)
+	assert.Len(t, sessions, 7)
+	assert.Len(t, client.GetUserAgents(), 1)
 
-	for _, hit := range client.Sessions {
+	for _, hit := range sessions {
 		assert.Empty(t, hit.Referrer)
 	}
 }
@@ -253,10 +260,9 @@ func TestTracker_HitConcurrency(t *testing.T) {
 		tracker[i] = NewTracker(dbClient, "salt", config)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
-
 	for i := 0; i < 100; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 		req.URL.Path = fmt.Sprintf("/page/%d", i+1)
 		go tracker[i%10].Hit(req, nil)
 		time.Sleep(time.Millisecond * 5)
@@ -304,10 +310,10 @@ func TestTracker_HitIsBot(t *testing.T) {
 		WorkerTimeout:    time.Second * 2,
 		SessionCache:     cache,
 	})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 
 	for i := 0; i < 7; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
 		req.URL.Path = fmt.Sprintf("/page/%d", i)
 		go tracker.Hit(req, nil)
 		time.Sleep(time.Millisecond * 5)
@@ -334,15 +340,16 @@ func TestTracker_Event(t *testing.T) {
 	tracker.Event(req, EventOptions{Name: ""}, nil)                                                                                  // ignore (invalid name)
 	tracker.Event(req, EventOptions{Name: " event  ", Duration: 42, Meta: map[string]string{"hello": "world", "meta": "data"}}, nil) // Store duration and meta data
 	tracker.Stop()
-	assert.Len(t, client.Events, 1)
-	assert.Equal(t, "event", client.Events[0].Name)
-	assert.Equal(t, uint32(42), client.Events[0].DurationSeconds)
-	assert.Len(t, client.Events[0].MetaKeys, 2)
-	assert.Len(t, client.Events[0].MetaValues, 2)
-	assert.Contains(t, client.Events[0].MetaKeys, "hello")
-	assert.Contains(t, client.Events[0].MetaKeys, "meta")
-	assert.Contains(t, client.Events[0].MetaValues, "world")
-	assert.Contains(t, client.Events[0].MetaValues, "data")
+	events := client.GetEvents()
+	assert.Len(t, events, 1)
+	assert.Equal(t, "event", events[0].Name)
+	assert.Equal(t, uint32(42), events[0].DurationSeconds)
+	assert.Len(t, events[0].MetaKeys, 2)
+	assert.Len(t, events[0].MetaValues, 2)
+	assert.Contains(t, events[0].MetaKeys, "hello")
+	assert.Contains(t, events[0].MetaKeys, "meta")
+	assert.Contains(t, events[0].MetaValues, "world")
+	assert.Contains(t, events[0].MetaValues, "data")
 }
 
 func TestTracker_EventTimeout(t *testing.T) {
@@ -355,12 +362,13 @@ func TestTracker_EventTimeout(t *testing.T) {
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	time.Sleep(time.Millisecond * 210)
-	assert.Len(t, client.Events, 2)
+	events := client.GetEvents()
+	assert.Len(t, events, 2)
 
 	// ignore order...
-	if client.Events[0].Path != "/" && client.Events[0].Path != "/hello-world" ||
-		client.Events[1].Path != "/" && client.Events[1].Path != "/hello-world" {
-		t.Fatalf("Sessions not as expected: %v %v", client.Events[0], client.Events[1])
+	if events[0].Path != "/" && events[0].Path != "/hello-world" ||
+		events[1].Path != "/" && events[1].Path != "/hello-world" {
+		t.Fatalf("Sessions not as expected: %v %v", events[0], events[1])
 	}
 }
 
@@ -381,7 +389,7 @@ func TestTracker_EventLimit(t *testing.T) {
 		}
 
 		tracker.Stop()
-		assert.Len(t, client.Events, 7)
+		assert.Len(t, client.GetEvents(), 7)
 	}
 }
 
@@ -404,7 +412,7 @@ func TestTracker_EventDiscard(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, client.Events, 5)
+	assert.Len(t, client.GetEvents(), 5)
 }
 
 func TestTracker_EventCountryCode(t *testing.T) {
@@ -426,11 +434,12 @@ func TestTracker_EventCountryCode(t *testing.T) {
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
-	assert.Len(t, client.Events, 2)
+	events := client.GetEvents()
+	assert.Len(t, events, 2)
 	foundGB := false
 	foundEmpty := false
 
-	for _, event := range client.Events {
+	for _, event := range events {
 		if event.CountryCode == "gb" {
 			foundGB = true
 		} else if event.CountryCode == "" {
@@ -454,8 +463,9 @@ func TestTracker_EventSession(t *testing.T) {
 	tracker.Event(req1, EventOptions{Name: "event"}, nil)
 	tracker.Event(req2, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
-	assert.Len(t, client.Events, 2)
-	assert.Equal(t, client.Events[0].SessionID, client.Events[1].SessionID)
+	events := client.GetEvents()
+	assert.Len(t, events, 2)
+	assert.Equal(t, events[0].SessionID, events[1].SessionID)
 }
 
 func TestTracker_EventTitle(t *testing.T) {
@@ -469,11 +479,12 @@ func TestTracker_EventTitle(t *testing.T) {
 		Title: "title",
 	})
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 0)
-	assert.Len(t, client.Sessions, 1)
-	assert.Len(t, client.UserAgents, 0)
-	assert.Len(t, client.Events, 1)
-	assert.Equal(t, "title", client.Events[0].Title)
+	events := client.GetEvents()
+	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, client.GetSessions(), 1)
+	assert.Len(t, client.GetUserAgents(), 0)
+	assert.Len(t, events, 1)
+	assert.Equal(t, "title", events[0].Title)
 }
 
 func TestTracker_EventIgnoreSubdomain(t *testing.T) {
@@ -502,9 +513,10 @@ func TestTracker_EventIgnoreSubdomain(t *testing.T) {
 		Referrer:                "pirsch.io",
 	})
 	tracker.Stop()
-	assert.Len(t, client.Events, 4)
+	events := client.GetEvents()
+	assert.Len(t, events, 4)
 
-	for _, hit := range client.Events {
+	for _, hit := range events {
 		assert.Empty(t, hit.Referrer)
 	}
 }
@@ -520,19 +532,20 @@ func TestTracker_EventUpdateSession(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	tracker.Event(req, EventOptions{Name: "event"}, nil)
 	tracker.Stop()
-	assert.Len(t, client.PageViews, 1)
-	assert.Len(t, client.Sessions, 3)
-	assert.Len(t, client.UserAgents, 1)
-	assert.Len(t, client.Events, 1)
-	assert.Equal(t, int8(1), client.Sessions[0].Sign)
-	assert.Equal(t, int8(-1), client.Sessions[1].Sign)
-	assert.Equal(t, int8(1), client.Sessions[2].Sign)
-	assert.True(t, client.Sessions[0].IsBounce)
-	assert.True(t, client.Sessions[1].IsBounce)
-	assert.False(t, client.Sessions[2].IsBounce)
-	assert.Equal(t, uint16(1), client.Sessions[0].PageViews)
-	assert.Equal(t, uint16(1), client.Sessions[1].PageViews)
-	assert.Equal(t, uint16(1), client.Sessions[2].PageViews)
+	sessions := client.GetSessions()
+	assert.Len(t, client.GetPageViews(), 1)
+	assert.Len(t, sessions, 3)
+	assert.Len(t, client.GetUserAgents(), 1)
+	assert.Len(t, client.GetEvents(), 1)
+	assert.Equal(t, int8(1), sessions[0].Sign)
+	assert.Equal(t, int8(-1), sessions[1].Sign)
+	assert.Equal(t, int8(1), sessions[2].Sign)
+	assert.True(t, sessions[0].IsBounce)
+	assert.True(t, sessions[1].IsBounce)
+	assert.False(t, sessions[2].IsBounce)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[1].PageViews)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
@@ -548,13 +561,14 @@ func TestTracker_ExtendSession(t *testing.T) {
 	})
 	tracker.Hit(req, nil)
 	tracker.Flush()
-	assert.Len(t, client.Sessions, 1)
-	at := client.Sessions[0].Time
-	fingerprint := client.Sessions[0].VisitorID
+	sessions := client.GetSessions()
+	assert.Len(t, sessions, 1)
+	at := sessions[0].Time
+	fingerprint := sessions[0].VisitorID
 	time.Sleep(time.Millisecond * 20)
 	tracker.ExtendSession(req, nil)
 	tracker.Flush()
-	assert.Len(t, client.Sessions, 1)
+	assert.Len(t, sessions, 1)
 	hit := sessionCache.Get(0, fingerprint, time.Now().UTC().Add(-time.Second))
 	assert.NotEqual(t, at, hit.Time)
 	assert.True(t, hit.Time.After(at))
