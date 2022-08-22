@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.1.0
+
+* upgraded to Go version 1.19
+* switched from `atomic.LoadInt32` to `atomic.Bool`
+* updated dependencies
+
 ## 4.0.0
 
 * added multiple filters for the same field connected with OR

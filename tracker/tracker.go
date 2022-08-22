@@ -137,7 +137,6 @@ type Tracker struct {
 	sessionCache                              session.Cache
 	salt                                      string
 	data                                      chan data
-	stopped                                   int32
 	worker                                    int
 	workerBufferSize                          int
 	workerTimeout                             time.Duration
@@ -153,6 +152,7 @@ type Tracker struct {
 	geoDB                                     *geodb.GeoDB
 	geoDBMutex                                sync.RWMutex
 	logger                                    *log.Logger
+	lock                                      atomic.Bool
 }
 
 // NewTracker creates a new tracker for given client, salt and config.
@@ -200,7 +200,7 @@ func NewTracker(client db.Store, salt string, config *Config) *Tracker {
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // It's safe (and recommended!) to call this function in its own goroutine.
 func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
-	if atomic.LoadInt32(&tracker.stopped) > 0 {
+	if tracker.lock.Load() {
 		return
 	}
 
@@ -243,7 +243,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 // The request might be ignored if it meets certain conditions. The HitOptions, if passed, will overwrite the Tracker configuration.
 // It's save (and recommended!) to call this function in its own goroutine.
 func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, options *HitOptions) {
-	if atomic.LoadInt32(&tracker.stopped) > 0 {
+	if tracker.lock.Load() {
 		return
 	}
 
@@ -341,8 +341,8 @@ func (tracker *Tracker) Flush() {
 
 // Stop flushes and stops all workers.
 func (tracker *Tracker) Stop() {
-	if atomic.LoadInt32(&tracker.stopped) == 0 {
-		atomic.StoreInt32(&tracker.stopped, 1)
+	if !tracker.lock.Load() {
+		tracker.lock.Store(true)
 		tracker.stopWorker()
 		tracker.flushData()
 	}
