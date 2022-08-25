@@ -148,8 +148,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		}
 	}
 
-	// TODO for events?
-	if filter.IncludeTimeOnPage && filter.table() != "event" {
+	if filter.IncludeTimeOnPage {
 		top, err := pages.avgTimeOnPage(filter, pathList)
 
 		if err != nil {
@@ -356,11 +355,8 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	filter = pages.analyzer.getFilter(filter)
-
-	if filter.table() == "event" {
-		return []model.AvgTimeSpentStats{}, nil
-	}
-
+	eventName, eventMetaKey, eventMeta := filter.EventName, filter.EventMetaKey, filter.EventMeta
+	filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil
 	filter.Search, filter.Sort, filter.Offset, filter.Limit = nil, nil, 0, 0
 	timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
@@ -383,7 +379,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 			SELECT path,
 			%s time_on_page
 			FROM (
-				SELECT session_id,
+				SELECT v.session_id sid,
 				path,
 				duration_seconds
 				%s
@@ -405,6 +401,18 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
 	}
 
+	if len(eventName) > 0 {
+		filter.EventName, filter.EventMetaKey, filter.EventMeta = eventName, eventMetaKey, eventMeta
+		eventFilterArgs, eventFilterQuery := filter.query(false)
+		args = append(args, eventFilterArgs...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (
+				SELECT visitor_id, session_id 
+				FROM event
+				WHERE %s
+			) ev
+			ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, eventFilterQuery))
+	}
+
 	args = append(args, timeArgs...)
 	pathQuery := strings.Repeat("?,", len(paths))
 
@@ -414,10 +422,10 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 
 	args = append(args, fieldArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
-				ORDER BY visitor_id, session_id, time
+				ORDER BY v.visitor_id, v.session_id, time
 			)
 			WHERE time_on_page > 0
-			AND session_id = neighbor(session_id, 1, null)
+			AND sid = neighbor(sid, 1, null)
 			AND path IN (%s)
 			%s
 		)

@@ -368,10 +368,10 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), SessionID: 1, Path: "/"},
-		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/"},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo"},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 20), SessionID: 1, Path: "/"},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 25), SessionID: 1, Path: "/bar"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/", DurationSeconds: 8},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo", DurationSeconds: 31},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 20), SessionID: 1, Path: "/", DurationSeconds: 9},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 25), SessionID: 1, Path: "/bar", DurationSeconds: 21},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
@@ -389,7 +389,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	entries, err := analyzer.Pages.Entry(&Filter{EventName: []string{"event"}})
+	entries, err := analyzer.Pages.Entry(&Filter{EventName: []string{"event"}, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
@@ -397,6 +397,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.Equal(t, 1, entries[0].Sessions)
 	assert.Equal(t, 1, entries[0].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 20, entries[0].AverageTimeSpentSeconds)
 	exits, err := analyzer.Pages.Exit(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
