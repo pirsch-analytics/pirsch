@@ -366,6 +366,13 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), SessionID: 1, Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 20), SessionID: 1, Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 25), SessionID: 1, Path: "/bar"},
+	}))
 	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
@@ -386,12 +393,18 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 1, entries[0].Sessions)
 	assert.Equal(t, 1, entries[0].Entries)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
 	exits, err := analyzer.Pages.Exit(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
 	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 1, exits[0].Sessions)
 	assert.Equal(t, 1, exits[0].Exits)
+	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
 	_, err = analyzer.Pages.Entry(getMaxFilter("event"))
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.Exit(getMaxFilter("event"))

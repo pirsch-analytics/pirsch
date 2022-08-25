@@ -124,32 +124,31 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		pathList = append(pathList, path)
 	}
 
-	if filter.table() != "event" {
-		totalSessions, err := pages.totalSessions(filter)
+	totalSessions, err := pages.totalSessions(filter)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		totalSessionsFloat64 := float64(totalSessions)
-		total, err := pages.totalVisitorsSessions(filter, pathList)
+	totalSessionsFloat64 := float64(totalSessions)
+	total, err := pages.totalVisitorsSessions(filter, pathList)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		for i := range stats {
-			for j := range total {
-				if stats[i].Path == total[j].Path {
-					stats[i].Visitors = total[j].Visitors
-					stats[i].Sessions = total[j].Sessions
-					stats[i].EntryRate = float64(stats[i].Entries) / totalSessionsFloat64
-					break
-				}
+	for i := range stats {
+		for j := range total {
+			if stats[i].Path == total[j].Path {
+				stats[i].Visitors = total[j].Visitors
+				stats[i].Sessions = total[j].Sessions
+				stats[i].EntryRate = float64(stats[i].Entries) / totalSessionsFloat64
+				break
 			}
 		}
 	}
 
+	// TODO for events?
 	if filter.IncludeTimeOnPage && filter.table() != "event" {
 		top, err := pages.avgTimeOnPage(filter, pathList)
 
@@ -199,40 +198,38 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	if filter.table() != "event" {
-		paths := make(map[string]struct{})
+	paths := make(map[string]struct{})
 
-		for i := range stats {
-			paths[stats[i].Path] = struct{}{}
-		}
+	for i := range stats {
+		paths[stats[i].Path] = struct{}{}
+	}
 
-		pathList := make([]string, 0, len(paths))
+	pathList := make([]string, 0, len(paths))
 
-		for path := range paths {
-			pathList = append(pathList, path)
-		}
+	for path := range paths {
+		pathList = append(pathList, path)
+	}
 
-		totalSessions, err := pages.totalSessions(filter)
+	totalSessions, err := pages.totalSessions(filter)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		totalSessionsFloat64 := float64(totalSessions)
-		total, err := pages.totalVisitorsSessions(filter, pathList)
+	totalSessionsFloat64 := float64(totalSessions)
+	total, err := pages.totalVisitorsSessions(filter, pathList)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		for i := range stats {
-			for j := range total {
-				if stats[i].Path == total[j].Path {
-					stats[i].Visitors = total[j].Visitors
-					stats[i].Sessions = total[j].Sessions
-					stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
-					break
-				}
+	for i := range stats {
+		for j := range total {
+			if stats[i].Path == total[j].Path {
+				stats[i].Visitors = total[j].Visitors
+				stats[i].Sessions = total[j].Sessions
+				stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
+				break
 			}
 		}
 	}
@@ -288,20 +285,32 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	}
 
 	filter = pages.analyzer.getFilter(filter)
-	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = []string{}, []string{}, []string{}, []string{}
+	eventName, eventMetaKey, eventMeta := filter.EventName, filter.EventMetaKey, filter.EventMeta
+	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath, filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil, nil, nil, nil, nil
 	filterArgs, filterQuery := filter.query(pages.analyzer.minIsBot > 0)
 	pathQuery := strings.Repeat("?,", len(paths))
+	var eventQuery, query string
+
+	if len(eventName) > 0 {
+		filter.EventName, filter.EventMetaKey, filter.EventMeta = eventName, eventMetaKey, eventMeta
+		eventFilterArgs, eventFilterQuery := filter.query(false)
+		filterArgs = append(filterArgs, eventFilterArgs...)
+		eventQuery = fmt.Sprintf(`INNER JOIN (
+				SELECT visitor_id, session_id 
+				FROM event
+				WHERE %s
+			) ev
+			ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, eventFilterQuery)
+	}
 
 	for _, path := range paths {
 		filterArgs = append(filterArgs, path)
 	}
 
-	var query string
-
 	if pages.analyzer.minIsBot > 0 {
 		query = fmt.Sprintf(`SELECT path,
-			uniq(visitor_id) visitors,
-			uniq(visitor_id, session_id) sessions,
+			uniq(v.visitor_id) visitors,
+			uniq(v.visitor_id, v.session_id) sessions,
 			count(1) views
 			FROM page_view v
 			INNER JOIN (
@@ -313,21 +322,23 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 				HAVING sum(sign) > 0
 			) s
 			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id
+			%s
 			WHERE path IN (%s)
 			GROUP BY path
 			ORDER BY visitors DESC, sessions DESC
-			%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
+			%s`, filterQuery, eventQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
 	} else {
 		query = fmt.Sprintf(`SELECT path,
-			uniq(visitor_id) visitors,
-			uniq(visitor_id, session_id) sessions,
+			uniq(v.visitor_id) visitors,
+			uniq(v.visitor_id, v.session_id) sessions,
 			count(1) views
-			FROM page_view
+			FROM page_view v
+			%s
 			WHERE %s
 			AND path IN (%s)
 			GROUP BY path
 			ORDER BY visitors DESC, sessions DESC
-			%s`, filterQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
+			%s`, filterQuery, eventQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
 	}
 
 	stats, err := pages.store.SelectTotalVisitorSessionStats(query, filterArgs...)

@@ -4,6 +4,7 @@
 
 * upgraded to Go version 1.19
 * switched from `atomic.LoadInt32` to `atomic.Bool`
+* added visitors, sessions, and entry/exit rate to entry/exit page statistics when filtering for an event
 * updated dependencies
 
 ## 4.0.0
