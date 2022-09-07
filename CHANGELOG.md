@@ -2,6 +2,8 @@
 
 ## 4.2.0
 
+* switched to `sendBeacon` for events
+* fixed `data-dev` attribute in `pirsch-events.js`
 * updated dependencies
 
 ## 4.1.0
