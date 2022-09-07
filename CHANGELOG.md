@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.2.0
+
+* updated dependencies
+
 ## 4.1.0
 
 * added visitors, sessions, entry/exit rate, and average time on page to entry/exit page statistics when filtering for an event
