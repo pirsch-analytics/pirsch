@@ -137,7 +137,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 	var timeOnPage uint32
 	var userAgent *model.UserAgent
 
-	if s == nil || referrerOrCampaignChanged(s, r, options) {
+	if s == nil || s.Start.Before(now.Add(-time.Hour*24)) || referrerOrCampaignChanged(s, r, options) {
 		s, userAgent = newSession(r, options, fingerprint, now, path, title)
 		sessionState.State = *s
 		options.SessionCache.Put(options.ClientID, fingerprint, s)
@@ -343,7 +343,7 @@ func updateSession(options *HitOptions, session *model.Session, event bool, now 
 		duration = 0
 	}
 
-	session.DurationSeconds = uint32(min(duration, options.SessionMaxAge.Milliseconds()/1000))
+	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.Time = now
 
@@ -448,12 +448,4 @@ func getURLQueryParam(param string) string {
 	}
 
 	return param
-}
-
-func min(a, b int64) int64 {
-	if a > b {
-		return b
-	}
-
-	return a
 }

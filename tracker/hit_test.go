@@ -602,8 +602,3 @@ func TestGetURLQueryParam(t *testing.T) {
 	assert.Equal(t, "https://test.com/foo/bar?param=value#anchor", getURLQueryParam("https://test.com/foo/bar?param=value#anchor"))
 	assert.Empty(t, getURLQueryParam("test"))
 }
-
-func TestMin(t *testing.T) {
-	assert.Equal(t, int64(5), min(5, 7))
-	assert.Equal(t, int64(19), min(34, 19))
-}

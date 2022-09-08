@@ -3,7 +3,9 @@
 ## 4.2.0
 
 * switched to `sendBeacon` for events
+* limited session lifetime to 24 hours
 * fixed `data-dev` attribute in `pirsch-events.js`
+* fixed `SessionMaxAge` being used for the maximum session lifetime
 * updated dependencies
 
 ## 4.1.0
