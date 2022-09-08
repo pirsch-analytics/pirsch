@@ -2,6 +2,7 @@
 
 ## 4.2.0
 
+* ignore User-Agents containing non-ASCII characters
 * switched to `sendBeacon` for events
 * limited session lifetime to 24 hours
 * fixed `data-dev` attribute in `pirsch-events.js`
