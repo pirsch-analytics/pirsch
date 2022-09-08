@@ -212,7 +212,7 @@ func IgnoreHit(r *http.Request) bool {
 	// empty User-Agents are usually bots
 	userAgent := strings.TrimSpace(strings.ToLower(r.Header.Get("User-Agent")))
 
-	if userAgent == "" || ua.ContainsNonASCIICharacters(userAgent) {
+	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || ua.ContainsNonASCIICharacters(userAgent) {
 		return true
 	}
 
