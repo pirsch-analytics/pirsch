@@ -2,8 +2,10 @@ package analyzer
 
 import (
 	"fmt"
+	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
+	"sort"
 	"strings"
 )
 
@@ -86,6 +88,12 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 // Entry returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	filter = pages.analyzer.getFilter(filter)
+	var sortVisitors pirsch.Direction
+
+	if len(filter.Sort) > 0 && filter.Sort[0].Field == FieldVisitors {
+		sortVisitors = filter.Sort[0].Direction
+		filter.Sort = filter.Sort[:0]
+	}
 
 	fields := []Field{
 		FieldEntryPath,
@@ -165,12 +173,30 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		}
 	}
 
+	if sortVisitors != "" {
+		if sortVisitors == pirsch.DirectionASC {
+			sort.Slice(stats, func(i, j int) bool {
+				return stats[i].Visitors < stats[j].Visitors
+			})
+		} else {
+			sort.Slice(stats, func(i, j int) bool {
+				return stats[i].Visitors > stats[j].Visitors
+			})
+		}
+	}
+
 	return stats, nil
 }
 
 // Exit returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	filter = pages.analyzer.getFilter(filter)
+	var sortVisitors pirsch.Direction
+
+	if len(filter.Sort) > 0 && filter.Sort[0].Field == FieldVisitors {
+		sortVisitors = filter.Sort[0].Direction
+		filter.Sort = filter.Sort[:0]
+	}
 
 	fields := []Field{
 		FieldExitPath,
@@ -230,6 +256,18 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 				stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
 				break
 			}
+		}
+	}
+
+	if sortVisitors != "" {
+		if sortVisitors == pirsch.DirectionASC {
+			sort.Slice(stats, func(i, j int) bool {
+				return stats[i].Visitors < stats[j].Visitors
+			})
+		} else {
+			sort.Slice(stats, func(i, j int) bool {
+				return stats[i].Visitors > stats[j].Visitors
+			})
 		}
 	}
 

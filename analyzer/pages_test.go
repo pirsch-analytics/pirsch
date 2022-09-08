@@ -364,6 +364,52 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: pastDay(2), SessionID: 1, Path: "/"},
+		{VisitorID: 1, Time: pastDay(2), SessionID: 2, Path: "/foo"},
+		{VisitorID: 2, Time: pastDay(2), SessionID: 3, Path: "/"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: pastDay(2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: pastDay(2), Start: time.Now(), SessionID: 2, EntryPath: "/foo", ExitPath: "/foo", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: pastDay(2), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/", PageViews: 1},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	entries, err := analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionDESC}}})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "/foo", entries[1].Path)
+	assert.Equal(t, 2, entries[0].Visitors)
+	assert.Equal(t, 1, entries[1].Visitors)
+	entries, err = analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionASC}}})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/foo", entries[0].Path)
+	assert.Equal(t, "/", entries[1].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 2, entries[1].Visitors)
+	exits, err := analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionDESC}}})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 2)
+	assert.Equal(t, "/", exits[0].Path)
+	assert.Equal(t, "/foo", exits[1].Path)
+	assert.Equal(t, 2, exits[0].Visitors)
+	assert.Equal(t, 1, exits[1].Visitors)
+	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionASC}}})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 2)
+	assert.Equal(t, "/foo", exits[0].Path)
+	assert.Equal(t, "/", exits[1].Path)
+	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 2, exits[1].Visitors)
+}
+
 func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

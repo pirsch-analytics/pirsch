@@ -6,6 +6,7 @@
 * ignore User-Agents containing less than 10 or more than 300 characters
 * switched to `sendBeacon` for events
 * limited session lifetime to 24 hours
+* added sorting entry/exit pages by the number of visitors
 * fixed `data-dev` attribute in `pirsch-events.js`
 * fixed `SessionMaxAge` being used for the maximum session lifetime
 * updated User-Agent blacklist
