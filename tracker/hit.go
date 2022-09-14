@@ -129,7 +129,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
 
-	// find session for today
+	// find session for today and maximum session age
 	salt += options.Salt
 	fingerprint := Fingerprint(r, salt, now, options.HeaderParser, options.AllowedProxySubnets)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
@@ -139,11 +139,9 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
 
 	if s == nil {
-		yesterday := now.Add(-time.Hour * 24)
-
-		if sessionMaxAge.Day() != yesterday.Day() {
-			// find session for previous day
-			fingerprintYesterday := Fingerprint(r, salt, yesterday, options.HeaderParser, options.AllowedProxySubnets)
+		// if the maximum session age reaches yesterday, we also need to check for the previous day
+		if sessionMaxAge.Day() != now.Day() {
+			fingerprintYesterday := Fingerprint(r, salt, sessionMaxAge, options.HeaderParser, options.AllowedProxySubnets)
 			my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
 			my.Lock()
 			defer my.Unlock()
