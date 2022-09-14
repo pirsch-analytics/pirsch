@@ -125,30 +125,42 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
+	getRequestURI(r, options)
+	path := getPath(options.Path)
+	title := shortenString(options.Title, 512)
+
+	// find session for today
 	salt += options.Salt
 	fingerprint := Fingerprint(r, salt, now, options.HeaderParser, options.AllowedProxySubnets)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
-	getRequestURI(r, options)
-	path := getPath(options.Path)
-	title := shortenString(options.Title, 512)
+	defer m.Unlock()
 	sessionMaxAge := now.Add(-options.SessionMaxAge)
 	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
 
 	if s == nil {
-		// try to find session on previous day
-		m.Unlock()
-		fingerprintYesterday := Fingerprint(r, salt, now.Add(-time.Hour*24), options.HeaderParser, options.AllowedProxySubnets)
-		m = options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
-		m.Lock()
+		// find session for previous day
+		yesterday := now.Add(-time.Hour * 24)
+		fingerprintYesterday := Fingerprint(r, salt, yesterday, options.HeaderParser, options.AllowedProxySubnets)
+		my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
+		my.Lock()
+		defer my.Unlock()
 		s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
+
+		if s != nil {
+			if s.Start.Before(now.Add(-time.Hour * 24)) {
+				s = nil
+			} else {
+				fingerprint = fingerprintYesterday
+			}
+		}
 	}
 
 	var sessionState SessionState
 	var timeOnPage uint32
 	var userAgent *model.UserAgent
 
-	if s == nil || s.Start.Before(now.Add(-time.Hour*24)) || referrerOrCampaignChanged(s, r, options) {
+	if s == nil || referrerOrCampaignChanged(s, r, options) {
 		s, userAgent = newSession(r, options, fingerprint, now, path, title)
 		sessionState.State = *s
 		options.SessionCache.Put(options.ClientID, fingerprint, s)
@@ -165,7 +177,6 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
-	m.Unlock()
 	return &model.PageView{
 		ClientID:        sessionState.State.ClientID,
 		VisitorID:       sessionState.State.VisitorID,

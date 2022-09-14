@@ -92,6 +92,6 @@ func (cache *RedisCache) Clear() {
 }
 
 // NewMutex implements the Cache interface.
-func (cache RedisCache) NewMutex(clientID, fingerprint uint64) sync.Locker {
+func (cache *RedisCache) NewMutex(clientID, fingerprint uint64) sync.Locker {
 	return &RedisMutex{cache.rs.NewMutex(getSessionKey(clientID, fingerprint) + "_lock")}
 }
