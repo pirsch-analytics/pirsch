@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.3.1
+
+* optimization reading session for previous day
+
 ## 4.3.0
 
 * added 24 hour limit to fingerprint (previously closed source as part of the salt)

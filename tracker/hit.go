@@ -139,19 +139,22 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
 
 	if s == nil {
-		// find session for previous day
 		yesterday := now.Add(-time.Hour * 24)
-		fingerprintYesterday := Fingerprint(r, salt, yesterday, options.HeaderParser, options.AllowedProxySubnets)
-		my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
-		my.Lock()
-		defer my.Unlock()
-		s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
 
-		if s != nil {
-			if s.Start.Before(now.Add(-time.Hour * 24)) {
-				s = nil
-			} else {
-				fingerprint = fingerprintYesterday
+		if sessionMaxAge.Day() != yesterday.Day() {
+			// find session for previous day
+			fingerprintYesterday := Fingerprint(r, salt, yesterday, options.HeaderParser, options.AllowedProxySubnets)
+			my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
+			my.Lock()
+			defer my.Unlock()
+			s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
+
+			if s != nil {
+				if s.Start.Before(now.Add(-time.Hour * 24)) {
+					s = nil
+				} else {
+					fingerprint = fingerprintYesterday
+				}
 			}
 		}
 	}
