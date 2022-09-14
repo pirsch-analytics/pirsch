@@ -125,14 +125,25 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 		options.SessionMaxAge = defaultSessionMaxAge
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser, options.AllowedProxySubnets)
+	salt += options.Salt
+	fingerprint := Fingerprint(r, salt, now, options.HeaderParser, options.AllowedProxySubnets)
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
-	defer m.Unlock()
 	getRequestURI(r, options)
 	path := getPath(options.Path)
 	title := shortenString(options.Title, 512)
-	s := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	sessionMaxAge := now.Add(-options.SessionMaxAge)
+	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
+
+	if s == nil {
+		// try to find session on previous day
+		m.Unlock()
+		fingerprintYesterday := Fingerprint(r, salt, now.Add(-time.Hour*24), options.HeaderParser, options.AllowedProxySubnets)
+		m = options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
+		m.Lock()
+		s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
+	}
+
 	var sessionState SessionState
 	var timeOnPage uint32
 	var userAgent *model.UserAgent
@@ -154,6 +165,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 		options.SessionCache.Put(options.ClientID, fingerprint, &state)
 	}
 
+	m.Unlock()
 	return &model.PageView{
 		ClientID:        sessionState.State.ClientID,
 		VisitorID:       sessionState.State.VisitorID,
@@ -192,11 +204,12 @@ func ExtendSession(r *http.Request, salt string, options *HitOptions) {
 		return
 	}
 
-	fingerprint := Fingerprint(r, salt+options.Salt, options.HeaderParser, options.AllowedProxySubnets)
-	s := options.SessionCache.Get(options.ClientID, fingerprint, time.Now().UTC().Add(-options.SessionMaxAge))
+	now := time.Now().UTC()
+	fingerprint := Fingerprint(r, salt+options.Salt, now, options.HeaderParser, options.AllowedProxySubnets)
+	s := options.SessionCache.Get(options.ClientID, fingerprint, now.Add(-options.SessionMaxAge))
 
 	if s != nil {
-		s.Time = time.Now().UTC()
+		s.Time = now
 		options.SessionCache.Put(options.ClientID, fingerprint, s)
 	}
 }

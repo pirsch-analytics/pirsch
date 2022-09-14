@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.0
+
+* added 24 hour limit to fingerprint (previously closed source as part of the salt)
+* updated dependencies
+
 ## 4.2.0
 
 * ignore User-Agents containing non-ASCII characters
