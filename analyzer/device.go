@@ -21,9 +21,9 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 
 	if table == "session" {
 		filterArgs, filterQuery := filter.query(true)
-		query = `SELECT sum(desktop*sign) platform_desktop,
-			sum(mobile*sign) platform_mobile,
-			sum(sign)-platform_desktop-platform_mobile platform_unknown,
+		query = `SELECT uniqIf(visitor_id, desktop = 1) platform_desktop,
+			uniqIf(visitor_id, mobile = 1) platform_mobile,
+			uniq(visitor_id)-platform_desktop-platform_mobile platform_unknown,
 			"platform_desktop" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_desktop,
 			"platform_mobile" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_mobile,
 			"platform_unknown" / IF("platform_desktop" + "platform_mobile" + "platform_unknown" = 0, 1, "platform_desktop" + "platform_mobile" + "platform_unknown") AS relative_platform_unknown

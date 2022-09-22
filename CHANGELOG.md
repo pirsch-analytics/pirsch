@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.2
+
+* fixed platform statistics returning sessions instead of unique visitors
+* fixed fingerprint test
+* updated dependencies
+
 ## 4.3.1
 
 * optimization reading session for previous day

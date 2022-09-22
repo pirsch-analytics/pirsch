@@ -24,11 +24,10 @@ func TestAnalyzer_Platform(t *testing.T) {
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			// set mobile which we overwrite with desktop to be sure the results get collapsed
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Mobile: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Desktop: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Mobile: true},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Desktop: true},
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Desktop: true},
 			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Mobile: true},
 			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Mobile: true},
