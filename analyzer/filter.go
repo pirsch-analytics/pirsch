@@ -613,12 +613,16 @@ func (filter *Filter) queryFields() ([]any, string) {
 	parts := make([]string, 0, len(queryFields))
 
 	for _, fields := range queryFields {
-		if len(fields.eqContains) != 0 {
+		if len(fields.eqContains) > 1 {
 			parts = append(parts, fmt.Sprintf("(%s) ", strings.Join(fields.eqContains, "OR ")))
+		} else if len(fields.eqContains) == 1 {
+			parts = append(parts, fields.eqContains[0])
 		}
 
-		if len(fields.notEq) != 0 {
+		if len(fields.notEq) > 1 {
 			parts = append(parts, strings.Join(fields.notEq, " AND "))
+		} else if len(fields.notEq) == 1 {
+			parts = append(parts, fields.notEq[0])
 		}
 	}
 
