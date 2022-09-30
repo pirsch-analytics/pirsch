@@ -658,7 +658,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.Equal(t, 1, exitPages[1].Exits)
 
 	// filter entry page
-	filter.Path = []string{}
+	filter.Path = nil
 	filter.EntryPath = []string{"/bar"}
 	pages, err = analyzer.Pages.ByPath(filter)
 	assert.NoError(t, err)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.4.0
+
+* use nil instead of empty slices when removing filter options
+* updated dependencies
+
 ## 4.3.2
 
 * fixed platform statistics returning sessions instead of unique visitors

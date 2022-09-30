@@ -203,7 +203,7 @@ func (filter *Filter) validate() {
 	}
 
 	if len(filter.Path) != 0 && len(filter.PathPattern) != 0 {
-		filter.PathPattern = []string{}
+		filter.PathPattern = nil
 	}
 
 	for i := 0; i < len(filter.Search); i++ {
@@ -251,7 +251,7 @@ func (filter *Filter) validate() {
 
 func (filter *Filter) removeDuplicates(in []string) []string {
 	if len(in) == 0 {
-		return []string{}
+		return nil
 	}
 
 	keys := make(map[string]struct{})
@@ -291,7 +291,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 			query.WriteString(filterQuery)
 		}
 
-		filter.EntryPath, filter.ExitPath = []string{}, []string{}
+		filter.EntryPath, filter.ExitPath = nil, nil
 		filterArgs, filterQuery := filter.query(false)
 		args = append(args, filterArgs...)
 		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
@@ -390,7 +390,7 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 
 func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string) {
 	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = []string{}, []string{}, []string{}, []string{}, nil
+	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil, nil, nil
 	search := filter.Search
 	filter.Search = nil
 	filterArgs, filterQuery := filter.query(true)

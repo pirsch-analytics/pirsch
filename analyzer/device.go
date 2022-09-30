@@ -31,7 +31,7 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 
 		if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
 			entryPath, exitPath, eventName := filter.EntryPath, filter.ExitPath, filter.EventName
-			filter.EntryPath, filter.ExitPath, filter.EventName = []string{}, []string{}, []string{}
+			filter.EntryPath, filter.ExitPath, filter.EventName = nil, nil, nil
 			innerFilterArgs, innerFilterQuery := filter.query(false)
 			filter.EntryPath, filter.ExitPath, filter.EventName = entryPath, exitPath, eventName
 			args = append(args, innerFilterArgs...)
@@ -63,7 +63,7 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 			}
 
 			innerArgs, innerQuery = filter.joinSessions(table, fields)
-			filter.EntryPath, filter.ExitPath = []string{}, []string{}
+			filter.EntryPath, filter.ExitPath = nil, nil
 		}
 
 		filterArgs, filterQuery := filter.query(false)

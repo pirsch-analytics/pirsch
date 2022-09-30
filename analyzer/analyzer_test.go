@@ -64,7 +64,7 @@ func TestAnalyzer_NoData(t *testing.T) {
 }
 
 func getMaxFilter(eventName string) *Filter {
-	events := []string{}
+	var events []string
 
 	if eventName != "" {
 		events = append(events, eventName)

@@ -301,7 +301,7 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 
 func (pages *Pages) totalSessions(filter *Filter) (int, error) {
 	filter = pages.analyzer.getFilter(filter)
-	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = []string{}, []string{}, []string{}, []string{}
+	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = nil, nil, nil, nil
 	filterArgs, filterQuery := filter.queryTime(pages.analyzer.minIsBot > 0)
 	query := fmt.Sprintf(`SELECT uniq(visitor_id, session_id)
 		FROM session
