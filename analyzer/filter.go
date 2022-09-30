@@ -365,7 +365,7 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 		if fields[i].filterTime {
 			timeArgs, timeQuery := filter.queryTime(false)
 			*args = append(*args, timeArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
+			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, timeQuery), fields[i].Name))
 		} else if fields[i].timezone {
 			if fields[i].Name == "day" && filter.Period != pirsch.PeriodDay {
 				switch filter.Period {
