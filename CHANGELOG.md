@@ -2,6 +2,7 @@
 
 ## 4.4.0
 
+* connect negated parameters using logical AND instead of OR
 * use nil instead of empty slices when removing filter options
 * updated dependencies
 

@@ -288,7 +288,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	assert.Equal(t, "campaign", args[18])
 	assert.Equal(t, "content", args[19])
 	assert.Equal(t, "term", args[20])
-	assert.Equal(t, "(path = ? OR path = ? ) AND (entry_path = ? ) AND (exit_path = ? ) AND (language = ? ) AND (country_code = ? ) AND (city = ? ) AND (referrer = ? ) AND (referrer_name = ? ) AND (os = ? ) AND (os_version = ? ) AND (browser = ? ) AND (browser_version = ? ) AND (screen_class = ? ) AND (screen_width = ? ) AND (screen_height = ? ) AND (utm_source = ? ) AND (utm_medium = ? ) AND (utm_campaign = ? ) AND (utm_content = ? ) AND (utm_term = ? ) AND (desktop = 0 AND mobile = 0 ) ", query)
+	assert.Equal(t, "(path = ? OR path = ? ) AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND screen_width = ? AND screen_height = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
 	filter.EventName = []string{"event"}
 	filter.EventMeta = map[string]string{
 		"foo": "bar",
@@ -296,7 +296,7 @@ func TestFilter_QueryFields(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 23)
 	assert.Equal(t, "event", args[21])
-	assert.Equal(t, "(path = ? OR path = ? ) AND (entry_path = ? ) AND (exit_path = ? ) AND (language = ? ) AND (country_code = ? ) AND (city = ? ) AND (referrer = ? ) AND (referrer_name = ? ) AND (os = ? ) AND (os_version = ? ) AND (browser = ? ) AND (browser_version = ? ) AND (screen_class = ? ) AND (screen_width = ? ) AND (screen_height = ? ) AND (utm_source = ? ) AND (utm_medium = ? ) AND (utm_campaign = ? ) AND (utm_content = ? ) AND (utm_term = ? ) AND (event_name = ? ) AND (desktop = 0 AND mobile = 0 ) AND (event_meta_values[indexOf(event_meta_keys, 'foo')] = ? ) ", query)
+	assert.Equal(t, "(path = ? OR path = ? ) AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND screen_width = ? AND screen_height = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 AND event_meta_values[indexOf(event_meta_keys, 'foo')] = ? ", query)
 }
 
 func TestFilter_QueryFieldsInvert(t *testing.T) {
@@ -349,7 +349,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	assert.Equal(t, "campaign", args[17])
 	assert.Equal(t, "content", args[18])
 	assert.Equal(t, "term", args[19])
-	assert.Equal(t, "(path != ? ) AND (entry_path != ? ) AND (exit_path != ? ) AND (language != ? ) AND (country_code != ? ) AND (city != ? ) AND (referrer != ? ) AND (referrer_name != ? ) AND (os != ? ) AND (os_version != ? ) AND (browser != ? ) AND (browser_version != ? ) AND (screen_class != ? ) AND (screen_width != ? ) AND (screen_height != ? ) AND (utm_source != ? ) AND (utm_medium != ? ) AND (utm_campaign != ? ) AND (utm_content != ? ) AND (utm_term != ? ) AND ((desktop = 1 OR mobile = 1) ) ", query)
+	assert.Equal(t, "path != ? AND entry_path != ? AND exit_path != ? AND language != ? AND country_code != ? AND city != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND screen_width != ? AND screen_height != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND (desktop = 1 OR mobile = 1) ", query)
 	filter.EventName = []string{"!event"}
 	filter.EventMeta = map[string]string{
 		"foo": "!bar",
@@ -357,7 +357,7 @@ func TestFilter_QueryFieldsInvert(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 22)
 	assert.Equal(t, "event", args[20])
-	assert.Equal(t, "(path != ? ) AND (entry_path != ? ) AND (exit_path != ? ) AND (language != ? ) AND (country_code != ? ) AND (city != ? ) AND (referrer != ? ) AND (referrer_name != ? ) AND (os != ? ) AND (os_version != ? ) AND (browser != ? ) AND (browser_version != ? ) AND (screen_class != ? ) AND (screen_width != ? ) AND (screen_height != ? ) AND (utm_source != ? ) AND (utm_medium != ? ) AND (utm_campaign != ? ) AND (utm_content != ? ) AND (utm_term != ? ) AND (event_name != ? ) AND ((desktop = 1 OR mobile = 1) ) AND (event_meta_values[indexOf(event_meta_keys, 'foo')] != ? ) ", query)
+	assert.Equal(t, "path != ? AND entry_path != ? AND exit_path != ? AND language != ? AND country_code != ? AND city != ? AND referrer != ? AND referrer_name != ? AND os != ? AND os_version != ? AND browser != ? AND browser_version != ? AND screen_class != ? AND screen_width != ? AND screen_height != ? AND utm_source != ? AND utm_medium != ? AND utm_campaign != ? AND utm_content != ? AND utm_term != ? AND event_name != ? AND (desktop = 1 OR mobile = 1) AND event_meta_values[indexOf(event_meta_keys, 'foo')] != ? ", query)
 }
 
 func TestFilter_QueryFieldsContains(t *testing.T) {
@@ -410,7 +410,7 @@ func TestFilter_QueryFieldsContains(t *testing.T) {
 	assert.Equal(t, "%campaign%", args[17])
 	assert.Equal(t, "%content%", args[18])
 	assert.Equal(t, "%term%", args[19])
-	assert.Equal(t, "(ilike(path, ?) = 1 ) AND (ilike(entry_path, ?) = 1 ) AND (ilike(exit_path, ?) = 1 ) AND (has(splitByChar(',', ?), language) = 1 ) AND (has(splitByChar(',', ?), country_code) = 1 ) AND (ilike(city, ?) = 1 ) AND (ilike(referrer, ?) = 1 ) AND (ilike(referrer_name, ?) = 1 ) AND (ilike(os, ?) = 1 ) AND (ilike(os_version, ?) = 1 ) AND (ilike(browser, ?) = 1 ) AND (ilike(browser_version, ?) = 1 ) AND (ilike(screen_class, ?) = 1 ) AND (screen_width = ? ) AND (screen_height = ? ) AND (ilike(utm_source, ?) = 1 ) AND (ilike(utm_medium, ?) = 1 ) AND (ilike(utm_campaign, ?) = 1 ) AND (ilike(utm_content, ?) = 1 ) AND (ilike(utm_term, ?) = 1 ) AND (desktop = 0 AND mobile = 0 ) ", query)
+	assert.Equal(t, "ilike(path, ?) = 1 AND ilike(entry_path, ?) = 1 AND ilike(exit_path, ?) = 1 AND has(splitByChar(',', ?), language) = 1 AND has(splitByChar(',', ?), country_code) = 1 AND ilike(city, ?) = 1 AND ilike(referrer, ?) = 1 AND ilike(referrer_name, ?) = 1 AND ilike(os, ?) = 1 AND ilike(os_version, ?) = 1 AND ilike(browser, ?) = 1 AND ilike(browser_version, ?) = 1 AND ilike(screen_class, ?) = 1 AND screen_width = ? AND screen_height = ? AND ilike(utm_source, ?) = 1 AND ilike(utm_medium, ?) = 1 AND ilike(utm_campaign, ?) = 1 AND ilike(utm_content, ?) = 1 AND ilike(utm_term, ?) = 1 AND desktop = 0 AND mobile = 0 ", query)
 	filter.EventName = []string{"~event"}
 	filter.EventMeta = map[string]string{
 		"foo": "~bar",
@@ -418,7 +418,7 @@ func TestFilter_QueryFieldsContains(t *testing.T) {
 	args, query = filter.queryFields()
 	assert.Len(t, args, 22)
 	assert.Equal(t, "%event%", args[20])
-	assert.Equal(t, "(ilike(path, ?) = 1 ) AND (ilike(entry_path, ?) = 1 ) AND (ilike(exit_path, ?) = 1 ) AND (has(splitByChar(',', ?), language) = 1 ) AND (has(splitByChar(',', ?), country_code) = 1 ) AND (ilike(city, ?) = 1 ) AND (ilike(referrer, ?) = 1 ) AND (ilike(referrer_name, ?) = 1 ) AND (ilike(os, ?) = 1 ) AND (ilike(os_version, ?) = 1 ) AND (ilike(browser, ?) = 1 ) AND (ilike(browser_version, ?) = 1 ) AND (ilike(screen_class, ?) = 1 ) AND (screen_width = ? ) AND (screen_height = ? ) AND (ilike(utm_source, ?) = 1 ) AND (ilike(utm_medium, ?) = 1 ) AND (ilike(utm_campaign, ?) = 1 ) AND (ilike(utm_content, ?) = 1 ) AND (ilike(utm_term, ?) = 1 ) AND (ilike(event_name, ?) = 1 ) AND (desktop = 0 AND mobile = 0 ) AND (ilike(event_meta_values[indexOf(event_meta_keys, 'foo')], ?) = 1 ) ", query)
+	assert.Equal(t, "ilike(path, ?) = 1 AND ilike(entry_path, ?) = 1 AND ilike(exit_path, ?) = 1 AND has(splitByChar(',', ?), language) = 1 AND has(splitByChar(',', ?), country_code) = 1 AND ilike(city, ?) = 1 AND ilike(referrer, ?) = 1 AND ilike(referrer_name, ?) = 1 AND ilike(os, ?) = 1 AND ilike(os_version, ?) = 1 AND ilike(browser, ?) = 1 AND ilike(browser_version, ?) = 1 AND ilike(screen_class, ?) = 1 AND screen_width = ? AND screen_height = ? AND ilike(utm_source, ?) = 1 AND ilike(utm_medium, ?) = 1 AND ilike(utm_campaign, ?) = 1 AND ilike(utm_content, ?) = 1 AND ilike(utm_term, ?) = 1 AND ilike(event_name, ?) = 1 AND desktop = 0 AND mobile = 0 AND ilike(event_meta_values[indexOf(event_meta_keys, 'foo')], ?) = 1 ", query)
 }
 
 func TestFilter_QueryFieldsNull(t *testing.T) {
@@ -456,7 +456,7 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 		assert.Empty(t, args[i])
 	}
 
-	assert.Equal(t, "(path = ? ) AND (entry_path = ? ) AND (exit_path = ? ) AND (language = ? ) AND (country_code = ? ) AND (city = ? ) AND (referrer = ? ) AND (referrer_name = ? ) AND (os = ? ) AND (os_version = ? ) AND (browser = ? ) AND (browser_version = ? ) AND (screen_class = ? ) AND (screen_width = ? ) AND (screen_height = ? ) AND (utm_source = ? ) AND (utm_medium = ? ) AND (utm_campaign = ? ) AND (utm_content = ? ) AND (utm_term = ? ) AND (desktop = 0 AND mobile = 0 ) ", query)
+	assert.Equal(t, "path = ? AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND screen_width = ? AND screen_height = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND desktop = 0 AND mobile = 0 ", query)
 	filter.EventName = []string{"null"}
 	filter.EventMeta = map[string]string{
 		"foo": "null",
@@ -469,7 +469,19 @@ func TestFilter_QueryFieldsNull(t *testing.T) {
 		assert.Empty(t, args[i])
 	}
 
-	assert.Equal(t, "(path = ? ) AND (entry_path = ? ) AND (exit_path = ? ) AND (language = ? ) AND (country_code = ? ) AND (city = ? ) AND (referrer = ? ) AND (referrer_name = ? ) AND (os = ? ) AND (os_version = ? ) AND (browser = ? ) AND (browser_version = ? ) AND (screen_class = ? ) AND (screen_width = ? ) AND (screen_height = ? ) AND (utm_source = ? ) AND (utm_medium = ? ) AND (utm_campaign = ? ) AND (utm_content = ? ) AND (utm_term = ? ) AND (event_name = ? ) AND (desktop = 0 AND mobile = 0 ) AND (event_meta_values[indexOf(event_meta_keys, 'foo')] = ? ) ", query)
+	assert.Equal(t, "path = ? AND entry_path = ? AND exit_path = ? AND language = ? AND country_code = ? AND city = ? AND referrer = ? AND referrer_name = ? AND os = ? AND os_version = ? AND browser = ? AND browser_version = ? AND screen_class = ? AND screen_width = ? AND screen_height = ? AND utm_source = ? AND utm_medium = ? AND utm_campaign = ? AND utm_content = ? AND utm_term = ? AND event_name = ? AND desktop = 0 AND mobile = 0 AND event_meta_values[indexOf(event_meta_keys, 'foo')] = ? ", query)
+}
+
+func TestFilter_QueryFieldsLogicalOperators(t *testing.T) {
+	filter := NewFilter(pirsch.NullClient)
+	filter.Path = []string{"/foo", "/bar", "!/exclude/path"}
+	filter.Country = []string{"ja", "!de", "!gb"}
+	filter.Language = []string{"~ja"}
+	filter.UTMSource = []string{"!Twitter"}
+	filter.validate()
+	args, query := filter.queryFields()
+	assert.Len(t, args, 8)
+	assert.Equal(t, "(path = ? OR path = ? ) AND path != ? AND has(splitByChar(',', ?), language) = 1 AND country_code = ? AND country_code != ?  AND country_code != ? AND utm_source != ? ", query)
 }
 
 func TestFilter_QueryFieldsPlatform(t *testing.T) {
@@ -477,17 +489,17 @@ func TestFilter_QueryFieldsPlatform(t *testing.T) {
 	filter.Platform = pirsch.PlatformDesktop
 	args, query := filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "(desktop = 1 ) ", query)
+	assert.Equal(t, "desktop = 1 ", query)
 	filter = NewFilter(pirsch.NullClient)
 	filter.Platform = pirsch.PlatformMobile
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "(mobile = 1 ) ", query)
+	assert.Equal(t, "mobile = 1 ", query)
 	filter = NewFilter(pirsch.NullClient)
 	filter.Platform = pirsch.PlatformUnknown
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "(desktop = 0 AND mobile = 0 ) ", query)
+	assert.Equal(t, "desktop = 0 AND mobile = 0 ", query)
 	_, query = filter.query(false)
 	assert.Contains(t, query, "desktop = 0 AND mobile = 0")
 }
@@ -497,17 +509,17 @@ func TestFilter_QueryFieldsPlatformInvert(t *testing.T) {
 	filter.Platform = "!" + pirsch.PlatformDesktop
 	args, query := filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "(desktop != 1 ) ", query)
+	assert.Equal(t, "desktop != 1 ", query)
 	filter = NewFilter(pirsch.NullClient)
 	filter.Platform = "!" + pirsch.PlatformMobile
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "(mobile != 1 ) ", query)
+	assert.Equal(t, "mobile != 1 ", query)
 	filter = NewFilter(pirsch.NullClient)
 	filter.Platform = "!" + pirsch.PlatformUnknown
 	args, query = filter.queryFields()
 	assert.Len(t, args, 0)
-	assert.Equal(t, "((desktop = 1 OR mobile = 1) ) ", query)
+	assert.Equal(t, "(desktop = 1 OR mobile = 1) ", query)
 	_, query = filter.query(false)
 	assert.Contains(t, query, "(desktop = 1 OR mobile = 1)")
 }
@@ -519,7 +531,7 @@ func TestFilter_QueryIsBot(t *testing.T) {
 	args, query := filter.query(true)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint8(5), args[2])
-	assert.Equal(t, "client_id = ? AND (path = ? )  AND is_bot < ? ", query)
+	assert.Equal(t, "client_id = ? AND path = ?  AND is_bot < ? ", query)
 }
 
 func TestFilter_QueryFieldsPathPattern(t *testing.T) {
@@ -528,7 +540,7 @@ func TestFilter_QueryFieldsPathPattern(t *testing.T) {
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
-	assert.Equal(t, `(match("path", ?) = 1 ) `, query)
+	assert.Equal(t, `match("path", ?) = 1 `, query)
 }
 
 func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
@@ -537,7 +549,7 @@ func TestFilter_QueryFieldsPathPatternInvert(t *testing.T) {
 	args, query := filter.queryFields()
 	assert.Len(t, args, 1)
 	assert.Equal(t, "/some/pattern", args[0])
-	assert.Equal(t, `(match("path", ?) = 0 ) `, query)
+	assert.Equal(t, `match("path", ?) = 0 `, query)
 }
 
 func TestFilter_QueryFieldsSearch(t *testing.T) {
@@ -561,7 +573,7 @@ func TestFilter_QueryFieldsSearch(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, "%/blog%", args[0])
 	assert.Equal(t, "%fox%", args[1])
-	assert.Equal(t, "(ilike(path, ?) = 1 ) AND (ilike(browser, ?) = 0 ) ", query)
+	assert.Equal(t, "ilike(path, ?) = 1 AND ilike(browser, ?) = 0 ", query)
 }
 
 func TestFilter_WithFill(t *testing.T) {
