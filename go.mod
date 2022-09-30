@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.0.0-20220921203646-d300de134e69
+	golang.org/x/net v0.0.0-20220927171203-f486391704dc
 )
 
 require (
@@ -26,17 +26,17 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/compress v1.15.10 // indirect
+	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/paulmach/orb v0.7.1 // indirect
-	github.com/pierrec/lz4/v4 v4.1.16 // indirect
+	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
