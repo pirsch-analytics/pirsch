@@ -13,6 +13,11 @@ const (
 	dateFormat = "2006-01-02"
 )
 
+type filterGroup struct {
+	eqContains []string
+	notEq      []string
+}
+
 // Filter are all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
 // To compare to none/unknown/empty, set the value to "null" (case-insensitive).
@@ -572,9 +577,9 @@ func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
 }
 
 func (filter *Filter) queryFields() ([]any, string) {
-	n := 25 + len(filter.EventMeta) + len(filter.Search) // maximum number of fields + one for bot filter + metadata fields + search fields
+	n := 20 // should be enough in most cases
 	args := make([]any, 0, n)
-	queryFields := make([][]string, 0, n)
+	queryFields := make([]filterGroup, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -605,50 +610,56 @@ func (filter *Filter) queryFields() ([]any, string) {
 		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.Name, filter.Search[i].Input)
 	}
 
-	or := make([]string, 0, len(queryFields))
+	parts := make([]string, 0, len(queryFields))
 
 	for _, fields := range queryFields {
-		or = append(or, fmt.Sprintf("(%s) ", strings.Join(fields, "OR ")))
+		if len(fields.eqContains) != 0 {
+			parts = append(parts, fmt.Sprintf("(%s) ", strings.Join(fields.eqContains, "OR ")))
+		}
+
+		if len(fields.notEq) != 0 {
+			parts = append(parts, strings.Join(fields.notEq, " AND "))
+		}
 	}
 
-	return args, strings.Join(or, "AND ")
+	return args, strings.Join(parts, "AND ")
 }
 
-func (filter *Filter) queryPlatform(queryFields *[][]string) {
+func (filter *Filter) queryPlatform(queryFields *[]filterGroup) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
 			if platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, []string{"desktop != 1 "})
+				*queryFields = append(*queryFields, filterGroup{notEq: []string{"desktop != 1 "}})
 			} else if platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, []string{"mobile != 1 "})
+				*queryFields = append(*queryFields, filterGroup{notEq: []string{"mobile != 1 "}})
 			} else {
-				*queryFields = append(*queryFields, []string{"(desktop = 1 OR mobile = 1) "})
+				*queryFields = append(*queryFields, filterGroup{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
 			}
 		} else {
 			if filter.Platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, []string{"desktop = 1 "})
+				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 1 "}})
 			} else if filter.Platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, []string{"mobile = 1 "})
+				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"mobile = 1 "}})
 			} else {
-				*queryFields = append(*queryFields, []string{"desktop = 0 AND mobile = 0 "})
+				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
 			}
 		}
 	}
 }
 
-func (filter *Filter) queryPathPattern(queryFields *[][]string, args *[]any) {
+func (filter *Filter) queryPathPattern(queryFields *[]filterGroup, args *[]any) {
 	if len(filter.PathPattern) != 0 {
-		group := make([]string, 0, len(filter.PathPattern))
+		var group filterGroup
 
 		for _, pattern := range filter.PathPattern {
 			if strings.HasPrefix(pattern, "!") {
 				*args = append(*args, pattern[1:])
-				group = append(group, `match("path", ?) = 0 `)
+				group.notEq = append(group.notEq, `match("path", ?) = 0 `)
 			} else {
 				*args = append(*args, pattern)
-				group = append(group, `match("path", ?) = 1 `)
+				group.eqContains = append(group.eqContains, `match("path", ?) = 1 `)
 			}
 		}
 
@@ -784,9 +795,11 @@ func (filter *Filter) query(filterBots bool) ([]any, string) {
 	return args, query
 }
 
-func (filter *Filter) appendQuery(queryFields *[][]string, args *[]any, field string, value []string) {
+func (filter *Filter) appendQuery(queryFields *[]filterGroup, args *[]any, field string, value []string) {
 	if len(value) != 0 {
-		group := make([]string, 0, len(value))
+		var group filterGroup
+		eqContainsArgs := make([]any, 0, len(value))
+		notEqArgs := make([]any, 0, len(value))
 
 		for _, v := range value {
 			comparator := "%s = ? "
@@ -812,15 +825,28 @@ func (filter *Filter) appendQuery(queryFields *[][]string, args *[]any, field st
 				}
 			}
 
-			*args = append(*args, filter.nullValue(v))
-			group = append(group, fmt.Sprintf(comparator, field))
+			if not {
+				notEqArgs = append(notEqArgs, filter.nullValue(v))
+				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
+			} else {
+				eqContainsArgs = append(eqContainsArgs, filter.nullValue(v))
+				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
+			}
+		}
+
+		for _, v := range eqContainsArgs {
+			*args = append(*args, v)
+		}
+
+		for _, v := range notEqArgs {
+			*args = append(*args, v)
 		}
 
 		*queryFields = append(*queryFields, group)
 	}
 }
 
-func (filter *Filter) appendQuerySearch(queryFields *[][]string, args *[]any, field, value string) {
+func (filter *Filter) appendQuerySearch(queryFields *[]filterGroup, args *[]any, field, value string) {
 	if value != "" {
 		comparator := ""
 
@@ -844,18 +870,22 @@ func (filter *Filter) appendQuerySearch(queryFields *[][]string, args *[]any, fi
 			*args = append(*args, fmt.Sprintf("%%%s%%", value))
 		}
 
-		*queryFields = append(*queryFields, []string{fmt.Sprintf(comparator, field)})
+		// use eqContains because it doesn't matter for a single field
+		*queryFields = append(*queryFields, filterGroup{eqContains: []string{fmt.Sprintf(comparator, field)}})
 	}
 }
 
-func (filter *Filter) appendQueryUInt16(queryFields *[][]string, args *[]any, field string, value []string) {
+func (filter *Filter) appendQueryUInt16(queryFields *[]filterGroup, args *[]any, field string, value []string) {
 	if len(value) != 0 {
-		group := make([]string, 0, len(value))
+		var group filterGroup
+		eqContainsArgs := make([]any, 0, len(value))
+		notEqArgs := make([]any, 0, len(value))
 
 		for _, v := range value {
 			comparator := "%s = ? "
+			not := strings.HasPrefix(v, "!")
 
-			if strings.HasPrefix(v, "!") {
+			if not {
 				v = v[1:]
 				comparator = "%s != ? "
 			}
@@ -870,17 +900,30 @@ func (filter *Filter) appendQueryUInt16(queryFields *[][]string, args *[]any, fi
 				}
 			}
 
-			*args = append(*args, valueInt)
-			group = append(group, fmt.Sprintf(comparator, field))
+			if not {
+				notEqArgs = append(notEqArgs, valueInt)
+				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
+			} else {
+				eqContainsArgs = append(eqContainsArgs, valueInt)
+				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
+			}
+		}
+
+		for _, v := range eqContainsArgs {
+			*args = append(*args, v)
+		}
+
+		for _, v := range notEqArgs {
+			*args = append(*args, v)
 		}
 
 		*queryFields = append(*queryFields, group)
 	}
 }
 
-func (filter *Filter) appendQueryMeta(queryFields *[][]string, args *[]any, kv map[string]string) {
+func (filter *Filter) appendQueryMeta(queryFields *[]filterGroup, args *[]any, kv map[string]string) {
 	if len(kv) != 0 {
-		group := make([]string, 0, len(kv))
+		var group filterGroup
 
 		for k, v := range kv {
 			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
@@ -893,11 +936,12 @@ func (filter *Filter) appendQueryMeta(queryFields *[][]string, args *[]any, kv m
 				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, '%s')], ?) = 1 "
 			}
 
+			// use notEq because they will all be joined using AND
 			*args = append(*args, filter.nullValue(v))
-			group = append(group, fmt.Sprintf(comparator, k))
+			group.notEq = append(group.notEq, fmt.Sprintf(comparator, k))
 		}
 
-		*queryFields = append(*queryFields, []string{strings.Join(group, "AND ")})
+		*queryFields = append(*queryFields, group)
 	}
 }
 
