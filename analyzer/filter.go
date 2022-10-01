@@ -277,7 +277,32 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, strin
 	args := make([]any, 0)
 	var query strings.Builder
 
-	if table == "event" || len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
+	if table == "event" && len(filter.EventName) != 0 && len(filter.Path) == 0 && len(filter.PathPattern) == 0 && !filter.fieldsContain(fields, FieldPath.Name) {
+		fieldsQuery := filter.joinSessionFields(&args, fields)
+		filterTimeArgs, filterTimeQuery := filter.queryTime(false)
+		args = append(args, filterTimeArgs...)
+		filterArgs, filterQuery := filter.query(true)
+		args = append(args, filterArgs...)
+		query.WriteString(fmt.Sprintf(`SELECT %s
+			FROM session s
+			LEFT JOIN (
+				SELECT visitor_id, session_id, event_name, event_meta_keys, event_meta_values, path, duration_seconds, title
+				FROM event
+				WHERE %s
+			) v
+			ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id
+			WHERE %s `, fieldsQuery, filterTimeQuery, filterQuery))
+
+		if len(groupBy) > 0 {
+			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
+		}
+
+		query.WriteString(`HAVING sum(sign) > 0 `)
+
+		if len(orderBy) > 0 {
+			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
+		}
+	} else if table == "event" || len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
 		if table == "session" {
 			table = "page_view"
 		}
@@ -384,6 +409,9 @@ func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
 			} else {
 				out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].Name))
 			}
+		} else if fields[i].Name == "meta_value" {
+			*args = append(*args, filter.EventMetaKey)
+			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
 		} else {
 			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].Name))
 		}

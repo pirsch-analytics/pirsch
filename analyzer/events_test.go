@@ -17,11 +17,11 @@ func TestAnalyzer_Events(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveSessions(t, [][]model.Session{
 			{
-				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: -1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
+				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 2},
 			},
 		})
 	}
@@ -79,7 +79,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
 	assert.Equal(t, 5, stats[0].Visitors)
-	assert.Equal(t, 6, stats[0].Views)
+	assert.Equal(t, 12, stats[0].Views)
 	assert.InDelta(t, 0.5, stats[0].CR, 0.001)
 	assert.InDelta(t, 4, stats[0].AverageDurationSeconds, 0.001)
 	assert.Len(t, stats[0].MetaKeys, 3)
@@ -107,8 +107,8 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Equal(t, "event1", stats[1].Name)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
-	assert.Equal(t, 2, stats[0].Views)
-	assert.Equal(t, 1, stats[1].Views)
+	assert.Equal(t, 4, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
 	assert.InDelta(t, 3, stats[0].AverageDurationSeconds, 0.001)
@@ -120,7 +120,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
 	assert.Equal(t, 2, stats[0].Visitors)
-	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 4, stats[0].Views)
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 8, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "in", stats[0].MetaValue)
@@ -131,8 +131,8 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Equal(t, "event2", stats[1].Name)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
-	assert.Equal(t, 2, stats[0].Views)
-	assert.Equal(t, 1, stats[1].Views)
+	assert.Equal(t, 4, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
 	assert.InDelta(t, 0.2, stats[0].CR, 0.001)
 	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
 	assert.InDelta(t, 5, stats[0].AverageDurationSeconds, 0.001)
@@ -144,7 +144,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event2", stats[0].Name)
 	assert.Equal(t, 1, stats[0].Visitors)
-	assert.Equal(t, 1, stats[0].Views)
+	assert.Equal(t, 2, stats[0].Views)
 	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
 	assert.InDelta(t, 9, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "param", stats[0].MetaValue)

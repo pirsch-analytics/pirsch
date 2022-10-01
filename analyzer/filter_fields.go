@@ -341,8 +341,8 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
-		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
+		querySessions:  "ifNull(toUInt64(avg(nullIf(v.duration_seconds, 0))), 0)",
+		queryPageViews: "ifNull(toUInt64(avg(nullIf(v.duration_seconds, 0))), 0)",
 		Name:           "average_time_spent_seconds",
 	}
 )
