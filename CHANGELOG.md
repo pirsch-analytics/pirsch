@@ -3,6 +3,7 @@
 ## 4.5.0
 
 * added options to disable the collection of query parameters, referrers, and resolution in scripts
+* added `HitOptions.MaxPageViews` for maximum number of page views to flag bots
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping

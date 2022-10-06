@@ -24,6 +24,7 @@ const (
 	maxWorkerTimeout        = time.Second * 60
 	defaultMinDelayMS       = 50
 	defaultIsBotThreshold   = 5 // also defined for the analyzer.Analyzer
+	defaultMaxPageViews     = 150
 )
 
 // Config is the optional configuration for the Tracker.
@@ -74,6 +75,10 @@ type Config struct {
 	// Will be set to 5 by default.
 	IsBotThreshold uint8
 
+	// MaxPageViews see HitOptions.MaxPageViews.
+	// Will be set to 150 by default.
+	MaxPageViews uint16
+
 	// DisableFlaggingBots disables MinDelay and IsBotThreshold (otherwise these would be set to their default values).
 	DisableFlaggingBots bool
 
@@ -108,6 +113,7 @@ func (config *Config) validate() {
 	if config.DisableFlaggingBots {
 		config.MinDelay = 0
 		config.IsBotThreshold = 0
+		config.MaxPageViews = 0
 	} else {
 		if config.MinDelay <= 0 {
 			config.MinDelay = defaultMinDelayMS
@@ -115,6 +121,10 @@ func (config *Config) validate() {
 
 		if config.IsBotThreshold == 0 {
 			config.IsBotThreshold = defaultIsBotThreshold
+		}
+
+		if config.MaxPageViews == 0 {
+			config.MaxPageViews = defaultMaxPageViews
 		}
 	}
 
@@ -149,6 +159,7 @@ type Tracker struct {
 	allowedProxySubnets                       []net.IPNet
 	minDelay                                  int64
 	isBotThreshold                            uint8
+	maxPageViews                              uint16
 	geoDB                                     *geodb.GeoDB
 	geoDBMutex                                sync.RWMutex
 	logger                                    *log.Logger
@@ -189,6 +200,7 @@ func NewTracker(client db.Store, salt string, config *Config) *Tracker {
 		allowedProxySubnets: config.AllowedProxySubnets,
 		minDelay:            config.MinDelay,
 		isBotThreshold:      config.IsBotThreshold,
+		maxPageViews:        config.MaxPageViews,
 		geoDB:               config.GeoDB,
 		logger:              config.Logger,
 	}
@@ -212,6 +224,7 @@ func (tracker *Tracker) Hit(r *http.Request, options *HitOptions) {
 				SessionMaxAge:                             tracker.sessionMaxAge,
 				MinDelay:                                  tracker.minDelay,
 				IsBotThreshold:                            tracker.isBotThreshold,
+				MaxPageViews:                              tracker.maxPageViews,
 			}
 		}
 

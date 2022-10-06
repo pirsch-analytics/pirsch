@@ -75,6 +75,12 @@ type HitOptions struct {
 	// Set it to 0 to disable ignoring requests.
 	IsBotThreshold uint8
 
+	// MaxPageViews defines the maximum number of page views a session might have.
+	// Once the maximum is reached, the session will be flagged as a bot, which can later be used to filter upon.
+	// Only when IsBotThreshold is set this will have an effect on whether the session is updated or not.
+	// Set it to 0 to disable flagging bots.
+	MaxPageViews uint16
+
 	// URL can be set to manually overwrite the URL stored for this request.
 	// This will also affect the Path, except it is set too.
 	URL string
@@ -350,7 +356,9 @@ func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now ti
 }
 
 func updateSession(options *HitOptions, session *model.Session, event bool, now time.Time, path, title string) uint32 {
-	if options.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < options.MinDelay {
+	if options.MaxPageViews > 0 && session.PageViews+1 >= options.MaxPageViews {
+		session.IsBot = 255
+	} else if options.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < options.MinDelay {
 		session.IsBot++
 	}
 
