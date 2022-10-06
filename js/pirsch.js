@@ -66,6 +66,9 @@
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch";
     const clientID = script.getAttribute("data-client-id") || 0;
     const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
+    const disableQueryParams = script.hasAttribute("data-disable-query");
+    const disableReferrer = script.hasAttribute("data-disable-referrer");
+    const disableResolution = script.hasAttribute("data-disable-resolution");
 
     function hit() {
         sendHit();
@@ -82,14 +85,18 @@
             hostname = location.href.replace(location.hostname, hostname);
         }
 
+        if (disableQueryParams) {
+            hostname = (hostname.includes('?') ? hostname.split('?')[0] : hostname);
+        }
+
         const url = endpoint +
             "?nc=" + new Date().getTime() +
             "&client_id=" + clientID +
             "&url=" + encodeURIComponent(hostname.substring(0, 1800)) +
             "&t=" + encodeURIComponent(document.title) +
-            "&ref=" + encodeURIComponent(document.referrer) +
-            "&w=" + screen.width +
-            "&h=" + screen.height +
+            "&ref=" + (disableReferrer ? '' : encodeURIComponent(document.referrer)) +
+            "&w=" + (disableResolution ? '' : screen.width) +
+            "&h=" + (disableResolution ? '' : screen.height) +
             params;
         const req = new XMLHttpRequest();
         req.open("GET", url);

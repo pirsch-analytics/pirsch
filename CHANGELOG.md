@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.5.0
+
+* added options to disable the collection of query parameters and referrer in scripts
+
 ## 4.4.0
 
 * connect negated parameters using logical AND instead of OR

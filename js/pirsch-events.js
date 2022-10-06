@@ -62,6 +62,10 @@
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch-event";
     const clientID = script.getAttribute("data-client-id");
     const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
+    const disableQueryParams = script.hasAttribute("data-disable-query");
+    const disableReferrer = script.hasAttribute("data-disable-referrer");
+    const disableResolution = script.hasAttribute("data-disable-resolution");
+
     window.pirsch = function (name, options) {
         if (typeof name !== "string" || !name) {
             return Promise.reject("The event name for Pirsch is invalid (must be a non-empty string)! Usage: pirsch('event name', {duration: 42, meta: {key: 'value'}})");
@@ -91,13 +95,17 @@
             hostname = location.href.replace(location.hostname, hostname);
         }
 
+        if (disableQueryParams) {
+            hostname = (hostname.includes('?') ? hostname.split('?')[0] : hostname);
+        }
+
         if (navigator.sendBeacon(endpoint, JSON.stringify({
             client_id: clientID,
             url: hostname.substring(0, 1800),
             title: document.title,
-            referrer: document.referrer,
-            screen_width: screen.width,
-            screen_height: screen.height,
+            referrer: (disableReferrer ? '' : encodeURIComponent(document.referrer)),
+            screen_width: (disableResolution ? 0 : screen.width),
+            screen_height: (disableResolution ? 0 : screen.height),
             event_name: name,
             event_duration: options && options.duration && typeof options.duration === "number" ? options.duration : 0,
             event_meta: meta
