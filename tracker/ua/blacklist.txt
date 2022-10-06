@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-09-08)
+# custom (last update: 2022-10-06)
 ://
 bot
 crawler
@@ -265,6 +265,25 @@ gkoudai
 tendermint
 win10chrome76
 wp-android-native
+sweepatic
+system(id)
+dreampassport
+aol explorer
+withcabin
+donutp
+media player
+openvas
+paypal
+psamma
+romeo-santos
+science traveller international
+sincera
+ads.txt
+sylera
+syndirella
+ztunnel
+oast.online
+webchk
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

@@ -129,6 +129,9 @@ The parameters are configured through HTML attributes. All of them are optional,
 | data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. | (no paths) |
 | data-domain | Specifies a list of additional domains to send data to. | (empty list) |
 | data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
+| data-disable-query | Removes all query parameters from the URL. | false |
+| data-disable-referrer | Disables the collection of the referrer. | false |
+| data-disable-resolution | Disables the collection of the screen resolution. | false |
 | data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
 The scripts can be disabled by setting the `disable_pirsch` variable in localStorage of your browser.

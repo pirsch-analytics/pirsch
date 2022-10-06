@@ -2,7 +2,12 @@
 
 ## 4.5.0
 
-* added options to disable the collection of query parameters and referrer in scripts
+* added options to disable the collection of query parameters, referrers, and resolution in scripts
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated browser version mapping
+* updated dependencies
 
 ## 4.4.0
 
