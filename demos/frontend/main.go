@@ -15,6 +15,7 @@ import (
 func main() {
 	copyPirschJs()
 	copyPirschEventsJs()
+	copyPirschSessionsJs()
 
 	// Set the key for SipHash.
 	tracker.SetFingerprintKeys(42, 123)
@@ -75,6 +76,12 @@ func main() {
 		log.Println("Received event")
 	}))
 
+	// Create an endpoint to handle session requests.
+	http.Handle("/session", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pirschTracker.ExtendSession(r, tracker.HitOptionsFromRequest(r))
+		log.Println("Kept session alive")
+	}))
+
 	// Add a handler to serve index.html and pirsch.js.
 	http.Handle("/", http.FileServer(http.Dir("./")))
 
@@ -102,6 +109,18 @@ func copyPirschEventsJs() {
 	}
 
 	if err := os.WriteFile("pirsch-events.js", content, 0755); err != nil {
+		panic(err)
+	}
+}
+
+func copyPirschSessionsJs() {
+	content, err := os.ReadFile("../../js/pirsch-sessions.js")
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile("pirsch-sessions.js", content, 0755); err != nil {
 		panic(err)
 	}
 }

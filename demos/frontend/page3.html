@@ -2,23 +2,29 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
-	<title>Page 1</title>
+	<title>Page 3</title>
 
 	<!-- add the tracking script and call it -->
 	<script type="text/javascript" src="pirsch.js" id="pirschjs"
 			data-endpoint="/count"
 			data-client-id="42"
-            data-include="\/page1\.html,\/page2\.html"
-			data-dev
-			data-param-optional-param="test"></script>
+			data-dev></script>
+
+    <!-- keep sessions alive -->
+    <script type="text/javascript" src="pirsch-sessions.js" id="pirschsessionsjs"
+            data-endpoint="/session"
+            data-client-id="42"
+            data-interval-ms="10000"
+            data-dev></script>
 </head>
 <body>
-	<h1>Page 1</h1>
+	<h1>Page 3</h1>
     <p>
         <a href="/index.html">Home</a>
         <a href="/page1.html">Page 1</a>
         <a href="/page2.html">Page 2</a>
         <a href="/page3.html">Page 3</a>
     </p>
+    <p>This page will keep the session alive.</p>
 </body>
 </html>

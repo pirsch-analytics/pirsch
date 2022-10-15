@@ -4,7 +4,7 @@
   "description": "Pirsch Analytics.",
   "main": "pirsch.js",
   "scripts": {
-    "minify": "uglifyjs -c -m -o  pirsch.min.js pirsch.js && uglifyjs -c -m -o  pirsch-events.min.js pirsch-events.js"
+    "minify": "uglifyjs -c -m -o  pirsch.min.js pirsch.js && uglifyjs -c -m -o  pirsch-events.min.js pirsch-events.js && uglifyjs -c -m -o  pirsch-sessions.min.js pirsch-sessions.js"
   },
   "repository": {
     "type": "git",
