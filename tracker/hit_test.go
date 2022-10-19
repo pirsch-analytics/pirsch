@@ -362,19 +362,24 @@ func TestHitFromRequestIsBot(t *testing.T) {
 
 func TestExtendSession(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := session.NewMemCache(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)
-	req.Header.Set("User-Agent", uaString)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	options := &HitOptions{
 		SessionCache: sessionCache,
 	}
 	_, sessionState, _ := HitFromRequest(req, "salt", options)
 	at := sessionState.State.Time
-	ExtendSession(req, "salt", options)
+	time.Sleep(time.Millisecond * 1050)
+	s := ExtendSession(req, "salt", options)
 	state := sessionCache.Get(0, sessionState.State.VisitorID, time.Now().UTC().Add(-time.Second))
 	assert.NotEqual(t, at, state.Time)
 	assert.True(t, state.Time.After(at))
+	assert.NotNil(t, s.Cancel)
+	assert.Equal(t, state.Time, s.State.Time)
+	assert.Equal(t, int8(-1), s.Cancel.Sign)
+	assert.Equal(t, int8(1), s.State.Sign)
+	assert.True(t, s.State.DurationSeconds > sessionState.State.DurationSeconds)
 }
 
 func TestIgnoreHitPrefetch(t *testing.T) {

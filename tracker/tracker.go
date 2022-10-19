@@ -328,21 +328,30 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 // ExtendSession looks up and extends the session for given request and client ID (optional).
 // This function does not Store a hit or event in database.
 func (tracker *Tracker) ExtendSession(r *http.Request, options *HitOptions) {
+	if tracker.lock.Load() {
+		return
+	}
+
 	if options == nil {
-		options = &HitOptions{}
+		options = &HitOptions{
+			SessionCache:        tracker.sessionCache,
+			SessionMaxAge:       tracker.sessionMaxAge,
+			AllowedProxySubnets: tracker.allowedProxySubnets,
+		}
 	}
 
 	if options.HeaderParser == nil {
 		options.HeaderParser = tracker.headerParser
 	}
 
-	ExtendSession(r, tracker.salt, &HitOptions{
-		ClientID:            options.ClientID,
-		SessionCache:        tracker.sessionCache,
-		SessionMaxAge:       tracker.sessionMaxAge,
-		HeaderParser:        options.HeaderParser,
-		AllowedProxySubnets: tracker.allowedProxySubnets,
-	})
+	sessionState := ExtendSession(r, tracker.salt, options)
+
+	// cancel must be set, otherwise there is no existing session
+	if sessionState.Cancel != nil {
+		tracker.data <- data{
+			session: sessionState,
+		}
+	}
 }
 
 // Flush flushes all hits to client that are currently buffered by the workers.

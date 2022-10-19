@@ -141,26 +141,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
 	m.Lock()
 	defer m.Unlock()
-	sessionMaxAge := now.Add(-options.SessionMaxAge)
-	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
-
-	// if the maximum session age reaches yesterday, we also need to check for the previous day
-	if s == nil && sessionMaxAge.Day() != now.Day() {
-		fingerprintYesterday := Fingerprint(r, salt, sessionMaxAge, options.HeaderParser, options.AllowedProxySubnets)
-		my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
-		my.Lock()
-		defer my.Unlock()
-		s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
-
-		if s != nil {
-			if s.Start.Before(now.Add(-time.Hour * 24)) {
-				s = nil
-			} else {
-				fingerprint = fingerprintYesterday
-			}
-		}
-	}
-
+	s, fingerprint := findSession(r, options, now, fingerprint)
 	var sessionState SessionState
 	var timeOnPage uint32
 	var userAgent *model.UserAgent
@@ -215,19 +196,39 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 
 // ExtendSession looks up and extends the session for given request.
 // This function does not Store a hit or event in database.
-func ExtendSession(r *http.Request, salt string, options *HitOptions) {
-	if options == nil {
-		return
-	}
-
+func ExtendSession(r *http.Request, salt string, options *HitOptions) SessionState {
 	now := time.Now().UTC()
-	fingerprint := Fingerprint(r, salt+options.Salt, now, options.HeaderParser, options.AllowedProxySubnets)
-	s := options.SessionCache.Get(options.ClientID, fingerprint, now.Add(-options.SessionMaxAge))
 
-	if s != nil {
-		s.Time = now
-		options.SessionCache.Put(options.ClientID, fingerprint, s)
+	if options == nil {
+		return SessionState{}
 	}
+
+	fingerprint := Fingerprint(r, salt+options.Salt, now, options.HeaderParser, options.AllowedProxySubnets)
+	m := options.SessionCache.NewMutex(options.ClientID, fingerprint)
+	m.Lock()
+	defer m.Unlock()
+	s, fingerprint := findSession(r, options, now, fingerprint)
+
+	if s == nil || options.IsBotThreshold > 0 && s.IsBot >= options.IsBotThreshold {
+		return SessionState{}
+	}
+
+	duration := now.Unix() - s.Start.Unix()
+
+	if duration < 0 {
+		duration = 0
+	}
+
+	var sessionState SessionState
+	s.Sign = -1
+	sessionState.Cancel = s
+	state := *s
+	state.DurationSeconds = uint32(duration)
+	state.Sign = 1
+	state.Time = now
+	sessionState.State = state
+	options.SessionCache.Put(options.ClientID, fingerprint, &state)
+	return sessionState
 }
 
 // IgnoreHit returns true, if a hit should be ignored for given request, or false otherwise.
@@ -291,6 +292,30 @@ func HitOptionsFromRequest(r *http.Request) *HitOptions {
 		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
 		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
 	}
+}
+
+func findSession(r *http.Request, options *HitOptions, now time.Time, fingerprint uint64) (*model.Session, uint64) {
+	sessionMaxAge := now.Add(-options.SessionMaxAge)
+	s := options.SessionCache.Get(options.ClientID, fingerprint, sessionMaxAge)
+
+	// if the maximum session age reaches yesterday, we also need to check for the previous day
+	if s == nil && sessionMaxAge.Day() != now.Day() {
+		fingerprintYesterday := Fingerprint(r, options.Salt, sessionMaxAge, options.HeaderParser, options.AllowedProxySubnets)
+		my := options.SessionCache.NewMutex(options.ClientID, fingerprintYesterday)
+		my.Lock()
+		defer my.Unlock()
+		s = options.SessionCache.Get(options.ClientID, fingerprintYesterday, sessionMaxAge)
+
+		if s != nil {
+			if s.Start.Before(now.Add(-time.Hour * 24)) {
+				return nil, fingerprint
+			} else {
+				fingerprint = fingerprintYesterday
+			}
+		}
+	}
+
+	return s, fingerprint
 }
 
 func newSession(r *http.Request, options *HitOptions, fingerprint uint64, now time.Time, path, title string) (*model.Session, *model.UserAgent) {

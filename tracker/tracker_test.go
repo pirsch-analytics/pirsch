@@ -585,10 +585,9 @@ func TestTracker_EventUpdateSession(t *testing.T) {
 
 func TestTracker_ExtendSession(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	uaString := "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 	sessionCache := session2.NewMemCache(dbClient, 100)
 	req := httptest.NewRequest(http.MethodGet, "/test/path", nil)
-	req.Header.Set("User-Agent", uaString)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36")
 	client := db.NewMockClient()
 	tracker := NewTracker(client, "salt", &Config{
 		SessionCache:  sessionCache,
@@ -605,6 +604,12 @@ func TestTracker_ExtendSession(t *testing.T) {
 	tracker.Flush()
 	assert.Len(t, sessions, 1)
 	hit := sessionCache.Get(0, fingerprint, time.Now().UTC().Add(-time.Second))
-	assert.NotEqual(t, at, hit.Time)
 	assert.True(t, hit.Time.After(at))
+	sessions = client.GetSessions()
+	assert.Len(t, sessions, 3)
+	assert.Equal(t, int8(1), sessions[0].Sign)
+	assert.Equal(t, int8(-1), sessions[1].Sign)
+	assert.Equal(t, int8(1), sessions[2].Sign)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
+	assert.True(t, sessions[2].Time.After(at))
 }

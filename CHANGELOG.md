@@ -1,8 +1,9 @@
 # Changelog
 
-## 4.6.0
+## 4.5.1
 
 * added `pirsch-sessions.js` script to extend sessions
+* fixed extending sessions
 * updated dependencies
 
 ## 4.5.0
