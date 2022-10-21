@@ -2,9 +2,9 @@ package tracker
 
 import (
 	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/geodb"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/ip"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/session"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
 	"net"
@@ -24,6 +24,8 @@ const (
 type Config struct {
 	Store                   db.Store
 	Salt                    string
+	FingerprintKey0         uint64
+	FingerprintKey1         uint64
 	Worker                  int
 	WorkerBufferSize        int
 	WorkerTimeout           time.Duration
@@ -38,6 +40,18 @@ type Config struct {
 }
 
 func (config *Config) validate() {
+	if config.Salt == "" {
+		config.Salt = util.RandString(20)
+	}
+
+	if config.FingerprintKey0 == 0 {
+		config.FingerprintKey0 = util.RandUint64()
+	}
+
+	if config.FingerprintKey1 == 0 {
+		config.FingerprintKey1 = util.RandUint64()
+	}
+
 	if config.Worker < 1 {
 		config.Worker = runtime.NumCPU()
 	}

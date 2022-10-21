@@ -5,11 +5,20 @@ import (
 	"testing"
 )
 
+func TestEventOptions_validate(t *testing.T) {
+	options := EventOptions{
+		Name: " test",
+	}
+	options.validate()
+	assert.Equal(t, "test", options.Name)
+}
+
 func TestEventOptions_getMetaData(t *testing.T) {
 	options := EventOptions{
 		Meta: map[string]string{
 			"key":   "value",
 			"hello": "world",
+			"empty": "",
 		},
 	}
 	k, v := options.getMetaData()

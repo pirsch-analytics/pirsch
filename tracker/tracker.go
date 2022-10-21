@@ -2,13 +2,32 @@ package tracker
 
 import (
 	"context"
+	"github.com/dchest/siphash"
+	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/model"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/geodb"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/referrer"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
+	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+)
+
+const (
+	minChromeVersion  = 71 // late 2018
+	minFirefoxVersion = 63 // late 2018
+	minSafariVersion  = 12 // late 2018
+	minOperaVersion   = 57 // late 2018
+	minEdgeVersion    = 88 // late 2020
+	minIEVersion      = 11 // late 2013
+
+	sessionMaxAge = time.Minute * 30
 )
 
 type data struct {
@@ -42,35 +61,25 @@ func NewTracker(config Config) *Tracker {
 }
 
 // PageView tracks a page view.
-func (tracker *Tracker) PageView(r *http.Request) {
+func (tracker *Tracker) PageView(r *http.Request, clientID uint64) {
 	if tracker.stopped.Load() {
 		return
 	}
 
-	/*if !IgnoreHit(r) {
-		if options == nil {
-			options = &HitOptions{
-				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
-				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
-				SessionMaxAge:                             tracker.sessionMaxAge,
-				MinDelay:                                  tracker.minDelay,
-				IsBotThreshold:                            tracker.isBotThreshold,
-				MaxPageViews:                              tracker.maxPageViews,
-			}
-		}
+	now := time.Now().UTC()
+	userAgent, ipAddress, ignore := tracker.ignore(r)
 
-		if tracker.geoDB != nil {
-			tracker.geoDBMutex.RLock()
-			options.geoDB = tracker.geoDB
-			tracker.geoDBMutex.RUnlock()
-		}
+	if !ignore {
+		/*getRequestURI(r, options)
+		path := getPath(options.Path)
+		title := shortenString(options.Title, 512)*/
 
-		if options.HeaderParser == nil {
-			options.HeaderParser = tracker.headerParser
-		}
+		fingerprint, session, m := tracker.findSession(clientID, userAgent.UserAgent, ipAddress, now)
+		m.Lock()
+		defer m.Unlock()
+	}
 
-		options.SessionCache = tracker.sessionCache
-		options.AllowedProxySubnets = tracker.allowedProxySubnets
+	/*
 		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
 
 		if pageView != nil {
@@ -80,37 +89,27 @@ func (tracker *Tracker) PageView(r *http.Request) {
 				ua:       ua,
 			}
 		}
-	}*/
+	*/
 }
 
 // Event tracks an event.
-func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions) {
+func (tracker *Tracker) Event(r *http.Request, clientID uint64, options EventOptions) {
 	if tracker.stopped.Load() {
 		return
 	}
 
-	/*if strings.TrimSpace(eventOptions.Name) != "" && !IgnoreHit(r) {
-		if options == nil {
-			// HitOptions.MinDelay and HitOptions.IsBotThreshold are ignored for events
-			options = &HitOptions{
-				ReferrerDomainBlacklist:                   tracker.referrerDomainBlacklist,
-				ReferrerDomainBlacklistIncludesSubdomains: tracker.referrerDomainBlacklistIncludesSubdomains,
-			}
-		}
+	now := time.Now().UTC()
+	options.validate()
 
-		if tracker.geoDB != nil {
-			tracker.geoDBMutex.RLock()
-			options.geoDB = tracker.geoDB
-			tracker.geoDBMutex.RUnlock()
-		}
+	if options.Name != "" {
+		userAgent, ipAddress, ignore := tracker.ignore(r)
 
-		if options.HeaderParser == nil {
-			options.HeaderParser = tracker.headerParser
+		if !ignore {
+			//
 		}
+	}
 
-		options.SessionCache = tracker.sessionCache
-		options.AllowedProxySubnets = tracker.allowedProxySubnets
-		options.event = true
+	/*
 		metaKeys, metaValues := eventOptions.getMetaData()
 		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
 
@@ -151,26 +150,20 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions) {
 				},
 			}
 		}
-	}*/
+	*/
 }
 
 // ExtendSession extends an existing session.
-func (tracker *Tracker) ExtendSession(r *http.Request) {
-	/*if options == nil {
-		options = &HitOptions{}
-	}
-
-	if options.HeaderParser == nil {
-		options.HeaderParser = tracker.headerParser
-	}
-
-	ExtendSession(r, tracker.salt, &HitOptions{
-		ClientID:            options.ClientID,
-		SessionCache:        tracker.sessionCache,
-		SessionMaxAge:       tracker.sessionMaxAge,
-		HeaderParser:        options.HeaderParser,
-		AllowedProxySubnets: tracker.allowedProxySubnets,
-	})*/
+func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
+	/*
+		ExtendSession(r, tracker.salt, &HitOptions{
+			ClientID:            options.ClientID,
+			SessionCache:        tracker.sessionCache,
+			SessionMaxAge:       tracker.sessionMaxAge,
+			HeaderParser:        options.HeaderParser,
+			AllowedProxySubnets: tracker.allowedProxySubnets,
+		})
+	*/
 }
 
 // Flush flushes all buffered data.
@@ -193,6 +186,115 @@ func (tracker *Tracker) SetGeoDB(geoDB *geodb.GeoDB) {
 	tracker.geoDBMutex.Lock()
 	defer tracker.geoDBMutex.Unlock()
 	tracker.config.GeoDB = geoDB
+}
+
+func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) {
+	// respect do not track header
+	if r.Header.Get("DNT") == "1" {
+		return model.UserAgent{}, "", true
+	}
+
+	// empty User-Agents are usually bots
+	rawUserAgent := r.UserAgent()
+	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
+
+	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
+		return model.UserAgent{}, "", true
+	}
+
+	// ignore browsers pre-fetching data
+	xPurpose := r.Header.Get("X-Purpose")
+	purpose := r.Header.Get("Purpose")
+
+	if r.Header.Get("X-Moz") == "prefetch" ||
+		xPurpose == "prefetch" ||
+		xPurpose == "preview" ||
+		purpose == "prefetch" ||
+		purpose == "preview" {
+		return model.UserAgent{}, "", true
+	}
+
+	// filter referrer spammers
+	if referrer.Ignore(r) {
+		return model.UserAgent{}, "", true
+	}
+
+	userAgentResult := ua.Parse(rawUserAgent)
+
+	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
+		return model.UserAgent{}, "", true
+	}
+
+	// filter for bot keywords
+	for _, botUserAgent := range ua.Blacklist {
+		if strings.Contains(userAgent, botUserAgent) {
+			return model.UserAgent{}, "", true
+		}
+	}
+
+	// TODO filter by IP address
+	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
+
+	return userAgentResult, ipAddress, false
+}
+
+func (tracker *Tracker) ignoreBrowserVersion(browser, version string) bool {
+	return version != "" &&
+		browser == pirsch.BrowserChrome && tracker.browserVersionBefore(version, minChromeVersion) ||
+		browser == pirsch.BrowserFirefox && tracker.browserVersionBefore(version, minFirefoxVersion) ||
+		browser == pirsch.BrowserSafari && tracker.browserVersionBefore(version, minSafariVersion) ||
+		browser == pirsch.BrowserOpera && tracker.browserVersionBefore(version, minOperaVersion) ||
+		browser == pirsch.BrowserEdge && tracker.browserVersionBefore(version, minEdgeVersion) ||
+		browser == pirsch.BrowserIE && tracker.browserVersionBefore(version, minIEVersion)
+}
+
+func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
+	i := strings.Index(version, ".")
+
+	if i >= 0 {
+		version = version[:i]
+	}
+
+	v, err := strconv.Atoi(version)
+
+	if err != nil {
+		return false
+	}
+
+	return v < min
+}
+
+func (tracker *Tracker) findSession(clientID uint64, ua, ip string, now time.Time) (uint64, *model.Session, sync.Locker) {
+	fingerprint := tracker.fingerprint(tracker.config.Salt, ua, ip, now)
+	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
+	maxAge := now.Add(-sessionMaxAge)
+	session := tracker.config.SessionCache.Get(clientID, fingerprint, maxAge)
+
+	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
+	if session == nil && maxAge.Day() != now.Day() {
+		fingerprintYesterday := tracker.fingerprint(tracker.config.Salt, ua, ip, maxAge)
+		m = tracker.config.SessionCache.NewMutex(clientID, fingerprintYesterday)
+		session = tracker.config.SessionCache.Get(clientID, fingerprintYesterday, maxAge)
+
+		if session != nil {
+			if session.Start.Before(now.Add(-time.Hour * 24)) {
+				session = nil
+			} else {
+				fingerprint = fingerprintYesterday
+			}
+		}
+	}
+
+	return fingerprint, session, m
+}
+
+func (tracker *Tracker) fingerprint(salt, ua, ip string, now time.Time) uint64 {
+	var sb strings.Builder
+	sb.WriteString(ua)
+	sb.WriteString(ip)
+	sb.WriteString(salt)
+	sb.WriteString(now.Format("20060102"))
+	return siphash.Hash(tracker.config.FingerprintKey0, tracker.config.FingerprintKey1, []byte(sb.String()))
 }
 
 func (tracker *Tracker) startWorker() {

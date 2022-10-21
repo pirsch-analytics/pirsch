@@ -50,7 +50,7 @@ type HeaderParser struct {
 func Get(r *http.Request, parser []HeaderParser, allowed []net.IPNet) string {
 	ip := cleanIP(r.RemoteAddr)
 
-	if allowed != nil && !validProxySource(ip, allowed) {
+	if len(allowed) > 0 && !validProxySource(ip, allowed) {
 		return ip
 	}
 
