@@ -1,10 +1,10 @@
 {
   "name": "pirsch",
-  "version": "1.7.2",
+  "version": "5.0.0",
   "description": "Pirsch Analytics.",
   "main": "pirsch.js",
   "scripts": {
-    "minify": "uglifyjs -c -m -o  pirsch.min.js pirsch.js && uglifyjs -c -m -o  pirsch-events.min.js pirsch-events.js && uglifyjs -c -m -o  pirsch-sessions.min.js pirsch-sessions.js"
+    "build": "esbuild pirsch.js --bundle --minify --outfile=pirsch.min.js && esbuild pirsch-events.js --bundle --minify --outfile=pirsch-events.min.js && esbuild pirsch-sessions.js --bundle --minify --outfile=pirsch-sessions.min.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,6 @@
   },
   "homepage": "https://github.com/pirsch-analytics/pirsch#readme",
   "devDependencies": {
-    "uglify-js": "^3.17.3"
+    "esbuild": "^0.15.12"
   }
 }
