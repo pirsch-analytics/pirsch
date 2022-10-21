@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_/ip"
 	"net"
 	"net/http"
 	"strings"

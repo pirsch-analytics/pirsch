@@ -78,7 +78,7 @@ func (cache *MemCache) NewMutex(uint64, uint64) sync.Locker {
 }
 
 // Sessions returns all sessions.
-// This is insecure and should only be used for testing.
+// This is insecure and should only be used in testing.
 func (cache *MemCache) Sessions() map[string]model.Session {
 	return cache.sessions
 }

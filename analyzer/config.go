@@ -1,7 +1,7 @@
 package analyzer
 
 const (
-	defaultIsBotThreshold = 5 // also defined for the tracker.Tracker
+	defaultIsBotThreshold = 5 // also defined for the tracker_.Tracker
 )
 
 // Config is the optional configuration for the Analyzer.

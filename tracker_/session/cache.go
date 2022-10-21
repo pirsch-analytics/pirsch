@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-// Cache is a session cache.
+// Cache caches sessions.
 type Cache interface {
-	// Get returns a session for given client ID, fingerprint, and offset.
+	// Get returns a session for given client ID, fingerprint, and maximum age.
 	Get(uint64, uint64, time.Time) *model.Session
 
-	// Put stores a session for given client ID and fingerprint.
+	// Put stores a session for given client ID, fingerprint, and Session.
 	Put(uint64, uint64, *model.Session)
 
 	// Clear clears the cache.

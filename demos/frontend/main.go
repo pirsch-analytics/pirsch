@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	_ "github.com/lib/pq"
 	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/tracker"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_/session"
 	"log"
 	"net/http"
 	"os"
@@ -46,7 +46,7 @@ func main() {
 	// HitOptionsFromRequest is a utility function to process the required parameters.
 	// You might want to additional checks, like for the client ID.
 	http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// We don't need to call Hit in a new goroutine, as this is the only call in the handler
+		// We don't need to call PageView in a new goroutine, as this is the only call in the handler
 		// (running in its own goroutine already).
 		pirschTracker.Hit(r, tracker.HitOptionsFromRequest(r))
 		log.Println("Counted one hit")
