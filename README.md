@@ -126,7 +126,8 @@ The parameters are configured through HTML attributes. All of them are optional,
 | - | - | - |
 | data-endpoint | The endpoint to call. This can be a local path, like /tracking, or a complete URL, like http://mywebsite.com/tracking. It must not contain any parameters. | /pirsch |
 | data-client-id | The client ID to use, in case you plan to track multiple websites using the same backend, or you want to split the data. Note that the client ID must be validated in the backend. | 0 (no client) |
-| data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. | (no paths) |
+| data-include | Specifies a list of regular expressions to test against. On a match, the page view or event will be included. This is done before excluding any pages. | (no paths) |
+| data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. This is done after including any pages. | (no paths) |
 | data-domain | Specifies a list of additional domains to send data to. | (empty list) |
 | data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
 | data-disable-query | Removes all query parameters from the URL. | false |
@@ -173,6 +174,29 @@ http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 ```
 
 There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
+
+### Keeping sessions alive
+
+It's possible to extend sessions. This can be useful for apps and other clients that don't refresh the page.
+
+```Go
+// A handler to keep sessions alive. It won't create a new page view and can be called periodically.
+http.Handle("/session", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    pirschTracker.ExtendSession(r, tracker.HitOptionsFromRequest(r))
+}))
+```
+
+The `pirsch-sessions.js` script will extend sessions automatically.
+
+```HTML
+<script type="text/javascript" src="pirsch-sessions.js" id="pirschsessionsjs"
+        data-endpoint="/session"
+        data-client-id="42"
+        data-interval-ms="10000"
+        data-dev></script>
+```
+
+It also supports the `data-include` and `data-exclude` options from above.
 
 ### Mapping IPs to countries and cities
 

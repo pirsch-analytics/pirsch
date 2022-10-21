@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.0
+
+* added `pirsch-sessions.js` script to extend sessions
+
 ## 4.5.0
 
 * added options to disable the collection of query parameters, referrers, and resolution in scripts
