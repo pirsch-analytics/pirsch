@@ -3,14 +3,13 @@ package tracker
 import (
 	"context"
 	"github.com/dchest/siphash"
+	iso6391 "github.com/emvi/iso-639-1"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/language"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/screen"
 	"github.com/pirsch-analytics/pirsch/v4/tracker_/utm"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
@@ -32,6 +31,23 @@ const (
 
 	sessionMaxAge = time.Minute * 30
 )
+
+type screenClass struct {
+	minWidth uint16
+	class    string
+}
+
+var screenClasses = []screenClass{
+	{5120, "UHD 5K"},
+	{3840, "UHD 4K"},
+	{2560, "WQHD"},
+	{1920, "Full HD"},
+	{1280, "HD"},
+	{1024, "XL"},
+	{800, "L"},
+	{600, "M"},
+	{415, "S"},
+}
 
 type data struct {
 	session       *model.Session
@@ -337,13 +353,18 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
 	ua.Browser = util.ShortenString(ua.Browser, 20)
 	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
-	lang := util.ShortenString(language.Get(r), 10)
+	lang := util.ShortenString(tracker.getLanguage(r), 10)
 	ref, referrerName, referrerIcon := referrer.Get(r, ref, tracker.config.ReferrerDomainBlacklist)
 	ref = util.ShortenString(ref, 200)
 	referrerName = util.ShortenString(referrerName, 200)
 	referrerIcon = util.ShortenString(referrerIcon, 2000)
-	screenClass := screen.GetClass(screenWidth)
-	utmParams := utm.Get(r)
+	screenClass := tracker.getScreenClass(screenWidth)
+	query := r.URL.Query()
+	utmSource := strings.TrimSpace(query.Get("utm_source"))
+	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
+	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
+	utmContent := strings.TrimSpace(query.Get("utm_content"))
+	utmTerm := strings.TrimSpace(query.Get("utm_term"))
 	countryCode, city := "", ""
 
 	if tracker.config.GeoDB != nil {
@@ -383,11 +404,11 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		ScreenWidth:    screenWidth,
 		ScreenHeight:   screenHeight,
 		ScreenClass:    screenClass,
-		UTMSource:      utmParams.Source,
-		UTMMedium:      utmParams.Medium,
-		UTMCampaign:    utmParams.Campaign,
-		UTMContent:     utmParams.Content,
-		UTMTerm:        utmParams.Term,
+		UTMSource:      utmSource,
+		UTMMedium:      utmMedium,
+		UTMCampaign:    utmCampaign,
+		UTMContent:     utmContent,
+		UTMTerm:        utmTerm,
 	}
 }
 
@@ -422,6 +443,37 @@ func (tracker *Tracker) updateSession(session *model.Session, event bool, now ti
 	}
 
 	return uint32(top)
+}
+
+func (tracker *Tracker) getLanguage(r *http.Request) string {
+	lang := r.Header.Get("Accept-Language")
+
+	if lang != "" {
+		left, _, _ := strings.Cut(lang, ";")
+		left, _, _ = strings.Cut(left, ",")
+		left, _, _ = strings.Cut(left, "-")
+		code := strings.ToLower(strings.TrimSpace(left))
+
+		if iso6391.ValidCode(code) {
+			return code
+		}
+	}
+
+	return ""
+}
+
+func (tracker *Tracker) getScreenClass(width uint16) string {
+	if width <= 0 {
+		return ""
+	}
+
+	for _, class := range screenClasses {
+		if width >= class.minWidth {
+			return class.class
+		}
+	}
+
+	return "XS"
 }
 
 func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref string) bool {
