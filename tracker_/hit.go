@@ -189,7 +189,7 @@ func HitFromRequest(r *http.Request, salt string, options *HitOptions) (*model.P
 		Time:            sessionState.State.Time,
 		DurationSeconds: timeOnPage,
 		Path:            sessionState.State.ExitPath,
-		Title:           sessionState.State.EntryTitle,
+		Title:           sessionState.State.ExitTitle,
 		Language:        sessionState.State.Language,
 		CountryCode:     sessionState.State.CountryCode,
 		City:            sessionState.State.City,

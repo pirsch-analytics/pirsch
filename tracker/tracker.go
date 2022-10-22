@@ -74,28 +74,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 	if !ignore {
 		options.validate(r)
-		path := tracker.getPath(options.Path)
-		title := util.ShortenString(options.Title, 512)
-		fingerprint, session, m := tracker.findSession(clientID, userAgent.UserAgent, ipAddress, now)
-		m.Lock()
-		defer m.Unlock()
-		var timeOnPage uint32
-		var cancelSession model.Session
-
-		if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer) {
-			session = tracker.newSession(clientID, r, fingerprint, now, userAgent, ipAddress, path, title, options.Referrer, options.ScreenWidth, options.ScreenHeight)
-			tracker.config.SessionCache.Put(clientID, fingerprint, session)
-		} else {
-			if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
-				return
-			}
-
-			cancelSession = *session
-			cancelSession.Sign = -1
-			timeOnPage = tracker.updateSession(session, false, now, path, title)
-			tracker.config.SessionCache.Put(clientID, fingerprint, session)
-		}
-
+		session, cancelSession, timeOnPage := tracker.getSession(clientID, r, now, userAgent, ipAddress, options)
 		data := data{
 			session: session,
 			pageView: &model.PageView{
@@ -105,7 +84,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 				Time:            session.Time,
 				DurationSeconds: timeOnPage,
 				Path:            session.ExitPath,
-				Title:           session.EntryTitle,
+				Title:           session.ExitTitle,
 				Language:        session.Language,
 				CountryCode:     session.CountryCode,
 				City:            session.City,
@@ -131,7 +110,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 		}
 
 		if cancelSession.Sign != 0 {
-			data.cancelSession = &cancelSession
+			data.cancelSession = cancelSession
 		}
 
 		tracker.data <- data
@@ -139,64 +118,64 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 }
 
 // Event tracks an event.
-func (tracker *Tracker) Event(r *http.Request, clientID uint64, options EventOptions) {
+func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions EventOptions, options Options) {
 	if tracker.stopped.Load() {
 		return
 	}
 
-	/*now := time.Now().UTC()
-	options.validate()
+	now := time.Now().UTC()
+	eventOptions.validate()
 
-	if options.Name != "" {
+	if eventOptions.Name != "" {
 		userAgent, ipAddress, ignore := tracker.ignore(r)
 
 		if !ignore {
-			//
-		}
-	}*/
-
-	/*
-		metaKeys, metaValues := eventOptions.getMetaData()
-		pageView, sessionState, _ := HitFromRequest(r, tracker.salt, options)
-
-		if pageView != nil {
-			tracker.data <- data{
-				session: sessionState,
+			options.validate(r)
+			session, cancelSession, _ := tracker.getSession(clientID, r, now, userAgent, ipAddress, options)
+			metaKeys, metaValues := eventOptions.getMetaData()
+			data := data{
+				session: session,
 				event: &model.Event{
-					ClientID:        pageView.ClientID,
-					VisitorID:       pageView.VisitorID,
-					Time:            pageView.Time,
-					SessionID:       pageView.SessionID,
+					ClientID:        clientID,
+					VisitorID:       session.VisitorID,
+					Time:            session.Time,
+					SessionID:       session.SessionID,
 					DurationSeconds: eventOptions.Duration,
-					Name:            strings.TrimSpace(eventOptions.Name),
+					Name:            eventOptions.Name,
 					MetaKeys:        metaKeys,
 					MetaValues:      metaValues,
-					Path:            pageView.Path,
-					Title:           options.Title,
-					Language:        pageView.Language,
-					CountryCode:     pageView.CountryCode,
-					City:            pageView.City,
-					Referrer:        pageView.Referrer,
-					ReferrerName:    pageView.ReferrerName,
-					ReferrerIcon:    pageView.ReferrerIcon,
-					OS:              pageView.OS,
-					OSVersion:       pageView.OSVersion,
-					Browser:         pageView.Browser,
-					BrowserVersion:  pageView.BrowserVersion,
-					Desktop:         pageView.Desktop,
-					Mobile:          pageView.Mobile,
-					ScreenWidth:     pageView.ScreenWidth,
-					ScreenHeight:    pageView.ScreenHeight,
-					ScreenClass:     pageView.ScreenClass,
-					UTMSource:       pageView.UTMSource,
-					UTMMedium:       pageView.UTMMedium,
-					UTMCampaign:     pageView.UTMCampaign,
-					UTMContent:      pageView.UTMContent,
-					UTMTerm:         pageView.UTMTerm,
+					Path:            session.ExitPath,
+					Title:           session.ExitTitle,
+					Language:        session.Language,
+					CountryCode:     session.CountryCode,
+					City:            session.City,
+					Referrer:        session.Referrer,
+					ReferrerName:    session.ReferrerName,
+					ReferrerIcon:    session.ReferrerIcon,
+					OS:              session.OS,
+					OSVersion:       session.OSVersion,
+					Browser:         session.Browser,
+					BrowserVersion:  session.BrowserVersion,
+					Desktop:         session.Desktop,
+					Mobile:          session.Mobile,
+					ScreenWidth:     session.ScreenWidth,
+					ScreenHeight:    session.ScreenHeight,
+					ScreenClass:     session.ScreenClass,
+					UTMSource:       session.UTMSource,
+					UTMMedium:       session.UTMMedium,
+					UTMCampaign:     session.UTMCampaign,
+					UTMContent:      session.UTMContent,
+					UTMTerm:         session.UTMTerm,
 				},
 			}
+
+			if cancelSession.Sign != 0 {
+				data.cancelSession = cancelSession
+			}
+
+			tracker.data <- data
 		}
-	*/
+	}
 }
 
 // ExtendSession extends an existing session.
@@ -310,25 +289,15 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getPath(path string) string {
-	path = util.ShortenString(path, 2000)
-
-	if path == "" {
-		return "/"
-	}
-
-	return path
-}
-
-func (tracker *Tracker) findSession(clientID uint64, ua, ip string, now time.Time) (uint64, *model.Session, sync.Locker) {
-	fingerprint := tracker.fingerprint(tracker.config.Salt, ua, ip, now)
+func (tracker *Tracker) getSession(clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32) {
+	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	maxAge := now.Add(-sessionMaxAge)
 	session := tracker.config.SessionCache.Get(clientID, fingerprint, maxAge)
 
 	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
 	if session == nil && maxAge.Day() != now.Day() {
-		fingerprintYesterday := tracker.fingerprint(tracker.config.Salt, ua, ip, maxAge)
+		fingerprintYesterday := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, maxAge)
 		m = tracker.config.SessionCache.NewMutex(clientID, fingerprintYesterday)
 		session = tracker.config.SessionCache.Get(clientID, fingerprintYesterday, maxAge)
 
@@ -341,7 +310,26 @@ func (tracker *Tracker) findSession(clientID uint64, ua, ip string, now time.Tim
 		}
 	}
 
-	return fingerprint, session, m
+	m.Lock()
+	defer m.Unlock()
+	var timeOnPage uint32
+	var cancelSession model.Session
+
+	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer) {
+		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options.Path, options.Title, options.Referrer, options.ScreenWidth, options.ScreenHeight)
+		tracker.config.SessionCache.Put(clientID, fingerprint, session)
+	} else {
+		if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
+			return nil, nil, 0
+		}
+
+		cancelSession = *session
+		cancelSession.Sign = -1
+		timeOnPage = tracker.updateSession(session, false, now, options.Path, options.Title)
+		tracker.config.SessionCache.Put(clientID, fingerprint, session)
+	}
+
+	return session, &cancelSession, timeOnPage
 }
 
 func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip, path, title, ref string, screenWidth, screenHeight uint16) *model.Session {

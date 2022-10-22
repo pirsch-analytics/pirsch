@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	"github.com/pirsch-analytics/pirsch/v4/util"
 	"net/http"
 	"net/url"
 )
@@ -30,5 +31,12 @@ func (options *Options) validate(r *http.Request) {
 		} else {
 			options.Path = u.Path
 		}
+	}
+
+	options.Title = util.ShortenString(options.Title, 512)
+	options.Path = util.ShortenString(options.Path, 2000)
+
+	if options.Path == "" {
+		options.Path = "/"
 	}
 }
