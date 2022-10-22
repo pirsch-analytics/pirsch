@@ -30,7 +30,13 @@ const (
 	minIEVersion      = 11 // late 2013
 
 	sessionMaxAge = time.Minute * 30
+
+	pageView = eventType(iota)
+	event
+	sessionUpdate
 )
+
+type eventType int
 
 type screenClass struct {
 	minWidth uint16
@@ -90,9 +96,16 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 	if !ignore {
 		options.validate(r)
-		session, cancelSession, timeOnPage := tracker.getSession(clientID, r, now, userAgent, ipAddress, options)
-		data := data{
-			session: session,
+		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
+		var saveUserAgent *model.UserAgent
+
+		if cancelSession == nil {
+			saveUserAgent = &userAgent
+		}
+
+		tracker.data <- data{
+			session:       session,
+			cancelSession: cancelSession,
 			pageView: &model.PageView{
 				ClientID:        session.ClientID,
 				VisitorID:       session.VisitorID,
@@ -122,14 +135,8 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 				UTMContent:      session.UTMContent,
 				UTMTerm:         session.UTMTerm,
 			},
-			ua: &userAgent,
+			ua: saveUserAgent,
 		}
-
-		if cancelSession.Sign != 0 {
-			data.cancelSession = cancelSession
-		}
-
-		tracker.data <- data
 	}
 }
 
@@ -147,10 +154,11 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 
 		if !ignore {
 			options.validate(r)
-			session, cancelSession, _ := tracker.getSession(clientID, r, now, userAgent, ipAddress, options)
+			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
 			metaKeys, metaValues := eventOptions.getMetaData()
-			data := data{
-				session: session,
+			tracker.data <- data{
+				session:       session,
+				cancelSession: cancelSession,
 				event: &model.Event{
 					ClientID:        clientID,
 					VisitorID:       session.VisitorID,
@@ -184,27 +192,27 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 					UTMTerm:         session.UTMTerm,
 				},
 			}
-
-			if cancelSession.Sign != 0 {
-				data.cancelSession = cancelSession
-			}
-
-			tracker.data <- data
 		}
 	}
 }
 
 // ExtendSession extends an existing session.
-func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64) {
-	/*
-		ExtendSession(r, tracker.salt, &HitOptions{
-			ClientID:            options.ClientID,
-			SessionCache:        tracker.sessionCache,
-			SessionMaxAge:       tracker.sessionMaxAge,
-			HeaderParser:        options.HeaderParser,
-			AllowedProxySubnets: tracker.allowedProxySubnets,
-		})
-	*/
+func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options Options) {
+	if tracker.stopped.Load() {
+		return
+	}
+
+	now := time.Now().UTC()
+	userAgent, ipAddress, ignore := tracker.ignore(r)
+
+	if !ignore {
+		options.validate(r)
+		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, options)
+		tracker.data <- data{
+			session:       session,
+			cancelSession: cancelSession,
+		}
+	}
 }
 
 // Flush flushes all buffered data.
@@ -305,7 +313,7 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getSession(clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32) {
+func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	maxAge := now.Add(-sessionMaxAge)
@@ -341,7 +349,7 @@ func (tracker *Tracker) getSession(clientID uint64, r *http.Request, now time.Ti
 
 		cancelSession = *session
 		cancelSession.Sign = -1
-		timeOnPage = tracker.updateSession(session, false, now, options.Path, options.Title)
+		timeOnPage = tracker.updateSession(t, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	}
 
@@ -412,7 +420,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	}
 }
 
-func (tracker *Tracker) updateSession(session *model.Session, event bool, now time.Time, path, title string) uint32 {
+func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) uint32 {
 	if tracker.config.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < tracker.config.MinDelay {
 		session.IsBot++
 	}
@@ -433,9 +441,9 @@ func (tracker *Tracker) updateSession(session *model.Session, event bool, now ti
 	session.Sign = 1
 	session.Time = now
 
-	if event {
+	if t == event {
 		session.IsBounce = false
-	} else {
+	} else if t == pageView {
 		session.IsBounce = session.IsBounce && path == session.ExitPath
 		session.ExitPath = path
 		session.ExitTitle = title

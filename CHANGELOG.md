@@ -2,7 +2,8 @@
 
 ## 5.0.0
 
-* added `pirsch-sessions.js` script to extend sessions
+* added `pirsch-sessions.js` script to automatically extend sessions
+* fixed extending sessions in database
 
 ## 4.5.0
 
