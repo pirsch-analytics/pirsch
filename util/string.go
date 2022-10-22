@@ -12,3 +12,12 @@ func ContainsNonASCIICharacters(ua string) bool {
 
 	return false
 }
+
+// ShortenString shortens given string to the given maximum number of bytes.
+func ShortenString(str string, n int) string {
+	if len(str) > n {
+		return str[:n]
+	}
+
+	return str
+}

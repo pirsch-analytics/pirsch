@@ -44,7 +44,7 @@ func Ignore(r *http.Request) bool {
 }
 
 // Get returns the referrer for given request.
-func Get(r *http.Request, ref string, domainBlacklist []string, ignoreSubdomain bool) (string, string, string) {
+func Get(r *http.Request, ref string, domainBlacklist []string) (string, string, string) {
 	referrer := ""
 
 	if ref != "" {
@@ -94,9 +94,7 @@ func Get(r *http.Request, ref string, domainBlacklist []string, ignoreSubdomain 
 		name = groups[hostname]
 	}
 
-	if ignoreSubdomain {
-		hostname = stripSubdomain(hostname)
-	}
+	hostname = stripSubdomain(hostname)
 
 	if containsString(domainBlacklist, hostname) {
 		return "", "", ""

@@ -23,3 +23,8 @@ func TestContainsNonASCIICharacters(t *testing.T) {
 		assert.False(t, ContainsNonASCIICharacters(in))
 	}
 }
+
+func TestShortenString(t *testing.T) {
+	assert.Equal(t, "abcd", ShortenString("abcdefghi", 4))
+	assert.Equal(t, "abcdefghi", ShortenString("abcdefghi", 100))
+}

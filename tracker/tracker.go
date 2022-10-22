@@ -9,6 +9,9 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_/language"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_/screen"
+	"github.com/pirsch-analytics/pirsch/v4/tracker_/utm"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
 	"net/http"
@@ -61,7 +64,7 @@ func NewTracker(config Config) *Tracker {
 }
 
 // PageView tracks a page view.
-func (tracker *Tracker) PageView(r *http.Request, clientID uint64) {
+func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Options) {
 	if tracker.stopped.Load() {
 		return
 	}
@@ -70,26 +73,69 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64) {
 	userAgent, ipAddress, ignore := tracker.ignore(r)
 
 	if !ignore {
-		/*getRequestURI(r, options)
-		path := getPath(options.Path)
-		title := shortenString(options.Title, 512)*/
-
+		options.validate(r)
+		path := tracker.getPath(options.Path)
+		title := util.ShortenString(options.Title, 512)
 		fingerprint, session, m := tracker.findSession(clientID, userAgent.UserAgent, ipAddress, now)
 		m.Lock()
 		defer m.Unlock()
-	}
+		var timeOnPage uint32
+		var cancelSession model.Session
 
-	/*
-		pageView, sessionState, ua := HitFromRequest(r, tracker.salt, options)
-
-		if pageView != nil {
-			tracker.data <- data{
-				session:  sessionState,
-				pageView: pageView,
-				ua:       ua,
+		if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer) {
+			session = tracker.newSession(clientID, r, fingerprint, now, userAgent, ipAddress, path, title, options.Referrer, options.ScreenWidth, options.ScreenHeight)
+			tracker.config.SessionCache.Put(clientID, fingerprint, session)
+		} else {
+			if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
+				return
 			}
+
+			cancelSession = *session
+			cancelSession.Sign = -1
+			timeOnPage = tracker.updateSession(session, false, now, path, title)
+			tracker.config.SessionCache.Put(clientID, fingerprint, session)
 		}
-	*/
+
+		data := data{
+			session: session,
+			pageView: &model.PageView{
+				ClientID:        session.ClientID,
+				VisitorID:       session.VisitorID,
+				SessionID:       session.SessionID,
+				Time:            session.Time,
+				DurationSeconds: timeOnPage,
+				Path:            session.ExitPath,
+				Title:           session.EntryTitle,
+				Language:        session.Language,
+				CountryCode:     session.CountryCode,
+				City:            session.City,
+				Referrer:        session.Referrer,
+				ReferrerName:    session.ReferrerName,
+				ReferrerIcon:    session.ReferrerIcon,
+				OS:              session.OS,
+				OSVersion:       session.OSVersion,
+				Browser:         session.Browser,
+				BrowserVersion:  session.BrowserVersion,
+				Desktop:         session.Desktop,
+				Mobile:          session.Mobile,
+				ScreenWidth:     session.ScreenWidth,
+				ScreenHeight:    session.ScreenHeight,
+				ScreenClass:     session.ScreenClass,
+				UTMSource:       session.UTMSource,
+				UTMMedium:       session.UTMMedium,
+				UTMCampaign:     session.UTMCampaign,
+				UTMContent:      session.UTMContent,
+				UTMTerm:         session.UTMTerm,
+			},
+			ua: &userAgent,
+		}
+
+		if cancelSession.Sign != 0 {
+			data.cancelSession = &cancelSession
+		}
+
+		tracker.data <- data
+	}
 }
 
 // Event tracks an event.
@@ -98,7 +144,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, options EventOpt
 		return
 	}
 
-	now := time.Now().UTC()
+	/*now := time.Now().UTC()
 	options.validate()
 
 	if options.Name != "" {
@@ -107,7 +153,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, options EventOpt
 		if !ignore {
 			//
 		}
-	}
+	}*/
 
 	/*
 		metaKeys, metaValues := eventOptions.getMetaData()
@@ -264,6 +310,16 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
+func (tracker *Tracker) getPath(path string) string {
+	path = util.ShortenString(path, 2000)
+
+	if path == "" {
+		return "/"
+	}
+
+	return path
+}
+
 func (tracker *Tracker) findSession(clientID uint64, ua, ip string, now time.Time) (uint64, *model.Session, sync.Locker) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
@@ -286,6 +342,113 @@ func (tracker *Tracker) findSession(clientID uint64, ua, ip string, now time.Tim
 	}
 
 	return fingerprint, session, m
+}
+
+func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip, path, title, ref string, screenWidth, screenHeight uint16) *model.Session {
+	ua.OS = util.ShortenString(ua.OS, 20)
+	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
+	ua.Browser = util.ShortenString(ua.Browser, 20)
+	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
+	lang := util.ShortenString(language.Get(r), 10)
+	ref, referrerName, referrerIcon := referrer.Get(r, ref, tracker.config.ReferrerDomainBlacklist)
+	ref = util.ShortenString(ref, 200)
+	referrerName = util.ShortenString(referrerName, 200)
+	referrerIcon = util.ShortenString(referrerIcon, 2000)
+	screenClass := screen.GetClass(screenWidth)
+	utmParams := utm.Get(r)
+	countryCode, city := "", ""
+
+	if tracker.config.GeoDB != nil {
+		countryCode, city = tracker.config.GeoDB.CountryCodeAndCity(ip)
+	}
+
+	if screenWidth <= 0 || screenHeight <= 0 {
+		screenWidth = 0
+		screenHeight = 0
+	}
+
+	return &model.Session{
+		Sign:           1,
+		ClientID:       clientID,
+		VisitorID:      fingerprint,
+		SessionID:      util.RandUint32(),
+		Time:           now,
+		Start:          now,
+		EntryPath:      path,
+		ExitPath:       path,
+		PageViews:      1,
+		IsBounce:       true,
+		EntryTitle:     title,
+		ExitTitle:      title,
+		Language:       lang,
+		CountryCode:    countryCode,
+		City:           city,
+		Referrer:       ref,
+		ReferrerName:   referrerName,
+		ReferrerIcon:   referrerIcon,
+		OS:             ua.OS,
+		OSVersion:      ua.OSVersion,
+		Browser:        ua.Browser,
+		BrowserVersion: ua.BrowserVersion,
+		Desktop:        ua.IsDesktop(),
+		Mobile:         ua.IsMobile(),
+		ScreenWidth:    screenWidth,
+		ScreenHeight:   screenHeight,
+		ScreenClass:    screenClass,
+		UTMSource:      utmParams.Source,
+		UTMMedium:      utmParams.Medium,
+		UTMCampaign:    utmParams.Campaign,
+		UTMContent:     utmParams.Content,
+		UTMTerm:        utmParams.Term,
+	}
+}
+
+func (tracker *Tracker) updateSession(session *model.Session, event bool, now time.Time, path, title string) uint32 {
+	if tracker.config.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < tracker.config.MinDelay {
+		session.IsBot++
+	}
+
+	top := now.Unix() - session.Time.Unix()
+
+	if top < 0 {
+		top = 0
+	}
+
+	duration := now.Unix() - session.Start.Unix()
+
+	if duration < 0 {
+		duration = 0
+	}
+
+	session.DurationSeconds = uint32(duration)
+	session.Sign = 1
+	session.Time = now
+
+	if event {
+		session.IsBounce = false
+	} else {
+		session.IsBounce = session.IsBounce && path == session.ExitPath
+		session.ExitPath = path
+		session.ExitTitle = title
+		session.PageViews++
+	}
+
+	return uint32(top)
+}
+
+func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref string) bool {
+	ref, _, _ = referrer.Get(r, ref, tracker.config.ReferrerDomainBlacklist)
+
+	if ref != "" && ref != session.Referrer {
+		return true
+	}
+
+	utmParams := utm.Get(r)
+	return (utmParams.Source != "" && utmParams.Source != session.UTMSource) ||
+		(utmParams.Medium != "" && utmParams.Medium != session.UTMMedium) ||
+		(utmParams.Campaign != "" && utmParams.Campaign != session.UTMCampaign) ||
+		(utmParams.Content != "" && utmParams.Content != session.UTMContent) ||
+		(utmParams.Term != "" && utmParams.Term != session.UTMTerm)
 }
 
 func (tracker *Tracker) fingerprint(salt, ua, ip string, now time.Time) uint64 {
