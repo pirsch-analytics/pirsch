@@ -298,7 +298,7 @@ func (tracker *Tracker) Event(r *http.Request, eventOptions EventOptions, option
 					MetaKeys:        metaKeys,
 					MetaValues:      metaValues,
 					Path:            pageView.Path,
-					Title:           options.Title,
+					Title:           pageView.Title,
 					Language:        pageView.Language,
 					CountryCode:     pageView.CountryCode,
 					City:            pageView.City,

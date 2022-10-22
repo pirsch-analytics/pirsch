@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.5.1
+
+* fixed page title for page views
+
 ## 4.5.0
 
 * added options to disable the collection of query parameters, referrers, and resolution in scripts
