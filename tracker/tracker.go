@@ -347,6 +347,10 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		}
 	}
 
+	if t == sessionUpdate && session == nil {
+		return nil, nil, 0
+	}
+
 	m.Lock()
 	defer m.Unlock()
 	var timeOnPage uint32

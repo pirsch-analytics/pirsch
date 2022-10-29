@@ -423,7 +423,38 @@ func TestTracker_EventDiscard(t *testing.T) {
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
-	// TODO
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.PageView(req, 123, Options{})
+	time.Sleep(time.Second * 2)
+	tracker.ExtendSession(req, 123, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	assert.Len(t, sessions, 3)
+	assert.NotZero(t, sessions[1].DurationSeconds+sessions[2].DurationSeconds)
+}
+
+func TestTracker_ExtendSessionNoSession(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.ExtendSession(req, 123, Options{}) // do not create sessions using this method
+	tracker.ExtendSession(req, 123, Options{})
+	tracker.Flush()
+	assert.Len(t, client.GetSessions(), 0)
 }
 
 func TestTracker_ignorePrefetch(t *testing.T) {
