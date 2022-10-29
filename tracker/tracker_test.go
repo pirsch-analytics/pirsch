@@ -21,6 +21,10 @@ const (
 	userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:105.0) Gecko/20100101 Firefox/105.0"
 )
 
+// TODO test combination of page views, events, and session updates
+// - session is being reset
+// - events shouldn't update the path
+
 func TestTracker_PageView(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
