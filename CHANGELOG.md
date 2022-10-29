@@ -4,6 +4,7 @@
 
 * added `pirsch-sessions.js` script to automatically extend sessions
 * fixed extending sessions in database
+* updated dependencies
 
 ## 4.5.1
 

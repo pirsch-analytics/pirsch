@@ -4,6 +4,8 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 // Options are optional parameters for page views and events.
@@ -39,4 +41,29 @@ func (options *Options) validate(r *http.Request) {
 	if options.Path == "" {
 		options.Path = "/"
 	}
+}
+
+// OptionsFromRequest returns Options for the client request.
+func OptionsFromRequest(r *http.Request) Options {
+	query := r.URL.Query()
+	return Options{
+		URL:          getURLQueryParam(query.Get("url")),
+		Title:        strings.TrimSpace(query.Get("t")),
+		Referrer:     getURLQueryParam(query.Get("ref")),
+		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
+		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
+	}
+}
+
+func getIntQueryParam[T uint16 | uint64](param string) T {
+	i, _ := strconv.ParseUint(param, 10, 64)
+	return T(i)
+}
+
+func getURLQueryParam(param string) string {
+	if _, err := url.ParseRequestURI(param); err != nil {
+		return ""
+	}
+
+	return param
 }

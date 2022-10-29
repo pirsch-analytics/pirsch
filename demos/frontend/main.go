@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	_ "github.com/lib/pq"
 	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/session"
+	"github.com/pirsch-analytics/pirsch/v4/tracker"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"log"
 	"net/http"
 	"os"
@@ -16,9 +16,6 @@ func main() {
 	copyPirschJs()
 	copyPirschEventsJs()
 	copyPirschSessionsJs()
-
-	// Set the key for SipHash.
-	tracker.SetFingerprintKeys(42, 123)
 
 	dbConfig := &db.ClientConfig{
 		Hostname:      "127.0.0.1",
@@ -38,8 +35,10 @@ func main() {
 		panic(err)
 	}
 
-	pirschTracker := tracker.NewTracker(store, "salt", &tracker.Config{
-		SessionCache: session.NewMemCache(store, 100),
+	pirschTracker := tracker.NewTracker(tracker.Config{
+		SessionCache:    session.NewMemCache(store, 100),
+		FingerprintKey0: 42,
+		FingerprintKey1: 123,
 	})
 
 	// Create an endpoint to handle client tracking requests.
@@ -48,7 +47,7 @@ func main() {
 	http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// We don't need to call PageView in a new goroutine, as this is the only call in the handler
 		// (running in its own goroutine already).
-		pirschTracker.Hit(r, tracker.HitOptionsFromRequest(r))
+		pirschTracker.PageView(r, 0, tracker.OptionsFromRequest(r))
 		log.Println("Counted one hit")
 	}))
 
@@ -72,13 +71,13 @@ func main() {
 			Meta:     req.Meta,
 		}
 
-		pirschTracker.Event(r, data, tracker.HitOptionsFromRequest(r))
+		pirschTracker.Event(r, 0, data, tracker.OptionsFromRequest(r))
 		log.Println("Received event")
 	}))
 
 	// Create an endpoint to handle session requests.
 	http.Handle("/session", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pirschTracker.ExtendSession(r, tracker.HitOptionsFromRequest(r))
+		pirschTracker.ExtendSession(r, 0, tracker.OptionsFromRequest(r))
 		log.Println("Kept session alive")
 	}))
 
