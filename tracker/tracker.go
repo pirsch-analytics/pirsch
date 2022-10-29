@@ -98,75 +98,20 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
 		var saveUserAgent *model.UserAgent
 
-		if cancelSession == nil {
-			saveUserAgent = &userAgent
-		}
+		if session != nil {
+			if cancelSession == nil {
+				saveUserAgent = &userAgent
+			}
 
-		tracker.data <- data{
-			session:       session,
-			cancelSession: cancelSession,
-			pageView: &model.PageView{
-				ClientID:        session.ClientID,
-				VisitorID:       session.VisitorID,
-				SessionID:       session.SessionID,
-				Time:            session.Time,
-				DurationSeconds: timeOnPage,
-				Path:            session.ExitPath,
-				Title:           session.ExitTitle,
-				Language:        session.Language,
-				CountryCode:     session.CountryCode,
-				City:            session.City,
-				Referrer:        session.Referrer,
-				ReferrerName:    session.ReferrerName,
-				ReferrerIcon:    session.ReferrerIcon,
-				OS:              session.OS,
-				OSVersion:       session.OSVersion,
-				Browser:         session.Browser,
-				BrowserVersion:  session.BrowserVersion,
-				Desktop:         session.Desktop,
-				Mobile:          session.Mobile,
-				ScreenWidth:     session.ScreenWidth,
-				ScreenHeight:    session.ScreenHeight,
-				ScreenClass:     session.ScreenClass,
-				UTMSource:       session.UTMSource,
-				UTMMedium:       session.UTMMedium,
-				UTMCampaign:     session.UTMCampaign,
-				UTMContent:      session.UTMContent,
-				UTMTerm:         session.UTMTerm,
-			},
-			ua: saveUserAgent,
-		}
-	}
-}
-
-// Event tracks an event.
-func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions EventOptions, options Options) {
-	if tracker.stopped.Load() {
-		return
-	}
-
-	now := time.Now().UTC()
-	eventOptions.validate()
-
-	if eventOptions.Name != "" {
-		userAgent, ipAddress, ignore := tracker.ignore(r)
-
-		if !ignore {
-			options.validate(r)
-			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
-			metaKeys, metaValues := eventOptions.getMetaData()
 			tracker.data <- data{
 				session:       session,
 				cancelSession: cancelSession,
-				event: &model.Event{
-					ClientID:        clientID,
+				pageView: &model.PageView{
+					ClientID:        session.ClientID,
 					VisitorID:       session.VisitorID,
-					Time:            session.Time,
 					SessionID:       session.SessionID,
-					DurationSeconds: eventOptions.Duration,
-					Name:            eventOptions.Name,
-					MetaKeys:        metaKeys,
-					MetaValues:      metaValues,
+					Time:            session.Time,
+					DurationSeconds: timeOnPage,
 					Path:            session.ExitPath,
 					Title:           session.ExitTitle,
 					Language:        session.Language,
@@ -190,6 +135,72 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 					UTMContent:      session.UTMContent,
 					UTMTerm:         session.UTMTerm,
 				},
+				ua: saveUserAgent,
+			}
+		}
+	}
+}
+
+// Event tracks an event.
+func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions EventOptions, options Options) {
+	if tracker.stopped.Load() {
+		return
+	}
+
+	now := time.Now().UTC()
+	eventOptions.validate()
+
+	if eventOptions.Name != "" {
+		userAgent, ipAddress, ignore := tracker.ignore(r)
+
+		if !ignore {
+			options.validate(r)
+			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
+			var saveUserAgent *model.UserAgent
+
+			if session != nil {
+				if cancelSession == nil {
+					saveUserAgent = &userAgent
+				}
+
+				metaKeys, metaValues := eventOptions.getMetaData()
+				tracker.data <- data{
+					session:       session,
+					cancelSession: cancelSession,
+					event: &model.Event{
+						ClientID:        clientID,
+						VisitorID:       session.VisitorID,
+						Time:            session.Time,
+						SessionID:       session.SessionID,
+						DurationSeconds: eventOptions.Duration,
+						Name:            eventOptions.Name,
+						MetaKeys:        metaKeys,
+						MetaValues:      metaValues,
+						Path:            session.ExitPath,
+						Title:           session.ExitTitle,
+						Language:        session.Language,
+						CountryCode:     session.CountryCode,
+						City:            session.City,
+						Referrer:        session.Referrer,
+						ReferrerName:    session.ReferrerName,
+						ReferrerIcon:    session.ReferrerIcon,
+						OS:              session.OS,
+						OSVersion:       session.OSVersion,
+						Browser:         session.Browser,
+						BrowserVersion:  session.BrowserVersion,
+						Desktop:         session.Desktop,
+						Mobile:          session.Mobile,
+						ScreenWidth:     session.ScreenWidth,
+						ScreenHeight:    session.ScreenHeight,
+						ScreenClass:     session.ScreenClass,
+						UTMSource:       session.UTMSource,
+						UTMMedium:       session.UTMMedium,
+						UTMCampaign:     session.UTMCampaign,
+						UTMContent:      session.UTMContent,
+						UTMTerm:         session.UTMTerm,
+					},
+					ua: saveUserAgent,
+				}
 			}
 		}
 	}
@@ -207,9 +218,12 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 	if !ignore {
 		options.validate(r)
 		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, options)
-		tracker.data <- data{
-			session:       session,
-			cancelSession: cancelSession,
+
+		if session != nil {
+			tracker.data <- data{
+				session:       session,
+				cancelSession: cancelSession,
+			}
 		}
 	}
 }
@@ -437,19 +451,18 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 		duration = 0
 	}
 
-	session.DurationSeconds = uint32(duration)
-	session.Sign = 1
-	session.Time = now
-
 	if t == event {
 		session.IsBounce = false
 	} else if t == pageView {
 		session.IsBounce = session.IsBounce && path == session.ExitPath
-		session.ExitPath = path
-		session.ExitTitle = title
 		session.PageViews++
 	}
 
+	session.DurationSeconds = uint32(duration)
+	session.Sign = 1
+	session.Time = now
+	session.ExitPath = path
+	session.ExitTitle = title
 	return uint32(top)
 }
 

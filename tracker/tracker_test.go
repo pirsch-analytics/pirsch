@@ -1,11 +1,14 @@
 package tracker
 
 import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
+	session2 "github.com/pirsch-analytics/pirsch/v4/tracker_/session"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -83,6 +86,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.True(t, pageViews[0].Time.After(now))
 	assert.Equal(t, uint32(0), pageViews[0].DurationSeconds)
 	assert.Equal(t, "/foo/bar", pageViews[0].Path)
+	assert.Equal(t, "Foo", pageViews[0].Title)
 	assert.Equal(t, "fr", pageViews[0].Language)
 	assert.Equal(t, "gb", pageViews[0].CountryCode)
 	assert.Equal(t, "London", pageViews[0].City)
@@ -151,6 +155,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.True(t, pageViews[1].Time.After(now))
 	assert.Equal(t, uint32(1), pageViews[1].DurationSeconds)
 	assert.Equal(t, "/test", pageViews[1].Path)
+	assert.Equal(t, "Bar", pageViews[1].Title)
 	assert.Equal(t, "fr", pageViews[1].Language)
 	assert.Equal(t, "gb", pageViews[1].CountryCode)
 	assert.Equal(t, "London", pageViews[1].City)
@@ -176,49 +181,35 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, userAgent, userAgents[0].UserAgent)
 }
 
-/*func TestTracker_HitIgnoreSubdomain(t *testing.T) {
+func TestTracker_PageViewReferrerIgnoreSubdomain(t *testing.T) {
 	client := db.NewMockClient()
-	tracker := NewTracker(client, "salt", &Config{
-		WorkerTimeout: time.Second,
+	tracker := NewTracker(Config{
+		Store:                   client,
+		WorkerTimeout:           time.Millisecond * 100,
+		ReferrerDomainBlacklist: []string{"pirsch.io"},
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+	req.Header.Add("User-Agent", userAgent)
 	req.RemoteAddr = "81.2.69.142"
-	tracker.Hit(req, &HitOptions{
-		ReferrerDomainBlacklist: []string{"pirsch.io"},
-		Referrer:                "https://pirsch.io/",
-	})
-	tracker.Hit(req, &HitOptions{
-		ReferrerDomainBlacklist:                   []string{"pirsch.io"},
-		ReferrerDomainBlacklistIncludesSubdomains: true,
-		Referrer: "https://www.pirsch.io/",
-	})
-	tracker.Hit(req, &HitOptions{
-		ReferrerDomainBlacklist: []string{"pirsch.io", "www.pirsch.io"},
-		Referrer:                "https://www.pirsch.io/",
-	})
-	tracker.Hit(req, &HitOptions{
-		ReferrerDomainBlacklist: []string{"pirsch.io"},
-		Referrer:                "pirsch.io",
-	})
+	tracker.PageView(req, 0, Options{Referrer: "https://pirsch.io/"})
+	tracker.PageView(req, 0, Options{Referrer: "https://www.pirsch.io/"})
 	tracker.Stop()
 	sessions := client.GetSessions()
-	assert.Len(t, client.GetPageViews(), 4)
-	assert.Len(t, sessions, 7)
-	assert.Len(t, client.GetUserAgents(), 1)
+	assert.Len(t, sessions, 3)
 
-	for _, hit := range sessions {
-		assert.Empty(t, hit.Referrer)
+	for _, session := range sessions {
+		assert.Empty(t, session.Referrer)
 	}
-}*/
+}
 
-/*func TestTracker_HitIsBot(t *testing.T) {
+func TestTracker_PageViewIsBot(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	cache := session2.NewRedisCache(time.Second*60, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
 	cache.Clear()
-	tracker := NewTracker(dbClient, "salt", &Config{
+	tracker := NewTracker(Config{
+		Store:            dbClient,
 		Worker:           4,
 		WorkerBufferSize: 5,
 		WorkerTimeout:    time.Second * 2,
@@ -227,9 +218,9 @@ func TestTracker_PageView(t *testing.T) {
 
 	for i := 0; i < 7; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0")
+		req.Header.Add("User-Agent", userAgent)
 		req.URL.Path = fmt.Sprintf("/page/%d", i)
-		go tracker.Hit(req, nil)
+		go tracker.PageView(req, 0, Options{})
 		time.Sleep(time.Millisecond * 5)
 	}
 
@@ -243,10 +234,192 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, 6, int(session.PageViews))
 	assert.Equal(t, "/page/0", session.EntryPath)
 	assert.Equal(t, "/page/5", session.ExitPath)
-}*/
+}
+
+func TestTracker_PageViewTimeout(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store:         client,
+		WorkerTimeout: time.Millisecond * 100,
+	})
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+	})
+	assert.Len(t, client.GetSessions(), 0)
+	assert.Len(t, client.GetPageViews(), 0)
+	time.Sleep(time.Millisecond * 110)
+	assert.Len(t, client.GetSessions(), 1)
+	assert.Len(t, client.GetPageViews(), 1)
+}
+
+func TestTracker_PageViewBuffer(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store:            client,
+		Worker:           1,
+		WorkerBufferSize: 5,
+		IsBotThreshold:   99,
+	})
+
+	for i := 0; i < 7; i++ {
+		tracker.PageView(req, 123, Options{})
+	}
+
+	time.Sleep(time.Millisecond * 20)
+	assert.Len(t, client.GetSessions(), 7)
+	assert.Len(t, client.GetPageViews(), 4)
+	tracker.Stop()
+	assert.Len(t, client.GetSessions(), 13)
+	assert.Len(t, client.GetPageViews(), 7)
+}
 
 func TestTracker_Event(t *testing.T) {
-	// TODO
+	now := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, err := geodb.NewGeoDB(geodb.Config{
+		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
+	})
+	assert.NoError(t, err)
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.Event(req, 123, EventOptions{
+		Name:     "event",
+		Duration: 42,
+		Meta:     map[string]string{"key0": "value0", "key1": "value1"},
+	}, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, events, 1)
+	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+
+	assert.Equal(t, uint64(123), events[0].ClientID)
+	assert.True(t, events[0].Time.After(now))
+	assert.Equal(t, "event", events[0].Name)
+	assert.Len(t, events[0].MetaKeys, 2)
+	assert.Len(t, events[0].MetaValues, 2)
+	assert.Equal(t, uint32(42), events[0].DurationSeconds)
+	assert.Equal(t, "/foo/bar", events[0].Path)
+	assert.Equal(t, "Foo", events[0].Title)
+	assert.Equal(t, "fr", events[0].Language)
+	assert.Equal(t, "gb", events[0].CountryCode)
+	assert.Equal(t, "London", events[0].City)
+	assert.Equal(t, "https://google.com", events[0].Referrer)
+	assert.Equal(t, "Google", events[0].ReferrerName)
+	assert.Equal(t, pirsch.OSLinux, events[0].OS)
+	assert.Empty(t, events[0].OSVersion)
+	assert.Equal(t, pirsch.BrowserFirefox, events[0].Browser)
+	assert.Equal(t, "105.0", events[0].BrowserVersion)
+	assert.True(t, events[0].Desktop)
+	assert.False(t, events[0].Mobile)
+	assert.Equal(t, uint16(1920), events[0].ScreenWidth)
+	assert.Equal(t, uint16(1080), events[0].ScreenHeight)
+	assert.Equal(t, "Full HD", events[0].ScreenClass)
+	assert.Equal(t, "Source", events[0].UTMSource)
+	assert.Equal(t, "Medium", events[0].UTMMedium)
+	assert.Equal(t, "Campaign", events[0].UTMCampaign)
+	assert.Equal(t, "Content", events[0].UTMContent)
+	assert.Equal(t, "Term", events[0].UTMTerm)
+
+	time.Sleep(time.Second)
+	req = httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.RemoteAddr = "81.2.69.142"
+	tracker.Event(req, 123, EventOptions{
+		Name: "event2",
+	}, Options{
+		Title: "Bar",
+	})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 3)
+	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, events, 2)
+	assert.Equal(t, int8(1), sessions[0].Sign)
+	assert.Equal(t, int8(-1), sessions[1].Sign)
+	assert.Equal(t, int8(1), sessions[2].Sign)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+
+	assert.Equal(t, uint64(123), events[1].ClientID)
+	assert.True(t, events[1].Time.After(now))
+	assert.Equal(t, "event2", events[1].Name)
+	assert.Len(t, events[1].MetaKeys, 0)
+	assert.Len(t, events[1].MetaValues, 0)
+	assert.Zero(t, events[1].DurationSeconds)
+	assert.Equal(t, "/test", events[1].Path)
+	assert.Equal(t, "Bar", events[1].Title)
+	assert.Equal(t, "fr", events[1].Language)
+	assert.Equal(t, "gb", events[1].CountryCode)
+	assert.Equal(t, "London", events[1].City)
+	assert.Equal(t, "https://google.com", events[1].Referrer)
+	assert.Equal(t, "Google", events[1].ReferrerName)
+	assert.Equal(t, pirsch.OSLinux, events[1].OS)
+	assert.Empty(t, events[1].OSVersion)
+	assert.Equal(t, pirsch.BrowserFirefox, events[1].Browser)
+	assert.Equal(t, "105.0", events[1].BrowserVersion)
+	assert.True(t, events[1].Desktop)
+	assert.False(t, events[1].Mobile)
+	assert.Equal(t, uint16(1920), events[1].ScreenWidth)
+	assert.Equal(t, uint16(1080), events[1].ScreenHeight)
+	assert.Equal(t, "Full HD", events[1].ScreenClass)
+	assert.Equal(t, "Source", events[1].UTMSource)
+	assert.Equal(t, "Medium", events[1].UTMMedium)
+	assert.Equal(t, "Campaign", events[1].UTMCampaign)
+	assert.Equal(t, "Content", events[1].UTMContent)
+	assert.Equal(t, "Term", events[1].UTMTerm)
+
+	userAgents := client.GetUserAgents()
+	assert.Len(t, userAgents, 1)
+	assert.Equal(t, userAgent, userAgents[0].UserAgent)
+}
+
+func TestTracker_EventDiscard(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.Event(req, 123, EventOptions{}, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+	})
+	tracker.Flush()
+	assert.Len(t, client.GetSessions(), 0)
+	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, client.GetEvents(), 0)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
