@@ -7,8 +7,8 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
-	session2 "github.com/pirsch-analytics/pirsch/v4/tracker_/session"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -197,14 +197,14 @@ func TestTracker_PageViewReferrerIgnoreSubdomain(t *testing.T) {
 	sessions := client.GetSessions()
 	assert.Len(t, sessions, 3)
 
-	for _, session := range sessions {
-		assert.Empty(t, session.Referrer)
+	for _, s := range sessions {
+		assert.Empty(t, s.Referrer)
 	}
 }
 
 func TestTracker_PageViewIsBot(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	cache := session2.NewRedisCache(time.Second*60, nil, &redis.Options{
+	cache := session.NewRedisCache(time.Second*60, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
 	cache.Clear()
@@ -225,15 +225,15 @@ func TestTracker_PageViewIsBot(t *testing.T) {
 	}
 
 	tracker.Stop()
-	var session model.Session
+	var s model.Session
 	assert.NoError(t, dbClient.QueryRow(`SELECT entry_path, exit_path, max(page_views) page_views, max(is_bot) is_bot
 		FROM session
 		GROUP BY entry_path, exit_path
-		HAVING sum(sign) > 0`).Scan(&session.EntryPath, &session.ExitPath, &session.PageViews, &session.IsBot))
-	assert.Equal(t, uint8(5), session.IsBot)
-	assert.Equal(t, 6, int(session.PageViews))
-	assert.Equal(t, "/page/0", session.EntryPath)
-	assert.Equal(t, "/page/5", session.ExitPath)
+		HAVING sum(sign) > 0`).Scan(&s.EntryPath, &s.ExitPath, &s.PageViews, &s.IsBot))
+	assert.Equal(t, uint8(5), s.IsBot)
+	assert.Equal(t, 6, int(s.PageViews))
+	assert.Equal(t, "/page/0", s.EntryPath)
+	assert.Equal(t, "/page/5", s.ExitPath)
 }
 
 func TestTracker_PageViewTimeout(t *testing.T) {
@@ -640,15 +640,15 @@ func TestTracker_referrerOrCampaignChanged(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Referer", "https://referrer.com")
-	session := &model.Session{Referrer: "https://referrer.com"}
-	assert.False(t, tracker.referrerOrCampaignChanged(req, session, ""))
-	session.Referrer = ""
-	assert.True(t, tracker.referrerOrCampaignChanged(req, session, ""))
-	session.Referrer = "https://referrer.com"
+	s := &model.Session{Referrer: "https://referrer.com"}
+	assert.False(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	s.Referrer = ""
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	s.Referrer = "https://referrer.com"
 	req = httptest.NewRequest(http.MethodGet, "/test?ref=https://different.com", nil)
-	assert.True(t, tracker.referrerOrCampaignChanged(req, session, ""))
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
 	req = httptest.NewRequest(http.MethodGet, "/test?utm_source=Referrer", nil)
-	assert.True(t, tracker.referrerOrCampaignChanged(req, session, ""))
-	session.UTMSource = "Referrer"
-	assert.False(t, tracker.referrerOrCampaignChanged(req, session, ""))
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	s.UTMSource = "Referrer"
+	assert.False(t, tracker.referrerOrCampaignChanged(req, s, ""))
 }
