@@ -9,10 +9,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 )
 
 // For more details, take a look at the backend demo and documentation.
 func main() {
+	compileJs()
 	copyPirschJs()
 	copyPirschEventsJs()
 	copyPirschSessionsJs()
@@ -36,6 +38,7 @@ func main() {
 	}
 
 	pirschTracker := tracker.NewTracker(tracker.Config{
+		Store:           store,
 		SessionCache:    session.NewMemCache(store, 100),
 		FingerprintKey0: 42,
 		FingerprintKey1: 123,
@@ -88,38 +91,47 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func compileJs() {
+	cmd := exec.Command("npm", "run", "build")
+	cmd.Dir = "../../js"
+
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func copyPirschJs() {
-	content, err := os.ReadFile("../../js/pirsch.js")
+	content, err := os.ReadFile("../../js/pirsch.min.js")
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := os.WriteFile("pirsch.js", content, 0755); err != nil {
+	if err := os.WriteFile("pirsch.min.js", content, 0755); err != nil {
 		panic(err)
 	}
 }
 
 func copyPirschEventsJs() {
-	content, err := os.ReadFile("../../js/pirsch-events.js")
+	content, err := os.ReadFile("../../js/pirsch-events.min.js")
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := os.WriteFile("pirsch-events.js", content, 0755); err != nil {
+	if err := os.WriteFile("pirsch-events.min.js", content, 0755); err != nil {
 		panic(err)
 	}
 }
 
 func copyPirschSessionsJs() {
-	content, err := os.ReadFile("../../js/pirsch-sessions.js")
+	content, err := os.ReadFile("../../js/pirsch-sessions.min.js")
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := os.WriteFile("pirsch-sessions.js", content, 0755); err != nil {
+	if err := os.WriteFile("pirsch-sessions.min.js", content, 0755); err != nil {
 		panic(err)
 	}
 }

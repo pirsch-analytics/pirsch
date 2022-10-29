@@ -4,6 +4,6 @@ js/pirsch.min.js
 js/pirsch-events.min.js
 js/pirsch-sessions.min.js
 tracker/geodb/GeoLite2-Country.mmdb
-demos/frontend/pirsch.js
-demos/frontend/pirsch-events.js
-demos/frontend/pirsch-sessions.js
+demos/frontend/pirsch.min.js
+demos/frontend/pirsch-events.min.js
+demos/frontend/pirsch-sessions.min.js

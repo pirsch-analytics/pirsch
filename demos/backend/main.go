@@ -32,6 +32,7 @@ func main() {
 	// Set up a default tracker with a salt.
 	// This will buffer and store hits and generate sessions by default.
 	pirschTracker := tracker.NewTracker(tracker.Config{
+		Store:           store,
 		SessionCache:    session.NewMemCache(store, 100),
 		FingerprintKey0: 42,
 		FingerprintKey1: 123,
