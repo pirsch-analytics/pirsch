@@ -16,8 +16,8 @@ const (
 	defaultWorkerBufferSize = 500
 	defaultWorkerTimeout    = time.Second * 5
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelayMS       = 75
-	defaultIsBotThreshold   = 5
+	defaultMinDelayMS       = int64(75)
+	defaultIsBotThreshold   = uint8(5)
 )
 
 // Config is the configuration for the Tracker.

@@ -10,7 +10,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
-	"github.com/pirsch-analytics/pirsch/v4/tracker_/utm"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
 	"net/http"
@@ -491,12 +490,17 @@ func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *mode
 		return true
 	}
 
-	utmParams := utm.Get(r)
-	return (utmParams.Source != "" && utmParams.Source != session.UTMSource) ||
-		(utmParams.Medium != "" && utmParams.Medium != session.UTMMedium) ||
-		(utmParams.Campaign != "" && utmParams.Campaign != session.UTMCampaign) ||
-		(utmParams.Content != "" && utmParams.Content != session.UTMContent) ||
-		(utmParams.Term != "" && utmParams.Term != session.UTMTerm)
+	query := r.URL.Query()
+	utmSource := strings.TrimSpace(query.Get("utm_source"))
+	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
+	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
+	utmContent := strings.TrimSpace(query.Get("utm_content"))
+	utmTerm := strings.TrimSpace(query.Get("utm_term"))
+	return (utmSource != "" && utmSource != session.UTMSource) ||
+		(utmMedium != "" && utmMedium != session.UTMMedium) ||
+		(utmCampaign != "" && utmCampaign != session.UTMCampaign) ||
+		(utmContent != "" && utmContent != session.UTMContent) ||
+		(utmTerm != "" && utmTerm != session.UTMTerm)
 }
 
 func (tracker *Tracker) fingerprint(salt, ua, ip string, now time.Time) uint64 {
