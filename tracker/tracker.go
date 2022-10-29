@@ -336,7 +336,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	m.Lock()
 	defer m.Unlock()
 	var timeOnPage uint32
-	var cancelSession model.Session
+	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer) {
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options.Path, options.Title, options.Referrer, options.ScreenWidth, options.ScreenHeight)
@@ -346,13 +346,14 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 			return nil, nil, 0
 		}
 
-		cancelSession = *session
+		sessionCopy := *session
+		cancelSession = &sessionCopy
 		cancelSession.Sign = -1
 		timeOnPage = tracker.updateSession(t, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	}
 
-	return session, &cancelSession, timeOnPage
+	return session, cancelSession, timeOnPage
 }
 
 func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip, path, title, ref string, screenWidth, screenHeight uint16) *model.Session {
