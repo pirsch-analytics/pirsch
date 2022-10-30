@@ -6,7 +6,6 @@ import (
 	iso6391 "github.com/emvi/iso-639-1"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/model"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
@@ -16,7 +15,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -65,12 +63,11 @@ type data struct {
 
 // Tracker tracks page views, events, and updates sessions.
 type Tracker struct {
-	config     Config
-	data       chan data
-	cancel     context.CancelFunc
-	done       chan bool
-	geoDBMutex sync.RWMutex
-	stopped    atomic.Bool
+	config  Config
+	data    chan data
+	cancel  context.CancelFunc
+	done    chan bool
+	stopped atomic.Bool
 }
 
 // NewTracker creates a new tracker for given client, salt and config.
@@ -242,13 +239,6 @@ func (tracker *Tracker) Stop() {
 		tracker.stopWorker()
 		tracker.flushData()
 	}
-}
-
-// SetGeoDB updates the GeoDB.
-func (tracker *Tracker) SetGeoDB(geoDB *geodb.GeoDB) {
-	tracker.geoDBMutex.Lock()
-	defer tracker.geoDBMutex.Unlock()
-	tracker.config.GeoDB = geoDB
 }
 
 func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) {
