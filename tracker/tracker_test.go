@@ -499,7 +499,13 @@ func TestTracker_ExtendSession(t *testing.T) {
 	tracker.Flush()
 	sessions := client.GetSessions()
 	assert.Len(t, sessions, 3)
-	assert.NotZero(t, sessions[1].DurationSeconds+sessions[2].DurationSeconds)
+	assert.Equal(t, uint32(2), sessions[2].DurationSeconds)
+	assert.Equal(t, uint16(1), sessions[2].Extended)
+	tracker.ExtendSession(req, 123, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	assert.Len(t, sessions, 5)
+	assert.Equal(t, uint16(2), sessions[4].Extended)
 }
 
 func TestTracker_ExtendSessionNoSession(t *testing.T) {

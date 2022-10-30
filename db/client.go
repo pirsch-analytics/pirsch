@@ -218,7 +218,7 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-        is_bot) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        is_bot, extended) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -258,7 +258,8 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 			session.UTMCampaign,
 			session.UTMContent,
 			session.UTMTerm,
-			session.IsBot)
+			session.IsBot,
+			session.Extended)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -421,7 +422,8 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		utm_campaign,
 		utm_content,
 		utm_term,
-		is_bot
+		is_bot,
+		extended
 		FROM session
 		WHERE client_id = ?
 		AND visitor_id = ?
@@ -462,7 +464,8 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		&session.UTMCampaign,
 		&session.UTMContent,
 		&session.UTMTerm,
-		&session.IsBot)
+		&session.IsBot,
+		&session.Extended)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

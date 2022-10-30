@@ -90,6 +90,7 @@ func TestClient_SaveSessions(t *testing.T) {
 			ScreenHeight:    1080,
 			ScreenClass:     "XL",
 			IsBot:           5,
+			Extended:        123,
 		},
 		{
 			Sign:      -1,

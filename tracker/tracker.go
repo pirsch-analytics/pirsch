@@ -12,6 +12,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
 	"github.com/pirsch-analytics/pirsch/v4/util"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -455,6 +456,8 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	} else if t == pageView {
 		session.IsBounce = session.IsBounce && path == session.ExitPath
 		session.PageViews++
+	} else if session.Extended < math.MaxUint16-1 {
+		session.Extended++
 	}
 
 	session.DurationSeconds = uint32(duration)
