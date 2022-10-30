@@ -2,8 +2,20 @@ package ip
 
 import (
 	"bytes"
+	"database/sql"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"io"
 	"net"
+	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
+)
+
+const (
+	udgerDownload = "https://data.udger.com/%s/udgerdb_v4.dat"
+	udgerFilename = "udgerdb_v4.dat"
 )
 
 type ipRange struct {
@@ -13,14 +25,19 @@ type ipRange struct {
 
 // Udger implements the Filter interface.
 type Udger struct {
+	accessKey          string
+	downloadPath       string
 	ipsV4, ipsV6       map[string]struct{}
 	rangesV4, rangesV6 []ipRange
 	m                  sync.RWMutex
 }
 
 // NewUdger creates a new Filter using the IP lists provided by udger.com.
-func NewUdger() *Udger {
-	return &Udger{}
+func NewUdger(accessKey, downloadPath string) *Udger {
+	return &Udger{
+		accessKey:    accessKey,
+		downloadPath: downloadPath,
+	}
 }
 
 // Update implements the Filter interface.
@@ -89,6 +106,127 @@ func (udger *Udger) Ignore(ip string) bool {
 	}
 
 	return udger.findIP(ip, parsedIP, udger.ipsV6, udger.rangesV6)
+}
+
+// DownloadAndUpdate downloads and updates the IP list from udger.com.
+func (udger *Udger) DownloadAndUpdate() error {
+	if err := udger.download(); err != nil {
+		return err
+	}
+
+	if err := udger.updateFromDB(); err != nil {
+		return err
+	}
+
+	if err := os.Remove(filepath.Join(udger.downloadPath, udgerFilename)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (udger *Udger) download() error {
+	if err := os.MkdirAll(udger.downloadPath, 0755); err != nil {
+		return err
+	}
+
+	resp, err := http.Get(fmt.Sprintf(udgerDownload, udger.accessKey))
+
+	if err != nil {
+		return err
+	}
+
+	data, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(udger.downloadPath, udgerFilename), data, 0755); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (udger *Udger) updateFromDB() error {
+	db, err := sql.Open("sqlite3", filepath.Join(udger.downloadPath, udgerFilename))
+
+	if err != nil {
+		return err
+	}
+
+	defer db.Close()
+	var ipV4 []string
+	rows, err := db.Query("SELECT ip FROM udger_ip_list WHERE ip NOT LIKE '%:%' AND class_id NOT IN (1, 5, 100)")
+
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var ip string
+
+		if err := rows.Scan(&ip); err != nil {
+			return err
+		}
+
+		ipV4 = append(ipV4, ip)
+	}
+
+	var ipV6 []string
+	rows, err = db.Query("SELECT ip FROM udger_ip_list WHERE ip LIKE '%:%' AND class_id NOT IN (1, 5, 100)")
+
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var ip string
+
+		if err := rows.Scan(&ip); err != nil {
+			return err
+		}
+
+		ipV6 = append(ipV6, ip)
+	}
+
+	var rangesV4 []Range
+	rows, err = db.Query("SELECT ip_from, ip_to FROM udger_datacenter_range")
+
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var ipRange Range
+
+		if err := rows.Scan(&ipRange.From, &ipRange.To); err != nil {
+			return err
+		}
+
+		rangesV4 = append(rangesV4, ipRange)
+	}
+
+	var rangesV6 []Range
+	rows, err = db.Query("SELECT ip_from, ip_to FROM udger_datacenter_range6")
+
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var ipRange Range
+
+		if err := rows.Scan(&ipRange.From, &ipRange.To); err != nil {
+			return err
+		}
+
+		rangesV6 = append(rangesV6, ipRange)
+	}
+
+	udger.Update(ipV4, ipV6, rangesV4, rangesV6)
+	return nil
 }
 
 func (udger *Udger) findIP(ip string, parsedIP net.IP, ips map[string]struct{}, ranges []ipRange) bool {

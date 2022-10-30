@@ -28,6 +28,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/paulmach/orb v0.7.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

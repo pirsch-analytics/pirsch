@@ -1,5 +1,6 @@
 .idea/
 js/node_modules/
+tracker/ip/tmp/
 js/pirsch.min.js
 js/pirsch-events.min.js
 js/pirsch-sessions.min.js

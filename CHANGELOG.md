@@ -4,6 +4,7 @@
 
 * added `pirsch-sessions.js` script to automatically extend sessions
 * added field to count how often a session has been extended
+* added filtering based on IP address
 * fixed extending sessions in database
 * updated dependencies
 

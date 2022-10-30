@@ -2,11 +2,12 @@ package ip
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
 func TestUdger(t *testing.T) {
-	udger := NewUdger()
+	udger := NewUdger("", "")
 	udger.Update([]string{
 		"90.154.29.38",
 	}, []string{
@@ -28,4 +29,25 @@ func TestUdger(t *testing.T) {
 	assert.True(t, udger.Ignore("2001:1ab0:f001::"))
 	assert.True(t, udger.Ignore("2001:1ab0:f001:ffff:ffff:ffff:ffff:ffff"))
 	assert.True(t, udger.Ignore("2001:1ab0:f001:1000:0000:0000:0000:00ff"))
+}
+
+func BenchmarkUdger(b *testing.B) {
+	accessKey := os.Getenv("UDGER_ACCESS_KEY")
+
+	if accessKey != "" {
+		udger := NewUdger(accessKey, "tmp")
+		assert.NoError(b, udger.DownloadAndUpdate())
+
+		b.Run("IPv4", func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				assert.False(b, udger.Ignore("91.36.189.125"))
+			}
+		})
+
+		b.Run("IPv6", func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				assert.False(b, udger.Ignore("2003:e1:7f03:a7b7:6328:b96a:4061:8581"))
+			}
+		})
+	}
 }
