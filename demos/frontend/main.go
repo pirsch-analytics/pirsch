@@ -51,15 +51,20 @@ func main() {
 		// We don't need to call PageView in a new goroutine, as this is the only call in the handler
 		// (running in its own goroutine already).
 		pirschTracker.PageView(r, 0, tracker.OptionsFromRequest(r))
-		log.Println("Counted one hit")
+		log.Println("Counted page view")
 	}))
 
 	// Create an endpoint to handle client event requests.
 	http.Handle("/event", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
-			Name     string            `json:"event_name"`
-			Duration uint32            `json:"event_duration"`
-			Meta     map[string]string `json:"event_meta"`
+			Name         string            `json:"event_name"`
+			Duration     uint32            `json:"event_duration"`
+			Meta         map[string]string `json:"event_meta"`
+			URL          string            `json:"url"`
+			Title        string            `json:"title"`
+			Referrer     string            `json:"referrer"`
+			ScreenWidth  uint16            `json:"screen_width"`
+			ScreenHeight uint16            `json:"screen_height"`
 		}
 		decoder := json.NewDecoder(r.Body)
 
@@ -68,13 +73,17 @@ func main() {
 			return
 		}
 
-		data := tracker.EventOptions{
+		pirschTracker.Event(r, 0, tracker.EventOptions{
 			Name:     req.Name,
 			Duration: req.Duration,
 			Meta:     req.Meta,
-		}
-
-		pirschTracker.Event(r, 0, data, tracker.OptionsFromRequest(r))
+		}, tracker.Options{
+			URL:          req.URL,
+			Title:        req.Title,
+			Referrer:     req.Referrer,
+			ScreenWidth:  req.ScreenWidth,
+			ScreenHeight: req.ScreenHeight,
+		})
 		log.Println("Received event")
 	}))
 
