@@ -295,8 +295,11 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 		}
 	}
 
-	// TODO filter by IP address
 	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
+
+	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
+		return model.UserAgent{}, "", true
+	}
 
 	return userAgentResult, ipAddress, false
 }

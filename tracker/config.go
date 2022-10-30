@@ -35,6 +35,7 @@ type Config struct {
 	MinDelay            int64
 	IsBotThreshold      uint8
 	GeoDB               *geodb.GeoDB
+	IPFilter            ip.Filter
 	Logger              *log.Logger
 }
 

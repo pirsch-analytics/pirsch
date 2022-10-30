@@ -7,6 +7,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v4/tracker/ua"
 	"github.com/stretchr/testify/assert"
@@ -655,6 +656,26 @@ func TestTracker_ignoreDoNotTrack(t *testing.T) {
 	}
 
 	req.Header.Set("DNT", "1")
+
+	if _, _, ignore := tracker.ignore(req); !ignore {
+		t.Fatal("Request must have been ignored")
+	}
+}
+
+func TestTracker_ignoreIP(t *testing.T) {
+	filter := ip.NewUdger("", "")
+	filter.Update([]string{"90.154.29.38"}, []string{}, []ip.Range{}, []ip.Range{})
+	tracker := NewTracker(Config{
+		IPFilter: filter,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", userAgent)
+
+	if _, _, ignore := tracker.ignore(req); ignore {
+		t.Fatal("Request must not have been ignored")
+	}
+
+	req.RemoteAddr = "90.154.29.38"
 
 	if _, _, ignore := tracker.ignore(req); !ignore {
 		t.Fatal("Request must have been ignored")
