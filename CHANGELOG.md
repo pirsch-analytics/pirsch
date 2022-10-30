@@ -5,7 +5,9 @@
 * added `pirsch-sessions.js` script to automatically extend sessions
 * added field to count how often a session has been extended
 * added filtering based on IP address
+* improved interfaces and defaults
 * fixed extending sessions in database
+* fixed automatic GeoDB update
 * updated dependencies
 
 ## 4.5.1

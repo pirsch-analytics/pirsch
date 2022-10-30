@@ -2,63 +2,47 @@ package geodb
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"github.com/oschwald/maxminddb-golang"
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/util"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 const (
 	geoLite2Permalink     = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=LICENSE_KEY&suffix=tar.gz"
 	geoLite2LicenseKey    = "LICENSE_KEY"
 	geoLite2TarGzFilename = "GeoLite2-City.tar.gz"
+	geoLite2Filename      = "GeoLite2-City.mmdb"
 )
 
-// Config is the configuration for the GeoDB.
-type Config struct {
-	// File is the path (including the filename) to the GeoLite2 country database file.
-	// See GeoLite2Filename for the required filename.
-	File string
-
-	// Logger is the log.Logger used for logging.
-	// Note that this will log the IP address and should therefore only be used for debugging.
-	// Set it to nil to disable logging for GeoDB.
-	Logger *log.Logger
-}
-
-// GeoDB maps IPs to their geo location based on MaxMinds GeoLite2 or GeoIP2 database.
+// GeoDB maps IPs to their geological location based on MaxMinds GeoLite2 or GeoIP2 database.
 type GeoDB struct {
-	db     *maxminddb.Reader
-	logger *log.Logger
+	licenseKey   string
+	downloadPath string
+	db           *maxminddb.Reader
+	m            sync.RWMutex
 }
 
-// NewGeoDB creates a new GeoDB for given database file.
-// The file is loaded into memory, therefore it's not necessary to close the reader (see oschwald/maxminddb-golang documentatio).
-// The database should be updated on a regular basis.
-func NewGeoDB(config Config) (*GeoDB, error) {
-	data, err := os.ReadFile(config.File)
-
-	if err != nil {
-		return nil, err
+// NewGeoDB creates a new GeoDB for given license key.
+func NewGeoDB(licenseKey, downloadPath string) (*GeoDB, error) {
+	geoDB := &GeoDB{
+		licenseKey:   licenseKey,
+		downloadPath: downloadPath,
 	}
 
-	db, err := maxminddb.FromBytes(data)
-
-	if err != nil {
-		return nil, err
+	if licenseKey != "" && downloadPath != "" {
+		if err := geoDB.Update(); err != nil {
+			return nil, err
+		}
 	}
 
-	return &GeoDB{
-		db:     db,
-		logger: config.Logger,
-	}, nil
+	return geoDB, nil
 }
 
 // CountryCodeAndCity looks up the country code and city for given IP.
@@ -68,10 +52,6 @@ func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
 	parsedIP := net.ParseIP(ip)
 
 	if parsedIP == nil {
-		if db.logger != nil {
-			db.logger.Printf("error parsing IP address %s", ip)
-		}
-
 		return "", ""
 	}
 
@@ -86,44 +66,59 @@ func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
 		} `maxminddb:"city"`
 	}{}
 
-	if err := db.db.Lookup(parsedIP, &record); err != nil {
-		if db.logger != nil {
-			db.logger.Printf("error looking up IP address %s", parsedIP)
-		}
+	db.m.RLock()
+	defer db.m.RUnlock()
 
+	if err := db.db.Lookup(parsedIP, &record); err != nil {
 		return "", ""
 	}
 
 	return strings.ToLower(record.Country.ISOCode), record.City.Names.En
 }
 
-// Get downloads and unpacks the MaxMind GeoLite2 database.
-// The tarball is downloaded and unpacked at the provided path. The directories will created if required.
-// The license key is used for the download and must be provided for a registered account.
-// Please refer to MaxMinds website on how to do that: https://dev.maxmind.com/geoip/geoip2/geolite2/
-// The database should be updated on a regular basis.
-func Get(path, licenseKey string) error {
-	if err := download(path, licenseKey); err != nil {
+// Update downloads and unpacks the MaxMind GeoLite2 database.
+func (db *GeoDB) Update() error {
+	if err := db.download(); err != nil {
 		return err
 	}
 
-	if err := unpack(path); err != nil {
+	if err := db.unpackAndUpdate(); err != nil {
 		return err
 	}
 
-	if err := cleanupDownload(path); err != nil {
+	if err := os.Remove(filepath.Join(db.downloadPath, geoLite2TarGzFilename)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func download(path, licenseKey string) error {
-	if err := os.MkdirAll(path, 0755); err != nil {
+// UpdateFromFile updates GeoDB from given file instead of downloading the database.
+func (db *GeoDB) UpdateFromFile(path string) error {
+	data, err := os.ReadFile(path)
+
+	if err != nil {
 		return err
 	}
 
-	resp, err := http.Get(strings.Replace(geoLite2Permalink, geoLite2LicenseKey, licenseKey, 1))
+	db.m.Lock()
+	defer db.m.Unlock()
+	geoDB, err := maxminddb.FromBytes(data)
+
+	if err != nil {
+		return err
+	}
+
+	db.db = geoDB
+	return nil
+}
+
+func (db *GeoDB) download() error {
+	if err := os.MkdirAll(db.downloadPath, 0755); err != nil {
+		return err
+	}
+
+	resp, err := http.Get(strings.Replace(geoLite2Permalink, geoLite2LicenseKey, db.licenseKey, 1))
 
 	if err != nil {
 		return err
@@ -135,38 +130,30 @@ func download(path, licenseKey string) error {
 		return err
 	}
 
-	if err := os.WriteFile(filepath.Join(path, geoLite2TarGzFilename), tarGz, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(db.downloadPath, geoLite2TarGzFilename), tarGz, 0755); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func unpack(path string) error {
-	file, err := os.Open(filepath.Join(path, geoLite2TarGzFilename))
+func (db *GeoDB) unpackAndUpdate() error {
+	file, err := os.Open(filepath.Join(db.downloadPath, geoLite2TarGzFilename))
 
 	if err != nil {
 		return err
 	}
 
-	logger := util.GetDefaultLogger()
-	defer func() {
-		if err := file.Close(); err != nil {
-			logger.Printf("error closing GeoDB file")
-		}
-	}()
+	defer file.Close()
 	gzipFile, err := gzip.NewReader(file)
 
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		if err := gzipFile.Close(); err != nil {
-			logger.Printf("error closing GeoDB zip file")
-		}
-	}()
+	defer gzipFile.Close()
 	r := tar.NewReader(gzipFile)
+	var out bytes.Buffer
 
 	for {
 		header, err := r.Next()
@@ -177,36 +164,23 @@ func unpack(path string) error {
 			return err
 		}
 
-		if filepath.Base(header.Name) == pirsch.GeoLite2Filename {
-			out, err := os.Create(filepath.Join(path, pirsch.GeoLite2Filename))
-
-			if err != nil {
+		if filepath.Base(header.Name) == geoLite2Filename {
+			if _, err := io.Copy(&out, r); err != nil {
 				return err
-			}
-
-			if _, err := io.Copy(out, r); err != nil {
-				if err := out.Close(); err != nil {
-					logger.Printf("error closing GeoLite2 database file")
-				}
-
-				return err
-			}
-
-			if err := out.Close(); err != nil {
-				logger.Printf("error closing GeoLite2 database file")
 			}
 
 			break
 		}
 	}
 
-	return nil
-}
+	db.m.Lock()
+	defer db.m.Unlock()
+	geoDB, err := maxminddb.FromBytes(out.Bytes())
 
-func cleanupDownload(path string) error {
-	if err := os.Remove(filepath.Join(path, geoLite2TarGzFilename)); err != nil {
+	if err != nil {
 		return err
 	}
 
+	db.db = geoDB
 	return nil
 }

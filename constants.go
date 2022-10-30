@@ -71,11 +71,6 @@ const (
 	DirectionDESC = Direction("DESC")
 )
 
-const (
-	// GeoLite2Filename is the default filename of the GeoLite2 database.
-	GeoLite2Filename = "GeoLite2-City.mmdb"
-)
-
 // Period is used to group results.
 type Period int
 

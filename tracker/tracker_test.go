@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -71,10 +70,8 @@ func TestTracker_PageView(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, err := geodb.NewGeoDB(geodb.Config{
-		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
-	})
-	assert.NoError(t, err)
+	geoDB, _ := geodb.NewGeoDB("", "")
+	assert.NoError(t, geoDB.UpdateFromFile("geodb/GeoIP2-City-Test.mmdb"))
 	client := db.NewMockClient()
 	tracker := NewTracker(Config{
 		Store: client,
@@ -354,10 +351,8 @@ func TestTracker_Event(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, err := geodb.NewGeoDB(geodb.Config{
-		File: filepath.Join("geodb/GeoIP2-City-Test.mmdb"),
-	})
-	assert.NoError(t, err)
+	geoDB, _ := geodb.NewGeoDB("", "")
+	assert.NoError(t, geoDB.UpdateFromFile("geodb/GeoIP2-City-Test.mmdb"))
 	client := db.NewMockClient()
 	tracker := NewTracker(Config{
 		Store: client,
