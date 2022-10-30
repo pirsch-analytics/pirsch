@@ -44,7 +44,7 @@ func Ignore(r *http.Request) bool {
 }
 
 // Get returns the referrer for given request.
-func Get(r *http.Request, ref string) (string, string, string) {
+func Get(r *http.Request, ref, requestHostname string) (string, string, string) {
 	referrer := ""
 
 	if ref != "" {
@@ -75,7 +75,7 @@ func Get(r *http.Request, ref string) (string, string, string) {
 
 	hostname := strings.ToLower(u.Hostname())
 
-	if hostname == strings.ToLower(r.URL.Hostname()) {
+	if hostname == requestHostname {
 		return "", "", ""
 	}
 

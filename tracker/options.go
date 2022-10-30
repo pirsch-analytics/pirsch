@@ -11,6 +11,7 @@ import (
 // Options are optional parameters for page views and events.
 type Options struct {
 	URL          string
+	Hostname     string
 	Path         string
 	Title        string
 	Referrer     string
@@ -26,6 +27,8 @@ func (options *Options) validate(r *http.Request) {
 	u, err := url.ParseRequestURI(options.URL)
 
 	if err == nil {
+		options.Hostname = strings.ToLower(u.Hostname())
+
 		if options.Path != "" {
 			// change path and re-assemble URL
 			u.Path = options.Path
@@ -49,7 +52,7 @@ func OptionsFromRequest(r *http.Request) Options {
 	return Options{
 		URL:          getURLQueryParam(query.Get("url")),
 		Title:        strings.TrimSpace(query.Get("t")),
-		Referrer:     getURLQueryParam(query.Get("ref")),
+		Referrer:     strings.TrimSpace(query.Get("ref")),
 		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
 		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
 	}

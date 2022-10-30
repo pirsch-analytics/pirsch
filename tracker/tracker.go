@@ -356,8 +356,8 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	var timeOnPage uint32
 	var cancelSession *model.Session
 
-	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer) {
-		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options.Path, options.Title, options.Referrer, options.ScreenWidth, options.ScreenHeight)
+	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
+		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
 		if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
@@ -374,17 +374,17 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	return session, cancelSession, timeOnPage
 }
 
-func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip, path, title, ref string, screenWidth, screenHeight uint16) *model.Session {
+func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, options Options) *model.Session {
 	ua.OS = util.ShortenString(ua.OS, 20)
 	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
 	ua.Browser = util.ShortenString(ua.Browser, 20)
 	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
 	lang := util.ShortenString(tracker.getLanguage(r), 10)
-	ref, referrerName, referrerIcon := referrer.Get(r, ref)
+	ref, referrerName, referrerIcon := referrer.Get(r, options.Referrer, options.Hostname)
 	ref = util.ShortenString(ref, 200)
 	referrerName = util.ShortenString(referrerName, 200)
 	referrerIcon = util.ShortenString(referrerIcon, 2000)
-	screenClass := tracker.getScreenClass(screenWidth)
+	screenClass := tracker.getScreenClass(options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
 	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
@@ -397,11 +397,6 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		countryCode, city = tracker.config.GeoDB.CountryCodeAndCity(ip)
 	}
 
-	if screenWidth <= 0 || screenHeight <= 0 {
-		screenWidth = 0
-		screenHeight = 0
-	}
-
 	return &model.Session{
 		Sign:           1,
 		ClientID:       clientID,
@@ -409,12 +404,12 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		SessionID:      util.RandUint32(),
 		Time:           now,
 		Start:          now,
-		EntryPath:      path,
-		ExitPath:       path,
+		EntryPath:      options.Path,
+		ExitPath:       options.Path,
 		PageViews:      1,
 		IsBounce:       true,
-		EntryTitle:     title,
-		ExitTitle:      title,
+		EntryTitle:     options.Title,
+		ExitTitle:      options.Title,
 		Language:       lang,
 		CountryCode:    countryCode,
 		City:           city,
@@ -427,8 +422,8 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		BrowserVersion: ua.BrowserVersion,
 		Desktop:        ua.IsDesktop(),
 		Mobile:         ua.IsMobile(),
-		ScreenWidth:    screenWidth,
-		ScreenHeight:   screenHeight,
+		ScreenWidth:    options.ScreenWidth,
+		ScreenHeight:   options.ScreenHeight,
 		ScreenClass:    screenClass,
 		UTMSource:      utmSource,
 		UTMMedium:      utmMedium,
@@ -501,12 +496,10 @@ func (tracker *Tracker) getScreenClass(width uint16) string {
 	return "XS"
 }
 
-func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref string) bool {
-	ref, _, _ = referrer.Get(r, ref)
+func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref, hostname string) bool {
+	ref, _, _ = referrer.Get(r, ref, hostname)
 
-	// FIXME
 	if ref != "" && ref != session.Referrer {
-		log.Println("REFERRER CHANGED", ref, session.Referrer)
 		return true
 	}
 

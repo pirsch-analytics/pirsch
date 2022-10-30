@@ -702,14 +702,14 @@ func TestTracker_referrerOrCampaignChanged(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Referer", "https://referrer.com")
 	s := &model.Session{Referrer: "https://referrer.com"}
-	assert.False(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	assert.False(t, tracker.referrerOrCampaignChanged(req, s, "", ""))
 	s.Referrer = ""
-	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, "", ""))
 	s.Referrer = "https://referrer.com"
 	req = httptest.NewRequest(http.MethodGet, "/test?ref=https://different.com", nil)
-	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, "", ""))
 	req = httptest.NewRequest(http.MethodGet, "/test?utm_source=Referrer", nil)
-	assert.True(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	assert.True(t, tracker.referrerOrCampaignChanged(req, s, "", ""))
 	s.UTMSource = "Referrer"
-	assert.False(t, tracker.referrerOrCampaignChanged(req, s, ""))
+	assert.False(t, tracker.referrerOrCampaignChanged(req, s, "", ""))
 }
