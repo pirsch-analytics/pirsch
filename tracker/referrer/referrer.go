@@ -44,7 +44,7 @@ func Ignore(r *http.Request) bool {
 }
 
 // Get returns the referrer for given request.
-func Get(r *http.Request, ref string, domainBlacklist []string) (string, string, string) {
+func Get(r *http.Request, ref string) (string, string, string) {
 	referrer := ""
 
 	if ref != "" {
@@ -70,18 +70,18 @@ func Get(r *http.Request, ref string, domainBlacklist []string) (string, string,
 		}
 
 		// accept non-url referrers (from utm_source for example)
-		if !containsString(domainBlacklist, referrer) {
-			return "", strings.TrimSpace(referrer), ""
-		}
+		return "", strings.TrimSpace(referrer), ""
+	}
 
+	hostname := strings.ToLower(u.Hostname())
+
+	if hostname == strings.ToLower(r.URL.Hostname()) {
 		return "", "", ""
 	}
 
 	if u.Path == "/" {
 		u.Path = ""
 	}
-
-	hostname := strings.ToLower(u.Hostname())
 
 	if isIP(hostname) {
 		return "", "", ""
@@ -92,12 +92,6 @@ func Get(r *http.Request, ref string, domainBlacklist []string) (string, string,
 	if name == "" {
 		// try again without path
 		name = groups[hostname]
-	}
-
-	hostname = stripSubdomain(hostname)
-
-	if containsString(domainBlacklist, hostname) {
-		return "", "", ""
 	}
 
 	if name == "" {

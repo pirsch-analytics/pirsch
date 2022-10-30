@@ -380,7 +380,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	ua.Browser = util.ShortenString(ua.Browser, 20)
 	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
 	lang := util.ShortenString(tracker.getLanguage(r), 10)
-	ref, referrerName, referrerIcon := referrer.Get(r, ref, tracker.config.ReferrerDomainBlacklist)
+	ref, referrerName, referrerIcon := referrer.Get(r, ref)
 	ref = util.ShortenString(ref, 200)
 	referrerName = util.ShortenString(referrerName, 200)
 	referrerIcon = util.ShortenString(referrerIcon, 2000)
@@ -502,9 +502,11 @@ func (tracker *Tracker) getScreenClass(width uint16) string {
 }
 
 func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref string) bool {
-	ref, _, _ = referrer.Get(r, ref, tracker.config.ReferrerDomainBlacklist)
+	ref, _, _ = referrer.Get(r, ref)
 
+	// FIXME
 	if ref != "" && ref != session.Referrer {
+		log.Println("REFERRER CHANGED", ref, session.Referrer)
 		return true
 	}
 

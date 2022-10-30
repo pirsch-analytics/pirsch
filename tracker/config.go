@@ -22,21 +22,20 @@ const (
 
 // Config is the configuration for the Tracker.
 type Config struct {
-	Store                   db.Store
-	Salt                    string
-	FingerprintKey0         uint64
-	FingerprintKey1         uint64
-	Worker                  int
-	WorkerBufferSize        int
-	WorkerTimeout           time.Duration
-	ReferrerDomainBlacklist []string
-	SessionCache            session.Cache
-	HeaderParser            []ip.HeaderParser
-	AllowedProxySubnets     []net.IPNet
-	MinDelay                int64
-	IsBotThreshold          uint8
-	GeoDB                   *geodb.GeoDB
-	Logger                  *log.Logger
+	Store               db.Store
+	Salt                string
+	FingerprintKey0     uint64
+	FingerprintKey1     uint64
+	Worker              int
+	WorkerBufferSize    int
+	WorkerTimeout       time.Duration
+	SessionCache        session.Cache
+	HeaderParser        []ip.HeaderParser
+	AllowedProxySubnets []net.IPNet
+	MinDelay            int64
+	IsBotThreshold      uint8
+	GeoDB               *geodb.GeoDB
+	Logger              *log.Logger
 }
 
 func (config *Config) validate() {

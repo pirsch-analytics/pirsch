@@ -8,45 +8,35 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	input := []struct {
-		referrer  string
-		blacklist []string
-	}{
-		{"http://boring.old/domain", nil},
-		{"http://boring.old/domain/", nil},
-		{"https://with.subdomain.com/", nil},
-		{"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42#anchor", nil},
-		{"http://boring.old/domain", []string{"boring.old"}},
-		{"https://with.subdomain.com/", []string{"boring.old"}},
-		{"https://sub.boring.old/domain", []string{"boring.old"}},
-		{"https://sub.boring.old/domain", []string{"boring.old"}},
-		{"https://example.com/", nil},
-		{"https://example.com", nil},
-		{"ReferrerName", nil},
-		{"  ", nil},
-		{"https://www.pirsch.io/", []string{"pirsch.io"}},
-		{"https://www.pirsch.io/", []string{"pirsch.io", "www.pirsch.io"}},
-		{"https://www.pirsch.io/", []string{"pirsch.io"}},
-		{"pirsch.io", []string{"pirsch.io"}},
-		{"49.12.18.161", nil},
-		{"49.12.18.161/", nil},
-		{"http://49.12.18.161/", nil},
-		{"168.119.249.160:8080", nil},
-		{"168.119.249.160:8080/signup", nil},
-		{"https://168.119.249.160:8080", nil},
-		{"https://168.119.249.160:8080/signup", nil},
-		{"https://example.com", nil},
-		{"https://example.com/", nil},
-		{"sub.example.com/with/path/", nil},
-		{"http://sub.example.com/with/path/", nil},
-		{"https://www.google.com", nil},
-		{"https://www.google.bf", nil},
-		{"https://google.com/", nil},
-		{"https://google.bf", nil},
-		{"https://www.google.pl/products", nil},
-		{"https://t.co/asdf", nil},
-		{"https://t.co", nil},
-		{"HTTPS://T.CO", nil},
+	input := []string{
+		"http://boring.old/domain",
+		"http://boring.old/domain/",
+		"https://with.subdomain.com/",
+		"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42#anchor",
+		"https://example.com/",
+		"https://example.com",
+		"ReferrerName",
+		"  ",
+		"pirsch.io",
+		"49.12.18.161",
+		"49.12.18.161/",
+		"http://49.12.18.161/",
+		"168.119.249.160:8080",
+		"168.119.249.160:8080/signup",
+		"https://168.119.249.160:8080",
+		"https://168.119.249.160:8080/signup",
+		"https://example.com",
+		"https://example.com/",
+		"sub.example.com/with/path/",
+		"http://sub.example.com/with/path/",
+		"https://www.google.com",
+		"https://www.google.bf",
+		"https://google.com/",
+		"https://google.bf",
+		"https://www.google.pl/products",
+		"https://t.co/asdf",
+		"https://t.co",
+		"HTTPS://T.CO",
 	}
 	expected := []struct {
 		referrer string
@@ -54,20 +44,13 @@ func TestGet(t *testing.T) {
 	}{
 		{"http://boring.old/domain", "boring.old"},
 		{"http://boring.old/domain/", "boring.old"}, // trailing slashes only matter for non-root domain URLs
-		{"https://with.subdomain.com", "subdomain.com"},
-		{"https://with.multiple.subdomains.com/and/a/path", "subdomains.com"},
-		{"", ""},
-		{"https://with.subdomain.com", "subdomain.com"},
-		{"", ""},
-		{"", ""},
+		{"https://with.subdomain.com", "with.subdomain.com"},
+		{"https://with.multiple.subdomains.com/and/a/path", "with.multiple.subdomains.com"},
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
 		{"", "ReferrerName"},
 		{"", ""},
-		{"", ""},
-		{"", ""},
-		{"", ""},
-		{"", ""},
+		{"", "pirsch.io"},
 		{"", ""},
 		{"", ""},
 		{"", ""},
@@ -78,7 +61,7 @@ func TestGet(t *testing.T) {
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
 		{"", "sub.example.com/with/path/"},
-		{"http://sub.example.com/with/path/", "example.com"},
+		{"http://sub.example.com/with/path/", "sub.example.com"},
 		{"https://www.google.com", "Google"},
 		{"https://www.google.bf", "Google"},
 		{"https://google.com", "Google"},
@@ -91,11 +74,26 @@ func TestGet(t *testing.T) {
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Add("Referer", in.referrer)
-		referrer, referrerName, _ := Get(r, "", in.blacklist)
+		r.Header.Add("Referer", in)
+		referrer, referrerName, _ := Get(r, "")
 		assert.Equal(t, expected[i].referrer, referrer)
 		assert.Equal(t, expected[i].name, referrerName)
 	}
+}
+
+func TestGetSameDomain(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
+	r.Header.Add("Referer", "https://example.com/foo/bar")
+	referrer, referrerName, referrerIcon := Get(r, "")
+	assert.Empty(t, referrer)
+	assert.Empty(t, referrerName)
+	assert.Empty(t, referrerIcon)
+	r = httptest.NewRequest(http.MethodGet, "https://example.com", nil)
+	r.Header.Add("Referer", "https://sub.example.com/foo/bar")
+	referrer, referrerName, referrerIcon = Get(r, "")
+	assert.Equal(t, "https://sub.example.com/foo/bar", referrer)
+	assert.Equal(t, "sub.example.com", referrerName)
+	assert.Empty(t, referrerIcon)
 }
 
 func TestGetFromHeaderOrQuery(t *testing.T) {
@@ -174,11 +172,11 @@ func TestStripSubdomain(t *testing.T) {
 func TestGetAndroidApp(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
-	_, name, icon := Get(r, "", nil)
+	_, name, icon := Get(r, "")
 	assert.Equal(t, "Slack", name)
 	assert.NotEmpty(t, icon)
 	r.Header.Set("Referer", androidAppPrefix+"does-not-exist")
-	ref, name, icon := Get(r, "", nil)
+	ref, name, icon := Get(r, "")
 	assert.Equal(t, androidAppPrefix+"does-not-exist", ref)
 	assert.Empty(t, name)
 	assert.Empty(t, icon)

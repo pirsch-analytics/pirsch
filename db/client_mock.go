@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/model"
+	"sort"
 	"sync"
 	"time"
 )
@@ -33,6 +34,13 @@ func (client *ClientMock) GetPageViews() []model.PageView {
 	defer client.m.Unlock()
 	data := make([]model.PageView, len(client.pageViews))
 	copy(data, client.pageViews)
+	sort.Slice(data, func(i, j int) bool {
+		if data[i].Time.Before(data[j].Time) {
+			return true
+		}
+
+		return false
+	})
 	return data
 }
 
@@ -42,6 +50,13 @@ func (client *ClientMock) GetSessions() []model.Session {
 	defer client.m.Unlock()
 	data := make([]model.Session, len(client.sessions))
 	copy(data, client.sessions)
+	sort.Slice(data, func(i, j int) bool {
+		if data[i].Time.Before(data[j].Time) {
+			return true
+		}
+
+		return false
+	})
 	return data
 }
 
@@ -51,6 +66,13 @@ func (client *ClientMock) GetEvents() []model.Event {
 	defer client.m.Unlock()
 	data := make([]model.Event, len(client.events))
 	copy(data, client.events)
+	sort.Slice(data, func(i, j int) bool {
+		if data[i].Time.Before(data[j].Time) {
+			return true
+		}
+
+		return false
+	})
 	return data
 }
 
@@ -60,6 +82,13 @@ func (client *ClientMock) GetUserAgents() []model.UserAgent {
 	defer client.m.Unlock()
 	data := make([]model.UserAgent, len(client.userAgents))
 	copy(data, client.userAgents)
+	sort.Slice(data, func(i, j int) bool {
+		if data[i].Time.Before(data[j].Time) {
+			return true
+		}
+
+		return false
+	})
 	return data
 }
 

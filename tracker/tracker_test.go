@@ -21,9 +21,47 @@ const (
 	userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:105.0) Gecko/20100101 Firefox/105.0"
 )
 
-// TODO test combination of page views, events, and session updates
-// - session is being reset
-// - events shouldn't update the path
+func TestTracker(t *testing.T) {
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/foo", nil)
+	req.Header.Add("User-Agent", userAgent)
+	tracker.PageView(req, 123, Options{})
+	time.Sleep(time.Second)
+	tracker.Event(req, 123, EventOptions{Name: "test"}, Options{})
+	time.Sleep(time.Second * 2)
+	req = httptest.NewRequest(http.MethodGet, "/bar", nil)
+	req.Header.Add("User-Agent", userAgent)
+	tracker.PageView(req, 123, Options{})
+	time.Sleep(time.Second)
+	tracker.ExtendSession(req, 123, Options{})
+	tracker.Stop()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 7)
+	assert.Len(t, pageViews, 2)
+	assert.Len(t, events, 1)
+	assert.Equal(t, sessions[6].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[6].VisitorID, pageViews[1].VisitorID)
+	assert.Equal(t, sessions[6].VisitorID, events[0].VisitorID)
+	assert.Equal(t, sessions[6].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, sessions[6].SessionID, pageViews[1].SessionID)
+	assert.Equal(t, sessions[6].SessionID, events[0].SessionID)
+
+	assert.Equal(t, uint16(2), sessions[6].PageViews)
+	assert.Equal(t, "/foo", sessions[6].EntryPath)
+	assert.Equal(t, "/bar", sessions[6].ExitPath)
+	assert.Equal(t, uint32(4), sessions[6].DurationSeconds)
+
+	assert.Equal(t, "/foo", pageViews[0].Path)
+	assert.Equal(t, "/bar", pageViews[1].Path)
+
+	assert.Equal(t, "test", events[0].Name)
+	assert.Equal(t, "/foo", events[0].Path)
+}
 
 func TestTracker_PageView(t *testing.T) {
 	now := time.Now()
@@ -185,25 +223,44 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, userAgent, userAgents[0].UserAgent)
 }
 
-func TestTracker_PageViewReferrerIgnoreSubdomain(t *testing.T) {
+func TestTracker_PageViewReferrerIgnorePath(t *testing.T) {
 	client := db.NewMockClient()
 	tracker := NewTracker(Config{
-		Store:                   client,
-		WorkerTimeout:           time.Millisecond * 100,
-		ReferrerDomainBlacklist: []string{"pirsch.io"},
+		Store: client,
 	})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo", nil)
 	req.Header.Add("User-Agent", userAgent)
-	req.RemoteAddr = "81.2.69.142"
-	tracker.PageView(req, 0, Options{Referrer: "https://pirsch.io/"})
-	tracker.PageView(req, 0, Options{Referrer: "https://www.pirsch.io/"})
+	req.Header.Add("Referer", "https://google.com")
+	tracker.PageView(req, 0, Options{})
+	req = httptest.NewRequest(http.MethodGet, "https://example.com/bar", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Add("Referer", "https://example.com/foo")
+	tracker.PageView(req, 0, Options{})
 	tracker.Stop()
 	sessions := client.GetSessions()
 	assert.Len(t, sessions, 3)
+	assert.Equal(t, "https://google.com", sessions[0].Referrer)
+	assert.Equal(t, "https://google.com", sessions[1].Referrer)
+	assert.Equal(t, "https://google.com", sessions[2].Referrer)
+}
 
-	for _, s := range sessions {
-		assert.Empty(t, s.Referrer)
-	}
+func TestTracker_PageViewReferrerOverwriteIgnorePath(t *testing.T) {
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo", nil)
+	req.Header.Add("User-Agent", userAgent)
+	tracker.PageView(req, 0, Options{Referrer: "https://google.com"})
+	req = httptest.NewRequest(http.MethodGet, "https://example.com/bar", nil)
+	req.Header.Add("User-Agent", userAgent)
+	tracker.PageView(req, 0, Options{Referrer: "https://example.com/foo"})
+	tracker.Stop()
+	sessions := client.GetSessions()
+	assert.Len(t, sessions, 3)
+	assert.Equal(t, "https://google.com", sessions[0].Referrer)
+	assert.Equal(t, "https://google.com", sessions[1].Referrer)
+	assert.Equal(t, "https://google.com", sessions[2].Referrer)
 }
 
 func TestTracker_PageViewIsBot(t *testing.T) {
