@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4"
+	"strconv"
 	"strings"
 )
 
@@ -15,17 +16,23 @@ const (
 
 type table string
 
+type where struct {
+	eqContains []string
+	notEq      []string
+}
+
 type query struct {
 	filter   *Filter
 	fields   []Field
 	from     table
 	join     *query
 	leftJoin *query
-	where    []Field
 	groupBy  []Field
 	orderBy  []Field
-	q        strings.Builder
-	args     []any
+
+	where []where
+	q     strings.Builder
+	args  []any
 }
 
 func (query *query) query() (string, []any) {
@@ -115,7 +122,256 @@ func (query *query) whereTime() {
 }
 
 func (query *query) whereFields() {
-	// TODO
+	query.whereField("path", query.filter.Path)
+	query.whereField("entry_path", query.filter.EntryPath)
+	query.whereField("exit_path", query.filter.ExitPath)
+	query.whereField("language", query.filter.Language)
+	query.whereField("country_code", query.filter.Country)
+	query.whereField("city", query.filter.City)
+	query.whereField("referrer", query.filter.Referrer)
+	query.whereField("referrer_name", query.filter.ReferrerName)
+	query.whereField("os", query.filter.OS)
+	query.whereField("os_version", query.filter.OSVersion)
+	query.whereField("browser", query.filter.Browser)
+	query.whereField("browser_version", query.filter.BrowserVersion)
+	query.whereField("screen_class", query.filter.ScreenClass)
+	query.whereFieldUInt16("screen_width", query.filter.ScreenWidth)
+	query.whereFieldUInt16("screen_height", query.filter.ScreenHeight)
+	query.whereField("utm_source", query.filter.UTMSource)
+	query.whereField("utm_medium", query.filter.UTMMedium)
+	query.whereField("utm_campaign", query.filter.UTMCampaign)
+	query.whereField("utm_content", query.filter.UTMContent)
+	query.whereField("utm_term", query.filter.UTMTerm)
+	query.whereField("event_name", query.filter.EventName)
+	query.whereField("event_meta_keys", query.filter.EventMetaKey)
+	query.whereFieldPlatform()
+	query.whereFieldPathPattern()
+	query.whereFieldMeta()
+
+	for i := range query.filter.Search {
+		query.whereFieldSearch(query.filter.Search[i].Field.Name, query.filter.Search[i].Input)
+	}
+
+	if len(query.where) > 0 {
+		query.q.WriteString("AND ")
+		parts := make([]string, 0, len(query.where))
+
+		for _, fields := range query.where {
+			if len(fields.eqContains) > 1 {
+				parts = append(parts, fmt.Sprintf("(%s) ", strings.Join(fields.eqContains, "OR ")))
+			} else if len(fields.eqContains) == 1 {
+				parts = append(parts, fields.eqContains[0])
+			}
+
+			if len(fields.notEq) > 1 {
+				parts = append(parts, strings.Join(fields.notEq, " AND "))
+			} else if len(fields.notEq) == 1 {
+				parts = append(parts, fields.notEq[0])
+			}
+		}
+
+		query.q.WriteString(strings.Join(parts, "AND "))
+	}
+}
+
+func (query *query) whereField(field string, value []string) {
+	if len(value) != 0 {
+		var group where
+		eqContainsArgs := make([]any, 0, len(value))
+		notEqArgs := make([]any, 0, len(value))
+
+		for _, v := range value {
+			comparator := "%s = ? "
+			not := strings.HasPrefix(v, "!")
+
+			if field == "event_meta_keys" {
+				if not {
+					v = v[1:]
+					comparator = "!has(%s, ?) "
+				} else {
+					comparator = "has(%s, ?) "
+				}
+			} else if not {
+				v = v[1:]
+				comparator = "%s != ? "
+			} else if strings.HasPrefix(v, "~") {
+				if field == FieldLanguage.Name || field == FieldCountry.Name {
+					v = v[1:]
+					comparator = "has(splitByChar(',', ?), %s) = 1 "
+				} else {
+					v = fmt.Sprintf("%%%s%%", v[1:])
+					comparator = "ilike(%s, ?) = 1 "
+				}
+			}
+
+			if not {
+				notEqArgs = append(notEqArgs, query.nullValue(v))
+				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
+			} else {
+				eqContainsArgs = append(eqContainsArgs, query.nullValue(v))
+				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
+			}
+		}
+
+		for _, v := range eqContainsArgs {
+			query.args = append(query.args, v)
+		}
+
+		for _, v := range notEqArgs {
+			query.args = append(query.args, v)
+		}
+
+		query.where = append(query.where, group)
+	}
+}
+
+func (query *query) whereFieldSearch(field, value string) {
+	if value != "" {
+		comparator := ""
+
+		if field == FieldLanguage.Name || field == FieldCountry.Name {
+			comparator = "has(splitByChar(',', ?), %s) = 1 "
+
+			if strings.HasPrefix(value, "!") {
+				value = value[1:]
+				comparator = "has(splitByChar(',', ?), %s) = 0 "
+			}
+
+			query.args = append(query.args, value)
+		} else {
+			comparator = "ilike(%s, ?) = 1 "
+
+			if strings.HasPrefix(value, "!") {
+				value = value[1:]
+				comparator = "ilike(%s, ?) = 0 "
+			}
+
+			query.args = append(query.args, fmt.Sprintf("%%%s%%", value))
+		}
+
+		// use eqContains because it doesn't matter for a single field
+		query.where = append(query.where, where{eqContains: []string{fmt.Sprintf(comparator, field)}})
+	}
+}
+
+func (query *query) whereFieldUInt16(field string, value []string) {
+	if len(value) != 0 {
+		var group where
+		eqContainsArgs := make([]any, 0, len(value))
+		notEqArgs := make([]any, 0, len(value))
+
+		for _, v := range value {
+			comparator := "%s = ? "
+			not := strings.HasPrefix(v, "!")
+
+			if not {
+				v = v[1:]
+				comparator = "%s != ? "
+			}
+
+			var valueInt uint16
+
+			if strings.ToLower(v) != "null" {
+				i, err := strconv.ParseUint(v, 10, 16)
+
+				if err == nil {
+					valueInt = uint16(i)
+				}
+			}
+
+			if not {
+				notEqArgs = append(notEqArgs, valueInt)
+				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
+			} else {
+				eqContainsArgs = append(eqContainsArgs, valueInt)
+				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
+			}
+		}
+
+		for _, v := range eqContainsArgs {
+			query.args = append(query.args, v)
+		}
+
+		for _, v := range notEqArgs {
+			query.args = append(query.args, v)
+		}
+
+		query.where = append(query.where, group)
+	}
+}
+
+func (query *query) whereFieldMeta() {
+	if len(query.filter.EventMeta) != 0 {
+		var group where
+
+		for k, v := range query.filter.EventMeta {
+			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+
+			if strings.HasPrefix(v, "!") {
+				v = v[1:]
+				comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+			} else if strings.HasPrefix(v, "~") {
+				v = fmt.Sprintf("%%%s%%", v[1:])
+				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, '%s')], ?) = 1 "
+			}
+
+			// use notEq because they will all be joined using AND
+			query.args = append(query.args, query.nullValue(v))
+			group.notEq = append(group.notEq, fmt.Sprintf(comparator, k))
+		}
+
+		query.where = append(query.where, group)
+	}
+}
+
+func (query *query) whereFieldPlatform() {
+	if query.filter.Platform != "" {
+		if strings.HasPrefix(query.filter.Platform, "!") {
+			platform := query.filter.Platform[1:]
+
+			if platform == pirsch.PlatformDesktop {
+				query.where = append(query.where, where{notEq: []string{"desktop != 1 "}})
+			} else if platform == pirsch.PlatformMobile {
+				query.where = append(query.where, where{notEq: []string{"mobile != 1 "}})
+			} else {
+				query.where = append(query.where, where{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
+			}
+		} else {
+			if query.filter.Platform == pirsch.PlatformDesktop {
+				query.where = append(query.where, where{eqContains: []string{"desktop = 1 "}})
+			} else if query.filter.Platform == pirsch.PlatformMobile {
+				query.where = append(query.where, where{eqContains: []string{"mobile = 1 "}})
+			} else {
+				query.where = append(query.where, where{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
+			}
+		}
+	}
+}
+
+func (query *query) whereFieldPathPattern() {
+	if len(query.filter.PathPattern) != 0 {
+		var group where
+
+		for _, pattern := range query.filter.PathPattern {
+			if strings.HasPrefix(pattern, "!") {
+				query.args = append(query.args, pattern[1:])
+				group.notEq = append(group.notEq, `match("path", ?) = 0 `)
+			} else {
+				query.args = append(query.args, pattern)
+				group.eqContains = append(group.eqContains, `match("path", ?) = 1 `)
+			}
+		}
+
+		query.where = append(query.where, group)
+	}
+}
+
+func (query *query) nullValue(value string) string {
+	if strings.ToLower(value) == "null" {
+		return ""
+	}
+
+	return value
 }
 
 func (query *query) groupByFields() {

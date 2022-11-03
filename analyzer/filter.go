@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type filterGroup struct {
-	eqContains []string
-	notEq      []string
-}
-
 // Filter are all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
 // To compare to none/unknown/empty, set the value to "null" (case-insensitive).
@@ -266,6 +261,10 @@ func (filter *Filter) removeDuplicates(in []string) []string {
 	}
 
 	return list
+}
+
+func (filter *Filter) toDate(date time.Time) time.Time {
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
@@ -575,7 +574,7 @@ func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
 func (filter *Filter) queryFields() ([]any, string) {
 	n := 20 // should be enough in most cases
 	args := make([]any, 0, n)
-	queryFields := make([]filterGroup, 0, n)
+	queryFields := make([]where, 0, n)
 	filter.appendQuery(&queryFields, &args, "path", filter.Path)
 	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
 	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
@@ -625,33 +624,33 @@ func (filter *Filter) queryFields() ([]any, string) {
 	return args, strings.Join(parts, "AND ")
 }
 
-func (filter *Filter) queryPlatform(queryFields *[]filterGroup) {
+func (filter *Filter) queryPlatform(queryFields *[]where) {
 	if filter.Platform != "" {
 		if strings.HasPrefix(filter.Platform, "!") {
 			platform := filter.Platform[1:]
 
 			if platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"desktop != 1 "}})
+				*queryFields = append(*queryFields, where{notEq: []string{"desktop != 1 "}})
 			} else if platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"mobile != 1 "}})
+				*queryFields = append(*queryFields, where{notEq: []string{"mobile != 1 "}})
 			} else {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
+				*queryFields = append(*queryFields, where{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
 			}
 		} else {
 			if filter.Platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 1 "}})
+				*queryFields = append(*queryFields, where{eqContains: []string{"desktop = 1 "}})
 			} else if filter.Platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"mobile = 1 "}})
+				*queryFields = append(*queryFields, where{eqContains: []string{"mobile = 1 "}})
 			} else {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
+				*queryFields = append(*queryFields, where{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
 			}
 		}
 	}
 }
 
-func (filter *Filter) queryPathPattern(queryFields *[]filterGroup, args *[]any) {
+func (filter *Filter) queryPathPattern(queryFields *[]where, args *[]any) {
 	if len(filter.PathPattern) != 0 {
-		var group filterGroup
+		var group where
 
 		for _, pattern := range filter.PathPattern {
 			if strings.HasPrefix(pattern, "!") {
@@ -795,9 +794,9 @@ func (filter *Filter) query(filterBots bool) ([]any, string) {
 	return args, query
 }
 
-func (filter *Filter) appendQuery(queryFields *[]filterGroup, args *[]any, field string, value []string) {
+func (filter *Filter) appendQuery(queryFields *[]where, args *[]any, field string, value []string) {
 	if len(value) != 0 {
-		var group filterGroup
+		var group where
 		eqContainsArgs := make([]any, 0, len(value))
 		notEqArgs := make([]any, 0, len(value))
 
@@ -846,7 +845,7 @@ func (filter *Filter) appendQuery(queryFields *[]filterGroup, args *[]any, field
 	}
 }
 
-func (filter *Filter) appendQuerySearch(queryFields *[]filterGroup, args *[]any, field, value string) {
+func (filter *Filter) appendQuerySearch(queryFields *[]where, args *[]any, field, value string) {
 	if value != "" {
 		comparator := ""
 
@@ -871,13 +870,13 @@ func (filter *Filter) appendQuerySearch(queryFields *[]filterGroup, args *[]any,
 		}
 
 		// use eqContains because it doesn't matter for a single field
-		*queryFields = append(*queryFields, filterGroup{eqContains: []string{fmt.Sprintf(comparator, field)}})
+		*queryFields = append(*queryFields, where{eqContains: []string{fmt.Sprintf(comparator, field)}})
 	}
 }
 
-func (filter *Filter) appendQueryUInt16(queryFields *[]filterGroup, args *[]any, field string, value []string) {
+func (filter *Filter) appendQueryUInt16(queryFields *[]where, args *[]any, field string, value []string) {
 	if len(value) != 0 {
-		var group filterGroup
+		var group where
 		eqContainsArgs := make([]any, 0, len(value))
 		notEqArgs := make([]any, 0, len(value))
 
@@ -921,9 +920,9 @@ func (filter *Filter) appendQueryUInt16(queryFields *[]filterGroup, args *[]any,
 	}
 }
 
-func (filter *Filter) appendQueryMeta(queryFields *[]filterGroup, args *[]any, kv map[string]string) {
+func (filter *Filter) appendQueryMeta(queryFields *[]where, args *[]any, kv map[string]string) {
 	if len(kv) != 0 {
-		var group filterGroup
+		var group where
 
 		for k, v := range kv {
 			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
@@ -951,16 +950,4 @@ func (filter *Filter) nullValue(value string) string {
 	}
 
 	return value
-}
-
-func (filter *Filter) toDate(date time.Time) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-}
-
-func (filter *Filter) boolean(b bool) int8 {
-	if b {
-		return 1
-	}
-
-	return 0
 }
