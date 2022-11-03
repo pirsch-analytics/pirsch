@@ -18,14 +18,14 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Equal(t, time.UTC, filter.Timezone)
 	assert.Zero(t, filter.From)
 	assert.Zero(t, filter.To)
-	filter = &Filter{From: pastDay(2), To: pastDay(5), Limit: 42}
+	filter = &Filter{From: util.PastDay(2), To: util.PastDay(5), Limit: 42}
 	filter.validate()
-	assert.Equal(t, pastDay(5), filter.From)
-	assert.Equal(t, pastDay(2), filter.To)
+	assert.Equal(t, util.PastDay(5), filter.From)
+	assert.Equal(t, util.PastDay(2), filter.To)
 	assert.Equal(t, 42, filter.Limit)
-	filter = &Filter{From: pastDay(2), To: util.Today().Add(time.Hour * 24 * 5)}
+	filter = &Filter{From: util.PastDay(2), To: util.Today().Add(time.Hour * 24 * 5)}
 	filter.validate()
-	assert.Equal(t, pastDay(2), filter.From)
+	assert.Equal(t, util.PastDay(2), filter.From)
 	assert.Equal(t, util.Today().Add(time.Hour*24), filter.To)
 	filter = &Filter{Limit: -42, Path: []string{"/path"}, PathPattern: []string{"pattern"}}
 	filter.validate()
@@ -210,15 +210,15 @@ func TestFilter_Table(t *testing.T) {
 
 func TestFilter_QueryTime(t *testing.T) {
 	filter := NewFilter(pirsch.NullClient)
-	filter.From = pastDay(5)
-	filter.To = pastDay(2)
+	filter.From = util.PastDay(5)
+	filter.To = util.PastDay(2)
 	args, query := filter.queryTime(false)
 	assert.Len(t, args, 3)
 	assert.Equal(t, pirsch.NullClient, args[0])
 	assert.Equal(t, filter.From.Format(dateFormat), args[1])
 	assert.Equal(t, filter.To.Format(dateFormat), args[2])
 	assert.Equal(t, "client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ", query)
-	filter.From = pastDay(2)
+	filter.From = util.PastDay(2)
 	filter.validate()
 	args, query = filter.queryTime(false)
 	assert.Len(t, args, 2)
@@ -581,8 +581,8 @@ func TestFilter_WithFill(t *testing.T) {
 	args, query := filter.withFill()
 	assert.Len(t, args, 0)
 	assert.Empty(t, query)
-	filter.From = pastDay(10)
-	filter.To = pastDay(5)
+	filter.From = util.PastDay(10)
+	filter.To = util.PastDay(5)
 	args, query = filter.withFill()
 	assert.Len(t, args, 2)
 	assert.Equal(t, filter.From.Format(dateFormat), args[0])
@@ -636,7 +636,7 @@ func TestFilter_Fields(t *testing.T) {
 
 func TestFilter_JoinOrderBy(t *testing.T) {
 	filter := NewFilter(pirsch.NullClient)
-	filter.From = pastDay(1)
+	filter.From = util.PastDay(1)
 	filter.To = util.Today()
 	args := make([]any, 0)
 	query := filter.joinOrderBy(&args, []Field{
@@ -662,9 +662,4 @@ func TestFilter_JoinOrderBy(t *testing.T) {
 	})
 	assert.Len(t, args, 0)
 	assert.Equal(t, "path DESC,visitors ASC", query)
-}
-
-func pastDay(n int) time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month(), now.Day()-n, 0, 0, 0, 0, time.UTC)
 }

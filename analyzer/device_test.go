@@ -38,7 +38,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	platform, err := analyzer.Device.Platform(&Filter{From: pastDay(5), To: util.Today()})
+	platform, err := analyzer.Device.Platform(&Filter{From: util.PastDay(5), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, platform.PlatformDesktop)
 	assert.Equal(t, 2, platform.PlatformMobile)

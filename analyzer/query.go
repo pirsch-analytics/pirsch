@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	sessions  = "session"
-	pageViews = "page_view"
-	events    = "events"
+	sessions   = "session"
+	pageViews  = "page_view"
+	events     = "events"
+	dateFormat = "2006-01-02"
 )
 
 type table string
@@ -20,6 +21,7 @@ type query struct {
 	from     table
 	join     *query
 	leftJoin *query
+	where    []Field
 	groupBy  []Field
 	orderBy  []Field
 	q        strings.Builder
@@ -31,7 +33,8 @@ func (query *query) query() (string, []any) {
 	query.selectFields()
 	query.fromTable()
 	query.joinQuery()
-	query.where()
+	query.whereTime()
+	query.whereFields()
 	query.groupByFields()
 	query.having()
 	query.orderByFields()
@@ -80,7 +83,38 @@ func (query *query) joinQuery() {
 	// TODO
 }
 
-func (query *query) where() {
+func (query *query) whereTime() {
+	query.args = append(query.args, query.filter.ClientID)
+	query.q.WriteString("WHERE client_id = ? ")
+	tz := query.filter.Timezone.String()
+
+	if !query.filter.From.IsZero() && !query.filter.To.IsZero() && query.filter.From.Equal(query.filter.To) {
+		query.args = append(query.args, query.filter.From.Format(dateFormat))
+		query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
+	} else {
+		if !query.filter.From.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.From)
+				query.q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.From.Format(dateFormat))
+				query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+			}
+		}
+
+		if !query.filter.To.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.To)
+				query.q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.To.Format(dateFormat))
+				query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+			}
+		}
+	}
+}
+
+func (query *query) whereFields() {
 	// TODO
 }
 

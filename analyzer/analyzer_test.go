@@ -19,7 +19,7 @@ func TestAnalyzer_NoData(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByPeriod(nil)
 	assert.NoError(t, err)
-	_, err = analyzer.Visitors.Growth(&Filter{From: pastDay(7), To: util.Today()})
+	_, err = analyzer.Visitors.Growth(&Filter{From: util.PastDay(7), To: util.Today()})
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByHour(nil)
 	assert.NoError(t, err)
@@ -72,8 +72,8 @@ func getMaxFilter(eventName string) *Filter {
 
 	return &Filter{
 		ClientID:       42,
-		From:           pastDay(5),
-		To:             pastDay(2),
+		From:           util.PastDay(5),
+		To:             util.PastDay(2),
 		Path:           []string{"/path"},
 		EntryPath:      []string{"/entry"},
 		ExitPath:       []string{"/exit"},

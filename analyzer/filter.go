@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-const (
-	dateFormat = "2006-01-02"
-)
-
 type filterGroup struct {
 	eqContains []string
 	notEq      []string
