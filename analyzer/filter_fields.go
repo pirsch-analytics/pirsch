@@ -1,6 +1,20 @@
 package analyzer
 
 var (
+	// FieldVisitorID is a query result column.
+	FieldVisitorID = Field{
+		querySessions:  "visitor_id",
+		queryPageViews: "visitor_id",
+		Name:           "visitor_id",
+	}
+
+	// FieldSessionID is a query result column.
+	FieldSessionID = Field{
+		querySessions:  "session_id",
+		queryPageViews: "session_id",
+		Name:           "session_id",
+	}
+
 	// FieldCount is a query result column.
 	FieldCount = Field{
 		querySessions:  "count(*)",

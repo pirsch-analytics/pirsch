@@ -98,14 +98,14 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 
 // Total returns the total visitor count, session count, bounce rate, and views.
 func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error) {
-	args, query := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
 		FieldVisitors,
 		FieldSessions,
 		FieldViews,
 		FieldBounces,
 		FieldBounceRate,
 	}, nil, nil)
-	stats, err := visitors.store.GetTotalVisitorStats(query, args...)
+	stats, err := visitors.store.GetTotalVisitorStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 // ByPeriod returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
 func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldDay,
 		FieldVisitors,
 		FieldSessions,
@@ -130,7 +130,7 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 		FieldDay,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorStats(filter.Period, query, args...)
+	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -157,8 +157,8 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		FieldBounces,
 		FieldBounceRate,
 	}
-	args, query := filter.buildQuery(fields, nil, nil)
-	current, err := visitors.store.GetGrowthStats(query, args...)
+	q, args := filter.buildQuery(fields, nil, nil)
+	current, err := visitors.store.GetGrowthStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -200,8 +200,8 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		}
 	}
 
-	args, query = filter.buildQuery(fields, nil, nil)
-	previous, err := visitors.store.GetGrowthStats(query, args...)
+	q, args = filter.buildQuery(fields, nil, nil)
+	previous, err := visitors.store.GetGrowthStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 // ByHour returns the visitor count grouped by time of day.
 func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, error) {
-	args, query := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
 		FieldHour,
 		FieldVisitors,
 		FieldSessions,
@@ -245,7 +245,7 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 		FieldHour,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorHourStats(query, args...)
+	stats, err := visitors.store.SelectVisitorHourStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -282,8 +282,8 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		fields = append(fields, FieldAnyReferrer)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := visitors.store.SelectReferrerStats(query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := visitors.store.SelectReferrerStats(q, args...)
 
 	if err != nil {
 		return nil, err

@@ -91,9 +91,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 
 	// no filter (from page views)
 	analyzer := NewAnalyzer(dbClient, nil)
-	args, query := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldVisitors, FieldPath})
+	q, args := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldVisitors, FieldPath})
 	var stats []model.PageStats
-	rows, err := dbClient.Query(query, args...)
+	rows, err := dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
@@ -111,9 +111,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join (from page views)
-	args, query = analyzer.getFilter(&Filter{EntryPath: []string{"/"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
-	rows, err = dbClient.Query(query, args...)
+	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
@@ -131,9 +131,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join and filter (from page views)
-	args, query = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
-	rows, err = dbClient.Query(query, args...)
+	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
@@ -147,9 +147,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 
 	// filter (from page views)
-	args, query = analyzer.getFilter(&Filter{Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
 	stats = stats[:0]
-	rows, err = dbClient.Query(query, args...)
+	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
@@ -163,9 +163,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 2, stats[0].Visitors)
 
 	// no filter (from sessions)
-	args, query = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil)
+	q, args = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil)
 	var vstats model.PageStats
-	assert.NoError(t, dbClient.QueryRow(query, args...).Scan(&vstats.Visitors, &vstats.Sessions, &vstats.Views, &vstats.Bounces, &vstats.BounceRate))
+	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.Sessions, &vstats.Views, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 2, vstats.Visitors)
 	assert.Equal(t, 2, vstats.Sessions)
 	assert.Equal(t, 6, vstats.Views)
@@ -173,8 +173,8 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 
 	// filter (from page views)
-	args, query = analyzer.getFilter(&Filter{Path: []string{"/foo"}, EntryPath: []string{"/"}}).buildQuery([]Field{FieldVisitors, FieldRelativeVisitors, FieldSessions, FieldViews, FieldRelativeViews, FieldBounces, FieldBounceRate}, nil, nil)
-	assert.NoError(t, dbClient.QueryRow(query, args...).Scan(&vstats.Visitors, &vstats.RelativeVisitors, &vstats.Sessions, &vstats.Views, &vstats.RelativeViews, &vstats.Bounces, &vstats.BounceRate))
+	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}, EntryPath: []string{"/"}}).buildQuery([]Field{FieldVisitors, FieldRelativeVisitors, FieldSessions, FieldViews, FieldRelativeViews, FieldBounces, FieldBounceRate}, nil, nil)
+	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.RelativeVisitors, &vstats.Sessions, &vstats.Views, &vstats.RelativeViews, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
 	assert.Equal(t, 2, vstats.Views)
@@ -184,9 +184,9 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 
 	// filter period
-	args, query = analyzer.getFilter(&Filter{Period: pirsch.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
+	q, args = analyzer.getFilter(&Filter{Period: pirsch.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
 	var visitors []model.VisitorStats
-	rows, err = dbClient.Query(query, args...)
+	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {

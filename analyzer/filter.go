@@ -265,8 +265,8 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
-	return []any{}, ""
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
+	return "", []any{}
 }
 
 /*func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {

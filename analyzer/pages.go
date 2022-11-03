@@ -114,8 +114,8 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		orderBy = append(orderBy, FieldEntryTitle)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectEntryStats(filter.IncludeTitle, query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectEntryStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -217,8 +217,8 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		orderBy = append(orderBy, FieldExitTitle)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectExitStats(filter.IncludeTitle, query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectExitStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -284,14 +284,14 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 		return nil, nil
 	}
 
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
 		FieldCR,
 	}, nil, []Field{
 		FieldVisitors,
 	})
-	stats, err := pages.store.GetPageConversionsStats(query, args...)
+	stats, err := pages.store.GetPageConversionsStats(q, args...)
 
 	if err != nil {
 		return nil, err

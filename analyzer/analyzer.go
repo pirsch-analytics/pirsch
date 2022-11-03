@@ -74,7 +74,7 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) ([]any, string) {
+func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (string, []any) {
 	fields := make([]Field, 0, len(attr)+2)
 	fields = append(fields, attr...)
 	fields = append(fields, FieldVisitors, FieldRelativeVisitors)

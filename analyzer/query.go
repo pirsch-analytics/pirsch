@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	sessions   = "session"
-	pageViews  = "page_view"
-	events     = "events"
+	sessions   = "session s"
+	pageViews  = "page_view pv"
+	events     = "events e"
 	dateFormat = "2006-01-02"
 )
 
@@ -87,7 +87,15 @@ func (query *query) fromTable() {
 }
 
 func (query *query) joinQuery() {
-	// TODO
+	if query.join != nil {
+		q, args := query.join.query()
+		query.args = append(query.args, args...)
+		query.q.WriteString(fmt.Sprintf("JOIN (%s) j ON j.visitor_id = pv.visitor_id AND j.session_id = pv.session_id ", q))
+	} else if query.leftJoin != nil {
+		q, args := query.join.query()
+		query.args = append(query.args, args...)
+		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) j ON j.visitor_id = pv.visitor_id AND j.session_id = pv.session_id ", q))
+	}
 }
 
 func (query *query) whereTime(filterBots bool) string {

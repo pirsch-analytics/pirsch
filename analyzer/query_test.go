@@ -59,5 +59,45 @@ func TestQuery(t *testing.T) {
 	assert.Equal(t, "%search%", args[14])
 	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[15])
 	assert.Equal(t, util.Today().Format(dateFormat), args[16])
-	assert.Equal(t, "SELECT toDate(time, 'UTC') day,country_code country_code,uniq(visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM session WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?)  AND is_bot < ? AND (path = ? OR path = ? ) AND language = ? AND country_code = ? AND country_code != ? AND ilike(referrer, ?) = 1 AND desktop = 1 AND match(\"path\", ?) = 1 AND ilike(path, ?) = 1 GROUP BY country_code HAVING sum(sign) > 0 ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 ", queryStr)
+	assert.Equal(t, "SELECT toDate(time, 'UTC') day,country_code country_code,uniq(visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM session s WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?)  AND is_bot < ? AND (path = ? OR path = ? ) AND language = ? AND country_code = ? AND country_code != ? AND ilike(referrer, ?) = 1 AND desktop = 1 AND match(\"path\", ?) = 1 AND ilike(path, ?) = 1 GROUP BY country_code HAVING sum(sign) > 0 ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 ", queryStr)
+}
+
+func TestQueryJoin(t *testing.T) {
+	filter := &Filter{
+		ClientID: 42,
+		From:     util.PastDay(7),
+		To:       util.Today(),
+	}
+	q := query{
+		filter: filter,
+		fields: []Field{
+			FieldPath,
+			FieldVisitors,
+		},
+		from: pageViews,
+		join: &query{
+			filter: filter,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			from: sessions,
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		},
+		groupBy: []Field{
+			FieldPath,
+		},
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 6)
+	assert.Equal(t, int64(42), args[0])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[1])
+	assert.Equal(t, util.Today().Format(dateFormat), args[2])
+	assert.Equal(t, int64(42), args[3])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[4])
+	assert.Equal(t, util.Today().Format(dateFormat), args[5])
+	assert.Equal(t, "SELECT path path,uniq(visitor_id) visitors FROM page_view pv JOIN (SELECT visitor_id visitor_id,session_id session_id FROM session s WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY visitor_id,session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = pv.visitor_id AND j.session_id = pv.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY path ", queryStr)
 }
