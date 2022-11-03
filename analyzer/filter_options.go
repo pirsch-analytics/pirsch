@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 )
 
@@ -75,8 +74,11 @@ func (options *FilterOptions) Languages(filter *Filter) ([]string, error) {
 }
 
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
-	filter = options.analyzer.getFilter(filter)
+	// TODO
+	return []string{}, nil
+
+	/*filter = options.analyzer.getFilter(filter)
 	args, timeFilter := filter.queryTime(false)
 	query := fmt.Sprintf(`SELECT DISTINCT %s FROM %s WHERE %s ORDER BY %s ASC`, field, table, timeFilter, field)
-	return options.store.SelectOptions(query, args...)
+	return options.store.SelectOptions(query, args...)*/
 }

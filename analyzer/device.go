@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 )
@@ -14,7 +13,10 @@ type Device struct {
 
 // Platform returns the visitor count grouped by platform.
 func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
-	filter = device.analyzer.getFilter(filter)
+	// TODO
+	return &model.PlatformStats{}, nil
+
+	/*filter = device.analyzer.getFilter(filter)
 	table := filter.table()
 	var args []any
 	query := ""
@@ -110,7 +112,7 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
 
 // Browser returns the visitor count grouped by browser.

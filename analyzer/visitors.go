@@ -2,11 +2,9 @@ package analyzer
 
 import (
 	"errors"
-	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/util"
-	"strings"
 	"time"
 )
 
@@ -24,7 +22,10 @@ type Visitors struct {
 // Active returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]model.ActiveVisitorStats, int, error) {
-	filter = visitors.analyzer.getFilter(filter)
+	// TODO
+	return []model.ActiveVisitorStats{}, 0, nil
+
+	/*filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
 	title := ""
@@ -92,7 +93,7 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 		return nil, 0, err
 	}
 
-	return stats, count, nil
+	return stats, count, nil*/
 }
 
 // Total returns the total visitor count, session count, bounce rate, and views.
@@ -292,7 +293,10 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 }
 
 func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query(true)
+	// TODO
+	return 0, nil
+
+	/*filterArgs, filterQuery := filter.query(true)
 	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
 	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
 	var query strings.Builder
@@ -324,11 +328,14 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 		return 0, err
 	}
 
-	return averageTimeSpentSeconds, nil
+	return averageTimeSpentSeconds, nil*/
 }
 
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query(false)
+	// TODO
+	return 0, nil
+
+	/*filterArgs, filterQuery := filter.query(false)
 	var query string
 
 	if visitors.analyzer.minIsBot > 0 {
@@ -355,11 +362,14 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 		return 0, err
 	}
 
-	return averageTimeSpentSeconds, nil
+	return averageTimeSpentSeconds, nil*/
 }
 
 func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
-	timeArgs, timeQuery := filter.queryTime(false)
+	// TODO
+	return 0, nil
+
+	/*timeArgs, timeQuery := filter.queryTime(false)
 	fieldArgs, fieldQuery := filter.queryFields()
 
 	if fieldQuery != "" {
@@ -414,7 +424,7 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 		return 0, err
 	}
 
-	return averageTimeSpentSeconds, nil
+	return averageTimeSpentSeconds, nil*/
 }
 
 func calculateGrowth[T int | float64](current, previous T) float64 {

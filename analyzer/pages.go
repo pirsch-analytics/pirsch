@@ -1,12 +1,10 @@
 package analyzer
 
 import (
-	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"sort"
-	"strings"
 )
 
 // Pages aggregates statistics regarding pages.
@@ -17,7 +15,10 @@ type Pages struct {
 
 // ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
-	filter = pages.analyzer.getFilter(filter)
+	// TODO
+	return []model.PageStats{}, nil
+
+	/*filter = pages.analyzer.getFilter(filter)
 	fields := []Field{
 		FieldPath,
 		FieldVisitors,
@@ -82,7 +83,7 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		}
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
 
 // Entry returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
@@ -300,7 +301,10 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 }
 
 func (pages *Pages) totalSessions(filter *Filter) (int, error) {
-	filter = pages.analyzer.getFilter(filter)
+	// TODO
+	return 0, nil
+
+	/*filter = pages.analyzer.getFilter(filter)
 	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = nil, nil, nil, nil
 	filterArgs, filterQuery := filter.queryTime(pages.analyzer.minIsBot > 0)
 	query := fmt.Sprintf(`SELECT uniq(visitor_id, session_id)
@@ -313,11 +317,14 @@ func (pages *Pages) totalSessions(filter *Filter) (int, error) {
 		return 0, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
 
 func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]model.TotalVisitorSessionStats, error) {
-	if len(paths) == 0 {
+	// TODO
+	return []model.TotalVisitorSessionStats{}, nil
+
+	/*if len(paths) == 0 {
 		return []model.TotalVisitorSessionStats{}, nil
 	}
 
@@ -333,7 +340,7 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 		eventFilterArgs, eventFilterQuery := filter.query(false)
 		filterArgs = append(filterArgs, eventFilterArgs...)
 		eventQuery = fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id, session_id 
+				SELECT visitor_id, session_id
 				FROM event
 				WHERE %s
 			) ev
@@ -384,11 +391,14 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
 
 func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTimeSpentStats, error) {
-	if len(paths) == 0 {
+	// TODO
+	return []model.AvgTimeSpentStats{}, nil
+
+	/*if len(paths) == 0 {
 		return []model.AvgTimeSpentStats{}, nil
 	}
 
@@ -444,7 +454,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		eventFilterArgs, eventFilterQuery := filter.query(false)
 		args = append(args, eventFilterArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id, session_id 
+				SELECT visitor_id, session_id
 				FROM event
 				WHERE %s
 			) ev
@@ -474,5 +484,5 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }

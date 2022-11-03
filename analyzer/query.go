@@ -40,11 +40,12 @@ func (query *query) query() (string, []any) {
 	query.selectFields()
 	query.fromTable()
 	query.joinQuery()
-	query.whereTime()
+	query.q.WriteString(query.whereTime(true))
 	query.whereFields()
 	query.groupByFields()
 	query.having()
 	query.orderByFields()
+	query.withLimit()
 	return query.q.String(), query.args
 }
 
@@ -54,8 +55,7 @@ func (query *query) selectFields() {
 
 	for i := range query.fields {
 		if query.fields[i].filterTime {
-			timeArgs, timeQuery := query.filter.queryTime(false)
-			query.args = append(query.args, timeArgs...)
+			timeQuery := query.whereTime(false)
 			q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.fields[i].queryPageViews, timeQuery), query.fields[i].Name))
 		} else if query.fields[i].timezone {
 			if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
@@ -90,35 +90,48 @@ func (query *query) joinQuery() {
 	// TODO
 }
 
-func (query *query) whereTime() {
+func (query *query) whereTime(filterBots bool) string {
 	query.args = append(query.args, query.filter.ClientID)
-	query.q.WriteString("WHERE client_id = ? ")
+	var q strings.Builder
+
+	if filterBots {
+		q.WriteString("WHERE ")
+	}
+
+	q.WriteString("client_id = ? ")
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.From.IsZero() && !query.filter.To.IsZero() && query.filter.From.Equal(query.filter.To) {
 		query.args = append(query.args, query.filter.From.Format(dateFormat))
-		query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
+		q.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
 	} else {
 		if !query.filter.From.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.From)
-				query.q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
+				q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
 			} else {
 				query.args = append(query.args, query.filter.From.Format(dateFormat))
-				query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
 			}
 		}
 
 		if !query.filter.To.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.To)
-				query.q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
+				q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
 			} else {
 				query.args = append(query.args, query.filter.To.Format(dateFormat))
-				query.q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
 			}
 		}
 	}
+
+	if filterBots && query.filter.minIsBot > 0 {
+		query.args = append(query.args, query.filter.minIsBot)
+		q.WriteString(" AND is_bot < ? ")
+	}
+
+	return q.String()
 }
 
 func (query *query) whereFields() {
@@ -423,8 +436,7 @@ func (query *query) orderByFields() {
 			if query.orderBy[i].queryWithFill != "" {
 				q.WriteString(fmt.Sprintf(`%s %s %s,`, query.orderBy[i].Name, query.orderBy[i].queryDirection, query.orderBy[i].queryWithFill))
 			} else if query.orderBy[i].withFill {
-				fillArgs, fillQuery := query.filter.withFill()
-				query.args = append(query.args, fillArgs...)
+				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
 				if query.orderBy[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
@@ -445,6 +457,36 @@ func (query *query) orderByFields() {
 		}
 
 		str := q.String()
-		query.q.WriteString(str[:len(str)-1])
+		query.q.WriteString(str[:len(str)-1] + " ")
+	}
+}
+
+func (query *query) withFill() string {
+	if !query.filter.From.IsZero() && !query.filter.To.IsZero() {
+		q := ""
+
+		switch query.filter.Period {
+		case pirsch.PeriodDay:
+			q = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
+		case pirsch.PeriodWeek:
+			q = "WITH FILL FROM toStartOfWeek(toDate(?), 1) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
+		case pirsch.PeriodMonth:
+			q = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
+		case pirsch.PeriodYear:
+			q = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
+		}
+
+		query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
+		return q
+	}
+
+	return ""
+}
+
+func (query *query) withLimit() {
+	if query.filter.Limit > 0 && query.filter.Offset > 0 {
+		query.q.WriteString(fmt.Sprintf("LIMIT %d OFFSET %d ", query.filter.Limit, query.filter.Offset))
+	} else if query.filter.Limit > 0 {
+		query.q.WriteString(fmt.Sprintf("LIMIT %d ", query.filter.Limit))
 	}
 }

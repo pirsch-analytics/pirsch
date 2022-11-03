@@ -1,12 +1,8 @@
 package analyzer
 
 import (
-	"fmt"
-	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
-	"strings"
-	"time"
 )
 
 // Time aggregates statistics regarding the time on page and session duration.
@@ -17,7 +13,10 @@ type Time struct {
 
 // AvgSessionDuration returns the average session duration grouped by day, week, month, or year.
 func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error) {
-	filter = t.analyzer.getFilter(filter)
+	// TODO
+	return []model.TimeSpentStats{}, nil
+
+	/*filter = t.analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
 		return []model.TimeSpentStats{}, nil
@@ -87,12 +86,15 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
 
 // AvgTimeOnPage returns the average time on page grouped by day, week, month, or year.
 func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
-	filter = t.analyzer.getFilter(filter)
+	// TODO
+	return []model.TimeSpentStats{}, nil
+
+	/*filter = t.analyzer.getFilter(filter)
 
 	if filter.table() == "event" {
 		return []model.TimeSpentStats{}, nil
@@ -185,5 +187,5 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		return nil, err
 	}
 
-	return stats, nil
+	return stats, nil*/
 }
