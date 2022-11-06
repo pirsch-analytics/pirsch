@@ -266,7 +266,103 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 }
 
 func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
-	return "", []any{}
+	q := query{
+		filter:  filter,
+		from:    filter.table(fields),
+		search:  filter.Search,
+		groupBy: groupBy,
+		orderBy: orderBy,
+		offset:  filter.Offset,
+		limit:   filter.Limit,
+	}
+
+	if q.from == events || q.from == pageViews {
+		q.fields = filter.excludeFields(fields,
+			FieldEntryPath,
+			FieldEntryTitle,
+			FieldExitPath,
+			FieldExitTitle,
+			FieldBounces,
+			FieldViews)
+		q.join = filter.joinSessions(fields)
+	} else {
+		q.fields = fields
+	}
+
+	query, args := q.query() // TODO for debugging
+	return query, args
+}
+
+func (filter *Filter) table(fields []Field) table {
+	if len(filter.EventName) != 0 || filter.eventFilter {
+		return events
+	} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
+		return pageViews
+	}
+
+	return sessions
+}
+
+func (filter *Filter) joinSessions(fields []Field) *query {
+	if filter.minIsBot > 0 ||
+		len(filter.EntryPath) != 0 ||
+		len(filter.ExitPath) != 0 ||
+		filter.fieldsContain(fields, FieldBounces.Name) ||
+		filter.fieldsContain(fields, FieldViews.Name) ||
+		filter.fieldsContain(fields, FieldEntryPath.Name) ||
+		filter.fieldsContain(fields, FieldExitPath.Name) {
+		sessionFields := []Field{FieldVisitorID, FieldSessionID}
+		groupBy := []Field{FieldVisitorID, FieldSessionID}
+
+		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath.Name) {
+			sessionFields = append(sessionFields, FieldEntryPath)
+			groupBy = append(groupBy, FieldEntryPath)
+
+			if filter.IncludeTitle {
+				sessionFields = append(sessionFields, FieldEntryTitle)
+				groupBy = append(groupBy, FieldEntryTitle)
+			}
+		}
+
+		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath.Name) {
+			sessionFields = append(sessionFields, FieldExitPath)
+			groupBy = append(groupBy, FieldExitPath)
+
+			if filter.IncludeTitle {
+				sessionFields = append(sessionFields, FieldExitTitle)
+				groupBy = append(groupBy, FieldExitTitle)
+			}
+		}
+
+		if filter.fieldsContain(fields, FieldBounces.Name) {
+			sessionFields = append(sessionFields, FieldBounces)
+		}
+
+		if filter.fieldsContain(fields, FieldViews.Name) {
+			sessionFields = append(sessionFields, FieldViews)
+		}
+
+		return &query{
+			filter:  filter,
+			fields:  sessionFields,
+			from:    sessions,
+			groupBy: groupBy,
+		}
+	}
+
+	return nil
+}
+
+func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
+	result := make([]Field, 0, len(fields))
+
+	for _, field := range fields {
+		if !filter.fieldsContain(exclude, field.Name) {
+			result = append(result, field)
+		}
+	}
+
+	return result
 }
 
 /*func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
@@ -397,14 +493,6 @@ func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string)
 		) s
 		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery, groupByQuery)
 	return filterArgs, query
-}
-
-func (filter *Filter) table() string {
-	if len(filter.EventName) != 0 || filter.eventFilter {
-		return "event"
-	}
-
-	return "session"
 }*/
 
 func (filter *Filter) fieldsContain(haystack []Field, needle string) bool {

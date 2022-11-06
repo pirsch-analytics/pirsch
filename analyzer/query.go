@@ -27,8 +27,11 @@ type query struct {
 	from     table
 	join     *query
 	leftJoin *query
+	search   []Search
 	groupBy  []Field
 	orderBy  []Field
+	limit    int
+	offset   int
 
 	where []where
 	q     strings.Builder
@@ -56,30 +59,38 @@ func (query *query) selectFields() {
 	for i := range query.fields {
 		if query.fields[i].filterTime {
 			timeQuery := query.whereTime(false)
-			q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.fields[i].queryPageViews, timeQuery), query.fields[i].Name))
+			q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 		} else if query.fields[i].timezone {
 			if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
 				switch query.filter.Period {
 				case pirsch.PeriodWeek:
-					q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.fields[i].queryPageViews, query.filter.Timezone.String())))
+					q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 				case pirsch.PeriodMonth:
-					q.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(query.fields[i].queryPageViews, query.filter.Timezone.String())))
+					q.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 				case pirsch.PeriodYear:
-					q.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(query.fields[i].queryPageViews, query.filter.Timezone.String())))
+					q.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 				}
 			} else {
-				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.fields[i].queryPageViews, query.filter.Timezone.String()), query.fields[i].Name))
+				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
 			}
 		} else if query.fields[i].Name == "meta_value" {
 			query.args = append(query.args, query.filter.EventMetaKey)
-			q.WriteString(fmt.Sprintf(`%s %s,`, query.fields[i].queryPageViews, query.fields[i].Name))
+			q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 		} else {
-			q.WriteString(fmt.Sprintf(`%s %s,`, query.fields[i].queryPageViews, query.fields[i].Name))
+			q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 		}
 	}
 
 	str := q.String()
 	query.q.WriteString(str[:len(str)-1] + " ")
+}
+
+func (query *query) selectField(field Field) string {
+	if query.from == sessions {
+		return field.querySessions
+	}
+
+	return field.queryPageViews
 }
 
 func (query *query) fromTable() {
@@ -134,7 +145,7 @@ func (query *query) whereTime(filterBots bool) string {
 		}
 	}
 
-	if filterBots && query.filter.minIsBot > 0 {
+	if query.from == sessions && filterBots && query.filter.minIsBot > 0 {
 		query.args = append(query.args, query.filter.minIsBot)
 		q.WriteString(" AND is_bot < ? ")
 	}
@@ -143,9 +154,22 @@ func (query *query) whereTime(filterBots bool) string {
 }
 
 func (query *query) whereFields() {
-	query.whereField("path", query.filter.Path)
-	query.whereField("entry_path", query.filter.EntryPath)
-	query.whereField("exit_path", query.filter.ExitPath)
+	if query.from == pageViews {
+		query.whereField("path", query.filter.Path)
+		query.whereFieldPathPattern()
+	}
+
+	if query.from == sessions {
+		query.whereField("entry_path", query.filter.EntryPath)
+		query.whereField("exit_path", query.filter.ExitPath)
+	}
+
+	if query.from == events {
+		query.whereField("event_name", query.filter.EventName)
+		query.whereField("event_meta_keys", query.filter.EventMetaKey)
+		query.whereFieldMeta()
+	}
+
 	query.whereField("language", query.filter.Language)
 	query.whereField("country_code", query.filter.Country)
 	query.whereField("city", query.filter.City)
@@ -163,14 +187,10 @@ func (query *query) whereFields() {
 	query.whereField("utm_campaign", query.filter.UTMCampaign)
 	query.whereField("utm_content", query.filter.UTMContent)
 	query.whereField("utm_term", query.filter.UTMTerm)
-	query.whereField("event_name", query.filter.EventName)
-	query.whereField("event_meta_keys", query.filter.EventMetaKey)
 	query.whereFieldPlatform()
-	query.whereFieldPathPattern()
-	query.whereFieldMeta()
 
-	for i := range query.filter.Search {
-		query.whereFieldSearch(query.filter.Search[i].Field.Name, query.filter.Search[i].Input)
+	for i := range query.search {
+		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
 	}
 
 	if len(query.where) > 0 {
@@ -492,9 +512,9 @@ func (query *query) withFill() string {
 }
 
 func (query *query) withLimit() {
-	if query.filter.Limit > 0 && query.filter.Offset > 0 {
-		query.q.WriteString(fmt.Sprintf("LIMIT %d OFFSET %d ", query.filter.Limit, query.filter.Offset))
-	} else if query.filter.Limit > 0 {
-		query.q.WriteString(fmt.Sprintf("LIMIT %d ", query.filter.Limit))
+	if query.limit > 0 && query.offset > 0 {
+		query.q.WriteString(fmt.Sprintf("LIMIT %d OFFSET %d ", query.limit, query.offset))
+	} else if query.limit > 0 {
+		query.q.WriteString(fmt.Sprintf("LIMIT %d ", query.limit))
 	}
 }
