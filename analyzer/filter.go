@@ -281,9 +281,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			FieldEntryPath,
 			FieldEntryTitle,
 			FieldExitPath,
-			FieldExitTitle,
-			FieldBounces,
-			FieldViews)
+			FieldExitTitle)
 		q.join = filter.joinSessions(fields)
 	} else {
 		q.fields = fields

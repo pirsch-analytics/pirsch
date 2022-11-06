@@ -101,8 +101,9 @@ var (
 
 	// FieldViews is a query result column.
 	FieldViews = Field{
-		querySessions:  "sum(page_views*sign)",
-		queryPageViews: "count(1)",
+		querySessions: "sum(page_views*sign)",
+		//queryPageViews: "count(1)", // FIXME
+		queryPageViews: "sum(views)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
 		Name:           "views",
@@ -119,8 +120,9 @@ var (
 
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
-		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
+		querySessions: "sum(is_bounce*sign)",
+		//queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)", // FIXME
+		queryPageViews: "sum(bounces)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		Name:           "bounces",

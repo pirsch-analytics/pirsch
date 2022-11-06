@@ -10,7 +10,7 @@ import (
 const (
 	sessions   = "session s"
 	pageViews  = "page_view pv"
-	events     = "events e"
+	events     = "event e"
 	dateFormat = "2006-01-02"
 )
 
