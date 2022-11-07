@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	sessions   = "session s"
-	pageViews  = "page_view pv"
-	events     = "event e"
+	sessions   = "session t"
+	pageViews  = "page_view t"
+	events     = "event t"
 	dateFormat = "2006-01-02"
 )
 
@@ -43,7 +43,7 @@ func (query *query) query() (string, []any) {
 	query.selectFields()
 	query.fromTable()
 	query.joinQuery()
-	query.q.WriteString(query.whereTime(true))
+	query.q.WriteString(query.whereTime())
 	query.whereFields()
 	query.groupByFields()
 	query.having()
@@ -58,7 +58,7 @@ func (query *query) selectFields() {
 
 	for i := range query.fields {
 		if query.fields[i].filterTime {
-			timeQuery := query.whereTime(false)
+			timeQuery := query.whereTime()[len("WHERE "):]
 			q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 		} else if query.fields[i].timezone {
 			if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
@@ -101,23 +101,18 @@ func (query *query) joinQuery() {
 	if query.join != nil {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
-		query.q.WriteString(fmt.Sprintf("JOIN (%s) j ON j.visitor_id = pv.visitor_id AND j.session_id = pv.session_id ", q))
+		query.q.WriteString(fmt.Sprintf("JOIN (%s) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id ", q))
 	} else if query.leftJoin != nil {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
-		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) j ON j.visitor_id = pv.visitor_id AND j.session_id = pv.session_id ", q))
+		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id ", q))
 	}
 }
 
-func (query *query) whereTime(filterBots bool) string {
+func (query *query) whereTime() string {
 	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
-
-	if filterBots {
-		q.WriteString("WHERE ")
-	}
-
-	q.WriteString("client_id = ? ")
+	q.WriteString("WHERE client_id = ? ")
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.From.IsZero() && !query.filter.To.IsZero() && query.filter.From.Equal(query.filter.To) {
@@ -145,7 +140,7 @@ func (query *query) whereTime(filterBots bool) string {
 		}
 	}
 
-	if query.from == sessions && filterBots && query.filter.minIsBot > 0 {
+	if query.from == sessions && query.filter.minIsBot > 0 {
 		query.args = append(query.args, query.filter.minIsBot)
 		q.WriteString(" AND is_bot < ? ")
 	}
