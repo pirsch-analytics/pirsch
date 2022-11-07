@@ -1,5 +1,7 @@
 package analyzer
 
+import "github.com/pirsch-analytics/pirsch/v4"
+
 var (
 	// FieldVisitorID is a query result column.
 	FieldVisitorID = Field{
@@ -368,7 +370,7 @@ type Field struct {
 	querySessions  string
 	queryPageViews string
 	queryPeriod    string
-	queryDirection string
+	queryDirection pirsch.Direction
 	queryWithFill  string
 	withFill       bool
 	timezone       bool

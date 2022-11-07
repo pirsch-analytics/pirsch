@@ -446,8 +446,12 @@ func (query *query) orderByFields() {
 		query.orderBy = make([]Field, 0, len(query.filter.Sort))
 
 		for i := range query.filter.Sort {
-			query.filter.Sort[i].Field.queryDirection = string(query.filter.Sort[i].Direction)
-			query.orderBy = append(query.orderBy, query.filter.Sort[i].Field)
+			for j := range query.orderBy {
+				if query.filter.Sort[i].Field == query.orderBy[j] {
+					query.orderBy[i].queryDirection = query.filter.Sort[i].Direction
+					break
+				}
+			}
 		}
 	}
 
