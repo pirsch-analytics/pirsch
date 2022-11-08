@@ -140,8 +140,7 @@ type Filter struct {
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
 
-	eventFilter bool
-	minIsBot    uint8
+	minIsBot uint8
 }
 
 // Search filters results by searching for the given input for given field.
@@ -234,13 +233,7 @@ func (filter *Filter) validate() {
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
-
-	if len(filter.EventName) > 0 || filter.eventFilter {
-		filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
-	} else {
-		filter.EventMetaKey = nil
-		filter.EventMeta = nil
-	}
+	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
 }
 
 func (filter *Filter) removeDuplicates(in []string) []string {
@@ -296,7 +289,7 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 }
 
 func (filter *Filter) table(fields []Field) table {
-	if len(filter.EventName) != 0 || filter.eventFilter {
+	if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName.Name) {
 		return events
 	} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
 		return pageViews

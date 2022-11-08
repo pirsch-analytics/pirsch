@@ -15,7 +15,6 @@ type Events struct {
 // Events returns the visitor count, views, and conversion rate for custom events.
 func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	filter = events.analyzer.getFilter(filter)
-	filter.eventFilter = true
 	q, args := filter.buildQuery([]Field{
 		FieldEventName,
 		FieldVisitors,
@@ -76,7 +75,6 @@ func (events *Events) List(filter *Filter) ([]model.EventListStats, error) {
 		filter = NewFilter(pirsch.NullClient)
 	}
 
-	filter.eventFilter = true
 	filter = events.analyzer.getFilter(filter)
 	q, args := filter.buildQuery([]Field{
 		FieldEventName,

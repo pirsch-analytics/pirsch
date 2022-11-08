@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
@@ -15,10 +16,7 @@ type Pages struct {
 
 // ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
-	// TODO
-	return []model.PageStats{}, nil
-
-	/*filter = pages.analyzer.getFilter(filter)
+	filter = pages.analyzer.getFilter(filter)
 	fields := []Field{
 		FieldPath,
 		FieldVisitors,
@@ -43,18 +41,18 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		orderBy = append(orderBy, FieldTitle)
 	}
 
-	if filter.table() == "event" {
+	if filter.table(fields) == events {
 		fields = append(fields, FieldEventTimeSpent)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, filter.table() == "event", query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, filter.table(fields) == events, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if filter.IncludeTimeOnPage && filter.table() == "session" {
+	if filter.IncludeTimeOnPage && filter.table(fields) == "session" {
 		paths := make(map[string]struct{})
 
 		for i := range stats {
@@ -83,7 +81,7 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		}
 	}
 
-	return stats, nil*/
+	return stats, nil
 }
 
 // Entry returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
@@ -301,23 +299,16 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 }
 
 func (pages *Pages) totalSessions(filter *Filter) (int, error) {
-	// TODO
-	return 0, nil
-
-	/*filter = pages.analyzer.getFilter(filter)
-	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = nil, nil, nil, nil
-	filterArgs, filterQuery := filter.queryTime(pages.analyzer.minIsBot > 0)
-	query := fmt.Sprintf(`SELECT uniq(visitor_id, session_id)
-		FROM session
-		WHERE %s
-		HAVING sum(sign) > 0`, filterQuery)
+	filter = pages.analyzer.getFilter(filter)
+	filterQuery, filterArgs := filter.buildTimeQuery()
+	query := fmt.Sprintf("SELECT uniq(visitor_id, session_id) FROM session %s HAVING sum(sign) > 0", filterQuery)
 	stats, err := pages.store.SelectTotalSessions(query, filterArgs...)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return stats, nil*/
+	return stats, nil
 }
 
 func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]model.TotalVisitorSessionStats, error) {
