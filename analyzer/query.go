@@ -53,36 +53,38 @@ func (query *query) query() (string, []any) {
 }
 
 func (query *query) selectFields() {
-	query.q.WriteString("SELECT ")
-	var q strings.Builder
+	if len(query.fields) > 0 {
+		query.q.WriteString("SELECT ")
+		var q strings.Builder
 
-	for i := range query.fields {
-		if query.fields[i].filterTime {
-			timeQuery := query.whereTime()[len("WHERE "):]
-			q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
-		} else if query.fields[i].timezone {
-			if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
-				switch query.filter.Period {
-				case pirsch.PeriodWeek:
-					q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-				case pirsch.PeriodMonth:
-					q.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-				case pirsch.PeriodYear:
-					q.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+		for i := range query.fields {
+			if query.fields[i].filterTime {
+				timeQuery := query.whereTime()[len("WHERE "):]
+				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
+			} else if query.fields[i].timezone {
+				if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
+					switch query.filter.Period {
+					case pirsch.PeriodWeek:
+						q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+					case pirsch.PeriodMonth:
+						q.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+					case pirsch.PeriodYear:
+						q.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+					}
+				} else {
+					q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
 				}
+			} else if query.fields[i].Name == "meta_value" {
+				query.args = append(query.args, query.filter.EventMetaKey)
+				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 			} else {
-				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
+				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 			}
-		} else if query.fields[i].Name == "meta_value" {
-			query.args = append(query.args, query.filter.EventMetaKey)
-			q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
-		} else {
-			q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 		}
-	}
 
-	str := q.String()
-	query.q.WriteString(str[:len(str)-1] + " ")
+		str := q.String()
+		query.q.WriteString(str[:len(str)-1] + " ")
+	}
 }
 
 func (query *query) selectField(field Field) string {
@@ -149,14 +151,12 @@ func (query *query) whereTime() string {
 }
 
 func (query *query) whereFields() {
-	if query.from == pageViews {
-		query.whereField("path", query.filter.Path)
-		query.whereFieldPathPattern()
-	}
-
 	if query.from == sessions {
 		query.whereField("entry_path", query.filter.EntryPath)
 		query.whereField("exit_path", query.filter.ExitPath)
+	} else {
+		query.whereField("path", query.filter.Path)
+		query.whereFieldPathPattern()
 	}
 
 	if query.from == events {

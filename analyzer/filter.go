@@ -287,8 +287,12 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		q.fields = fields
 	}
 
-	query, args := q.query() // TODO for debugging
-	return query, args
+	return q.query()
+}
+
+func (filter *Filter) buildTimeQuery() (string, []any) {
+	q := query{filter: filter}
+	return q.whereTime(), q.args
 }
 
 func (filter *Filter) table(fields []Field) table {
