@@ -157,6 +157,7 @@ func (query *query) whereFields() {
 	} else {
 		query.whereField("path", query.filter.Path)
 		query.whereFieldPathPattern()
+		query.whereFieldPathIn()
 	}
 
 	if query.from == events {
@@ -399,6 +400,19 @@ func (query *query) whereFieldPathPattern() {
 		}
 
 		query.where = append(query.where, group)
+	}
+}
+
+func (query *query) whereFieldPathIn() {
+	if len(query.filter.AnyPath) != 0 {
+		for _, path := range query.filter.AnyPath {
+			query.args = append(query.args, path)
+		}
+
+		q := strings.Repeat("?,", len(query.filter.AnyPath))
+		query.where = append(query.where, where{
+			eqContains: []string{fmt.Sprintf("path IN (%s) ", q[:len(q)-1])},
+		})
 	}
 }
 

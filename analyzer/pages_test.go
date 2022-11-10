@@ -850,4 +850,6 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 3, total[0].Sessions)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
+	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter("event"), []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
 }

@@ -37,6 +37,9 @@ type Filter struct {
 	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path []string
 
+	// AnyPath filters for any path in the list.
+	AnyPath []string
+
 	// EntryPath filters for the entry page.
 	EntryPath []string
 

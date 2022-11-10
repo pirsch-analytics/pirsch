@@ -178,11 +178,11 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.RelativeVisitors, &vstats.Sessions, &vstats.Views, &vstats.RelativeViews, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
-	assert.Equal(t, 6, vstats.Views)
+	assert.Equal(t, 2, vstats.Views)
 	assert.Equal(t, 0, vstats.Bounces)
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 	assert.InDelta(t, 0.5, vstats.RelativeVisitors, 0.01)
-	assert.InDelta(t, 1, vstats.RelativeViews, 0.01)
+	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 
 	// filter period
 	q, args = analyzer.getFilter(&Filter{Period: pirsch.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
