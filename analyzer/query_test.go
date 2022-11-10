@@ -22,7 +22,7 @@ func TestQuery(t *testing.T) {
 		Limit:       99,
 		minIsBot:    5,
 	}
-	q := query{
+	q := queryBuilder{
 		filter: filter,
 		fields: []Field{
 			FieldDay,
@@ -31,7 +31,7 @@ func TestQuery(t *testing.T) {
 			FieldRelativeVisitors,
 		},
 		from: pageViews,
-		join: &query{
+		join: &queryBuilder{
 			filter: filter,
 			fields: []Field{
 				FieldVisitorID,
@@ -85,14 +85,13 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryAnyPath(t *testing.T) {
-	filter := &Filter{
-		ClientID: 42,
-		From:     util.PastDay(7),
-		To:       util.Today(),
-		AnyPath:  []string{"/", "/foo"},
-	}
-	q := query{
-		filter: filter,
+	q := queryBuilder{
+		filter: &Filter{
+			ClientID: 42,
+			From:     util.PastDay(7),
+			To:       util.Today(),
+			AnyPath:  []string{"/", "/foo"},
+		},
 		fields: []Field{
 			FieldPath,
 			FieldVisitors,
@@ -110,4 +109,70 @@ func TestQueryAnyPath(t *testing.T) {
 	assert.Equal(t, "/", args[3])
 	assert.Equal(t, "/foo", args[4])
 	assert.Equal(t, "SELECT path path,uniq(visitor_id) visitors FROM page_view t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND path IN (?,?) GROUP BY path ", queryStr)
+}
+
+func TestQueryPlatformSession(t *testing.T) {
+	q := queryBuilder{
+		filter: &Filter{
+			ClientID: 42,
+			From:     util.PastDay(7),
+			To:       util.Today(),
+		},
+		fields: []Field{
+			FieldPlatformDesktop,
+		},
+		from: sessions,
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 3)
+	assert.Equal(t, int64(42), args[0])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[1])
+	assert.Equal(t, util.Today().Format(dateFormat), args[2])
+	assert.Equal(t, "SELECT uniqIf(visitor_id, desktop = 1) platform_desktop FROM session t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) HAVING sum(sign) > 0 ", queryStr)
+}
+
+func TestQueryPlatformPageView(t *testing.T) {
+	filter := &Filter{
+		ClientID: 42,
+		From:     util.PastDay(7),
+		To:       util.Today(),
+		Path:     []string{"/foo"},
+	}
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{
+			FieldPlatformDesktop,
+			FieldPlatformMobile,
+		},
+		from: pageViews,
+		join: &queryBuilder{
+			filter: filter,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			from: sessions,
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		},
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 14)
+	assert.Equal(t, int64(42), args[0])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[1])
+	assert.Equal(t, util.Today().Format(dateFormat), args[2])
+	assert.Equal(t, int64(42), args[3])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[4])
+	assert.Equal(t, util.Today().Format(dateFormat), args[5])
+	assert.Equal(t, "/foo", args[6])
+	assert.Equal(t, int64(42), args[7])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[8])
+	assert.Equal(t, util.Today().Format(dateFormat), args[9])
+	assert.Equal(t, int64(42), args[10])
+	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[11])
+	assert.Equal(t, util.Today().Format(dateFormat), args[12])
+	assert.Equal(t, "/foo", args[13])
+	assert.Equal(t, "SELECT toInt64OrDefault((SELECT uniq(visitor_id) visitors FROM page_view t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM session t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY visitor_id,session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 AND path = ? )) platform_desktop,toInt64OrDefault((SELECT uniq(visitor_id) visitors FROM page_view t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM session t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY visitor_id,session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 AND path = ? )) platform_mobile ", queryStr)
 }

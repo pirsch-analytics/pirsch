@@ -262,7 +262,7 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 }
 
 func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
-	q := query{
+	q := queryBuilder{
 		filter:  filter,
 		from:    filter.table(fields),
 		search:  filter.Search,
@@ -287,7 +287,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 }
 
 func (filter *Filter) buildTimeQuery() (string, []any) {
-	q := query{filter: filter}
+	q := queryBuilder{filter: filter}
 	return q.whereTime(), q.args
 }
 
@@ -301,7 +301,7 @@ func (filter *Filter) table(fields []Field) table {
 	return sessions
 }
 
-func (filter *Filter) joinSessions(fields []Field) *query {
+func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 	if filter.minIsBot > 0 ||
 		len(filter.EntryPath) != 0 ||
 		len(filter.ExitPath) != 0 ||
@@ -340,7 +340,7 @@ func (filter *Filter) joinSessions(fields []Field) *query {
 			sessionFields = append(sessionFields, FieldViews)
 		}
 
-		return &query{
+		return &queryBuilder{
 			filter:  filter,
 			fields:  sessionFields,
 			from:    sessions,

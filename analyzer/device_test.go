@@ -13,14 +13,14 @@ import (
 func TestAnalyzer_Platform(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, Time: time.Now(), Path: "/"},
-		{VisitorID: 1, Time: time.Now(), Path: "/foo"},
-		{VisitorID: 1, Time: time.Now(), Path: "/bar"},
-		{VisitorID: 2, Time: time.Now(), Path: "/"},
-		{VisitorID: 3, Time: time.Now(), Path: "/"},
+		{VisitorID: 1, Time: time.Now(), Path: "/", Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/foo", Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/bar", Desktop: true},
+		{VisitorID: 2, Time: time.Now(), Path: "/", Mobile: true},
+		{VisitorID: 3, Time: time.Now(), Path: "/", Mobile: true},
 		{VisitorID: 4, Time: time.Now(), Path: "/"},
-		{VisitorID: 5, Time: time.Now(), Path: "/"},
-		{VisitorID: 6, Time: time.Now(), Path: "/"},
+		{VisitorID: 5, Time: time.Now(), Path: "/", Desktop: true},
+		{VisitorID: 6, Time: time.Now(), Path: "/", Desktop: true},
 	}))
 	saveSessions(t, [][]model.Session{
 		{

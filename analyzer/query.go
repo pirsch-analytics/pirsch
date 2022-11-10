@@ -21,12 +21,12 @@ type where struct {
 	notEq      []string
 }
 
-type query struct {
+type queryBuilder struct {
 	filter   *Filter
 	fields   []Field
 	from     table
-	join     *query
-	leftJoin *query
+	join     *queryBuilder
+	leftJoin *queryBuilder
 	search   []Search
 	groupBy  []Field
 	orderBy  []Field
@@ -38,21 +38,27 @@ type query struct {
 	args  []any
 }
 
-func (query *query) query() (string, []any) {
+func (query *queryBuilder) query() (string, []any) {
 	query.args = make([]any, 0)
-	query.selectFields()
-	query.fromTable()
-	query.joinQuery()
-	query.q.WriteString(query.whereTime())
-	query.whereFields()
-	query.groupByFields()
-	query.having()
-	query.orderByFields()
-	query.withLimit()
+	combineResults := query.selectFields()
+
+	if !combineResults {
+		query.fromTable()
+		query.joinQuery()
+		query.q.WriteString(query.whereTime())
+		query.whereFields()
+		query.groupByFields()
+		query.having()
+		query.orderByFields()
+		query.withLimit()
+	}
+
 	return query.q.String(), query.args
 }
 
-func (query *query) selectFields() {
+func (query *queryBuilder) selectFields() bool {
+	combineResults := false
+
 	if len(query.fields) > 0 {
 		query.q.WriteString("SELECT ")
 		var q strings.Builder
@@ -62,7 +68,7 @@ func (query *query) selectFields() {
 				timeQuery := query.whereTime()[len("WHERE "):]
 				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 			} else if query.fields[i].timezone {
-				if query.fields[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
+				if query.fields[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
 					switch query.filter.Period {
 					case pirsch.PeriodWeek:
 						q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
@@ -74,7 +80,10 @@ func (query *query) selectFields() {
 				} else {
 					q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
 				}
-			} else if query.fields[i].Name == "meta_value" {
+			} else if query.from != sessions && (query.fields[i].Name == FieldPlatformDesktop.Name || query.fields[i].Name == FieldPlatformMobile.Name || query.fields[i].Name == FieldPlatformUnknown.Name) {
+				q.WriteString(query.selectPlatform(query.fields[i]))
+				combineResults = true
+			} else if query.fields[i].Name == FieldEventMetaValues.Name {
 				query.args = append(query.args, query.filter.EventMetaKey)
 				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 			} else {
@@ -85,9 +94,11 @@ func (query *query) selectFields() {
 		str := q.String()
 		query.q.WriteString(str[:len(str)-1] + " ")
 	}
+
+	return combineResults
 }
 
-func (query *query) selectField(field Field) string {
+func (query *queryBuilder) selectField(field Field) string {
 	if query.from == sessions {
 		return field.querySessions
 	}
@@ -95,11 +106,40 @@ func (query *query) selectField(field Field) string {
 	return field.queryPageViews
 }
 
-func (query *query) fromTable() {
+func (query *queryBuilder) selectPlatform(field Field) string {
+	var join, leftJoin *queryBuilder
+
+	if query.join != nil {
+		joinCopy := *query.join
+		join = &joinCopy
+	}
+
+	if query.leftJoin != nil {
+		leftJoinCopy := *query.leftJoin
+		leftJoin = &leftJoinCopy
+	}
+
+	q := queryBuilder{
+		filter:   query.filter,
+		fields:   []Field{FieldVisitors},
+		from:     query.from,
+		join:     join,
+		leftJoin: leftJoin,
+		where: []where{
+			// use notEq so they are connected by AND
+			{notEq: strings.Split(field.queryPageViews, ",")},
+		},
+	}
+	subquery, args := q.query()
+	query.args = append(query.args, args...)
+	return fmt.Sprintf("toInt64OrDefault((%s)) %s,", subquery, field.Name)
+}
+
+func (query *queryBuilder) fromTable() {
 	query.q.WriteString(fmt.Sprintf("FROM %s ", query.from))
 }
 
-func (query *query) joinQuery() {
+func (query *queryBuilder) joinQuery() {
 	if query.join != nil {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
@@ -111,7 +151,7 @@ func (query *query) joinQuery() {
 	}
 }
 
-func (query *query) whereTime() string {
+func (query *queryBuilder) whereTime() string {
 	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
 	q.WriteString("WHERE client_id = ? ")
@@ -150,39 +190,39 @@ func (query *query) whereTime() string {
 	return q.String()
 }
 
-func (query *query) whereFields() {
+func (query *queryBuilder) whereFields() {
 	if query.from == sessions {
-		query.whereField("entry_path", query.filter.EntryPath)
-		query.whereField("exit_path", query.filter.ExitPath)
+		query.whereField(FieldEntryPath.Name, query.filter.EntryPath)
+		query.whereField(FieldExitPath.Name, query.filter.ExitPath)
 	} else {
-		query.whereField("path", query.filter.Path)
+		query.whereField(FieldPath.Name, query.filter.Path)
 		query.whereFieldPathPattern()
 		query.whereFieldPathIn()
 	}
 
 	if query.from == events {
-		query.whereField("event_name", query.filter.EventName)
+		query.whereField(FieldEventName.Name, query.filter.EventName)
 		query.whereField("event_meta_keys", query.filter.EventMetaKey)
 		query.whereFieldMeta()
 	}
 
-	query.whereField("language", query.filter.Language)
-	query.whereField("country_code", query.filter.Country)
-	query.whereField("city", query.filter.City)
-	query.whereField("referrer", query.filter.Referrer)
-	query.whereField("referrer_name", query.filter.ReferrerName)
-	query.whereField("os", query.filter.OS)
-	query.whereField("os_version", query.filter.OSVersion)
-	query.whereField("browser", query.filter.Browser)
-	query.whereField("browser_version", query.filter.BrowserVersion)
-	query.whereField("screen_class", query.filter.ScreenClass)
+	query.whereField(FieldLanguage.Name, query.filter.Language)
+	query.whereField(FieldCountry.Name, query.filter.Country)
+	query.whereField(FieldCity.Name, query.filter.City)
+	query.whereField(FieldReferrer.Name, query.filter.Referrer)
+	query.whereField(FieldReferrerName.Name, query.filter.ReferrerName)
+	query.whereField(FieldOS.Name, query.filter.OS)
+	query.whereField(FieldOSVersion.Name, query.filter.OSVersion)
+	query.whereField(FieldBrowser.Name, query.filter.Browser)
+	query.whereField(FieldBrowserVersion.Name, query.filter.BrowserVersion)
+	query.whereField(FieldScreenClass.Name, query.filter.ScreenClass)
 	query.whereFieldUInt16("screen_width", query.filter.ScreenWidth)
 	query.whereFieldUInt16("screen_height", query.filter.ScreenHeight)
-	query.whereField("utm_source", query.filter.UTMSource)
-	query.whereField("utm_medium", query.filter.UTMMedium)
-	query.whereField("utm_campaign", query.filter.UTMCampaign)
-	query.whereField("utm_content", query.filter.UTMContent)
-	query.whereField("utm_term", query.filter.UTMTerm)
+	query.whereField(FieldUTMSource.Name, query.filter.UTMSource)
+	query.whereField(FieldUTMMedium.Name, query.filter.UTMMedium)
+	query.whereField(FieldUTMCampaign.Name, query.filter.UTMCampaign)
+	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
+	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
 	query.whereFieldPlatform()
 
 	for i := range query.search {
@@ -201,7 +241,7 @@ func (query *query) whereFields() {
 			}
 
 			if len(fields.notEq) > 1 {
-				parts = append(parts, strings.Join(fields.notEq, " AND "))
+				parts = append(parts, strings.Join(fields.notEq, " AND ")+" ")
 			} else if len(fields.notEq) == 1 {
 				parts = append(parts, fields.notEq[0])
 			}
@@ -211,7 +251,7 @@ func (query *query) whereFields() {
 	}
 }
 
-func (query *query) whereField(field string, value []string) {
+func (query *queryBuilder) whereField(field string, value []string) {
 	if len(value) != 0 {
 		var group where
 		eqContainsArgs := make([]any, 0, len(value))
@@ -262,7 +302,7 @@ func (query *query) whereField(field string, value []string) {
 	}
 }
 
-func (query *query) whereFieldSearch(field, value string) {
+func (query *queryBuilder) whereFieldSearch(field, value string) {
 	if value != "" {
 		comparator := ""
 
@@ -291,7 +331,7 @@ func (query *query) whereFieldSearch(field, value string) {
 	}
 }
 
-func (query *query) whereFieldUInt16(field string, value []string) {
+func (query *queryBuilder) whereFieldUInt16(field string, value []string) {
 	if len(value) != 0 {
 		var group where
 		eqContainsArgs := make([]any, 0, len(value))
@@ -337,7 +377,7 @@ func (query *query) whereFieldUInt16(field string, value []string) {
 	}
 }
 
-func (query *query) whereFieldMeta() {
+func (query *queryBuilder) whereFieldMeta() {
 	if len(query.filter.EventMeta) != 0 {
 		var group where
 
@@ -361,7 +401,7 @@ func (query *query) whereFieldMeta() {
 	}
 }
 
-func (query *query) whereFieldPlatform() {
+func (query *queryBuilder) whereFieldPlatform() {
 	if query.filter.Platform != "" {
 		if strings.HasPrefix(query.filter.Platform, "!") {
 			platform := query.filter.Platform[1:]
@@ -385,7 +425,7 @@ func (query *query) whereFieldPlatform() {
 	}
 }
 
-func (query *query) whereFieldPathPattern() {
+func (query *queryBuilder) whereFieldPathPattern() {
 	if len(query.filter.PathPattern) != 0 {
 		var group where
 
@@ -403,7 +443,7 @@ func (query *query) whereFieldPathPattern() {
 	}
 }
 
-func (query *query) whereFieldPathIn() {
+func (query *queryBuilder) whereFieldPathIn() {
 	if len(query.filter.AnyPath) != 0 {
 		for _, path := range query.filter.AnyPath {
 			query.args = append(query.args, path)
@@ -416,7 +456,7 @@ func (query *query) whereFieldPathIn() {
 	}
 }
 
-func (query *query) nullValue(value string) string {
+func (query *queryBuilder) nullValue(value string) string {
 	if strings.ToLower(value) == "null" {
 		return ""
 	}
@@ -424,13 +464,13 @@ func (query *query) nullValue(value string) string {
 	return value
 }
 
-func (query *query) groupByFields() {
+func (query *queryBuilder) groupByFields() {
 	if len(query.groupBy) > 0 {
 		query.q.WriteString("GROUP BY ")
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.groupBy[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
+			if query.groupBy[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
 				switch query.filter.Period {
 				case pirsch.PeriodWeek:
 					q.WriteString("week,")
@@ -449,13 +489,13 @@ func (query *query) groupByFields() {
 	}
 }
 
-func (query *query) having() {
+func (query *queryBuilder) having() {
 	if query.from == sessions {
 		query.q.WriteString("HAVING sum(sign) > 0 ")
 	}
 }
 
-func (query *query) orderByFields() {
+func (query *queryBuilder) orderByFields() {
 	if len(query.filter.Sort) > 0 {
 		query.orderBy = make([]Field, 0, len(query.filter.Sort))
 
@@ -480,7 +520,7 @@ func (query *query) orderByFields() {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
-				if query.orderBy[i].Name == "day" && query.filter.Period != pirsch.PeriodDay {
+				if query.orderBy[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
 					switch query.filter.Period {
 					case pirsch.PeriodWeek:
 						name = "week"
@@ -502,7 +542,7 @@ func (query *query) orderByFields() {
 	}
 }
 
-func (query *query) withFill() string {
+func (query *queryBuilder) withFill() string {
 	if !query.filter.From.IsZero() && !query.filter.To.IsZero() {
 		q := ""
 
@@ -524,7 +564,7 @@ func (query *query) withFill() string {
 	return ""
 }
 
-func (query *query) withLimit() {
+func (query *queryBuilder) withLimit() {
 	if query.limit > 0 && query.offset > 0 {
 		query.q.WriteString(fmt.Sprintf("LIMIT %d OFFSET %d ", query.limit, query.offset))
 	} else if query.limit > 0 {

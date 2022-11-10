@@ -361,6 +361,48 @@ var (
 		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		Name:           "average_time_spent_seconds",
 	}
+
+	// FieldPlatformDesktop is a query result column.
+	FieldPlatformDesktop = Field{
+		querySessions:  "uniqIf(visitor_id, desktop = 1)",
+		queryPageViews: "desktop = 1,mobile = 0",
+		Name:           "platform_desktop",
+	}
+
+	// FieldPlatformMobile is a query result column.
+	FieldPlatformMobile = Field{
+		querySessions:  "uniqIf(visitor_id, mobile = 1)",
+		queryPageViews: "desktop = 0,mobile = 1",
+		Name:           "platform_mobile",
+	}
+
+	// FieldPlatformUnknown is a query result column.
+	FieldPlatformUnknown = Field{
+		querySessions:  "uniq(visitor_id)-platform_desktop-platform_mobile",
+		queryPageViews: "desktop = 0,mobile = 0",
+		Name:           "platform_unknown",
+	}
+
+	// FieldRelativePlatformDesktop is a query result column.
+	FieldRelativePlatformDesktop = Field{
+		querySessions:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_desktop",
+	}
+
+	// FieldRelativePlatformMobile is a query result column.
+	FieldRelativePlatformMobile = Field{
+		querySessions:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_mobile",
+	}
+
+	// FieldRelativePlatformUnknown is a query result column.
+	FieldRelativePlatformUnknown = Field{
+		querySessions:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_unknown",
+	}
 )
 
 // Field is a column for a query.
