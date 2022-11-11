@@ -1,8 +1,12 @@
 package analyzer
 
 import (
+	"fmt"
+	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
+	"strings"
+	"time"
 )
 
 // Time aggregates statistics regarding the time on page and session duration.
@@ -91,30 +95,19 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 
 // AvgTimeOnPage returns the average time on page grouped by day, week, month, or year.
 func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
-	// TODO
-	return []model.TimeSpentStats{}, nil
+	filter = t.analyzer.getFilter(filter)
+	table := filter.table([]Field{})
 
-	/*filter = t.analyzer.getFilter(filter)
-
-	if filter.table() == "event" {
+	if table == events {
 		return []model.TimeSpentStats{}, nil
 	}
 
-	timeArgs, timeQuery := filter.queryTime(false)
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if len(fieldArgs) > 0 {
-		fieldQuery = "AND " + fieldQuery
+	q := queryBuilder{
+		filter: filter,
+		from:   table,
+		search: filter.Search,
 	}
 
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	withFillArgs, withFillQuery := filter.withFill()
-	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs)+len(withFillArgs))
 	var query strings.Builder
 
 	if filter.Period != pirsch.PeriodDay {
@@ -128,6 +121,8 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		}
 	}
 
+	fields := q.getFields()
+	fields = append(fields, "duration_seconds")
 	query.WriteString(fmt.Sprintf(`SELECT day,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -136,13 +131,10 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 			FROM (
 				SELECT session_id,
 				toDate(time, '%s') day,
-				duration_seconds
 				%s
-				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), time.UTC.String(), fieldsQuery))
+				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), time.UTC.String(), strings.Join(fields, ",")))
 
 	if t.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
-		args = append(args, innerTimeArgs...)
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -153,22 +145,17 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
 	}
 
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
-	args = append(args, withFillArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-				ORDER BY visitor_id, session_id, time
-			)
-			WHERE session_id = neighbor(session_id, 1, null)
-			AND time_on_page > 0
-			%s
-		)
-		GROUP BY day
-		ORDER BY day
-		%s`, timeQuery, fieldQuery, withFillQuery))
+	minIsBot := filter.minIsBot
+	filter.minIsBot = 0
+	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY visitor_id, session_id, time)
+		WHERE session_id = neighbor(session_id, 1, null) AND time_on_page > 0 `, q.whereTime()[len("WHERE "):]))
+	q.whereFields()
+	where := q.q.String()
+	query.WriteString(fmt.Sprintf(`%s) GROUP BY day ORDER BY day %s`, where, q.withFill()))
+	filter.minIsBot = minIsBot
 
 	if filter.Period != pirsch.PeriodDay {
 		switch filter.Period {
@@ -181,11 +168,11 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		}
 	}
 
-	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), args...)
+	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return stats, nil*/
+	return stats, nil
 }

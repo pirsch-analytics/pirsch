@@ -56,6 +56,66 @@ func (query *queryBuilder) query() (string, []any) {
 	return query.q.String(), query.args
 }
 
+func (query *queryBuilder) getFields() []string {
+	fields := make([]string, 0, 25)
+	query.appendField(&fields, FieldPath.Name, query.filter.Path)
+	query.appendField(&fields, FieldEntryPath.Name, query.filter.EntryPath)
+	query.appendField(&fields, FieldExitPath.Name, query.filter.ExitPath)
+	query.appendField(&fields, FieldLanguage.Name, query.filter.Language)
+	query.appendField(&fields, FieldCountry.Name, query.filter.Country)
+	query.appendField(&fields, FieldCity.Name, query.filter.City)
+	query.appendField(&fields, FieldReferrer.Name, query.filter.Referrer)
+	query.appendField(&fields, FieldReferrerName.Name, query.filter.ReferrerName)
+	query.appendField(&fields, FieldOS.Name, query.filter.OS)
+	query.appendField(&fields, FieldOSVersion.Name, query.filter.OSVersion)
+	query.appendField(&fields, FieldBrowser.Name, query.filter.Browser)
+	query.appendField(&fields, FieldBrowserVersion.Name, query.filter.BrowserVersion)
+	query.appendField(&fields, FieldScreenClass.Name, query.filter.ScreenClass)
+	query.appendField(&fields, "screen_width", query.filter.ScreenWidth)
+	query.appendField(&fields, "screen_height", query.filter.ScreenHeight)
+	query.appendField(&fields, FieldUTMSource.Name, query.filter.UTMSource)
+	query.appendField(&fields, FieldUTMMedium.Name, query.filter.UTMMedium)
+	query.appendField(&fields, FieldUTMCampaign.Name, query.filter.UTMCampaign)
+	query.appendField(&fields, FieldUTMContent.Name, query.filter.UTMContent)
+	query.appendField(&fields, FieldUTMTerm.Name, query.filter.UTMTerm)
+	query.appendField(&fields, FieldEventName.Name, query.filter.EventName)
+
+	if query.filter.Platform != "" {
+		platform := query.filter.Platform
+
+		if strings.HasPrefix(platform, "!") {
+			platform = query.filter.Platform[1:]
+		}
+
+		if platform == pirsch.PlatformDesktop {
+			fields = append(fields, "desktop")
+		} else if platform == pirsch.PlatformMobile {
+			fields = append(fields, "mobile")
+		} else {
+			fields = append(fields, "desktop")
+			fields = append(fields, "mobile")
+		}
+	}
+
+	if len(query.filter.Path) == 0 && len(query.filter.PathPattern) != 0 {
+		fields = append(fields, FieldPath.Name)
+	}
+
+	if len(query.filter.EventMeta) > 0 {
+		fields = append(fields, "event_meta_keys", "event_meta_values")
+	} else {
+		query.appendField(&fields, "event_meta_keys", query.filter.EventMetaKey)
+	}
+
+	return fields
+}
+
+func (query *queryBuilder) appendField(fields *[]string, field string, value []string) {
+	if len(value) != 0 {
+		*fields = append(*fields, field)
+	}
+}
+
 func (query *queryBuilder) selectFields() bool {
 	combineResults := false
 
