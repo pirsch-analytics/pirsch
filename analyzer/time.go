@@ -17,32 +17,20 @@ type Time struct {
 
 // AvgSessionDuration returns the average session duration grouped by day, week, month, or year.
 func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error) {
-	// TODO
-	return []model.TimeSpentStats{}, nil
+	filter = t.analyzer.getFilter(filter)
+	table := filter.table([]Field{})
 
-	/*filter = t.analyzer.getFilter(filter)
-
-	if filter.table() == "event" {
+	if table == events {
 		return []model.TimeSpentStats{}, nil
 	}
 
-	filterArgs, filterQuery := filter.query(true)
-	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
-	withFillArgs, withFillQuery := filter.withFill()
-	args := make([]any, 0, len(filterArgs)+len(innerFilterArgs)+len(withFillArgs))
-	var query strings.Builder
-
-	if filter.Period != pirsch.PeriodDay {
-		switch filter.Period {
-		case pirsch.PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
-		case pirsch.PeriodMonth:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
-		case pirsch.PeriodYear:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
-		}
+	q := queryBuilder{
+		filter: filter,
+		from:   table,
+		search: filter.Search,
 	}
-
+	var query strings.Builder
+	t.selectAvgTimeSpentPeriod(filter.Period, query)
 	query.WriteString(fmt.Sprintf(`SELECT day, average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
@@ -52,7 +40,8 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			FROM session s `, time.UTC.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
-		args = append(args, innerFilterArgs...)
+		minIsBot := filter.minIsBot
+		filter.minIsBot = 0
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -60,37 +49,32 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			FROM page_view
 			WHERE %s
 		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		filter.minIsBot = minIsBot
 	}
 
-	args = append(args, filterArgs...)
-	args = append(args, withFillArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			AND duration_seconds != 0
+	query.WriteString(q.whereTime())
+	q.whereFields()
+	where := q.q.String()
+
+	if where != "" {
+		query.WriteString(fmt.Sprintf("AND %s ", where))
+	}
+
+	query.WriteString(fmt.Sprintf(`AND duration_seconds != 0
 			GROUP BY day
 			HAVING sum(sign) > 0
 			ORDER BY day
 			%s
-		)`, filterQuery, withFillQuery))
-
-	if filter.Period != pirsch.PeriodDay {
-		switch filter.Period {
-		case pirsch.PeriodWeek:
-			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
-		case pirsch.PeriodMonth:
-			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
-		case pirsch.PeriodYear:
-			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
-		}
-	}
-
-	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), args...)
+		)`, q.withFill()))
+	t.groupByPeriod(filter.Period, query)
+	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return stats, nil*/
+	return stats, nil
 }
 
 // AvgTimeOnPage returns the average time on page grouped by day, week, month, or year.
@@ -107,20 +91,8 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		from:   table,
 		search: filter.Search,
 	}
-
 	var query strings.Builder
-
-	if filter.Period != pirsch.PeriodDay {
-		switch filter.Period {
-		case pirsch.PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
-		case pirsch.PeriodMonth:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
-		case pirsch.PeriodYear:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
-		}
-	}
-
+	t.selectAvgTimeSpentPeriod(filter.Period, query)
 	fields := q.getFields()
 	fields = append(fields, "duration_seconds")
 	query.WriteString(fmt.Sprintf(`SELECT day,
@@ -156,9 +128,32 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	where := q.q.String()
 	query.WriteString(fmt.Sprintf(`%s) GROUP BY day ORDER BY day %s`, where, q.withFill()))
 	filter.minIsBot = minIsBot
+	t.groupByPeriod(filter.Period, query)
+	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
-	if filter.Period != pirsch.PeriodDay {
-		switch filter.Period {
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query strings.Builder) {
+	if period != pirsch.PeriodDay {
+		switch period {
+		case pirsch.PeriodWeek:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
+		case pirsch.PeriodMonth:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
+		case pirsch.PeriodYear:
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
+		}
+	}
+}
+
+func (t *Time) groupByPeriod(period pirsch.Period, query strings.Builder) {
+	if period != pirsch.PeriodDay {
+		switch period {
 		case pirsch.PeriodWeek:
 			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
 		case pirsch.PeriodMonth:
@@ -167,12 +162,4 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
 		}
 	}
-
-	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return stats, nil
 }
