@@ -53,7 +53,7 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		return nil, err
 	}
 
-	if filter.IncludeTimeOnPage && filter.table(fields) == sessions {
+	if filter.IncludeTimeOnPage {
 		paths := make(map[string]struct{})
 
 		for i := range stats {

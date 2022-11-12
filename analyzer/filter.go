@@ -292,9 +292,9 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 }
 
 func (filter *Filter) table(fields []Field) table {
-	if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName.Name) {
+	if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
 		return events
-	} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
+	} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
 		return pageViews
 	}
 
@@ -305,14 +305,14 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 	if filter.minIsBot > 0 ||
 		len(filter.EntryPath) != 0 ||
 		len(filter.ExitPath) != 0 ||
-		filter.fieldsContain(fields, FieldBounces.Name) ||
-		filter.fieldsContain(fields, FieldViews.Name) ||
-		filter.fieldsContain(fields, FieldEntryPath.Name) ||
-		filter.fieldsContain(fields, FieldExitPath.Name) {
+		filter.fieldsContain(fields, FieldBounces) ||
+		filter.fieldsContain(fields, FieldViews) ||
+		filter.fieldsContain(fields, FieldEntryPath) ||
+		filter.fieldsContain(fields, FieldExitPath) {
 		sessionFields := []Field{FieldVisitorID, FieldSessionID}
 		groupBy := []Field{FieldVisitorID, FieldSessionID}
 
-		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath.Name) {
+		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath) {
 			sessionFields = append(sessionFields, FieldEntryPath)
 			groupBy = append(groupBy, FieldEntryPath)
 
@@ -322,7 +322,7 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			}
 		}
 
-		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath.Name) {
+		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath) {
 			sessionFields = append(sessionFields, FieldExitPath)
 			groupBy = append(groupBy, FieldExitPath)
 
@@ -332,11 +332,11 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			}
 		}
 
-		if filter.fieldsContain(fields, FieldBounces.Name) {
+		if filter.fieldsContain(fields, FieldBounces) {
 			sessionFields = append(sessionFields, FieldBounces)
 		}
 
-		if filter.fieldsContain(fields, FieldViews.Name) {
+		if filter.fieldsContain(fields, FieldViews) {
 			sessionFields = append(sessionFields, FieldViews)
 		}
 
@@ -355,7 +355,7 @@ func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
 	result := make([]Field, 0, len(fields))
 
 	for _, field := range fields {
-		if !filter.fieldsContain(exclude, field.Name) {
+		if !filter.fieldsContain(exclude, field) {
 			result = append(result, field)
 		}
 	}
@@ -363,9 +363,9 @@ func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
 	return result
 }
 
-func (filter *Filter) fieldsContain(haystack []Field, needle string) bool {
+func (filter *Filter) fieldsContain(haystack []Field, needle Field) bool {
 	for i := range haystack {
-		if haystack[i].Name == needle {
+		if haystack[i] == needle {
 			return true
 		}
 	}
