@@ -6,6 +6,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"sort"
+	"strings"
 )
 
 // Pages aggregates statistics regarding pages.
@@ -339,32 +340,32 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 }
 
 func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTimeSpentStats, error) {
-	// TODO
-	return []model.AvgTimeSpentStats{}, nil
-
-	/*if len(paths) == 0 {
+	if len(paths) == 0 {
 		return []model.AvgTimeSpentStats{}, nil
 	}
 
 	filter = pages.analyzer.getFilter(filter)
-	eventName, eventMetaKey, eventMeta := filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil
-	filter.Search, filter.Sort, filter.Offset, filter.Limit = nil, nil, 0, 0
-	timeArgs, timeQuery := filter.queryTime(false)
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if len(fieldArgs) > 0 {
-		fieldQuery = "AND " + fieldQuery
+	q := queryBuilder{
+		filter: filter,
+		from:   pageViews,
+		search: filter.Search,
 	}
-
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
-	}
-
-	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
+	fields := q.getFields()
+	fields = append(fields, "duration_seconds")
+	hasPath := false
+
+	for _, field := range fields {
+		if field == FieldPath.Name {
+			hasPath = true
+			break
+		}
+	}
+
+	if !hasPath {
+		fields = append(fields, FieldPath.Name)
+	}
+
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
@@ -372,61 +373,56 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 			%s time_on_page
 			FROM (
 				SELECT v.session_id sid,
-				path,
-				duration_seconds
 				%s
-				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), fieldsQuery))
+				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
 	if pages.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
-		args = append(args, innerTimeArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
+		sessionsQuery := queryBuilder{
+			filter: filter,
+			from:   sessions,
+			search: filter.Search,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		}
+		str, args := sessionsQuery.query()
+		q.args = append(q.args, args...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (%s) s ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, str))
 	}
 
-	if len(eventName) > 0 {
-		filter.EventName, filter.EventMetaKey, filter.EventMeta = eventName, eventMetaKey, eventMeta
-		eventFilterArgs, eventFilterQuery := filter.query(false)
-		args = append(args, eventFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id, session_id
-				FROM event
-				WHERE %s
-			) ev
-			ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, eventFilterQuery))
+	if len(filter.EventName) > 0 {
+		eventsQuery := queryBuilder{
+			filter: filter,
+			from:   events,
+			search: filter.Search,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		}
+		str, args := eventsQuery.query()
+		q.args = append(q.args, args...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (%s) ev ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, str))
 	}
 
-	args = append(args, timeArgs...)
-	pathQuery := strings.Repeat("?,", len(paths))
-
-	for _, path := range paths {
-		args = append(args, path)
-	}
-
-	args = append(args, fieldArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-				ORDER BY v.visitor_id, v.session_id, time
-			)
-			WHERE time_on_page > 0
-			AND sid = neighbor(sid, 1, null)
-			AND path IN (%s)
-			%s
-		)
-		GROUP BY path`, timeQuery, pathQuery[:len(pathQuery)-1], fieldQuery))
-	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), args...)
+	whereTime := q.whereTime()[len("WHERE "):]
+	q.whereFields()
+	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY v.visitor_id, v.session_id, time)
+		WHERE time_on_page > 0 AND sid = neighbor(sid, 1, null) %s) GROUP BY path`, whereTime, q.q.String()))
+	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return stats, nil*/
+	return stats, nil
 }

@@ -58,9 +58,28 @@ func (query *queryBuilder) query() (string, []any) {
 
 func (query *queryBuilder) getFields() []string {
 	fields := make([]string, 0, 25)
-	query.appendField(&fields, FieldPath.Name, query.filter.Path)
-	query.appendField(&fields, FieldEntryPath.Name, query.filter.EntryPath)
-	query.appendField(&fields, FieldExitPath.Name, query.filter.ExitPath)
+
+	if query.from == sessions {
+		query.appendField(&fields, FieldEntryPath.Name, query.filter.EntryPath)
+		query.appendField(&fields, FieldExitPath.Name, query.filter.ExitPath)
+	} else {
+		query.appendField(&fields, FieldPath.Name, query.filter.Path)
+
+		if len(query.filter.Path) == 0 && (len(query.filter.PathPattern) != 0 || len(query.filter.AnyPath) != 0) {
+			fields = append(fields, FieldPath.Name)
+		}
+	}
+
+	if query.from == events {
+		query.appendField(&fields, FieldEventName.Name, query.filter.EventName)
+
+		if len(query.filter.EventMeta) > 0 {
+			fields = append(fields, "event_meta_keys", "event_meta_values")
+		} else {
+			query.appendField(&fields, "event_meta_keys", query.filter.EventMetaKey)
+		}
+	}
+
 	query.appendField(&fields, FieldLanguage.Name, query.filter.Language)
 	query.appendField(&fields, FieldCountry.Name, query.filter.Country)
 	query.appendField(&fields, FieldCity.Name, query.filter.City)
@@ -78,7 +97,6 @@ func (query *queryBuilder) getFields() []string {
 	query.appendField(&fields, FieldUTMCampaign.Name, query.filter.UTMCampaign)
 	query.appendField(&fields, FieldUTMContent.Name, query.filter.UTMContent)
 	query.appendField(&fields, FieldUTMTerm.Name, query.filter.UTMTerm)
-	query.appendField(&fields, FieldEventName.Name, query.filter.EventName)
 
 	if query.filter.Platform != "" {
 		platform := query.filter.Platform
@@ -95,16 +113,6 @@ func (query *queryBuilder) getFields() []string {
 			fields = append(fields, "desktop")
 			fields = append(fields, "mobile")
 		}
-	}
-
-	if len(query.filter.Path) == 0 && len(query.filter.PathPattern) != 0 {
-		fields = append(fields, FieldPath.Name)
-	}
-
-	if len(query.filter.EventMeta) > 0 {
-		fields = append(fields, "event_meta_keys", "event_meta_values")
-	} else {
-		query.appendField(&fields, "event_meta_keys", query.filter.EventMetaKey)
 	}
 
 	return fields

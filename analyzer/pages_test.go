@@ -801,6 +801,8 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, 16)
 	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
+	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter("event"), []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
