@@ -292,10 +292,12 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 }
 
 func (filter *Filter) table(fields []Field) table {
-	if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
-		return events
-	} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
-		return pageViews
+	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
+		if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
+			return events
+		} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
+			return pageViews
+		}
 	}
 
 	return sessions
@@ -312,7 +314,7 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 		sessionFields := []Field{FieldVisitorID, FieldSessionID}
 		groupBy := []Field{FieldVisitorID, FieldSessionID}
 
-		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath) {
+		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath) || filter.searchContains(FieldEntryPath) {
 			sessionFields = append(sessionFields, FieldEntryPath)
 			groupBy = append(groupBy, FieldEntryPath)
 
@@ -322,7 +324,7 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			}
 		}
 
-		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath) {
+		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath) || filter.searchContains(FieldExitPath) {
 			sessionFields = append(sessionFields, FieldExitPath)
 			groupBy = append(groupBy, FieldExitPath)
 
@@ -366,6 +368,16 @@ func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
 func (filter *Filter) fieldsContain(haystack []Field, needle Field) bool {
 	for i := range haystack {
 		if haystack[i] == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (filter *Filter) searchContains(needle Field) bool {
+	for i := range filter.Search {
+		if filter.Search[i].Field == needle {
 			return true
 		}
 	}

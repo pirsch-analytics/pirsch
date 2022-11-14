@@ -350,7 +350,6 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		from:   pageViews,
 		search: filter.Search,
 	}
-	var query strings.Builder
 	fields := q.getFields()
 	fields = append(fields, "duration_seconds")
 	hasPath := false
@@ -366,6 +365,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		fields = append(fields, FieldPath.Name)
 	}
 
+	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (

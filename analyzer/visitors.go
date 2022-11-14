@@ -2,9 +2,11 @@ package analyzer
 
 import (
 	"errors"
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4/db"
 	"github.com/pirsch-analytics/pirsch/v4/model"
 	"github.com/pirsch-analytics/pirsch/v4/util"
+	"strings"
 	"time"
 )
 
@@ -366,35 +368,30 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 }
 
 func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
-	// TODO
-	return 0, nil
-
-	/*timeArgs, timeQuery := filter.queryTime(false)
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "AND " + fieldQuery
+	q := queryBuilder{
+		filter: filter,
+		from:   pageViews,
+		search: filter.Search,
 	}
+	fields := q.getFields()
+	fieldsQuery := strings.Join(fields, ",")
 
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
+	if len(fields) > 0 {
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
 			SELECT %s time_on_page
 			FROM (
-				SELECT session_id %s,
+				SELECT session_id,
 				sum(duration_seconds) duration_seconds
+				%s
 				FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
 
 	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		innerTimeArgs, innerTimeQuery := filter.queryTime(true)
-		args = append(args, innerTimeArgs...)
+		q.from = sessions
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -405,26 +402,24 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		q.from = pageViews
 	}
 
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
 				GROUP BY visitor_id, session_id, time %s
 				ORDER BY visitor_id, session_id, time
 			)
 			WHERE session_id = neighbor(session_id, 1, null)
-			AND time_on_page > 0
-			%s
-		)`, timeQuery, fieldsQuery, fieldQuery))
-	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), args...)
+			AND time_on_page > 0 %s)`, q.whereTime()[len("WHERE "):], fieldsQuery, q.q.String()))
+	q.whereFields()
+	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), q.args...)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return averageTimeSpentSeconds, nil*/
+	return averageTimeSpentSeconds, nil
 }
 
 func calculateGrowth[T int | float64](current, previous T) float64 {
