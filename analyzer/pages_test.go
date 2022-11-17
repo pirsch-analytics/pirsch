@@ -348,7 +348,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
 	assert.Equal(t, "/", exits[0].Path)
-	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 3, exits[0].Visitors)
 	assert.Equal(t, 1, exits[0].Exits)
 	assert.InDelta(t, 0.2, exits[0].ExitRate, 0.01)
 	_, err = analyzer.Pages.Exit(&Filter{Path: []string{"/bar"}, IncludeTitle: true})

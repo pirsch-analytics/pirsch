@@ -285,7 +285,11 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	}
 
 	filter = pages.analyzer.getFilter(filter)
+	filter.Path = nil
+	filter.EntryPath = nil
+	filter.ExitPath = nil
 	filter.AnyPath = paths
+	filter.IncludeTitle = false
 	q, args := filter.buildQuery([]Field{
 		FieldPath,
 		FieldVisitors,
