@@ -294,9 +294,35 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 	return averageTimeSpentSeconds, nil
 }
 
+// TODO
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
-	// TODO
-	return 0, nil
+	path, pattern, anyPath := filter.Path, filter.PathPattern, filter.AnyPath
+	filter.Path, filter.PathPattern, filter.AnyPath = nil, nil, nil
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{FieldDurationSeconds},
+		from:   events,
+		search: filter.Search,
+	}
+
+	if visitors.analyzer.minIsBot > 0 {
+		q.join = &queryBuilder{
+			filter:  filter,
+			fields:  []Field{FieldVisitorID, FieldSessionID},
+			from:    sessions,
+			groupBy: []Field{FieldVisitorID, FieldSessionID},
+		}
+	}
+
+	query, args := q.query()
+	filter.Path, filter.PathPattern, filter.AnyPath = path, pattern, anyPath
+	averageTimeSpentSeconds, err := visitors.store.Count(query, args...)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return averageTimeSpentSeconds, nil
 
 	/*filterArgs, filterQuery := filter.query(false)
 	var query string

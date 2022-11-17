@@ -403,6 +403,13 @@ var (
 		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_unknown",
 	}
+
+	// FieldDurationSeconds is a query result column.
+	FieldDurationSeconds = Field{
+		querySessions:  "sum(duration_seconds)",
+		queryPageViews: "sum(duration_seconds)",
+		Name:           "duration_seconds",
+	}
 )
 
 // Field is a column for a query.
