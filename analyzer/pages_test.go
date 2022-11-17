@@ -186,10 +186,17 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 		},
 		{
 			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 1"},
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 1", ExitTitle: "Home 2"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", EntryTitle: "Home 1", ExitTitle: "Foo"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home 2", ExitTitle: "Home 2"},
 			{Sign: 1, VisitorID: 2, SessionID: 3, Time: util.PastDay(1), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
+		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/foo", Title: "Foo", DurationSeconds: 42},
+		{VisitorID: 1, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home 2"},
+		{VisitorID: 2, Time: util.PastDay(1), SessionID: 2, Path: "/foo", Title: "Foo"},
+	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event", VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{Name: "event", VisitorID: 1, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
@@ -203,7 +210,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	assert.Equal(t, "Home 1", visitors[0].Title)
 	assert.Equal(t, "Home 2", visitors[1].Title)
 	assert.Equal(t, "Foo", visitors[2].Title)
-	assert.Equal(t, 0, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 42, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
@@ -826,6 +833,9 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{Sign: 1, VisitorID: 3, SessionID: 1, Time: util.Today(), Start: time.Now()},
 		{Sign: 1, VisitorID: 3, SessionID: 1, Time: util.Today(), Start: time.Now()},
 	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo"},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
 	total, err := analyzer.Pages.totalVisitorsSessions(nil, []string{"/", "/foo", "/bar"})
@@ -850,6 +860,13 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 3, total[0].Views)
 	assert.Equal(t, 3, total[0].Visitors)
 	assert.Equal(t, 3, total[0].Sessions)
+	total, err = analyzer.Pages.totalVisitorsSessions(&Filter{EventName: []string{"event"}}, []string{"/"})
+	assert.NoError(t, err)
+	assert.Len(t, total, 1)
+	assert.Equal(t, "/", total[0].Path)
+	assert.Equal(t, 1, total[0].Views)
+	assert.Equal(t, 1, total[0].Visitors)
+	assert.Equal(t, 1, total[0].Sessions)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter("event"), []string{"/", "/foo", "/bar"})

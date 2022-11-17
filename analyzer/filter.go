@@ -279,6 +279,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			FieldExitPath,
 			FieldExitTitle)
 		q.join = filter.joinSessions(fields)
+		q.joinSecond = filter.joinEvents()
 	} else {
 		q.fields = fields
 	}
@@ -293,10 +294,10 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 
 func (filter *Filter) table(fields []Field) table {
 	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
-		if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
-			return events
-		} else if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
+		if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
 			return pageViews
+		} else if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
+			return events
 		}
 	}
 
@@ -347,6 +348,22 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			fields:  sessionFields,
 			from:    sessions,
 			groupBy: groupBy,
+		}
+	}
+
+	return nil
+}
+
+func (filter *Filter) joinEvents() *queryBuilder {
+	if len(filter.EventName) != 0 {
+		filterCopy := *filter
+		filterCopy.Path = nil
+		filterCopy.AnyPath = nil
+		return &queryBuilder{
+			filter:  &filterCopy,
+			fields:  []Field{FieldVisitorID, FieldSessionID},
+			from:    events,
+			groupBy: []Field{FieldVisitorID, FieldSessionID},
 		}
 	}
 

@@ -22,16 +22,17 @@ type where struct {
 }
 
 type queryBuilder struct {
-	filter   *Filter
-	fields   []Field
-	from     table
-	join     *queryBuilder
-	leftJoin *queryBuilder
-	search   []Search
-	groupBy  []Field
-	orderBy  []Field
-	limit    int
-	offset   int
+	filter     *Filter
+	fields     []Field
+	from       table
+	join       *queryBuilder
+	joinSecond *queryBuilder
+	leftJoin   *queryBuilder
+	search     []Search
+	groupBy    []Field
+	orderBy    []Field
+	limit      int
+	offset     int
 
 	where []where
 	q     strings.Builder
@@ -212,10 +213,18 @@ func (query *queryBuilder) joinQuery() {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("JOIN (%s) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id ", q))
-	} else if query.leftJoin != nil {
+	}
+
+	if query.joinSecond != nil {
+		q, args := query.joinSecond.query()
+		query.args = append(query.args, args...)
+		query.q.WriteString(fmt.Sprintf("JOIN (%s) k ON k.visitor_id = t.visitor_id AND k.session_id = t.session_id ", q))
+	}
+
+	if query.leftJoin != nil {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
-		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id ", q))
+		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
 }
 

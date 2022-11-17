@@ -67,8 +67,8 @@ var (
 
 	// FieldVisitors is a query result column.
 	FieldVisitors = Field{
-		querySessions:  "uniq(visitor_id)",
-		queryPageViews: "uniq(visitor_id)",
+		querySessions:  "uniq(t.visitor_id)",
+		queryPageViews: "uniq(t.visitor_id)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
 		Name:           "visitors",
@@ -94,8 +94,8 @@ var (
 
 	// FieldSessions is a query result column.
 	FieldSessions = Field{
-		querySessions:  "uniq(visitor_id, session_id)",
-		queryPageViews: "uniq(visitor_id, session_id)",
+		querySessions:  "uniq(t.visitor_id, t.session_id)",
+		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
 		Name:           "sessions",
@@ -122,7 +122,7 @@ var (
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
 		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "uniqIf((visitor_id, session_id), bounces = 1)",
+		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		Name:           "bounces",
