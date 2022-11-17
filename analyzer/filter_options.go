@@ -76,7 +76,7 @@ func (options *FilterOptions) Languages(filter *Filter) ([]string, error) {
 
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
-	args, timeFilter := filter.queryTime(false)
-	query := fmt.Sprintf(`SELECT DISTINCT %s FROM %s WHERE %s ORDER BY %s ASC`, field, table, timeFilter, field)
-	return options.store.SelectOptions(query, args...)
+	timeQuery, args := filter.buildTimeQuery()
+	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %s %s ORDER BY %s ASC`, field, table, timeQuery, field)
+	return options.store.SelectOptions(q, args...)
 }

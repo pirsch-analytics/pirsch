@@ -17,11 +17,11 @@ func TestAnalyzer_Events(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		saveSessions(t, [][]model.Session{
 			{
-				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
 			},
 			{
-				{Sign: -1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
-				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},
+				{Sign: -1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
+				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
 			},
 		})
 	}

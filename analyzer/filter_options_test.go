@@ -12,10 +12,10 @@ import (
 func TestFilterOptions_Pages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: pastDay(4), Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: pastDay(2), Path: "/foo"},
-		{VisitorID: 1, SessionID: 2, Time: pastDay(2), Path: "/foo"},
-		{VisitorID: 1, SessionID: 1, Time: pastDay(1), Path: "/bar"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Path: "/foo"},
+		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Path: "/bar"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -25,7 +25,7 @@ func TestFilterOptions_Pages(t *testing.T) {
 	assert.Equal(t, "/", options[0])
 	assert.Equal(t, "/bar", options[1])
 	assert.Equal(t, "/foo", options[2])
-	options, err = analyzer.Options.Pages(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.Pages(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "/bar", options[0])
@@ -35,10 +35,10 @@ func TestFilterOptions_Pages(t *testing.T) {
 func TestFilterOptions_Referrer(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), Referrer: "https://google.com", ReferrerName: "Google"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), Referrer: "https://twitter.com", ReferrerName: "Twitter"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Referrer: "https://google.com", ReferrerName: "Google"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Referrer: "https://twitter.com", ReferrerName: "Twitter"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -48,7 +48,7 @@ func TestFilterOptions_Referrer(t *testing.T) {
 	assert.Equal(t, "https://google.com", options[0])
 	assert.Equal(t, "https://pirsch.io", options[1])
 	assert.Equal(t, "https://twitter.com", options[2])
-	options, err = analyzer.Options.Referrer(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.Referrer(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "https://pirsch.io", options[0])
@@ -59,7 +59,7 @@ func TestFilterOptions_Referrer(t *testing.T) {
 	assert.Equal(t, "Google", options[0])
 	assert.Equal(t, "Pirsch", options[1])
 	assert.Equal(t, "Twitter", options[2])
-	options, err = analyzer.Options.ReferrerName(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.ReferrerName(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "Pirsch", options[0])
@@ -69,10 +69,10 @@ func TestFilterOptions_Referrer(t *testing.T) {
 func TestFilterOptions_UTM(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), UTMSource: "source", UTMMedium: "medium", UTMCampaign: "campaign", UTMContent: "content", UTMTerm: "term"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), UTMSource: "bar", UTMMedium: "bar", UTMCampaign: "bar", UTMContent: "bar", UTMTerm: "bar"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), UTMSource: "source", UTMMedium: "medium", UTMCampaign: "campaign", UTMContent: "content", UTMTerm: "term"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), UTMSource: "bar", UTMMedium: "bar", UTMCampaign: "bar", UTMContent: "bar", UTMTerm: "bar"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -82,7 +82,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "bar", utmSource[0])
 	assert.Equal(t, "foo", utmSource[1])
 	assert.Equal(t, "source", utmSource[2])
-	utmSource, err = analyzer.Options.UTMSource(&Filter{From: pastDay(3), To: util.Today()})
+	utmSource, err = analyzer.Options.UTMSource(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmSource, 2)
 	assert.Equal(t, "bar", utmSource[0])
@@ -93,7 +93,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "bar", utmMedium[0])
 	assert.Equal(t, "foo", utmMedium[1])
 	assert.Equal(t, "medium", utmMedium[2])
-	utmMedium, err = analyzer.Options.UTMMedium(&Filter{From: pastDay(3), To: util.Today()})
+	utmMedium, err = analyzer.Options.UTMMedium(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmMedium, 2)
 	assert.Equal(t, "bar", utmMedium[0])
@@ -104,7 +104,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "bar", utmCampaign[0])
 	assert.Equal(t, "campaign", utmCampaign[1])
 	assert.Equal(t, "foo", utmCampaign[2])
-	utmCampaign, err = analyzer.Options.UTMCampaign(&Filter{From: pastDay(3), To: util.Today()})
+	utmCampaign, err = analyzer.Options.UTMCampaign(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmCampaign, 2)
 	assert.Equal(t, "bar", utmCampaign[0])
@@ -115,7 +115,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "bar", utmContent[0])
 	assert.Equal(t, "content", utmContent[1])
 	assert.Equal(t, "foo", utmContent[2])
-	utmContent, err = analyzer.Options.UTMContent(&Filter{From: pastDay(3), To: util.Today()})
+	utmContent, err = analyzer.Options.UTMContent(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmContent, 2)
 	assert.Equal(t, "bar", utmContent[0])
@@ -126,7 +126,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "bar", utmTerm[0])
 	assert.Equal(t, "foo", utmTerm[1])
 	assert.Equal(t, "term", utmTerm[2])
-	utmTerm, err = analyzer.Options.UTMTerm(&Filter{From: pastDay(3), To: util.Today()})
+	utmTerm, err = analyzer.Options.UTMTerm(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmTerm, 2)
 	assert.Equal(t, "bar", utmTerm[0])
@@ -136,10 +136,10 @@ func TestFilterOptions_UTM(t *testing.T) {
 func TestFilterOptions_Events(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, SessionID: 1, Time: pastDay(4), Name: "event"},
-		{VisitorID: 1, SessionID: 1, Time: pastDay(2), Name: "foo"},
-		{VisitorID: 1, SessionID: 2, Time: pastDay(2), Name: "foo"},
-		{VisitorID: 1, SessionID: 1, Time: pastDay(1), Name: "bar"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Name: "event"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Name: "foo"},
+		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "foo"},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Name: "bar"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -149,7 +149,7 @@ func TestFilterOptions_Events(t *testing.T) {
 	assert.Equal(t, "bar", options[0])
 	assert.Equal(t, "event", options[1])
 	assert.Equal(t, "foo", options[2])
-	options, err = analyzer.Options.Events(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.Events(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "bar", options[0])
@@ -159,10 +159,10 @@ func TestFilterOptions_Events(t *testing.T) {
 func TestFilterOptions_Countries(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), CountryCode: "us"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), CountryCode: "ja"},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), CountryCode: "ja"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), CountryCode: "de"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), CountryCode: "us"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), CountryCode: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), CountryCode: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), CountryCode: "de"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -172,7 +172,7 @@ func TestFilterOptions_Countries(t *testing.T) {
 	assert.Equal(t, "de", options[0])
 	assert.Equal(t, "ja", options[1])
 	assert.Equal(t, "us", options[2])
-	options, err = analyzer.Options.Countries(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.Countries(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "de", options[0])
@@ -182,10 +182,10 @@ func TestFilterOptions_Countries(t *testing.T) {
 func TestFilterOptions_Cities(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), City: "Boston"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), City: "Tokio"},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), City: "Tokio"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), City: "Berlin"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), City: "Boston"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), City: "Tokio"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), City: "Tokio"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), City: "Berlin"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -195,7 +195,7 @@ func TestFilterOptions_Cities(t *testing.T) {
 	assert.Equal(t, "Berlin", options[0])
 	assert.Equal(t, "Boston", options[1])
 	assert.Equal(t, "Tokio", options[2])
-	options, err = analyzer.Options.Cities(&Filter{From: pastDay(3), To: util.Today()})
+	options, err = analyzer.Options.Cities(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
 	assert.Equal(t, "Berlin", options[0])
@@ -205,10 +205,10 @@ func TestFilterOptions_Cities(t *testing.T) {
 func TestFilterOptions_Languages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(4), Start: pastDay(4), Language: "en"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(2), Start: pastDay(2), Language: "ja"},
-		{Sign: 1, VisitorID: 1, SessionID: 2, Time: pastDay(2), Start: pastDay(2), Language: "ja"},
-		{Sign: 1, VisitorID: 1, SessionID: 1, Time: pastDay(1), Start: pastDay(1), Language: "de"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Language: "en"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Language: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Language: "ja"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Language: "de"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
@@ -218,7 +218,7 @@ func TestFilterOptions_Languages(t *testing.T) {
 	assert.Equal(t, "de", utmSource[0])
 	assert.Equal(t, "en", utmSource[1])
 	assert.Equal(t, "ja", utmSource[2])
-	utmSource, err = analyzer.Options.Languages(&Filter{From: pastDay(3), To: util.Today()})
+	utmSource, err = analyzer.Options.Languages(&Filter{From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, utmSource, 2)
 	assert.Equal(t, "de", utmSource[0])

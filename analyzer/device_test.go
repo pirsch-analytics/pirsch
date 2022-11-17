@@ -13,14 +13,14 @@ import (
 func TestAnalyzer_Platform(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, Time: time.Now(), Path: "/"},
-		{VisitorID: 1, Time: time.Now(), Path: "/foo"},
-		{VisitorID: 1, Time: time.Now(), Path: "/bar"},
-		{VisitorID: 2, Time: time.Now(), Path: "/"},
-		{VisitorID: 3, Time: time.Now(), Path: "/"},
+		{VisitorID: 1, Time: time.Now(), Path: "/", Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/foo", Desktop: true},
+		{VisitorID: 1, Time: time.Now(), Path: "/bar", Desktop: true},
+		{VisitorID: 2, Time: time.Now(), Path: "/", Mobile: true},
+		{VisitorID: 3, Time: time.Now(), Path: "/", Mobile: true},
 		{VisitorID: 4, Time: time.Now(), Path: "/"},
-		{VisitorID: 5, Time: time.Now(), Path: "/"},
-		{VisitorID: 6, Time: time.Now(), Path: "/"},
+		{VisitorID: 5, Time: time.Now(), Path: "/", Desktop: true},
+		{VisitorID: 6, Time: time.Now(), Path: "/", Desktop: true},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
@@ -38,7 +38,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient, nil)
-	platform, err := analyzer.Device.Platform(&Filter{From: pastDay(5), To: util.Today()})
+	platform, err := analyzer.Device.Platform(&Filter{From: util.PastDay(5), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, platform.PlatformDesktop)
 	assert.Equal(t, 2, platform.PlatformMobile)

@@ -1,6 +1,22 @@
 package analyzer
 
+import "github.com/pirsch-analytics/pirsch/v4"
+
 var (
+	// FieldVisitorID is a query result column.
+	FieldVisitorID = Field{
+		querySessions:  "visitor_id",
+		queryPageViews: "visitor_id",
+		Name:           "visitor_id",
+	}
+
+	// FieldSessionID is a query result column.
+	FieldSessionID = Field{
+		querySessions:  "session_id",
+		queryPageViews: "session_id",
+		Name:           "session_id",
+	}
+
 	// FieldCount is a query result column.
 	FieldCount = Field{
 		querySessions:  "count(*)",
@@ -51,8 +67,8 @@ var (
 
 	// FieldVisitors is a query result column.
 	FieldVisitors = Field{
-		querySessions:  "uniq(visitor_id)",
-		queryPageViews: "uniq(visitor_id)",
+		querySessions:  "uniq(t.visitor_id)",
+		queryPageViews: "uniq(t.visitor_id)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
 		Name:           "visitors",
@@ -78,8 +94,8 @@ var (
 
 	// FieldSessions is a query result column.
 	FieldSessions = Field{
-		querySessions:  "uniq(visitor_id, session_id)",
-		queryPageViews: "uniq(visitor_id, session_id)",
+		querySessions:  "uniq(t.visitor_id, t.session_id)",
+		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
 		Name:           "sessions",
@@ -106,7 +122,7 @@ var (
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
 		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "uniqIf((visitor_id, session_id), is_bounce = 1)",
+		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		Name:           "bounces",
@@ -345,6 +361,55 @@ var (
 		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
 		Name:           "average_time_spent_seconds",
 	}
+
+	// FieldPlatformDesktop is a query result column.
+	FieldPlatformDesktop = Field{
+		querySessions:  "uniqIf(visitor_id, desktop = 1)",
+		queryPageViews: "desktop = 1,mobile = 0",
+		Name:           "platform_desktop",
+	}
+
+	// FieldPlatformMobile is a query result column.
+	FieldPlatformMobile = Field{
+		querySessions:  "uniqIf(visitor_id, mobile = 1)",
+		queryPageViews: "desktop = 0,mobile = 1",
+		Name:           "platform_mobile",
+	}
+
+	// FieldPlatformUnknown is a query result column.
+	FieldPlatformUnknown = Field{
+		querySessions:  "uniq(visitor_id)-platform_desktop-platform_mobile",
+		queryPageViews: "desktop = 0,mobile = 0",
+		Name:           "platform_unknown",
+	}
+
+	// FieldRelativePlatformDesktop is a query result column.
+	FieldRelativePlatformDesktop = Field{
+		querySessions:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_desktop",
+	}
+
+	// FieldRelativePlatformMobile is a query result column.
+	FieldRelativePlatformMobile = Field{
+		querySessions:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_mobile",
+	}
+
+	// FieldRelativePlatformUnknown is a query result column.
+	FieldRelativePlatformUnknown = Field{
+		querySessions:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		Name:           "relative_platform_unknown",
+	}
+
+	// FieldDurationSeconds is a query result column.
+	FieldDurationSeconds = Field{
+		querySessions:  "sum(duration_seconds)",
+		queryPageViews: "sum(duration_seconds)",
+		Name:           "duration_seconds",
+	}
 )
 
 // Field is a column for a query.
@@ -352,7 +417,7 @@ type Field struct {
 	querySessions  string
 	queryPageViews string
 	queryPeriod    string
-	queryDirection string
+	queryDirection pirsch.Direction
 	queryWithFill  string
 	withFill       bool
 	timezone       bool

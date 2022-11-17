@@ -27,66 +27,26 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
-	title := ""
+	fields := []Field{FieldPath}
+	groupBy := []Field{FieldPath}
+	orderBy := []Field{FieldVisitors, FieldPath}
 
 	if filter.IncludeTitle {
-		title = ",title"
+		fields = append(fields, FieldTitle)
+		groupBy = append(groupBy, FieldTitle)
+		orderBy = append(orderBy, FieldTitle)
 	}
 
-	filterArgs, filterQuery := filter.query(false)
-	innerFilterArgs, innerFilterQuery := filter.queryTime(true)
-	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path %s,
-		uniq(visitor_id) visitors
-		FROM page_view v `, title))
-
-	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY path %s
-		ORDER BY visitors DESC, path
-		%s`, filterQuery, title, filter.withLimit()))
-	stats, err := visitors.store.SelectActiveVisitorStats(title != "", query.String(), args...)
+	fields = append(fields, FieldVisitors)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := visitors.store.SelectActiveVisitorStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	query.Reset()
-	query.WriteString(`SELECT uniq(visitor_id) visitors
-		FROM page_view v `)
-
-	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
-	count, err := visitors.store.Count(query.String(), args...)
+	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil)
+	count, err := visitors.store.Count(q, args...)
 
 	if err != nil {
 		return nil, 0, err
@@ -97,14 +57,14 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 
 // Total returns the total visitor count, session count, bounce rate, and views.
 func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error) {
-	args, query := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
 		FieldVisitors,
 		FieldSessions,
 		FieldViews,
 		FieldBounces,
 		FieldBounceRate,
 	}, nil, nil)
-	stats, err := visitors.store.GetTotalVisitorStats(query, args...)
+	stats, err := visitors.store.GetTotalVisitorStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -116,7 +76,7 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 // ByPeriod returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
 func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldDay,
 		FieldVisitors,
 		FieldSessions,
@@ -129,7 +89,7 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 		FieldDay,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorStats(filter.Period, query, args...)
+	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -156,8 +116,8 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		FieldBounces,
 		FieldBounceRate,
 	}
-	args, query := filter.buildQuery(fields, nil, nil)
-	current, err := visitors.store.GetGrowthStats(query, args...)
+	q, args := filter.buildQuery(fields, nil, nil)
+	current, err := visitors.store.GetGrowthStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -199,8 +159,8 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		}
 	}
 
-	args, query = filter.buildQuery(fields, nil, nil)
-	previous, err := visitors.store.GetGrowthStats(query, args...)
+	q, args = filter.buildQuery(fields, nil, nil)
+	previous, err := visitors.store.GetGrowthStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -231,7 +191,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 // ByHour returns the visitor count grouped by time of day.
 func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, error) {
-	args, query := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
 		FieldHour,
 		FieldVisitors,
 		FieldSessions,
@@ -244,7 +204,7 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 		FieldHour,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorHourStats(query, args...)
+	stats, err := visitors.store.SelectVisitorHourStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -281,8 +241,8 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		fields = append(fields, FieldAnyReferrer)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := visitors.store.SelectReferrerStats(query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := visitors.store.SelectReferrerStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -292,33 +252,40 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 }
 
 func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query(true)
-	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
-	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
+	q := queryBuilder{
+		filter: filter,
+		from:   sessions,
+		search: filter.Search,
+	}
 	var query strings.Builder
 	query.WriteString(`SELECT sum(duration_seconds)
 		FROM (
 			SELECT sum(duration_seconds*sign) duration_seconds
-			FROM session s `)
+			FROM session t `)
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
-		args = append(args, innerFilterArgs...)
+		q.from = pageViews
+		whereTime := q.whereTime()
+		q.whereFields()
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
+			SELECT visitor_id, session_id FROM page_view %s %s
 		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+		ON v.visitor_id = t.visitor_id AND v.session_id = t.session_id `, whereTime, q.q.String()))
+		q.from = sessions
+		q.q.Reset()
+		q.where = nil
 	}
 
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			GROUP BY visitor_id, session_id
-			HAVING sum(sign) > 0
-		)`, filterQuery))
-	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), args...)
+	query.WriteString(q.whereTime())
+	q.whereFields()
+	where := q.q.String()
+
+	if where != "" {
+		query.WriteString(where)
+	}
+
+	query.WriteString("GROUP BY visitor_id, session_id HAVING sum(sign) > 0)")
+	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), q.args...)
 
 	if err != nil {
 		return 0, err
@@ -328,28 +295,24 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 }
 
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
-	filterArgs, filterQuery := filter.query(false)
-	var query string
-
-	if visitors.analyzer.minIsBot > 0 {
-		innerFilterArgs, innerFilterQuery := filter.queryTime(true)
-		query = fmt.Sprintf(`SELECT sum(duration_seconds)
-			FROM event e
-			INNER JOIN (
-				SELECT visitor_id,
-				session_id
-				FROM session
-				WHERE %s
-			) s
-			ON s.visitor_id = e.visitor_id AND s.session_id = e.session_id
-			WHERE %s`, innerFilterQuery, filterQuery)
-		innerFilterArgs = append(innerFilterArgs, filterArgs...)
-		filterArgs = innerFilterArgs
-	} else {
-		query = fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{FieldDurationSeconds},
+		from:   events,
+		search: filter.Search,
 	}
 
-	averageTimeSpentSeconds, err := visitors.store.Count(query, filterArgs...)
+	if visitors.analyzer.minIsBot > 0 {
+		q.join = &queryBuilder{
+			filter:  filter,
+			fields:  []Field{FieldVisitorID, FieldSessionID},
+			from:    sessions,
+			groupBy: []Field{FieldVisitorID, FieldSessionID},
+		}
+	}
+
+	query, args := q.query()
+	averageTimeSpentSeconds, err := visitors.store.Count(query, args...)
 
 	if err != nil {
 		return 0, err
@@ -359,32 +322,30 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 }
 
 func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
-	timeArgs, timeQuery := filter.queryTime(false)
-	fieldArgs, fieldQuery := filter.queryFields()
-
-	if fieldQuery != "" {
-		fieldQuery = "AND " + fieldQuery
+	q := queryBuilder{
+		filter: filter,
+		from:   pageViews,
+		search: filter.Search,
 	}
+	fields := q.getFields()
+	fieldsQuery := strings.Join(fields, ",")
 
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
+	if len(fields) > 0 {
 		fieldsQuery = "," + fieldsQuery
 	}
 
-	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
 			SELECT %s time_on_page
 			FROM (
-				SELECT session_id %s,
+				SELECT session_id,
 				sum(duration_seconds) duration_seconds
+				%s
 				FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
 
 	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		innerTimeArgs, innerTimeQuery := filter.queryTime(true)
-		args = append(args, innerTimeArgs...)
+		q.from = sessions
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -395,20 +356,18 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		q.from = pageViews
 	}
 
-	args = append(args, timeArgs...)
-	args = append(args, fieldArgs...)
 	query.WriteString(fmt.Sprintf(`WHERE %s
 				GROUP BY visitor_id, session_id, time %s
 				ORDER BY visitor_id, session_id, time
 			)
 			WHERE session_id = neighbor(session_id, 1, null)
-			AND time_on_page > 0
-			%s
-		)`, timeQuery, fieldsQuery, fieldQuery))
-	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), args...)
+			AND time_on_page > 0 %s)`, q.whereTime()[len("WHERE "):], fieldsQuery, q.q.String()))
+	q.whereFields()
+	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), q.args...)
 
 	if err != nil {
 		return 0, err

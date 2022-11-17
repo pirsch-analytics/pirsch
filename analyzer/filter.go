@@ -1,22 +1,11 @@
 package analyzer
 
 import (
-	"fmt"
 	"github.com/pirsch-analytics/pirsch/v4"
 	"github.com/pirsch-analytics/pirsch/v4/util"
-	"strconv"
 	"strings"
 	"time"
 )
-
-const (
-	dateFormat = "2006-01-02"
-)
-
-type filterGroup struct {
-	eqContains []string
-	notEq      []string
-}
 
 // Filter are all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
@@ -47,6 +36,9 @@ type Filter struct {
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path []string
+
+	// AnyPath filters for any path in the list.
+	AnyPath []string
 
 	// EntryPath filters for the entry page.
 	EntryPath []string
@@ -151,8 +143,7 @@ type Filter struct {
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
 
-	eventFilter bool
-	minIsBot    uint8
+	minIsBot uint8
 }
 
 // Search filters results by searching for the given input for given field.
@@ -245,13 +236,7 @@ func (filter *Filter) validate() {
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
-
-	if len(filter.EventName) > 0 || filter.eventFilter {
-		filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
-	} else {
-		filter.EventMetaKey = nil
-		filter.EventMeta = nil
-	}
+	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
 }
 
 func (filter *Filter) removeDuplicates(in []string) []string {
@@ -272,468 +257,144 @@ func (filter *Filter) removeDuplicates(in []string) []string {
 	return list
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) ([]any, string) {
-	table := filter.table()
-	args := make([]any, 0)
-	var query strings.Builder
+func (filter *Filter) toDate(date time.Time) time.Time {
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+}
 
-	if table == "event" || len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath.Name) {
-		if table == "session" {
-			table = "page_view"
-		}
+func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
+	q := queryBuilder{
+		filter:  filter,
+		from:    filter.table(fields),
+		search:  filter.Search,
+		groupBy: groupBy,
+		orderBy: orderBy,
+		offset:  filter.Offset,
+		limit:   filter.Limit,
+	}
 
-		query.WriteString(fmt.Sprintf(`SELECT %s FROM %s v `, filter.joinPageViewFields(&args, fields), table))
-
-		if filter.minIsBot > 0 ||
-			len(filter.EntryPath) != 0 ||
-			len(filter.ExitPath) != 0 ||
-			filter.fieldsContain(fields, FieldBounces.Name) ||
-			filter.fieldsContain(fields, FieldViews.Name) ||
-			filter.fieldsContain(fields, FieldEntryPath.Name) ||
-			filter.fieldsContain(fields, FieldExitPath.Name) {
-			filterArgs, filterQuery := filter.joinSessions(table, fields)
-			args = append(args, filterArgs...)
-			query.WriteString(filterQuery)
-		}
-
-		filter.EntryPath, filter.ExitPath = nil, nil
-		filterArgs, filterQuery := filter.query(false)
-		args = append(args, filterArgs...)
-		query.WriteString(fmt.Sprintf(`WHERE %s `, filterQuery))
-
-		if len(groupBy) > 0 {
-			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
-		}
-
-		if len(orderBy) > 0 {
-			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
-		}
+	if q.from == events || q.from == pageViews {
+		q.fields = filter.excludeFields(fields,
+			FieldEntryPath,
+			FieldEntryTitle,
+			FieldExitPath,
+			FieldExitTitle)
+		q.join = filter.joinSessions(fields)
+		q.joinSecond = filter.joinEvents()
 	} else {
-		filterArgs, filterQuery := filter.query(true)
-		query.WriteString(fmt.Sprintf(`SELECT %s
-			FROM session
-			WHERE %s `, filter.joinSessionFields(&args, fields), filterQuery))
-		args = append(args, filterArgs...)
-
-		if len(groupBy) > 0 {
-			query.WriteString(fmt.Sprintf(`GROUP BY %s `, filter.joinGroupBy(groupBy)))
-		}
-
-		query.WriteString(`HAVING sum(sign) > 0 `)
-
-		if len(orderBy) > 0 {
-			query.WriteString(fmt.Sprintf(`ORDER BY %s `, filter.joinOrderBy(&args, orderBy)))
-		}
+		q.fields = fields
 	}
 
-	query.WriteString(filter.withLimit())
-	return args, query.String()
+	return q.query()
 }
 
-func (filter *Filter) joinPageViewFields(args *[]any, fields []Field) string {
-	var out strings.Builder
+func (filter *Filter) buildTimeQuery() (string, []any) {
+	q := queryBuilder{filter: filter}
+	return q.whereTime(), q.args
+}
 
-	for i := range fields {
-		if fields[i].filterTime {
-			timeArgs, timeQuery := filter.queryTime(false)
-			*args = append(*args, timeArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, timeQuery), fields[i].Name))
-		} else if fields[i].timezone {
-			if fields[i].Name == "day" && filter.Period != pirsch.PeriodDay {
-				switch filter.Period {
-				case pirsch.PeriodWeek:
-					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
-				case pirsch.PeriodMonth:
-					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
-				case pirsch.PeriodYear:
-					out.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String())))
-				}
-			} else {
-				out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].queryPageViews, filter.Timezone.String()), fields[i].Name))
-			}
-		} else if fields[i].Name == "meta_value" {
-			*args = append(*args, filter.EventMetaKey)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
-		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].queryPageViews, fields[i].Name))
+func (filter *Filter) table(fields []Field) table {
+	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
+		if !filter.fieldsContain(fields, FieldEventName) && (len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath)) {
+			return pageViews
+		} else if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
+			return events
 		}
 	}
 
-	str := out.String()
-	return str[:len(str)-1]
+	return sessions
 }
 
-func (filter *Filter) joinSessionFields(args *[]any, fields []Field) string {
-	var out strings.Builder
+func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
+	if filter.minIsBot > 0 ||
+		len(filter.EntryPath) != 0 ||
+		len(filter.ExitPath) != 0 ||
+		filter.fieldsContain(fields, FieldBounces) ||
+		filter.fieldsContain(fields, FieldViews) ||
+		filter.fieldsContain(fields, FieldEntryPath) ||
+		filter.fieldsContain(fields, FieldExitPath) {
+		sessionFields := []Field{FieldVisitorID, FieldSessionID}
+		groupBy := []Field{FieldVisitorID, FieldSessionID}
 
-	for i := range fields {
-		if fields[i].filterTime {
-			timeArgs, timeQuery := filter.queryTime(false)
-			*args = append(*args, timeArgs...)
-			out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, timeQuery), fields[i].Name))
-		} else if fields[i].timezone {
-			if fields[i].Name == "day" && filter.Period != pirsch.PeriodDay {
-				switch filter.Period {
-				case pirsch.PeriodWeek:
-					out.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
-				case pirsch.PeriodMonth:
-					out.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
-				case pirsch.PeriodYear:
-					out.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String())))
-				}
-			} else {
-				out.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(fields[i].querySessions, filter.Timezone.String()), fields[i].Name))
-			}
-		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].querySessions, fields[i].Name))
-		}
-	}
+		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath) || filter.searchContains(FieldEntryPath) {
+			sessionFields = append(sessionFields, FieldEntryPath)
+			groupBy = append(groupBy, FieldEntryPath)
 
-	str := out.String()
-	return str[:len(str)-1]
-}
-
-func (filter *Filter) joinSessions(table string, fields []Field) ([]any, string) {
-	path, pathPattern, eventName, eventMetaKey, eventMeta := filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil, nil, nil
-	search := filter.Search
-	filter.Search = nil
-	filterArgs, filterQuery := filter.query(true)
-	filter.Path, filter.PathPattern, filter.EventName, filter.EventMetaKey, filter.EventMeta = path, pathPattern, eventName, eventMetaKey, eventMeta
-	filter.Search = search
-	sessionFields := make([]string, 0, 6)
-	groupBy := make([]string, 0, 4)
-
-	if filter.fieldsContain(fields, FieldEntryPath.Name) {
-		sessionFields = append(sessionFields, FieldEntryPath.Name)
-		groupBy = append(groupBy, FieldEntryPath.Name)
-	}
-
-	if filter.fieldsContain(fields, FieldExitPath.Name) {
-		sessionFields = append(sessionFields, FieldExitPath.Name)
-		groupBy = append(groupBy, FieldExitPath.Name)
-	}
-
-	if filter.fieldsContainByQuerySession(fields, FieldEntryTitle.querySessions) {
-		sessionFields = append(sessionFields, FieldEntryTitle.querySessions)
-		groupBy = append(groupBy, FieldEntryTitle.querySessions)
-	}
-
-	if filter.fieldsContainByQuerySession(fields, FieldExitTitle.querySessions) {
-		sessionFields = append(sessionFields, FieldExitTitle.querySessions)
-		groupBy = append(groupBy, FieldExitTitle.querySessions)
-	}
-
-	if filter.fieldsContain(fields, FieldBounces.Name) {
-		sessionFields = append(sessionFields, "sum(is_bounce*sign) is_bounce")
-	}
-
-	if filter.fieldsContain(fields, FieldViews.Name) {
-		sessionFields = append(sessionFields, "sum(page_views*sign) page_views")
-	}
-
-	sessionFieldsQuery := strings.Join(sessionFields, ",")
-
-	if sessionFieldsQuery != "" {
-		sessionFieldsQuery = "," + sessionFieldsQuery
-	}
-
-	query := ""
-
-	if table == "page_view" || table == "event" {
-		query = "INNER "
-	} else {
-		query = "LEFT "
-	}
-
-	groupByQuery := strings.Join(groupBy, ",")
-
-	if groupByQuery != "" {
-		groupByQuery = "," + groupByQuery
-	}
-
-	query += fmt.Sprintf(`JOIN (
-			SELECT visitor_id,
-			session_id
-			%s
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id %s
-			HAVING sum(sign) > 0
-		) s
-		ON s.visitor_id = v.visitor_id AND s.session_id = v.session_id `, sessionFieldsQuery, filterQuery, groupByQuery)
-	return filterArgs, query
-}
-
-func (filter *Filter) joinGroupBy(fields []Field) string {
-	var out strings.Builder
-
-	for i := range fields {
-		if fields[i].Name == "day" && filter.Period != pirsch.PeriodDay {
-			switch filter.Period {
-			case pirsch.PeriodWeek:
-				out.WriteString("week,")
-			case pirsch.PeriodMonth:
-				out.WriteString("month,")
-			case pirsch.PeriodYear:
-				out.WriteString("year,")
-			}
-		} else {
-			out.WriteString(fields[i].Name + ",")
-		}
-	}
-
-	str := out.String()
-	return str[:len(str)-1]
-}
-
-func (filter *Filter) joinOrderBy(args *[]any, fields []Field) string {
-	if len(filter.Sort) > 0 {
-		fields = make([]Field, 0, len(filter.Sort))
-
-		for i := range filter.Sort {
-			filter.Sort[i].Field.queryDirection = string(filter.Sort[i].Direction)
-			fields = append(fields, filter.Sort[i].Field)
-		}
-	}
-
-	var out strings.Builder
-
-	for i := range fields {
-		if fields[i].queryWithFill != "" {
-			out.WriteString(fmt.Sprintf(`%s %s %s,`, fields[i].Name, fields[i].queryDirection, fields[i].queryWithFill))
-		} else if fields[i].withFill {
-			fillArgs, fillQuery := filter.withFill()
-			*args = append(*args, fillArgs...)
-			name := fields[i].Name
-
-			if fields[i].Name == "day" && filter.Period != pirsch.PeriodDay {
-				switch filter.Period {
-				case pirsch.PeriodWeek:
-					name = "week"
-				case pirsch.PeriodMonth:
-					name = "month"
-				case pirsch.PeriodYear:
-					name = "year"
-				}
-			}
-
-			out.WriteString(fmt.Sprintf(`%s %s %s,`, name, fields[i].queryDirection, fillQuery))
-		} else {
-			out.WriteString(fmt.Sprintf(`%s %s,`, fields[i].Name, fields[i].queryDirection))
-		}
-	}
-
-	str := out.String()
-	return str[:len(str)-1]
-}
-
-func (filter *Filter) table() string {
-	if len(filter.EventName) != 0 || filter.eventFilter {
-		return "event"
-	}
-
-	return "session"
-}
-
-func (filter *Filter) queryTime(filterBots bool) ([]any, string) {
-	args := make([]any, 0, 5)
-	args = append(args, filter.ClientID)
-	var sqlQuery strings.Builder
-	sqlQuery.WriteString("client_id = ? ")
-	tz := filter.Timezone.String()
-
-	if !filter.From.IsZero() && !filter.To.IsZero() && filter.From.Equal(filter.To) {
-		args = append(args, filter.From.Format(dateFormat))
-		sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
-	} else {
-		if !filter.From.IsZero() {
-			if filter.IncludeTime {
-				args = append(args, filter.From)
-				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
-			} else {
-				args = append(args, filter.From.Format(dateFormat))
-				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+			if filter.IncludeTitle {
+				sessionFields = append(sessionFields, FieldEntryTitle)
+				groupBy = append(groupBy, FieldEntryTitle)
 			}
 		}
 
-		if !filter.To.IsZero() {
-			if filter.IncludeTime {
-				args = append(args, filter.To)
-				sqlQuery.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
-			} else {
-				args = append(args, filter.To.Format(dateFormat))
-				sqlQuery.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
-			}
-		}
-	}
+		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath) || filter.searchContains(FieldExitPath) {
+			sessionFields = append(sessionFields, FieldExitPath)
+			groupBy = append(groupBy, FieldExitPath)
 
-	if filterBots && filter.minIsBot > 0 {
-		args = append(args, filter.minIsBot)
-		sqlQuery.WriteString(" AND is_bot < ? ")
-	}
-
-	return args, sqlQuery.String()
-}
-
-func (filter *Filter) queryFields() ([]any, string) {
-	n := 20 // should be enough in most cases
-	args := make([]any, 0, n)
-	queryFields := make([]filterGroup, 0, n)
-	filter.appendQuery(&queryFields, &args, "path", filter.Path)
-	filter.appendQuery(&queryFields, &args, "entry_path", filter.EntryPath)
-	filter.appendQuery(&queryFields, &args, "exit_path", filter.ExitPath)
-	filter.appendQuery(&queryFields, &args, "language", filter.Language)
-	filter.appendQuery(&queryFields, &args, "country_code", filter.Country)
-	filter.appendQuery(&queryFields, &args, "city", filter.City)
-	filter.appendQuery(&queryFields, &args, "referrer", filter.Referrer)
-	filter.appendQuery(&queryFields, &args, "referrer_name", filter.ReferrerName)
-	filter.appendQuery(&queryFields, &args, "os", filter.OS)
-	filter.appendQuery(&queryFields, &args, "os_version", filter.OSVersion)
-	filter.appendQuery(&queryFields, &args, "browser", filter.Browser)
-	filter.appendQuery(&queryFields, &args, "browser_version", filter.BrowserVersion)
-	filter.appendQuery(&queryFields, &args, "screen_class", filter.ScreenClass)
-	filter.appendQueryUInt16(&queryFields, &args, "screen_width", filter.ScreenWidth)
-	filter.appendQueryUInt16(&queryFields, &args, "screen_height", filter.ScreenHeight)
-	filter.appendQuery(&queryFields, &args, "utm_source", filter.UTMSource)
-	filter.appendQuery(&queryFields, &args, "utm_medium", filter.UTMMedium)
-	filter.appendQuery(&queryFields, &args, "utm_campaign", filter.UTMCampaign)
-	filter.appendQuery(&queryFields, &args, "utm_content", filter.UTMContent)
-	filter.appendQuery(&queryFields, &args, "utm_term", filter.UTMTerm)
-	filter.appendQuery(&queryFields, &args, "event_name", filter.EventName)
-	filter.appendQuery(&queryFields, &args, "event_meta_keys", filter.EventMetaKey)
-	filter.queryPlatform(&queryFields)
-	filter.queryPathPattern(&queryFields, &args)
-	filter.appendQueryMeta(&queryFields, &args, filter.EventMeta)
-
-	for i := range filter.Search {
-		filter.appendQuerySearch(&queryFields, &args, filter.Search[i].Field.Name, filter.Search[i].Input)
-	}
-
-	parts := make([]string, 0, len(queryFields))
-
-	for _, fields := range queryFields {
-		if len(fields.eqContains) > 1 {
-			parts = append(parts, fmt.Sprintf("(%s) ", strings.Join(fields.eqContains, "OR ")))
-		} else if len(fields.eqContains) == 1 {
-			parts = append(parts, fields.eqContains[0])
-		}
-
-		if len(fields.notEq) > 1 {
-			parts = append(parts, strings.Join(fields.notEq, " AND "))
-		} else if len(fields.notEq) == 1 {
-			parts = append(parts, fields.notEq[0])
-		}
-	}
-
-	return args, strings.Join(parts, "AND ")
-}
-
-func (filter *Filter) queryPlatform(queryFields *[]filterGroup) {
-	if filter.Platform != "" {
-		if strings.HasPrefix(filter.Platform, "!") {
-			platform := filter.Platform[1:]
-
-			if platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"desktop != 1 "}})
-			} else if platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"mobile != 1 "}})
-			} else {
-				*queryFields = append(*queryFields, filterGroup{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
-			}
-		} else {
-			if filter.Platform == pirsch.PlatformDesktop {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 1 "}})
-			} else if filter.Platform == pirsch.PlatformMobile {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"mobile = 1 "}})
-			} else {
-				*queryFields = append(*queryFields, filterGroup{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
-			}
-		}
-	}
-}
-
-func (filter *Filter) queryPathPattern(queryFields *[]filterGroup, args *[]any) {
-	if len(filter.PathPattern) != 0 {
-		var group filterGroup
-
-		for _, pattern := range filter.PathPattern {
-			if strings.HasPrefix(pattern, "!") {
-				*args = append(*args, pattern[1:])
-				group.notEq = append(group.notEq, `match("path", ?) = 0 `)
-			} else {
-				*args = append(*args, pattern)
-				group.eqContains = append(group.eqContains, `match("path", ?) = 1 `)
+			if filter.IncludeTitle {
+				sessionFields = append(sessionFields, FieldExitTitle)
+				groupBy = append(groupBy, FieldExitTitle)
 			}
 		}
 
-		*queryFields = append(*queryFields, group)
-	}
-}
-
-func (filter *Filter) fields() string {
-	fields := make([]string, 0, 26)
-	filter.appendField(&fields, "path", filter.Path)
-	filter.appendField(&fields, "entry_path", filter.EntryPath)
-	filter.appendField(&fields, "exit_path", filter.ExitPath)
-	filter.appendField(&fields, "language", filter.Language)
-	filter.appendField(&fields, "country_code", filter.Country)
-	filter.appendField(&fields, "city", filter.City)
-	filter.appendField(&fields, "referrer", filter.Referrer)
-	filter.appendField(&fields, "referrer_name", filter.ReferrerName)
-	filter.appendField(&fields, "os", filter.OS)
-	filter.appendField(&fields, "os_version", filter.OSVersion)
-	filter.appendField(&fields, "browser", filter.Browser)
-	filter.appendField(&fields, "browser_version", filter.BrowserVersion)
-	filter.appendField(&fields, "screen_class", filter.ScreenClass)
-	filter.appendField(&fields, "screen_width", filter.ScreenWidth)
-	filter.appendField(&fields, "screen_height", filter.ScreenHeight)
-	filter.appendField(&fields, "utm_source", filter.UTMSource)
-	filter.appendField(&fields, "utm_medium", filter.UTMMedium)
-	filter.appendField(&fields, "utm_campaign", filter.UTMCampaign)
-	filter.appendField(&fields, "utm_content", filter.UTMContent)
-	filter.appendField(&fields, "utm_term", filter.UTMTerm)
-	filter.appendField(&fields, "event_name", filter.EventName)
-
-	if filter.Platform != "" {
-		platform := filter.Platform
-
-		if strings.HasPrefix(platform, "!") {
-			platform = filter.Platform[1:]
+		if filter.fieldsContain(fields, FieldBounces) {
+			sessionFields = append(sessionFields, FieldBounces)
 		}
 
-		if platform == pirsch.PlatformDesktop {
-			fields = append(fields, "desktop")
-		} else if platform == pirsch.PlatformMobile {
-			fields = append(fields, "mobile")
-		} else {
-			fields = append(fields, "desktop")
-			fields = append(fields, "mobile")
+		if filter.fieldsContain(fields, FieldViews) {
+			sessionFields = append(sessionFields, FieldViews)
+		}
+
+		return &queryBuilder{
+			filter:  filter,
+			fields:  sessionFields,
+			from:    sessions,
+			groupBy: groupBy,
 		}
 	}
 
-	if len(filter.Path) == 0 && len(filter.PathPattern) != 0 {
-		fields = append(fields, "path")
-	}
-
-	if len(filter.EventMeta) > 0 {
-		fields = append(fields, "event_meta_keys", "event_meta_values")
-	} else {
-		filter.appendField(&fields, "event_meta_keys", filter.EventMetaKey)
-	}
-
-	return strings.Join(fields, ",")
+	return nil
 }
 
-func (filter *Filter) appendField(fields *[]string, field string, value []string) {
-	if len(value) != 0 {
-		*fields = append(*fields, field)
+func (filter *Filter) joinEvents() *queryBuilder {
+	if len(filter.EventName) != 0 {
+		filterCopy := *filter
+		filterCopy.Path = nil
+		filterCopy.AnyPath = nil
+		return &queryBuilder{
+			filter:  &filterCopy,
+			fields:  []Field{FieldVisitorID, FieldSessionID},
+			from:    events,
+			groupBy: []Field{FieldVisitorID, FieldSessionID},
+		}
 	}
+
+	return nil
 }
 
-func (filter *Filter) fieldsContain(haystack []Field, needle string) bool {
+func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
+	result := make([]Field, 0, len(fields))
+
+	for _, field := range fields {
+		if !filter.fieldsContain(exclude, field) {
+			result = append(result, field)
+		}
+	}
+
+	return result
+}
+
+func (filter *Filter) fieldsContain(haystack []Field, needle Field) bool {
 	for i := range haystack {
-		if haystack[i].Name == needle {
+		if haystack[i] == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (filter *Filter) searchContains(needle Field) bool {
+	for i := range filter.Search {
+		if filter.Search[i].Field == needle {
 			return true
 		}
 	}
@@ -749,222 +410,4 @@ func (filter *Filter) fieldsContainByQuerySession(haystack []Field, needle strin
 	}
 
 	return false
-}
-
-func (filter *Filter) withFill() ([]any, string) {
-	if !filter.From.IsZero() && !filter.To.IsZero() {
-		query := ""
-
-		switch filter.Period {
-		case pirsch.PeriodDay:
-			query = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
-		case pirsch.PeriodWeek:
-			query = "WITH FILL FROM toStartOfWeek(toDate(?), 1) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
-		case pirsch.PeriodMonth:
-			query = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
-		case pirsch.PeriodYear:
-			query = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
-		}
-
-		return []any{filter.From.Format(dateFormat), filter.To.Format(dateFormat)}, query
-	}
-
-	return nil, ""
-}
-
-func (filter *Filter) withLimit() string {
-	if filter.Limit > 0 && filter.Offset > 0 {
-		return fmt.Sprintf("LIMIT %d OFFSET %d ", filter.Limit, filter.Offset)
-	} else if filter.Limit > 0 {
-		return fmt.Sprintf("LIMIT %d ", filter.Limit)
-	}
-
-	return ""
-}
-
-func (filter *Filter) query(filterBots bool) ([]any, string) {
-	args, query := filter.queryTime(false)
-	fieldArgs, queryFields := filter.queryFields()
-	args = append(args, fieldArgs...)
-
-	if queryFields != "" {
-		query += "AND " + queryFields
-	}
-
-	if filterBots && filter.minIsBot > 0 {
-		args = append(args, filter.minIsBot)
-		query += " AND is_bot < ? "
-	}
-
-	return args, query
-}
-
-func (filter *Filter) appendQuery(queryFields *[]filterGroup, args *[]any, field string, value []string) {
-	if len(value) != 0 {
-		var group filterGroup
-		eqContainsArgs := make([]any, 0, len(value))
-		notEqArgs := make([]any, 0, len(value))
-
-		for _, v := range value {
-			comparator := "%s = ? "
-			not := strings.HasPrefix(v, "!")
-
-			if field == "event_meta_keys" {
-				if not {
-					v = v[1:]
-					comparator = "!has(%s, ?) "
-				} else {
-					comparator = "has(%s, ?) "
-				}
-			} else if not {
-				v = v[1:]
-				comparator = "%s != ? "
-			} else if strings.HasPrefix(v, "~") {
-				if field == FieldLanguage.Name || field == FieldCountry.Name {
-					v = v[1:]
-					comparator = "has(splitByChar(',', ?), %s) = 1 "
-				} else {
-					v = fmt.Sprintf("%%%s%%", v[1:])
-					comparator = "ilike(%s, ?) = 1 "
-				}
-			}
-
-			if not {
-				notEqArgs = append(notEqArgs, filter.nullValue(v))
-				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
-			} else {
-				eqContainsArgs = append(eqContainsArgs, filter.nullValue(v))
-				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
-			}
-		}
-
-		for _, v := range eqContainsArgs {
-			*args = append(*args, v)
-		}
-
-		for _, v := range notEqArgs {
-			*args = append(*args, v)
-		}
-
-		*queryFields = append(*queryFields, group)
-	}
-}
-
-func (filter *Filter) appendQuerySearch(queryFields *[]filterGroup, args *[]any, field, value string) {
-	if value != "" {
-		comparator := ""
-
-		if field == FieldLanguage.Name || field == FieldCountry.Name {
-			comparator = "has(splitByChar(',', ?), %s) = 1 "
-
-			if strings.HasPrefix(value, "!") {
-				value = value[1:]
-				comparator = "has(splitByChar(',', ?), %s) = 0 "
-			}
-
-			*args = append(*args, value)
-		} else {
-			comparator = "ilike(%s, ?) = 1 "
-
-			if strings.HasPrefix(value, "!") {
-				value = value[1:]
-				comparator = "ilike(%s, ?) = 0 "
-			}
-
-			*args = append(*args, fmt.Sprintf("%%%s%%", value))
-		}
-
-		// use eqContains because it doesn't matter for a single field
-		*queryFields = append(*queryFields, filterGroup{eqContains: []string{fmt.Sprintf(comparator, field)}})
-	}
-}
-
-func (filter *Filter) appendQueryUInt16(queryFields *[]filterGroup, args *[]any, field string, value []string) {
-	if len(value) != 0 {
-		var group filterGroup
-		eqContainsArgs := make([]any, 0, len(value))
-		notEqArgs := make([]any, 0, len(value))
-
-		for _, v := range value {
-			comparator := "%s = ? "
-			not := strings.HasPrefix(v, "!")
-
-			if not {
-				v = v[1:]
-				comparator = "%s != ? "
-			}
-
-			var valueInt uint16
-
-			if strings.ToLower(v) != "null" {
-				i, err := strconv.ParseUint(v, 10, 16)
-
-				if err == nil {
-					valueInt = uint16(i)
-				}
-			}
-
-			if not {
-				notEqArgs = append(notEqArgs, valueInt)
-				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
-			} else {
-				eqContainsArgs = append(eqContainsArgs, valueInt)
-				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
-			}
-		}
-
-		for _, v := range eqContainsArgs {
-			*args = append(*args, v)
-		}
-
-		for _, v := range notEqArgs {
-			*args = append(*args, v)
-		}
-
-		*queryFields = append(*queryFields, group)
-	}
-}
-
-func (filter *Filter) appendQueryMeta(queryFields *[]filterGroup, args *[]any, kv map[string]string) {
-	if len(kv) != 0 {
-		var group filterGroup
-
-		for k, v := range kv {
-			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
-
-			if strings.HasPrefix(v, "!") {
-				v = v[1:]
-				comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
-			} else if strings.HasPrefix(v, "~") {
-				v = fmt.Sprintf("%%%s%%", v[1:])
-				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, '%s')], ?) = 1 "
-			}
-
-			// use notEq because they will all be joined using AND
-			*args = append(*args, filter.nullValue(v))
-			group.notEq = append(group.notEq, fmt.Sprintf(comparator, k))
-		}
-
-		*queryFields = append(*queryFields, group)
-	}
-}
-
-func (filter *Filter) nullValue(value string) string {
-	if strings.ToLower(value) == "null" {
-		return ""
-	}
-
-	return value
-}
-
-func (filter *Filter) toDate(date time.Time) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-}
-
-func (filter *Filter) boolean(b bool) int8 {
-	if b {
-		return 1
-	}
-
-	return 0
 }

@@ -4,10 +4,16 @@
 
 * added `pirsch-sessions.js` script to automatically extend sessions
 * added field to count how often a session has been extended
-* added filtering based on IP address
+* added bot filter based on IP address
 * improved interfaces and defaults
+* improved query builder
+* fixed inverting event filter
 * fixed extending sessions in database
 * fixed automatic GeoDB update
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated browser version mapping
 * updated dependencies
 
 ## 4.5.1

@@ -15,8 +15,7 @@ type Events struct {
 // Events returns the visitor count, views, and conversion rate for custom events.
 func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	filter = events.analyzer.getFilter(filter)
-	filter.eventFilter = true
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldEventName,
 		FieldVisitors,
 		FieldViews,
@@ -29,7 +28,7 @@ func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 		FieldVisitors,
 		FieldEventName,
 	})
-	stats, err := events.store.SelectEventStats(false, query, args...)
+	stats, err := events.store.SelectEventStats(false, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -47,7 +46,7 @@ func (events *Events) Breakdown(filter *Filter) ([]model.EventStats, error) {
 		return []model.EventStats{}, nil
 	}
 
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldEventName,
 		FieldVisitors,
 		FieldViews,
@@ -61,7 +60,7 @@ func (events *Events) Breakdown(filter *Filter) ([]model.EventStats, error) {
 		FieldVisitors,
 		FieldEventMetaValues,
 	})
-	stats, err := events.store.SelectEventStats(true, query, args...)
+	stats, err := events.store.SelectEventStats(true, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -76,9 +75,8 @@ func (events *Events) List(filter *Filter) ([]model.EventListStats, error) {
 		filter = NewFilter(pirsch.NullClient)
 	}
 
-	filter.eventFilter = true
 	filter = events.analyzer.getFilter(filter)
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldEventName,
 		FieldEventMeta,
 		FieldVisitors,
@@ -90,7 +88,7 @@ func (events *Events) List(filter *Filter) ([]model.EventListStats, error) {
 		FieldCount,
 		FieldEventName,
 	})
-	stats, err := events.store.SelectEventListStats(query, args...)
+	stats, err := events.store.SelectEventListStats(q, args...)
 
 	if err != nil {
 		return nil, err

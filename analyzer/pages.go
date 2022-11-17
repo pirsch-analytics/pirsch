@@ -42,30 +42,19 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		orderBy = append(orderBy, FieldTitle)
 	}
 
-	if filter.table() == "event" {
+	if filter.table(fields) == events {
 		fields = append(fields, FieldEventTimeSpent)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, filter.table() == "event", query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, filter.table(fields) == events, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if filter.IncludeTimeOnPage && filter.table() == "session" {
-		paths := make(map[string]struct{})
-
-		for i := range stats {
-			paths[stats[i].Path] = struct{}{}
-		}
-
-		pathList := make([]string, 0, len(paths))
-
-		for path := range paths {
-			pathList = append(pathList, path)
-		}
-
+	if filter.IncludeTimeOnPage {
+		pathList := getPathList(stats)
 		top, err := pages.avgTimeOnPage(filter, pathList)
 
 		if err != nil {
@@ -113,25 +102,14 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		orderBy = append(orderBy, FieldEntryTitle)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectEntryStats(filter.IncludeTitle, query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectEntryStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	paths := make(map[string]struct{})
-
-	for i := range stats {
-		paths[stats[i].Path] = struct{}{}
-	}
-
-	pathList := make([]string, 0, len(paths))
-
-	for path := range paths {
-		pathList = append(pathList, path)
-	}
-
+	pathList := getPathList(stats)
 	totalSessions, err := pages.totalSessions(filter)
 
 	if err != nil {
@@ -216,25 +194,14 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		orderBy = append(orderBy, FieldExitTitle)
 	}
 
-	args, query := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectExitStats(filter.IncludeTitle, query, args...)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := pages.store.SelectExitStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	paths := make(map[string]struct{})
-
-	for i := range stats {
-		paths[stats[i].Path] = struct{}{}
-	}
-
-	pathList := make([]string, 0, len(paths))
-
-	for path := range paths {
-		pathList = append(pathList, path)
-	}
-
+	pathList := getPathList(stats)
 	totalSessions, err := pages.totalSessions(filter)
 
 	if err != nil {
@@ -283,14 +250,14 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 		return nil, nil
 	}
 
-	args, query := filter.buildQuery([]Field{
+	q, args := filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
 		FieldCR,
 	}, nil, []Field{
 		FieldVisitors,
 	})
-	stats, err := pages.store.GetPageConversionsStats(query, args...)
+	stats, err := pages.store.GetPageConversionsStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -301,12 +268,8 @@ func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, er
 
 func (pages *Pages) totalSessions(filter *Filter) (int, error) {
 	filter = pages.analyzer.getFilter(filter)
-	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath = nil, nil, nil, nil
-	filterArgs, filterQuery := filter.queryTime(pages.analyzer.minIsBot > 0)
-	query := fmt.Sprintf(`SELECT uniq(visitor_id, session_id)
-		FROM session
-		WHERE %s
-		HAVING sum(sign) > 0`, filterQuery)
+	filterQuery, filterArgs := filter.buildTimeQuery()
+	query := fmt.Sprintf("SELECT uniq(visitor_id, session_id) FROM session %s HAVING sum(sign) > 0", filterQuery)
 	stats, err := pages.store.SelectTotalSessions(query, filterArgs...)
 
 	if err != nil {
@@ -322,63 +285,23 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	}
 
 	filter = pages.analyzer.getFilter(filter)
-	eventName, eventMetaKey, eventMeta := filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.Path, filter.PathPattern, filter.EntryPath, filter.ExitPath, filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil, nil, nil, nil, nil
-	filterArgs, filterQuery := filter.query(pages.analyzer.minIsBot > 0)
-	pathQuery := strings.Repeat("?,", len(paths))
-	var eventQuery, query string
-
-	if len(eventName) > 0 {
-		filter.EventName, filter.EventMetaKey, filter.EventMeta = eventName, eventMetaKey, eventMeta
-		eventFilterArgs, eventFilterQuery := filter.query(false)
-		filterArgs = append(filterArgs, eventFilterArgs...)
-		eventQuery = fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id, session_id 
-				FROM event
-				WHERE %s
-			) ev
-			ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, eventFilterQuery)
-	}
-
-	for _, path := range paths {
-		filterArgs = append(filterArgs, path)
-	}
-
-	if pages.analyzer.minIsBot > 0 {
-		query = fmt.Sprintf(`SELECT path,
-			uniq(v.visitor_id) visitors,
-			uniq(v.visitor_id, v.session_id) sessions,
-			count(1) views
-			FROM page_view v
-			INNER JOIN (
-				SELECT visitor_id,
-				session_id
-				FROM session
-				WHERE %s
-				GROUP BY visitor_id, session_id
-				HAVING sum(sign) > 0
-			) s
-			ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id
-			%s
-			WHERE path IN (%s)
-			GROUP BY path
-			ORDER BY visitors DESC, sessions DESC
-			%s`, filterQuery, eventQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
-	} else {
-		query = fmt.Sprintf(`SELECT path,
-			uniq(v.visitor_id) visitors,
-			uniq(v.visitor_id, v.session_id) sessions,
-			count(1) views
-			FROM page_view v
-			%s
-			WHERE %s
-			AND path IN (%s)
-			GROUP BY path
-			ORDER BY visitors DESC, sessions DESC
-			%s`, filterQuery, eventQuery, pathQuery[:len(pathQuery)-1], filter.withLimit())
-	}
-
-	stats, err := pages.store.SelectTotalVisitorSessionStats(query, filterArgs...)
+	filter.Path = nil
+	filter.EntryPath = nil
+	filter.ExitPath = nil
+	filter.AnyPath = paths
+	filter.IncludeTitle = false
+	q, args := filter.buildQuery([]Field{
+		FieldPath,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+	}, []Field{
+		FieldPath,
+	}, []Field{
+		FieldVisitors,
+		FieldSessions,
+	})
+	stats, err := pages.store.SelectTotalVisitorSessionStats(q, args...)
 
 	if err != nil {
 		return nil, err
@@ -393,23 +316,26 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	filter = pages.analyzer.getFilter(filter)
-	eventName, eventMetaKey, eventMeta := filter.EventName, filter.EventMetaKey, filter.EventMeta
-	filter.EventName, filter.EventMetaKey, filter.EventMeta = nil, nil, nil
-	filter.Search, filter.Sort, filter.Offset, filter.Limit = nil, nil, 0, 0
-	timeArgs, timeQuery := filter.queryTime(false)
-	fieldArgs, fieldQuery := filter.queryFields()
+	q := queryBuilder{
+		filter: filter,
+		from:   pageViews,
+		search: filter.Search,
+	}
+	fields := q.getFields()
+	fields = append(fields, "duration_seconds")
+	hasPath := false
 
-	if len(fieldArgs) > 0 {
-		fieldQuery = "AND " + fieldQuery
+	for _, field := range fields {
+		if field == FieldPath.Name {
+			hasPath = true
+			break
+		}
 	}
 
-	fieldsQuery := filter.fields()
-
-	if fieldsQuery != "" {
-		fieldsQuery = "," + fieldsQuery
+	if !hasPath {
+		fields = append(fields, FieldPath.Name)
 	}
 
-	args := make([]any, 0, len(timeArgs)*2+len(fieldArgs))
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT path,
 		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
@@ -418,61 +344,72 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 			%s time_on_page
 			FROM (
 				SELECT v.session_id sid,
-				path,
-				duration_seconds
 				%s
-				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), fieldsQuery))
+				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
 	if pages.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		innerTimeArgs, innerTimeQuery := filter.queryTime(false)
-		args = append(args, innerTimeArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerTimeQuery))
+		sessionsQuery := queryBuilder{
+			filter: filter,
+			from:   sessions,
+			search: filter.Search,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		}
+		str, args := sessionsQuery.query()
+		q.args = append(q.args, args...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (%s) s ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, str))
 	}
 
-	if len(eventName) > 0 {
-		filter.EventName, filter.EventMetaKey, filter.EventMeta = eventName, eventMetaKey, eventMeta
-		eventFilterArgs, eventFilterQuery := filter.query(false)
-		args = append(args, eventFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-				SELECT visitor_id, session_id 
-				FROM event
-				WHERE %s
-			) ev
-			ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, eventFilterQuery))
+	if len(filter.EventName) > 0 {
+		eventsQuery := queryBuilder{
+			filter: filter,
+			from:   events,
+			search: filter.Search,
+			fields: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+			groupBy: []Field{
+				FieldVisitorID,
+				FieldSessionID,
+			},
+		}
+		str, args := eventsQuery.query()
+		q.args = append(q.args, args...)
+		query.WriteString(fmt.Sprintf(`INNER JOIN (%s) ev ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, str))
 	}
 
-	args = append(args, timeArgs...)
-	pathQuery := strings.Repeat("?,", len(paths))
-
-	for _, path := range paths {
-		args = append(args, path)
-	}
-
-	args = append(args, fieldArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-				ORDER BY v.visitor_id, v.session_id, time
-			)
-			WHERE time_on_page > 0
-			AND sid = neighbor(sid, 1, null)
-			AND path IN (%s)
-			%s
-		)
-		GROUP BY path`, timeQuery, pathQuery[:len(pathQuery)-1], fieldQuery))
-	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), args...)
+	whereTime := q.whereTime()[len("WHERE "):]
+	q.whereFields()
+	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY v.visitor_id, v.session_id, time)
+		WHERE time_on_page > 0 AND sid = neighbor(sid, 1, null) %s) GROUP BY path`, whereTime, q.q.String()))
+	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return stats, nil
+}
+
+func getPathList[T interface{ GetPath() string }](stats []T) []string {
+	paths := make(map[string]struct{})
+
+	for i := range stats {
+		paths[stats[i].GetPath()] = struct{}{}
+	}
+
+	pathList := make([]string, 0, len(paths))
+
+	for path := range paths {
+		pathList = append(pathList, path)
+	}
+
+	return pathList
 }
