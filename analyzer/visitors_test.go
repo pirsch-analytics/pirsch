@@ -484,6 +484,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 			{Sign: 1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
 			{Sign: 1, VisitorID: 2, Time: util.PastDay(4).Add(time.Second * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 3, Time: util.PastDay(4).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+
 			{Sign: 1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: -1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo"},
@@ -492,14 +493,46 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 			{Sign: 1, VisitorID: 5, SessionID: 31, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar"},
 			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Second * 7), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 7, Time: util.PastDay(3).Add(time.Second * 8), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+
 			{Sign: 1, VisitorID: 8, SessionID: 2, Time: util.PastDay(2).Add(time.Second * 9), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: -1, VisitorID: 8, SessionID: 2, Time: util.PastDay(2).Add(time.Second * 9), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 8, SessionID: 2, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
 			{Sign: 1, VisitorID: 9, Time: util.PastDay(2).Add(time.Second * 10), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 10, Time: util.PastDay(2).Add(time.Second * 11), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
+
 			{Sign: 1, VisitorID: 11, Time: util.Today().Add(time.Second * 12), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 12, SessionID: 3, Time: util.PastDay(9), Path: "/"},
+		{VisitorID: 12, SessionID: 3, Time: util.PastDay(9), Path: "/foo"},
+		{VisitorID: 12, Time: util.PastDay(9), Path: "/"},
+		{VisitorID: 13, SessionID: 3, Time: util.PastDay(9), Path: "/"},
+		{VisitorID: 13, SessionID: 31, Time: util.PastDay(9), Path: "/bar"},
+		{VisitorID: 14, Time: util.PastDay(9), Path: "/"},
+		{VisitorID: 15, Time: util.PastDay(9), Path: "/"},
+
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/foo"},
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
+
+		{VisitorID: 4, SessionID: 3, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 4, SessionID: 3, Time: util.PastDay(3), Path: "/foo"},
+		{VisitorID: 4, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 5, SessionID: 3, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 5, SessionID: 31, Time: util.PastDay(3), Path: "/bar"},
+		{VisitorID: 6, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 7, Time: util.PastDay(3), Path: "/"},
+
+		{VisitorID: 8, SessionID: 2, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 8, SessionID: 2, Time: util.PastDay(2), Path: "/bar"},
+		{VisitorID: 9, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 10, Time: util.PastDay(2), Path: "/"},
+
+		{VisitorID: 11, Time: util.Today(), Path: "/"},
+	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event1", VisitorID: 13, Time: util.PastDay(9).Add(time.Second * 4), SessionID: 3, Path: "/"},
 		{Name: "event1", DurationSeconds: 300, VisitorID: 14, Time: util.PastDay(9).Add(time.Minute * 5), SessionID: 3, Path: "/foo"},

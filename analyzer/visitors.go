@@ -294,10 +294,7 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 	return averageTimeSpentSeconds, nil
 }
 
-// TODO
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
-	path, pattern, anyPath := filter.Path, filter.PathPattern, filter.AnyPath
-	filter.Path, filter.PathPattern, filter.AnyPath = nil, nil, nil
 	q := queryBuilder{
 		filter: filter,
 		fields: []Field{FieldDurationSeconds},
@@ -315,7 +312,6 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 	}
 
 	query, args := q.query()
-	filter.Path, filter.PathPattern, filter.AnyPath = path, pattern, anyPath
 	averageTimeSpentSeconds, err := visitors.store.Count(query, args...)
 
 	if err != nil {
@@ -323,35 +319,6 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 	}
 
 	return averageTimeSpentSeconds, nil
-
-	/*filterArgs, filterQuery := filter.query(false)
-	var query string
-
-	if visitors.analyzer.minIsBot > 0 {
-		innerFilterArgs, innerFilterQuery := filter.queryTime(true)
-		query = fmt.Sprintf(`SELECT sum(duration_seconds)
-			FROM event e
-			INNER JOIN (
-				SELECT visitor_id,
-				session_id
-				FROM session
-				WHERE %s
-			) s
-			ON s.visitor_id = e.visitor_id AND s.session_id = e.session_id
-			WHERE %s`, innerFilterQuery, filterQuery)
-		innerFilterArgs = append(innerFilterArgs, filterArgs...)
-		filterArgs = innerFilterArgs
-	} else {
-		query = fmt.Sprintf(`SELECT sum(duration_seconds) FROM event WHERE %s`, filterQuery)
-	}
-
-	averageTimeSpentSeconds, err := visitors.store.Count(query, filterArgs...)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return averageTimeSpentSeconds, nil*/
 }
 
 func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
