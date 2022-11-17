@@ -24,78 +24,35 @@ type Visitors struct {
 // Active returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]model.ActiveVisitorStats, int, error) {
-	// TODO
-	return []model.ActiveVisitorStats{}, 0, nil
-
-	/*filter = visitors.analyzer.getFilter(filter)
+	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
-	title := ""
+	fields := []Field{FieldPath}
+	groupBy := []Field{FieldPath}
+	orderBy := []Field{FieldVisitors, FieldPath}
 
 	if filter.IncludeTitle {
-		title = ",title"
+		fields = append(fields, FieldTitle)
+		groupBy = append(groupBy, FieldTitle)
+		orderBy = append(orderBy, FieldTitle)
 	}
 
-	filterArgs, filterQuery := filter.query(false)
-	innerFilterArgs, innerFilterQuery := filter.queryTime(true)
-	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
-	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path %s,
-		uniq(visitor_id) visitors
-		FROM page_view v `, title))
-
-	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		args = append(args, innerFilterArgs...)
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-		GROUP BY path %s
-		ORDER BY visitors DESC, path
-		%s`, filterQuery, title, filter.withLimit()))
-	stats, err := visitors.store.SelectActiveVisitorStats(title != "", query.String(), args...)
+	fields = append(fields, FieldVisitors)
+	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	stats, err := visitors.store.SelectActiveVisitorStats(filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	query.Reset()
-	query.WriteString(`SELECT uniq(visitor_id) visitors
-		FROM page_view v `)
-
-	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
-		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			entry_path,
-			exit_path
-			FROM session
-			WHERE %s
-			GROUP BY visitor_id, session_id, entry_path, exit_path
-			HAVING sum(sign) > 0
-		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
-	}
-
-	query.WriteString(fmt.Sprintf(`WHERE %s`, filterQuery))
-	count, err := visitors.store.Count(query.String(), args...)
+	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil)
+	count, err := visitors.store.Count(q, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return stats, count, nil*/
+	return stats, count, nil
 }
 
 // Total returns the total visitor count, session count, bounce rate, and views.

@@ -69,6 +69,8 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.Equal(t, "Foo", visitors[2].Title)
 	_, _, err = analyzer.Visitors.Active(getMaxFilter(""), time.Minute*10)
 	assert.NoError(t, err)
+	_, _, err = analyzer.Visitors.Active(getMaxFilter("event"), time.Minute*10)
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_TotalVisitors(t *testing.T) {
