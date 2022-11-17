@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// TODO
 func TestAnalyzer_Events(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 
@@ -161,7 +160,6 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO
 func TestAnalyzer_EventList(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 

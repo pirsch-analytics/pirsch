@@ -294,7 +294,7 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 
 func (filter *Filter) table(fields []Field) table {
 	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
-		if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) {
+		if !filter.fieldsContain(fields, FieldEventName) && (len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath)) {
 			return pageViews
 		} else if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
 			return events
