@@ -30,7 +30,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 		search: filter.Search,
 	}
 	var query strings.Builder
-	t.selectAvgTimeSpentPeriod(filter.Period, query)
+	t.selectAvgTimeSpentPeriod(filter.Period, &query)
 	query.WriteString(fmt.Sprintf(`SELECT day, average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
@@ -58,7 +58,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	where := q.q.String()
 
 	if where != "" {
-		query.WriteString(fmt.Sprintf("AND %s ", where))
+		query.WriteString(where)
 	}
 
 	query.WriteString(fmt.Sprintf(`AND duration_seconds != 0
@@ -67,7 +67,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			ORDER BY day
 			%s
 		)`, q.withFill()))
-	t.groupByPeriod(filter.Period, query)
+	t.groupByPeriod(filter.Period, &query)
 	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
 	if err != nil {
@@ -92,7 +92,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		search: filter.Search,
 	}
 	var query strings.Builder
-	t.selectAvgTimeSpentPeriod(filter.Period, query)
+	t.selectAvgTimeSpentPeriod(filter.Period, &query)
 	fields := q.getFields()
 	fields = append(fields, "duration_seconds")
 	query.WriteString(fmt.Sprintf(`SELECT day,
@@ -128,7 +128,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	where := q.q.String()
 	query.WriteString(fmt.Sprintf(`%s) GROUP BY day ORDER BY day %s`, where, q.withFill()))
 	filter.minIsBot = minIsBot
-	t.groupByPeriod(filter.Period, query)
+	t.groupByPeriod(filter.Period, &query)
 	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
 	if err != nil {
@@ -138,7 +138,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	return stats, nil
 }
 
-func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query strings.Builder) {
+func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query *strings.Builder) {
 	if period != pirsch.PeriodDay {
 		switch period {
 		case pirsch.PeriodWeek:
@@ -151,7 +151,7 @@ func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query strings.Buil
 	}
 }
 
-func (t *Time) groupByPeriod(period pirsch.Period, query strings.Builder) {
+func (t *Time) groupByPeriod(period pirsch.Period, query *strings.Builder) {
 	if period != pirsch.PeriodDay {
 		switch period {
 		case pirsch.PeriodWeek:

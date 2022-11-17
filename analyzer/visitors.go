@@ -252,42 +252,46 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 }
 
 func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
-	// TODO
-	return 0, nil
-
-	/*filterArgs, filterQuery := filter.query(true)
-	innerFilterArgs, innerFilterQuery := filter.queryTime(false)
-	args := make([]any, 0, len(innerFilterArgs)+len(filterArgs))
+	q := queryBuilder{
+		filter: filter,
+		from:   sessions,
+		search: filter.Search,
+	}
 	var query strings.Builder
 	query.WriteString(`SELECT sum(duration_seconds)
 		FROM (
 			SELECT sum(duration_seconds*sign) duration_seconds
-			FROM session s `)
+			FROM session t `)
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
-		args = append(args, innerFilterArgs...)
+		q.from = pageViews
+		whereTime := q.whereTime()
+		q.whereFields()
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
-			SELECT visitor_id,
-			session_id,
-			path
-			FROM page_view
-			WHERE %s
+			SELECT visitor_id, session_id FROM page_view %s %s
 		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, innerFilterQuery))
+		ON v.visitor_id = t.visitor_id AND v.session_id = t.session_id `, whereTime, q.q.String()))
+		q.from = sessions
+		q.q.Reset()
+		q.where = nil
 	}
 
-	args = append(args, filterArgs...)
-	query.WriteString(fmt.Sprintf(`WHERE %s
-			GROUP BY visitor_id, session_id
-			HAVING sum(sign) > 0
-		)`, filterQuery))
-	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), args...)
+	query.WriteString(q.whereTime())
+	q.whereFields()
+	where := q.q.String()
+
+	if where != "" {
+		query.WriteString(where)
+	}
+
+	query.WriteString("GROUP BY visitor_id, session_id HAVING sum(sign) > 0)")
+	averageTimeSpentSeconds, err := visitors.store.Count(query.String(), q.args...)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return averageTimeSpentSeconds, nil*/
+	return averageTimeSpentSeconds, nil
 }
 
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
