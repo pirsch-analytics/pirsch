@@ -66,6 +66,10 @@ type PageStats struct {
 	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
+func (stats PageStats) GetPath() string {
+	return stats.Path
+}
+
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
 	Path                    string  `db:"entry_path" json:"path"`
@@ -77,6 +81,10 @@ type EntryStats struct {
 	AverageTimeSpentSeconds int     `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
+func (stats EntryStats) GetPath() string {
+	return stats.Path
+}
+
 // ExitStats is the result type for exit page statistics.
 type ExitStats struct {
 	Path     string  `db:"exit_path" json:"path"`
@@ -85,6 +93,10 @@ type ExitStats struct {
 	Sessions int     `json:"sessions"`
 	Exits    int     `json:"exits"`
 	ExitRate float64 `db:"exit_rate" json:"exit_rate"`
+}
+
+func (stats ExitStats) GetPath() string {
+	return stats.Path
 }
 
 // PageConversionsStats is the result type for page conversions.

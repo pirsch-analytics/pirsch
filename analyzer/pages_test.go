@@ -421,13 +421,13 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
-			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar"},
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar", PageViews: 3},
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
@@ -854,4 +854,36 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter("event"), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
+}
+
+func TestGetPathList(t *testing.T) {
+	paths := getPathList([]model.PageStats{
+		{Path: "/"},
+		{Path: "/foo"},
+		{Path: "/bar"},
+	})
+	assert.Len(t, paths, 3)
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+
+	paths = getPathList([]model.EntryStats{
+		{Path: "/"},
+		{Path: "/foo"},
+		{Path: "/bar"},
+	})
+	assert.Len(t, paths, 3)
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+
+	paths = getPathList([]model.ExitStats{
+		{Path: "/"},
+		{Path: "/foo"},
+		{Path: "/bar"},
+	})
+	assert.Len(t, paths, 3)
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
 }

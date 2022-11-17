@@ -54,18 +54,7 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 	}
 
 	if filter.IncludeTimeOnPage {
-		paths := make(map[string]struct{})
-
-		for i := range stats {
-			paths[stats[i].Path] = struct{}{}
-		}
-
-		pathList := make([]string, 0, len(paths))
-
-		for path := range paths {
-			pathList = append(pathList, path)
-		}
-
+		pathList := getPathList(stats)
 		top, err := pages.avgTimeOnPage(filter, pathList)
 
 		if err != nil {
@@ -120,18 +109,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		return nil, err
 	}
 
-	paths := make(map[string]struct{})
-
-	for i := range stats {
-		paths[stats[i].Path] = struct{}{}
-	}
-
-	pathList := make([]string, 0, len(paths))
-
-	for path := range paths {
-		pathList = append(pathList, path)
-	}
-
+	pathList := getPathList(stats)
 	totalSessions, err := pages.totalSessions(filter)
 
 	if err != nil {
@@ -223,18 +201,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	paths := make(map[string]struct{})
-
-	for i := range stats {
-		paths[stats[i].Path] = struct{}{}
-	}
-
-	pathList := make([]string, 0, len(paths))
-
-	for path := range paths {
-		pathList = append(pathList, path)
-	}
-
+	pathList := getPathList(stats)
 	totalSessions, err := pages.totalSessions(filter)
 
 	if err != nil {
@@ -425,4 +392,20 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	return stats, nil
+}
+
+func getPathList[T interface{ GetPath() string }](stats []T) []string {
+	paths := make(map[string]struct{})
+
+	for i := range stats {
+		paths[stats[i].GetPath()] = struct{}{}
+	}
+
+	pathList := make([]string, 0, len(paths))
+
+	for path := range paths {
+		pathList = append(pathList, path)
+	}
+
+	return pathList
 }
