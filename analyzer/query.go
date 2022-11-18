@@ -22,17 +22,18 @@ type where struct {
 }
 
 type queryBuilder struct {
-	filter     *Filter
-	fields     []Field
-	from       table
-	join       *queryBuilder
-	joinSecond *queryBuilder
-	leftJoin   *queryBuilder
-	search     []Search
-	groupBy    []Field
-	orderBy    []Field
-	limit      int
-	offset     int
+	filter             *Filter
+	fields             []Field
+	from               table
+	join               *queryBuilder
+	joinSecond         *queryBuilder
+	leftJoin           *queryBuilder
+	search             []Search
+	groupBy            []Field
+	orderBy            []Field
+	limit              int
+	offset             int
+	includeEventFilter bool
 
 	where []where
 	q     strings.Builder
@@ -277,7 +278,8 @@ func (query *queryBuilder) whereFields() {
 		query.whereFieldPathIn()
 	}
 
-	if query.from == events {
+	if query.from == events || query.includeEventFilter {
+		query.whereField(FieldPath.Name, query.filter.Path)
 		query.whereField(FieldEventName.Name, query.filter.EventName)
 		query.whereField("event_meta_keys", query.filter.EventMetaKey)
 		query.whereFieldMeta()
