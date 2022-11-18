@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-10-06)
+# custom (last update: 2022-11-18)
 ://
 bot
 crawler
@@ -284,6 +284,21 @@ syndirella
 ztunnel
 oast.online
 webchk
+nginx
+report runner
+nga_wp_jw
+cyberwarcon
+tzzdev
+braavos
+accountsd
+integration
+microsoftteamsroom
+agent orange
+trustoo
+dnstwist
+cvvs/
+lasso
+developer
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

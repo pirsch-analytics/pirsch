@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-10-06)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2022-11-18)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -192,6 +192,7 @@ var blacklist = map[string]struct{}{
 	"asupro.com":                           {},
 	"asynt.net":                            {},
 	"atleticpharm.org":                     {},
+	"atoblog.online":                       {},
 	"atyks.ru":                             {},
 	"aucoinhomes.com":                      {},
 	"auto-b2b-seo-service.com":             {},
@@ -1235,6 +1236,7 @@ var blacklist = map[string]struct{}{
 	"mosputana.info":                       {},
 	"mosputana.top":                        {},
 	"mosrif.ru":                            {},
+	"mossiemckenzie.shop":                  {},
 	"mostbet-original.ru":                  {},
 	"mostcool.top":                         {},
 	"mostorgnerud.ru":                      {},
