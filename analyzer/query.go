@@ -222,7 +222,7 @@ func (query *queryBuilder) joinQuery() {
 	}
 
 	if query.leftJoin != nil {
-		q, args := query.join.query()
+		q, args := query.leftJoin.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
