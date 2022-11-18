@@ -47,80 +47,13 @@ To store hits and statistics, Pirsch uses ClickHouse. Database migrations can be
 
 ### Server-side tracking
 
-Here is a quick demo on how to use the library:
-
-```Go
-// Set the key for SipHash. This should be called on startup (before generating the first fingerprint) and is NOT concurrency save.
-tracker.SetFingerprintKeys(42, 123)
-
-dbConfig := &db.ClientConfig{
-    Hostname:      "127.0.0.1",
-    Port:          9000,
-}
-
-// Migrate the database.
-db.Migrate(dbConfig)
-
-// Create a new ClickHouse client to store data.
-store, _ := db.NewClient(dbConfig)
-
-// Set up a default tracker with a salt.
-// This will buffer and store hits and generate sessions by default.
-pirschTracker := tracker.NewTracker(store, "salt", &tracker.Config{
-    SessionCache: session.NewMemCache(store, 100),
-})
-
-// Create a handler to serve traffic.
-// We prevent tracking resources by checking the path. So a file on /my-file.txt won't create a new hit
-// but all page calls will be tracked.
-http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    if r.URL.Path == "/" {
-        go pirschTracker.Hit(r, nil)
-    }
-
-    w.Write([]byte("<h1>Hello World!</h1>"))
-}))
-
-// And finally, start the server.
-// We don't flush hits on shutdown but you should add that in a real application by calling Tracker.Flush().
-log.Println("Starting server on port 8080...")
-http.ListenAndServe(":8080", nil)
-```
-
-The secret salt passed to `NewTracker` should not be known outside your organization as it can be used to generate fingerprints equal to yours.
-Note that while you can generate the salt at random, the fingerprints will change too. To get reliable data configure a fixed salt and treat it like a password.
-
-To analyze hits and processed data you can use the `Analyzer`, which provides convenience functions to extract useful information.
-
-```Go
-// This also needs access to the store.
-pirschAnalyzer := analyzer.NewAnalyzer(store)
-
-// As an example, lets extract the total number of visitors.
-// The filter is used to specify the time frame you're looking at (days) and is optional.
-// If you pass nil, the Analyzer returns statistics for all hits (be careful about that!).
-visitors, err := pirschAnalyzer.Visitors(&analyzer.Filter{
-    From: yesterday(),
-    To: today()
-})
-```
+Please refer to the [demo](demos/backend) for server-side tracking.
 
 ### Client-side tracking
 
-You can also track visitors on the client side by adding `pirsch.js`/`pirsch-events.js` to your website. It will perform a GET request to the configured endpoint.
+Please refer to the [demo](demos/frontend) for client-side tracking and keeping sessions alive.
 
-```HTML
-<!-- add the tracking script to the head area and configure it using attributes -->
-<script type="text/javascript" src="js/pirsch.js" id="pirschjs"
-        data-endpoint="/count"
-        data-client-id="42"
-        data-exclude="/path/to/exclude,/regex/.*"
-        data-domain="foo.com,bar.com"
-        data-dev
-        data-param-optional-param="test"></script>
-```
-
-The parameters are configured through HTML attributes. All of them are optional, except for the `id`. Here is a list of the possible options.
+The scripts are configured using HTML attributes. All of them are optional, except for the `id`. Here is a list of the possible options.
 
 | Option | Description | Default |
 | - | - | - |
@@ -137,67 +70,6 @@ The parameters are configured through HTML attributes. All of them are optional,
 
 The scripts can be disabled by setting the `disable_pirsch` variable in localStorage of your browser.
 
-To track the hits you need to call `Hit` from the endpoint that you configured for `pirsch.js`. Here is a simple example.
-
-```Go
-// Create an endpoint to handle client tracking requests.
-// HitOptionsFromRequest is a utility function to process the required parameters.
-// You might want to additional checks, like for the client ID.
-http.Handle("/count", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    trackerTracker.Hit(r, tracker.HitOptionsFromRequest(r))
-}))
-```
-
-`HitOptionsFromRequest` will read the parameters send by `pirsch.js` and returns a new `HitOptions` object that can be passed to `Hit`. You might want to split these steps into two, to run additional checks for the parameters that were sent by the user.
-
-### Custom Event Tracking
-
-Custom events are conceptually the same as hits, except that they have a name and hold additional metadata. To create an event, call the tracker and pass in the additional fields.
-
-```Go
-http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    if r.URL.Path == "/" {
-    	// The name in the options is required!
-		options := tracker.EventOptions{
-            Name: "my-event",
-            Duration: 42, // optional field to save a duration, this will be used to calculate an average time when using the analyzer
-            Meta: map[string]string{ // optional metadata, the results can be filtered by them
-                "http_status": "200",
-                "product_id": "123",
-            },
-        }
-        go pirschTracker.Event(r, options, nil)
-    }
-
-    w.Write([]byte("<h1>Hello World!</h1>"))
-}))
-```
-
-There are two methods to read events using the `Analyzer`. `Analyzer.Events` returns a list containing all events and metadata keys. `Analyzer.EventBreakdown` breaks down a single event by grouping the metadata fields by value. You have to set the `Filter.EventName` and `Filter.EventMetaKey` when using this function. All other analyzer methods can be used with an event name to filter for an event.
-
-### Keeping sessions alive
-
-It's possible to extend sessions. This can be useful for apps and other clients that don't refresh the page.
-
-```Go
-// A handler to keep sessions alive. It won't create a new page view and can be called periodically.
-http.Handle("/session", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    pirschTracker.ExtendSession(r, tracker.HitOptionsFromRequest(r))
-}))
-```
-
-The `pirsch-sessions.js` script will extend sessions automatically.
-
-```HTML
-<script type="text/javascript" src="pirsch-sessions.js" id="pirschsessionsjs"
-        data-endpoint="/session"
-        data-client-id="42"
-        data-interval-ms="10000"
-        data-dev></script>
-```
-
-It also supports the `data-include` and `data-exclude` options from above.
-
 ### Mapping IPs to countries and cities
 
 Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/) database to map IPs to countries. The database **is not included**, so you need to download it yourself. IP mapping is optional, it must explicitly be enabled by setting the GeoDB attribute of the `TrackerConfig` or through the `HitOptions` when calling `HitFromRequest`.
@@ -209,13 +81,24 @@ Pirsch uses MaxMind's [GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/)
 
 The GeoDB should be updated on a regular basis. The Tracker has a method `SetGeoDB` to update the GeoDB at runtime (thread-safe).
 
+### Filtering IP addresses
+
+It's possible to filter bots using an IP address list. Currently, Pirsch supports [Udger](https://udger.com).
+
+1. create an account at Udger
+2. subscribe to the local parser (SQLite) IP list
+3. create an `ip.Udger` object using your access key
+4. pass it to the `Tracker`
+
+The list inside `ip.Udger` can be automatically updated by calling `ip.Udger.Update`.
+
 ## Documentation
 
 Read the [full documentation](https://godoc.org/github.com/pirsch-analytics/pirsch) for details, check out `demos`, or read the article at https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl.
 
-## Building pirsch.js and pirsch-events.js
+## Building the scripts
 
-To minify `pirsch.js`/`pirsch-events.js` to `pirsch.min.js`/`pirsch-events.min.js` you need to run `npm i` and `npm run minify` inside the `js` directory.
+To minify `pirsch.js`/`pirsch-events.js`/`pirsch-sessions.js` to `pirsch.min.js`/`pirsch-events.min.js`/`pirsch-sessions.min.js` you need to run `npm i` and `npm run build` inside the `js` directory.
 
 ## Things to maintain
 
