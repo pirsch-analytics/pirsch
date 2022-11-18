@@ -348,11 +348,25 @@ var (
 		Name:           "meta_keys",
 	}
 
+	// FieldEventMetaKeysRaw is a query result column.
+	FieldEventMetaKeysRaw = Field{
+		querySessions:  "event_meta_keys",
+		queryPageViews: "event_meta_keys",
+		Name:           "event_meta_keys",
+	}
+
 	// FieldEventMetaValues is a query result column.
 	FieldEventMetaValues = Field{
 		querySessions:  "event_meta_values[indexOf(event_meta_keys, ?)]",
 		queryPageViews: "event_meta_values[indexOf(event_meta_keys, ?)]",
 		Name:           "meta_value",
+	}
+
+	// FieldEventMetaValuesRaw is a query result column.
+	FieldEventMetaValuesRaw = Field{
+		querySessions:  "event_meta_values",
+		queryPageViews: "event_meta_values",
+		Name:           "event_meta_values",
 	}
 
 	// FieldEventTimeSpent is a query result column.

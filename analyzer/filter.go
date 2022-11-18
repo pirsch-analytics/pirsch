@@ -271,8 +271,14 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		offset:  filter.Offset,
 		limit:   filter.Limit,
 	}
+	returnEventName := filter.fieldsContain(fields, FieldEventName)
 
-	if q.from == events || q.from == pageViews {
+	if q.from == events && !returnEventName {
+		q.from = sessions
+		q.fields = filter.excludeFields(fields, FieldPath)
+		q.includeEventFilter = true
+		q.leftJoin = filter.leftJoinEvents(fields)
+	} else if q.from == pageViews || returnEventName {
 		q.fields = filter.excludeFields(fields,
 			FieldEntryPath,
 			FieldEntryTitle,
@@ -368,6 +374,27 @@ func (filter *Filter) joinEvents() *queryBuilder {
 	}
 
 	return nil
+}
+
+func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
+	filterCopy := *filter
+	filterCopy.EventName = nil
+	filterCopy.EventMetaKey = nil
+	filterCopy.EventMeta = nil
+	eventFields := []Field{FieldVisitorID, FieldSessionID, FieldEventName}
+
+	if len(filter.EventMeta) != 0 || filter.fieldsContain(fields, FieldEventMeta) {
+		eventFields = append(eventFields, FieldEventMetaKeysRaw, FieldEventMetaValuesRaw)
+	} else if len(filter.EventMetaKey) != 0 || filter.fieldsContain(fields, FieldEventMetaKeys) {
+		eventFields = append(eventFields, FieldEventMetaKeysRaw)
+	}
+
+	return &queryBuilder{
+		filter:  &filterCopy,
+		fields:  eventFields,
+		from:    events,
+		groupBy: eventFields,
+	}
 }
 
 func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {

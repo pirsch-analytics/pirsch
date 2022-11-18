@@ -22,17 +22,18 @@ type where struct {
 }
 
 type queryBuilder struct {
-	filter     *Filter
-	fields     []Field
-	from       table
-	join       *queryBuilder
-	joinSecond *queryBuilder
-	leftJoin   *queryBuilder
-	search     []Search
-	groupBy    []Field
-	orderBy    []Field
-	limit      int
-	offset     int
+	filter             *Filter
+	fields             []Field
+	from               table
+	join               *queryBuilder
+	joinSecond         *queryBuilder
+	leftJoin           *queryBuilder
+	search             []Search
+	groupBy            []Field
+	orderBy            []Field
+	limit              int
+	offset             int
+	includeEventFilter bool
 
 	where []where
 	q     strings.Builder
@@ -222,7 +223,7 @@ func (query *queryBuilder) joinQuery() {
 	}
 
 	if query.leftJoin != nil {
-		q, args := query.join.query()
+		q, args := query.leftJoin.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
@@ -277,7 +278,8 @@ func (query *queryBuilder) whereFields() {
 		query.whereFieldPathIn()
 	}
 
-	if query.from == events {
+	if query.from == events || query.includeEventFilter {
+		query.whereField(FieldPath.Name, query.filter.Path)
 		query.whereField(FieldEventName.Name, query.filter.EventName)
 		query.whereField("event_meta_keys", query.filter.EventMetaKey)
 		query.whereFieldMeta()
