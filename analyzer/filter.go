@@ -279,7 +279,10 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			FieldExitPath,
 			FieldExitTitle)
 		q.join = filter.joinSessions(fields)
-		q.joinSecond = filter.joinEvents()
+
+		if q.from != events {
+			q.joinSecond = filter.joinEvents()
+		}
 	} else {
 		q.fields = fields
 	}

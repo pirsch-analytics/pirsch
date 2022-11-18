@@ -174,6 +174,31 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_TotalVisitorsInvertEvent(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "event"},
+	}))
+	analyzer := NewAnalyzer(dbClient, nil)
+	visitors, err := analyzer.Visitors.Total(&Filter{From: util.Today(), To: util.Today(), EventName: []string{"!event"}})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+}
+
 func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
