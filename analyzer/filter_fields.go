@@ -1,6 +1,6 @@
 package analyzer
 
-import "github.com/pirsch-analytics/pirsch/v4"
+import "github.com/pirsch-analytics/pirsch/v5"
 
 var (
 	// FieldVisitorID is a query result column.

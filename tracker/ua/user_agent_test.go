@@ -1,7 +1,7 @@
 package ua
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4"
+	"github.com/pirsch-analytics/pirsch/v5"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

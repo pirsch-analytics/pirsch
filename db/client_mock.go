@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v5"
+	"github.com/pirsch-analytics/pirsch/v5/model"
 	"sort"
 	"sync"
 	"time"

@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v5/db"
+	"github.com/pirsch-analytics/pirsch/v5/model"
 )
 
 // Demographics aggregates metadata statistics like the referrer, browser, and OS.

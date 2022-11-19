@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v5/db"
 )
 
 // FilterOptions returns options that can be used to filter results.

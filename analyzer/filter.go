@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/pirsch-analytics/pirsch/v5"
+	"github.com/pirsch-analytics/pirsch/v5/util"
 	"strings"
 	"time"
 )

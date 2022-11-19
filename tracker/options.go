@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/pirsch-analytics/pirsch/v5/util"
 	"net/http"
 	"net/url"
 	"strconv"

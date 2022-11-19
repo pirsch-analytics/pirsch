@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4"
+	"github.com/pirsch-analytics/pirsch/v5"
 	"time"
 )
 

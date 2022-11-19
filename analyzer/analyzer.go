@@ -2,8 +2,8 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v5"
+	"github.com/pirsch-analytics/pirsch/v5/db"
 )
 
 // Analyzer provides an interface to analyze statistics.

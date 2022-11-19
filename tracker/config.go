@@ -1,11 +1,11 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/geodb"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/ip"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
-	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/pirsch-analytics/pirsch/v5/db"
+	"github.com/pirsch-analytics/pirsch/v5/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v5/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v5/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v5/util"
 	"log"
 	"net"
 	"runtime"

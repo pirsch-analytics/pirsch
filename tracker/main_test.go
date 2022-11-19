@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/db"
+	"github.com/pirsch-analytics/pirsch/v5/db"
 	"os"
 	"testing"
 )

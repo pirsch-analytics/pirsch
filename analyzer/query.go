@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v4"
+	"github.com/pirsch-analytics/pirsch/v5"
 	"strconv"
 	"strings"
 )

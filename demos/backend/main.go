@@ -2,9 +2,9 @@ package main
 
 import (
 	_ "github.com/lib/pq"
-	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/tracker"
-	"github.com/pirsch-analytics/pirsch/v4/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v5/db"
+	"github.com/pirsch-analytics/pirsch/v5/tracker"
+	"github.com/pirsch-analytics/pirsch/v5/tracker/session"
 	"log"
 	"net/http"
 )

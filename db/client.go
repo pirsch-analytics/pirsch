@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/model"
-	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/pirsch-analytics/pirsch/v5"
+	"github.com/pirsch-analytics/pirsch/v5/model"
+	"github.com/pirsch-analytics/pirsch/v5/util"
 	"log"
 	"time"
 )

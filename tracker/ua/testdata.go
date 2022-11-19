@@ -1,6 +1,6 @@
 package ua
 
-import "github.com/pirsch-analytics/pirsch/v4"
+import "github.com/pirsch-analytics/pirsch/v5"
 
 type testUserAgent struct {
 	ua             string

@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/pirsch-analytics/pirsch/v4/model"
-	"github.com/pirsch-analytics/pirsch/v4/util"
+	"github.com/pirsch-analytics/pirsch/v5/model"
+	"github.com/pirsch-analytics/pirsch/v5/util"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"

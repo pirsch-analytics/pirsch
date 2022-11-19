@@ -2,9 +2,9 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v4"
-	"github.com/pirsch-analytics/pirsch/v4/db"
-	"github.com/pirsch-analytics/pirsch/v4/model"
+	"github.com/pirsch-analytics/pirsch/v5"
+	"github.com/pirsch-analytics/pirsch/v5/db"
+	"github.com/pirsch-analytics/pirsch/v5/model"
 	"sort"
 	"strings"
 )
