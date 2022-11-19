@@ -17,7 +17,7 @@ type UserAgent struct {
 	// Browser is the browser name.
 	Browser string `db:"-"`
 
-	// BrowserVersion is the browser (non technical) version number.
+	// BrowserVersion is the browser (non-technical) version number.
 	BrowserVersion string `db:"-"`
 
 	// OS is the operating system.

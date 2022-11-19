@@ -52,7 +52,7 @@ func main() {
 	}))
 
 	// And finally, start the server.
-	// We don't flush hits on shutdown but you should add that in a real application by calling Tracker.Flush().
+	// We don't flush hits on shutdown, but you should add that in a real application by calling Tracker.Flush().
 	log.Println("Starting server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

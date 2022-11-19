@@ -130,5 +130,5 @@ Note that we only accept pull requests if you transfer the ownership of your con
 GNU AGPLv3
 
 <p align="center">
-    <img src="gopher.svg" width="200px" />
+    <img src="gopher.svg" alt="Gopher" width="200px" />
 </p>
