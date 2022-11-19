@@ -229,6 +229,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 // Flush flushes all buffered data.
 func (tracker *Tracker) Flush() {
 	tracker.stopWorker()
+	tracker.flushData()
 	tracker.startWorker()
 }
 
