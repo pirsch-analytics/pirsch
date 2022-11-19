@@ -520,6 +520,28 @@ func TestTracker_ExtendSessionNoSession(t *testing.T) {
 	assert.Len(t, client.GetSessions(), 0)
 }
 
+func TestTracker_Flush(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	tracker := NewTracker(Config{
+		Store:        dbClient,
+		SessionCache: session.NewMemCache(dbClient, 100),
+	})
+
+	for i := 0; i < 10; i++ {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.RemoteAddr = "187.65.23.54"
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:79.0) Gecko/20220101 Firefox/100.0")
+		req.Header.Set("Accept-Language", "en")
+		go tracker.Event(req, 0, EventOptions{Name: "event"}, Options{})
+	}
+
+	time.Sleep(time.Second)
+	tracker.Flush()
+	count, err := dbClient.Count(`SELECT count(*) FROM event`)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, count)
+}
+
 func TestTracker_ignorePrefetch(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
