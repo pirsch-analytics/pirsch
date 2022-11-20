@@ -85,6 +85,14 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 300, visitors[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
+	visitors, err = analyzer.Pages.ByPath(&Filter{Sort: []Sort{
+		{Field: FieldPath, Direction: pirsch.DirectionDESC},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/foo", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, "/", visitors[2].Path)
 	top, err := analyzer.Time.AvgTimeOnPage(nil)
 	assert.NoError(t, err)
 	assert.Len(t, top, 2)

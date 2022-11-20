@@ -349,8 +349,10 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			sessionFields = append(sessionFields, FieldViews)
 		}
 
+		filterCopy := *filter
+		filterCopy.Sort = nil
 		return &queryBuilder{
-			filter:  filter,
+			filter:  &filterCopy,
 			fields:  sessionFields,
 			from:    sessions,
 			groupBy: groupBy,
@@ -365,6 +367,7 @@ func (filter *Filter) joinEvents() *queryBuilder {
 		filterCopy := *filter
 		filterCopy.Path = nil
 		filterCopy.AnyPath = nil
+		filterCopy.Sort = nil
 		return &queryBuilder{
 			filter:  &filterCopy,
 			fields:  []Field{FieldVisitorID, FieldSessionID},
@@ -381,6 +384,7 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 	filterCopy.EventName = nil
 	filterCopy.EventMetaKey = nil
 	filterCopy.EventMeta = nil
+	filterCopy.Sort = nil
 	eventFields := []Field{FieldVisitorID, FieldSessionID, FieldEventName}
 
 	if len(filter.EventMeta) != 0 || filter.fieldsContain(fields, FieldEventMeta) {

@@ -576,16 +576,14 @@ func (query *queryBuilder) having() {
 
 func (query *queryBuilder) orderByFields() {
 	if len(query.filter.Sort) > 0 {
-		query.orderBy = make([]Field, 0, len(query.filter.Sort))
+		fields := make([]Field, 0, len(query.filter.Sort))
 
 		for i := range query.filter.Sort {
-			for j := range query.orderBy {
-				if query.filter.Sort[i].Field == query.orderBy[j] {
-					query.orderBy[i].queryDirection = query.filter.Sort[i].Direction
-					break
-				}
-			}
+			query.filter.Sort[i].Field.queryDirection = query.filter.Sort[i].Direction
+			fields = append(fields, query.filter.Sort[i].Field)
 		}
+
+		query.orderBy = fields
 	}
 
 	if len(query.orderBy) > 0 {
