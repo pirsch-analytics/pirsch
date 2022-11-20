@@ -322,8 +322,10 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 }
 
 func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
+	filterCopy := *filter
+	filterCopy.Sort = nil
 	q := queryBuilder{
-		filter: filter,
+		filter: &filterCopy,
 		from:   pageViews,
 		search: filter.Search,
 	}

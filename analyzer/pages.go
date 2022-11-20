@@ -317,6 +317,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	filter = pages.analyzer.getFilter(filter)
+	filter.Sort = nil
 	q := queryBuilder{
 		filter: filter,
 		from:   pageViews,
