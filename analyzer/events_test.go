@@ -245,3 +245,60 @@ func TestAnalyzer_EventList(t *testing.T) {
 	}})
 	assert.NoError(t, err)
 }
+
+func TestAnalyzer_EventFilter(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 3, Time: util.Today(), Path: "/"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", IsBounce: false, PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "event1", MetaKeys: []string{"k0", "k1"}, MetaValues: []string{"v0", "v1"}},
+		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3"}, MetaValues: []string{"v2", "v3"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	list, err := analyzer.Events.Events(&Filter{EventName: []string{"event1"}})
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "event1", list[0].Name)
+	list, err = analyzer.Events.Events(&Filter{EventName: []string{"!event1"}})
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "event2", list[0].Name)
+
+	breakdown, err := analyzer.Events.Breakdown(&Filter{EventName: []string{"event1"}, EventMetaKey: []string{"k0"}})
+	assert.NoError(t, err)
+	assert.Len(t, breakdown, 1)
+	assert.Equal(t, "event1", breakdown[0].Name)
+	breakdown, err = analyzer.Events.Breakdown(&Filter{EventName: []string{"!event1"}, EventMetaKey: []string{"k2"}})
+	assert.NoError(t, err)
+	assert.Len(t, breakdown, 1)
+	assert.Equal(t, "event2", breakdown[0].Name)
+
+	eventList, err := analyzer.Events.List(&Filter{EventName: []string{"event1"}})
+	assert.NoError(t, err)
+	assert.Len(t, eventList, 1)
+	assert.Equal(t, "event1", eventList[0].Name)
+	eventList, err = analyzer.Events.List(&Filter{EventName: []string{"!event1"}})
+	assert.NoError(t, err)
+	assert.Len(t, eventList, 1)
+	assert.Equal(t, "event2", eventList[0].Name)
+	eventList, err = analyzer.Events.List(&Filter{EventName: []string{"!event1"}, EventMeta: map[string]string{"k2": "v2"}})
+	assert.NoError(t, err)
+	assert.Len(t, eventList, 1)
+	assert.Equal(t, "event2", eventList[0].Name)
+	assert.Equal(t, "v2", eventList[0].Meta["k2"])
+}

@@ -286,11 +286,13 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			FieldExitTitle)
 		q.join = filter.joinSessions(fields)
 
-		if filter.valuesContainPrefix(filter.EventName, "!") {
-			q.includeEventFilter = true
-			q.leftJoin = filter.leftJoinEvents(fields)
-		} else {
-			q.joinSecond = filter.joinEvents()
+		if q.from != events {
+			if filter.valuesContainPrefix(filter.EventName, "!") {
+				q.includeEventFilter = true
+				q.leftJoin = filter.leftJoinEvents(fields)
+			} else {
+				q.joinSecond = filter.joinEvents()
+			}
 		}
 	} else {
 		q.fields = fields
