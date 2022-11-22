@@ -296,6 +296,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		}
 	} else {
 		q.fields = fields
+		q.join = filter.joinPageViews(fields)
 
 		if filter.valuesContainPrefix(filter.EventName, "!") {
 			q.includeEventFilter = true
@@ -371,6 +372,29 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 			fields:  sessionFields,
 			from:    sessions,
 			groupBy: groupBy,
+		}
+	}
+
+	return nil
+}
+
+func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
+	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
+		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
+
+		if len(filter.PathPattern) != 0 {
+			pageViewFields = append(pageViewFields, FieldPath)
+		} else if len(filter.Path) != 0 || filter.fieldsContain(fields, FieldPath) {
+			pageViewFields = append(pageViewFields, FieldPath)
+		}
+
+		filterCopy := *filter
+		filterCopy.Sort = nil
+		return &queryBuilder{
+			filter:  &filterCopy,
+			fields:  pageViewFields,
+			from:    pageViews,
+			groupBy: pageViewFields,
 		}
 	}
 

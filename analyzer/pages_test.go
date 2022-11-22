@@ -540,6 +540,10 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.Exit(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.Pages.Entry(getMaxFilter("!event"))
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Exit(getMaxFilter("!event"))
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_PageConversions(t *testing.T) {
@@ -628,18 +632,24 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), DurationSeconds: 0, Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/"},
+		{VisitorID: 1, Time: util.Today(), DurationSeconds: 0, Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 7), DurationSeconds: 2, Path: "/integrations/wordpress/"},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 0, EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/", EntryPath: "/settings/general", PageViews: 4, IsBounce: false},
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 7, ExitPath: "/integrations/wordpress/", EntryPath: "/", PageViews: 4, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second * 7), Start: time.Now(), DurationSeconds: 0, EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 10), Start: time.Now(), DurationSeconds: 3, EntryPath: "/", ExitPath: "/integrations/wordpress/", PageViews: 2, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second * 12), Start: time.Now(), DurationSeconds: 3, EntryPath: "/", ExitPath: "/integrations/wordpress/", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 5, EntryPath: "/", ExitPath: "/account/billing/", PageViews: 3, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 5, EntryPath: "/", ExitPath: "/account/billing/", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 7, EntryPath: "/", ExitPath: "/settings/general/", PageViews: 4, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 7, EntryPath: "/", ExitPath: "/settings/general/", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 7, EntryPath: "/", ExitPath: "/integrations/wordpress/", PageViews: 5, IsBounce: false},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -660,6 +670,14 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	assert.Equal(t, "/integrations/wordpress/", exit[0].Path)
 	assert.Equal(t, 1, exit[0].Visitors)
 	assert.Equal(t, 1, exit[0].Exits)
+
+	filter.Path = []string{"/foo"}
+	entry, err = analyzer.Pages.Entry(filter)
+	assert.NoError(t, err)
+	assert.Len(t, entry, 0)
+	exit, err = analyzer.Pages.Exit(filter)
+	assert.NoError(t, err)
+	assert.Len(t, exit, 0)
 }
 
 func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
