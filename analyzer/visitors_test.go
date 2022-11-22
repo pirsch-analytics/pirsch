@@ -174,7 +174,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_TotalVisitorsInvertEvent(t *testing.T) {
+func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
