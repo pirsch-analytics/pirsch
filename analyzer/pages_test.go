@@ -223,6 +223,46 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
+func TestAnalyzer_PagesEvent(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 3, Time: util.Today(), Path: "/"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", IsBounce: false, PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "event"},
+		{VisitorID: 3, Time: util.Today(), Name: "event"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	visitors, err := analyzer.Pages.ByPath(&Filter{EventName: []string{"event"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "/", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, "/foo", visitors[2].Path)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	visitors, err = analyzer.Pages.ByPath(&Filter{EventName: []string{"!event"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "/foo", visitors[0].Path)
+	assert.Equal(t, 1, visitors[0].Visitors)
+}
+
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

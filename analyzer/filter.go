@@ -285,7 +285,13 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			FieldExitPath,
 			FieldExitTitle)
 		q.join = filter.joinSessions(fields)
-		q.joinSecond = filter.joinEvents()
+
+		if filter.valuesContainPrefix(filter.EventName, "!") {
+			q.includeEventFilter = true
+			q.leftJoin = filter.leftJoinEvents(fields)
+		} else {
+			q.joinSecond = filter.joinEvents()
+		}
 	} else {
 		q.fields = fields
 	}
@@ -416,6 +422,16 @@ func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
 func (filter *Filter) fieldsContain(haystack []Field, needle Field) bool {
 	for i := range haystack {
 		if haystack[i] == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (filter *Filter) valuesContainPrefix(haystack []string, prefix string) bool {
+	for i := range haystack {
+		if strings.HasPrefix(haystack[i], prefix) {
 			return true
 		}
 	}
