@@ -17,9 +17,24 @@ type Pages struct {
 
 // ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
+	return pages.byPath(filter, false)
+}
+
+// ByEventPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by event path and (optional) title.
+func (pages *Pages) ByEventPath(filter *Filter) ([]model.PageStats, error) {
+	return pages.byPath(filter, true)
+}
+
+func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, error) {
 	filter = pages.analyzer.getFilter(filter)
+	pathField := FieldPath
+
+	if eventPath {
+		pathField = FieldEventPath
+	}
+
 	fields := []Field{
-		FieldPath,
+		pathField,
 		FieldVisitors,
 		FieldSessions,
 		FieldRelativeVisitors,
@@ -29,25 +44,27 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 		FieldBounceRate,
 	}
 	groupBy := []Field{
-		FieldPath,
+		pathField,
 	}
 	orderBy := []Field{
 		FieldVisitors,
-		FieldPath,
+		pathField,
 	}
 
 	if filter.IncludeTitle {
-		fields = append(fields, FieldTitle)
-		groupBy = append(groupBy, FieldTitle)
-		orderBy = append(orderBy, FieldTitle)
-	}
-
-	if filter.table(fields) == events {
-		fields = append(fields, FieldEventTimeSpent)
+		if eventPath {
+			fields = append(fields, FieldEventTitle)
+			groupBy = append(groupBy, FieldEventTitle)
+			orderBy = append(orderBy, FieldEventTitle)
+		} else {
+			fields = append(fields, FieldTitle)
+			groupBy = append(groupBy, FieldTitle)
+			orderBy = append(orderBy, FieldTitle)
+		}
 	}
 
 	q, args := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, filter.table(fields) == events, q, args...)
+	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, false, q, args...)
 
 	if err != nil {
 		return nil, err

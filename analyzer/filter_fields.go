@@ -33,6 +33,15 @@ var (
 		Name:           "path",
 	}
 
+	// FieldEventPath is a query result column.
+	FieldEventPath = Field{
+		id:             1,
+		querySessions:  "path",
+		queryPageViews: "path",
+		queryDirection: "ASC",
+		Name:           "path",
+	}
+
 	// FieldEntryPath is a query result column.
 	FieldEntryPath = Field{
 		querySessions:  "entry_path",
@@ -290,6 +299,15 @@ var (
 		Name:           "title",
 	}
 
+	// FieldEventTitle is a query result column.
+	FieldEventTitle = Field{
+		id:             2,
+		querySessions:  "title",
+		queryPageViews: "title",
+		queryDirection: "ASC",
+		Name:           "title",
+	}
+
 	// FieldEntryTitle is a query result column.
 	FieldEntryTitle = Field{
 		querySessions:  "entry_title",
@@ -428,6 +446,7 @@ var (
 
 // Field is a column for a query.
 type Field struct {
+	id             uint8
 	querySessions  string
 	queryPageViews string
 	queryPeriod    string

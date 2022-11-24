@@ -725,7 +725,7 @@ func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model
 }
 
 // SelectPageStats implements the Store interface.
-func (client *Client) SelectPageStats(includeTitle, includeEvent bool, query string, args ...any) ([]model.PageStats, error) {
+func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query string, args ...any) ([]model.PageStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -736,7 +736,7 @@ func (client *Client) SelectPageStats(includeTitle, includeEvent bool, query str
 	var results []model.PageStats
 
 	if includeTitle {
-		if includeEvent {
+		if includeTimeSpent {
 			for rows.Next() {
 				var result model.PageStats
 
@@ -775,7 +775,7 @@ func (client *Client) SelectPageStats(includeTitle, includeEvent bool, query str
 			}
 		}
 	} else {
-		if includeEvent {
+		if includeTimeSpent {
 			for rows.Next() {
 				var result model.PageStats
 

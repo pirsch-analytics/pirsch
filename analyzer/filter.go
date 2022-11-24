@@ -291,7 +291,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 				q.includeEventFilter = true
 				q.leftJoin = filter.leftJoinEvents(fields)
 			} else {
-				q.joinSecond = filter.joinEvents()
+				q.joinSecond = filter.joinEvents(fields)
 			}
 		}
 	} else {
@@ -302,7 +302,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			q.includeEventFilter = true
 			q.leftJoin = filter.leftJoinEvents(fields)
 		} else {
-			q.joinSecond = filter.joinEvents()
+			q.joinSecond = filter.joinEvents(fields)
 		}
 	}
 
@@ -401,17 +401,27 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 	return nil
 }
 
-func (filter *Filter) joinEvents() *queryBuilder {
+func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 	if len(filter.EventName) != 0 {
 		filterCopy := *filter
 		filterCopy.Path = nil
 		filterCopy.AnyPath = nil
 		filterCopy.Sort = nil
+		eventFields := []Field{FieldVisitorID, FieldSessionID}
+
+		if filter.fieldsContain(fields, FieldEventPath) {
+			eventFields = append(eventFields, FieldEventPath)
+		}
+
+		if filter.fieldsContain(fields, FieldEventTitle) {
+			eventFields = append(eventFields, FieldEventTitle)
+		}
+
 		return &queryBuilder{
 			filter:  &filterCopy,
-			fields:  []Field{FieldVisitorID, FieldSessionID},
+			fields:  eventFields,
 			from:    events,
-			groupBy: []Field{FieldVisitorID, FieldSessionID},
+			groupBy: eventFields,
 		}
 	}
 
@@ -430,6 +440,14 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw, FieldEventMetaValuesRaw)
 	} else if len(filter.EventMetaKey) != 0 || filter.fieldsContain(fields, FieldEventMetaKeys) {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw)
+	}
+
+	if filter.fieldsContain(fields, FieldEventPath) {
+		eventFields = append(eventFields, FieldEventPath)
+	}
+
+	if filter.fieldsContain(fields, FieldEventTitle) {
+		eventFields = append(eventFields, FieldEventTitle)
 	}
 
 	return &queryBuilder{

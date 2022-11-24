@@ -5,6 +5,7 @@
 * added `pirsch-sessions.js` script to automatically extend sessions
 * added field to count how often a session has been extended
 * added bot filter based on IP address
+* added event pages as new statistic
 * improved interfaces and defaults
 * improved query builder
 * fixed inverting event filter
