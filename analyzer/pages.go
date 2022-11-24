@@ -22,6 +22,10 @@ func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 
 // ByEventPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by event path and (optional) title.
 func (pages *Pages) ByEventPath(filter *Filter) ([]model.PageStats, error) {
+	if len(filter.EventName) == 0 {
+		return []model.PageStats{}, nil
+	}
+
 	return pages.byPath(filter, true)
 }
 
