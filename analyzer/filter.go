@@ -316,7 +316,8 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 
 func (filter *Filter) table(fields []Field) table {
 	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
-		if !filter.fieldsContain(fields, FieldEventName) && (len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath)) {
+		if !filter.fieldsContain(fields, FieldEventName) &&
+			(len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath)) {
 			return pageViews
 		} else if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
 			return events
@@ -379,12 +380,12 @@ func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
-	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
+	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.searchContains(FieldPath) {
 		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
 
 		if len(filter.PathPattern) != 0 {
 			pageViewFields = append(pageViewFields, FieldPath)
-		} else if len(filter.Path) != 0 || filter.fieldsContain(fields, FieldPath) {
+		} else if len(filter.Path) != 0 || filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
 			pageViewFields = append(pageViewFields, FieldPath)
 		}
 

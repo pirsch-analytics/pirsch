@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.1
+
+* fixed searching by path
+* updated dependencies
+
 ## 5.0.0
 
 * added `pirsch-sessions.js` script to automatically extend sessions

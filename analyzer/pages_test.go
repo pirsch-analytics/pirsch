@@ -151,6 +151,16 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	ttop, err = analyzer.Visitors.totalTimeOnPage(&Filter{MaxTimeOnPageSeconds: 200})
 	assert.NoError(t, err)
 	assert.Equal(t, 180+120+200+200, ttop)
+	visitors, err = analyzer.Pages.ByPath(&Filter{Search: []Search{{Field: FieldPath, Input: "%foo%"}}, IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		ExitPath:          []string{"/foo"},
+		Search:            []Search{{Field: FieldPath, Input: "%foo%"}},
+		IncludeTimeOnPage: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
 }
 
 func TestAnalyzer_PageTitle(t *testing.T) {
@@ -328,7 +338,6 @@ func TestAnalyzer_PagesEventPath(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Path) // "unknown"
 	assert.Equal(t, 1, visitors[0].Visitors)
-
 	visitors, err = analyzer.Pages.ByEventPath(&Filter{EventName: []string{"event"}, IncludeTitle: true})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 2)
@@ -344,6 +353,19 @@ func TestAnalyzer_PagesEventPath(t *testing.T) {
 	assert.Empty(t, visitors[0].Path)  // "unknown"
 	assert.Empty(t, visitors[0].Title) // "unknown"
 	assert.Equal(t, 1, visitors[0].Visitors)
+	_, err = analyzer.Pages.ByEventPath(&Filter{
+		EventName:         []string{"event"},
+		Search:            []Search{{Field: FieldEventPath, Input: "%foo%"}},
+		IncludeTimeOnPage: true,
+	})
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.ByEventPath(&Filter{
+		EventName:         []string{"event"},
+		EntryPath:         []string{"/"},
+		Search:            []Search{{Field: FieldEventPath, Input: "%foo%"}},
+		IncludeTimeOnPage: true,
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
@@ -441,6 +463,14 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
+	_, err = analyzer.Pages.Entry(&Filter{Search: []Search{{Field: FieldPath, Input: "%foo%"}}, IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Entry(&Filter{
+		EntryPath:         []string{"/"},
+		Search:            []Search{{Field: FieldPath, Input: "%foo%"}},
+		IncludeTimeOnPage: true,
+	})
+	assert.NoError(t, err)
 	exits, err := analyzer.Pages.Exit(nil)
 	assert.NoError(t, err)
 	assert.Len(t, exits, 3)
@@ -499,6 +529,14 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 			Input: "/",
 		},
 	}})
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Exit(&Filter{Search: []Search{{Field: FieldPath, Input: "%foo%"}}, IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Exit(&Filter{
+		ExitPath:          []string{"/"},
+		Search:            []Search{{Field: FieldPath, Input: "%foo%"}},
+		IncludeTimeOnPage: true,
+	})
 	assert.NoError(t, err)
 }
 
