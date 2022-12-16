@@ -66,7 +66,6 @@ The scripts are configured using HTML attributes. All of them are optional, exce
 | data-disable-query | Removes all query parameters from the URL. | false |
 | data-disable-referrer | Disables the collection of the referrer. | false |
 | data-disable-resolution | Disables the collection of the screen resolution. | false |
-| data-param-* | Additional parameters to send with the request. The name send is everything after `data-param-`. | (no parameters) |
 
 The scripts can be disabled by setting the `disable_pirsch` variable in localStorage of your browser.
 

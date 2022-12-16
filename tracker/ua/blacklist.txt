@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-11-18)
+# custom (last update: 2022-12-16)
 ://
 bot
 crawler
@@ -210,7 +210,6 @@ openwave
 peach
 pixalate
 puppeteeragent
-r (4.2.0 x86_64-pc-linux-gnu x86_64 linux-gnu)
 sprout social
 candroid
 ivoox
@@ -299,6 +298,13 @@ dnstwist
 cvvs/
 lasso
 developer
+black magic
+force-ws05
+h002375fzr7s
+h6c86lti5ifj_2
+mypxapp
+496ffe900b0471c45ed62acedd255020
+06d8d6b03c5d67d530631759888ad064
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

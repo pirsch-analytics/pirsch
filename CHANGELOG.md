@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.2
+
+* removed unused custom parameters (`data-param-*`)
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 5.0.1
 
 * fixed searching by path

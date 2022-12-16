@@ -9,16 +9,6 @@ import {getScript, ignore} from "./common";
         return;
     }
 
-    // get custom attributes
-    const attributes = script.getAttributeNames();
-    let params = "";
-
-    for (let i = 0; i < attributes.length; i++) {
-        if (attributes[i].toLowerCase().startsWith("data-param-")) {
-            params += "&" + attributes[i].substring("data-param-".length) + "=" + script.getAttribute(attributes[i]);
-        }
-    }
-
     // register hit function
     const endpoint = script.getAttribute("data-endpoint") || "/pirsch";
     const clientID = script.getAttribute("data-client-id") || 0;
@@ -53,8 +43,7 @@ import {getScript, ignore} from "./common";
             "&t=" + encodeURIComponent(document.title) +
             "&ref=" + (disableReferrer ? '' : encodeURIComponent(document.referrer)) +
             "&w=" + (disableResolution ? '' : screen.width) +
-            "&h=" + (disableResolution ? '' : screen.height) +
-            params;
+            "&h=" + (disableResolution ? '' : screen.height);
         const req = new XMLHttpRequest();
         req.open("GET", url);
         req.send();
