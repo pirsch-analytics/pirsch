@@ -1,4 +1,4 @@
-import {getScript, ignore} from "./common";
+import {getScript, ignore, rewriteHostname, rewriteReferrer} from "./common";
 
 (function () {
     "use strict";
@@ -16,9 +16,10 @@ import {getScript, ignore} from "./common";
     const disableQueryParams = script.hasAttribute("data-disable-query");
     const disableReferrer = script.hasAttribute("data-disable-referrer");
     const disableResolution = script.hasAttribute("data-disable-resolution");
+    const rewrite = script.getAttribute("data-dev");
 
     function hit() {
-        sendHit();
+        sendHit(rewrite);
 
         for (let i = 0; i < domains.length; i++) {
             sendHit(domains[i]);
@@ -26,11 +27,8 @@ import {getScript, ignore} from "./common";
     }
 
     function sendHit(hostname) {
-        if (!hostname) {
-            hostname = location.href;
-        } else {
-            hostname = location.href.replace(location.hostname, hostname);
-        }
+        const referrer = rewriteReferrer(hostname);
+        hostname = rewriteHostname(hostname);
 
         if (disableQueryParams) {
             hostname = (hostname.includes('?') ? hostname.split('?')[0] : hostname);
@@ -41,7 +39,7 @@ import {getScript, ignore} from "./common";
             "&client_id=" + clientID +
             "&url=" + encodeURIComponent(hostname.substring(0, 1800)) +
             "&t=" + encodeURIComponent(document.title) +
-            "&ref=" + (disableReferrer ? '' : encodeURIComponent(document.referrer)) +
+            "&ref=" + (disableReferrer ? '' : encodeURIComponent(referrer)) +
             "&w=" + (disableResolution ? '' : screen.width) +
             "&h=" + (disableResolution ? '' : screen.height);
         const req = new XMLHttpRequest();

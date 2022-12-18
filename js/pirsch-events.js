@@ -1,4 +1,4 @@
-import {getScript, ignore} from "./common";
+import {getScript, ignore, rewriteHostname, rewriteReferrer} from "./common";
 
 (function () {
     "use strict";
@@ -22,6 +22,7 @@ import {getScript, ignore} from "./common";
     const disableQueryParams = script.hasAttribute("data-disable-query");
     const disableReferrer = script.hasAttribute("data-disable-referrer");
     const disableResolution = script.hasAttribute("data-disable-resolution");
+    const rewrite = script.getAttribute("data-dev");
 
     window.pirsch = function (name, options) {
         if (typeof name !== "string" || !name) {
@@ -37,7 +38,7 @@ import {getScript, ignore} from "./common";
                 }
             }
 
-            sendEvent(null, name, options, meta, resolve, reject);
+            sendEvent(rewrite, name, options, meta, resolve, reject);
 
             for (let i = 0; i < domains.length; i++) {
                 sendEvent(domains[i], name, options, meta, resolve, reject);
@@ -46,11 +47,8 @@ import {getScript, ignore} from "./common";
     }
 
     function sendEvent(hostname, name, options, meta, resolve, reject) {
-        if (!hostname) {
-            hostname = location.href;
-        } else {
-            hostname = location.href.replace(location.hostname, hostname);
-        }
+        const referrer = rewriteReferrer(hostname);
+        hostname = rewriteHostname(hostname);
 
         if (disableQueryParams) {
             hostname = (hostname.includes('?') ? hostname.split('?')[0] : hostname);
@@ -60,7 +58,7 @@ import {getScript, ignore} from "./common";
             client_id: clientID,
             url: hostname.substring(0, 1800),
             title: document.title,
-            referrer: (disableReferrer ? '' : encodeURIComponent(document.referrer)),
+            referrer: (disableReferrer ? '' : encodeURIComponent(referrer)),
             screen_width: (disableResolution ? 0 : screen.width),
             screen_height: (disableResolution ? 0 : screen.height),
             event_name: name,

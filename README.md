@@ -62,7 +62,7 @@ The scripts are configured using HTML attributes. All of them are optional, exce
 | data-include | Specifies a list of regular expressions to test against. On a match, the page view or event will be included. This is done before excluding any pages. | (no paths) |
 | data-exclude | Specifies a list of regular expressions to test against. On a match, the page view or event will be ignored. This is done after including any pages. | (no paths) |
 | data-domain | Specifies a list of additional domains to send data to. | (empty list) |
-| data-dev | Enable tracking hits on localhost. This is used for testing purposes only. | false |
+| data-dev | Enable tracking hits on localhost. This is used for testing purposes only. You can set a hostname to overwrite localhost to something else, like `data-dev="example.com"`. | undefined |
 | data-disable-query | Removes all query parameters from the URL. | false |
 | data-disable-referrer | Disables the collection of the referrer. | false |
 | data-disable-resolution | Disables the collection of the screen resolution. | false |

@@ -13,9 +13,10 @@ import {getScript, ignore} from "./common";
     const endpoint = script.getAttribute("data-endpoint") || "/session";
     const clientID = script.getAttribute("data-client-id") || 0;
     const domains = script.getAttribute("data-domain") ? script.getAttribute("data-domain").split(",") || [] : [];
+    const rewrite = script.getAttribute("data-dev");
 
     function extendSession() {
-        sendExtendSession();
+        sendExtendSession(rewrite);
 
         for (let i = 0; i < domains.length; i++) {
             sendExtendSession(domains[i]);
@@ -23,12 +24,7 @@ import {getScript, ignore} from "./common";
     }
 
     function sendExtendSession(hostname) {
-        if (!hostname) {
-            hostname = location.href;
-        } else {
-            hostname = location.href.replace(location.hostname, hostname);
-        }
-
+        hostname = rewrite(hostname);
         const url = endpoint +
             "?nc=" + new Date().getTime() +
             "&client_id=" + clientID +

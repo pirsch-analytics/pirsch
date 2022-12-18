@@ -12,6 +12,26 @@ export function ignore(script) {
     return dnt() || isLocalhost(script) || !includePage(script) || excludePage(script);
 }
 
+export function rewriteHostname(hostname) {
+    if (!hostname) {
+        hostname = location.href;
+    } else {
+        hostname = location.href.replace(location.hostname, hostname);
+    }
+
+    return hostname;
+}
+
+export function rewriteReferrer(hostname) {
+    let referrer = document.referrer;
+
+    if (hostname) {
+        referrer = referrer.replace(location.hostname, hostname);
+    }
+
+    return referrer;
+}
+
 function dnt() {
     return navigator.doNotTrack === "1" || localStorage.getItem("disable_pirsch");
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.3
+
+* added a rewrite option using the `data-dev` attribute
+
 ## 5.0.2
 
 * removed unused custom parameters (`data-param-*`)

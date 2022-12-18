@@ -43,6 +43,7 @@ func main() {
 		// You can make sure only page calls get counted by checking the path: if r.URL.Path == "/" {...
 		if r.URL.Path != "/favicon.ico" {
 			go pirschTracker.PageView(r, 0, tracker.Options{})
+			log.Println("Page view tracked!")
 		}
 
 		// Send response.
