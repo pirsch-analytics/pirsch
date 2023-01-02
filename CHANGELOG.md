@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.1.0
+
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 5.0.3
 
 * added a rewrite option using the `data-dev` attribute

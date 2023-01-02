@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2022-12-16)
+# custom (last update: 2023-01-02)
 ://
 bot
 crawler
@@ -305,6 +305,13 @@ h6c86lti5ifj_2
 mypxapp
 496ffe900b0471c45ed62acedd255020
 06d8d6b03c5d67d530631759888ad064
+crossingminds
+hello world
+msoffice
+wxwork
+mxplayer
+guayoyo
+ipcamviewer
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
