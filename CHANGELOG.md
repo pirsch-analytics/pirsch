@@ -2,6 +2,7 @@
 
 ## 5.1.0
 
+* added paramater to overwrite the time a page view/event/session extension has been sent to support batch inserts
 * updated User-Agent blacklist
 * updated referrer blacklist
 * updated referrer mapping

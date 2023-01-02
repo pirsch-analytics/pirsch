@@ -93,6 +93,11 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 	if !ignore {
 		options.validate(r)
+
+		if !options.Time.IsZero() {
+			now = options.Time
+		}
+
 		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
 		var saveUserAgent *model.UserAgent
 
@@ -153,6 +158,11 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 
 		if !ignore {
 			options.validate(r)
+
+			if !options.Time.IsZero() {
+				now = options.Time
+			}
+
 			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
 			var saveUserAgent *model.UserAgent
 
@@ -215,6 +225,11 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 
 	if !ignore {
 		options.validate(r)
+
+		if !options.Time.IsZero() {
+			now = options.Time
+		}
+
 		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, options)
 
 		if session != nil {

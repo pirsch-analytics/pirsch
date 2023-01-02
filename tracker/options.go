@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Options are optional parameters for page views and events.
@@ -17,6 +18,7 @@ type Options struct {
 	Referrer     string
 	ScreenWidth  uint16
 	ScreenHeight uint16
+	Time         time.Time
 }
 
 func (options *Options) validate(r *http.Request) {

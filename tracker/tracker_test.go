@@ -344,6 +344,31 @@ func TestTracker_PageViewBuffer(t *testing.T) {
 	assert.Len(t, client.GetPageViews(), 7)
 }
 
+func TestTracker_PageViewOverwriteTime(t *testing.T) {
+	now := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.PageView(req, 123, Options{
+		Time: now.Add(-time.Second * 20),
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.True(t, now.After(sessions[0].Time))
+	assert.True(t, now.After(pageViews[0].Time))
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
@@ -479,6 +504,33 @@ func TestTracker_EventDiscard(t *testing.T) {
 	assert.Len(t, client.GetEvents(), 0)
 }
 
+func TestTracker_EventOverwriteTime(t *testing.T) {
+	now := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.Event(req, 123, EventOptions{
+		Name: "event",
+	}, Options{
+		Time: now.Add(-time.Second * 20),
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, events, 1)
+	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
+	assert.True(t, now.After(sessions[0].Time))
+	assert.True(t, now.After(events[0].Time))
+}
+
 func TestTracker_ExtendSession(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)
@@ -518,6 +570,34 @@ func TestTracker_ExtendSessionNoSession(t *testing.T) {
 	tracker.ExtendSession(req, 123, Options{})
 	tracker.Flush()
 	assert.Len(t, client.GetSessions(), 0)
+}
+
+func TestTracker_ExtendSessionOverwriteTime(t *testing.T) {
+	now := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.PageView(req, 123, Options{
+		Time: now.Add(-time.Second * 20),
+	})
+	time.Sleep(time.Second * 2)
+	tracker.ExtendSession(req, 123, Options{
+		Time: now.Add(-time.Second * 10),
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	assert.Len(t, sessions, 3)
+	assert.Equal(t, uint32(10), sessions[2].DurationSeconds)
+	assert.Equal(t, uint16(1), sessions[2].Extended)
+	assert.True(t, now.After(sessions[0].Time))
+	assert.True(t, now.After(sessions[1].Time))
+	assert.True(t, now.After(sessions[2].Time))
 }
 
 func TestTracker_Flush(t *testing.T) {
