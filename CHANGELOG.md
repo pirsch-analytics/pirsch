@@ -3,6 +3,9 @@
 ## 5.2.0
 
 * removed screen width and height (only the class is used)
+* updated User-Agent blacklist
+* updated referrer blacklist
+* updated referrer mapping
 * updated dependencies
 
 ## 5.1.0
