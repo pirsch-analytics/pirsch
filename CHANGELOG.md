@@ -3,6 +3,7 @@
 ## 5.2.0
 
 * removed screen width and height (only the class is used)
+* updated dependencies
 
 ## 5.1.0
 
