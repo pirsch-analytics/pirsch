@@ -288,16 +288,16 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S", ScreenWidth: 415, ScreenHeight: 600},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ScreenClass: "XL", ScreenWidth: 2560, ScreenHeight: 1440},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ScreenClass: "L", ScreenWidth: 1980, ScreenHeight: 1080},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL", ScreenWidth: 3840, ScreenHeight: 2080},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), ScreenClass: "XL"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ScreenClass: "XL"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ScreenClass: "L"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -314,13 +314,13 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenWidth: []string{"2560"}})
+	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenClass: []string{"XL"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "XL", visitors[0].ScreenClass)
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
-	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenHeight: []string{"1080"}})
+	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenClass: []string{"L"}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "L", visitors[0].ScreenClass)

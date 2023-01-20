@@ -150,8 +150,8 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 
 	query, err := tx.Prepare(`INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
 		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		browser, browser_version, desktop, mobile, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -177,8 +177,6 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 			pageView.BrowserVersion,
 			client.boolean(pageView.Desktop),
 			client.boolean(pageView.Mobile),
-			pageView.ScreenWidth,
-			pageView.ScreenHeight,
 			pageView.ScreenClass,
 			pageView.UTMSource,
 			pageView.UTMMedium,
@@ -216,9 +214,9 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 
 	query, err := tx.Prepare(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
 		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
+		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-        is_bot, extended) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        is_bot, extended) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -250,8 +248,6 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 			session.BrowserVersion,
 			client.boolean(session.Desktop),
 			client.boolean(session.Mobile),
-			session.ScreenWidth,
-			session.ScreenHeight,
 			session.ScreenClass,
 			session.UTMSource,
 			session.UTMMedium,
@@ -291,8 +287,8 @@ func (client *Client) SaveEvents(events []model.Event) error {
 
 	query, err := tx.Prepare(`INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
 		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_width, screen_height, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		browser, browser_version, desktop, mobile, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -321,8 +317,6 @@ func (client *Client) SaveEvents(events []model.Event) error {
 			event.BrowserVersion,
 			client.boolean(event.Desktop),
 			client.boolean(event.Mobile),
-			event.ScreenWidth,
-			event.ScreenHeight,
 			event.ScreenClass,
 			event.UTMSource,
 			event.UTMMedium,
@@ -414,8 +408,6 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		browser_version,
 		desktop,
 		mobile,
-		screen_width,
-		screen_height,
 		screen_class,
 		utm_source,
 		utm_medium,
@@ -456,8 +448,6 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		&session.BrowserVersion,
 		&session.Desktop,
 		&session.Mobile,
-		&session.ScreenWidth,
-		&session.ScreenHeight,
 		&session.ScreenClass,
 		&session.UTMSource,
 		&session.UTMMedium,

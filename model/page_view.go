@@ -26,8 +26,6 @@ type PageView struct {
 	BrowserVersion  string    `db:"browser_version" json:"browser_version"`
 	Desktop         bool      `json:"desktop"`
 	Mobile          bool      `json:"mobile"`
-	ScreenWidth     uint16    `db:"screen_width" json:"screen_width"`
-	ScreenHeight    uint16    `db:"screen_height" json:"screen_height"`
 	ScreenClass     string    `db:"screen_class" json:"screen_class"`
 	UTMSource       string    `db:"utm_source" json:"utm_source"`
 	UTMMedium       string    `db:"utm_medium" json:"utm_medium"`

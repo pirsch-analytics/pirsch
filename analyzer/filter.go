@@ -88,12 +88,6 @@ type Filter struct {
 	// ScreenClass filters for the screen class.
 	ScreenClass []string
 
-	// ScreenWidth filters for the screen width.
-	ScreenWidth []string
-
-	// ScreenHeight filters for the screen width.
-	ScreenHeight []string
-
 	// UTMSource filters for the utm_source query parameter.
 	UTMSource []string
 
@@ -228,8 +222,6 @@ func (filter *Filter) validate() {
 	filter.Browser = filter.removeDuplicates(filter.Browser)
 	filter.BrowserVersion = filter.removeDuplicates(filter.BrowserVersion)
 	filter.ScreenClass = filter.removeDuplicates(filter.ScreenClass)
-	filter.ScreenWidth = filter.removeDuplicates(filter.ScreenWidth)
-	filter.ScreenHeight = filter.removeDuplicates(filter.ScreenHeight)
 	filter.UTMSource = filter.removeDuplicates(filter.UTMSource)
 	filter.UTMMedium = filter.removeDuplicates(filter.UTMMedium)
 	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)

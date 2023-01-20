@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.0
+
+* removed screen width and height (only the class is used)
+
 ## 5.1.0
 
 * added parameter to overwrite the time a page view/event/session extension has been sent to support batch inserts

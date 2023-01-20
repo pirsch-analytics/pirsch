@@ -45,8 +45,6 @@ func TestClient_SavePageViews(t *testing.T) {
 			City:            "London",
 			Desktop:         true,
 			Mobile:          false,
-			ScreenWidth:     1920,
-			ScreenHeight:    1080,
 			ScreenClass:     "XL",
 		},
 		{
@@ -86,8 +84,6 @@ func TestClient_SaveSessions(t *testing.T) {
 			City:            "London",
 			Desktop:         true,
 			Mobile:          false,
-			ScreenWidth:     1920,
-			ScreenHeight:    1080,
 			ScreenClass:     "XL",
 			IsBot:           5,
 			Extended:        123,
@@ -175,8 +171,6 @@ func TestClient_SaveEvents(t *testing.T) {
 			City:            "London",
 			Desktop:         true,
 			Mobile:          false,
-			ScreenWidth:     1920,
-			ScreenHeight:    1080,
 			ScreenClass:     "XL",
 		},
 		{
