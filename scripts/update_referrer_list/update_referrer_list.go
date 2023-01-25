@@ -40,10 +40,34 @@ func main() {
 		log.Fatal(err)
 	}
 
+	handle, err := os.Open("scripts/update_referrer_list/list.json")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	file, err := io.ReadAll(handle)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var extended database
+
+	json.Unmarshal(file, &extended)
+
 	groups := map[string]string{}
 
 	for key := range db {
 		for name, domains := range db[key] {
+			for _, domain := range domains.Domains {
+				groups[strings.ToLower(domain)] = name
+			}
+		}
+	}
+
+	for key := range extended {
+		for name, domains := range extended[key] {
 			for _, domain := range domains.Domains {
 				groups[strings.ToLower(domain)] = name
 			}
