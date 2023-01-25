@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -39,6 +40,48 @@ func main() {
 		log.Fatal(err)
 	}
 
+	handle, err := os.Open("tracker/referrer/list.json")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	file, err := io.ReadAll(handle)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var extended database
+
+	json.Unmarshal(file, &extended)
+
+	groups := map[string]string{}
+
+	for key := range db {
+		for name, domains := range db[key] {
+			for _, domain := range domains.Domains {
+				groups[strings.ToLower(domain)] = name
+			}
+		}
+	}
+
+	for key := range extended {
+		for name, domains := range extended[key] {
+			for _, domain := range domains.Domains {
+				groups[strings.ToLower(domain)] = name
+			}
+		}
+	}
+
+	keys := make([]string, 0, len(groups))
+
+	for k := range groups {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	log.Println("Writing list")
 	var out strings.Builder
 	out.WriteString(`package referrer
@@ -47,13 +90,9 @@ var (
 	groups = map[string]string{
 `)
 
-	for key := range db {
-		for name, domains := range db[key] {
-			for _, domain := range domains.Domains {
-				out.WriteString(fmt.Sprintf(`"%s": "%s",`, strings.ToLower(domain), name))
-				out.WriteRune('\n')
-			}
-		}
+	for _, key := range keys {
+		out.WriteString(fmt.Sprintf(`"%s": "%s",`, key, groups[key]))
+		out.WriteRune('\n')
 	}
 
 	out.WriteString(`}
