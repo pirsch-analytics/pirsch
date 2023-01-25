@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.0
+
+* improved referrer mapping
+
 ## 5.2.0
 
 * removed screen width and height (only the class is used)
