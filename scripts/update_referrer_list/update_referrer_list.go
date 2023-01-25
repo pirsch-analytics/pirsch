@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handle, err := os.Open("scripts/update_referrer_list/list.json")
+	handle, err := os.Open("tracker/referrer/list.json")
 
 	if err != nil {
 		log.Fatal(err)
