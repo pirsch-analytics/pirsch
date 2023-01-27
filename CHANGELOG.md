@@ -3,6 +3,7 @@
 ## 5.3.0
 
 * improved referrer mapping
+* updated dependencies
 
 ## 5.2.0
 
