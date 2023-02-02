@@ -361,6 +361,74 @@ func TestTracker_PageViewOverwriteTime(t *testing.T) {
 	assert.True(t, now.After(pageViews[0].Time))
 }
 
+func TestTracker_PageViewFindSession(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	cache := session.NewMemCache(client, 10)
+	tracker := NewTracker(Config{
+		Store:        client,
+		SessionCache: cache,
+	})
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	cachedSessions := cache.Sessions()
+	var cachedSession model.Session
+	var cachedKey string
+
+	for key, value := range cachedSessions {
+		cachedSession = value
+		cachedKey = key
+	}
+
+	cachedSession.Time = time.Now().UTC().Add(time.Hour * -4)
+	cachedSessions[cachedKey] = cachedSession
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, pageViews, 2)
+}
+
+func TestTracker_PageViewFindSessionRedis(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewMockClient()
+	cache := session.NewRedisCache(time.Minute*30, nil, &redis.Options{
+		Addr: "localhost:6379",
+	})
+	tracker := NewTracker(Config{
+		Store:        client,
+		SessionCache: cache,
+	})
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	cache.Put(123, tracker.fingerprint(tracker.config.Salt, userAgent, "81.2.69.142", time.Now().UTC()), &model.Session{
+		Time: time.Now().UTC().Add(time.Hour * -4),
+	})
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, pageViews, 2)
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
