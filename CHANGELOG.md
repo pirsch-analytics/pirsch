@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.0
+
+* updated dependencies
+
 ## 5.3.0
 
 * improved referrer mapping
