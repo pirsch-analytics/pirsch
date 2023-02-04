@@ -10,6 +10,8 @@ type testUserAgent struct {
 	osVersion      string
 }
 
+// https://www.useragents.me/
+
 var userAgentsEdge = []testUserAgent{
 	{
 		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.74 Safari/537.36 Edg/79.0.309.43",
@@ -81,6 +83,13 @@ var userAgentsEdge = []testUserAgent{
 		os:             pirsch.OSWindows,
 		osVersion:      "10",
 	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.70",
+		browser:        pirsch.BrowserEdge,
+		browserVersion: "109.0",
+		os:             pirsch.OSWindows,
+		osVersion:      "10",
+	},
 }
 
 var userAgentsOpera = []testUserAgent{
@@ -138,6 +147,13 @@ var userAgentsOpera = []testUserAgent{
 		browserVersion: "27.0",
 		os:             pirsch.OSWindows,
 		osVersion:      "8",
+	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 OPR/94.0.0.0",
+		browser:        pirsch.BrowserOpera,
+		browserVersion: "94.0",
+		os:             pirsch.OSWindows,
+		osVersion:      "10",
 	},
 }
 
@@ -220,6 +236,20 @@ var userAgentsFirefox = []testUserAgent{
 		browserVersion: "79.0",
 		os:             pirsch.OSAndroid,
 		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0",
+		browser:        pirsch.BrowserFirefox,
+		browserVersion: "109.0",
+		os:             pirsch.OSWindows,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0",
+		browser:        pirsch.BrowserFirefox,
+		browserVersion: "109.0",
+		os:             pirsch.OSLinux,
+		osVersion:      "",
 	},
 }
 
@@ -339,6 +369,27 @@ var userAgentsChrome = []testUserAgent{
 		os:             pirsch.OSAndroid,
 		osVersion:      "5.1",
 	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+		browser:        pirsch.BrowserChrome,
+		browserVersion: "109.0",
+		os:             pirsch.OSWindows,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+		browser:        pirsch.BrowserChrome,
+		browserVersion: "109.0",
+		os:             pirsch.OSMac,
+		osVersion:      "10.15",
+	},
+	{
+		ua:             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+		browser:        pirsch.BrowserChrome,
+		browserVersion: "109.0",
+		os:             pirsch.OSLinux,
+		osVersion:      "",
+	},
 }
 
 var userAgentsSafari = []testUserAgent{
@@ -407,6 +458,20 @@ var userAgentsSafari = []testUserAgent{
 		browserVersion: "15.4",
 		os:             pirsch.OSiOS,
 		osVersion:      "15.4",
+	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15",
+		browser:        pirsch.BrowserSafari,
+		browserVersion: "16.2",
+		os:             pirsch.OSMac,
+		osVersion:      "10.15",
+	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15",
+		browser:        pirsch.BrowserSafari,
+		browserVersion: "16.3",
+		os:             pirsch.OSMac,
+		osVersion:      "10.15",
 	},
 }
 
@@ -480,6 +545,13 @@ var userAgentsIE = []testUserAgent{
 		browserVersion: "11.0",
 		os:             pirsch.OSWindows,
 		osVersion:      "8",
+	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
+		browser:        pirsch.BrowserIE,
+		browserVersion: "11.0",
+		os:             pirsch.OSWindows,
+		osVersion:      "10",
 	},
 }
 

@@ -2,6 +2,7 @@
 
 ## 5.4.0
 
+* added User-Agents tests for recent browsers
 * upgraded to Go 1.20
 * updated dependencies
 
