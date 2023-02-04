@@ -2,6 +2,7 @@
 
 ## 5.4.0
 
+* upgraded to Go 1.20
 * updated dependencies
 
 ## 5.3.0

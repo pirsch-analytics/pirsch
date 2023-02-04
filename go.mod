@@ -1,9 +1,9 @@
 module github.com/pirsch-analytics/pirsch/v5
 
-go 1.19
+go 1.20
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.6.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.5.1
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.0.1
 	github.com/emvi/null v1.3.1
@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/ClickHouse/ch-go v0.51.2 // indirect
+	github.com/ClickHouse/ch-go v0.52.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
