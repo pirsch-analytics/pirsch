@@ -2,7 +2,9 @@
 
 ## 5.4.0
 
+* added cache for Android app referrer mapping
 * added User-Agents tests for recent browsers
+* fixed Android app referrer mapping with trailing slashes
 * upgraded to Go 1.20
 * updated User-Agent blacklist
 * updated referrer blacklist

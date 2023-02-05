@@ -180,15 +180,14 @@ func TestGetAndroidApp(t *testing.T) {
 	_, name, icon := Get(r, "", "")
 	assert.Equal(t, "Slack", name)
 	assert.NotEmpty(t, icon)
+	r = httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Add("Referer", androidAppPrefix+"com.pinterest/")
+	_, name, icon = Get(r, "", "")
+	assert.Equal(t, "Pinterest", name)
+	assert.NotEmpty(t, icon)
 	r.Header.Set("Referer", androidAppPrefix+"does-not-exist")
 	ref, name, icon := Get(r, "", "")
 	assert.Equal(t, androidAppPrefix+"does-not-exist", ref)
 	assert.Empty(t, name)
 	assert.Empty(t, icon)
-}
-
-func TestContainsString(t *testing.T) {
-	list := []string{"a", "b", "c", "d"}
-	assert.False(t, containsString(list, "e"))
-	assert.True(t, containsString(list, "c"))
 }

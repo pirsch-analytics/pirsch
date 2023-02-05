@@ -1,18 +1,11 @@
 package referrer
 
 import (
-	"fmt"
-	"golang.org/x/net/html"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"strings"
-)
-
-const (
-	androidAppPrefix   = "android-app://"
-	googlePlayStoreURL = "https://play.google.com/store/apps/details?id=%s"
 )
 
 // QueryParams is a list of query parameters to set the referrer.
@@ -58,7 +51,7 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 	}
 
 	if strings.HasPrefix(strings.ToLower(referrer), androidAppPrefix) {
-		name, icon := getAndroidAppName(referrer)
+		name, icon := androidAppCache.getAndroidAppName(referrer)
 		return referrer, name, icon
 	}
 
@@ -160,115 +153,4 @@ func stripSubdomain(hostname string) string {
 	}
 
 	return hostname[index:]
-}
-
-func getAndroidAppName(referrer string) (string, string) {
-	packageName := referrer[len(androidAppPrefix):]
-	resp, err := http.Get(fmt.Sprintf(googlePlayStoreURL, packageName))
-
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return "", ""
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	doc, err := html.Parse(resp.Body)
-
-	if err != nil {
-		return "", ""
-	}
-
-	titleNode := findAndroidAppName(doc)
-
-	if titleNode == nil {
-		return "", ""
-	}
-
-	appName := findTextNode(titleNode)
-
-	if appName == nil {
-		return "", ""
-	}
-
-	icon := ""
-	iconNode := findAndroidAppIcon(doc)
-
-	if iconNode != nil {
-		icon = getHTMLAttribute(iconNode, "src")
-	}
-
-	return appName.Data, icon
-}
-
-func findAndroidAppName(node *html.Node) *html.Node {
-	if node.Type == html.ElementNode && node.Data == "h1" {
-		return node
-	}
-
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if n := findAndroidAppName(c); n != nil {
-			return n
-		}
-	}
-
-	return nil
-}
-
-func findAndroidAppIcon(node *html.Node) *html.Node {
-	if node.Type == html.ElementNode && node.Data == "img" && hasHTMLAttribute(node, "itemprop", "image") {
-		return node
-	}
-
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if n := findAndroidAppIcon(c); n != nil {
-			return n
-		}
-	}
-
-	return nil
-}
-
-func findTextNode(node *html.Node) *html.Node {
-	if node.Type == html.TextNode {
-		return node
-	}
-
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if n := findTextNode(c); n != nil {
-			return n
-		}
-	}
-
-	return nil
-}
-
-func hasHTMLAttribute(node *html.Node, key, value string) bool {
-	for _, attr := range node.Attr {
-		if attr.Key == key && attr.Val == value {
-			return true
-		}
-	}
-
-	return false
-}
-
-func getHTMLAttribute(node *html.Node, key string) string {
-	for _, attr := range node.Attr {
-		if attr.Key == key {
-			return attr.Val
-		}
-	}
-
-	return ""
-}
-
-func containsString(list []string, str string) bool {
-	for _, item := range list {
-		if item == str {
-			return true
-		}
-	}
-
-	return false
 }
