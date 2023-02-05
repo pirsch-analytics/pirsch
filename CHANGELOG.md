@@ -4,6 +4,8 @@
 
 * added User-Agents tests for recent browsers
 * upgraded to Go 1.20
+* updated User-Agent blacklist
+* updated referrer blacklist
 * updated dependencies
 
 ## 5.3.0
