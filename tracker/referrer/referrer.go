@@ -51,7 +51,7 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 	}
 
 	if strings.HasPrefix(strings.ToLower(referrer), androidAppPrefix) {
-		name, icon := androidAppCache.getAndroidAppName(referrer)
+		name, icon := androidAppCache.get(referrer)
 		return referrer, name, icon
 	}
 

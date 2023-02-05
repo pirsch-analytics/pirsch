@@ -42,7 +42,7 @@ func newAndroid() *android {
 	}
 }
 
-func (cache *android) getAndroidAppName(referrer string) (string, string) {
+func (cache *android) get(referrer string) (string, string) {
 	packageName := referrer[len(androidAppPrefix):]
 
 	if strings.HasSuffix(packageName, "/") {
@@ -60,6 +60,7 @@ func (cache *android) getAndroidAppName(referrer string) (string, string) {
 	resp, err := http.Get(fmt.Sprintf(googlePlayStoreURL, packageName))
 
 	if err != nil || resp.StatusCode != http.StatusOK {
+		cache.updateApp(packageName, "", "")
 		return "", ""
 	}
 
@@ -69,28 +70,36 @@ func (cache *android) getAndroidAppName(referrer string) (string, string) {
 	doc, err := html.Parse(resp.Body)
 
 	if err != nil {
+		cache.updateApp(packageName, "", "")
 		return "", ""
 	}
 
-	titleNode := cache.findAndroidAppName(doc)
+	titleNode := cache.findName(doc)
 
 	if titleNode == nil {
+		cache.updateApp(packageName, "", "")
 		return "", ""
 	}
 
 	appName := cache.findTextNode(titleNode)
 
 	if appName == nil {
+		cache.updateApp(packageName, "", "")
 		return "", ""
 	}
 
 	icon := ""
-	iconNode := cache.findAndroidAppIcon(doc)
+	iconNode := cache.findIcon(doc)
 
 	if iconNode != nil {
 		icon = cache.getHTMLAttribute(iconNode, "src")
 	}
 
+	cache.updateApp(packageName, appName.Data, icon)
+	return appName.Data, icon
+}
+
+func (cache *android) updateApp(packageName, name, icon string) {
 	cache.m.Lock()
 	defer cache.m.Unlock()
 	now := time.Now().UTC()
@@ -100,17 +109,16 @@ func (cache *android) getAndroidAppName(referrer string) (string, string) {
 		cache.nextUpdate = now.Add(cache.maxAge)
 	}
 
-	cache.cache[packageName] = androidApp{appName.Data, icon}
-	return appName.Data, icon
+	cache.cache[packageName] = androidApp{name, icon}
 }
 
-func (cache *android) findAndroidAppName(node *html.Node) *html.Node {
+func (cache *android) findName(node *html.Node) *html.Node {
 	if node.Type == html.ElementNode && node.Data == "h1" {
 		return node
 	}
 
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if n := cache.findAndroidAppName(c); n != nil {
+		if n := cache.findName(c); n != nil {
 			return n
 		}
 	}
@@ -118,13 +126,13 @@ func (cache *android) findAndroidAppName(node *html.Node) *html.Node {
 	return nil
 }
 
-func (cache *android) findAndroidAppIcon(node *html.Node) *html.Node {
+func (cache *android) findIcon(node *html.Node) *html.Node {
 	if node.Type == html.ElementNode && node.Data == "img" && cache.hasHTMLAttribute(node, "itemprop", "image") {
 		return node
 	}
 
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if n := cache.findAndroidAppIcon(c); n != nil {
+		if n := cache.findIcon(c); n != nil {
 			return n
 		}
 	}

@@ -12,7 +12,7 @@ func TestAndroidAppCache(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		go func() {
-			name, icon := androidAppCache.getAndroidAppName(androidAppPrefix + "com.Slack")
+			name, icon := androidAppCache.get(androidAppPrefix + "com.Slack")
 			assert.Equal(t, "Slack", name)
 			assert.NotEmpty(t, icon)
 			wg.Done()
