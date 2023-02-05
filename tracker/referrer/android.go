@@ -27,10 +27,10 @@ type androidApp struct {
 
 type android struct {
 	cache      map[string]androidApp
-	m          sync.RWMutex
 	maxSize    int
 	maxAge     time.Duration
 	nextUpdate time.Time
+	m          sync.RWMutex
 }
 
 func newAndroid() *android {
