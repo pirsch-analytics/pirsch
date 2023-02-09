@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.1
+
+* added metadata options to analyzer
+
 ## 5.4.0
 
 * added cache for Android app referrer mapping

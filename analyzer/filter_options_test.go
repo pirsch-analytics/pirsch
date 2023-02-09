@@ -224,3 +224,32 @@ func TestFilterOptions_Languages(t *testing.T) {
 	assert.Equal(t, "de", utmSource[0])
 	assert.Equal(t, "ja", utmSource[1])
 }
+
+func TestFilterOptions_EventMetadataValues(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Name: "event0", MetaKeys: []string{"key0", "key1"}, MetaValues: []string{"val0", "val1"}},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Name: "event1"},
+		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "event2", MetaKeys: []string{"key0", "key1"}, MetaValues: []string{"val1", "val2"}},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Name: "event3", MetaKeys: []string{"key1", "key2"}, MetaValues: []string{"val1", "val3"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	options, err := analyzer.Options.EventMetadataValues(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 0)
+	options, err = analyzer.Options.EventMetadataValues(&Filter{From: util.PastDay(3), To: util.Today(), EventName: []string{"event0", "event1", "event2", "event3"}})
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "val1", options[0])
+	assert.Equal(t, "val2", options[1])
+	assert.Equal(t, "val3", options[2])
+	options, err = analyzer.Options.EventMetadataValues(&Filter{
+		EventName: []string{"event3"},
+		Path:      []string{"/unknown"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "val1", options[0])
+	assert.Equal(t, "val3", options[1])
+}

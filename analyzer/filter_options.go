@@ -74,6 +74,32 @@ func (options *FilterOptions) Languages(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "language", "session")
 }
 
+// EventMetadataValues returns all metadata values.
+func (options *FilterOptions) EventMetadataValues(filter *Filter) ([]string, error) {
+	if filter == nil || len(filter.EventName) == 0 {
+		return []string{}, nil
+	}
+
+	filter = options.analyzer.getFilter(filter)
+	timeQuery, args := filter.buildTimeQuery()
+	builder := queryBuilder{
+		filter: &Filter{
+			EventName: filter.EventName,
+		},
+		from:   events,
+		fields: []Field{FieldEventName},
+	}
+	builder.whereFields()
+	args = append(args, builder.args...)
+	q := fmt.Sprintf(`SELECT DISTINCT arrayJoin(event_meta_values) AS "values"
+		FROM event
+		%s
+		AND length(event_meta_values) > 0
+		%s
+		ORDER BY "values" ASC`, timeQuery, builder.q.String())
+	return options.store.SelectOptions(q, args...)
+}
+
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
 	timeQuery, args := filter.buildTimeQuery()
