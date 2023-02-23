@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-02-05)
+# custom (last update: 2023-02-23)
 ://
 bot
 crawler
@@ -327,6 +327,15 @@ gnu c
 golang
 proxy
 internal
+innersourcecoach
+ixquick
+kopeechka
+select
+pg_
+waitfor
+delay
+0+0+0+1
+sysdate
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

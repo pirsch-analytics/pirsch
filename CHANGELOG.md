@@ -4,6 +4,8 @@
 
 * added region for US cities
 * renamed `GeoDB.CountryCodeAndCity` to `GeoDB.GetLocation`
+* updated User-Agent blacklist
+* updated referrer blacklist
 * updated dependencies
 
 ## 5.4.1

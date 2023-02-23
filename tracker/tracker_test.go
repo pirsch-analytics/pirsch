@@ -757,6 +757,22 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 			t.Fatalf("Request with user agent '%v' must have been ignored", botUserAgent)
 		}
 	}
+
+	botUserAgent := []string{
+		"-1' OR 2+990-990-1=0+0+0+1 or 'J2HdM1AB'='",
+		"0'XOR(if(now()=sysdate(),sleep(15),0))XOR'Z",
+		"1 waitfor delay '0:0:15' --",
+		"14wpthYh' OR 294=(SELECT 294 FROM PG_SLEEP(15))--",
+	}
+
+	for _, userAgent := range botUserAgent {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", userAgent)
+
+		if _, _, ignore := tracker.ignore(req); !ignore {
+			t.Fatalf("Request with user agent '%v' must have been ignored", botUserAgent)
+		}
+	}
 }
 
 func TestTracker_ignoreReferrer(t *testing.T) {
