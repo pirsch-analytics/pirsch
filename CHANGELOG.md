@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.1
+
+* downgraded ClickHouse driver
+
 ## 5.5.0
 
 * added region for US cities
