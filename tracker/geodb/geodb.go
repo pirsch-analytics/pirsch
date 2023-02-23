@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"github.com/oschwald/maxminddb-golang"
 	"io"
 	"net"
@@ -45,10 +46,10 @@ func NewGeoDB(licenseKey, downloadPath string) (*GeoDB, error) {
 	return geoDB, nil
 }
 
-// CountryCodeAndCity looks up the country code and city for given IP.
+// GetLocation looks up the country code, subdivision (region), and city for given IP.
 // If the IP is invalid it will return an empty string.
 // The country code is returned in lowercase.
-func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
+func (db *GeoDB) GetLocation(ip string) (string, string) {
 	parsedIP := net.ParseIP(ip)
 
 	if parsedIP == nil {
@@ -59,6 +60,9 @@ func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
 		Country struct {
 			ISOCode string `maxminddb:"iso_code"`
 		} `maxminddb:"country"`
+		Subdivisions []struct {
+			ISOCode string `maxminddb:"iso_code"`
+		} `maxminddb:"subdivisions"`
 		City struct {
 			Names struct {
 				En string `maxminddb:"en"`
@@ -71,6 +75,10 @@ func (db *GeoDB) CountryCodeAndCity(ip string) (string, string) {
 
 	if err := db.db.Lookup(parsedIP, &record); err != nil {
 		return "", ""
+	}
+
+	if record.Country.ISOCode == "US" && len(record.Subdivisions) > 0 && record.Subdivisions[0].ISOCode != "" {
+		record.City.Names.En += fmt.Sprintf(" (%s)", record.Subdivisions[0].ISOCode)
 	}
 
 	return strings.ToLower(record.Country.ISOCode), record.City.Names.En

@@ -400,7 +400,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	countryCode, city := "", ""
 
 	if tracker.config.GeoDB != nil {
-		countryCode, city = tracker.config.GeoDB.CountryCodeAndCity(ip)
+		countryCode, city = tracker.config.GeoDB.GetLocation(ip)
 	}
 
 	return &model.Session{

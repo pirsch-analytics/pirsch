@@ -16,16 +16,16 @@ func TestGet(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, geoDB)
 		assert.NoFileExists(t, filepath.Join("tmp", geoLite2TarGzFilename))
-		countryCode, city := geoDB.CountryCodeAndCity("81.2.69.142")
+		countryCode, city := geoDB.GetLocation("81.2.69.142")
 		assert.NotEmpty(t, countryCode)
 		assert.NotEmpty(t, city)
 	}
 }
 
-func TestGeoDB_CountryCode(t *testing.T) {
+func TestGeoDB_GetLocation(t *testing.T) {
 	geoDB, _ := NewGeoDB("", "")
 	assert.NoError(t, geoDB.UpdateFromFile("GeoIP2-City-Test.mmdb"))
-	countryCode, city := geoDB.CountryCodeAndCity("81.2.69.142")
+	countryCode, city := geoDB.GetLocation("81.2.69.142")
 	assert.Equal(t, "gb", countryCode)
 	assert.Equal(t, "London", city)
 }

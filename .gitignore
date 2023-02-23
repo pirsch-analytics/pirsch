@@ -1,6 +1,7 @@
 .idea/
 js/node_modules/
 tracker/geodb/tmp/
+tracker/geodb/GeoLite2-City.mmdb
 tracker/ip/tmp/
 js/pirsch.min.js
 js/pirsch-events.min.js

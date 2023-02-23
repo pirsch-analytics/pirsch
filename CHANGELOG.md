@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.5.0
+
+* added region for US cities
+* renamed `GeoDB.CountryCodeAndCity` to `GeoDB.GetLocation`
+* updated dependencies
+
 ## 5.4.1
 
 * added metadata options to analyzer
