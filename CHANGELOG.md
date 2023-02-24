@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.2
+
+* fixed ClickHouse driver concurrency issues
+
 ## 5.5.1
 
 * downgraded ClickHouse driver
