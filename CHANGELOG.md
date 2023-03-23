@@ -4,7 +4,8 @@
 
 * added parsing referrer from query parameters (ref, utm_source, ...)
 * added Safari version 16 Webkit version mapping
-* fixed query when multiple 
+* fixed escaped URLs in Referer header
+* fixed query when multiple metadata keys were set
 * updated User-Agent blacklist
 * updated dependencies
 

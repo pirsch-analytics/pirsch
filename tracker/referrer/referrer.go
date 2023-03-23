@@ -64,7 +64,11 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 	var err error
 
 	if strings.HasPrefix(strings.ToLower(referrer), "http") {
-		u, err = url.ParseRequestURI(referrer)
+		referrer, err = url.QueryUnescape(referrer)
+
+		if err == nil {
+			u, err = url.ParseRequestURI(referrer)
+		}
 	} else if isDomain.MatchString(referrer) {
 		u, err = url.ParseRequestURI(fmt.Sprintf("https://%s", referrer))
 	} else {
