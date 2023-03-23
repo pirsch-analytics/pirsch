@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-02-23)
+# custom (last update: 2023-03-23)
 ://
 bot
 crawler
@@ -93,7 +93,6 @@ mojeek
 rnps-action-cards
 subjs
 loilonote
-reactornetty
 zx-80 spectrum
 qualys
 atvoice
@@ -270,7 +269,6 @@ dreampassport
 aol explorer
 withcabin
 donutp
-media player
 openvas
 paypal
 psamma
@@ -309,11 +307,9 @@ crossingminds
 hello world
 msoffice
 wxwork
-mxplayer
 guayoyo
 ipcamviewer
 com.the-dots
-exoplayerlib
 49dba188c47cddc37a5d69084d5102e9
 2b818e3af0a3928ea9c640987bfce08c
 epicai
@@ -336,6 +332,54 @@ waitfor
 delay
 0+0+0+1
 sysdate
+mediahubmx
+w3m
+android_bp_app
+zoho
+mjukisbyxor
+bp_app
+globalprotect
+postiviidakko
+aggregage
+durston
+gibgas
+microblogpub
+reqwest
+risseri
+evolution
+headlines
+favicon
+readyou
+specialdetect
+react
+targetapp
+margin
+lobste
+flutter
+hjdicks
+ureq
+instapaper
+pinner
+player
+drip
+${
+print
+***
+1B
+1C
+1D
+!(()&&!|*|*|
+1IMornNI4O
+1KB80glvxO
+1VDxQ0aD2O
+1lBpiFR8YO
+1a94M83v2O
+19Yh2XtdVO
+1K2Sv0a6YO
+1kMRVMr8tO
+10KGP7vB2O
+1FtlLdrNtO
+15Q0ixZyLO
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
@@ -534,7 +578,6 @@ pycurl
 python
 qwantify
 rambler
-reactornetty
 readpaper
 redalert
 riddler

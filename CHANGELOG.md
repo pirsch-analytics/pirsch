@@ -2,6 +2,9 @@
 
 ## 5.6.0
 
+* added Safari version 16 Webkit version mapping
+* fixed query when multiple 
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 5.5.2

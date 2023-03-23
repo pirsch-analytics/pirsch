@@ -152,8 +152,10 @@ func (query *queryBuilder) selectFields() bool {
 				q.WriteString(query.selectPlatform(query.fields[i]))
 				combineResults = true
 			} else if query.fields[i].Name == FieldEventMetaValues.Name {
-				query.args = append(query.args, query.filter.EventMetaKey)
-				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
+				if len(query.filter.EventMetaKey) > 0 {
+					query.args = append(query.args, query.filter.EventMetaKey[0])
+					q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
+				}
 			} else {
 				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
 			}
