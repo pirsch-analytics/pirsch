@@ -1,6 +1,7 @@
 package referrer
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -50,7 +51,7 @@ func TestGet(t *testing.T) {
 		{"https://example.com", "example.com"},
 		{"", "ReferrerName"},
 		{"", ""},
-		{"", "pirsch.io"},
+		{"https://pirsch.io", "pirsch.io"},
 		{"", ""},
 		{"", ""},
 		{"", ""},
@@ -75,6 +76,42 @@ func TestGet(t *testing.T) {
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Add("Referer", in)
+		referrer, referrerName, _ := Get(r, "", "")
+		assert.Equal(t, expected[i].referrer, referrer)
+		assert.Equal(t, expected[i].name, referrerName)
+	}
+}
+
+func TestGetQuery(t *testing.T) {
+	input := []struct {
+		param    string
+		referrer string
+	}{
+		{"ref", "https://www.google.com/"},
+		{"ref", "https%3A%2F%2Fwww.google.com%2F"},
+		{"utm_source", "https://www.google.com/"},
+		{"utm_source", "https%3A%2F%2Fwww.google.com%2F"},
+		{"ref", "google.com"},
+		{"utm_source", "google.com"},
+		{"ref", "My+Referrer"},
+		{"ref", "referrer"},
+	}
+	expected := []struct {
+		referrer string
+		name     string
+	}{
+		{"https://www.google.com", "Google"},
+		{"https://www.google.com", "Google"},
+		{"https://www.google.com", "Google"},
+		{"https://www.google.com", "Google"},
+		{"https://google.com", "Google"},
+		{"https://google.com", "Google"},
+		{"", "My Referrer"},
+		{"", "referrer"},
+	}
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
 		referrer, referrerName, _ := Get(r, "", "")
 		assert.Equal(t, expected[i].referrer, referrer)
 		assert.Equal(t, expected[i].name, referrerName)

@@ -1,10 +1,13 @@
 package referrer
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -16,6 +19,8 @@ var QueryParams = []string{
 	"source",
 	"utm_source",
 }
+
+var isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
 
 // Ignore returns whether a referrer should be ignored or not.
 func Ignore(r *http.Request) bool {
@@ -55,7 +60,16 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 		return referrer, name, icon
 	}
 
-	u, err := url.ParseRequestURI(referrer)
+	var u *url.URL
+	var err error
+
+	if strings.HasPrefix(strings.ToLower(referrer), "http") {
+		u, err = url.ParseRequestURI(referrer)
+	} else if isDomain.MatchString(referrer) {
+		u, err = url.ParseRequestURI(fmt.Sprintf("https://%s", referrer))
+	} else {
+		err = errors.New("not a URI")
+	}
 
 	if err != nil {
 		if isIP(referrer) {

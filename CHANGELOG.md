@@ -2,6 +2,7 @@
 
 ## 5.6.0
 
+* added parsing referrer from query parameters (ref, utm_source, ...)
 * added Safari version 16 Webkit version mapping
 * fixed query when multiple 
 * updated User-Agent blacklist
