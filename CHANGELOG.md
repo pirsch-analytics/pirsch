@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.7.0
+
+* added `Analyzer.Visitors.TotalVisitorsPageViews`
+* updated dependencies
+
 ## 5.6.0
 
 * added parsing referrer from query parameters (ref, utm_source, ...)

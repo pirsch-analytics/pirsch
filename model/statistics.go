@@ -20,6 +20,14 @@ type TotalVisitorStats struct {
 	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
 }
 
+// TotalVisitorsPageViewsStats is the result type for total visitor cound and number of page views statistics.
+type TotalVisitorsPageViewsStats struct {
+	Visitors       int     `json:"visitors"`
+	Views          int     `json:"views"`
+	VisitorsGrowth float64 `json:"visitors_growth"`
+	ViewsGrowth    float64 `json:"views_growth"`
+}
+
 // VisitorStats is the result type for visitor statistics.
 type VisitorStats struct {
 	Day        null.Time `json:"day"`

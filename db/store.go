@@ -32,6 +32,9 @@ type Store interface {
 	// GetTotalVisitorStats returns the TotalVisitorStats.
 	GetTotalVisitorStats(string, ...any) (*model.TotalVisitorStats, error)
 
+	// GetTotalVisitorsPageViewsStats returns the TotalVisitorsPageViewsStats.
+	GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error)
+
 	// SelectVisitorStats selects VisitorStats.
 	SelectVisitorStats(pirsch.Period, string, ...any) ([]model.VisitorStats, error)
 

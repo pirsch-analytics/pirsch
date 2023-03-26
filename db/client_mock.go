@@ -148,6 +148,11 @@ func (client *ClientMock) GetTotalVisitorStats(string, ...any) (*model.TotalVisi
 	return nil, nil
 }
 
+// GetTotalVisitorsPageViewsStats implements the Store interface.
+func (client *ClientMock) GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error) {
+	return nil, nil
+}
+
 // SelectVisitorStats implements the Store interface.
 func (client *ClientMock) SelectVisitorStats(pirsch.Period, string, ...any) ([]model.VisitorStats, error) {
 	return nil, nil

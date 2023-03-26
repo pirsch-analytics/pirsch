@@ -73,6 +73,43 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 	return stats, nil
 }
 
+// TotalVisitorsPageViews returns the total visitor count and number of page views including the growth.
+func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVisitorsPageViewsStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+
+	if filter.From.IsZero() || filter.To.IsZero() {
+		return nil, ErrNoPeriodOrDay
+	}
+
+	q, args := filter.buildQuery([]Field{
+		FieldVisitors,
+		FieldViews,
+	}, nil, nil)
+	current, err := visitors.store.GetTotalVisitorsPageViewsStats(q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	visitors.getPreviousPeriod(filter)
+	q, args = filter.buildQuery([]Field{
+		FieldVisitors,
+		FieldViews,
+	}, nil, nil)
+	previous, err := visitors.store.GetTotalVisitorsPageViewsStats(q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.TotalVisitorsPageViewsStats{
+		Visitors:       current.Visitors,
+		Views:          current.Views,
+		VisitorsGrowth: calculateGrowth(current.Visitors, previous.Visitors),
+		ViewsGrowth:    calculateGrowth(current.Views, previous.Views),
+	}, nil
+}
+
 // ByPeriod returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
 func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
@@ -137,28 +174,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		return nil, err
 	}
 
-	// get previous statistics
-	if filter.From.Equal(filter.To) {
-		if filter.To.Equal(util.Today()) {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = time.Now().UTC().Add(-time.Hour * 24 * 7)
-			filter.IncludeTime = true
-		} else {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = filter.To.Add(-time.Hour * 24 * 7)
-		}
-	} else {
-		days := filter.To.Sub(filter.From)
-
-		if days >= time.Hour*24 {
-			filter.To = filter.From.Add(-time.Hour * 24)
-			filter.From = filter.To.Add(-days)
-		} else {
-			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = filter.To.Add(-time.Hour * 24)
-		}
-	}
-
+	visitors.getPreviousPeriod(filter)
 	q, args = filter.buildQuery(fields, nil, nil)
 	previous, err := visitors.store.GetGrowthStats(q, args...)
 
@@ -249,6 +265,29 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 	}
 
 	return stats, nil
+}
+
+func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
+	if filter.From.Equal(filter.To) {
+		if filter.To.Equal(util.Today()) {
+			filter.From = filter.From.Add(-time.Hour * 24 * 7)
+			filter.To = time.Now().UTC().Add(-time.Hour * 24 * 7)
+			filter.IncludeTime = true
+		} else {
+			filter.From = filter.From.Add(-time.Hour * 24 * 7)
+			filter.To = filter.To.Add(-time.Hour * 24 * 7)
+		}
+	} else {
+		days := filter.To.Sub(filter.From)
+
+		if days >= time.Hour*24 {
+			filter.To = filter.From.Add(-time.Hour * 24)
+			filter.From = filter.To.Add(-days)
+		} else {
+			filter.From = filter.From.Add(-time.Hour * 24)
+			filter.To = filter.To.Add(-time.Hour * 24)
+		}
+	}
 }
 
 func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {

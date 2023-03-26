@@ -536,6 +536,17 @@ func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model.To
 	return result, nil
 }
 
+// GetTotalVisitorsPageViewsStats implements the Store interface.
+func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model.TotalVisitorsPageViewsStats, error) {
+	result := new(model.TotalVisitorsPageViewsStats)
+
+	if err := client.QueryRow(query, args...).Scan(&result.Visitors, &result.Views); err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // SelectVisitorStats implements the Store interface.
 func (client *Client) SelectVisitorStats(period pirsch.Period, query string, args ...any) ([]model.VisitorStats, error) {
 	rows, err := client.Query(query, args...)
