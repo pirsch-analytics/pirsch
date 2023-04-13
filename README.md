@@ -1,4 +1,6 @@
-![Pirsch Logo](logo.png)
+<p align="center">
+    <img src="logo.svg" alt="Pirsch Logo" width="78px" />
+</p>
 
 # Pirsch Analytics
 
@@ -20,22 +22,11 @@ Pirsch generates a unique fingerprint for each visitor. The fingerprint is a has
 
 You can find our documentation [here](https://docs.pirsch.io). The code reference can be found on [go.dev](https://pkg.go.dev/github.com/pirsch-analytics/pirsch/v5).
 
-## Maintenance
-
-The following things need regular maintenance (using the scripts in the `scripts` directory if available):
-
-* Go and JS dependencies
-* referrer blacklist
-* User-Agent blacklist
-* browser version mapping
-* OS version mapping
-* referrer mapping (grouping)
-
 ## Contributions
 
 Contributions are welcome! Please open a pull requests for your changes and tickets in case you would like to discuss something or have a question.
 
-To run the tests you'll need a ClickHouse database, and a schema called `pirschtest`. The user is set to `default` (no password).
+To run the tests you'll need a ClickHouse database and a schema called `pirschtest`. The user is set to `default` (no password).
 
 Note that we only accept pull requests if you transfer the ownership of your contribution to us. As we also offer a managed commercial solution with this library at its core, we want to make sure we can keep control over the source code.
 
