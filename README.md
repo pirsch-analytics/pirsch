@@ -1,6 +1,4 @@
-<p align="center">
-    <img src="logo.svg" alt="Pirsch Logo" width="78px" />
-</p>
+<img src="logo.svg" alt="Pirsch Logo" width="26" />
 
 # Pirsch Analytics
 
