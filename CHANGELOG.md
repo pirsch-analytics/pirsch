@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.7.1
+
+* removed JavaScript scripts so that they don't have to be maintained in two places
+* removed demo code
+* updated dependencies
+
 ## 5.7.0
 
 * added `Analyzer.Visitors.TotalVisitorsPageViews`
