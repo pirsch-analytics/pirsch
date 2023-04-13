@@ -420,6 +420,17 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.2222, entries[1].EntryRate, 0.001)
 	assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, entries[1].AverageTimeSpentSeconds)
+	entries, err = analyzer.Pages.Entry(&Filter{PathPattern: []string{"(?i)^/.*$"}})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "/bar", entries[1].Path)
+	assert.Equal(t, 6, entries[0].Visitors)
+	assert.Equal(t, 4, entries[1].Visitors)
+	assert.Equal(t, 7, entries[0].Sessions)
+	assert.Equal(t, 4, entries[1].Sessions)
+	assert.Equal(t, 7, entries[0].Entries)
+	assert.Equal(t, 3, entries[1].Entries)
 	entries, err = analyzer.Pages.Entry(&Filter{From: util.PastDay(1), To: util.Today(), IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
@@ -492,6 +503,21 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.InDelta(t, 0.4444, exits[0].ExitRate, 0.001)
 	assert.InDelta(t, 0.4444, exits[1].ExitRate, 0.001)
 	assert.InDelta(t, 0.1111, exits[2].ExitRate, 0.001)
+	exits, err = analyzer.Pages.Exit(&Filter{PathPattern: []string{"(?i)^/.*$"}})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 3)
+	assert.Equal(t, "/", exits[0].Path)
+	assert.Equal(t, "/bar", exits[1].Path)
+	assert.Equal(t, "/foo", exits[2].Path)
+	assert.Equal(t, 6, exits[0].Visitors)
+	assert.Equal(t, 4, exits[1].Visitors)
+	assert.Equal(t, 1, exits[2].Visitors)
+	assert.Equal(t, 7, exits[0].Sessions)
+	assert.Equal(t, 4, exits[1].Sessions)
+	assert.Equal(t, 1, exits[2].Sessions)
+	assert.Equal(t, 4, exits[0].Exits)
+	assert.Equal(t, 4, exits[1].Exits)
+	assert.Equal(t, 2, exits[2].Exits)
 	exits, err = analyzer.Pages.Exit(&Filter{From: util.PastDay(1), To: util.Today(), IncludeTitle: true})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
@@ -788,12 +814,12 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: false},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/", EntryPath: "/exit", PageViews: 4, IsBounce: true},
 			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 30), Start: time.Now(), ExitPath: "/exit", EntryPath: "/", PageViews: 4, IsBounce: false},
-			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: time.Now(), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: time.Now(), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: true},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)

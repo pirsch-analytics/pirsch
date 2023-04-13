@@ -4,6 +4,8 @@
 
 * removed JavaScript scripts so that they don't have to be maintained in two places
 * removed demo code
+* updated User-Agent blacklist
+* updated referrer blacklist
 * updated dependencies
 
 ## 5.7.0

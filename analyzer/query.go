@@ -134,19 +134,19 @@ func (query *queryBuilder) selectFields() bool {
 		for i := range query.fields {
 			if query.fields[i].filterTime {
 				timeQuery := query.whereTime()[len("WHERE "):]
-				q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
+				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 			} else if query.fields[i].timezone {
 				if query.fields[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
 					switch query.filter.Period {
 					case pirsch.PeriodWeek:
-						q.WriteString(fmt.Sprintf(`toStartOfWeek(%s, 1) week,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					case pirsch.PeriodMonth:
-						q.WriteString(fmt.Sprintf(`toStartOfMonth(%s) month,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					case pirsch.PeriodYear:
-						q.WriteString(fmt.Sprintf(`toStartOfYear(%s) year,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					}
 				} else {
-					q.WriteString(fmt.Sprintf(`%s %s,`, fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
 				}
 			} else if query.from != sessions && (query.fields[i].Name == FieldPlatformDesktop.Name || query.fields[i].Name == FieldPlatformMobile.Name || query.fields[i].Name == FieldPlatformUnknown.Name) {
 				q.WriteString(query.selectPlatform(query.fields[i]))
@@ -154,10 +154,10 @@ func (query *queryBuilder) selectFields() bool {
 			} else if query.fields[i].Name == FieldEventMetaValues.Name {
 				if len(query.filter.EventMetaKey) > 0 {
 					query.args = append(query.args, query.filter.EventMetaKey[0])
-					q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
+					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 				}
 			} else {
-				q.WriteString(fmt.Sprintf(`%s %s,`, query.selectField(query.fields[i]), query.fields[i].Name))
+				q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 			}
 		}
 
@@ -590,7 +590,7 @@ func (query *queryBuilder) orderByFields() {
 
 		for i := range query.orderBy {
 			if query.orderBy[i].queryWithFill != "" {
-				q.WriteString(fmt.Sprintf(`%s %s %s,`, query.orderBy[i].Name, query.orderBy[i].queryDirection, query.orderBy[i].queryWithFill))
+				q.WriteString(fmt.Sprintf("%s %s %s,", query.orderBy[i].Name, query.orderBy[i].queryDirection, query.orderBy[i].queryWithFill))
 			} else if query.orderBy[i].withFill {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
@@ -606,9 +606,9 @@ func (query *queryBuilder) orderByFields() {
 					}
 				}
 
-				q.WriteString(fmt.Sprintf(`%s %s %s,`, name, query.orderBy[i].queryDirection, fillQuery))
+				q.WriteString(fmt.Sprintf("%s %s %s,", name, query.orderBy[i].queryDirection, fillQuery))
 			} else {
-				q.WriteString(fmt.Sprintf(`%s %s,`, query.orderBy[i].Name, query.orderBy[i].queryDirection))
+				q.WriteString(fmt.Sprintf("%s %s,", query.orderBy[i].Name, query.orderBy[i].queryDirection))
 			}
 		}
 
