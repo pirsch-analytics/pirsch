@@ -8,7 +8,7 @@
 
 This is the open-source core of [Pirsch Analytics](https://pirsch.io), a privacy-friendly web analytics solution. It originally started as an [experiment](https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl) to reliably analyze web traffic from the server-side using Go.
 
-Pirsch is made in the EU 🇪🇺 and hosted on german 🇩🇪 owned servers at [Hetzner](https://www.hetzner.com/). You can find an interactive demo of what the dashboard looks like today [here](https://pirsch.pirsch.io).
+Pirsch is made in the EU 🇪🇺 and hosted on German 🇩🇪 owned servers at [Hetzner](https://www.hetzner.com/). You can find an interactive demo of what the dashboard looks like today [here](https://pirsch.pirsch.io).
 
 ## How does it work?
 
