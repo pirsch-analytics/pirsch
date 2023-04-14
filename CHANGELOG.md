@@ -1,7 +1,9 @@
 # Changelog
 
-## 5.7.1
+## 5.8.0
 
+* optimized field comparisons
+* fixed entries/exits when filtering for a path pattern
 * removed JavaScript scripts so that they don't have to be maintained in two places
 * removed demo code
 * updated User-Agent blacklist

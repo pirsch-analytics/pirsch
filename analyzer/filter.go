@@ -271,12 +271,9 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		q.includeEventFilter = true
 		q.leftJoin = filter.leftJoinEvents(fields)
 	} else if q.from == pageViews || returnEventName {
-		q.fields = filter.excludeFields(fields,
-			FieldEntryPath,
-			FieldEntryTitle,
-			FieldExitPath,
-			FieldExitTitle)
+		q.fields = fields
 		q.join = filter.joinSessions(fields)
+		q.join.parent = &q
 
 		if q.from != events {
 			if filter.valuesContainPrefix(filter.EventName, "!") {
@@ -316,6 +313,8 @@ func (filter *Filter) table(fields []Field) table {
 		if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
 			return events
 		}
+	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) {
+		return pageViews
 	}
 
 	return sessions

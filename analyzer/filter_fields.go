@@ -53,7 +53,7 @@ var (
 	// FieldEntries is a query result column.
 	FieldEntries = Field{
 		querySessions:  "sum(sign)",
-		queryPageViews: "uniq(visitor_id, session_id)",
+		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryDirection: "DESC",
 		Name:           "entries",
 	}
@@ -69,7 +69,7 @@ var (
 	// FieldExits is a query result column.
 	FieldExits = Field{
 		querySessions:  "sum(sign)",
-		queryPageViews: "uniq(visitor_id, session_id)",
+		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryDirection: "DESC",
 		Name:           "exits",
 	}

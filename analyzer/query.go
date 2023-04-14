@@ -25,6 +25,7 @@ type queryBuilder struct {
 	filter             *Filter
 	fields             []Field
 	from               table
+	parent             *queryBuilder
 	join               *queryBuilder
 	joinSecond         *queryBuilder
 	leftJoin           *queryBuilder
@@ -136,7 +137,7 @@ func (query *queryBuilder) selectFields() bool {
 				timeQuery := query.whereTime()[len("WHERE "):]
 				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 			} else if query.fields[i].timezone {
-				if query.fields[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
+				if query.fields[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
 					switch query.filter.Period {
 					case pirsch.PeriodWeek:
 						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
@@ -148,14 +149,16 @@ func (query *queryBuilder) selectFields() bool {
 				} else {
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
 				}
-			} else if query.from != sessions && (query.fields[i].Name == FieldPlatformDesktop.Name || query.fields[i].Name == FieldPlatformMobile.Name || query.fields[i].Name == FieldPlatformUnknown.Name) {
+			} else if query.from != sessions && (query.fields[i] == FieldPlatformDesktop || query.fields[i] == FieldPlatformMobile || query.fields[i] == FieldPlatformUnknown) {
 				q.WriteString(query.selectPlatform(query.fields[i]))
 				combineResults = true
-			} else if query.fields[i].Name == FieldEventMetaValues.Name {
+			} else if query.fields[i] == FieldEventMetaValues {
 				if len(query.filter.EventMetaKey) > 0 {
 					query.args = append(query.args, query.filter.EventMetaKey[0])
 					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 				}
+			} else if query.parent != nil && (query.fields[i] == FieldEntryTitle || query.fields[i] == FieldExitTitle) {
+				q.WriteString(query.selectField(query.fields[i]) + ",")
 			} else {
 				q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 			}
@@ -547,7 +550,7 @@ func (query *queryBuilder) groupByFields() {
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.groupBy[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
+			if query.groupBy[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
 				switch query.filter.Period {
 				case pirsch.PeriodWeek:
 					q.WriteString("week,")
@@ -556,6 +559,8 @@ func (query *queryBuilder) groupByFields() {
 				case pirsch.PeriodYear:
 					q.WriteString("year,")
 				}
+			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
+				q.WriteString(query.selectField(query.groupBy[i]) + ",")
 			} else {
 				q.WriteString(query.groupBy[i].Name + ",")
 			}
@@ -595,7 +600,7 @@ func (query *queryBuilder) orderByFields() {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
-				if query.orderBy[i].Name == FieldDay.Name && query.filter.Period != pirsch.PeriodDay {
+				if query.orderBy[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
 					switch query.filter.Period {
 					case pirsch.PeriodWeek:
 						name = "week"
