@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.8.1
+
+* fixed session locks (?)
+* updated dependencies
+
 ## 5.8.0
 
 * optimized field comparisons

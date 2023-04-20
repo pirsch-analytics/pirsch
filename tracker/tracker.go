@@ -335,13 +335,16 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
+	m.Lock()
 	maxAge := now.Add(-sessionMaxAge)
 	session := tracker.config.SessionCache.Get(clientID, fingerprint, maxAge)
 
 	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
 	if session == nil && maxAge.Day() != now.Day() {
+		m.Unlock()
 		fingerprintYesterday := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, maxAge)
 		m = tracker.config.SessionCache.NewMutex(clientID, fingerprintYesterday)
+		m.Lock()
 		session = tracker.config.SessionCache.Get(clientID, fingerprintYesterday, maxAge)
 
 		if session != nil {
@@ -353,12 +356,12 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		}
 	}
 
+	defer m.Unlock()
+
 	if t == sessionUpdate && session == nil {
 		return nil, nil, 0
 	}
 
-	m.Lock()
-	defer m.Unlock()
 	var timeOnPage uint32
 	var cancelSession *model.Session
 
