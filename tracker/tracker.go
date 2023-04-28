@@ -98,7 +98,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			now = options.Time
 		}
 
-		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
+		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
 		var saveUserAgent *model.UserAgent
 
 		if session != nil {
@@ -161,7 +161,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				now = options.Time
 			}
 
-			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
+			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
 			var saveUserAgent *model.UserAgent
 
 			if session != nil {
@@ -226,7 +226,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 			now = options.Time
 		}
 
-		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, options)
+		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, 0, options)
 
 		if session != nil {
 			tracker.data <- data{
@@ -332,7 +332,7 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32) {
+func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) (*model.Session, *model.Session, uint32) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	m.Lock()
@@ -366,7 +366,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
-		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
+		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, pageViews, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
 		if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
@@ -383,7 +383,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	return session, cancelSession, timeOnPage
 }
 
-func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, options Options) *model.Session {
+func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) *model.Session {
 	ua.OS = util.ShortenString(ua.OS, 20)
 	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
 	ua.Browser = util.ShortenString(ua.Browser, 20)
@@ -415,7 +415,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		Start:          now,
 		EntryPath:      options.Path,
 		ExitPath:       options.Path,
-		PageViews:      1,
+		PageViews:      pageViews,
 		IsBounce:       true,
 		EntryTitle:     options.Title,
 		ExitTitle:      options.Title,

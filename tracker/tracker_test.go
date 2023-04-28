@@ -460,7 +460,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Len(t, events, 1)
 	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
 	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
-	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(0), sessions[0].PageViews)
 
 	assert.Equal(t, uint64(123), events[0].ClientID)
 	assert.True(t, events[0].Time.After(now))
@@ -506,7 +506,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Equal(t, int8(1), sessions[0].Sign)
 	assert.Equal(t, int8(-1), sessions[1].Sign)
 	assert.Equal(t, int8(1), sessions[2].Sign)
-	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(0), sessions[0].PageViews)
 
 	assert.Equal(t, uint64(123), events[1].ClientID)
 	assert.True(t, events[1].Time.After(now))
