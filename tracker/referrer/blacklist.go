@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2023-04-13)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2023-05-27)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -350,6 +350,7 @@ var blacklist = map[string]struct{}{
 	"briankatrine.top":                     {},
 	"brickmaster.pro":                      {},
 	"brillianty.info":                      {},
+	"britneyblog.online":                   {},
 	"brk-rti.ru":                           {},
 	"brooklynsays.com":                     {},
 	"brothers-smaller.ru":                  {},
@@ -736,6 +737,7 @@ var blacklist = map[string]struct{}{
 	"feminist.org.ua":                      {},
 	"fidalsa.de":                           {},
 	"fierrohack.ru":                        {},
+	"figensahin.com":                       {},
 	"filesclub.net":                        {},
 	"filesdatabase.net":                    {},
 	"films2018.com":                        {},

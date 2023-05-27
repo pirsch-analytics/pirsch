@@ -3,6 +3,10 @@
 ## 5.9.0
 
 * improved string utility functions
+* increased minimum delay between page views from 75ms to 500ms
+* added option for maximum number of page views
+* updated User-Agent blacklist
+* updated referrer blacklist
 * updated dependencies
 
 ## 5.8.2

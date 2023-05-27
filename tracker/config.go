@@ -16,8 +16,9 @@ const (
 	defaultWorkerBufferSize = 500
 	defaultWorkerTimeout    = time.Second * 5
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelayMS       = int64(75)
+	defaultMinDelayMS       = int64(500)
 	defaultIsBotThreshold   = uint8(5)
+	defaultMaxPageViews     = uint16(200)
 )
 
 // Config is the configuration for the Tracker.
@@ -34,6 +35,7 @@ type Config struct {
 	AllowedProxySubnets []net.IPNet
 	MinDelay            int64
 	IsBotThreshold      uint8
+	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
 	IPFilter            ip.Filter
 	Logger              *log.Logger
@@ -76,6 +78,10 @@ func (config *Config) validate() {
 
 	if config.IsBotThreshold == 0 {
 		config.IsBotThreshold = defaultIsBotThreshold
+	}
+
+	if config.MaxPageViews == 0 {
+		config.MaxPageViews = defaultMaxPageViews
 	}
 
 	if config.Logger == nil {

@@ -39,7 +39,7 @@ func main() {
 	ua := make([]string, 0, len(entries))
 
 	for entry := range entries {
-		ua = append(ua, entry)
+		ua = append(ua, strings.ReplaceAll(entry, `"`, `\"`))
 	}
 
 	sort.Strings(ua)

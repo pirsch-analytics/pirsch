@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-03-23)
+# custom (last update: 2023-05-27)
 ://
 bot
 crawler
@@ -381,23 +381,38 @@ print
 1FtlLdrNtO
 15Q0ixZyLO
 saws
-37.221.193.221:18790
-37.221.193.221:17860
-51.254.167.45:47928
-46.105.76.41:56036
-162.19.7.47:22098
-162.19.7.57:55784
-172.106.19.155:15732
-172.106.13.203:48357
-66.29.128.244:62408
-162.19.7.47:57531
-172.106.19.156:28691
-212.83.143.151:46796
 1680033504967
 order
 links
 returnb2b
 rupee
+wpe wp upgrade
+anthropic
+profiling
+sectigo
+cyberdog
+sri lanka
+1680033504967
+1681696517991
+returnb2b
+1685169227575
+unbekannt
+wedocservice
+eudaimon
+importer
+codjiranode
+infestra
+classify-workers
+180thestrand
+ss00
+zengenti
+dbpedia
+platform
+lavf
+order/**/
+-1 or
+-1' or
+-1" or
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

@@ -731,6 +731,12 @@ func TestTracker_ignoreUserAgent(t *testing.T) {
 		{"This is a spider request", true},
 		{"Visit http://spam.com!", true},
 		{"", true},
+		{"172.22.0.11:30004", true},
+		{"172.22.0.11", true},
+		{"2345:0425:2CA1:0000:0000:0567:5673:23b5", true},
+		{"2345:425:2CA1:0000:0000:567:5673:23b5", true},
+		{"2345:0425:2CA1:0:0:0567:5673:23b5", true},
+		{"[2345:0425:2CA1:0:0:0567:5673:23b5]:8080", true},
 		{userAgent, false},
 	}
 
@@ -741,7 +747,11 @@ func TestTracker_ignoreUserAgent(t *testing.T) {
 		req.Header.Set("User-Agent", userAgent.userAgent)
 
 		if _, _, ignore := tracker.ignore(req); ignore != userAgent.ignore {
-			t.Fatalf("Request with User-Agent '%s' must be ignored", userAgent.userAgent)
+			if userAgent.ignore {
+				t.Fatalf("Request with User-Agent '%s' must be ignored", userAgent.userAgent)
+			} else {
+				t.Fatalf("Request with User-Agent '%s' must not be ignored", userAgent.userAgent)
+			}
 		}
 	}
 }

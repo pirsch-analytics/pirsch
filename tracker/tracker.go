@@ -12,6 +12,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v5/util"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -267,6 +268,21 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 		return model.UserAgent{}, "", true
 	}
 
+	// ignore User-Agents that are an IP address
+	host := rawUserAgent
+
+	if net.ParseIP(host) != nil {
+		return model.UserAgent{}, "", true
+	}
+
+	if strings.Contains(host, ":") {
+		host, _, _ = net.SplitHostPort(rawUserAgent)
+	}
+
+	if net.ParseIP(host) != nil {
+		return model.UserAgent{}, "", true
+	}
+
 	// ignore browsers pre-fetching data
 	xPurpose := r.Header.Get("X-Purpose")
 	purpose := r.Header.Get("Purpose")
@@ -369,7 +385,8 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, pageViews, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
-		if tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold {
+		if (tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold) ||
+			(tracker.config.MaxPageViews > 0) && session.PageViews >= tracker.config.MaxPageViews {
 			return nil, nil, 0
 		}
 
