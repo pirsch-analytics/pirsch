@@ -386,7 +386,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
 		if (tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold) ||
-			(tracker.config.MaxPageViews > 0) && session.PageViews >= tracker.config.MaxPageViews {
+			(tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews) {
 			return nil, nil, 0
 		}
 

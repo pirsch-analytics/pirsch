@@ -861,6 +861,27 @@ func TestTracker_ignoreIP(t *testing.T) {
 	}
 }
 
+func TestTracker_ignorePageViews(t *testing.T) {
+	client := db.NewMockClient()
+	cache := session.NewMemCache(client, 10)
+	tracker := NewTracker(Config{
+		Store:        client,
+		SessionCache: cache,
+		MaxPageViews: 5,
+		MinDelay:     1,
+	})
+
+	for i := 0; i < 10; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", userAgent)
+		tracker.PageView(req, 0, Options{})
+		time.Sleep(time.Millisecond * 5)
+	}
+
+	tracker.Stop()
+	assert.Len(t, client.GetPageViews(), 5)
+}
+
 func TestTracker_getLanguage(t *testing.T) {
 	input := []string{
 		"",
