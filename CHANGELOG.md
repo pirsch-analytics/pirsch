@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.9.0
+
+* improved string utility functions
+* updated dependencies
+
 ## 5.8.2
 
 * fixed page view count when session is created on an event

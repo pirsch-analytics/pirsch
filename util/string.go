@@ -1,11 +1,15 @@
 package util
 
-import "unicode"
+import (
+	"bytes"
+	"unicode"
+	"unicode/utf8"
+)
 
 // ContainsNonASCIICharacters returns whether the string only consists out of ASCII characters or not.
 func ContainsNonASCIICharacters(ua string) bool {
-	for i := 0; i < len(ua); i++ {
-		if ua[i] > unicode.MaxASCII {
+	for _, c := range ua {
+		if c > unicode.MaxASCII {
 			return true
 		}
 	}
@@ -15,8 +19,9 @@ func ContainsNonASCIICharacters(ua string) bool {
 
 // ShortenString shortens given string to the given maximum number of bytes.
 func ShortenString(str string, n int) string {
-	if len(str) > n {
-		return str[:n]
+	if utf8.RuneCountInString(str) > n {
+		runes := bytes.Runes([]byte(str))
+		return string(runes[:n])
 	}
 
 	return str
