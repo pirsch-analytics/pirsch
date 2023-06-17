@@ -264,6 +264,8 @@ func TestTracker_PageViewIsBot(t *testing.T) {
 		Worker:           4,
 		WorkerBufferSize: 5,
 		WorkerTimeout:    time.Second * 2,
+		MinDelay:         500,
+		IsBotThreshold:   5,
 		SessionCache:     cache,
 	})
 

@@ -16,8 +16,8 @@ const (
 	defaultWorkerBufferSize = 500
 	defaultWorkerTimeout    = time.Second * 5
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelayMS       = int64(500)
-	defaultIsBotThreshold   = uint8(5)
+	defaultMinDelayMS       = int64(200)
+	defaultIsBotThreshold   = uint8(10)
 	defaultMaxPageViews     = uint16(200)
 )
 
