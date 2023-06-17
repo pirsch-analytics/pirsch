@@ -3,6 +3,7 @@
 ## 5.9.1
 
 * use less aggressive bot filtering defaults
+* updated dependencies
 
 ## 5.9.0
 
