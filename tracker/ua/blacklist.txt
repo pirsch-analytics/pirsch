@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-05-27)
+# custom (last update: 2023-06-28)
 ://
 bot
 crawler
@@ -413,6 +413,17 @@ order/**/
 -1 or
 -1' or
 -1" or
+1687905700113
+1686805689354
+1686401621817
+mytool
+aliappiphone
+roche-waas
+mmb1_pedrillo
+1686705713195
+1686705749888
+1687171999244
+1685804726376
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
