@@ -213,6 +213,29 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, userAgent, userAgents[0].UserAgent)
 }
 
+func TestTracker_PageViewRebounce(t *testing.T) {
+	client := db.NewMockClient()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.PageView(req, 123, Options{})
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 3)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[1].PageViews)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
+	assert.Equal(t, uint32(0), sessions[2].DurationSeconds)
+}
+
 func TestTracker_PageViewReferrerIgnorePath(t *testing.T) {
 	client := db.NewMockClient()
 	tracker := NewTracker(Config{
@@ -313,11 +336,6 @@ func TestTracker_PageViewTimeout(t *testing.T) {
 }
 
 func TestTracker_PageViewBuffer(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
-	req.Header.Add("User-Agent", userAgent)
-	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
-	req.Header.Set("Referer", "https://google.com")
-	req.RemoteAddr = "81.2.69.142"
 	client := db.NewMockClient()
 	tracker := NewTracker(Config{
 		Store:            client,
@@ -327,6 +345,11 @@ func TestTracker_PageViewBuffer(t *testing.T) {
 	})
 
 	for i := 0; i < 7; i++ {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/foo/bar/%d?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", i), nil)
+		req.Header.Add("User-Agent", userAgent)
+		req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+		req.Header.Set("Referer", "https://google.com")
+		req.RemoteAddr = "81.2.69.142"
 		tracker.PageView(req, 123, Options{})
 	}
 
@@ -874,7 +897,7 @@ func TestTracker_ignorePageViews(t *testing.T) {
 	})
 
 	for i := 0; i < 10; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%d", i), nil)
 		req.Header.Set("User-Agent", userAgent)
 		tracker.PageView(req, 0, Options{})
 		time.Sleep(time.Millisecond * 5)

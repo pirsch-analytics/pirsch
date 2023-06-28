@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.9.2
+
+* do not increase page view count on bounce
+* do not store page view if the session bounced before
+
 ## 5.9.1
 
 * use less aggressive bot filtering defaults

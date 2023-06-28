@@ -99,7 +99,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			now = options.Time
 		}
 
-		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
+		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
 		var saveUserAgent *model.UserAgent
 
 		if session != nil {
@@ -107,10 +107,10 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 				saveUserAgent = &userAgent
 			}
 
-			tracker.data <- data{
-				session:       session,
-				cancelSession: cancelSession,
-				pageView: &model.PageView{
+			var pv *model.PageView
+
+			if !bounced {
+				pv = &model.PageView{
 					ClientID:        session.ClientID,
 					VisitorID:       session.VisitorID,
 					SessionID:       session.SessionID,
@@ -136,8 +136,14 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 					UTMCampaign:     session.UTMCampaign,
 					UTMContent:      session.UTMContent,
 					UTMTerm:         session.UTMTerm,
-				},
-				ua: saveUserAgent,
+				}
+			}
+
+			tracker.data <- data{
+				session:       session,
+				cancelSession: cancelSession,
+				pageView:      pv,
+				ua:            saveUserAgent,
 			}
 		}
 	}
@@ -162,7 +168,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				now = options.Time
 			}
 
-			session, cancelSession, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
+			session, cancelSession, _, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
 			var saveUserAgent *model.UserAgent
 
 			if session != nil {
@@ -227,7 +233,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 			now = options.Time
 		}
 
-		session, cancelSession, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, 0, options)
+		session, cancelSession, _, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, 0, options)
 
 		if session != nil {
 			tracker.data <- data{
@@ -348,7 +354,7 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) (*model.Session, *model.Session, uint32) {
+func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) (*model.Session, *model.Session, uint32, bool) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	m.Lock()
@@ -375,10 +381,11 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	defer m.Unlock()
 
 	if t == sessionUpdate && session == nil {
-		return nil, nil, 0
+		return nil, nil, 0, false
 	}
 
 	var timeOnPage uint32
+	bounced := false // bounced not including session creation
 	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
@@ -387,17 +394,17 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	} else {
 		if (tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold) ||
 			(tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews) {
-			return nil, nil, 0
+			return nil, nil, 0, false
 		}
 
 		sessionCopy := *session
 		cancelSession = &sessionCopy
 		cancelSession.Sign = -1
-		timeOnPage = tracker.updateSession(t, session, now, options.Path, options.Title)
+		timeOnPage, bounced = tracker.updateSession(t, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	}
 
-	return session, cancelSession, timeOnPage
+	return session, cancelSession, timeOnPage, bounced
 }
 
 func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) *model.Session {
@@ -457,7 +464,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	}
 }
 
-func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) uint32 {
+func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) (uint32, bool) {
 	if tracker.config.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < tracker.config.MinDelay {
 		session.IsBot++
 	}
@@ -478,7 +485,10 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 		session.IsBounce = false
 	} else if t == pageView {
 		session.IsBounce = session.IsBounce && path == session.ExitPath
-		session.PageViews++
+
+		if !session.IsBounce {
+			session.PageViews++
+		}
 	} else if session.Extended < math.MaxUint16-1 {
 		session.Extended++
 	}
@@ -488,7 +498,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	session.Time = now
 	session.ExitPath = path
 	session.ExitTitle = title
-	return uint32(top)
+	return uint32(top), session.IsBounce
 }
 
 func (tracker *Tracker) getLanguage(r *http.Request) string {
