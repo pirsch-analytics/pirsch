@@ -34,9 +34,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	query.WriteString(fmt.Sprintf(`SELECT day, average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') day,
-			sum(duration_seconds*sign) duration,
-			sum(sign) n,
-			toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
+			toUInt64(ifNotFinite(round(avg(duration_seconds*sign)), 0)) average_time_spent_seconds
 			FROM session s `, time.UTC.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
@@ -96,7 +94,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	fields := q.getFields()
 	fields = append(fields, "duration_seconds")
 	query.WriteString(fmt.Sprintf(`SELECT day,
-		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
+		toUInt64(ifNotFinite(round(avg(time_on_page)), 0)) average_time_spent_seconds
 		FROM (
 			SELECT day,
 			%s time_on_page

@@ -436,8 +436,8 @@ var (
 		Name:           "relative_platform_unknown",
 	}
 
-	// FieldDurationSeconds is a query result column.
-	FieldDurationSeconds = Field{
+	// FieldEventDurationSeconds is a query result column.
+	FieldEventDurationSeconds = Field{
 		querySessions:  "sum(duration_seconds)",
 		queryPageViews: "sum(duration_seconds)",
 		Name:           "duration_seconds",

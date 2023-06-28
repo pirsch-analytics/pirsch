@@ -9,6 +9,30 @@ import (
 	"time"
 )
 
+func TestAnalyzer_AvgSessionDuration(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, DurationSeconds: 25},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, DurationSeconds: 25},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, DurationSeconds: 28},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), SessionID: 2, DurationSeconds: 5},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), SessionID: 3, DurationSeconds: 0},
+			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), SessionID: 4, DurationSeconds: 35},
+			{Sign: 1, VisitorID: 5, Time: util.Today(), Start: time.Now(), SessionID: 5, DurationSeconds: 2},
+			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: time.Now(), SessionID: 6, DurationSeconds: 0},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient, nil)
+	stats, err := analyzer.Time.AvgSessionDuration(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, 12, stats[0].AverageTimeSpentSeconds)
+}
+
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

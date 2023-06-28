@@ -47,7 +47,7 @@ func CleanupDB(t *testing.T, client *Client) {
 	assert.NoError(t, err)
 	_, err = client.Exec(`ALTER TABLE "user_agent" DELETE WHERE 1=1`)
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 50)
 }
 
 // DropDB drops all database tables.

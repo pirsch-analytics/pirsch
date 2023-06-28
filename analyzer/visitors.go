@@ -336,7 +336,7 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 	q := queryBuilder{
 		filter: filter,
-		fields: []Field{FieldDurationSeconds},
+		fields: []Field{FieldEventDurationSeconds},
 		from:   events,
 		search: filter.Search,
 	}
