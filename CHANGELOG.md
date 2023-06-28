@@ -4,6 +4,7 @@
 
 * do not increase page view count on bounce
 * do not store page view if the session bounced before
+* updated dependencies
 
 ## 5.9.1
 
