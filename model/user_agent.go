@@ -6,7 +6,7 @@ import (
 )
 
 // UserAgent contains information extracted from the User-Agent header.
-// The creation time and User-Agent string are stored in the database to find bots.
+// The creation time and User-Agent are stored in the database to find bots.
 type UserAgent struct {
 	// Time is the creation date for the database record.
 	Time time.Time

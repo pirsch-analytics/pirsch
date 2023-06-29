@@ -20,6 +20,9 @@ type Store interface {
 	// SaveUserAgents saves given UserAgent headers.
 	SaveUserAgents([]model.UserAgent) error
 
+	// SaveBots saves given bots.
+	SaveBots([]model.Bot) error
+
 	// Session returns the last hit for given client, fingerprint, and maximum age.
 	Session(uint64, uint64, time.Time) (*model.Session, error)
 

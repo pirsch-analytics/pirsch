@@ -14,12 +14,13 @@ type ClientMock struct {
 	sessions      []model.Session
 	events        []model.Event
 	userAgents    []model.UserAgent
+	bots          []model.Bot
 	ReturnSession *model.Session
 	m             sync.Mutex
 }
 
-// NewMockClient returns a new mock client.
-func NewMockClient() *ClientMock {
+// NewClientMock returns a new mock client.
+func NewClientMock() *ClientMock {
 	return &ClientMock{
 		pageViews:  make([]model.PageView, 0),
 		sessions:   make([]model.Session, 0),
@@ -92,6 +93,22 @@ func (client *ClientMock) GetUserAgents() []model.UserAgent {
 	return data
 }
 
+// GetBots returns a copy of the bots slice.
+func (client *ClientMock) GetBots() []model.Bot {
+	client.m.Lock()
+	defer client.m.Unlock()
+	data := make([]model.Bot, len(client.bots))
+	copy(data, client.bots)
+	sort.Slice(data, func(i, j int) bool {
+		if data[i].Time.Before(data[j].Time) {
+			return true
+		}
+
+		return false
+	})
+	return data
+}
+
 // SavePageViews implements the Store interface.
 func (client *ClientMock) SavePageViews(pageViews []model.PageView) error {
 	client.m.Lock()
@@ -121,6 +138,13 @@ func (client *ClientMock) SaveUserAgents(userAgents []model.UserAgent) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.userAgents = append(client.userAgents, userAgents...)
+	return nil
+}
+
+func (client *ClientMock) SaveBots(bots []model.Bot) error {
+	client.m.Lock()
+	defer client.m.Unlock()
+	client.bots = append(client.bots, bots...)
 	return nil
 }
 

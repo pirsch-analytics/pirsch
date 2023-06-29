@@ -195,6 +195,27 @@ func TestClient_SaveUserAgents(t *testing.T) {
 	}))
 }
 
+func TestClient_SaveBots(t *testing.T) {
+	CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveBots([]model.Bot{
+		{
+			ClientID:  1,
+			VisitorID: 1,
+			Time:      time.Now(),
+			UserAgent: "ua1",
+			Path:      "/foo",
+			Event:     "event",
+		},
+		{
+			ClientID:  2,
+			VisitorID: 2,
+			Time:      time.Now(),
+			UserAgent: "ua2",
+			Path:      "/bar",
+		},
+	}))
+}
+
 func TestClient_Session(t *testing.T) {
 	CleanupDB(t, dbClient)
 	now := time.Now().UTC().Add(-time.Second * 20)

@@ -60,6 +60,8 @@ func DropDB(t *testing.T, client *Client) {
 	assert.NoError(t, err)
 	_, err = client.Exec(`DROP TABLE IF EXISTS "user_agent"`)
 	assert.NoError(t, err)
+	_, err = client.Exec(`DROP TABLE IF EXISTS "bot"`)
+	assert.NoError(t, err)
 	_, err = client.Exec(`DROP TABLE IF EXISTS "schema_migrations"`)
 	assert.NoError(t, err)
 }

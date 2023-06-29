@@ -2,6 +2,7 @@
 
 ## 5.10.0
 
+* added bot table for traffic that has been filtered
 * removed `is_bot` counter
 
 ## 5.9.2

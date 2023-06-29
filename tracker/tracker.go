@@ -60,6 +60,7 @@ type data struct {
 	pageView      *model.PageView
 	event         *model.Event
 	ua            *model.UserAgent
+	bot           *model.Bot
 }
 
 // Tracker tracks page views, events, and updates sessions.
@@ -91,14 +92,13 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 	now := time.Now().UTC()
 	userAgent, ipAddress, ignore := tracker.ignore(r)
+	options.validate(r)
+
+	if !options.Time.IsZero() {
+		now = options.Time
+	}
 
 	if !ignore {
-		options.validate(r)
-
-		if !options.Time.IsZero() {
-			now = options.Time
-		}
-
 		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
 		var saveUserAgent *model.UserAgent
 
@@ -146,6 +146,16 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 				ua:            saveUserAgent,
 			}
 		}
+	} else {
+		tracker.data <- data{
+			bot: &model.Bot{
+				ClientID:  clientID,
+				VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
+				Time:      now,
+				UserAgent: r.UserAgent(),
+				Path:      options.Path,
+			},
+		}
 	}
 }
 
@@ -160,14 +170,13 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 
 	if eventOptions.Name != "" {
 		userAgent, ipAddress, ignore := tracker.ignore(r)
+		options.validate(r)
+
+		if !options.Time.IsZero() {
+			now = options.Time
+		}
 
 		if !ignore {
-			options.validate(r)
-
-			if !options.Time.IsZero() {
-				now = options.Time
-			}
-
 			session, cancelSession, _, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
 			var saveUserAgent *model.UserAgent
 
@@ -212,6 +221,17 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 					},
 					ua: saveUserAgent,
 				}
+			}
+		} else {
+			tracker.data <- data{
+				bot: &model.Bot{
+					ClientID:  clientID,
+					VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
+					Time:      now,
+					UserAgent: r.UserAgent(),
+					Path:      options.Path,
+					Event:     eventOptions.Name,
+				},
 			}
 		}
 	}
@@ -579,6 +599,7 @@ func (tracker *Tracker) flushData() {
 	pageViews := make([]model.PageView, 0, bufferSize)
 	events := make([]model.Event, 0, bufferSize)
 	userAgents := make([]model.UserAgent, 0, bufferSize)
+	bots := make([]model.Bot, 0, bufferSize)
 
 	for {
 		stop := false
@@ -605,16 +626,25 @@ func (tracker *Tracker) flushData() {
 				userAgents = append(userAgents, *data.ua)
 			}
 
-			if len(sessions)+2 >= bufferSize*2 || len(pageViews)+1 >= bufferSize ||
-				len(events)+1 >= bufferSize || len(userAgents)+1 >= bufferSize {
+			if data.bot != nil {
+				bots = append(bots, *data.bot)
+			}
+
+			if len(sessions)+2 >= bufferSize*2 ||
+				len(pageViews)+1 >= bufferSize ||
+				len(events)+1 >= bufferSize ||
+				len(userAgents)+1 >= bufferSize ||
+				len(bots)+1 >= bufferSize {
 				tracker.saveSessions(sessions)
 				tracker.savePageViews(pageViews)
 				tracker.saveEvents(events)
 				tracker.saveUserAgents(userAgents)
+				tracker.saveBots(bots)
 				sessions = sessions[:0]
 				pageViews = pageViews[:0]
 				events = events[:0]
 				userAgents = userAgents[:0]
+				bots = bots[:0]
 			}
 		default:
 			stop = true
@@ -629,6 +659,7 @@ func (tracker *Tracker) flushData() {
 	tracker.savePageViews(pageViews)
 	tracker.saveEvents(events)
 	tracker.saveUserAgents(userAgents)
+	tracker.saveBots(bots)
 }
 
 func (tracker *Tracker) aggregateData(ctx context.Context) {
@@ -637,6 +668,7 @@ func (tracker *Tracker) aggregateData(ctx context.Context) {
 	pageViews := make([]model.PageView, 0, bufferSize)
 	events := make([]model.Event, 0, bufferSize)
 	userAgents := make([]model.UserAgent, 0, bufferSize)
+	bots := make([]model.Bot, 0, bufferSize)
 	timer := time.NewTimer(tracker.config.WorkerTimeout)
 	defer timer.Stop()
 
@@ -665,31 +697,43 @@ func (tracker *Tracker) aggregateData(ctx context.Context) {
 				userAgents = append(userAgents, *data.ua)
 			}
 
-			if len(sessions)+2 >= bufferSize*2 || len(pageViews)+1 >= bufferSize ||
-				len(events)+1 >= bufferSize || len(userAgents)+1 >= bufferSize {
+			if data.bot != nil {
+				bots = append(bots, *data.bot)
+			}
+
+			if len(sessions)+2 >= bufferSize*2 ||
+				len(pageViews)+1 >= bufferSize ||
+				len(events)+1 >= bufferSize ||
+				len(userAgents)+1 >= bufferSize ||
+				len(bots)+1 >= bufferSize {
 				tracker.saveSessions(sessions)
 				tracker.savePageViews(pageViews)
 				tracker.saveEvents(events)
 				tracker.saveUserAgents(userAgents)
+				tracker.saveBots(bots)
 				sessions = sessions[:0]
 				pageViews = pageViews[:0]
 				events = events[:0]
 				userAgents = userAgents[:0]
+				bots = bots[:0]
 			}
 		case <-timer.C:
 			tracker.saveSessions(sessions)
 			tracker.savePageViews(pageViews)
 			tracker.saveEvents(events)
 			tracker.saveUserAgents(userAgents)
+			tracker.saveBots(bots)
 			sessions = sessions[:0]
 			pageViews = pageViews[:0]
 			events = events[:0]
 			userAgents = userAgents[:0]
+			bots = bots[:0]
 		case <-ctx.Done():
 			tracker.saveSessions(sessions)
 			tracker.savePageViews(pageViews)
 			tracker.saveEvents(events)
 			tracker.saveUserAgents(userAgents)
+			tracker.saveBots(bots)
 			tracker.done <- true
 			return
 		}
@@ -724,6 +768,14 @@ func (tracker *Tracker) saveUserAgents(userAgents []model.UserAgent) {
 	if len(userAgents) > 0 {
 		if err := tracker.config.Store.SaveUserAgents(userAgents); err != nil {
 			tracker.config.Logger.Printf("error saving user agents: %s", err)
+		}
+	}
+}
+
+func (tracker *Tracker) saveBots(bots []model.Bot) {
+	if len(bots) > 0 {
+		if err := tracker.config.Store.SaveBots(bots); err != nil {
+			tracker.config.Logger.Printf("error saving bots: %s", err)
 		}
 	}
 }

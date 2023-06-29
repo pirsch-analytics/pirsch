@@ -10,7 +10,7 @@ import (
 )
 
 func TestMemCache(t *testing.T) {
-	client := db.NewMockClient()
+	client := db.NewClientMock()
 	cache := NewMemCache(client, 10)
 	session := cache.Get(1, 1, time.Now().Add(-time.Second*10))
 	assert.Nil(t, session)
@@ -82,7 +82,7 @@ func TestMemCache(t *testing.T) {
 }
 
 func TestMemCache_Put(t *testing.T) {
-	client := db.NewMockClient()
+	client := db.NewClientMock()
 	cache := NewMemCache(client, 10)
 	now := time.Now()
 	cache.Put(1, 1, &model.Session{

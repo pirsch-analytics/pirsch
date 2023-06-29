@@ -380,6 +380,42 @@ func (client *Client) SaveUserAgents(userAgents []model.UserAgent) error {
 	return nil
 }
 
+func (client *Client) SaveBots(bots []model.Bot) error {
+	tx, err := client.Begin()
+
+	if err != nil {
+		return err
+	}
+
+	query, err := tx.Prepare(`INSERT INTO "bot" (client_id, visitor_id, time, user_agent, path, event_name) VALUES (?,?,?,?,?,?)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, bot := range bots {
+		_, err := query.Exec(bot.ClientID, bot.VisitorID, bot.Time, bot.UserAgent, bot.Path, bot.Event)
+
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				client.logger.Printf("error rolling back transaction to save bots: %s", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	if client.debug {
+		client.logger.Printf("saved %d bots", len(bots))
+	}
+
+	return nil
+}
+
 // Session implements the Store interface.
 func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*model.Session, error) {
 	query := `SELECT sign,
