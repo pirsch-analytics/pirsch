@@ -37,7 +37,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	platform, err := analyzer.Device.Platform(&Filter{From: util.PastDay(5), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, platform.PlatformDesktop)
@@ -77,7 +77,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.Browser(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -126,7 +126,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.BrowserVersion(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
@@ -189,7 +189,7 @@ func TestAnalyzer_OS(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.OS(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -238,7 +238,7 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.OSVersion(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
@@ -301,7 +301,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.ScreenClass(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.0
+
+* removed `is_bot` counter
+
 ## 5.9.2
 
 * do not increase page view count on bounce

@@ -26,7 +26,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	source, err := analyzer.UTM.Source(nil)
 	assert.NoError(t, err)
 	assert.Len(t, source, 3)

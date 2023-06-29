@@ -12,7 +12,7 @@ import (
 
 func TestAnalyzer_NoData(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	_, _, err := analyzer.Visitors.Active(nil, time.Minute*15)
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.Total(nil)

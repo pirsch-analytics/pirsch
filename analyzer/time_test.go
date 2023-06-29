@@ -26,7 +26,7 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Time.AvgSessionDuration(nil)
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
@@ -64,7 +64,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	byDay, err := analyzer.Time.AvgTimeOnPage(&Filter{Path: []string{"/"}, From: util.PastDay(3), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 4)

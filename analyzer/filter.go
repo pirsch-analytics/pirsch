@@ -136,8 +136,6 @@ type Filter struct {
 	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
-
-	minIsBot uint8
 }
 
 // Search filters results by searching for the given input for given field.
@@ -273,7 +271,10 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 	} else if q.from == pageViews || returnEventName {
 		q.fields = fields
 		q.join = filter.joinSessions(fields)
-		q.join.parent = &q
+
+		if q.join != nil {
+			q.join.parent = &q
+		}
 
 		if q.from != events {
 			if filter.valuesContainPrefix(filter.EventName, "!") {
@@ -321,8 +322,7 @@ func (filter *Filter) table(fields []Field) table {
 }
 
 func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
-	if filter.minIsBot > 0 ||
-		len(filter.EntryPath) != 0 ||
+	if len(filter.EntryPath) != 0 ||
 		len(filter.ExitPath) != 0 ||
 		filter.fieldsContain(fields, FieldBounces) ||
 		filter.fieldsContain(fields, FieldViews) ||

@@ -392,8 +392,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, pageViews, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
-		if (tracker.config.IsBotThreshold > 0 && session.IsBot >= tracker.config.IsBotThreshold) ||
-			(tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews) {
+		if tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
 			return nil, nil, 0, false
 		}
 
@@ -465,10 +464,6 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 }
 
 func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) (uint32, bool) {
-	if tracker.config.MinDelay > 0 && now.UnixMilli()-session.Time.UnixMilli() < tracker.config.MinDelay {
-		session.IsBot++
-	}
-
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {

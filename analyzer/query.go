@@ -263,11 +263,6 @@ func (query *queryBuilder) whereTime() string {
 		}
 	}
 
-	if query.from == sessions && query.filter.minIsBot > 0 {
-		query.args = append(query.args, query.filter.minIsBot)
-		q.WriteString(" AND is_bot < ? ")
-	}
-
 	return q.String()
 }
 

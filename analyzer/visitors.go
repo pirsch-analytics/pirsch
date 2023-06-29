@@ -340,16 +340,6 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 		from:   events,
 		search: filter.Search,
 	}
-
-	if visitors.analyzer.minIsBot > 0 {
-		q.join = &queryBuilder{
-			filter:  filter,
-			fields:  []Field{FieldVisitorID, FieldSessionID},
-			from:    sessions,
-			groupBy: []Field{FieldVisitorID, FieldSessionID},
-		}
-	}
-
 	query, args := q.query()
 	averageTimeSpentSeconds, err := visitors.store.Count(query, args...)
 
@@ -385,7 +375,7 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 				%s
 				FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
 
-	if visitors.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
 		q.from = sessions
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,

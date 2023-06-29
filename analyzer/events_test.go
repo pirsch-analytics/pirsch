@@ -40,7 +40,7 @@ func TestAnalyzer_Events(t *testing.T) {
 		{Name: "event2", DurationSeconds: 4, VisitorID: 5, Time: util.Today().Add(time.Second * 8), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events.Events(nil)
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
@@ -184,7 +184,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "56"}, VisitorID: 4, Time: util.Today(), Path: "/"},
 		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 5, Time: util.Today(), Path: "/foo"},
 	}))
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events.List(nil)
 	assert.NoError(t, err)
 	assert.Len(t, stats, 4)
@@ -269,7 +269,7 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3"}, MetaValues: []string{"v2", "v3"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	list, err := analyzer.Events.Events(&Filter{EventName: []string{"event1"}})
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)

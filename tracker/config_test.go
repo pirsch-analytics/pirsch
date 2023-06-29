@@ -16,8 +16,6 @@ func TestConfig_validate(t *testing.T) {
 	assert.Equal(t, defaultWorkerBufferSize, cfg.WorkerBufferSize)
 	assert.Equal(t, defaultWorkerTimeout, cfg.WorkerTimeout)
 	assert.NotNil(t, cfg.SessionCache)
-	assert.Equal(t, defaultMinDelayMS, cfg.MinDelay)
-	assert.Equal(t, defaultIsBotThreshold, cfg.IsBotThreshold)
 	assert.NotNil(t, cfg.Logger)
 	cfg.WorkerTimeout = time.Second * 999
 	cfg.validate()

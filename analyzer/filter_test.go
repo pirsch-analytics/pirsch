@@ -90,7 +90,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	})
 
 	// no filter (from page views)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	q, args := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors},
 		[]Field{FieldPath}, []Field{FieldVisitors, FieldPath})
 	var stats []model.PageStats

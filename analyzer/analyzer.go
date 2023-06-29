@@ -16,19 +16,11 @@ type Analyzer struct {
 	Events       Events
 	Time         Time
 	Options      FilterOptions
-	minIsBot     uint8
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.
-func NewAnalyzer(store db.Store, config *Config) *Analyzer {
-	if config == nil {
-		config = new(Config)
-	}
-
-	config.validate()
-	analyzer := &Analyzer{
-		minIsBot: config.IsBotThreshold,
-	}
+func NewAnalyzer(store db.Store) *Analyzer {
+	analyzer := new(Analyzer)
 	analyzer.Visitors = Visitors{
 		analyzer: analyzer,
 		store:    store,
@@ -90,11 +82,6 @@ func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	}
 
 	filter.validate()
-
-	if analyzer.minIsBot > 0 {
-		filter.minIsBot = analyzer.minIsBot
-	}
-
 	filterCopy := *filter
 	return &filterCopy
 }

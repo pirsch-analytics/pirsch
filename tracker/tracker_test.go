@@ -118,7 +118,6 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, "Campaign", sessions[0].UTMCampaign)
 	assert.Equal(t, "Content", sessions[0].UTMContent)
 	assert.Equal(t, "Term", sessions[0].UTMTerm)
-	assert.Equal(t, uint8(0), sessions[0].IsBot)
 
 	assert.Equal(t, uint64(123), pageViews[0].ClientID)
 	assert.True(t, pageViews[0].Time.After(now))
@@ -183,7 +182,6 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, "Campaign", sessions[2].UTMCampaign)
 	assert.Equal(t, "Content", sessions[2].UTMContent)
 	assert.Equal(t, "Term", sessions[2].UTMTerm)
-	assert.Equal(t, uint8(0), sessions[2].IsBot)
 
 	assert.Equal(t, uint64(123), pageViews[1].ClientID)
 	assert.True(t, pageViews[1].Time.After(now))
@@ -276,42 +274,6 @@ func TestTracker_PageViewReferrerOverwriteIgnorePath(t *testing.T) {
 	assert.Equal(t, "https://google.com", sessions[2].Referrer)
 }
 
-func TestTracker_PageViewIsBot(t *testing.T) {
-	db.CleanupDB(t, dbClient)
-	cache := session.NewRedisCache(time.Second*60, nil, &redis.Options{
-		Addr: "localhost:6379",
-	})
-	cache.Clear()
-	tracker := NewTracker(Config{
-		Store:            dbClient,
-		Worker:           4,
-		WorkerBufferSize: 5,
-		WorkerTimeout:    time.Second * 2,
-		MinDelay:         500,
-		IsBotThreshold:   5,
-		SessionCache:     cache,
-	})
-
-	for i := 0; i < 7; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Add("User-Agent", userAgent)
-		req.URL.Path = fmt.Sprintf("/page/%d", i)
-		go tracker.PageView(req, 0, Options{})
-		time.Sleep(time.Millisecond * 5)
-	}
-
-	tracker.Stop()
-	var s model.Session
-	assert.NoError(t, dbClient.QueryRow(`SELECT entry_path, exit_path, max(page_views) page_views, max(is_bot) is_bot
-		FROM session
-		GROUP BY entry_path, exit_path
-		HAVING sum(sign) > 0`).Scan(&s.EntryPath, &s.ExitPath, &s.PageViews, &s.IsBot))
-	assert.Equal(t, uint8(5), s.IsBot)
-	assert.Equal(t, 6, int(s.PageViews))
-	assert.Equal(t, "/page/0", s.EntryPath)
-	assert.Equal(t, "/page/5", s.ExitPath)
-}
-
 func TestTracker_PageViewTimeout(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)
@@ -341,7 +303,6 @@ func TestTracker_PageViewBuffer(t *testing.T) {
 		Store:            client,
 		Worker:           1,
 		WorkerBufferSize: 5,
-		IsBotThreshold:   99,
 	})
 
 	for i := 0; i < 7; i++ {
@@ -893,7 +854,6 @@ func TestTracker_ignorePageViews(t *testing.T) {
 		Store:        client,
 		SessionCache: cache,
 		MaxPageViews: 5,
-		MinDelay:     1,
 	})
 
 	for i := 0; i < 10; i++ {

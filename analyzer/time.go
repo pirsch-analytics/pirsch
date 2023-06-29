@@ -38,8 +38,6 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			FROM session s `, time.UTC.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
-		minIsBot := filter.minIsBot
-		filter.minIsBot = 0
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -48,7 +46,6 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			WHERE %s
 		) v
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
-		filter.minIsBot = minIsBot
 	}
 
 	query.WriteString(q.whereTime())
@@ -104,7 +101,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 				%s
 				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), time.UTC.String(), strings.Join(fields, ",")))
 
-	if t.analyzer.minIsBot > 0 || len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -118,14 +115,11 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
 	}
 
-	minIsBot := filter.minIsBot
-	filter.minIsBot = 0
 	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY visitor_id, session_id, time)
 		WHERE session_id = neighbor(session_id, 1, null) AND time_on_page > 0 `, q.whereTime()[len("WHERE "):]))
 	q.whereFields()
 	where := q.q.String()
 	query.WriteString(fmt.Sprintf(`%s) GROUP BY day ORDER BY day %s`, where, q.withFill()))
-	filter.minIsBot = minIsBot
 	t.groupByPeriod(filter.Period, &query)
 	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 

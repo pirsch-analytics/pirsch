@@ -215,8 +215,8 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 	query, err := tx.Prepare(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
 		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-        is_bot, extended) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -254,7 +254,6 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 			session.UTMCampaign,
 			session.UTMContent,
 			session.UTMTerm,
-			session.IsBot,
 			session.Extended)
 
 		if err != nil {
@@ -414,7 +413,6 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		utm_campaign,
 		utm_content,
 		utm_term,
-		is_bot,
 		extended
 		FROM session
 		WHERE client_id = ?
@@ -454,7 +452,6 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		&session.UTMCampaign,
 		&session.UTMContent,
 		&session.UTMTerm,
-		&session.IsBot,
 		&session.Extended)
 
 	if err != nil {

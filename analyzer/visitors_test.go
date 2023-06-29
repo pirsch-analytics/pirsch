@@ -38,7 +38,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, count, err := analyzer.Visitors.Active(nil, time.Minute*10)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, count)
@@ -116,7 +116,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
 	}))
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Total(&Filter{From: util.PastDay(4), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 9, visitors.Visitors)
@@ -189,7 +189,7 @@ func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, Time: util.Today(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"1", "2"}},
 	}))
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Total(&Filter{From: util.Today(), To: util.Today(), EventName: []string{"!event"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, visitors.Visitors)
@@ -239,7 +239,7 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.TotalVisitorsPageViews(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, visitors)
@@ -303,7 +303,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
 		{VisitorID: 9, Time: util.Today(), Path: "/"},
 	}))
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{From: util.PastDay(4), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 5)
@@ -461,7 +461,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
@@ -501,7 +501,7 @@ func TestAnalyzer_GrowthDay(t *testing.T) {
 		{Sign: 1, VisitorID: 9, Time: util.Today().Add(time.Hour * 21), Start: time.Now()},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 
 	// Testing for today is hard because it would require messing with the time.Now function.
 	// I don't want to do that, so let's assume it works (tested in debug mode) and just get no error for today.
@@ -523,7 +523,7 @@ func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
 		{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now()},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(&Filter{From: util.Today(), To: util.Today().Add(time.Hour * 4), IncludeTime: true})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -536,7 +536,7 @@ func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
 
 func TestAnalyzer_GrowthNoData(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(&Filter{From: util.PastDay(7), To: util.PastDay(7)})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -650,7 +650,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 		{Name: "event1", VisitorID: 11, Time: util.Today().Add(time.Second * 12), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
@@ -660,10 +660,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.InDelta(t, 0.5, growth.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 0.5, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, 1, growth.TimeSpentGrowth, 0.001)
-	analyzer = NewAnalyzer(dbClient, &Config{
-		DisableBotFilter: true,
-	})
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	growth, err = analyzer.Visitors.Growth(&Filter{From: util.PastDay(3), To: util.PastDay(2), EventName: []string{"event1"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
@@ -710,7 +707,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/"},
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByHour(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
@@ -783,7 +780,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -874,7 +871,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(&Filter{Referrer: []string{pirsch.Unknown}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
@@ -898,7 +895,7 @@ func TestAnalyzer_Timezone(t *testing.T) {
 		{VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
 	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient, nil)
+	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{From: util.PastDay(3), To: util.PastDay(1)})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)

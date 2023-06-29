@@ -16,8 +16,6 @@ const (
 	defaultWorkerBufferSize = 500
 	defaultWorkerTimeout    = time.Second * 5
 	maxWorkerTimeout        = time.Second * 60
-	defaultMinDelayMS       = int64(200)
-	defaultIsBotThreshold   = uint8(10)
 	defaultMaxPageViews     = uint16(200)
 )
 
@@ -33,8 +31,6 @@ type Config struct {
 	SessionCache        session.Cache
 	HeaderParser        []ip.HeaderParser
 	AllowedProxySubnets []net.IPNet
-	MinDelay            int64
-	IsBotThreshold      uint8
 	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
 	IPFilter            ip.Filter
@@ -70,14 +66,6 @@ func (config *Config) validate() {
 
 	if config.SessionCache == nil {
 		config.SessionCache = session.NewMemCache(config.Store, 0)
-	}
-
-	if config.MinDelay <= 0 {
-		config.MinDelay = defaultMinDelayMS
-	}
-
-	if config.IsBotThreshold == 0 {
-		config.IsBotThreshold = defaultIsBotThreshold
 	}
 
 	if config.MaxPageViews == 0 {
