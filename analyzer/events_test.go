@@ -160,6 +160,52 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_EventsSortCR(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+
+	// create sessions for the conversion rate
+	for i := 0; i < 10; i++ {
+		saveSessions(t, [][]model.Session{
+			{
+				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
+			},
+		})
+	}
+
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{Name: "event1", VisitorID: 1, Time: util.Today(), Path: "/"},
+		{Name: "event1", VisitorID: 2, Time: util.Today().Add(time.Second), Path: "/"},
+		{Name: "event1", VisitorID: 3, Time: util.Today().Add(time.Second * 2), Path: "/"},
+		{Name: "event2", VisitorID: 3, Time: util.Today().Add(time.Minute), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.Events.Events(&Filter{Sort: []Sort{
+		{
+			Field:     FieldCR,
+			Direction: pirsch.DirectionASC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event2", stats[0].Name)
+	assert.Equal(t, "event1", stats[1].Name)
+	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.3, stats[1].CR, 0.001)
+	stats, err = analyzer.Events.Events(&Filter{Sort: []Sort{
+		{
+			Field:     FieldCR,
+			Direction: pirsch.DirectionDESC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, "event2", stats[1].Name)
+	assert.InDelta(t, 0.3, stats[0].CR, 0.001)
+	assert.InDelta(t, 0.1, stats[1].CR, 0.001)
+}
+
 func TestAnalyzer_EventList(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 

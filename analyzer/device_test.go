@@ -172,6 +172,54 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox, BrowserVersion: "89.0.0"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Device.BrowserVersion(&Filter{Sort: []Sort{
+		{
+			Field:     FieldBrowserVersion,
+			Direction: pirsch.DirectionASC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "85.1", visitors[0].BrowserVersion)
+	assert.Equal(t, "89.0.0", visitors[1].BrowserVersion)
+	visitors, err = analyzer.Device.BrowserVersion(&Filter{Sort: []Sort{
+		{
+			Field:     FieldBrowserVersion,
+			Direction: pirsch.DirectionDESC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "89.0.0", visitors[0].BrowserVersion)
+	assert.Equal(t, "85.1", visitors[1].BrowserVersion)
+	visitors, err = analyzer.Device.BrowserVersion(&Filter{Search: []Search{
+		{
+			Field: FieldBrowserVersion,
+			Input: "89",
+		},
+	}, Sort: []Sort{
+		{
+			Field:     FieldBrowserVersion,
+			Direction: pirsch.DirectionDESC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "89.0.0", visitors[0].BrowserVersion)
+}
+
 func TestAnalyzer_OS(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -282,6 +330,53 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
+}
+
+func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac, OSVersion: "14.0.0"},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Device.OSVersion(&Filter{Sort: []Sort{
+		{
+			Field:     FieldOSVersion,
+			Direction: pirsch.DirectionASC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "10", visitors[0].OSVersion)
+	assert.Equal(t, "14.0.0", visitors[1].OSVersion)
+	visitors, err = analyzer.Device.OSVersion(&Filter{Sort: []Sort{
+		{
+			Field:     FieldOSVersion,
+			Direction: pirsch.DirectionDESC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "14.0.0", visitors[0].OSVersion)
+	assert.Equal(t, "10", visitors[1].OSVersion)
+	visitors, err = analyzer.Device.OSVersion(&Filter{Search: []Search{
+		{
+			Field: FieldOSVersion,
+			Input: "14",
+		},
+	}, Sort: []Sort{
+		{
+			Field:     FieldOSVersion,
+			Direction: pirsch.DirectionDESC,
+		},
+	}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "14.0.0", visitors[0].OSVersion)
 }
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
