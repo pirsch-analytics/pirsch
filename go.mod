@@ -12,7 +12,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/oschwald/maxminddb-golang v1.11.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/net v0.11.0
+	golang.org/x/net v0.12.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/compress v1.16.6 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/paulmach/orb v0.9.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
@@ -36,6 +36,6 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

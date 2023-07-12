@@ -224,10 +224,10 @@ func TestAnalyzer_EventList(t *testing.T) {
 
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 1, Time: util.Today(), Path: "/"},
-		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 2, Time: util.Today(), Path: "/foo"},
+		{Name: "event1", MetaKeys: []string{"b", "a"}, MetaValues: []string{"42", "foo"}, VisitorID: 2, Time: util.Today(), Path: "/foo"},
 		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"bar", "42"}, VisitorID: 1, Time: util.Today(), Path: "/bar"},
-		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 3, Time: util.Today(), Path: "/"},
-		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "56"}, VisitorID: 4, Time: util.Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"b", "a"}, MetaValues: []string{"42", "foo"}, VisitorID: 3, Time: util.Today(), Path: "/"},
+		{Name: "event2", MetaKeys: []string{"b", "a"}, MetaValues: []string{"56", "foo"}, VisitorID: 4, Time: util.Today(), Path: "/"},
 		{Name: "event2", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 5, Time: util.Today(), Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)

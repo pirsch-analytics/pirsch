@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.10.1
+
+* fixed grouping events by metadata
+* updated dependencies
+
 ## 5.10.0
 
 * added bot table for traffic that has been filtered

@@ -354,8 +354,8 @@ var (
 
 	// FieldEventMeta is a query result column.
 	FieldEventMeta = Field{
-		querySessions:  "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
-		queryPageViews: "cast((event_meta_keys, event_meta_values), 'Map(String, String)')",
+		querySessions:  "cast(arraySort(arrayZip(event_meta_keys, event_meta_values)), 'Map(String, String)')",
+		queryPageViews: "cast(arraySort(arrayZip(event_meta_keys, event_meta_values)), 'Map(String, String)')",
 		Name:           "meta",
 	}
 

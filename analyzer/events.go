@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v5"
 	"github.com/pirsch-analytics/pirsch/v5/db"
 	"github.com/pirsch-analytics/pirsch/v5/model"
 )
@@ -71,10 +70,6 @@ func (events *Events) Breakdown(filter *Filter) ([]model.EventStats, error) {
 
 // List returns events as a list. The metadata is grouped as key-value pairs.
 func (events *Events) List(filter *Filter) ([]model.EventListStats, error) {
-	if filter == nil {
-		filter = NewFilter(pirsch.NullClient)
-	}
-
 	filter = events.analyzer.getFilter(filter)
 	q, args := filter.buildQuery([]Field{
 		FieldEventName,
