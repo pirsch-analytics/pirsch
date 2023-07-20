@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/ClickHouse/ch-go v0.57.0 // indirect
+	github.com/ClickHouse/ch-go v0.58.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/paulmach/orb v0.9.2 // indirect
+	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

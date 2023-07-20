@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.2
+
+* updated dependencies
+
 ## 5.10.1
 
 * fixed grouping events by metadata
