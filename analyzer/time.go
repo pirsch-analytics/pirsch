@@ -34,7 +34,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day",
-		    sum(duration_seconds*sign) duration,
+			sum(duration_seconds*sign) duration,
 			uniq(visitor_id, session_id) n
 			FROM "session" s `, time.UTC.String()))
 
