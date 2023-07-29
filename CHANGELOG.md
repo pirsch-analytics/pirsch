@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.10.3
+
+* fixed calculating average session duration
+* updated dependencies
+
 ## 5.10.2
 
 * updated dependencies

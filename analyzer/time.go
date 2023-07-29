@@ -31,11 +31,12 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 	var query strings.Builder
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
-	query.WriteString(fmt.Sprintf(`SELECT day, average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') day,
-			toUInt64(ifNotFinite(round(avg(duration_seconds*sign)), 0)) average_time_spent_seconds
-			FROM session s `, time.UTC.String()))
+			SELECT toDate(time, '%s') "day",
+		    sum(duration_seconds*sign) duration,
+			uniq(visitor_id, session_id) n
+			FROM "session" s `, time.UTC.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -57,9 +58,9 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 
 	query.WriteString(fmt.Sprintf(`AND duration_seconds != 0
-			GROUP BY day
+			GROUP BY "day"
 			HAVING sum(sign) > 0
-			ORDER BY day
+			ORDER BY "day"
 			%s
 		)`, q.withFill()))
 	t.groupByPeriod(filter.Period, &query)
@@ -90,14 +91,14 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
 	fields := q.getFields()
 	fields = append(fields, "duration_seconds")
-	query.WriteString(fmt.Sprintf(`SELECT day,
+	query.WriteString(fmt.Sprintf(`SELECT "day",
 		toUInt64(ifNotFinite(round(avg(time_on_page)), 0)) average_time_spent_seconds
 		FROM (
-			SELECT day,
+			SELECT "day",
 			%s time_on_page
 			FROM (
 				SELECT session_id,
-				toDate(time, '%s') day,
+				toDate(time, '%s') "day",
 				%s
 				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), time.UTC.String(), strings.Join(fields, ",")))
 
@@ -119,7 +120,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		WHERE session_id = neighbor(session_id, 1, null) AND time_on_page > 0 `, q.whereTime()[len("WHERE "):]))
 	q.whereFields()
 	where := q.q.String()
-	query.WriteString(fmt.Sprintf(`%s) GROUP BY day ORDER BY day %s`, where, q.withFill()))
+	query.WriteString(fmt.Sprintf(`%s) GROUP BY "day" ORDER BY "day" %s`, where, q.withFill()))
 	t.groupByPeriod(filter.Period, &query)
 	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 
@@ -134,11 +135,11 @@ func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query *strings.Bui
 	if period != pirsch.PeriodDay {
 		switch period {
 		case pirsch.PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek(day, 1) week FROM (`)
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
 		case pirsch.PeriodMonth:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth(day) month FROM (`)
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pirsch.PeriodYear:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear(day) year FROM (`)
+			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
 		}
 	}
 }

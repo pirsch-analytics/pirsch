@@ -30,7 +30,9 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 	stats, err := analyzer.Time.AvgSessionDuration(nil)
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
-	assert.Equal(t, 12, stats[0].AverageTimeSpentSeconds)
+
+	// average is (28+5+35+2)/4 because bounced visitors are not taken into the calculation
+	assert.Equal(t, 18, stats[0].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
