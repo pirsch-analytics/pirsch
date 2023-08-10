@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.11.0
+
+* upgraded to Go 1.21
+* updated dependencies 
+
 ## 5.10.3
 
 * fixed calculating average session duration
