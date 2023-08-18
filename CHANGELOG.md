@@ -1,9 +1,10 @@
 # Changelog
 
-## 5.11.0
+## 6.0.0
 
+* removed deprecated `rand.Seed` initialization
 * upgraded to Go 1.21
-* updated dependencies 
+* updated dependencies
 
 ## 5.10.3
 
