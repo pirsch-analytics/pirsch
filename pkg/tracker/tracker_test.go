@@ -947,16 +947,23 @@ func TestTracker_getLanguage(t *testing.T) {
 }
 
 func TestTracker_getScreenClass(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Sec-CH-Width", "1920")
+	req.Header.Set("Sec-CH-Viewport-Width", "1919")
 	tracker := NewTracker(Config{})
-	assert.Equal(t, "", tracker.getScreenClass(0))
-	assert.Equal(t, "XS", tracker.getScreenClass(42))
-	assert.Equal(t, "XL", tracker.getScreenClass(1024))
-	assert.Equal(t, "XL", tracker.getScreenClass(1025))
-	assert.Equal(t, "HD", tracker.getScreenClass(1919))
-	assert.Equal(t, "Full HD", tracker.getScreenClass(2559))
-	assert.Equal(t, "WQHD", tracker.getScreenClass(3839))
-	assert.Equal(t, "UHD 4K", tracker.getScreenClass(5119))
-	assert.Equal(t, "UHD 5K", tracker.getScreenClass(5120))
+	assert.Equal(t, "XS", tracker.getScreenClass(req, 42))
+	assert.Equal(t, "XL", tracker.getScreenClass(req, 1024))
+	assert.Equal(t, "XL", tracker.getScreenClass(req, 1025))
+	assert.Equal(t, "HD", tracker.getScreenClass(req, 1919))
+	assert.Equal(t, "Full HD", tracker.getScreenClass(req, 2559))
+	assert.Equal(t, "WQHD", tracker.getScreenClass(req, 3839))
+	assert.Equal(t, "UHD 4K", tracker.getScreenClass(req, 5119))
+	assert.Equal(t, "UHD 5K", tracker.getScreenClass(req, 5120))
+	assert.Equal(t, "Full HD", tracker.getScreenClass(req, 0))
+	req.Header.Del("Sec-CH-Width")
+	assert.Equal(t, "HD", tracker.getScreenClass(req, 0))
+	req.Header.Del("Sec-CH-Viewport-Width")
+	assert.Equal(t, "", tracker.getScreenClass(req, 0))
 }
 
 func TestTracker_referrerOrCampaignChanged(t *testing.T) {

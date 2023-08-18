@@ -436,7 +436,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	ref = util.ShortenString(ref, 200)
 	referrerName = util.ShortenString(referrerName, 200)
 	referrerIcon = util.ShortenString(referrerIcon, 2000)
-	screenClass := tracker.getScreenClass(options.ScreenWidth)
+	screenClass := tracker.getScreenClass(r, options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
 	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
@@ -533,9 +533,17 @@ func (tracker *Tracker) getLanguage(r *http.Request) string {
 	return ""
 }
 
-func (tracker *Tracker) getScreenClass(width uint16) string {
-	if width <= 0 {
-		return ""
+func (tracker *Tracker) getScreenClass(r *http.Request, width uint16) string {
+	if width == 0 {
+		width = tracker.getScreenWidthFromHeader(r, "Sec-CH-Width")
+
+		if width == 0 {
+			width = tracker.getScreenWidthFromHeader(r, "Sec-CH-Viewport-Width")
+		}
+
+		if width == 0 {
+			return ""
+		}
 	}
 
 	for _, class := range screenClasses {
@@ -545,6 +553,20 @@ func (tracker *Tracker) getScreenClass(width uint16) string {
 	}
 
 	return "XS"
+}
+
+func (tracker *Tracker) getScreenWidthFromHeader(r *http.Request, header string) uint16 {
+	h := r.Header.Get(header)
+
+	if h != "" {
+		w, err := strconv.Atoi(h)
+
+		if err == nil && w > 0 {
+			return uint16(w)
+		}
+	}
+
+	return 0
 }
 
 func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref, hostname string) bool {
