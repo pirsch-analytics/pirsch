@@ -3,15 +3,16 @@
 all: deps referrer ua test
 
 test:
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/analyzer
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/db
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker/geodb
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker/ip
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker/referrer
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker/session
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker/ua
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/tracker
-	go test -cover -race github.com/pirsch-analytics/pirsch/v5/util
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/internal/util
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/analyzer
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/cron
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/db
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua
+	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker
 
 deps:
 	go get -u -t ./...

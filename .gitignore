@@ -1,10 +1,5 @@
 .idea/
 
-tracker/geodb/tmp/
-tracker/geodb/GeoLite2-City.mmdb
-tracker/ip/tmp/
-tracker/geodb/GeoLite2-Country.mmdb
-
-demos/frontend/pirsch.min.js
-demos/frontend/pirsch-events.min.js
-demos/frontend/pirsch-sessions.min.js
+pkg/tracker/geodb/tmp/
+pkg/tracker/geodb/*.mmdb
+pkg/tracker/ip/tmp/

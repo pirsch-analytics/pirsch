@@ -2,6 +2,7 @@
 
 ## 6.0.0
 
+* refactored package structure
 * removed deprecated `rand.Seed` initialization
 * upgraded to Go 1.21
 * updated dependencies

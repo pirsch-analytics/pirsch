@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handle, err := os.Open("tracker/referrer/list.json")
+	handle, err := os.Open("pkg/tracker/referrer/list.json")
 
 	if err != nil {
 		log.Fatal(err)
@@ -98,7 +98,7 @@ var (
 	out.WriteString(`}
 )`)
 
-	if err := os.WriteFile("tracker/referrer/list.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/tracker/referrer/list.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

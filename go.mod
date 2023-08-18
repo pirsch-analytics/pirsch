@@ -1,4 +1,4 @@
-module github.com/pirsch-analytics/pirsch/v5
+module github.com/pirsch-analytics/pirsch/v6
 
 go 1.21
 
