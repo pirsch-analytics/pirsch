@@ -21,10 +21,10 @@ import (
 )
 
 const (
-	minChromeVersion  = 71 // late 2018
-	minFirefoxVersion = 63 // late 2018
+	minChromeVersion  = 70 // late 2019
+	minFirefoxVersion = 68 // mid 2019
 	minSafariVersion  = 12 // late 2018
-	minOperaVersion   = 57 // late 2018
+	minOperaVersion   = 65 // late 2019
 	minEdgeVersion    = 88 // late 2020
 	minIEVersion      = 11 // late 2013
 
