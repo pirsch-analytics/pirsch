@@ -26,7 +26,9 @@ func TestParseSimple(t *testing.T) {
 
 func TestGetBrowser(t *testing.T) {
 	for _, ua := range userAgentsAll {
-		system, products := parse(ua.ua)
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", ua.ua)
+		system, products := parse(req)
 		browser, version := getBrowser(products, system, ua.os)
 		assert.Equal(t, ua.browser, browser)
 		assert.Equal(t, ua.browserVersion, version)
@@ -34,13 +36,14 @@ func TestGetBrowser(t *testing.T) {
 }
 
 func TestGetBrowserChromeSafari(t *testing.T) {
-	chrome := "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
-	system, products := parse(chrome)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
+	system, products := parse(req)
 	browser, version := getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserChrome, browser)
 	assert.Equal(t, "87.0", version)
-	safari := "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15"
-	system, products = parse(safari)
+	req.Header.Set("User-Agent", "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15")
+	system, products = parse(req)
 	browser, version = getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserSafari, browser)
 	assert.Equal(t, "14.0", version)
@@ -48,7 +51,9 @@ func TestGetBrowserChromeSafari(t *testing.T) {
 
 func TestGetOS(t *testing.T) {
 	for _, ua := range userAgentsAll {
-		system, _ := parse(ua.ua)
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", ua.ua)
+		system, _ := parse(req)
 		os, version := getOS(system)
 		assert.Equal(t, ua.os, os)
 		assert.Equal(t, ua.osVersion, version)
@@ -159,7 +164,9 @@ func TestParse(t *testing.T) {
 	}
 
 	for i, in := range input {
-		system, products := parse(in)
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", in)
+		system, products := parse(req)
 		assert.ElementsMatch(t, expected[i][0], system)
 		assert.ElementsMatch(t, expected[i][1], products)
 	}

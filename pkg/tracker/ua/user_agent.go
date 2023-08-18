@@ -22,7 +22,7 @@ const (
 // Parse parses the User-Agent header for given request and returns the extracted information.
 // This supports major browsers and operating systems.
 func Parse(r *http.Request) model.UserAgent {
-	system, products := parse(r.UserAgent())
+	system, products := parse(r)
 	userAgent := model.UserAgent{
 		Time:      time.Now().UTC(),
 		UserAgent: r.UserAgent(),
@@ -269,18 +269,20 @@ func getOSVersion(version string, n int) string {
 }
 
 // parses, filters and returns the system and product strings
-func parse(ua string) ([]string, []string) {
-	// remove leading spaces, single and double quotes
-	ua = strings.Trim(ua, ` '"`)
+func parse(r *http.Request) ([]string, []string) {
+	ua := strings.Trim(r.UserAgent(), ` '"`)
 
 	if ua == "" {
 		return nil, nil
 	}
 
-	// extract client system data
-	var system []string
 	systemStart := strings.IndexRune(ua, uaSystemLeftDelimiter)
 	systemEnd := strings.IndexRune(ua, uaSystemRightDelimiter)
+	return parseSystem(ua, systemStart, systemEnd), parseProducts(ua, systemStart, systemEnd)
+}
+
+func parseSystem(ua string, systemStart, systemEnd int) []string {
+	var system []string
 
 	if systemStart > -1 && systemEnd > -1 && systemStart < systemEnd {
 		systemParts := strings.Split(ua[systemStart+1:systemEnd], uaSystemDelimiter)
@@ -295,7 +297,10 @@ func parse(ua string) ([]string, []string) {
 		}
 	}
 
-	// parse products and filter for meaningless strings
+	return system
+}
+
+func parseProducts(ua string, systemStart, systemEnd int) []string {
 	var productStrings []string
 
 	if systemStart > -1 && systemEnd > -1 {
@@ -312,7 +317,7 @@ func parse(ua string) ([]string, []string) {
 		}
 	}
 
-	return system, products
+	return products
 }
 
 func ignoreProductString(product string) bool {
