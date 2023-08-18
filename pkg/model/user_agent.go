@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/emvi/null"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"time"
 )
@@ -25,14 +26,20 @@ type UserAgent struct {
 
 	// OSVersion is the operating system version number.
 	OSVersion string `db:"-"`
+
+	// Mobile indicated whether this is a mobile device from client hint headers.
+	// It'll be set to null if the header is not present or empty.
+	Mobile null.Bool `db:"-"`
 }
 
 // IsDesktop returns true if the user agent is a desktop device.
 func (ua *UserAgent) IsDesktop() bool {
-	return ua.OS == pkg.OSWindows || ua.OS == pkg.OSMac || ua.OS == pkg.OSLinux
+	return ua.Mobile.Valid && !ua.Mobile.Bool ||
+		ua.OS == pkg.OSWindows || ua.OS == pkg.OSMac || ua.OS == pkg.OSLinux
 }
 
 // IsMobile returns true if the user agent is a mobile device.
 func (ua *UserAgent) IsMobile() bool {
-	return ua.OS == pkg.OSAndroid || ua.OS == pkg.OSiOS || ua.OS == pkg.OSWindowsMobile
+	return ua.Mobile.Valid && ua.Mobile.Bool ||
+		ua.OS == pkg.OSAndroid || ua.OS == pkg.OSiOS || ua.OS == pkg.OSWindowsMobile
 }

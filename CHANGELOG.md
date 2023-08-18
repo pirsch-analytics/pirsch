@@ -6,6 +6,7 @@
 * switched to `log/slog` for logging
 * removed deprecated `rand.Seed` initialization
 * updated browser minimum versions
+* added support for client hints
 * upgraded to Go 1.21
 * updated dependencies
 

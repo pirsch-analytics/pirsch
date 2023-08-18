@@ -1,8 +1,10 @@
 package ua
 
 import (
+	"github.com/emvi/null"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"net/http"
 	"strings"
 	"time"
 	"unicode"
@@ -17,17 +19,17 @@ const (
 	uaVersionDelimiter        = '.'
 )
 
-// Parse parses given User-Agent header and returns the extracted information.
-// This just supports major browsers and operating systems, we don't care about browsers and OSes that have no market share,
-// unless you prove us wrong.
-func Parse(ua string) model.UserAgent {
-	system, products := parse(ua)
+// Parse parses the User-Agent header for given request and returns the extracted information.
+// This supports major browsers and operating systems.
+func Parse(r *http.Request) model.UserAgent {
+	system, products := parse(r.UserAgent())
 	userAgent := model.UserAgent{
 		Time:      time.Now().UTC(),
-		UserAgent: ua,
+		UserAgent: r.UserAgent(),
 	}
 	userAgent.OS, userAgent.OSVersion = getOS(system)
 	userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
+	userAgent.Mobile = getMobile(r)
 	return userAgent
 }
 
@@ -112,6 +114,16 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 	}
 
 	return browser, version
+}
+
+func getMobile(r *http.Request) null.Bool {
+	mobile := r.Header.Get("Sec-CH-UA-Mobile")
+
+	if mobile != "" && (mobile == "?0" || mobile == "?1") {
+		return null.NewBool(mobile == "?1", true)
+	}
+
+	return null.NewBool(false, false)
 }
 
 // older Safari versions send their version number inside the Version/ product string instead of the Safari/ part

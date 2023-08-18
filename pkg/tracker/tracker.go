@@ -326,7 +326,7 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 		return model.UserAgent{}, "", true
 	}
 
-	userAgentResult := ua.Parse(rawUserAgent)
+	userAgentResult := ua.Parse(r)
 
 	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
 		return model.UserAgent{}, "", true

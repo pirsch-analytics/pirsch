@@ -3,6 +3,7 @@ package ua
 import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -10,13 +11,17 @@ import (
 func TestParseSimple(t *testing.T) {
 	// just a simple test to check Parse returns something for a clean User-Agent
 	uaString := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0"
-	ua := Parse(uaString)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", uaString)
+	req.Header.Set("Sec-CH-UA-Mobile", "?1")
+	ua := Parse(req)
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
 	assert.Equal(t, uaString, ua.UserAgent)
 	assert.Equal(t, pkg.OSMac, ua.OS)
 	assert.Equal(t, "10.15", ua.OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, ua.Browser)
 	assert.Equal(t, "79.0", ua.BrowserVersion)
+	assert.True(t, ua.Mobile.Bool)
 }
 
 func TestGetBrowser(t *testing.T) {
