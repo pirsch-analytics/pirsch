@@ -3,6 +3,7 @@
 ## 6.0.0
 
 * refactored package structure
+* switched to `log/slog` for logging
 * removed deprecated `rand.Seed` initialization
 * upgraded to Go 1.21
 * updated dependencies

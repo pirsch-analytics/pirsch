@@ -767,7 +767,7 @@ func (tracker *Tracker) saveEvents(events []model2.Event) {
 func (tracker *Tracker) saveUserAgents(userAgents []model2.UserAgent) {
 	if len(userAgents) > 0 {
 		if err := tracker.config.Store.SaveUserAgents(userAgents); err != nil {
-			tracker.config.Logger.Printf("error saving user agents: %s", err)
+			tracker.config.Logger.Error("error saving user agents", "err", err)
 		}
 	}
 }
@@ -775,7 +775,7 @@ func (tracker *Tracker) saveUserAgents(userAgents []model2.UserAgent) {
 func (tracker *Tracker) saveBots(bots []model2.Bot) {
 	if len(bots) > 0 {
 		if err := tracker.config.Store.SaveBots(bots); err != nil {
-			tracker.config.Logger.Printf("error saving bots: %s", err)
+			tracker.config.Logger.Error("error saving bots", "err", err)
 		}
 	}
 }

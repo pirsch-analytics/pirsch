@@ -8,9 +8,9 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/logger"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"log"
+	"log/slog"
+	"os"
 	"time"
 )
 
@@ -62,7 +62,7 @@ type ClientConfig struct {
 
 	// Logger is the log.Logger used for logging.
 	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
-	Logger *log.Logger
+	Logger *slog.Logger
 
 	// Debug will enable verbose logging.
 	Debug bool
@@ -86,14 +86,14 @@ func (config *ClientConfig) validate() {
 	}
 
 	if config.Logger == nil {
-		config.Logger = logger.GetDefaultLogger()
+		config.Logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	}
 }
 
 // Client is a ClickHouse database client.
 type Client struct {
 	*sql.DB
-	logger *log.Logger
+	logger *slog.Logger
 	debug  bool
 }
 
@@ -186,7 +186,7 @@ func (client *Client) SavePageViews(pageViews []model2.PageView) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save page views: %s", err)
+				client.logger.Error("error rolling back transaction to save page views", "err", err)
 			}
 
 			return err
@@ -198,7 +198,7 @@ func (client *Client) SavePageViews(pageViews []model2.PageView) error {
 	}
 
 	if client.debug {
-		client.logger.Printf("saved %d page views", len(pageViews))
+		client.logger.Debug("saved page views", "count", len(pageViews))
 	}
 
 	return nil
@@ -258,7 +258,7 @@ func (client *Client) SaveSessions(sessions []model2.Session) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save sessions: %s", err)
+				client.logger.Error("error rolling back transaction to save sessions", "err", err)
 			}
 
 			return err
@@ -270,7 +270,7 @@ func (client *Client) SaveSessions(sessions []model2.Session) error {
 	}
 
 	if client.debug {
-		client.logger.Printf("saved %d sessions", len(sessions))
+		client.logger.Debug("saved sessions", "count", len(sessions))
 	}
 
 	return nil
@@ -325,7 +325,7 @@ func (client *Client) SaveEvents(events []model2.Event) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save events: %s", err)
+				client.logger.Error("error rolling back transaction to save events", "err", err)
 			}
 
 			return err
@@ -337,7 +337,7 @@ func (client *Client) SaveEvents(events []model2.Event) error {
 	}
 
 	if client.debug {
-		client.logger.Printf("saved %d events", len(events))
+		client.logger.Debug("saved events", "count", len(events))
 	}
 
 	return nil
@@ -362,7 +362,7 @@ func (client *Client) SaveUserAgents(userAgents []model2.UserAgent) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save user agents: %s", err)
+				client.logger.Error("error rolling back transaction to save user agents", "err", err)
 			}
 
 			return err
@@ -374,7 +374,7 @@ func (client *Client) SaveUserAgents(userAgents []model2.UserAgent) error {
 	}
 
 	if client.debug {
-		client.logger.Printf("saved %d user agents", len(userAgents))
+		client.logger.Debug("saved user agents", "count", len(userAgents))
 	}
 
 	return nil
@@ -398,7 +398,7 @@ func (client *Client) SaveBots(bots []model2.Bot) error {
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Printf("error rolling back transaction to save bots: %s", err)
+				client.logger.Error("error rolling back transaction to save bots", "err", err)
 			}
 
 			return err
@@ -410,7 +410,7 @@ func (client *Client) SaveBots(bots []model2.Bot) error {
 	}
 
 	if client.debug {
-		client.logger.Printf("saved %d bots", len(bots))
+		client.logger.Debug("saved bots", "count", len(bots))
 	}
 
 	return nil
@@ -491,10 +491,10 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		&session.Extended)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		} else {
-			client.logger.Printf("error reading session: %s", err)
+			client.logger.Error("error reading session", "err", err)
 			return nil, err
 		}
 	}
@@ -507,10 +507,10 @@ func (client *Client) Count(query string, args ...any) (int, error) {
 	var count int
 
 	if err := client.QueryRow(query, args...).Scan(&count); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
 		} else {
-			client.logger.Printf("error counting results: %s", err)
+			client.logger.Error("error counting results", "err", err)
 			return 0, err
 		}
 	}
@@ -562,7 +562,7 @@ func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model2.T
 		&result.Sessions,
 		&result.Views,
 		&result.Bounces,
-		&result.BounceRate); err != nil && err != sql.ErrNoRows {
+		&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -573,7 +573,7 @@ func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model2.T
 func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model2.TotalVisitorsPageViewsStats, error) {
 	result := new(model2.TotalVisitorsPageViewsStats)
 
-	if err := client.QueryRow(query, args...).Scan(&result.Visitors, &result.Views); err != nil && err != sql.ErrNoRows {
+	if err := client.QueryRow(query, args...).Scan(&result.Visitors, &result.Views); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -722,7 +722,7 @@ func (client *Client) GetGrowthStats(query string, args ...any) (*model2.GrowthS
 		&result.Sessions,
 		&result.Views,
 		&result.Bounces,
-		&result.BounceRate); err != nil && err != sql.ErrNoRows {
+		&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -950,7 +950,7 @@ func (client *Client) SelectExitStats(includeTitle bool, query string, args ...a
 func (client *Client) SelectTotalSessions(query string, args ...any) (int, error) {
 	var result int
 
-	if err := client.QueryRow(query, args...).Scan(&result); err != nil && err != sql.ErrNoRows {
+	if err := client.QueryRow(query, args...).Scan(&result); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
@@ -987,7 +987,7 @@ func (client *Client) GetPageConversionsStats(query string, args ...any) (*model
 
 	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
 		&result.Views,
-		&result.CR); err != nil && err != sql.ErrNoRows {
+		&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -1104,7 +1104,7 @@ func (client *Client) GetPlatformStats(query string, args ...any) (*model2.Platf
 		&result.PlatformUnknown,
 		&result.RelativePlatformDesktop,
 		&result.RelativePlatformMobile,
-		&result.RelativePlatformUnknown); err != nil && err != sql.ErrNoRows {
+		&result.RelativePlatformUnknown); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -1457,6 +1457,6 @@ func (client *Client) boolean(b bool) int8 {
 
 func (client *Client) closeRows(rows *sql.Rows) {
 	if err := rows.Close(); err != nil {
-		client.logger.Printf("error closing rows: %s", err)
+		client.logger.Error("error closing rows", "err", err)
 	}
 }

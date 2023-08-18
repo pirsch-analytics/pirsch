@@ -6,9 +6,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/logger"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"log"
+	"log/slog"
+	"os"
 	"sync"
 	"time"
 )
@@ -18,7 +18,7 @@ type RedisCache struct {
 	maxAge time.Duration
 	rds    *redis.Client
 	rs     *redsync.Redsync
-	logger *log.Logger
+	logger *slog.Logger
 }
 
 // RedisMutex wraps a redis mutex.
@@ -39,9 +39,9 @@ func (m *RedisMutex) Unlock() {
 }
 
 // NewRedisCache creates a new cache for given maximum age and redis connection.
-func NewRedisCache(maxAge time.Duration, log *log.Logger, redisOptions *redis.Options) *RedisCache {
+func NewRedisCache(maxAge time.Duration, log *slog.Logger, redisOptions *redis.Options) *RedisCache {
 	if log == nil {
-		log = logger.GetDefaultLogger()
+		log = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	}
 
 	client := redis.NewClient(redisOptions)
@@ -59,7 +59,7 @@ func (cache *RedisCache) Get(clientID, fingerprint uint64, _ time.Time) *model.S
 
 	if err != nil {
 		if err != redis.Nil {
-			cache.logger.Printf("error reading session from cache: %s", err)
+			cache.logger.Error("error reading session from cache", "err", err)
 		}
 
 		return nil
@@ -68,7 +68,7 @@ func (cache *RedisCache) Get(clientID, fingerprint uint64, _ time.Time) *model.S
 	var session model.Session
 
 	if err := json.Unmarshal([]byte(r), &session); err != nil {
-		cache.logger.Printf("error unmarshalling session from cache: %s", err)
+		cache.logger.Error("error unmarshalling session from cache", "err", err)
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (cache *RedisCache) Put(clientID, fingerprint uint64, session *model.Sessio
 	if err == nil {
 		cache.rds.SetEX(context.Background(), getSessionKey(clientID, fingerprint), v, cache.maxAge)
 	} else {
-		cache.logger.Printf("error storing session in cache: %s", err)
+		cache.logger.Error("error storing session in cache", "err", err)
 	}
 }
 

@@ -3,12 +3,12 @@ package tracker
 import (
 	util2 "github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/logger"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
 	ip2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	session2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
-	"log"
+	"log/slog"
 	"net"
+	"os"
 	"runtime"
 	"time"
 )
@@ -35,7 +35,7 @@ type Config struct {
 	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
 	IPFilter            ip2.Filter
-	Logger              *log.Logger
+	Logger              *slog.Logger
 }
 
 func (config *Config) validate() {
@@ -74,6 +74,6 @@ func (config *Config) validate() {
 	}
 
 	if config.Logger == nil {
-		config.Logger = logger.GetDefaultLogger()
+		config.Logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	}
 }
