@@ -7,6 +7,7 @@
 * removed deprecated `rand.Seed` initialization
 * updated browser minimum versions
 * added support for client hints
+* added Chrome OS and Windows 11 detection
 * upgraded to Go 1.21
 * updated dependencies
 

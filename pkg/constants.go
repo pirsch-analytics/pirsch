@@ -36,6 +36,9 @@ const (
 
 	// OSWindowsMobile represents the Windows Mobile operating system.
 	OSWindowsMobile = "Windows Mobile"
+
+	// OSChrome represents the Chrome operating system.
+	OSChrome = "Chrome OS"
 )
 
 const (

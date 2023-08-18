@@ -28,7 +28,7 @@ func TestGetBrowser(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", ua.ua)
-		system, products := parse(req)
+		system, products, _, _ := parse(req)
 		browser, version := getBrowser(products, system, ua.os)
 		assert.Equal(t, ua.browser, browser)
 		assert.Equal(t, ua.browserVersion, version)
@@ -38,12 +38,12 @@ func TestGetBrowser(t *testing.T) {
 func TestGetBrowserChromeSafari(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-	system, products := parse(req)
+	system, products, _, _ := parse(req)
 	browser, version := getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserChrome, browser)
 	assert.Equal(t, "87.0", version)
 	req.Header.Set("User-Agent", "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15")
-	system, products = parse(req)
+	system, products, _, _ = parse(req)
 	browser, version = getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserSafari, browser)
 	assert.Equal(t, "14.0", version)
@@ -53,7 +53,7 @@ func TestGetOS(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", ua.ua)
-		system, _ := parse(req)
+		system, _, _, _ := parse(req)
 		os, version := getOS(system)
 		assert.Equal(t, ua.os, os)
 		assert.Equal(t, ua.osVersion, version)
@@ -126,6 +126,29 @@ func TestGetOSVersion(t *testing.T) {
 	}
 }
 
+func TestParseClientHints(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/116.0")
+	req.Header.Set("Sec-CH-UA-Platform", pkg.OSChrome)
+	req.Header.Set("Sec-CH-UA-Platform-Version", "6.4.10")
+	ua := Parse(req)
+	assert.Equal(t, pkg.OSChrome, ua.OS)
+	assert.Equal(t, "6.4", ua.OSVersion)
+	req.Header.Set("Sec-CH-UA-Platform", "Unknown")
+	ua = Parse(req)
+	assert.Equal(t, pkg.OSLinux, ua.OS)
+	assert.Empty(t, ua.OSVersion)
+	req.Header.Set("Sec-CH-UA-Platform", "Does not exist")
+	ua = Parse(req)
+	assert.Empty(t, ua.OS)
+	assert.Empty(t, ua.OSVersion)
+	req.Header.Set("Sec-CH-UA-Platform", "Windows")
+	req.Header.Set("Sec-CH-UA-Platform-Version", "13.0.0")
+	ua = Parse(req)
+	assert.Equal(t, pkg.OSWindows, ua.OS)
+	assert.Equal(t, "11", ua.OSVersion)
+}
+
 func TestParse(t *testing.T) {
 	input := []string{
 		// empty
@@ -166,8 +189,10 @@ func TestParse(t *testing.T) {
 	for i, in := range input {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", in)
-		system, products := parse(req)
+		system, products, systemFromCH, productFromCH := parse(req)
 		assert.ElementsMatch(t, expected[i][0], system)
 		assert.ElementsMatch(t, expected[i][1], products)
+		assert.False(t, systemFromCH)
+		assert.False(t, productFromCH)
 	}
 }

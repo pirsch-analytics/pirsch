@@ -392,6 +392,13 @@ var userAgentsChrome = []testUserAgent{
 		os:             pkg.OSLinux,
 		osVersion:      "",
 	},
+	{
+		ua:             "Mozilla/5.0 (X11; CrOS x86_64 15359.58.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.134 Safari/537.36",
+		browser:        pkg.BrowserChrome,
+		browserVersion: "112.0",
+		os:             pkg.OSChrome,
+		osVersion:      "15359.58",
+	},
 }
 
 var userAgentsSafari = []testUserAgent{

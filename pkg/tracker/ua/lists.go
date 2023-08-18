@@ -1,5 +1,7 @@
 package ua
 
+import "github.com/pirsch-analytics/pirsch/v6/pkg"
+
 var (
 	// filterProductPrefix is a list of product prefixes to ignore, as they provide no value in identifying a browser.
 	filterProductPrefix = []string{
@@ -23,7 +25,8 @@ var (
 		"6.2":  "8",
 		"6.3":  "8",
 		"10.0": "10",
-		"13.0": "11", // this is unreliable, as Chrome and Firefox decided to freeze the User-Agent header
+		"13.0": "11",
+		"14.0": "11",
 		"CE":   "CE",
 	}
 
@@ -98,5 +101,16 @@ var (
 		"613.1":  "15.4",
 		"613.2":  "15.5",
 		"614.3":  "16.2",
+	}
+
+	// osMapping groups operating system names.
+	osMapping = map[string]string{
+		"Android":     pkg.OSAndroid,
+		"Chrome OS":   pkg.OSChrome,
+		"Chromium OS": pkg.OSChrome,
+		"iOS":         pkg.OSiOS,
+		"Linux":       pkg.OSLinux,
+		"macOS":       pkg.OSMac,
+		"Windows":     pkg.OSWindows,
 	}
 )

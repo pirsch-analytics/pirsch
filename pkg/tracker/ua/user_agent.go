@@ -22,13 +22,24 @@ const (
 // Parse parses the User-Agent header for given request and returns the extracted information.
 // This supports major browsers and operating systems.
 func Parse(r *http.Request) model.UserAgent {
-	system, products := parse(r)
+	system, products, systemFromCH, productFromCH := parse(r)
 	userAgent := model.UserAgent{
 		Time:      time.Now().UTC(),
 		UserAgent: r.UserAgent(),
 	}
-	userAgent.OS, userAgent.OSVersion = getOS(system)
-	userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
+
+	if systemFromCH {
+		userAgent.OS, userAgent.OSVersion = mapOS(system)
+	} else {
+		userAgent.OS, userAgent.OSVersion = getOS(system)
+	}
+
+	if productFromCH {
+		// TODO
+	} else {
+		userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
+	}
+
 	userAgent.Mobile = getMobile(r)
 	return userAgent
 }
@@ -67,10 +78,32 @@ func getOS(system []string) (string, string) {
 			os = pkg.OSiOS
 			version = getiOSVersion(sys)
 			break
+		} else if strings.HasPrefix(sys, "CrOS") {
+			os = pkg.OSChrome
+			version = getChromeOSVersion(sys)
+			break
 		}
 	}
 
 	return os, version
+}
+
+func mapOS(system []string) (string, string) {
+	if len(system) != 2 {
+		return "", ""
+	}
+
+	os, found := osMapping[system[0]]
+
+	if !found {
+		return "", ""
+	}
+
+	if os == pkg.OSWindows {
+		return os, windowsVersions[getOSVersion(system[1], 1)]
+	}
+
+	return os, getOSVersion(system[1], 1)
 }
 
 func getBrowser(products []string, system []string, os string) (string, string) {
@@ -210,6 +243,14 @@ func getiOSVersion(system string) string {
 	return ""
 }
 
+func getChromeOSVersion(system string) string {
+	if i := strings.LastIndexByte(system, ' '); i > -1 {
+		return getOSVersion(system[i+1:], 1)
+	}
+
+	return ""
+}
+
 // returns the first prefix it finds in the prefix list, or else an empty string is returned
 func findPrefix(list []string, prefix ...string) string {
 	for _, entry := range list {
@@ -269,16 +310,28 @@ func getOSVersion(version string, n int) string {
 }
 
 // parses, filters and returns the system and product strings
-func parse(r *http.Request) ([]string, []string) {
+func parse(r *http.Request) ([]string, []string, bool, bool) {
 	ua := strings.Trim(r.UserAgent(), ` '"`)
 
 	if ua == "" {
-		return nil, nil
+		return nil, nil, false, false
 	}
 
 	systemStart := strings.IndexRune(ua, uaSystemLeftDelimiter)
 	systemEnd := strings.IndexRune(ua, uaSystemRightDelimiter)
-	return parseSystem(ua, systemStart, systemEnd), parseProducts(ua, systemStart, systemEnd)
+	chPlatform := r.Header.Get("Sec-CH-UA-Platform")
+	platformFromCH := false
+	var system []string
+
+	if chPlatform != "" && strings.ToLower(chPlatform) != "unknown" {
+		system = []string{chPlatform, r.Header.Get("Sec-CH-UA-Platform-Version")}
+		platformFromCH = true
+	} else {
+		system = parseSystem(ua, systemStart, systemEnd)
+	}
+
+	// TODO product from client hints
+	return system, parseProducts(ua, systemStart, systemEnd), platformFromCH, false
 }
 
 func parseSystem(ua string, systemStart, systemEnd int) []string {
