@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -91,7 +91,7 @@ func TestAnalyzer_Events(t *testing.T) {
 	_, err = analyzer.Events.Events(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEventName,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -183,7 +183,7 @@ func TestAnalyzer_EventsSortCR(t *testing.T) {
 	stats, err := analyzer.Events.Events(&Filter{Sort: []Sort{
 		{
 			Field:     FieldCR,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -195,7 +195,7 @@ func TestAnalyzer_EventsSortCR(t *testing.T) {
 	stats, err = analyzer.Events.Events(&Filter{Sort: []Sort{
 		{
 			Field:     FieldCR,
-			Direction: pirsch.DirectionDESC,
+			Direction: pkg.DirectionDESC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 	_, err = analyzer.Events.List(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEventName,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{

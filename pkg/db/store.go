@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"time"
 )
@@ -39,10 +39,10 @@ type Store interface {
 	GetTotalVisitorsPageViewsStats(string, ...any) (*model2.TotalVisitorsPageViewsStats, error)
 
 	// SelectVisitorStats selects VisitorStats.
-	SelectVisitorStats(pirsch.Period, string, ...any) ([]model2.VisitorStats, error)
+	SelectVisitorStats(pkg.Period, string, ...any) ([]model2.VisitorStats, error)
 
 	// SelectTimeSpentStats selects TimeSpentStats.
-	SelectTimeSpentStats(pirsch.Period, string, ...any) ([]model2.TimeSpentStats, error)
+	SelectTimeSpentStats(pkg.Period, string, ...any) ([]model2.TimeSpentStats, error)
 
 	// GetGrowthStats returns the GrowthStats.
 	GetGrowthStats(string, ...any) (*model2.GrowthStats, error)

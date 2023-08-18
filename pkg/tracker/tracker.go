@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/dchest/siphash"
 	iso6391 "github.com/emvi/iso-639-1"
-	"github.com/pirsch-analytics/pirsch/v6"
 	util2 "github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer"
@@ -350,12 +350,12 @@ func (tracker *Tracker) ignore(r *http.Request) (model2.UserAgent, string, bool)
 
 func (tracker *Tracker) ignoreBrowserVersion(browser, version string) bool {
 	return version != "" &&
-		browser == pirsch.BrowserChrome && tracker.browserVersionBefore(version, minChromeVersion) ||
-		browser == pirsch.BrowserFirefox && tracker.browserVersionBefore(version, minFirefoxVersion) ||
-		browser == pirsch.BrowserSafari && tracker.browserVersionBefore(version, minSafariVersion) ||
-		browser == pirsch.BrowserOpera && tracker.browserVersionBefore(version, minOperaVersion) ||
-		browser == pirsch.BrowserEdge && tracker.browserVersionBefore(version, minEdgeVersion) ||
-		browser == pirsch.BrowserIE && tracker.browserVersionBefore(version, minIEVersion)
+		browser == pkg.BrowserChrome && tracker.browserVersionBefore(version, minChromeVersion) ||
+		browser == pkg.BrowserFirefox && tracker.browserVersionBefore(version, minFirefoxVersion) ||
+		browser == pkg.BrowserSafari && tracker.browserVersionBefore(version, minSafariVersion) ||
+		browser == pkg.BrowserOpera && tracker.browserVersionBefore(version, minOperaVersion) ||
+		browser == pkg.BrowserEdge && tracker.browserVersionBefore(version, minEdgeVersion) ||
+		browser == pkg.BrowserIE && tracker.browserVersionBefore(version, minIEVersion)
 }
 
 func (tracker *Tracker) browserVersionBefore(version string, min int) bool {

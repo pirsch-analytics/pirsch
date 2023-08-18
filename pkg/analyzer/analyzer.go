@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 )
 
@@ -78,7 +78,7 @@ func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (stri
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
 	if filter == nil {
-		filter = NewFilter(pirsch.NullClient)
+		filter = NewFilter(pkg.NullClient)
 	}
 
 	filter.validate()

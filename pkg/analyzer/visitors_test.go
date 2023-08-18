@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -389,20 +389,20 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:   util.PastDay(90),
 		To:     util.Today(),
-		Period: pirsch.PeriodWeek,
+		Period: pkg.PeriodWeek,
 	})
 	assert.NoError(t, err)
 	assert.True(t, visitors[0].Week.Valid)
 	_, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:   util.Today(),
 		To:     util.Today(),
-		Period: pirsch.PeriodWeek,
+		Period: pkg.PeriodWeek,
 	})
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:   util.PastDay(1),
 		To:     util.Today(),
-		Period: pirsch.PeriodWeek,
+		Period: pkg.PeriodWeek,
 	})
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByPeriod(&Filter{
@@ -418,7 +418,7 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	_, err = analyzer.Time.AvgSessionDuration(&Filter{
 		From:   util.PastDay(90),
 		To:     util.Today(),
-		Period: pirsch.PeriodWeek,
+		Period: pkg.PeriodWeek,
 	})
 	assert.NoError(t, err)
 	_, err = analyzer.Time.AvgSessionDuration(&Filter{
@@ -809,7 +809,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	_, err = analyzer.Visitors.Referrer(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldReferrerName,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -872,7 +872,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Visitors.Referrer(&Filter{Referrer: []string{pirsch.Unknown}})
+	visitors, err := analyzer.Visitors.Referrer(&Filter{Referrer: []string{pkg.Unknown}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Referrer)

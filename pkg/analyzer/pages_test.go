@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -86,7 +86,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 600, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 	visitors, err = analyzer.Pages.ByPath(&Filter{Sort: []Sort{
-		{Field: FieldPath, Direction: pirsch.DirectionDESC},
+		{Field: FieldPath, Direction: pkg.DirectionDESC},
 	}})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
@@ -134,7 +134,7 @@ func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
 	_, err = analyzer.Pages.ByPath(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldPath,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -465,7 +465,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = analyzer.Pages.Entry(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldEntryPath,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -547,7 +547,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = analyzer.Pages.Exit(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldExitPath,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -582,28 +582,28 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	entries, err := analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionDESC}}})
+	entries, err := analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionDESC}}})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, "/foo", entries[1].Path)
 	assert.Equal(t, 2, entries[0].Visitors)
 	assert.Equal(t, 1, entries[1].Visitors)
-	entries, err = analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionASC}}})
+	entries, err = analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionASC}}})
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "/foo", entries[0].Path)
 	assert.Equal(t, "/", entries[1].Path)
 	assert.Equal(t, 1, entries[0].Visitors)
 	assert.Equal(t, 2, entries[1].Visitors)
-	exits, err := analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionDESC}}})
+	exits, err := analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionDESC}}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
 	assert.Equal(t, "/", exits[0].Path)
 	assert.Equal(t, "/foo", exits[1].Path)
 	assert.Equal(t, 2, exits[0].Visitors)
 	assert.Equal(t, 1, exits[1].Visitors)
-	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pirsch.DirectionASC}}})
+	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionASC}}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
 	assert.Equal(t, "/foo", exits[0].Path)

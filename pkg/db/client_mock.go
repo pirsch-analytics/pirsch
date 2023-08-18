@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sort"
 	"sync"
@@ -178,12 +178,12 @@ func (client *ClientMock) GetTotalVisitorsPageViewsStats(string, ...any) (*model
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *ClientMock) SelectVisitorStats(pirsch.Period, string, ...any) ([]model2.VisitorStats, error) {
+func (client *ClientMock) SelectVisitorStats(pkg.Period, string, ...any) ([]model2.VisitorStats, error) {
 	return nil, nil
 }
 
 // SelectTimeSpentStats implements the Store interface.
-func (client *ClientMock) SelectTimeSpentStats(pirsch.Period, string, ...any) ([]model2.TimeSpentStats, error) {
+func (client *ClientMock) SelectTimeSpentStats(pkg.Period, string, ...any) ([]model2.TimeSpentStats, error) {
 	return nil, nil
 }
 

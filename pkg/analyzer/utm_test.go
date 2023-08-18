@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -102,7 +102,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTM.Medium(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMMedium,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -114,7 +114,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTM.Campaign(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMCampaign,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -126,7 +126,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTM.Source(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMSource,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -138,7 +138,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTM.Term(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMTerm,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -150,7 +150,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = analyzer.UTM.Content(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldUTMContent,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{

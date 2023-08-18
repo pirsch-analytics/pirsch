@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +46,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	visitors, err = analyzer.Demographics.Languages(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldLanguage,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -95,7 +95,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	visitors, err = analyzer.Demographics.Countries(&Filter{Offset: 0, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldCountry,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -151,7 +151,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 	_, err = analyzer.Demographics.Cities(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldCity,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{

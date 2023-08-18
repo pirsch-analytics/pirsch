@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestFilter_Validate(t *testing.T) {
-	filter := NewFilter(pirsch.NullClient)
+	filter := NewFilter(pkg.NullClient)
 	filter.validate()
 	assert.NotNil(t, filter)
 	assert.NotNil(t, filter.Timezone)
@@ -41,7 +41,7 @@ func TestFilter_Validate(t *testing.T) {
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {
-	filter := NewFilter(pirsch.NullClient)
+	filter := NewFilter(pkg.NullClient)
 	filter.Path = []string{
 		"/",
 		"/",
@@ -185,7 +185,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 
 	// filter period
-	q, args = analyzer.getFilter(&Filter{Period: pirsch.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
+	q, args = analyzer.getFilter(&Filter{Period: pkg.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
 	var visitors []model2.VisitorStats
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)

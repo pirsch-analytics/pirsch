@@ -1,4 +1,4 @@
-package pirsch
+package pkg
 
 const (
 	// BrowserChrome represents the Chrome and Chromium browser.

@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"time"
 )
 
@@ -29,10 +29,10 @@ type UserAgent struct {
 
 // IsDesktop returns true if the user agent is a desktop device.
 func (ua *UserAgent) IsDesktop() bool {
-	return ua.OS == pirsch.OSWindows || ua.OS == pirsch.OSMac || ua.OS == pirsch.OSLinux
+	return ua.OS == pkg.OSWindows || ua.OS == pkg.OSMac || ua.OS == pkg.OSLinux
 }
 
 // IsMobile returns true if the user agent is a mobile device.
 func (ua *UserAgent) IsMobile() bool {
-	return ua.OS == pirsch.OSAndroid || ua.OS == pirsch.OSiOS || ua.OS == pirsch.OSWindowsMobile
+	return ua.OS == pkg.OSAndroid || ua.OS == pkg.OSiOS || ua.OS == pkg.OSWindowsMobile
 }

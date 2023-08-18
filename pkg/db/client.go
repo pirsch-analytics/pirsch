@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/logger"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log"
@@ -581,7 +581,7 @@ func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) 
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *Client) SelectVisitorStats(period pirsch.Period, query string, args ...any) ([]model2.VisitorStats, error) {
+func (client *Client) SelectVisitorStats(period pkg.Period, query string, args ...any) ([]model2.VisitorStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -592,7 +592,7 @@ func (client *Client) SelectVisitorStats(period pirsch.Period, query string, arg
 	var results []model2.VisitorStats
 
 	switch period {
-	case pirsch.PeriodWeek:
+	case pkg.PeriodWeek:
 		for rows.Next() {
 			var result model2.VisitorStats
 
@@ -607,7 +607,7 @@ func (client *Client) SelectVisitorStats(period pirsch.Period, query string, arg
 
 			results = append(results, result)
 		}
-	case pirsch.PeriodMonth:
+	case pkg.PeriodMonth:
 		for rows.Next() {
 			var result model2.VisitorStats
 
@@ -622,7 +622,7 @@ func (client *Client) SelectVisitorStats(period pirsch.Period, query string, arg
 
 			results = append(results, result)
 		}
-	case pirsch.PeriodYear:
+	case pkg.PeriodYear:
 		for rows.Next() {
 			var result model2.VisitorStats
 
@@ -658,7 +658,7 @@ func (client *Client) SelectVisitorStats(period pirsch.Period, query string, arg
 }
 
 // SelectTimeSpentStats implements the Store interface.
-func (client *Client) SelectTimeSpentStats(period pirsch.Period, query string, args ...any) ([]model2.TimeSpentStats, error) {
+func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args ...any) ([]model2.TimeSpentStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -669,7 +669,7 @@ func (client *Client) SelectTimeSpentStats(period pirsch.Period, query string, a
 	var results []model2.TimeSpentStats
 
 	switch period {
-	case pirsch.PeriodWeek:
+	case pkg.PeriodWeek:
 		for rows.Next() {
 			var result model2.TimeSpentStats
 
@@ -679,7 +679,7 @@ func (client *Client) SelectTimeSpentStats(period pirsch.Period, query string, a
 
 			results = append(results, result)
 		}
-	case pirsch.PeriodMonth:
+	case pkg.PeriodMonth:
 		for rows.Next() {
 			var result model2.TimeSpentStats
 
@@ -689,7 +689,7 @@ func (client *Client) SelectTimeSpentStats(period pirsch.Period, query string, a
 
 			results = append(results, result)
 		}
-	case pirsch.PeriodYear:
+	case pkg.PeriodYear:
 		for rows.Next() {
 			var result model2.TimeSpentStats
 

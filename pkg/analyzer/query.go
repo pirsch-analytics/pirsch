@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"strconv"
 	"strings"
 )
@@ -106,9 +106,9 @@ func (query *queryBuilder) getFields() []string {
 			platform = query.filter.Platform[1:]
 		}
 
-		if platform == pirsch.PlatformDesktop {
+		if platform == pkg.PlatformDesktop {
 			fields = append(fields, "desktop")
-		} else if platform == pirsch.PlatformMobile {
+		} else if platform == pkg.PlatformMobile {
 			fields = append(fields, "mobile")
 		} else {
 			fields = append(fields, "desktop")
@@ -137,13 +137,13 @@ func (query *queryBuilder) selectFields() bool {
 				timeQuery := query.whereTime()[len("WHERE "):]
 				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
 			} else if query.fields[i].timezone {
-				if query.fields[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
+				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 					switch query.filter.Period {
-					case pirsch.PeriodWeek:
+					case pkg.PeriodWeek:
 						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-					case pirsch.PeriodMonth:
+					case pkg.PeriodMonth:
 						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-					case pirsch.PeriodYear:
+					case pkg.PeriodYear:
 						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					}
 				} else {
@@ -481,17 +481,17 @@ func (query *queryBuilder) whereFieldPlatform() {
 		if strings.HasPrefix(query.filter.Platform, "!") {
 			platform := query.filter.Platform[1:]
 
-			if platform == pirsch.PlatformDesktop {
+			if platform == pkg.PlatformDesktop {
 				query.where = append(query.where, where{notEq: []string{"desktop != 1 "}})
-			} else if platform == pirsch.PlatformMobile {
+			} else if platform == pkg.PlatformMobile {
 				query.where = append(query.where, where{notEq: []string{"mobile != 1 "}})
 			} else {
 				query.where = append(query.where, where{notEq: []string{"(desktop = 1 OR mobile = 1) "}})
 			}
 		} else {
-			if query.filter.Platform == pirsch.PlatformDesktop {
+			if query.filter.Platform == pkg.PlatformDesktop {
 				query.where = append(query.where, where{eqContains: []string{"desktop = 1 "}})
-			} else if query.filter.Platform == pirsch.PlatformMobile {
+			} else if query.filter.Platform == pkg.PlatformMobile {
 				query.where = append(query.where, where{eqContains: []string{"mobile = 1 "}})
 			} else {
 				query.where = append(query.where, where{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
@@ -545,13 +545,13 @@ func (query *queryBuilder) groupByFields() {
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.groupBy[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
+			if query.groupBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 				switch query.filter.Period {
-				case pirsch.PeriodWeek:
+				case pkg.PeriodWeek:
 					q.WriteString("week,")
-				case pirsch.PeriodMonth:
+				case pkg.PeriodMonth:
 					q.WriteString("month,")
-				case pirsch.PeriodYear:
+				case pkg.PeriodYear:
 					q.WriteString("year,")
 				}
 			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
@@ -595,13 +595,13 @@ func (query *queryBuilder) orderByFields() {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
-				if query.orderBy[i] == FieldDay && query.filter.Period != pirsch.PeriodDay {
+				if query.orderBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 					switch query.filter.Period {
-					case pirsch.PeriodWeek:
+					case pkg.PeriodWeek:
 						name = "week"
-					case pirsch.PeriodMonth:
+					case pkg.PeriodMonth:
 						name = "month"
-					case pirsch.PeriodYear:
+					case pkg.PeriodYear:
 						name = "year"
 					}
 				}
@@ -622,13 +622,13 @@ func (query *queryBuilder) withFill() string {
 		q := ""
 
 		switch query.filter.Period {
-		case pirsch.PeriodDay:
+		case pkg.PeriodDay:
 			q = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
-		case pirsch.PeriodWeek:
+		case pkg.PeriodWeek:
 			q = "WITH FILL FROM toStartOfWeek(toDate(?), 1) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
-		case pirsch.PeriodMonth:
+		case pkg.PeriodMonth:
 			q = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
-		case pirsch.PeriodYear:
+		case pkg.PeriodYear:
 			q = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
 		}
 

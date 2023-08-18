@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -16,7 +16,7 @@ func TestQuery(t *testing.T) {
 		Country:     []string{"de", "!ja"},
 		Language:    []string{"nUlL"},
 		Referrer:    []string{"~Google"},
-		Platform:    pirsch.PlatformDesktop,
+		Platform:    pkg.PlatformDesktop,
 		PathPattern: []string{"/some/pattern"},
 		Offset:      10,
 		Limit:       99,

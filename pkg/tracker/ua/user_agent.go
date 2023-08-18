@@ -1,7 +1,7 @@
 package ua
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"strings"
 	"time"
@@ -37,32 +37,32 @@ func getOS(system []string) (string, string) {
 
 	for _, sys := range system {
 		if strings.HasPrefix(sys, "Windows Phone") || strings.HasPrefix(sys, "Windows Mobile") {
-			os = pirsch.OSWindowsMobile
+			os = pkg.OSWindowsMobile
 			version = getWindowsMobileVersion(sys)
 			break
 		} else if strings.HasPrefix(sys, "Windows") {
-			os = pirsch.OSWindows
+			os = pkg.OSWindows
 			version = getWindowsVersion(sys)
 			// leave a chance to detect IE...
 		} else if strings.HasPrefix(sys, "Intel Mac OS X") || strings.HasPrefix(sys, "PPC Mac OS X") {
-			os = pirsch.OSMac
+			os = pkg.OSMac
 			version = getMacVersion(sys)
 			break
 		} else if strings.HasPrefix(sys, "Linux") {
-			os = pirsch.OSLinux
+			os = pkg.OSLinux
 			// this might be Android...
 		} else if strings.HasPrefix(sys, "Android") {
 			if prefix := findPrefix(system, "Windows Mobile"); prefix != "" {
-				os = pirsch.OSWindowsMobile
+				os = pkg.OSWindowsMobile
 				version = getProductVersion(prefix, 1)
 				break
 			}
 
-			os = pirsch.OSAndroid
+			os = pkg.OSAndroid
 			version = getAndroidVersion(sys)
 			break
 		} else if strings.HasPrefix(sys, "CPU iPhone OS") || strings.HasPrefix(sys, "CPU OS") {
-			os = pirsch.OSiOS
+			os = pkg.OSiOS
 			version = getiOSVersion(sys)
 			break
 		}
@@ -77,7 +77,7 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 
 	// special case for IE
 	if v := isIE(system); v != "" {
-		return pirsch.BrowserIE, v
+		return pkg.BrowserIE, v
 	}
 
 	productChrome := ""
@@ -89,25 +89,25 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 		} else if strings.HasPrefix(product, "Safari/") {
 			productSafari = product
 		} else if strings.HasPrefix(product, "CriOS/") {
-			return pirsch.BrowserChrome, getProductVersion(product, 1)
+			return pkg.BrowserChrome, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Edg/") || strings.HasPrefix(product, "Edge/") || strings.HasPrefix(product, "EdgA/") || strings.HasPrefix(product, "EdgiOS/") {
-			return pirsch.BrowserEdge, getProductVersion(product, 1)
+			return pkg.BrowserEdge, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Chromium/") {
-			return pirsch.BrowserChrome, getProductVersion(product, 1)
+			return pkg.BrowserChrome, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Firefox/") || strings.HasPrefix(product, "FxiOS/") {
-			return pirsch.BrowserFirefox, getProductVersion(product, 1)
+			return pkg.BrowserFirefox, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Opera/") || strings.HasPrefix(product, "OPR/") {
-			return pirsch.BrowserOpera, getProductVersion(product, 1)
+			return pkg.BrowserOpera, getProductVersion(product, 1)
 		}
 	}
 
 	// When we made it to this point, it's gone get ugly and inaccurate, as Safari and Chrome send almost identical
 	// user agents most of the time. But anything coming from Mac or iOS is most likely Safari, I guess...
-	if (os == pirsch.OSMac || os == pirsch.OSiOS) && productSafari != "" && productChrome == "" {
-		browser = pirsch.BrowserSafari
+	if (os == pkg.OSMac || os == pkg.OSiOS) && productSafari != "" && productChrome == "" {
+		browser = pkg.BrowserSafari
 		version = getSafariVersion(products, productSafari)
 	} else if productChrome != "" {
-		browser = pirsch.BrowserChrome
+		browser = pkg.BrowserChrome
 		version = getProductVersion(productChrome, 1)
 	}
 

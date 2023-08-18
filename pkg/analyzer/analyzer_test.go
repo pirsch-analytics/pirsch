@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -82,11 +82,11 @@ func getMaxFilter(eventName string) *Filter {
 		City:           []string{"London"},
 		Referrer:       []string{"ref"},
 		ReferrerName:   []string{"refname"},
-		OS:             []string{pirsch.OSWindows},
+		OS:             []string{pkg.OSWindows},
 		OSVersion:      []string{"10"},
-		Browser:        []string{pirsch.BrowserChrome},
+		Browser:        []string{pkg.BrowserChrome},
 		BrowserVersion: []string{"90"},
-		Platform:       pirsch.PlatformDesktop,
+		Platform:       pkg.PlatformDesktop,
 		ScreenClass:    []string{"XL"},
 		UTMSource:      []string{"source"},
 		UTMMedium:      []string{"medium"},

@@ -1,7 +1,7 @@
 package ua
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -13,9 +13,9 @@ func TestParseSimple(t *testing.T) {
 	ua := Parse(uaString)
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), ua.Time.UnixMilli(), 10)
 	assert.Equal(t, uaString, ua.UserAgent)
-	assert.Equal(t, pirsch.OSMac, ua.OS)
+	assert.Equal(t, pkg.OSMac, ua.OS)
 	assert.Equal(t, "10.15", ua.OSVersion)
-	assert.Equal(t, pirsch.BrowserFirefox, ua.Browser)
+	assert.Equal(t, pkg.BrowserFirefox, ua.Browser)
 	assert.Equal(t, "79.0", ua.BrowserVersion)
 }
 
@@ -31,13 +31,13 @@ func TestGetBrowser(t *testing.T) {
 func TestGetBrowserChromeSafari(t *testing.T) {
 	chrome := "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
 	system, products := parse(chrome)
-	browser, version := getBrowser(products, system, pirsch.OSMac)
-	assert.Equal(t, pirsch.BrowserChrome, browser)
+	browser, version := getBrowser(products, system, pkg.OSMac)
+	assert.Equal(t, pkg.BrowserChrome, browser)
 	assert.Equal(t, "87.0", version)
 	safari := "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15"
 	system, products = parse(safari)
-	browser, version = getBrowser(products, system, pirsch.OSMac)
-	assert.Equal(t, pirsch.BrowserSafari, browser)
+	browser, version = getBrowser(products, system, pkg.OSMac)
+	assert.Equal(t, pkg.BrowserSafari, browser)
 	assert.Equal(t, "14.0", version)
 }
 

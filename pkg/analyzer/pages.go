@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sort"
@@ -98,7 +98,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 // Entry returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
 func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	filter = pages.analyzer.getFilter(filter)
-	var sortVisitors pirsch.Direction
+	var sortVisitors pkg.Direction
 
 	if len(filter.Sort) > 0 && filter.Sort[0].Field == FieldVisitors {
 		sortVisitors = filter.Sort[0].Direction
@@ -173,7 +173,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	if sortVisitors != "" {
-		if sortVisitors == pirsch.DirectionASC {
+		if sortVisitors == pkg.DirectionASC {
 			sort.Slice(stats, func(i, j int) bool {
 				return stats[i].Visitors < stats[j].Visitors
 			})
@@ -190,7 +190,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 // Exit returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
 func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	filter = pages.analyzer.getFilter(filter)
-	var sortVisitors pirsch.Direction
+	var sortVisitors pkg.Direction
 
 	if len(filter.Sort) > 0 && filter.Sort[0].Field == FieldVisitors {
 		sortVisitors = filter.Sort[0].Direction
@@ -248,7 +248,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	}
 
 	if sortVisitors != "" {
-		if sortVisitors == pirsch.DirectionASC {
+		if sortVisitors == pkg.DirectionASC {
 			sort.Slice(stats, func(i, j int) bool {
 				return stats[i].Visitors < stats[j].Visitors
 			})

@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"strings"
 	"time"
 )
@@ -31,7 +31,7 @@ type Filter struct {
 	// This is only used by Analyzer.ByPeriod, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
 	// Using it for other queries leads to wrong results and might return an error.
 	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
-	Period pirsch.Period
+	Period pkg.Period
 
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
@@ -148,7 +148,7 @@ type Search struct {
 // Sort sorts results by a field and direction.
 type Sort struct {
 	Field     Field
-	Direction pirsch.Direction
+	Direction pkg.Direction
 }
 
 // NewFilter creates a new filter for given client ID.

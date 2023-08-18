@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"strings"
@@ -131,27 +131,27 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	return stats, nil
 }
 
-func (t *Time) selectAvgTimeSpentPeriod(period pirsch.Period, query *strings.Builder) {
-	if period != pirsch.PeriodDay {
+func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builder) {
+	if period != pkg.PeriodDay {
 		switch period {
-		case pirsch.PeriodWeek:
+		case pkg.PeriodWeek:
 			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
-		case pirsch.PeriodMonth:
+		case pkg.PeriodMonth:
 			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
-		case pirsch.PeriodYear:
+		case pkg.PeriodYear:
 			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
 		}
 	}
 }
 
-func (t *Time) groupByPeriod(period pirsch.Period, query *strings.Builder) {
-	if period != pirsch.PeriodDay {
+func (t *Time) groupByPeriod(period pkg.Period, query *strings.Builder) {
+	if period != pkg.PeriodDay {
 		switch period {
-		case pirsch.PeriodWeek:
+		case pkg.PeriodWeek:
 			query.WriteString(`) GROUP BY week ORDER BY week ASC`)
-		case pirsch.PeriodMonth:
+		case pkg.PeriodMonth:
 			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
-		case pirsch.PeriodYear:
+		case pkg.PeriodYear:
 			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
 		}
 	}

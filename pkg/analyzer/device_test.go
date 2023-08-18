@@ -1,8 +1,8 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6"
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -64,16 +64,16 @@ func TestAnalyzer_Browser(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserEdge},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserEdge},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserSafari},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserFirefox},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserFirefox},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserSafari},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -81,9 +81,9 @@ func TestAnalyzer_Browser(t *testing.T) {
 	visitors, err := analyzer.Device.Browser(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
-	assert.Equal(t, pirsch.BrowserChrome, visitors[0].Browser)
-	assert.Equal(t, pirsch.BrowserFirefox, visitors[1].Browser)
-	assert.Equal(t, pirsch.BrowserSafari, visitors[2].Browser)
+	assert.Equal(t, pkg.BrowserChrome, visitors[0].Browser)
+	assert.Equal(t, pkg.BrowserFirefox, visitors[1].Browser)
+	assert.Equal(t, pkg.BrowserSafari, visitors[2].Browser)
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
@@ -97,7 +97,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 	_, err = analyzer.Device.Browser(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldBrowser,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -112,17 +112,17 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserEdge, BrowserVersion: "85.0"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge, BrowserVersion: "85.0"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserEdge, BrowserVersion: "85.0"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox, BrowserVersion: "89.0.0"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox, BrowserVersion: "89.0.1"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserSafari, BrowserVersion: "14.1.2"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "87.2"},
-			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "86.0"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge, BrowserVersion: "85.0"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserFirefox, BrowserVersion: "89.0.0"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserFirefox, BrowserVersion: "89.0.1"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserSafari, BrowserVersion: "14.1.2"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "87.2"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "86.0"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -130,12 +130,12 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	visitors, err := analyzer.Device.BrowserVersion(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, pirsch.BrowserChrome, visitors[0].Browser)
-	assert.Equal(t, pirsch.BrowserChrome, visitors[1].Browser)
-	assert.Equal(t, pirsch.BrowserChrome, visitors[2].Browser)
-	assert.Equal(t, pirsch.BrowserFirefox, visitors[3].Browser)
-	assert.Equal(t, pirsch.BrowserFirefox, visitors[4].Browser)
-	assert.Equal(t, pirsch.BrowserSafari, visitors[5].Browser)
+	assert.Equal(t, pkg.BrowserChrome, visitors[0].Browser)
+	assert.Equal(t, pkg.BrowserChrome, visitors[1].Browser)
+	assert.Equal(t, pkg.BrowserChrome, visitors[2].Browser)
+	assert.Equal(t, pkg.BrowserFirefox, visitors[3].Browser)
+	assert.Equal(t, pkg.BrowserFirefox, visitors[4].Browser)
+	assert.Equal(t, pkg.BrowserSafari, visitors[5].Browser)
 	assert.Equal(t, "85.1", visitors[0].BrowserVersion)
 	assert.Equal(t, "86.0", visitors[1].BrowserVersion)
 	assert.Equal(t, "87.2", visitors[2].BrowserVersion)
@@ -161,7 +161,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 	_, err = analyzer.Device.BrowserVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldBrowserVersion,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -176,10 +176,10 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserFirefox, BrowserVersion: "89.0.0"},
-			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pirsch.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserFirefox, BrowserVersion: "89.0.0"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -187,7 +187,7 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 	visitors, err := analyzer.Device.BrowserVersion(&Filter{Sort: []Sort{
 		{
 			Field:     FieldBrowserVersion,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -197,7 +197,7 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 	visitors, err = analyzer.Device.BrowserVersion(&Filter{Sort: []Sort{
 		{
 			Field:     FieldBrowserVersion,
-			Direction: pirsch.DirectionDESC,
+			Direction: pkg.DirectionDESC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -212,7 +212,7 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 	}, Sort: []Sort{
 		{
 			Field:     FieldBrowserVersion,
-			Direction: pirsch.DirectionDESC,
+			Direction: pkg.DirectionDESC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -224,16 +224,16 @@ func TestAnalyzer_OS(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSLinux},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSLinux},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: pirsch.OSAndroid},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: pkg.OSAndroid},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -241,9 +241,9 @@ func TestAnalyzer_OS(t *testing.T) {
 	visitors, err := analyzer.Device.OS(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
-	assert.Equal(t, pirsch.OSWindows, visitors[0].OS)
-	assert.Equal(t, pirsch.OSMac, visitors[1].OS)
-	assert.Equal(t, pirsch.OSAndroid, visitors[2].OS)
+	assert.Equal(t, pkg.OSWindows, visitors[0].OS)
+	assert.Equal(t, pkg.OSMac, visitors[1].OS)
+	assert.Equal(t, pkg.OSAndroid, visitors[2].OS)
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 2, visitors[1].Visitors)
 	assert.Equal(t, 1, visitors[2].Visitors)
@@ -257,7 +257,7 @@ func TestAnalyzer_OS(t *testing.T) {
 	_, err = analyzer.Device.OS(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldOS,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -272,17 +272,17 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSLinux, OSVersion: "1"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux, OSVersion: "1"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSLinux, OSVersion: "1"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac, OSVersion: "14.0.0"},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac, OSVersion: "13.1.0"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: pirsch.OSLinux},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "9"},
-			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "8"},
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux, OSVersion: "1"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac, OSVersion: "14.0.0"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac, OSVersion: "13.1.0"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "9"},
+			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "8"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -290,12 +290,12 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	visitors, err := analyzer.Device.OSVersion(nil)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, pirsch.OSWindows, visitors[0].OS)
-	assert.Equal(t, pirsch.OSLinux, visitors[1].OS)
-	assert.Equal(t, pirsch.OSMac, visitors[2].OS)
-	assert.Equal(t, pirsch.OSMac, visitors[3].OS)
-	assert.Equal(t, pirsch.OSWindows, visitors[4].OS)
-	assert.Equal(t, pirsch.OSWindows, visitors[5].OS)
+	assert.Equal(t, pkg.OSWindows, visitors[0].OS)
+	assert.Equal(t, pkg.OSLinux, visitors[1].OS)
+	assert.Equal(t, pkg.OSMac, visitors[2].OS)
+	assert.Equal(t, pkg.OSMac, visitors[3].OS)
+	assert.Equal(t, pkg.OSWindows, visitors[4].OS)
+	assert.Equal(t, pkg.OSWindows, visitors[5].OS)
 	assert.Equal(t, "10", visitors[0].OSVersion)
 	assert.Empty(t, visitors[1].OSVersion)
 	assert.Equal(t, "13.1.0", visitors[2].OSVersion)
@@ -321,7 +321,7 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 	_, err = analyzer.Device.OSVersion(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldOSVersion,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}, Search: []Search{
 		{
@@ -336,9 +336,9 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model2.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pirsch.OSWindows, OSVersion: "10"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pirsch.OSMac, OSVersion: "14.0.0"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac, OSVersion: "14.0.0"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -346,7 +346,7 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 	visitors, err := analyzer.Device.OSVersion(&Filter{Sort: []Sort{
 		{
 			Field:     FieldOSVersion,
-			Direction: pirsch.DirectionASC,
+			Direction: pkg.DirectionASC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -356,7 +356,7 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 	visitors, err = analyzer.Device.OSVersion(&Filter{Sort: []Sort{
 		{
 			Field:     FieldOSVersion,
-			Direction: pirsch.DirectionDESC,
+			Direction: pkg.DirectionDESC,
 		},
 	}})
 	assert.NoError(t, err)
@@ -371,7 +371,7 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 	}, Sort: []Sort{
 		{
 			Field:     FieldOSVersion,
-			Direction: pirsch.DirectionDESC,
+			Direction: pkg.DirectionDESC,
 		},
 	}})
 	assert.NoError(t, err)
