@@ -34,12 +34,18 @@ type UserAgent struct {
 
 // IsDesktop returns true if the user agent is a desktop device.
 func (ua *UserAgent) IsDesktop() bool {
-	return ua.Mobile.Valid && !ua.Mobile.Bool ||
-		ua.OS == pkg.OSWindows || ua.OS == pkg.OSMac || ua.OS == pkg.OSLinux
+	if ua.Mobile.Valid {
+		return !ua.Mobile.Bool
+	}
+
+	return ua.OS == pkg.OSWindows || ua.OS == pkg.OSMac || ua.OS == pkg.OSLinux
 }
 
 // IsMobile returns true if the user agent is a mobile device.
 func (ua *UserAgent) IsMobile() bool {
-	return ua.Mobile.Valid && ua.Mobile.Bool ||
-		ua.OS == pkg.OSAndroid || ua.OS == pkg.OSiOS || ua.OS == pkg.OSWindowsMobile
+	if ua.Mobile.Valid {
+		return ua.Mobile.Bool
+	}
+
+	return ua.OS == pkg.OSAndroid || ua.OS == pkg.OSiOS || ua.OS == pkg.OSWindowsMobile
 }
