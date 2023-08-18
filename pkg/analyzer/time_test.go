@@ -3,7 +3,7 @@ package analyzer
 import (
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -11,7 +11,7 @@ import (
 
 func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, DurationSeconds: 25},
 		},
@@ -37,7 +37,7 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 
 func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model2.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(3), SessionID: 3, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: util.PastDay(3).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
 		{VisitorID: 2, Time: util.PastDay(3), SessionID: 3, Path: "/", Title: "Home"},
@@ -51,7 +51,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 		{VisitorID: 6, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home"},
 		{VisitorID: 6, Time: util.PastDay(1).Add(time.Second * 6), SessionID: 1, Path: "/foo", DurationSeconds: 6, Title: "Foo"},
 	}))
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.PastDay(3), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/"},
 		},

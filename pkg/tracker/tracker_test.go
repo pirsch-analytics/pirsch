@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	db2 "github.com/pirsch-analytics/pirsch/v6/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
-	ip2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
-	session2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -22,7 +22,7 @@ const (
 )
 
 func TestTracker(t *testing.T) {
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -72,7 +72,7 @@ func TestTracker_PageView(t *testing.T) {
 	req.RemoteAddr = "81.2.69.142"
 	geoDB, _ := geodb.NewGeoDB("", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 		GeoDB: geoDB,
@@ -212,7 +212,7 @@ func TestTracker_PageView(t *testing.T) {
 }
 
 func TestTracker_PageViewRebounce(t *testing.T) {
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -235,7 +235,7 @@ func TestTracker_PageViewRebounce(t *testing.T) {
 }
 
 func TestTracker_PageViewReferrerIgnorePath(t *testing.T) {
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -256,7 +256,7 @@ func TestTracker_PageViewReferrerIgnorePath(t *testing.T) {
 }
 
 func TestTracker_PageViewReferrerOverwriteIgnorePath(t *testing.T) {
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -280,7 +280,7 @@ func TestTracker_PageViewTimeout(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store:         client,
 		WorkerTimeout: time.Millisecond * 100,
@@ -298,7 +298,7 @@ func TestTracker_PageViewTimeout(t *testing.T) {
 }
 
 func TestTracker_PageViewBuffer(t *testing.T) {
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store:            client,
 		Worker:           1,
@@ -329,7 +329,7 @@ func TestTracker_PageViewOverwriteTime(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -353,8 +353,8 @@ func TestTracker_PageViewFindSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
-	cache := session2.NewMemCache(client, 10)
+	client := db.NewClientMock()
+	cache := session.NewMemCache(client, 10)
 	tracker := NewTracker(Config{
 		Store:        client,
 		SessionCache: cache,
@@ -390,8 +390,8 @@ func TestTracker_PageViewFindSessionRedis(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
-	cache := session2.NewRedisCache(time.Minute*30, nil, &redis.Options{
+	client := db.NewClientMock()
+	cache := session.NewRedisCache(time.Minute*30, nil, &redis.Options{
 		Addr: "localhost:6379",
 	})
 	tracker := NewTracker(Config{
@@ -424,7 +424,7 @@ func TestTracker_Event(t *testing.T) {
 	req.RemoteAddr = "81.2.69.142"
 	geoDB, _ := geodb.NewGeoDB("", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 		GeoDB: geoDB,
@@ -531,7 +531,7 @@ func TestTracker_EventDiscard(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -553,7 +553,7 @@ func TestTracker_EventOverwriteTime(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -579,7 +579,7 @@ func TestTracker_ExtendSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -604,7 +604,7 @@ func TestTracker_ExtendSessionNoSession(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -621,7 +621,7 @@ func TestTracker_ExtendSessionOverwriteTime(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	client := db2.NewClientMock()
+	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
 	})
@@ -643,10 +643,10 @@ func TestTracker_ExtendSessionOverwriteTime(t *testing.T) {
 }
 
 func TestTracker_Flush(t *testing.T) {
-	db2.CleanupDB(t, dbClient)
+	db.CleanupDB(t, dbClient)
 	tracker := NewTracker(Config{
 		Store:        dbClient,
-		SessionCache: session2.NewMemCache(dbClient, 100),
+		SessionCache: session.NewMemCache(dbClient, 100),
 	})
 
 	for i := 0; i < 10; i++ {
@@ -665,10 +665,10 @@ func TestTracker_Flush(t *testing.T) {
 }
 
 func TestTrackerBots(t *testing.T) {
-	store := db2.NewClientMock()
+	store := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store:        store,
-		SessionCache: session2.NewMemCache(store, 100),
+		SessionCache: session.NewMemCache(store, 100),
 	})
 
 	for i := 0; i < 3; i++ {
@@ -878,8 +878,8 @@ func TestTracker_ignoreDoNotTrack(t *testing.T) {
 }
 
 func TestTracker_ignoreIP(t *testing.T) {
-	filter := ip2.NewUdger("", "")
-	filter.Update([]string{"90.154.29.38"}, []string{}, []ip2.Range{}, []ip2.Range{})
+	filter := ip.NewUdger("", "")
+	filter.Update([]string{"90.154.29.38"}, []string{}, []ip.Range{}, []ip.Range{})
 	tracker := NewTracker(Config{
 		IPFilter: filter,
 	})
@@ -898,8 +898,8 @@ func TestTracker_ignoreIP(t *testing.T) {
 }
 
 func TestTracker_ignorePageViews(t *testing.T) {
-	client := db2.NewClientMock()
-	cache := session2.NewMemCache(client, 10)
+	client := db.NewClientMock()
+	cache := session.NewMemCache(client, 10)
 	tracker := NewTracker(Config{
 		Store:        client,
 		SessionCache: cache,

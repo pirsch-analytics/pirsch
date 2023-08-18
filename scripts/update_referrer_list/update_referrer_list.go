@@ -54,7 +54,9 @@ func main() {
 
 	var extended database
 
-	json.Unmarshal(file, &extended)
+	if err := json.Unmarshal(file, &extended); err != nil {
+		log.Fatal(err)
+	}
 
 	groups := map[string]string{}
 

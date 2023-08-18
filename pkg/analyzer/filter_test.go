@@ -4,7 +4,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -60,7 +60,7 @@ func TestFilter_RemoveDuplicates(t *testing.T) {
 
 func TestFilter_BuildQuery(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model2.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo"},
 		{VisitorID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo"},
@@ -70,7 +70,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 		{VisitorID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo"},
 		{VisitorID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/"},
 	}))
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
 			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
@@ -93,12 +93,12 @@ func TestFilter_BuildQuery(t *testing.T) {
 	analyzer := NewAnalyzer(dbClient)
 	q, args := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors},
 		[]Field{FieldPath}, []Field{FieldVisitors, FieldPath})
-	var stats []model2.PageStats
+	var stats []model.PageStats
 	rows, err := dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
-		var stat model2.PageStats
+		var stat model.PageStats
 		assert.NoError(t, rows.Scan(&stat.Path, &stat.Visitors))
 		stats = append(stats, stat)
 	}
@@ -118,7 +118,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.NoError(t, err)
 
 	for rows.Next() {
-		var stat model2.PageStats
+		var stat model.PageStats
 		assert.NoError(t, rows.Scan(&stat.Path, &stat.Visitors))
 		stats = append(stats, stat)
 	}
@@ -138,7 +138,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.NoError(t, err)
 
 	for rows.Next() {
-		var stat model2.PageStats
+		var stat model.PageStats
 		assert.NoError(t, rows.Scan(&stat.Path, &stat.Visitors))
 		stats = append(stats, stat)
 	}
@@ -154,7 +154,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.NoError(t, err)
 
 	for rows.Next() {
-		var stat model2.PageStats
+		var stat model.PageStats
 		assert.NoError(t, rows.Scan(&stat.Path, &stat.Visitors))
 		stats = append(stats, stat)
 	}
@@ -165,7 +165,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 
 	// no filter (from sessions)
 	q, args = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil)
-	var vstats model2.PageStats
+	var vstats model.PageStats
 	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.Sessions, &vstats.Views, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 2, vstats.Visitors)
 	assert.Equal(t, 2, vstats.Sessions)
@@ -186,12 +186,12 @@ func TestFilter_BuildQuery(t *testing.T) {
 
 	// filter period
 	q, args = analyzer.getFilter(&Filter{Period: pkg.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
-	var visitors []model2.VisitorStats
+	var visitors []model.VisitorStats
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
 
 	for rows.Next() {
-		var stat model2.VisitorStats
+		var stat model.VisitorStats
 		assert.NoError(t, rows.Scan(&stat.Day, &stat.Visitors))
 		visitors = append(visitors, stat)
 	}

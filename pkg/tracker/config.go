@@ -1,11 +1,11 @@
 package tracker
 
 import (
-	util2 "github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
-	ip2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
-	session2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
 	"log/slog"
 	"net"
 	"os"
@@ -29,26 +29,26 @@ type Config struct {
 	Worker              int
 	WorkerBufferSize    int
 	WorkerTimeout       time.Duration
-	SessionCache        session2.Cache
-	HeaderParser        []ip2.HeaderParser
+	SessionCache        session.Cache
+	HeaderParser        []ip.HeaderParser
 	AllowedProxySubnets []net.IPNet
 	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
-	IPFilter            ip2.Filter
+	IPFilter            ip.Filter
 	Logger              *slog.Logger
 }
 
 func (config *Config) validate() {
 	if config.Salt == "" {
-		config.Salt = util2.RandString(20)
+		config.Salt = util.RandString(20)
 	}
 
 	if config.FingerprintKey0 == 0 {
-		config.FingerprintKey0 = util2.RandUint64()
+		config.FingerprintKey0 = util.RandUint64()
 	}
 
 	if config.FingerprintKey1 == 0 {
-		config.FingerprintKey1 = util2.RandUint64()
+		config.FingerprintKey1 = util.RandUint64()
 	}
 
 	if config.Worker < 1 {
@@ -66,7 +66,7 @@ func (config *Config) validate() {
 	}
 
 	if config.SessionCache == nil {
-		config.SessionCache = session2.NewMemCache(config.Store, 0)
+		config.SessionCache = session.NewMemCache(config.Store, 0)
 	}
 
 	if config.MaxPageViews == 0 {

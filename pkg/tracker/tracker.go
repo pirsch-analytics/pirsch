@@ -3,13 +3,13 @@ package tracker
 import (
 	"context"
 	"github.com/dchest/siphash"
-	iso6391 "github.com/emvi/iso-639-1"
-	util2 "github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/emvi/iso-639-1"
+	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer"
-	ua2 "github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
 	"log"
 	"math"
 	"net"
@@ -55,12 +55,12 @@ var screenClasses = []screenClass{
 }
 
 type data struct {
-	session       *model2.Session
-	cancelSession *model2.Session
-	pageView      *model2.PageView
-	event         *model2.Event
-	ua            *model2.UserAgent
-	bot           *model2.Bot
+	session       *model.Session
+	cancelSession *model.Session
+	pageView      *model.PageView
+	event         *model.Event
+	ua            *model.UserAgent
+	bot           *model.Bot
 }
 
 // Tracker tracks page views, events, and updates sessions.
@@ -100,17 +100,17 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 	if !ignore {
 		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
-		var saveUserAgent *model2.UserAgent
+		var saveUserAgent *model.UserAgent
 
 		if session != nil {
 			if cancelSession == nil {
 				saveUserAgent = &userAgent
 			}
 
-			var pv *model2.PageView
+			var pv *model.PageView
 
 			if !bounced {
-				pv = &model2.PageView{
+				pv = &model.PageView{
 					ClientID:        session.ClientID,
 					VisitorID:       session.VisitorID,
 					SessionID:       session.SessionID,
@@ -148,7 +148,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 		}
 	} else {
 		tracker.data <- data{
-			bot: &model2.Bot{
+			bot: &model.Bot{
 				ClientID:  clientID,
 				VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
 				Time:      now,
@@ -178,7 +178,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 
 		if !ignore {
 			session, cancelSession, _, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
-			var saveUserAgent *model2.UserAgent
+			var saveUserAgent *model.UserAgent
 
 			if session != nil {
 				if cancelSession == nil {
@@ -189,7 +189,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				tracker.data <- data{
 					session:       session,
 					cancelSession: cancelSession,
-					event: &model2.Event{
+					event: &model.Event{
 						ClientID:        clientID,
 						VisitorID:       session.VisitorID,
 						Time:            session.Time,
@@ -224,7 +224,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 			}
 		} else {
 			tracker.data <- data{
-				bot: &model2.Bot{
+				bot: &model.Bot{
 					ClientID:  clientID,
 					VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
 					Time:      now,
@@ -280,25 +280,25 @@ func (tracker *Tracker) Stop() {
 	}
 }
 
-func (tracker *Tracker) ignore(r *http.Request) (model2.UserAgent, string, bool) {
+func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) {
 	// respect do not track header
 	if r.Header.Get("DNT") == "1" {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	// empty User-Agents are usually bots
 	rawUserAgent := r.UserAgent()
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
 
-	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util2.ContainsNonASCIICharacters(userAgent) {
-		return model2.UserAgent{}, "", true
+	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
+		return model.UserAgent{}, "", true
 	}
 
 	// ignore User-Agents that are an IP address
 	host := rawUserAgent
 
 	if net.ParseIP(host) != nil {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	if strings.Contains(host, ":") {
@@ -306,7 +306,7 @@ func (tracker *Tracker) ignore(r *http.Request) (model2.UserAgent, string, bool)
 	}
 
 	if net.ParseIP(host) != nil {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	// ignore browsers pre-fetching data
@@ -318,31 +318,31 @@ func (tracker *Tracker) ignore(r *http.Request) (model2.UserAgent, string, bool)
 		xPurpose == "preview" ||
 		purpose == "prefetch" ||
 		purpose == "preview" {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	// filter referrer spammers
 	if referrer.Ignore(r) {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
-	userAgentResult := ua2.Parse(rawUserAgent)
+	userAgentResult := ua.Parse(rawUserAgent)
 
 	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	// filter for bot keywords
-	for _, botUserAgent := range ua2.Blacklist {
+	for _, botUserAgent := range ua.Blacklist {
 		if strings.Contains(userAgent, botUserAgent) {
-			return model2.UserAgent{}, "", true
+			return model.UserAgent{}, "", true
 		}
 	}
 
 	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
 
 	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
-		return model2.UserAgent{}, "", true
+		return model.UserAgent{}, "", true
 	}
 
 	return userAgentResult, ipAddress, false
@@ -374,7 +374,7 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model2.UserAgent, ip string, pageViews uint16, options Options) (*model2.Session, *model2.Session, uint32, bool) {
+func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) (*model.Session, *model.Session, uint32, bool) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	m.Lock()
@@ -406,7 +406,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 
 	var timeOnPage uint32
 	bounced := false // bounced not including session creation
-	var cancelSession *model2.Session
+	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, pageViews, options)
@@ -426,16 +426,16 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	return session, cancelSession, timeOnPage, bounced
 }
 
-func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model2.UserAgent, ip string, pageViews uint16, options Options) *model2.Session {
-	ua.OS = util2.ShortenString(ua.OS, 20)
-	ua.OSVersion = util2.ShortenString(ua.OSVersion, 20)
-	ua.Browser = util2.ShortenString(ua.Browser, 20)
-	ua.BrowserVersion = util2.ShortenString(ua.BrowserVersion, 20)
-	lang := util2.ShortenString(tracker.getLanguage(r), 10)
+func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) *model.Session {
+	ua.OS = util.ShortenString(ua.OS, 20)
+	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
+	ua.Browser = util.ShortenString(ua.Browser, 20)
+	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
+	lang := util.ShortenString(tracker.getLanguage(r), 10)
 	ref, referrerName, referrerIcon := referrer.Get(r, options.Referrer, options.Hostname)
-	ref = util2.ShortenString(ref, 200)
-	referrerName = util2.ShortenString(referrerName, 200)
-	referrerIcon = util2.ShortenString(referrerIcon, 2000)
+	ref = util.ShortenString(ref, 200)
+	referrerName = util.ShortenString(referrerName, 200)
+	referrerIcon = util.ShortenString(referrerIcon, 2000)
 	screenClass := tracker.getScreenClass(options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
@@ -449,11 +449,11 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		countryCode, city = tracker.config.GeoDB.GetLocation(ip)
 	}
 
-	return &model2.Session{
+	return &model.Session{
 		Sign:           1,
 		ClientID:       clientID,
 		VisitorID:      fingerprint,
-		SessionID:      util2.RandUint32(),
+		SessionID:      util.RandUint32(),
 		Time:           now,
 		Start:          now,
 		EntryPath:      options.Path,
@@ -483,7 +483,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	}
 }
 
-func (tracker *Tracker) updateSession(t eventType, session *model2.Session, now time.Time, path, title string) (uint32, bool) {
+func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) (uint32, bool) {
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {
@@ -547,7 +547,7 @@ func (tracker *Tracker) getScreenClass(width uint16) string {
 	return "XS"
 }
 
-func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model2.Session, ref, hostname string) bool {
+func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref, hostname string) bool {
 	ref, _, _ = referrer.Get(r, ref, hostname)
 
 	if ref != "" && ref != session.Referrer {
@@ -595,11 +595,11 @@ func (tracker *Tracker) stopWorker() {
 
 func (tracker *Tracker) flushData() {
 	bufferSize := tracker.config.WorkerBufferSize
-	sessions := make([]model2.Session, 0, bufferSize*2)
-	pageViews := make([]model2.PageView, 0, bufferSize)
-	events := make([]model2.Event, 0, bufferSize)
-	userAgents := make([]model2.UserAgent, 0, bufferSize)
-	bots := make([]model2.Bot, 0, bufferSize)
+	sessions := make([]model.Session, 0, bufferSize*2)
+	pageViews := make([]model.PageView, 0, bufferSize)
+	events := make([]model.Event, 0, bufferSize)
+	userAgents := make([]model.UserAgent, 0, bufferSize)
+	bots := make([]model.Bot, 0, bufferSize)
 
 	for {
 		stop := false
@@ -664,11 +664,11 @@ func (tracker *Tracker) flushData() {
 
 func (tracker *Tracker) aggregateData(ctx context.Context) {
 	bufferSize := tracker.config.WorkerBufferSize
-	sessions := make([]model2.Session, 0, bufferSize*2)
-	pageViews := make([]model2.PageView, 0, bufferSize)
-	events := make([]model2.Event, 0, bufferSize)
-	userAgents := make([]model2.UserAgent, 0, bufferSize)
-	bots := make([]model2.Bot, 0, bufferSize)
+	sessions := make([]model.Session, 0, bufferSize*2)
+	pageViews := make([]model.PageView, 0, bufferSize)
+	events := make([]model.Event, 0, bufferSize)
+	userAgents := make([]model.UserAgent, 0, bufferSize)
+	bots := make([]model.Bot, 0, bufferSize)
 	timer := time.NewTimer(tracker.config.WorkerTimeout)
 	defer timer.Stop()
 
@@ -740,7 +740,7 @@ func (tracker *Tracker) aggregateData(ctx context.Context) {
 	}
 }
 
-func (tracker *Tracker) savePageViews(pageViews []model2.PageView) {
+func (tracker *Tracker) savePageViews(pageViews []model.PageView) {
 	if len(pageViews) > 0 {
 		if err := tracker.config.Store.SavePageViews(pageViews); err != nil {
 			log.Panicf("error saving page views: %s", err)
@@ -748,7 +748,7 @@ func (tracker *Tracker) savePageViews(pageViews []model2.PageView) {
 	}
 }
 
-func (tracker *Tracker) saveSessions(sessions []model2.Session) {
+func (tracker *Tracker) saveSessions(sessions []model.Session) {
 	if len(sessions) > 0 {
 		if err := tracker.config.Store.SaveSessions(sessions); err != nil {
 			log.Panicf("error saving sessions: %s", err)
@@ -756,7 +756,7 @@ func (tracker *Tracker) saveSessions(sessions []model2.Session) {
 	}
 }
 
-func (tracker *Tracker) saveEvents(events []model2.Event) {
+func (tracker *Tracker) saveEvents(events []model.Event) {
 	if len(events) > 0 {
 		if err := tracker.config.Store.SaveEvents(events); err != nil {
 			log.Panicf("error saving events: %s", err)
@@ -764,7 +764,7 @@ func (tracker *Tracker) saveEvents(events []model2.Event) {
 	}
 }
 
-func (tracker *Tracker) saveUserAgents(userAgents []model2.UserAgent) {
+func (tracker *Tracker) saveUserAgents(userAgents []model.UserAgent) {
 	if len(userAgents) > 0 {
 		if err := tracker.config.Store.SaveUserAgents(userAgents); err != nil {
 			tracker.config.Logger.Error("error saving user agents", "err", err)
@@ -772,7 +772,7 @@ func (tracker *Tracker) saveUserAgents(userAgents []model2.UserAgent) {
 	}
 }
 
-func (tracker *Tracker) saveBots(bots []model2.Bot) {
+func (tracker *Tracker) saveBots(bots []model.Bot) {
 	if len(bots) > 0 {
 		if err := tracker.config.Store.SaveBots(bots); err != nil {
 			tracker.config.Logger.Error("error saving bots", "err", err)

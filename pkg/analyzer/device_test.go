@@ -4,7 +4,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 func TestAnalyzer_Platform(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model2.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Now(), Path: "/", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/foo", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/bar", Desktop: true},
@@ -22,7 +22,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 		{VisitorID: 5, Time: time.Now(), Path: "/", Desktop: true},
 		{VisitorID: 6, Time: time.Now(), Path: "/", Desktop: true},
 	}))
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Desktop: true},
 		},
@@ -62,7 +62,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 
 func TestAnalyzer_Browser(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge},
 		},
@@ -110,7 +110,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 
 func TestAnalyzer_BrowserVersion(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserEdge, BrowserVersion: "85.0"},
 		},
@@ -174,7 +174,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 
 func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
 			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
@@ -222,7 +222,7 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 
 func TestAnalyzer_OS(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux},
 		},
@@ -270,7 +270,7 @@ func TestAnalyzer_OS(t *testing.T) {
 
 func TestAnalyzer_OSVersion(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSLinux, OSVersion: "1"},
 		},
@@ -334,7 +334,7 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 
 func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
 			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "10"},
@@ -381,7 +381,7 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 
 func TestAnalyzer_ScreenClass(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	saveSessions(t, [][]model2.Session{
+	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), ScreenClass: "S"},
 		},

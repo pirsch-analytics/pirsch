@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/pirsch-analytics/pirsch/v6/internal/util"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
@@ -24,7 +24,7 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_SavePageViews(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model2.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -57,7 +57,7 @@ func TestClient_SavePageViews(t *testing.T) {
 
 func TestClient_SaveSessions(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions([]model2.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{
 			Sign:            1,
 			ClientID:        1,
@@ -99,11 +99,11 @@ func TestClient_SaveSessions(t *testing.T) {
 
 func TestClient_SaveSessionsBatch(t *testing.T) {
 	CleanupDB(t, dbClient)
-	sessions := make([]model2.Session, 0, 101)
+	sessions := make([]model.Session, 0, 101)
 
 	for i := 0; i < 50; i++ {
 		now := time.Now().Add(time.Millisecond * time.Duration(i))
-		sessions = append(sessions, model2.Session{
+		sessions = append(sessions, model.Session{
 			Sign:      1,
 			ClientID:  2,
 			VisitorID: 3,
@@ -112,7 +112,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 			SessionID: 4,
 			PageViews: uint16(i + 1),
 		})
-		sessions = append(sessions, model2.Session{
+		sessions = append(sessions, model.Session{
 			Sign:      -1,
 			ClientID:  2,
 			VisitorID: 3,
@@ -123,7 +123,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		})
 	}
 
-	sessions = append(sessions, model2.Session{
+	sessions = append(sessions, model.Session{
 		Sign:      1,
 		ClientID:  2,
 		VisitorID: 3,
@@ -146,7 +146,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 
 func TestClient_SaveEvents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents([]model2.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -183,7 +183,7 @@ func TestClient_SaveEvents(t *testing.T) {
 
 func TestClient_SaveUserAgents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveUserAgents([]model2.UserAgent{
+	assert.NoError(t, dbClient.SaveUserAgents([]model.UserAgent{
 		{
 			Time:      time.Now(),
 			UserAgent: "ua1",
@@ -197,7 +197,7 @@ func TestClient_SaveUserAgents(t *testing.T) {
 
 func TestClient_SaveBots(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveBots([]model2.Bot{
+	assert.NoError(t, dbClient.SaveBots([]model.Bot{
 		{
 			ClientID:  1,
 			VisitorID: 1,
@@ -219,7 +219,7 @@ func TestClient_SaveBots(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	CleanupDB(t, dbClient)
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveSessions([]model2.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{
 			Sign:      1,
 			ClientID:  1,

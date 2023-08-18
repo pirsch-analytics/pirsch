@@ -8,7 +8,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	model2 "github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log/slog"
 	"os"
 	"time"
@@ -141,7 +141,7 @@ func NewClient(config *ClientConfig) (*Client, error) {
 }
 
 // SavePageViews implements the Store interface.
-func (client *Client) SavePageViews(pageViews []model2.PageView) error {
+func (client *Client) SavePageViews(pageViews []model.PageView) error {
 	tx, err := client.Begin()
 
 	if err != nil {
@@ -205,7 +205,7 @@ func (client *Client) SavePageViews(pageViews []model2.PageView) error {
 }
 
 // SaveSessions implements the Store interface.
-func (client *Client) SaveSessions(sessions []model2.Session) error {
+func (client *Client) SaveSessions(sessions []model.Session) error {
 	tx, err := client.Begin()
 
 	if err != nil {
@@ -277,7 +277,7 @@ func (client *Client) SaveSessions(sessions []model2.Session) error {
 }
 
 // SaveEvents implements the Store interface.
-func (client *Client) SaveEvents(events []model2.Event) error {
+func (client *Client) SaveEvents(events []model.Event) error {
 	tx, err := client.Begin()
 
 	if err != nil {
@@ -344,7 +344,7 @@ func (client *Client) SaveEvents(events []model2.Event) error {
 }
 
 // SaveUserAgents implements the Store interface.
-func (client *Client) SaveUserAgents(userAgents []model2.UserAgent) error {
+func (client *Client) SaveUserAgents(userAgents []model.UserAgent) error {
 	tx, err := client.Begin()
 
 	if err != nil {
@@ -380,7 +380,7 @@ func (client *Client) SaveUserAgents(userAgents []model2.UserAgent) error {
 	return nil
 }
 
-func (client *Client) SaveBots(bots []model2.Bot) error {
+func (client *Client) SaveBots(bots []model.Bot) error {
 	tx, err := client.Begin()
 
 	if err != nil {
@@ -417,7 +417,7 @@ func (client *Client) SaveBots(bots []model2.Bot) error {
 }
 
 // Session implements the Store interface.
-func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*model2.Session, error) {
+func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*model.Session, error) {
 	query := `SELECT sign,
         client_id,
 		visitor_id,
@@ -456,7 +456,7 @@ func (client *Client) Session(clientID, fingerprint uint64, maxAge time.Time) (*
 		AND time > ?
 		ORDER BY time DESC
 		LIMIT 1`
-	session := new(model2.Session)
+	session := new(model.Session)
 	err := client.QueryRow(query, clientID, fingerprint, maxAge).Scan(&session.Sign,
 		&session.ClientID,
 		&session.VisitorID,
@@ -519,7 +519,7 @@ func (client *Client) Count(query string, args ...any) (int, error) {
 }
 
 // SelectActiveVisitorStats implements the Store interface.
-func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, args ...any) ([]model2.ActiveVisitorStats, error) {
+func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, args ...any) ([]model.ActiveVisitorStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -527,11 +527,11 @@ func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, 
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.ActiveVisitorStats
+	var results []model.ActiveVisitorStats
 
 	if includeTitle {
 		for rows.Next() {
-			var result model2.ActiveVisitorStats
+			var result model.ActiveVisitorStats
 
 			if err := rows.Scan(&result.Path, &result.Title, &result.Visitors); err != nil {
 				return nil, err
@@ -541,7 +541,7 @@ func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, 
 		}
 	} else {
 		for rows.Next() {
-			var result model2.ActiveVisitorStats
+			var result model.ActiveVisitorStats
 
 			if err := rows.Scan(&result.Path, &result.Visitors); err != nil {
 				return nil, err
@@ -555,8 +555,8 @@ func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, 
 }
 
 // GetTotalVisitorStats implements the Store interface.
-func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model2.TotalVisitorStats, error) {
-	result := new(model2.TotalVisitorStats)
+func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model.TotalVisitorStats, error) {
+	result := new(model.TotalVisitorStats)
 
 	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
 		&result.Sessions,
@@ -570,8 +570,8 @@ func (client *Client) GetTotalVisitorStats(query string, args ...any) (*model2.T
 }
 
 // GetTotalVisitorsPageViewsStats implements the Store interface.
-func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model2.TotalVisitorsPageViewsStats, error) {
-	result := new(model2.TotalVisitorsPageViewsStats)
+func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model.TotalVisitorsPageViewsStats, error) {
+	result := new(model.TotalVisitorsPageViewsStats)
 
 	if err := client.QueryRow(query, args...).Scan(&result.Visitors, &result.Views); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
@@ -581,7 +581,7 @@ func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) 
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *Client) SelectVisitorStats(period pkg.Period, query string, args ...any) ([]model2.VisitorStats, error) {
+func (client *Client) SelectVisitorStats(period pkg.Period, query string, args ...any) ([]model.VisitorStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -589,12 +589,12 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, args .
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.VisitorStats
+	var results []model.VisitorStats
 
 	switch period {
 	case pkg.PeriodWeek:
 		for rows.Next() {
-			var result model2.VisitorStats
+			var result model.VisitorStats
 
 			if err := rows.Scan(&result.Week,
 				&result.Visitors,
@@ -609,7 +609,7 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, args .
 		}
 	case pkg.PeriodMonth:
 		for rows.Next() {
-			var result model2.VisitorStats
+			var result model.VisitorStats
 
 			if err := rows.Scan(&result.Month,
 				&result.Visitors,
@@ -624,7 +624,7 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, args .
 		}
 	case pkg.PeriodYear:
 		for rows.Next() {
-			var result model2.VisitorStats
+			var result model.VisitorStats
 
 			if err := rows.Scan(&result.Year,
 				&result.Visitors,
@@ -639,7 +639,7 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, args .
 		}
 	default:
 		for rows.Next() {
-			var result model2.VisitorStats
+			var result model.VisitorStats
 
 			if err := rows.Scan(&result.Day,
 				&result.Visitors,
@@ -658,7 +658,7 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, args .
 }
 
 // SelectTimeSpentStats implements the Store interface.
-func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args ...any) ([]model2.TimeSpentStats, error) {
+func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args ...any) ([]model.TimeSpentStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -666,12 +666,12 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.TimeSpentStats
+	var results []model.TimeSpentStats
 
 	switch period {
 	case pkg.PeriodWeek:
 		for rows.Next() {
-			var result model2.TimeSpentStats
+			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Week); err != nil {
 				return nil, err
@@ -681,7 +681,7 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 		}
 	case pkg.PeriodMonth:
 		for rows.Next() {
-			var result model2.TimeSpentStats
+			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Month); err != nil {
 				return nil, err
@@ -691,7 +691,7 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 		}
 	case pkg.PeriodYear:
 		for rows.Next() {
-			var result model2.TimeSpentStats
+			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Year); err != nil {
 				return nil, err
@@ -701,7 +701,7 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 		}
 	default:
 		for rows.Next() {
-			var result model2.TimeSpentStats
+			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.Day, &result.AverageTimeSpentSeconds); err != nil {
 				return nil, err
@@ -715,8 +715,8 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 }
 
 // GetGrowthStats implements the Store interface.
-func (client *Client) GetGrowthStats(query string, args ...any) (*model2.GrowthStats, error) {
-	result := new(model2.GrowthStats)
+func (client *Client) GetGrowthStats(query string, args ...any) (*model.GrowthStats, error) {
+	result := new(model.GrowthStats)
 
 	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
 		&result.Sessions,
@@ -730,7 +730,7 @@ func (client *Client) GetGrowthStats(query string, args ...any) (*model2.GrowthS
 }
 
 // SelectVisitorHourStats implements the Store interface.
-func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model2.VisitorHourStats, error) {
+func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model.VisitorHourStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -738,10 +738,10 @@ func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.VisitorHourStats
+	var results []model.VisitorHourStats
 
 	for rows.Next() {
-		var result model2.VisitorHourStats
+		var result model.VisitorHourStats
 
 		if err := rows.Scan(&result.Hour,
 			&result.Visitors,
@@ -759,7 +759,7 @@ func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model
 }
 
 // SelectPageStats implements the Store interface.
-func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query string, args ...any) ([]model2.PageStats, error) {
+func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query string, args ...any) ([]model.PageStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -767,12 +767,12 @@ func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.PageStats
+	var results []model.PageStats
 
 	if includeTitle {
 		if includeTimeSpent {
 			for rows.Next() {
-				var result model2.PageStats
+				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
 					&result.Visitors,
@@ -791,7 +791,7 @@ func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query
 			}
 		} else {
 			for rows.Next() {
-				var result model2.PageStats
+				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
 					&result.Visitors,
@@ -811,7 +811,7 @@ func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query
 	} else {
 		if includeTimeSpent {
 			for rows.Next() {
-				var result model2.PageStats
+				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
 					&result.Visitors,
@@ -829,7 +829,7 @@ func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query
 			}
 		} else {
 			for rows.Next() {
-				var result model2.PageStats
+				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
 					&result.Visitors,
@@ -851,7 +851,7 @@ func (client *Client) SelectPageStats(includeTitle, includeTimeSpent bool, query
 }
 
 // SelectAvgTimeSpentStats implements the Store interface.
-func (client *Client) SelectAvgTimeSpentStats(query string, args ...any) ([]model2.AvgTimeSpentStats, error) {
+func (client *Client) SelectAvgTimeSpentStats(query string, args ...any) ([]model.AvgTimeSpentStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -859,10 +859,10 @@ func (client *Client) SelectAvgTimeSpentStats(query string, args ...any) ([]mode
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.AvgTimeSpentStats
+	var results []model.AvgTimeSpentStats
 
 	for rows.Next() {
-		var result model2.AvgTimeSpentStats
+		var result model.AvgTimeSpentStats
 
 		if err := rows.Scan(&result.Path, &result.AverageTimeSpentSeconds); err != nil {
 			return nil, err
@@ -875,7 +875,7 @@ func (client *Client) SelectAvgTimeSpentStats(query string, args ...any) ([]mode
 }
 
 // SelectEntryStats implements the Store interface.
-func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...any) ([]model2.EntryStats, error) {
+func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...any) ([]model.EntryStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -883,11 +883,11 @@ func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.EntryStats
+	var results []model.EntryStats
 
 	if includeTitle {
 		for rows.Next() {
-			var result model2.EntryStats
+			var result model.EntryStats
 
 			if err := rows.Scan(&result.Path, &result.Entries, &result.Title); err != nil {
 				return nil, err
@@ -897,7 +897,7 @@ func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...
 		}
 	} else {
 		for rows.Next() {
-			var result model2.EntryStats
+			var result model.EntryStats
 
 			if err := rows.Scan(&result.Path, &result.Entries); err != nil {
 				return nil, err
@@ -911,7 +911,7 @@ func (client *Client) SelectEntryStats(includeTitle bool, query string, args ...
 }
 
 // SelectExitStats implements the Store interface.
-func (client *Client) SelectExitStats(includeTitle bool, query string, args ...any) ([]model2.ExitStats, error) {
+func (client *Client) SelectExitStats(includeTitle bool, query string, args ...any) ([]model.ExitStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -919,11 +919,11 @@ func (client *Client) SelectExitStats(includeTitle bool, query string, args ...a
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.ExitStats
+	var results []model.ExitStats
 
 	if includeTitle {
 		for rows.Next() {
-			var result model2.ExitStats
+			var result model.ExitStats
 
 			if err := rows.Scan(&result.Path, &result.Exits, &result.Title); err != nil {
 				return nil, err
@@ -933,7 +933,7 @@ func (client *Client) SelectExitStats(includeTitle bool, query string, args ...a
 		}
 	} else {
 		for rows.Next() {
-			var result model2.ExitStats
+			var result model.ExitStats
 
 			if err := rows.Scan(&result.Path, &result.Exits); err != nil {
 				return nil, err
@@ -958,7 +958,7 @@ func (client *Client) SelectTotalSessions(query string, args ...any) (int, error
 }
 
 // SelectTotalVisitorSessionStats implements the Store interface.
-func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) ([]model2.TotalVisitorSessionStats, error) {
+func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) ([]model.TotalVisitorSessionStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -966,10 +966,10 @@ func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) 
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.TotalVisitorSessionStats
+	var results []model.TotalVisitorSessionStats
 
 	for rows.Next() {
-		var result model2.TotalVisitorSessionStats
+		var result model.TotalVisitorSessionStats
 
 		if err := rows.Scan(&result.Path, &result.Visitors, &result.Sessions, &result.Views); err != nil {
 			return nil, err
@@ -982,8 +982,8 @@ func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) 
 }
 
 // GetPageConversionsStats implements the Store interface.
-func (client *Client) GetPageConversionsStats(query string, args ...any) (*model2.PageConversionsStats, error) {
-	result := new(model2.PageConversionsStats)
+func (client *Client) GetPageConversionsStats(query string, args ...any) (*model.PageConversionsStats, error) {
+	result := new(model.PageConversionsStats)
 
 	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
 		&result.Views,
@@ -995,7 +995,7 @@ func (client *Client) GetPageConversionsStats(query string, args ...any) (*model
 }
 
 // SelectEventStats implements the Store interface.
-func (client *Client) SelectEventStats(breakdown bool, query string, args ...any) ([]model2.EventStats, error) {
+func (client *Client) SelectEventStats(breakdown bool, query string, args ...any) ([]model.EventStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1003,11 +1003,11 @@ func (client *Client) SelectEventStats(breakdown bool, query string, args ...any
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.EventStats
+	var results []model.EventStats
 
 	if breakdown {
 		for rows.Next() {
-			var result model2.EventStats
+			var result model.EventStats
 
 			if err := rows.Scan(&result.Name,
 				&result.Visitors,
@@ -1022,7 +1022,7 @@ func (client *Client) SelectEventStats(breakdown bool, query string, args ...any
 		}
 	} else {
 		for rows.Next() {
-			var result model2.EventStats
+			var result model.EventStats
 
 			if err := rows.Scan(&result.Name,
 				&result.Visitors,
@@ -1041,7 +1041,7 @@ func (client *Client) SelectEventStats(breakdown bool, query string, args ...any
 }
 
 // SelectEventListStats implements the Store interface.
-func (client *Client) SelectEventListStats(query string, args ...any) ([]model2.EventListStats, error) {
+func (client *Client) SelectEventListStats(query string, args ...any) ([]model.EventListStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1049,10 +1049,10 @@ func (client *Client) SelectEventListStats(query string, args ...any) ([]model2.
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.EventListStats
+	var results []model.EventListStats
 
 	for rows.Next() {
-		var result model2.EventListStats
+		var result model.EventListStats
 
 		if err := rows.Scan(&result.Name, &result.Meta, &result.Visitors, &result.Count); err != nil {
 			return nil, err
@@ -1065,7 +1065,7 @@ func (client *Client) SelectEventListStats(query string, args ...any) ([]model2.
 }
 
 // SelectReferrerStats implements the Store interface.
-func (client *Client) SelectReferrerStats(query string, args ...any) ([]model2.ReferrerStats, error) {
+func (client *Client) SelectReferrerStats(query string, args ...any) ([]model.ReferrerStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1073,10 +1073,10 @@ func (client *Client) SelectReferrerStats(query string, args ...any) ([]model2.R
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.ReferrerStats
+	var results []model.ReferrerStats
 
 	for rows.Next() {
-		var result model2.ReferrerStats
+		var result model.ReferrerStats
 
 		if err := rows.Scan(&result.ReferrerName,
 			&result.ReferrerIcon,
@@ -1096,8 +1096,8 @@ func (client *Client) SelectReferrerStats(query string, args ...any) ([]model2.R
 }
 
 // GetPlatformStats implements the Store interface.
-func (client *Client) GetPlatformStats(query string, args ...any) (*model2.PlatformStats, error) {
-	result := new(model2.PlatformStats)
+func (client *Client) GetPlatformStats(query string, args ...any) (*model.PlatformStats, error) {
+	result := new(model.PlatformStats)
 
 	if err := client.QueryRow(query, args...).Scan(&result.PlatformDesktop,
 		&result.PlatformMobile,
@@ -1112,7 +1112,7 @@ func (client *Client) GetPlatformStats(query string, args ...any) (*model2.Platf
 }
 
 // SelectLanguageStats implements the Store interface.
-func (client *Client) SelectLanguageStats(query string, args ...any) ([]model2.LanguageStats, error) {
+func (client *Client) SelectLanguageStats(query string, args ...any) ([]model.LanguageStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1120,10 +1120,10 @@ func (client *Client) SelectLanguageStats(query string, args ...any) ([]model2.L
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.LanguageStats
+	var results []model.LanguageStats
 
 	for rows.Next() {
-		var result model2.LanguageStats
+		var result model.LanguageStats
 
 		if err := rows.Scan(&result.Language, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1136,7 +1136,7 @@ func (client *Client) SelectLanguageStats(query string, args ...any) ([]model2.L
 }
 
 // SelectCountryStats implements the Store interface.
-func (client *Client) SelectCountryStats(query string, args ...any) ([]model2.CountryStats, error) {
+func (client *Client) SelectCountryStats(query string, args ...any) ([]model.CountryStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1144,10 +1144,10 @@ func (client *Client) SelectCountryStats(query string, args ...any) ([]model2.Co
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.CountryStats
+	var results []model.CountryStats
 
 	for rows.Next() {
-		var result model2.CountryStats
+		var result model.CountryStats
 
 		if err := rows.Scan(&result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1160,7 +1160,7 @@ func (client *Client) SelectCountryStats(query string, args ...any) ([]model2.Co
 }
 
 // SelectCityStats implements the Store interface.
-func (client *Client) SelectCityStats(query string, args ...any) ([]model2.CityStats, error) {
+func (client *Client) SelectCityStats(query string, args ...any) ([]model.CityStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1168,10 +1168,10 @@ func (client *Client) SelectCityStats(query string, args ...any) ([]model2.CityS
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.CityStats
+	var results []model.CityStats
 
 	for rows.Next() {
-		var result model2.CityStats
+		var result model.CityStats
 
 		if err := rows.Scan(&result.City, &result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1184,7 +1184,7 @@ func (client *Client) SelectCityStats(query string, args ...any) ([]model2.CityS
 }
 
 // SelectBrowserStats implements the Store interface.
-func (client *Client) SelectBrowserStats(query string, args ...any) ([]model2.BrowserStats, error) {
+func (client *Client) SelectBrowserStats(query string, args ...any) ([]model.BrowserStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1192,10 +1192,10 @@ func (client *Client) SelectBrowserStats(query string, args ...any) ([]model2.Br
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.BrowserStats
+	var results []model.BrowserStats
 
 	for rows.Next() {
-		var result model2.BrowserStats
+		var result model.BrowserStats
 
 		if err := rows.Scan(&result.Browser, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1208,7 +1208,7 @@ func (client *Client) SelectBrowserStats(query string, args ...any) ([]model2.Br
 }
 
 // SelectOSStats implements the Store interface.
-func (client *Client) SelectOSStats(query string, args ...any) ([]model2.OSStats, error) {
+func (client *Client) SelectOSStats(query string, args ...any) ([]model.OSStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1216,10 +1216,10 @@ func (client *Client) SelectOSStats(query string, args ...any) ([]model2.OSStats
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.OSStats
+	var results []model.OSStats
 
 	for rows.Next() {
-		var result model2.OSStats
+		var result model.OSStats
 
 		if err := rows.Scan(&result.OS, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1232,7 +1232,7 @@ func (client *Client) SelectOSStats(query string, args ...any) ([]model2.OSStats
 }
 
 // SelectScreenClassStats implements the Store interface.
-func (client *Client) SelectScreenClassStats(query string, args ...any) ([]model2.ScreenClassStats, error) {
+func (client *Client) SelectScreenClassStats(query string, args ...any) ([]model.ScreenClassStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1240,10 +1240,10 @@ func (client *Client) SelectScreenClassStats(query string, args ...any) ([]model
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.ScreenClassStats
+	var results []model.ScreenClassStats
 
 	for rows.Next() {
-		var result model2.ScreenClassStats
+		var result model.ScreenClassStats
 
 		if err := rows.Scan(&result.ScreenClass, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1256,7 +1256,7 @@ func (client *Client) SelectScreenClassStats(query string, args ...any) ([]model
 }
 
 // SelectUTMSourceStats implements the Store interface.
-func (client *Client) SelectUTMSourceStats(query string, args ...any) ([]model2.UTMSourceStats, error) {
+func (client *Client) SelectUTMSourceStats(query string, args ...any) ([]model.UTMSourceStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1264,10 +1264,10 @@ func (client *Client) SelectUTMSourceStats(query string, args ...any) ([]model2.
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.UTMSourceStats
+	var results []model.UTMSourceStats
 
 	for rows.Next() {
-		var result model2.UTMSourceStats
+		var result model.UTMSourceStats
 
 		if err := rows.Scan(&result.UTMSource, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1280,7 +1280,7 @@ func (client *Client) SelectUTMSourceStats(query string, args ...any) ([]model2.
 }
 
 // SelectUTMMediumStats implements the Store interface.
-func (client *Client) SelectUTMMediumStats(query string, args ...any) ([]model2.UTMMediumStats, error) {
+func (client *Client) SelectUTMMediumStats(query string, args ...any) ([]model.UTMMediumStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1288,10 +1288,10 @@ func (client *Client) SelectUTMMediumStats(query string, args ...any) ([]model2.
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.UTMMediumStats
+	var results []model.UTMMediumStats
 
 	for rows.Next() {
-		var result model2.UTMMediumStats
+		var result model.UTMMediumStats
 
 		if err := rows.Scan(&result.UTMMedium, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1304,7 +1304,7 @@ func (client *Client) SelectUTMMediumStats(query string, args ...any) ([]model2.
 }
 
 // SelectUTMCampaignStats implements the Store interface.
-func (client *Client) SelectUTMCampaignStats(query string, args ...any) ([]model2.UTMCampaignStats, error) {
+func (client *Client) SelectUTMCampaignStats(query string, args ...any) ([]model.UTMCampaignStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1312,10 +1312,10 @@ func (client *Client) SelectUTMCampaignStats(query string, args ...any) ([]model
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.UTMCampaignStats
+	var results []model.UTMCampaignStats
 
 	for rows.Next() {
-		var result model2.UTMCampaignStats
+		var result model.UTMCampaignStats
 
 		if err := rows.Scan(&result.UTMCampaign, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1328,7 +1328,7 @@ func (client *Client) SelectUTMCampaignStats(query string, args ...any) ([]model
 }
 
 // SelectUTMContentStats implements the Store interface.
-func (client *Client) SelectUTMContentStats(query string, args ...any) ([]model2.UTMContentStats, error) {
+func (client *Client) SelectUTMContentStats(query string, args ...any) ([]model.UTMContentStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1336,10 +1336,10 @@ func (client *Client) SelectUTMContentStats(query string, args ...any) ([]model2
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.UTMContentStats
+	var results []model.UTMContentStats
 
 	for rows.Next() {
-		var result model2.UTMContentStats
+		var result model.UTMContentStats
 
 		if err := rows.Scan(&result.UTMContent, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1352,7 +1352,7 @@ func (client *Client) SelectUTMContentStats(query string, args ...any) ([]model2
 }
 
 // SelectUTMTermStats implements the Store interface.
-func (client *Client) SelectUTMTermStats(query string, args ...any) ([]model2.UTMTermStats, error) {
+func (client *Client) SelectUTMTermStats(query string, args ...any) ([]model.UTMTermStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1360,10 +1360,10 @@ func (client *Client) SelectUTMTermStats(query string, args ...any) ([]model2.UT
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.UTMTermStats
+	var results []model.UTMTermStats
 
 	for rows.Next() {
-		var result model2.UTMTermStats
+		var result model.UTMTermStats
 
 		if err := rows.Scan(&result.UTMTerm, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1376,7 +1376,7 @@ func (client *Client) SelectUTMTermStats(query string, args ...any) ([]model2.UT
 }
 
 // SelectOSVersionStats implements the Store interface.
-func (client *Client) SelectOSVersionStats(query string, args ...any) ([]model2.OSVersionStats, error) {
+func (client *Client) SelectOSVersionStats(query string, args ...any) ([]model.OSVersionStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1384,10 +1384,10 @@ func (client *Client) SelectOSVersionStats(query string, args ...any) ([]model2.
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.OSVersionStats
+	var results []model.OSVersionStats
 
 	for rows.Next() {
-		var result model2.OSVersionStats
+		var result model.OSVersionStats
 
 		if err := rows.Scan(&result.OS, &result.OSVersion, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
@@ -1400,7 +1400,7 @@ func (client *Client) SelectOSVersionStats(query string, args ...any) ([]model2.
 }
 
 // SelectBrowserVersionStats implements the Store interface.
-func (client *Client) SelectBrowserVersionStats(query string, args ...any) ([]model2.BrowserVersionStats, error) {
+func (client *Client) SelectBrowserVersionStats(query string, args ...any) ([]model.BrowserVersionStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -1408,10 +1408,10 @@ func (client *Client) SelectBrowserVersionStats(query string, args ...any) ([]mo
 	}
 
 	defer client.closeRows(rows)
-	var results []model2.BrowserVersionStats
+	var results []model.BrowserVersionStats
 
 	for rows.Next() {
-		var result model2.BrowserVersionStats
+		var result model.BrowserVersionStats
 
 		if err := rows.Scan(&result.Browser, &result.BrowserVersion, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
