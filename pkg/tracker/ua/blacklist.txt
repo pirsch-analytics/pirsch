@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-06-28)
+# custom (last update: 2023-08-19)
 ://
 bot
 crawler
@@ -424,6 +424,67 @@ mmb1_pedrillo
 1686705749888
 1687171999244
 1685804726376
+googleanalytics
+https:
+search.marginalia.nu
+arquivo-web-crawler
+<default user agent>
+duckduckbot
+[fban
+sitescorebot
+bitdiscovery
+iubenda-radar
+lightspeedsystemscrawler
+dingtalkbot
+investment
+seranking
+amazon.com
+afengineurl
+domaner.xyz
+logstatistic
+elisabot
+spiderweb
+getthit
+sitecheckerbotcrawler
+nu.nl
+easy-thumb
+macbaiduyunguanjia
+foregenix
+gosquared
+bunnyoptimizer
+webthumbs
+ohio-development
+findlinks
+bigpointclient
+hyperhost.ua
+gonative
+barooders
+vpuls0u6s7
+nhcapacketmng
+jnanagangothri
+exedwnloadmnger
+cve-2023-35078
+filetransport
+keynote
+keurig
+coffee-mug
+valavan_app
+we7test
+/etc/passwd
+scope (mars+)
+secragon
+1691513620386
+d038eacf-ab1a-408e-9f28-d05703d0433c
+1690974233830
+authorizeua
+kith-app
+darcyripper
+foofox
+lucee
+luasocket
+administrator
+benefithubwebview
+yqh24kes1y
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

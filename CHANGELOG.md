@@ -8,6 +8,7 @@
 * updated browser minimum versions
 * added support for client hints
 * added Chrome OS and Windows 11 detection
+* updated User-Agent blacklist
 * upgraded to Go 1.21
 * updated dependencies
 
