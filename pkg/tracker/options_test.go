@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/internal/util"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

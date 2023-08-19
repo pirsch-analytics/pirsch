@@ -4,12 +4,12 @@ import (
 	"context"
 	"github.com/dchest/siphash"
 	"github.com/emvi/iso-639-1"
-	"github.com/pirsch-analytics/pirsch/v6/internal/util"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
+	util2 "github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"log"
 	"math"
 	"net"
@@ -290,7 +290,7 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 	rawUserAgent := r.UserAgent()
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
 
-	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
+	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util2.ContainsNonASCIICharacters(userAgent) {
 		return model.UserAgent{}, "", true
 	}
 
@@ -427,15 +427,15 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 }
 
 func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) *model.Session {
-	ua.OS = util.ShortenString(ua.OS, 20)
-	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
-	ua.Browser = util.ShortenString(ua.Browser, 20)
-	ua.BrowserVersion = util.ShortenString(ua.BrowserVersion, 20)
-	lang := util.ShortenString(tracker.getLanguage(r), 10)
+	ua.OS = util2.ShortenString(ua.OS, 20)
+	ua.OSVersion = util2.ShortenString(ua.OSVersion, 20)
+	ua.Browser = util2.ShortenString(ua.Browser, 20)
+	ua.BrowserVersion = util2.ShortenString(ua.BrowserVersion, 20)
+	lang := util2.ShortenString(tracker.getLanguage(r), 10)
 	ref, referrerName, referrerIcon := referrer.Get(r, options.Referrer, options.Hostname)
-	ref = util.ShortenString(ref, 200)
-	referrerName = util.ShortenString(referrerName, 200)
-	referrerIcon = util.ShortenString(referrerIcon, 2000)
+	ref = util2.ShortenString(ref, 200)
+	referrerName = util2.ShortenString(referrerName, 200)
+	referrerIcon = util2.ShortenString(referrerIcon, 2000)
 	screenClass := tracker.getScreenClass(r, options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
@@ -453,7 +453,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		Sign:           1,
 		ClientID:       clientID,
 		VisitorID:      fingerprint,
-		SessionID:      util.RandUint32(),
+		SessionID:      util2.RandUint32(),
 		Time:           now,
 		Start:          now,
 		EntryPath:      options.Path,
