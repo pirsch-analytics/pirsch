@@ -1,5 +1,18 @@
 # Changelog
 
+## 6.0.0
+
+* refactored package structure
+* switched to `log/slog` for logging
+* removed deprecated `rand.Seed` initialization
+* updated browser minimum versions
+* added support for client hints
+* added Chrome OS and Windows 11 detection
+* updated User-Agent blacklist
+* updated referrer blacklist
+* upgraded to Go 1.21
+* updated dependencies
+
 ## 5.10.3
 
 * fixed calculating average session duration

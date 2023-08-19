@@ -13,7 +13,7 @@ import (
 // run this script from the root directory to update the blacklist.go
 func main() {
 	log.Println("Updating User-Agent blacklist")
-	list, err := os.Open("tracker/ua/blacklist.txt")
+	list, err := os.Open("pkg/tracker/ua/blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +56,7 @@ var Blacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("tracker/ua/blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/tracker/ua/blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 
