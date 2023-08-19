@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2023-06-28)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2023-08-19)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -118,6 +118,7 @@ var blacklist = map[string]struct{}{
 	"ai-seo-services.com":                  {},
 	"aibolita.com":                         {},
 	"aidarmebel.kz":                        {},
+	"aimeesblog.xyz":                       {},
 	"aimiot.net":                           {},
 	"aitiman.ae":                           {},
 	"akmussale.xyz":                        {},
@@ -295,6 +296,7 @@ var blacklist = map[string]struct{}{
 	"black-friday.ga":                      {},
 	"black-tip.top":                        {},
 	"blackhatworth.com":                    {},
+	"blancablog.online":                    {},
 	"blockchaintop.nl":                     {},
 	"blog.xsk.in":                          {},
 	"blog100.org":                          {},
@@ -657,6 +659,7 @@ var blacklist = map[string]struct{}{
 	"eko-gazon.ru":                         {},
 	"ekoproekt-kr.ru":                      {},
 	"ekto.ee":                              {},
+	"elainasblog.xyz":                      {},
 	"eldoradorent.az":                      {},
 	"electric-blue-industries.com":         {},
 	"elegante-vitrage.ru":                  {},
@@ -685,6 +688,7 @@ var blacklist = map[string]struct{}{
 	"epicdiving.com":                       {},
 	"eraglass.com":                         {},
 	"eric-artem.com":                       {},
+	"ericshome.store":                      {},
 	"erinhome.xyz":                         {},
 	"ero-video-chat.org":                   {},
 	"erofus.online":                        {},
@@ -1103,6 +1107,7 @@ var blacklist = map[string]struct{}{
 	"kazlenta.kz":                          {},
 	"kazrent.com":                          {},
 	"kellyonline.xyz":                      {},
+	"kendrablog.online":                    {},
 	"kenyagoods.xyz":                       {},
 	"kerch.site":                           {},
 	"kevblog.top":                          {},
@@ -1224,6 +1229,7 @@ var blacklist = map[string]struct{}{
 	"marathonbet-in.ru":                    {},
 	"marblestyle.ru":                       {},
 	"maridan.com.ua":                       {},
+	"marihome.online":                      {},
 	"marinetraffic.com":                    {},
 	"marjorieblog.online":                  {},
 	"marketland.ml":                        {},

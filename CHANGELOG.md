@@ -9,6 +9,7 @@
 * added support for client hints
 * added Chrome OS and Windows 11 detection
 * updated User-Agent blacklist
+* updated referrer blacklist
 * upgraded to Go 1.21
 * updated dependencies
 
