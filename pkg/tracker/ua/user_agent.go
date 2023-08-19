@@ -35,7 +35,7 @@ func Parse(r *http.Request) model.UserAgent {
 	}
 
 	if productFromCH {
-		// TODO
+		userAgent.Browser, userAgent.BrowserVersion = products[0], products[1]
 	} else {
 		userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
 	}
@@ -330,8 +330,23 @@ func parse(r *http.Request) ([]string, []string, bool, bool) {
 		system = parseSystem(ua, systemStart, systemEnd)
 	}
 
-	// TODO product from client hints
-	return system, parseProducts(ua, systemStart, systemEnd), platformFromCH, false
+	chProduct := r.Header.Get("Sec-CH-UA")
+	productFromCH := false
+	var products []string
+
+	if chProduct != "" {
+		products = parseProductsFromCH(chProduct)
+
+		if len(products) == 0 {
+			products = parseProducts(ua, systemStart, systemEnd)
+		} else {
+			productFromCH = true
+		}
+	} else {
+		products = parseProducts(ua, systemStart, systemEnd)
+	}
+
+	return system, products, platformFromCH, productFromCH
 }
 
 func parseSystem(ua string, systemStart, systemEnd int) []string {
@@ -381,4 +396,42 @@ func ignoreProductString(product string) bool {
 	}
 
 	return false
+}
+
+func parseProductsFromCH(header string) []string {
+	productStrings := strings.Split(header, ",")
+	genericProduct, genericVersion := "", ""
+
+	for _, str := range productStrings {
+		product, version, found := strings.Cut(str, ";")
+
+		if found {
+			if strings.Contains(product, "Google Chrome") {
+				return []string{pkg.BrowserChrome, parseProductVersion(version)}
+			} else if strings.Contains(product, "Microsoft Edge") {
+				return []string{pkg.BrowserEdge, parseProductVersion(version)}
+			} else if strings.Contains(product, "Opera") {
+				return []string{pkg.BrowserOpera, parseProductVersion(version)}
+			} else if !strings.Contains(product, "Brand") && !strings.Contains(product, "Chromium") {
+				genericProduct = strings.Trim(product, `"' `)
+				genericVersion = parseProductVersion(version)
+			}
+		}
+	}
+
+	if genericProduct != "" {
+		return []string{genericProduct, genericVersion}
+	}
+
+	return nil
+}
+
+func parseProductVersion(version string) string {
+	version = strings.ToLower(version)
+
+	if strings.HasPrefix(version, `v="`) {
+		return strings.Trim(version[3:], `"`)
+	}
+
+	return ""
 }
