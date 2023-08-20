@@ -319,12 +319,15 @@ func parse(r *http.Request) ([]string, []string, bool, bool) {
 
 	systemStart := strings.IndexRune(ua, uaSystemLeftDelimiter)
 	systemEnd := strings.IndexRune(ua, uaSystemRightDelimiter)
-	chPlatform := r.Header.Get("Sec-CH-UA-Platform")
+	chPlatform := strings.Trim(r.Header.Get("Sec-CH-UA-Platform"), `"'`)
 	platformFromCH := false
 	var system []string
 
 	if chPlatform != "" && strings.ToLower(chPlatform) != "unknown" {
-		system = []string{chPlatform, r.Header.Get("Sec-CH-UA-Platform-Version")}
+		system = []string{
+			chPlatform,
+			strings.Trim(r.Header.Get("Sec-CH-UA-Platform-Version"), `"'`),
+		}
 		platformFromCH = true
 	} else {
 		system = parseSystem(ua, systemStart, systemEnd)
@@ -406,6 +409,9 @@ func parseProductsFromCH(header string) []string {
 		product, version, found := strings.Cut(str, ";")
 
 		if found {
+			product = strings.Trim(product, `"'`)
+			version = strings.Trim(version, `"'`)
+
 			if strings.Contains(product, "Google Chrome") {
 				return []string{pkg.BrowserChrome, parseProductVersion(version)}
 			} else if strings.Contains(product, "Microsoft Edge") {
