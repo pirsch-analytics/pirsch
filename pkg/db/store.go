@@ -39,7 +39,7 @@ type Store interface {
 	GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error)
 
 	// SelectVisitorStats selects VisitorStats.
-	SelectVisitorStats(pkg.Period, string, bool, ...any) ([]model.VisitorStats, error)
+	SelectVisitorStats(pkg.Period, string, bool, bool, ...any) ([]model.VisitorStats, error)
 
 	// SelectTimeSpentStats selects TimeSpentStats.
 	SelectTimeSpentStats(pkg.Period, string, ...any) ([]model.TimeSpentStats, error)

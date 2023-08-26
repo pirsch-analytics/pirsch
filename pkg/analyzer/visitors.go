@@ -55,7 +55,7 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	return stats, count, nil
 }
 
-// Total returns the total visitor count, session count, bounce rate, views, and CR.
+// Total returns the total visitor count, session count, bounce rate, views, CR, and average and total custom metric.
 func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	fields := []Field{
@@ -124,7 +124,8 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	}, nil
 }
 
-// ByPeriod returns the visitor count, session count, bounce rate, views, and CR grouped by day, week, month, or year.
+// ByPeriod returns the visitor count, session count, bounce rate, views, CR, and average and total custom metric
+// grouped by day, week, month, or year.
 func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	fields := []Field{
@@ -140,13 +141,20 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 		fields = append(fields, FieldCR)
 	}
 
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
 	q, args := filter.buildQuery(fields, []Field{
 		FieldDay,
 	}, []Field{
 		FieldDay,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, filter.IncludeCR, args...)
+	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err

@@ -178,7 +178,7 @@ func (client *ClientMock) GetTotalVisitorsPageViewsStats(string, ...any) (*model
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *ClientMock) SelectVisitorStats(pkg.Period, string, bool, ...any) ([]model.VisitorStats, error) {
+func (client *ClientMock) SelectVisitorStats(pkg.Period, string, bool, bool, ...any) ([]model.VisitorStats, error) {
 	return nil, nil
 }
 
