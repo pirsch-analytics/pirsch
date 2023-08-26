@@ -95,6 +95,7 @@ func getMaxFilter(eventName string) *Filter {
 		UTMTerm:        []string{"term"},
 		EventName:      events,
 		Limit:          42,
+		IncludeCR:      true,
 	}
 }
 

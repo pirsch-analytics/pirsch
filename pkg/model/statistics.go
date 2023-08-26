@@ -18,6 +18,7 @@ type TotalVisitorStats struct {
 	Sessions   int     `json:"sessions"`
 	Bounces    int     `json:"bounces"`
 	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
+	CR         float64 `json:"cr"`
 }
 
 // TotalVisitorsPageViewsStats is the result type for total visitor cound and number of page views statistics.
@@ -39,6 +40,7 @@ type VisitorStats struct {
 	Sessions   int       `json:"sessions"`
 	Bounces    int       `json:"bounces"`
 	BounceRate float64   `db:"bounce_rate" json:"bounce_rate"`
+	CR         float64   `json:"cr"`
 }
 
 // Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
@@ -48,6 +50,7 @@ type Growth struct {
 	SessionsGrowth  float64 `json:"sessions_growth"`
 	BouncesGrowth   float64 `json:"bounces_growth"`
 	TimeSpentGrowth float64 `json:"time_spent_growth"`
+	CRGrowth        float64 `json:"cr_growth"`
 }
 
 // VisitorHourStats is the result type for visitor statistics grouped by time of day.
@@ -260,6 +263,7 @@ type GrowthStats struct {
 	Sessions   int
 	Bounces    int
 	BounceRate float64 `db:"bounce_rate"`
+	CR         float64
 }
 
 // TotalVisitorSessionStats are the total amount of visitors, views, and sessions for a page.

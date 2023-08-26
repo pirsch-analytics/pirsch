@@ -168,7 +168,7 @@ func (client *ClientMock) SelectActiveVisitorStats(bool, string, ...any) ([]mode
 }
 
 // GetTotalVisitorStats implements the Store interface.
-func (client *ClientMock) GetTotalVisitorStats(string, ...any) (*model.TotalVisitorStats, error) {
+func (client *ClientMock) GetTotalVisitorStats(string, bool, ...any) (*model.TotalVisitorStats, error) {
 	return nil, nil
 }
 
@@ -178,7 +178,7 @@ func (client *ClientMock) GetTotalVisitorsPageViewsStats(string, ...any) (*model
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *ClientMock) SelectVisitorStats(pkg.Period, string, ...any) ([]model.VisitorStats, error) {
+func (client *ClientMock) SelectVisitorStats(pkg.Period, string, bool, ...any) ([]model.VisitorStats, error) {
 	return nil, nil
 }
 
@@ -188,7 +188,7 @@ func (client *ClientMock) SelectTimeSpentStats(pkg.Period, string, ...any) ([]mo
 }
 
 // GetGrowthStats implements the Store interface.
-func (client *ClientMock) GetGrowthStats(string, ...any) (*model.GrowthStats, error) {
+func (client *ClientMock) GetGrowthStats(string, bool, ...any) (*model.GrowthStats, error) {
 	return nil, nil
 }
 

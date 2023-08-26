@@ -55,16 +55,23 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	return stats, count, nil
 }
 
-// Total returns the total visitor count, session count, bounce rate, and views.
+// Total returns the total visitor count, session count, bounce rate, views, and CR.
 func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error) {
-	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	filter = visitors.analyzer.getFilter(filter)
+	fields := []Field{
 		FieldVisitors,
 		FieldSessions,
 		FieldViews,
 		FieldBounces,
 		FieldBounceRate,
-	}, nil, nil)
-	stats, err := visitors.store.GetTotalVisitorStats(q, args...)
+	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCR)
+	}
+
+	q, args := filter.buildQuery(fields, nil, nil)
+	stats, err := visitors.store.GetTotalVisitorStats(q, filter.IncludeCR, args...)
 
 	if err != nil {
 		return nil, err
@@ -110,23 +117,29 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	}, nil
 }
 
-// ByPeriod returns the visitor count, session count, bounce rate, and views grouped by day, week, month, or year.
+// ByPeriod returns the visitor count, session count, bounce rate, views, and CR grouped by day, week, month, or year.
 func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	q, args := filter.buildQuery([]Field{
+	fields := []Field{
 		FieldDay,
 		FieldVisitors,
 		FieldSessions,
 		FieldViews,
 		FieldBounces,
 		FieldBounceRate,
-	}, []Field{
+	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCR)
+	}
+
+	q, args := filter.buildQuery(fields, []Field{
 		FieldDay,
 	}, []Field{
 		FieldDay,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, args...)
+	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, filter.IncludeCR, args...)
 
 	if err != nil {
 		return nil, err
@@ -153,8 +166,13 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		FieldBounces,
 		FieldBounceRate,
 	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCR)
+	}
+
 	q, args := filter.buildQuery(fields, nil, nil)
-	current, err := visitors.store.GetGrowthStats(q, args...)
+	current, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, args...)
 
 	if err != nil {
 		return nil, err
@@ -176,7 +194,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 	visitors.getPreviousPeriod(filter)
 	q, args = filter.buildQuery(fields, nil, nil)
-	previous, err := visitors.store.GetGrowthStats(q, args...)
+	previous, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, args...)
 
 	if err != nil {
 		return nil, err
@@ -202,6 +220,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		SessionsGrowth:  calculateGrowth(current.Sessions, previous.Sessions),
 		BouncesGrowth:   calculateGrowth(current.BounceRate, previous.BounceRate),
 		TimeSpentGrowth: calculateGrowth(currentTimeSpent, previousTimeSpent),
+		CRGrowth:        calculateGrowth(current.CR, previous.CR),
 	}, nil
 }
 
