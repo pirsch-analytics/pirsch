@@ -396,6 +396,27 @@ var (
 		Name:           "average_time_spent_seconds",
 	}
 
+	// FieldEventMetaCustomMetric is a query result column.
+	FieldEventMetaCustomMetric = Field{
+		querySessions:  "coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))",
+		queryPageViews: "coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))",
+		Name:           "custom_metric",
+	}
+
+	// FieldEventMetaCustomMetricAvg is a query result column.
+	FieldEventMetaCustomMetricAvg = Field{
+		querySessions:  "avg(custom_metric)",
+		queryPageViews: "avg(custom_metric)",
+		Name:           "custom_metric_avg",
+	}
+
+	// FieldEventMetaCustomMetricTotal is a query result column.
+	FieldEventMetaCustomMetricTotal = Field{
+		querySessions:  "sum(custom_metric)",
+		queryPageViews: "sum(custom_metric)",
+		Name:           "custom_metric_total",
+	}
+
 	// FieldPlatformDesktop is a query result column.
 	FieldPlatformDesktop = Field{
 		querySessions:  "uniqIf(visitor_id, desktop = 1)",

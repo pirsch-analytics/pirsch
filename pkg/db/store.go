@@ -33,7 +33,7 @@ type Store interface {
 	SelectActiveVisitorStats(bool, string, ...any) ([]model.ActiveVisitorStats, error)
 
 	// GetTotalVisitorStats returns the TotalVisitorStats.
-	GetTotalVisitorStats(string, bool, ...any) (*model.TotalVisitorStats, error)
+	GetTotalVisitorStats(string, bool, bool, ...any) (*model.TotalVisitorStats, error)
 
 	// GetTotalVisitorsPageViewsStats returns the TotalVisitorsPageViewsStats.
 	GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error)

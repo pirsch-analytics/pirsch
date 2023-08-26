@@ -70,8 +70,15 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 		fields = append(fields, FieldCR)
 	}
 
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
 	q, args := filter.buildQuery(fields, nil, nil)
-	stats, err := visitors.store.GetTotalVisitorStats(q, filter.IncludeCR, args...)
+	stats, err := visitors.store.GetTotalVisitorStats(q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err

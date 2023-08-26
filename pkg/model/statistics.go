@@ -13,12 +13,14 @@ type ActiveVisitorStats struct {
 
 // TotalVisitorStats is the result type for total visitor statistics.
 type TotalVisitorStats struct {
-	Visitors   int     `json:"visitors"`
-	Views      int     `json:"views"`
-	Sessions   int     `json:"sessions"`
-	Bounces    int     `json:"bounces"`
-	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
-	CR         float64 `json:"cr"`
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	Sessions          int     `json:"sessions"`
+	Bounces           int     `json:"bounces"`
+	BounceRate        float64 `db:"bounce_rate" json:"bounce_rate"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // TotalVisitorsPageViewsStats is the result type for total visitor cound and number of page views statistics.

@@ -24,9 +24,6 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
-	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
-	IncludeTime bool
-
 	// Period sets the period to group results.
 	// This is only used by Analyzer.ByPeriod, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
 	// Using it for other queries leads to wrong results and might return an error.
@@ -126,6 +123,16 @@ type Filter struct {
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
+	// CustomMetricKey is used to calculate the average and total for an event metadata field.
+	// This must be used together with EventName and CustomMetricType.
+	CustomMetricKey string
+
+	// CustomMetricType is used to calculate the average and total for an event metadata field.
+	CustomMetricType pkg.CustomMetricType
+
+	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
+	IncludeTime bool
+
 	// IncludeTitle indicates that the Analyzer.ByPath, Analyzer.Entry, and Analyzer.Exit should contain the page title.
 	IncludeTitle bool
 
@@ -207,6 +214,12 @@ func (filter *Filter) validate() {
 
 	if filter.Limit < 0 {
 		filter.Limit = 0
+	}
+
+	if filter.CustomMetricType != "" &&
+		filter.CustomMetricType != pkg.CustomMetricTypeInteger &&
+		filter.CustomMetricType != pkg.CustomMetricTypeFloat {
+		filter.CustomMetricType = ""
 	}
 
 	filter.Path = filter.removeDuplicates(filter.Path)
@@ -414,6 +427,10 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 			eventFields = append(eventFields, FieldEventTitle)
 		}
 
+		if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+			eventFields = append(eventFields, FieldEventMetaCustomMetric)
+		}
+
 		return &queryBuilder{
 			filter:  &filterCopy,
 			fields:  eventFields,
@@ -445,6 +462,10 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 
 	if filter.fieldsContain(fields, FieldEventTitle) {
 		eventFields = append(eventFields, FieldEventTitle)
+	}
+
+	if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		eventFields = append(eventFields, FieldEventMetaCustomMetric)
 	}
 
 	return &queryBuilder{

@@ -555,25 +555,50 @@ func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, 
 }
 
 // GetTotalVisitorStats implements the Store interface.
-func (client *Client) GetTotalVisitorStats(query string, includeCR bool, args ...any) (*model.TotalVisitorStats, error) {
+func (client *Client) GetTotalVisitorStats(query string, includeCR, includeCustomMetric bool, args ...any) (*model.TotalVisitorStats, error) {
 	result := new(model.TotalVisitorStats)
 
 	if includeCR {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate,
-			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCustomMetric {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	} else {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCustomMetric {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	}
 

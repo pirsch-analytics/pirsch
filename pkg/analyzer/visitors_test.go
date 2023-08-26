@@ -223,6 +223,107 @@ func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors.CR, 0.01)
 }
 
+func TestAnalyzer_TotalVisitorsCustomMetric(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 3, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 4, Time: util.Today(), Path: "/"},
+		{VisitorID: 5, Time: util.Today(), Path: "/"},
+		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
+		{VisitorID: 3, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
+		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
+		{VisitorID: 6, Time: util.Today(), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.Total(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 4, visitors.Visitors)
+	assert.Equal(t, 4, visitors.Sessions)
+	assert.Equal(t, 4, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 0.25, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0.6666, visitors.CR, 0.01)
+	assert.InDelta(t, 2.44, visitors.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 9.76, visitors.CustomMetricTotal, 0.001)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, visitors.Visitors)
+	assert.Equal(t, 3, visitors.Sessions)
+	assert.Equal(t, 3, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 0.3333, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors.CR, 0.01)
+	assert.InDelta(t, 2.6633, visitors.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 7.99, visitors.CustomMetricTotal, 0.001)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		Path:             []string{"/"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 1, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 1.89, visitors.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors.CustomMetricTotal, 0.001)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Unrelated"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 1, visitors.Views)
+	assert.Equal(t, 0, visitors.Bounces)
+	assert.InDelta(t, 0, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 99, visitors.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 99, visitors.CustomMetricTotal, 0.001)
+	filter := getMaxFilter("Sale")
+	filter.CustomMetricType = pkg.CustomMetricTypeFloat
+	filter.CustomMetricKey = "amount"
+	filter.To = util.Today()
+	visitors, err = analyzer.Visitors.Total(filter)
+}
+
 func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
