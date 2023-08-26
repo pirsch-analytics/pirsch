@@ -250,20 +250,34 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 // ByHour returns the visitor count grouped by time of day.
 func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, error) {
-	q, args := visitors.analyzer.getFilter(filter).buildQuery([]Field{
+	filter = visitors.analyzer.getFilter(filter)
+	fields := []Field{
 		FieldHour,
 		FieldVisitors,
 		FieldSessions,
 		FieldViews,
 		FieldBounces,
 		FieldBounceRate,
-	}, []Field{
+	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCR)
+	}
+
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
+	q, args := filter.buildQuery(fields, []Field{
 		FieldHour,
 	}, []Field{
 		FieldHour,
 		FieldVisitors,
 	})
-	stats, err := visitors.store.SelectVisitorHourStats(q, args...)
+	stats, err := visitors.store.SelectVisitorHourStats(q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err

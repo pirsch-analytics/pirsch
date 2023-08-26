@@ -48,7 +48,7 @@ type Store interface {
 	GetGrowthStats(string, bool, bool, ...any) (*model.GrowthStats, error)
 
 	// SelectVisitorHourStats selects VisitorHourStats.
-	SelectVisitorHourStats(string, ...any) ([]model.VisitorHourStats, error)
+	SelectVisitorHourStats(string, bool, bool, ...any) ([]model.VisitorHourStats, error)
 
 	// SelectPageStats selects PageStats.
 	SelectPageStats(bool, bool, string, ...any) ([]model.PageStats, error)

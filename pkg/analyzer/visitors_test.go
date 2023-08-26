@@ -1074,6 +1074,162 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour * 14), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: util.Today().Add(time.Hour * 21), Start: util.Today().Add(time.Hour * 21), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Start: util.Today().Add(time.Hour * 21), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Path: "/foo"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Path: "/bar"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 14), Path: "/"},
+		{VisitorID: 5, Time: util.Today().Add(time.Hour * 21), Path: "/"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Path: "/foo"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.ByHour(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[6].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[7].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[8].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[9].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[10].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[11].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[12].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[13].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 2.445, visitors[14].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[15].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[16].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[17].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[18].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[19].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[20].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 2.98, visitors[21].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[22].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[23].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[0].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[6].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[7].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[8].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[9].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[10].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[11].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[12].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[13].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 4.89, visitors[14].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[15].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[16].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[17].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[18].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[19].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[20].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 2.98, visitors[21].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[22].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[23].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[0].CR, 0.001)
+	assert.InDelta(t, 0, visitors[1].CR, 0.001)
+	assert.InDelta(t, 0, visitors[2].CR, 0.001)
+	assert.InDelta(t, 0, visitors[3].CR, 0.001)
+	assert.InDelta(t, 0, visitors[4].CR, 0.001)
+	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0, visitors[6].CR, 0.001)
+	assert.InDelta(t, 0, visitors[7].CR, 0.001)
+	assert.InDelta(t, 0, visitors[8].CR, 0.001)
+	assert.InDelta(t, 0, visitors[9].CR, 0.001)
+	assert.InDelta(t, 0, visitors[10].CR, 0.001)
+	assert.InDelta(t, 0, visitors[11].CR, 0.001)
+	assert.InDelta(t, 0, visitors[12].CR, 0.001)
+	assert.InDelta(t, 0, visitors[13].CR, 0.001)
+	assert.InDelta(t, 0.3333, visitors[14].CR, 0.001)
+	assert.InDelta(t, 0, visitors[15].CR, 0.001)
+	assert.InDelta(t, 0, visitors[16].CR, 0.001)
+	assert.InDelta(t, 0, visitors[17].CR, 0.001)
+	assert.InDelta(t, 0, visitors[18].CR, 0.001)
+	assert.InDelta(t, 0, visitors[19].CR, 0.001)
+	assert.InDelta(t, 0, visitors[20].CR, 0.001)
+	assert.InDelta(t, 0.1666, visitors[21].CR, 0.001)
+	assert.InDelta(t, 0, visitors[22].CR, 0.001)
+	assert.InDelta(t, 0, visitors[23].CR, 0.001)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 3.12, visitors[14].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 2.98, visitors[21].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 3.12, visitors[14].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 2.98, visitors[21].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0.1666, visitors[14].CR, 0.001)
+	assert.InDelta(t, 0.1666, visitors[21].CR, 0.001)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From:             util.Today(),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+		Path:             []string{"/"},
+	})
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[14].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[21].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[5].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[14].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[21].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0, visitors[14].CR, 0.001)
+	assert.InDelta(t, 0, visitors[21].CR, 0.001)
+	filter := getMaxFilter("Sale")
+	filter.CustomMetricType = pkg.CustomMetricTypeFloat
+	filter.CustomMetricKey = "amount"
+	filter.From = util.Today()
+	filter.To = util.Today()
+	_, err = analyzer.Visitors.ByHour(filter)
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Referrer(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

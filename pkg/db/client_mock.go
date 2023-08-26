@@ -193,7 +193,7 @@ func (client *ClientMock) GetGrowthStats(string, bool, bool, ...any) (*model.Gro
 }
 
 // SelectVisitorHourStats implements the Store interface.
-func (client *ClientMock) SelectVisitorHourStats(string, ...any) ([]model.VisitorHourStats, error) {
+func (client *ClientMock) SelectVisitorHourStats(string, bool, bool, ...any) ([]model.VisitorHourStats, error) {
 	return nil, nil
 }
 
