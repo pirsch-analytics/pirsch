@@ -143,7 +143,7 @@ var (
 	FieldBounceRate = Field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
-		queryPeriod:    "avg(bounce_rate)",
+		queryPeriod:    "ifNotFinite(avg(bounce_rate), 0)",
 		queryDirection: "DESC",
 		Name:           "bounce_rate",
 	}
@@ -391,8 +391,8 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
-		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
+		querySessions:  "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
+		queryPageViews: "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
 		Name:           "average_time_spent_seconds",
 	}
 
@@ -405,8 +405,8 @@ var (
 
 	// FieldEventMetaCustomMetricAvg is a query result column.
 	FieldEventMetaCustomMetricAvg = Field{
-		querySessions:  "avg(custom_metric)",
-		queryPageViews: "avg(custom_metric)",
+		querySessions:  "ifNotFinite(avg(custom_metric), 0)",
+		queryPageViews: "ifNotFinite(avg(custom_metric), 0)",
 		Name:           "custom_metric_avg",
 	}
 

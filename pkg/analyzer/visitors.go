@@ -186,8 +186,15 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		fields = append(fields, FieldCR)
 	}
 
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
 	q, args := filter.buildQuery(fields, nil, nil)
-	current, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, args...)
+	current, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err
@@ -209,7 +216,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 	visitors.getPreviousPeriod(filter)
 	q, args = filter.buildQuery(fields, nil, nil)
-	previous, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, args...)
+	previous, err := visitors.store.GetGrowthStats(q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err
@@ -230,12 +237,14 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 	}
 
 	return &model.Growth{
-		VisitorsGrowth:  calculateGrowth(current.Visitors, previous.Visitors),
-		ViewsGrowth:     calculateGrowth(current.Views, previous.Views),
-		SessionsGrowth:  calculateGrowth(current.Sessions, previous.Sessions),
-		BouncesGrowth:   calculateGrowth(current.BounceRate, previous.BounceRate),
-		TimeSpentGrowth: calculateGrowth(currentTimeSpent, previousTimeSpent),
-		CRGrowth:        calculateGrowth(current.CR, previous.CR),
+		VisitorsGrowth:          calculateGrowth(current.Visitors, previous.Visitors),
+		ViewsGrowth:             calculateGrowth(current.Views, previous.Views),
+		SessionsGrowth:          calculateGrowth(current.Sessions, previous.Sessions),
+		BouncesGrowth:           calculateGrowth(current.BounceRate, previous.BounceRate),
+		TimeSpentGrowth:         calculateGrowth(currentTimeSpent, previousTimeSpent),
+		CRGrowth:                calculateGrowth(current.CR, previous.CR),
+		CustomMetricAvgGrowth:   calculateGrowth(current.CustomMetricAvg, previous.CustomMetricAvg),
+		CustomMetricTotalGrowth: calculateGrowth(current.CustomMetricTotal, previous.CustomMetricTotal),
 	}, nil
 }
 

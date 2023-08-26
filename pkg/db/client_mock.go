@@ -188,7 +188,7 @@ func (client *ClientMock) SelectTimeSpentStats(pkg.Period, string, ...any) ([]mo
 }
 
 // GetGrowthStats implements the Store interface.
-func (client *ClientMock) GetGrowthStats(string, bool, ...any) (*model.GrowthStats, error) {
+func (client *ClientMock) GetGrowthStats(string, bool, bool, ...any) (*model.GrowthStats, error) {
 	return nil, nil
 }
 

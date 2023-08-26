@@ -907,25 +907,50 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 }
 
 // GetGrowthStats implements the Store interface.
-func (client *Client) GetGrowthStats(query string, includeCR bool, args ...any) (*model.GrowthStats, error) {
+func (client *Client) GetGrowthStats(query string, includeCR, includeCustomMetrics bool, args ...any) (*model.GrowthStats, error) {
 	result := new(model.GrowthStats)
 
-	if includeCR {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate,
-			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+	if includeCustomMetrics {
+		if includeCR {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	} else {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCR {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	}
 

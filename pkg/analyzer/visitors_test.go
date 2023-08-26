@@ -915,6 +915,79 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_GrowthCustomMetric(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(5), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 5, Time: util.Today(), Path: "/"},
+		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
+		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
+		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
+		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Visitors.Growth(&Filter{
+		From:             util.PastDay(2),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.NoError(t, err)
+	assert.InDelta(t, 0.3185, growth.CustomMetricAvgGrowth, 0.001)
+	assert.InDelta(t, -0.5604, growth.CustomMetricTotalGrowth, 0.001)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:             util.PastDay(5),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.NoError(t, err)
+	assert.InDelta(t, 1, growth.CustomMetricAvgGrowth, 0.001)
+	assert.InDelta(t, 1, growth.CustomMetricTotalGrowth, 0.001)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:             util.PastDay(5),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+		Path:             []string{"/"},
+	})
+	assert.NoError(t, err)
+	assert.InDelta(t, 1, growth.CustomMetricAvgGrowth, 0.001)
+	assert.InDelta(t, 1, growth.CustomMetricTotalGrowth, 0.001)
+	filter := getMaxFilter("Sale")
+	filter.CustomMetricType = pkg.CustomMetricTypeFloat
+	filter.CustomMetricKey = "amount"
+	filter.From = util.PastDay(5)
+	filter.To = util.Today()
+	_, err = analyzer.Visitors.Growth(filter)
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_VisitorHours(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

@@ -45,7 +45,7 @@ type Store interface {
 	SelectTimeSpentStats(pkg.Period, string, ...any) ([]model.TimeSpentStats, error)
 
 	// GetGrowthStats returns the GrowthStats.
-	GetGrowthStats(string, bool, ...any) (*model.GrowthStats, error)
+	GetGrowthStats(string, bool, bool, ...any) (*model.GrowthStats, error)
 
 	// SelectVisitorHourStats selects VisitorHourStats.
 	SelectVisitorHourStats(string, ...any) ([]model.VisitorHourStats, error)

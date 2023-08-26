@@ -49,12 +49,14 @@ type VisitorStats struct {
 
 // Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
 type Growth struct {
-	VisitorsGrowth  float64 `json:"visitors_growth"`
-	ViewsGrowth     float64 `json:"views_growth"`
-	SessionsGrowth  float64 `json:"sessions_growth"`
-	BouncesGrowth   float64 `json:"bounces_growth"`
-	TimeSpentGrowth float64 `json:"time_spent_growth"`
-	CRGrowth        float64 `json:"cr_growth"`
+	VisitorsGrowth          float64 `json:"visitors_growth"`
+	ViewsGrowth             float64 `json:"views_growth"`
+	SessionsGrowth          float64 `json:"sessions_growth"`
+	BouncesGrowth           float64 `json:"bounces_growth"`
+	TimeSpentGrowth         float64 `json:"time_spent_growth"`
+	CRGrowth                float64 `json:"cr_growth"`
+	CustomMetricAvgGrowth   float64 `json:"custom_metric_avg_growth"`
+	CustomMetricTotalGrowth float64 `json:"custom_metric_total_growth"`
 }
 
 // VisitorHourStats is the result type for visitor statistics grouped by time of day.
@@ -262,12 +264,14 @@ type UTMTermStats struct {
 
 // GrowthStats is the sum to calculate the growth rate.
 type GrowthStats struct {
-	Visitors   int
-	Views      int
-	Sessions   int
-	Bounces    int
-	BounceRate float64 `db:"bounce_rate"`
-	CR         float64
+	Visitors          int
+	Views             int
+	Sessions          int
+	Bounces           int
+	BounceRate        float64 `db:"bounce_rate"`
+	CR                float64
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // TotalVisitorSessionStats are the total amount of visitors, views, and sessions for a page.
