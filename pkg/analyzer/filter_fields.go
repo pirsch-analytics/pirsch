@@ -116,6 +116,7 @@ var (
 	FieldViews = Field{
 		querySessions:  "sum(page_views*sign)",
 		queryPageViews: "count(1)",
+		queryEvents:    "sum(views)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
 		Name:           "views",
@@ -396,24 +397,17 @@ var (
 		Name:           "average_time_spent_seconds",
 	}
 
-	// FieldEventMetaCustomMetric is a query result column.
-	FieldEventMetaCustomMetric = Field{
-		querySessions:  "coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))",
-		queryPageViews: "coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))",
-		Name:           "custom_metric",
-	}
-
 	// FieldEventMetaCustomMetricAvg is a query result column.
 	FieldEventMetaCustomMetricAvg = Field{
-		querySessions:  "ifNotFinite(avg(custom_metric), 0)",
-		queryPageViews: "ifNotFinite(avg(custom_metric), 0)",
+		querySessions:  "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		queryPageViews: "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
 		Name:           "custom_metric_avg",
 	}
 
 	// FieldEventMetaCustomMetricTotal is a query result column.
 	FieldEventMetaCustomMetricTotal = Field{
-		querySessions:  "sum(custom_metric)",
-		queryPageViews: "sum(custom_metric)",
+		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
 		Name:           "custom_metric_total",
 	}
 
@@ -472,6 +466,7 @@ type Field struct {
 	id             uint8
 	querySessions  string
 	queryPageViews string
+	queryEvents    string
 	queryPeriod    string
 	queryDirection pkg.Direction
 	queryWithFill  string

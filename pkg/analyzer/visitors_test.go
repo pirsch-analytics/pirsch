@@ -248,11 +248,11 @@ func TestAnalyzer_TotalVisitorsCustomMetric(t *testing.T) {
 		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
-		{VisitorID: 3, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
-		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
-		{VisitorID: 6, Time: util.Today(), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
-		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
+		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: util.Today(), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Total(&Filter{
@@ -580,11 +580,11 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
-		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
-		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
-		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
-		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{
@@ -607,14 +607,14 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 2.445, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 2.98, visitors[5].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 2.98, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[5].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 4.89, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 2.98, visitors[5].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 2.98, visitors[4].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:             util.PastDay(5),
 		To:               util.Today(),
@@ -631,14 +631,14 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 3.12, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 2.98, visitors[5].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 2.98, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[5].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 3.12, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 2.98, visitors[5].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 2.98, visitors[4].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:             util.PastDay(5),
 		To:               util.Today(),
@@ -948,11 +948,11 @@ func TestAnalyzer_GrowthCustomMetric(t *testing.T) {
 		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
-		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
-		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
-		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
-		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/"},
+		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/"},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(&Filter{
@@ -1111,11 +1111,11 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}},
-		{VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}},
-		{VisitorID: 4, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}},
-		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}},
-		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}},
+		{VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 14), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 21), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByHour(&Filter{
