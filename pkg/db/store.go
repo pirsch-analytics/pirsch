@@ -68,8 +68,8 @@ type Store interface {
 	// SelectTotalVisitorSessionStats selects TotalVisitorSessionStats.
 	SelectTotalVisitorSessionStats(string, ...any) ([]model.TotalVisitorSessionStats, error)
 
-	// GetPageConversionsStats returns the PageConversionsStats.
-	GetPageConversionsStats(string, ...any) (*model.PageConversionsStats, error)
+	// GetConversionsStats returns the ConversionsStats.
+	GetConversionsStats(string, bool, ...any) (*model.ConversionsStats, error)
 
 	// SelectEventStats selects EventStats.
 	SelectEventStats(bool, string, ...any) ([]model.EventStats, error)

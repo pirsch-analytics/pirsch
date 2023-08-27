@@ -687,24 +687,81 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
 		},
 	})
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"189", "EUR"}, Path: "/simple/page"},
+		{VisitorID: 2, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"312", "EUR"}, Path: "/simple"},
+		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"177", "USD"}, Path: "/simple/page"},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Pages.Conversions(nil)
 	assert.NoError(t, err)
-	assert.Nil(t, stats)
+	assert.NotNil(t, stats)
+	assert.Equal(t, 4, stats.Visitors)
+	assert.Equal(t, 7, stats.Views)
+	assert.InDelta(t, 1, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
 	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{".*"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
 	assert.Equal(t, 6, stats.Views)
 	assert.InDelta(t, 1, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
 	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, stats.Visitors)
 	assert.Equal(t, 3, stats.Views)
 	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, stats.Visitors)
+	assert.Equal(t, 4, stats.Views)
+	assert.InDelta(t, 0.75, stats.CR, 0.01)
+	assert.InDelta(t, 226, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 678, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 3, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+		PathPattern:      []string{"(?i)^/.*"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 3, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
 	_, err = analyzer.Pages.Conversions(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.Conversions(getMaxFilter("event"))
+	assert.NoError(t, err)
+	filter := getMaxFilter("Sale")
+	filter.CustomMetricType = pkg.CustomMetricTypeInteger
+	filter.CustomMetricKey = "amount"
+	filter.From = util.Today()
+	filter.To = util.Today()
+	_, err = analyzer.Pages.Conversions(filter)
 	assert.NoError(t, err)
 }
 

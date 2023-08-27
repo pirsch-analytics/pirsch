@@ -1248,14 +1248,24 @@ func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) 
 	return results, nil
 }
 
-// GetPageConversionsStats implements the Store interface.
-func (client *Client) GetPageConversionsStats(query string, args ...any) (*model.PageConversionsStats, error) {
-	result := new(model.PageConversionsStats)
+// GetConversionsStats implements the Store interface.
+func (client *Client) GetConversionsStats(query string, includeCustomMetric bool, args ...any) (*model.ConversionsStats, error) {
+	result := new(model.ConversionsStats)
 
-	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-		&result.Views,
-		&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	if includeCustomMetric {
+		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+			&result.Views,
+			&result.CR,
+			&result.CustomMetricAvg,
+			&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	} else {
+		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+			&result.Views,
+			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 	}
 
 	return result, nil

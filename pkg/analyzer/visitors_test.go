@@ -228,6 +228,10 @@ func TestAnalyzer_TotalVisitorsCustomMetric(t *testing.T) {
 	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
 			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
@@ -555,6 +559,10 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
@@ -920,6 +928,10 @@ func TestAnalyzer_GrowthCustomMetric(t *testing.T) {
 	saveSessions(t, [][]model.Session{
 		{
 			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
 			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
@@ -1078,6 +1090,10 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Start: util.Today().Add(time.Hour * 5), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour * 14), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},

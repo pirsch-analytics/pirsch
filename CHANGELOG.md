@@ -2,7 +2,7 @@
 
 ## 6.0.0
 
-* refactored package structure
+* refactored package structure and a few method and struct names
 * switched to `log/slog` for logging
 * removed deprecated `rand.Seed` initialization
 * updated browser minimum versions

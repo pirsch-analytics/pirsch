@@ -262,23 +262,23 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	return stats, nil
 }
 
-// Conversions returns the visitor count, views, and conversion rate for conversion goals.
-// This function is supposed to be used with the Filter.PathPattern, to list page conversions.
-func (pages *Pages) Conversions(filter *Filter) (*model.PageConversionsStats, error) {
+// Conversions returns the visitor count, views, conversion rate, and custom metric for conversion goals.
+func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error) {
 	filter = pages.analyzer.getFilter(filter)
-
-	if len(filter.PathPattern) == 0 {
-		return nil, nil
-	}
-
-	q, args := filter.buildQuery([]Field{
+	fields := []Field{
 		FieldVisitors,
 		FieldViews,
 		FieldCR,
-	}, nil, []Field{
-		FieldVisitors,
-	})
-	stats, err := pages.store.GetPageConversionsStats(q, args...)
+	}
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
+	q, args := filter.buildQuery(fields, nil, []Field{FieldVisitors})
+	stats, err := pages.store.GetConversionsStats(q, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err

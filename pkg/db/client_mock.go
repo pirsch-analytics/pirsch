@@ -227,8 +227,8 @@ func (client *ClientMock) SelectTotalVisitorSessionStats(string, ...any) ([]mode
 	return nil, nil
 }
 
-// GetPageConversionsStats implements the Store interface.
-func (client *ClientMock) GetPageConversionsStats(string, ...any) (*model.PageConversionsStats, error) {
+// GetConversionsStats implements the Store interface.
+func (client *ClientMock) GetConversionsStats(string, bool, ...any) (*model.ConversionsStats, error) {
 	return nil, nil
 }
 

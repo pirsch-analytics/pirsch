@@ -119,11 +119,13 @@ func (stats ExitStats) GetPath() string {
 	return stats.Path
 }
 
-// PageConversionsStats is the result type for page conversions.
-type PageConversionsStats struct {
-	Visitors int     `json:"visitors"`
-	Views    int     `json:"views"`
-	CR       float64 `json:"cr"`
+// ConversionsStats is the result type for page conversions.
+type ConversionsStats struct {
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // EventStats is the result type for custom events.
