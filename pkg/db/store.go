@@ -33,22 +33,22 @@ type Store interface {
 	SelectActiveVisitorStats(bool, string, ...any) ([]model.ActiveVisitorStats, error)
 
 	// GetTotalVisitorStats returns the TotalVisitorStats.
-	GetTotalVisitorStats(string, bool, ...any) (*model.TotalVisitorStats, error)
+	GetTotalVisitorStats(string, bool, bool, ...any) (*model.TotalVisitorStats, error)
 
 	// GetTotalVisitorsPageViewsStats returns the TotalVisitorsPageViewsStats.
 	GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error)
 
 	// SelectVisitorStats selects VisitorStats.
-	SelectVisitorStats(pkg.Period, string, bool, ...any) ([]model.VisitorStats, error)
+	SelectVisitorStats(pkg.Period, string, bool, bool, ...any) ([]model.VisitorStats, error)
 
 	// SelectTimeSpentStats selects TimeSpentStats.
 	SelectTimeSpentStats(pkg.Period, string, ...any) ([]model.TimeSpentStats, error)
 
 	// GetGrowthStats returns the GrowthStats.
-	GetGrowthStats(string, bool, ...any) (*model.GrowthStats, error)
+	GetGrowthStats(string, bool, bool, ...any) (*model.GrowthStats, error)
 
 	// SelectVisitorHourStats selects VisitorHourStats.
-	SelectVisitorHourStats(string, ...any) ([]model.VisitorHourStats, error)
+	SelectVisitorHourStats(string, bool, bool, ...any) ([]model.VisitorHourStats, error)
 
 	// SelectPageStats selects PageStats.
 	SelectPageStats(bool, bool, string, ...any) ([]model.PageStats, error)
@@ -68,8 +68,8 @@ type Store interface {
 	// SelectTotalVisitorSessionStats selects TotalVisitorSessionStats.
 	SelectTotalVisitorSessionStats(string, ...any) ([]model.TotalVisitorSessionStats, error)
 
-	// GetPageConversionsStats returns the PageConversionsStats.
-	GetPageConversionsStats(string, ...any) (*model.PageConversionsStats, error)
+	// GetConversionsStats returns the ConversionsStats.
+	GetConversionsStats(string, bool, ...any) (*model.ConversionsStats, error)
 
 	// SelectEventStats selects EventStats.
 	SelectEventStats(bool, string, ...any) ([]model.EventStats, error)

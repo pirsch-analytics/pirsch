@@ -2,13 +2,14 @@
 
 ## 6.0.0
 
-* refactored package structure
+* refactored package structure and a few method and struct names
 * switched to `log/slog` for logging
 * removed deprecated `rand.Seed` initialization
 * updated browser minimum versions
 * added support for client hints
 * added Chrome OS and Windows 11 detection
 * added conversion rate to total, by period, and growth
+* added custom metrics for events
 * updated User-Agent blacklist
 * updated referrer blacklist
 * upgraded to Go 1.21

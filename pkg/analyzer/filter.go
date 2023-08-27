@@ -24,9 +24,6 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
-	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
-	IncludeTime bool
-
 	// Period sets the period to group results.
 	// This is only used by Analyzer.ByPeriod, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
 	// Using it for other queries leads to wrong results and might return an error.
@@ -126,6 +123,16 @@ type Filter struct {
 	// Limit limits the number of results. Less or equal to zero means no limit.
 	Limit int
 
+	// CustomMetricKey is used to calculate the average and total for an event metadata field.
+	// This must be used together with EventName and CustomMetricType.
+	CustomMetricKey string
+
+	// CustomMetricType is used to calculate the average and total for an event metadata field.
+	CustomMetricType pkg.CustomMetricType
+
+	// IncludeTime sets whether the selected period should contain the time (hour, minute, second).
+	IncludeTime bool
+
 	// IncludeTitle indicates that the Analyzer.ByPath, Analyzer.Entry, and Analyzer.Exit should contain the page title.
 	IncludeTitle bool
 
@@ -209,6 +216,12 @@ func (filter *Filter) validate() {
 		filter.Limit = 0
 	}
 
+	if filter.CustomMetricType != "" &&
+		filter.CustomMetricType != pkg.CustomMetricTypeInteger &&
+		filter.CustomMetricType != pkg.CustomMetricTypeFloat {
+		filter.CustomMetricType = ""
+	}
+
 	filter.Path = filter.removeDuplicates(filter.Path)
 	filter.EntryPath = filter.removeDuplicates(filter.EntryPath)
 	filter.ExitPath = filter.removeDuplicates(filter.ExitPath)
@@ -265,13 +278,14 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		limit:   filter.Limit,
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
+	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
 
-	if q.from == events && !returnEventName {
+	if q.from == events && !returnEventName && !customMetric {
 		q.from = sessions
 		q.fields = filter.excludeFields(fields, FieldPath)
 		q.includeEventFilter = true
 		q.leftJoin = filter.leftJoinEvents(fields)
-	} else if q.from == pageViews || returnEventName {
+	} else if q.from == pageViews || returnEventName || customMetric {
 		q.fields = fields
 		q.join = filter.joinSessions(fields)
 
@@ -309,12 +323,17 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 
 func (filter *Filter) table(fields []Field) table {
 	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
-		if !filter.fieldsContain(fields, FieldEventName) &&
-			(len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath)) {
+		eventFilter := filter.fieldsContain(fields, FieldEventName) || filter.CustomMetricType != "" && filter.CustomMetricKey != ""
+
+		if !eventFilter &&
+			(len(filter.Path) != 0 ||
+				len(filter.PathPattern) != 0 ||
+				filter.fieldsContain(fields, FieldPath) ||
+				filter.searchContains(FieldPath)) {
 			return pageViews
 		}
 
-		if len(filter.EventName) != 0 || filter.fieldsContain(fields, FieldEventName) {
+		if len(filter.EventName) != 0 || eventFilter {
 			return events
 		}
 	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) {
@@ -412,6 +431,11 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 
 		if filter.fieldsContain(fields, FieldEventTitle) {
 			eventFields = append(eventFields, FieldEventTitle)
+		}
+
+		if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+			eventFields = append(eventFields, FieldEventMetaKeysRaw)
+			eventFields = append(eventFields, FieldEventMetaValuesRaw)
 		}
 
 		return &queryBuilder{

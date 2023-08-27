@@ -87,8 +87,8 @@ var (
 
 	// FieldRelativeVisitors is a query result column.
 	FieldRelativeVisitors = Field{
-		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -96,8 +96,8 @@ var (
 
 	// FieldCR is a query result column.
 	FieldCR = Field{
-		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",
@@ -116,6 +116,7 @@ var (
 	FieldViews = Field{
 		querySessions:  "sum(page_views*sign)",
 		queryPageViews: "count(1)",
+		queryEvents:    "sum(views)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
 		Name:           "views",
@@ -123,8 +124,8 @@ var (
 
 	// FieldRelativeViews is a query result column.
 	FieldRelativeViews = Field{
-		querySessions:  "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",
@@ -143,7 +144,7 @@ var (
 	FieldBounceRate = Field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
-		queryPeriod:    "avg(bounce_rate)",
+		queryPeriod:    "ifNotFinite(avg(bounce_rate), 0)",
 		queryDirection: "DESC",
 		Name:           "bounce_rate",
 	}
@@ -391,9 +392,23 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
-		queryPageViews: "ifNull(toUInt64(avg(nullIf(duration_seconds, 0))), 0)",
+		querySessions:  "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
+		queryPageViews: "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
 		Name:           "average_time_spent_seconds",
+	}
+
+	// FieldEventMetaCustomMetricAvg is a query result column.
+	FieldEventMetaCustomMetricAvg = Field{
+		querySessions:  "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		queryPageViews: "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		Name:           "custom_metric_avg",
+	}
+
+	// FieldEventMetaCustomMetricTotal is a query result column.
+	FieldEventMetaCustomMetricTotal = Field{
+		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		Name:           "custom_metric_total",
 	}
 
 	// FieldPlatformDesktop is a query result column.
@@ -451,6 +466,7 @@ type Field struct {
 	id             uint8
 	querySessions  string
 	queryPageViews string
+	queryEvents    string
 	queryPeriod    string
 	queryDirection pkg.Direction
 	queryWithFill  string

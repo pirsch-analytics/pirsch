@@ -13,12 +13,14 @@ type ActiveVisitorStats struct {
 
 // TotalVisitorStats is the result type for total visitor statistics.
 type TotalVisitorStats struct {
-	Visitors   int     `json:"visitors"`
-	Views      int     `json:"views"`
-	Sessions   int     `json:"sessions"`
-	Bounces    int     `json:"bounces"`
-	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
-	CR         float64 `json:"cr"`
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	Sessions          int     `json:"sessions"`
+	Bounces           int     `json:"bounces"`
+	BounceRate        float64 `db:"bounce_rate" json:"bounce_rate"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // TotalVisitorsPageViewsStats is the result type for total visitor cound and number of page views statistics.
@@ -31,36 +33,43 @@ type TotalVisitorsPageViewsStats struct {
 
 // VisitorStats is the result type for visitor statistics.
 type VisitorStats struct {
-	Day        null.Time `json:"day"`
-	Week       null.Time `json:"week"`
-	Month      null.Time `json:"month"`
-	Year       null.Time `json:"year"`
-	Visitors   int       `json:"visitors"`
-	Views      int       `json:"views"`
-	Sessions   int       `json:"sessions"`
-	Bounces    int       `json:"bounces"`
-	BounceRate float64   `db:"bounce_rate" json:"bounce_rate"`
-	CR         float64   `json:"cr"`
+	Day               null.Time `json:"day"`
+	Week              null.Time `json:"week"`
+	Month             null.Time `json:"month"`
+	Year              null.Time `json:"year"`
+	Visitors          int       `json:"visitors"`
+	Views             int       `json:"views"`
+	Sessions          int       `json:"sessions"`
+	Bounces           int       `json:"bounces"`
+	BounceRate        float64   `db:"bounce_rate" json:"bounce_rate"`
+	CR                float64   `json:"cr"`
+	CustomMetricAvg   float64   `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64   `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // Growth represents the visitors, views, sessions, bounces, and average session duration growth between two time periods.
 type Growth struct {
-	VisitorsGrowth  float64 `json:"visitors_growth"`
-	ViewsGrowth     float64 `json:"views_growth"`
-	SessionsGrowth  float64 `json:"sessions_growth"`
-	BouncesGrowth   float64 `json:"bounces_growth"`
-	TimeSpentGrowth float64 `json:"time_spent_growth"`
-	CRGrowth        float64 `json:"cr_growth"`
+	VisitorsGrowth          float64 `json:"visitors_growth"`
+	ViewsGrowth             float64 `json:"views_growth"`
+	SessionsGrowth          float64 `json:"sessions_growth"`
+	BouncesGrowth           float64 `json:"bounces_growth"`
+	TimeSpentGrowth         float64 `json:"time_spent_growth"`
+	CRGrowth                float64 `json:"cr_growth"`
+	CustomMetricAvgGrowth   float64 `json:"custom_metric_avg_growth"`
+	CustomMetricTotalGrowth float64 `json:"custom_metric_total_growth"`
 }
 
 // VisitorHourStats is the result type for visitor statistics grouped by time of day.
 type VisitorHourStats struct {
-	Hour       int     `json:"hour"`
-	Visitors   int     `json:"visitors"`
-	Views      int     `json:"views"`
-	Sessions   int     `json:"sessions"`
-	Bounces    int     `json:"bounces"`
-	BounceRate float64 `db:"bounce_rate" json:"bounce_rate"`
+	Hour              int     `json:"hour"`
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	Sessions          int     `json:"sessions"`
+	Bounces           int     `json:"bounces"`
+	BounceRate        float64 `db:"bounce_rate" json:"bounce_rate"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // PageStats is the result type for page statistics.
@@ -110,11 +119,13 @@ func (stats ExitStats) GetPath() string {
 	return stats.Path
 }
 
-// PageConversionsStats is the result type for page conversions.
-type PageConversionsStats struct {
-	Visitors int     `json:"visitors"`
-	Views    int     `json:"views"`
-	CR       float64 `json:"cr"`
+// ConversionsStats is the result type for page conversions.
+type ConversionsStats struct {
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // EventStats is the result type for custom events.
@@ -258,12 +269,14 @@ type UTMTermStats struct {
 
 // GrowthStats is the sum to calculate the growth rate.
 type GrowthStats struct {
-	Visitors   int
-	Views      int
-	Sessions   int
-	Bounces    int
-	BounceRate float64 `db:"bounce_rate"`
-	CR         float64
+	Visitors          int
+	Views             int
+	Sessions          int
+	Bounces           int
+	BounceRate        float64 `db:"bounce_rate"`
+	CR                float64
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
 // TotalVisitorSessionStats are the total amount of visitors, views, and sessions for a page.

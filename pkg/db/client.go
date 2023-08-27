@@ -555,25 +555,50 @@ func (client *Client) SelectActiveVisitorStats(includeTitle bool, query string, 
 }
 
 // GetTotalVisitorStats implements the Store interface.
-func (client *Client) GetTotalVisitorStats(query string, includeCR bool, args ...any) (*model.TotalVisitorStats, error) {
+func (client *Client) GetTotalVisitorStats(query string, includeCR, includeCustomMetric bool, args ...any) (*model.TotalVisitorStats, error) {
 	result := new(model.TotalVisitorStats)
 
 	if includeCR {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate,
-			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCustomMetric {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	} else {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCustomMetric {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	}
 
@@ -592,7 +617,7 @@ func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) 
 }
 
 // SelectVisitorStats implements the Store interface.
-func (client *Client) SelectVisitorStats(period pkg.Period, query string, includeCR bool, args ...any) ([]model.VisitorStats, error) {
+func (client *Client) SelectVisitorStats(period pkg.Period, query string, includeCR, includeCustomMetric bool, args ...any) ([]model.VisitorStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -607,24 +632,51 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, includ
 		for rows.Next() {
 			var result model.VisitorStats
 
-			if includeCR {
-				if err := rows.Scan(&result.Week,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate,
-					&result.CR); err != nil {
-					return nil, err
+			if includeCustomMetric {
+				if includeCR {
+					if err := rows.Scan(&result.Week,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Week,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
 				}
 			} else {
-				if err := rows.Scan(&result.Week,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate); err != nil {
-					return nil, err
+				if includeCR {
+					if err := rows.Scan(&result.Week,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Week,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate); err != nil {
+						return nil, err
+					}
 				}
 			}
 
@@ -634,24 +686,51 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, includ
 		for rows.Next() {
 			var result model.VisitorStats
 
-			if includeCR {
-				if err := rows.Scan(&result.Month,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate,
-					&result.CR); err != nil {
-					return nil, err
+			if includeCustomMetric {
+				if includeCR {
+					if err := rows.Scan(&result.Month,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Month,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
 				}
 			} else {
-				if err := rows.Scan(&result.Month,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate); err != nil {
-					return nil, err
+				if includeCR {
+					if err := rows.Scan(&result.Month,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Month,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate); err != nil {
+						return nil, err
+					}
 				}
 			}
 
@@ -661,24 +740,51 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, includ
 		for rows.Next() {
 			var result model.VisitorStats
 
-			if includeCR {
-				if err := rows.Scan(&result.Year,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate,
-					&result.CR); err != nil {
-					return nil, err
+			if includeCustomMetric {
+				if includeCR {
+					if err := rows.Scan(&result.Year,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Year,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
 				}
 			} else {
-				if err := rows.Scan(&result.Year,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate); err != nil {
-					return nil, err
+				if includeCR {
+					if err := rows.Scan(&result.Year,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Year,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate); err != nil {
+						return nil, err
+					}
 				}
 			}
 
@@ -688,24 +794,51 @@ func (client *Client) SelectVisitorStats(period pkg.Period, query string, includ
 		for rows.Next() {
 			var result model.VisitorStats
 
-			if includeCR {
-				if err := rows.Scan(&result.Day,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate,
-					&result.CR); err != nil {
-					return nil, err
+			if includeCustomMetric {
+				if includeCR {
+					if err := rows.Scan(&result.Day,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Day,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
 				}
 			} else {
-				if err := rows.Scan(&result.Day,
-					&result.Visitors,
-					&result.Sessions,
-					&result.Views,
-					&result.Bounces,
-					&result.BounceRate); err != nil {
-					return nil, err
+				if includeCR {
+					if err := rows.Scan(&result.Day,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Day,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate); err != nil {
+						return nil, err
+					}
 				}
 			}
 
@@ -774,25 +907,50 @@ func (client *Client) SelectTimeSpentStats(period pkg.Period, query string, args
 }
 
 // GetGrowthStats implements the Store interface.
-func (client *Client) GetGrowthStats(query string, includeCR bool, args ...any) (*model.GrowthStats, error) {
+func (client *Client) GetGrowthStats(query string, includeCR, includeCustomMetrics bool, args ...any) (*model.GrowthStats, error) {
 	result := new(model.GrowthStats)
 
-	if includeCR {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate,
-			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+	if includeCustomMetrics {
+		if includeCR {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CustomMetricAvg,
+				&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	} else {
-		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+		if includeCR {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate,
+				&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		} else {
+			if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+				&result.Sessions,
+				&result.Views,
+				&result.Bounces,
+				&result.BounceRate); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
 		}
 	}
 
@@ -800,7 +958,7 @@ func (client *Client) GetGrowthStats(query string, includeCR bool, args ...any) 
 }
 
 // SelectVisitorHourStats implements the Store interface.
-func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model.VisitorHourStats, error) {
+func (client *Client) SelectVisitorHourStats(query string, includeCR, includeCustomMetrics bool, args ...any) ([]model.VisitorHourStats, error) {
 	rows, err := client.Query(query, args...)
 
 	if err != nil {
@@ -813,13 +971,52 @@ func (client *Client) SelectVisitorHourStats(query string, args ...any) ([]model
 	for rows.Next() {
 		var result model.VisitorHourStats
 
-		if err := rows.Scan(&result.Hour,
-			&result.Visitors,
-			&result.Sessions,
-			&result.Views,
-			&result.Bounces,
-			&result.BounceRate); err != nil {
-			return nil, err
+		if includeCustomMetrics {
+			if includeCR {
+				if err := rows.Scan(&result.Hour,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Hour,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			}
+		} else {
+			if includeCR {
+				if err := rows.Scan(&result.Hour,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Hour,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate); err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		results = append(results, result)
@@ -1051,14 +1248,24 @@ func (client *Client) SelectTotalVisitorSessionStats(query string, args ...any) 
 	return results, nil
 }
 
-// GetPageConversionsStats implements the Store interface.
-func (client *Client) GetPageConversionsStats(query string, args ...any) (*model.PageConversionsStats, error) {
-	result := new(model.PageConversionsStats)
+// GetConversionsStats implements the Store interface.
+func (client *Client) GetConversionsStats(query string, includeCustomMetric bool, args ...any) (*model.ConversionsStats, error) {
+	result := new(model.ConversionsStats)
 
-	if err := client.QueryRow(query, args...).Scan(&result.Visitors,
-		&result.Views,
-		&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	if includeCustomMetric {
+		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+			&result.Views,
+			&result.CR,
+			&result.CustomMetricAvg,
+			&result.CustomMetricTotal); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	} else {
+		if err := client.QueryRow(query, args...).Scan(&result.Visitors,
+			&result.Views,
+			&result.CR); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
 	}
 
 	return result, nil
