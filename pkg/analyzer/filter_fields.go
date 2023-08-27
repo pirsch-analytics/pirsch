@@ -87,8 +87,8 @@ var (
 
 	// FieldRelativeVisitors is a query result column.
 	FieldRelativeVisitors = Field{
-		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -96,8 +96,8 @@ var (
 
 	// FieldCR is a query result column.
 	FieldCR = Field{
-		querySessions:  "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",
@@ -123,8 +123,8 @@ var (
 
 	// FieldRelativeViews is a query result column.
 	FieldRelativeViews = Field{
-		querySessions:  "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
-		queryPageViews: "toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM session WHERE %s), 1))",
+		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",
