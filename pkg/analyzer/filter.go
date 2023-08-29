@@ -313,6 +313,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		}
 	}
 
+	q.leftJoinSecond = filter.lefJoinUniqueVisitorsByPeriod(fields)
 	return q.query()
 }
 
@@ -477,6 +478,34 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		from:    events,
 		groupBy: eventFields,
 	}
+}
+
+func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilder {
+	if filter.fieldsContain(fields, FieldCRPeriod) {
+		var groupBy Field
+
+		if filter.fieldsContain(fields, FieldDay) {
+			groupBy = FieldDay
+		} else {
+			groupBy = FieldHour
+		}
+
+		return &queryBuilder{
+			filter: &Filter{
+				ClientID:    filter.ClientID,
+				Timezone:    filter.Timezone,
+				From:        filter.From,
+				To:          filter.To,
+				Period:      filter.Period,
+				IncludeTime: filter.IncludeTime,
+			},
+			fields:  []Field{groupBy, FieldVisitorsRaw},
+			from:    sessions,
+			groupBy: []Field{groupBy},
+		}
+	}
+
+	return nil
 }
 
 func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {

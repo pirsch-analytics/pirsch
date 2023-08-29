@@ -29,6 +29,7 @@ type queryBuilder struct {
 	join               *queryBuilder
 	joinSecond         *queryBuilder
 	leftJoin           *queryBuilder
+	leftJoinSecond     *queryBuilder
 	search             []Search
 	groupBy            []Field
 	orderBy            []Field
@@ -234,6 +235,21 @@ func (query *queryBuilder) joinQuery() {
 		q, args := query.leftJoin.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
+	}
+
+	if query.leftJoinSecond != nil {
+		q, args := query.leftJoinSecond.query()
+		query.args = append(query.args, args...)
+
+		if query.filter.fieldsContain(query.groupBy, FieldHour) {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON hour = uvd.hour ", q))
+		} else if query.filter.Period == pkg.PeriodDay {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON day = uvd.day ", q))
+		} else if query.filter.Period == pkg.PeriodWeek {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON week = uvd.week ", q))
+		} else {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON year = uvd.year ", q))
+		}
 	}
 }
 

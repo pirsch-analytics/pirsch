@@ -419,7 +419,11 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 		{VisitorID: 9, Time: util.Today(), Path: "/"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Visitors.ByPeriod(&Filter{From: util.PastDay(4), To: util.Today(), IncludeCR: true})
+	visitors, err := analyzer.Visitors.ByPeriod(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		IncludeCR: true,
+	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 5)
 	assert.Equal(t, util.PastDay(4), visitors[0].Day.Time)
@@ -452,12 +456,16 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
-	assert.InDelta(t, 0.4444, visitors[0].CR, 0.01)
+	assert.InDelta(t, 1, visitors[0].CR, 0.01)
 	assert.InDelta(t, 0, visitors[1].CR, 0.01)
-	assert.InDelta(t, 0.4444, visitors[2].CR, 0.01)
+	assert.InDelta(t, 1, visitors[2].CR, 0.01)
 	assert.InDelta(t, 0, visitors[3].CR, 0.01)
-	assert.InDelta(t, 0.1111, visitors[4].CR, 0.01)
-	visitors, err = analyzer.Visitors.ByPeriod(&Filter{Path: []string{"/"}, From: util.PastDay(4), To: util.Today()})
+	assert.InDelta(t, 1, visitors[4].CR, 0.01)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		Path: []string{"/"},
+		From: util.PastDay(4),
+		To:   util.Today(),
+	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 5)
 	assert.Equal(t, 4, visitors[0].Visitors)
@@ -664,6 +672,34 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:             util.PastDay(25),
+		To:               util.Today(),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+		Path:             []string{"/"},
+		Period:           pkg.PeriodWeek,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.InDelta(t, 0, visitors[0].CR, 0.001)
+	assert.InDelta(t, 0, visitors[1].CR, 0.001)
+	assert.InDelta(t, 0, visitors[2].CR, 0.001)
+	assert.InDelta(t, 0.25, visitors[3].CR, 0.001)
+	assert.InDelta(t, 0, visitors[4].CR, 0.001)
+	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[3].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[0].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 1.89, visitors[3].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	filter := getMaxFilter("Sale")
 	filter.CustomMetricType = pkg.CustomMetricTypeFloat
 	filter.CustomMetricKey = "amount"
@@ -855,7 +891,7 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[2].CR, 0.001)
 	assert.InDelta(t, 0, visitors[3].CR, 0.001)
 	assert.InDelta(t, 0, visitors[4].CR, 0.001)
-	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[5].CR, 0.001)
 	assert.InDelta(t, 0, visitors[6].CR, 0.001)
 	assert.InDelta(t, 0, visitors[7].CR, 0.001)
 	assert.InDelta(t, 0, visitors[8].CR, 0.001)
@@ -864,14 +900,14 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[11].CR, 0.001)
 	assert.InDelta(t, 0, visitors[12].CR, 0.001)
 	assert.InDelta(t, 0, visitors[13].CR, 0.001)
-	assert.InDelta(t, 0.3333, visitors[14].CR, 0.001)
+	assert.InDelta(t, 1, visitors[14].CR, 0.001)
 	assert.InDelta(t, 0, visitors[15].CR, 0.001)
 	assert.InDelta(t, 0, visitors[16].CR, 0.001)
 	assert.InDelta(t, 0, visitors[17].CR, 0.001)
 	assert.InDelta(t, 0, visitors[18].CR, 0.001)
 	assert.InDelta(t, 0, visitors[19].CR, 0.001)
 	assert.InDelta(t, 0, visitors[20].CR, 0.001)
-	assert.InDelta(t, 0.1666, visitors[21].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[21].CR, 0.001)
 	assert.InDelta(t, 0, visitors[22].CR, 0.001)
 	assert.InDelta(t, 0, visitors[23].CR, 0.001)
 	visitors, err = analyzer.Visitors.ByHour(&Filter{
@@ -889,9 +925,9 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	assert.InDelta(t, 1.89, visitors[5].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 3.12, visitors[14].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 2.98, visitors[21].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
-	assert.InDelta(t, 0.1666, visitors[14].CR, 0.001)
-	assert.InDelta(t, 0.1666, visitors[21].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[14].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[21].CR, 0.001)
 	visitors, err = analyzer.Visitors.ByHour(&Filter{
 		From:             util.Today(),
 		To:               util.Today(),
@@ -908,7 +944,7 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	assert.InDelta(t, 1.89, visitors[5].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[14].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[21].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0.1666, visitors[5].CR, 0.001)
+	assert.InDelta(t, 0.5, visitors[5].CR, 0.001)
 	assert.InDelta(t, 0, visitors[14].CR, 0.001)
 	assert.InDelta(t, 0, visitors[21].CR, 0.001)
 	filter := getMaxFilter("Sale")

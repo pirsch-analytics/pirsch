@@ -85,6 +85,14 @@ var (
 		Name:           "visitors",
 	}
 
+	// FieldVisitors is a query result column.
+	FieldVisitorsRaw = Field{
+		querySessions:  "uniq(visitor_id)",
+		queryPageViews: "uniq(visitor_id)",
+		queryDirection: "DESC",
+		Name:           "visitors",
+	}
+
 	// FieldRelativeVisitors is a query result column.
 	FieldRelativeVisitors = Field{
 		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
@@ -105,10 +113,9 @@ var (
 
 	// FieldCRPeriod is a query result column.
 	FieldCRPeriod = Field{
-		querySessions:  `toFloat64OrDefault(visitors / greatest(ifNull(max(tv.v), visitors), 1))`,
-		queryPageViews: `toFloat64OrDefault(visitors / greatest(ifNull(max(tv.v), visitors), 1))`,
+		querySessions:  `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
 		queryDirection: "DESC",
-		filterTime:     true,
 		Name:           "cr",
 	}
 
