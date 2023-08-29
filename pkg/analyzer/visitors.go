@@ -138,7 +138,7 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 	}
 
 	if filter.IncludeCR {
-		fields = append(fields, FieldCR)
+		fields = append(fields, FieldCRPeriod)
 	}
 
 	includeCustomMetric := false
@@ -155,6 +155,44 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 		FieldVisitors,
 	})
 	stats, err := visitors.store.SelectVisitorStats(filter.Period, q, filter.IncludeCR, includeCustomMetric, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// ByHour returns the visitor count grouped by time of day.
+func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	fields := []Field{
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
+	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCRPeriod)
+	}
+
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
+	q, args := filter.buildQuery(fields, []Field{
+		FieldHour,
+	}, []Field{
+		FieldHour,
+		FieldVisitors,
+	})
+	stats, err := visitors.store.SelectVisitorHourStats(q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err
@@ -246,44 +284,6 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		CustomMetricAvgGrowth:   calculateGrowth(current.CustomMetricAvg, previous.CustomMetricAvg),
 		CustomMetricTotalGrowth: calculateGrowth(current.CustomMetricTotal, previous.CustomMetricTotal),
 	}, nil
-}
-
-// ByHour returns the visitor count grouped by time of day.
-func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, error) {
-	filter = visitors.analyzer.getFilter(filter)
-	fields := []Field{
-		FieldHour,
-		FieldVisitors,
-		FieldSessions,
-		FieldViews,
-		FieldBounces,
-		FieldBounceRate,
-	}
-
-	if filter.IncludeCR {
-		fields = append(fields, FieldCR)
-	}
-
-	includeCustomMetric := false
-
-	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
-		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
-		includeCustomMetric = true
-	}
-
-	q, args := filter.buildQuery(fields, []Field{
-		FieldHour,
-	}, []Field{
-		FieldHour,
-		FieldVisitors,
-	})
-	stats, err := visitors.store.SelectVisitorHourStats(q, filter.IncludeCR, includeCustomMetric, args...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return stats, nil
 }
 
 // Referrer returns the visitor count and bounce rate grouped by referrer.
