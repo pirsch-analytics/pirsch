@@ -700,6 +700,24 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 1.89, visitors[3].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:      util.PastDay(90),
+		To:        util.Today(),
+		EventName: []string{"Sale"},
+		IncludeCR: true,
+		Period:    pkg.PeriodMonth,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:      util.PastDay(90),
+		To:        util.Today(),
+		EventName: []string{"Sale"},
+		IncludeCR: true,
+		Period:    pkg.PeriodYear,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
 	filter := getMaxFilter("Sale")
 	filter.CustomMetricType = pkg.CustomMetricTypeFloat
 	filter.CustomMetricKey = "amount"

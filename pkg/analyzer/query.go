@@ -247,6 +247,8 @@ func (query *queryBuilder) joinQuery() {
 			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON day = uvd.day ", q))
 		} else if query.filter.Period == pkg.PeriodWeek {
 			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON week = uvd.week ", q))
+		} else if query.filter.Period == pkg.PeriodMonth {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON month = uvd.month ", q))
 		} else {
 			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON year = uvd.year ", q))
 		}
