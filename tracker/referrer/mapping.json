@@ -1,0 +1,34 @@
+{
+    "unknown": {
+        "Tripadvisor":{
+            "domains": [
+                "tripadvisor.com",
+                "tripadvisor.be",
+                "tripadvisor.ru",
+                "tripadvisor.nl",
+                "tripadvisor.de",
+                "tripadvisor.it",
+                "tripadvisor.es",
+                "fr.tripadvisor.ch",
+                "tripadvisor.com.br",
+                "tripadvisor.se",
+                "tripadvisor.ca",
+                "tripadvisor.jp",
+                "no.tripadvisor.com",
+                "tripadvisor.ie",
+                "tripadvisor.dk",
+                "tripadvisor.ch",
+                "tripadvisor.pt",
+                "tripadvisor.com.gr",
+                "tripadvisor.com.au",
+                "tripadvisor.at",
+                "tripadvisor.in",
+                "tripadvisor.com.tr",
+                "tripadvisor.co",
+                "fr.tripadvisor.ca",
+                "tripadvisor.co.id",
+                "tripadvisor.co.il"
+            ]
+        }
+    }
+}
