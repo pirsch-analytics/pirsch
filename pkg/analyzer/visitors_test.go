@@ -701,7 +701,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 1.89, visitors[3].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      util.PastDay(90),
+		From:      util.PastDay(68),
 		To:        util.Today(),
 		EventName: []string{"Sale"},
 		IncludeCR: true,

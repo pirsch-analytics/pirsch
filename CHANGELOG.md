@@ -15,6 +15,12 @@
 * upgraded to Go 1.21
 * updated dependencies
 
+## 5.10.4
+
+* added custom referrer mapping
+* updated referrer mapping
+* fixed script to update referrer mapping
+
 ## 5.10.3
 
 * fixed calculating average session duration

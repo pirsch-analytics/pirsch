@@ -12,15 +12,33 @@ import (
 	"strings"
 )
 
+const (
+	snowplowList = "pkg/tracker/referrer/mapping-snowplow.json"
+	mappingList  = "pkg/tracker/referrer/mapping.json"
+)
+
 type domain struct {
 	Domains []string `json:"domains"`
 }
 
-type database map[string]map[string]domain
+type list map[string]map[string]domain
 
 // run this script from the root directory to generate the list.go
 func main() {
-	log.Println("Downloading database")
+	downloadSnowplowList()
+	fromSnowplow := loadList(snowplowList)
+	mapping := loadList(mappingList)
+	groups := make(map[string]string)
+	addGroups(groups, fromSnowplow)
+	addGroups(groups, mapping)
+	keys := getKeys(groups)
+	writeList(groups, keys)
+	formatCode()
+	log.Println("Done!")
+}
+
+func downloadSnowplowList() {
+	log.Println("Downloading snowplow list")
 	resp, err := http.Get("https://s3-eu-west-1.amazonaws.com/snowplow-hosted-assets/third-party/referer-parser/referers-latest.json")
 
 	if err != nil {
@@ -33,49 +51,38 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println("Processing database")
-	var db database
-
-	if err := json.Unmarshal(body, &db); err != nil {
+	if err := os.WriteFile(snowplowList, body, 0644); err != nil {
 		log.Fatal(err)
 	}
+}
 
-	handle, err := os.Open("pkg/tracker/referrer/list.json")
+func loadList(file string) list {
+	content, err := os.ReadFile(file)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	file, err := io.ReadAll(handle)
+	var l list
 
-	if err != nil {
+	if err := json.Unmarshal(content, &l); err != nil {
 		log.Fatal(err)
 	}
 
-	var extended database
+	return l
+}
 
-	if err := json.Unmarshal(file, &extended); err != nil {
-		log.Fatal(err)
-	}
-
-	groups := map[string]string{}
-
-	for key := range db {
-		for name, domains := range db[key] {
+func addGroups(groups map[string]string, l list) {
+	for key := range l {
+		for name, domains := range l[key] {
 			for _, domain := range domains.Domains {
 				groups[strings.ToLower(domain)] = name
 			}
 		}
 	}
+}
 
-	for key := range extended {
-		for name, domains := range extended[key] {
-			for _, domain := range domains.Domains {
-				groups[strings.ToLower(domain)] = name
-			}
-		}
-	}
-
+func getKeys(groups map[string]string) []string {
 	keys := make([]string, 0, len(groups))
 
 	for k := range groups {
@@ -83,7 +90,10 @@ func main() {
 	}
 
 	sort.Strings(keys)
+	return keys
+}
 
+func writeList(groups map[string]string, keys []string) {
 	log.Println("Writing list")
 	var out strings.Builder
 	out.WriteString(`package referrer
@@ -103,13 +113,13 @@ var (
 	if err := os.WriteFile("pkg/tracker/referrer/list.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
+}
 
+func formatCode() {
 	log.Println("Formatting code")
 	cmd := exec.Command("go", "fmt", "./...")
 
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
-
-	log.Println("Done!")
 }
