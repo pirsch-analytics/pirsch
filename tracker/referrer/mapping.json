@@ -1,6 +1,6 @@
 {
 	"unknown": {
-		"Tripadvisor":{
+		"Tripadvisor": {
 			"domains": [
 				"tripadvisor.com",
 				"tripadvisor.be",
@@ -31,145 +31,226 @@
 			]
 		},
 		"Yelp": {
-			"domain": [
-				"yelp.com", "fr.m.yelp.be", "fr.m.yelp.ca", "yelp.com", "fr.m.yelp.be", "fr.m.yelp.ca", "fr.m.yelp.ch", "en.yelp.be", "m.yelp.de", "m.yelp.nl", "yelp.it", "fr.yelp.ca", "m.yelp.com", "m.yelp.fr", "yelp.fr", "m.yelp.it", "nl.yelp.be", "yelp.ie", "m.yelp.ca", "en.m.yelp.be"
+			"domains": [
+				"yelp.com",
+				"fr.m.yelp.be",
+				"fr.m.yelp.ca",
+				"yelp.com",
+				"fr.m.yelp.be",
+				"fr.m.yelp.ca",
+				"fr.m.yelp.ch",
+				"en.yelp.be",
+				"m.yelp.de",
+				"m.yelp.nl",
+				"yelp.it",
+				"fr.yelp.ca",
+				"m.yelp.com",
+				"m.yelp.fr",
+				"yelp.fr",
+				"m.yelp.it",
+				"nl.yelp.be",
+				"yelp.ie",
+				"m.yelp.ca",
+				"en.m.yelp.be"
 			]
 		},
 		"Guide Michelin": {
-			"domain": [
+			"domains": [
 				"guide.michelin.com"
 			]
 		},
 		"Restaurantguru": {
-			"domain": [
-				"restaurantguru.com", "fr.restaurantguru.com", "fr-restaurantguru-com.cdn.ampproject.org", "search.restaurantguru.com", "restaurantguru-com.cdn.ampproject.org"
+			"domains": [
+				"restaurantguru.com",
+				"fr.restaurantguru.com",
+				"fr-restaurantguru-com.cdn.ampproject.org",
+				"search.restaurantguru.com",
+				"restaurantguru-com.cdn.ampproject.org"
 			]
 		},
 		"Resto": {
-			"domain": [
-				"resto.be", "nl.resto.be", "en.resto.be"
+			"domains": [
+				"resto.be",
+				"nl.resto.be",
+				"en.resto.be"
 			]
 		},
 		"LeFooding": {
-			"domain": [
+			"domains": [
 				"lefooding.com"
 			]
 		},
 		"Foursquare": {
-			"domain": [
-				"foursquare.com", "redirect.foursquare.com", "fr.foursquare.com", "de.foursquare.com", "it.foursquare.com", "es.foursquare.com","pt.foursquare.com","ru.foursquare.com"
+			"domains": [
+				"foursquare.com",
+				"redirect.foursquare.com",
+				"fr.foursquare.com",
+				"de.foursquare.com",
+				"it.foursquare.com",
+				"es.foursquare.com",
+				"pt.foursquare.com",
+				"ru.foursquare.com"
 			]
 		},
 		"VisitWallonia": {
-			"domain": [
-				"walloniebelgiquetourisme.be", "walloniebelgietoerisme.be"
+			"domains": [
+				"walloniebelgiquetourisme.be",
+				"walloniebelgietoerisme.be"
 			]
 		},
 		"Le Bonbon": {
-			"domain": [
+			"domains": [
 				"lebonbon.fr"
 			]
 		},
 		"Pages jaune": {
-			"domain": [
+			"domains": [
 				"pagesjaunes.fr"
 			]
 		},
-        "Gault&Milau": {
-			"domain": [
-				"gaultmillau.com", "gaultmillau.be", "be.gaultmillau.com", "fr.gaultmillau.com", "nl.gaultmillau.com", "lu.gaultmillau.com", "ro.gaultmillau.com"
+		"Gault&Milau": {
+			"domains": [
+				"gaultmillau.com",
+				"gaultmillau.be",
+				"be.gaultmillau.com",
+				"fr.gaultmillau.com",
+				"nl.gaultmillau.com",
+				"lu.gaultmillau.com",
+				"ro.gaultmillau.com"
 			]
 		},
-        "VisitBrussels": {
-			"domain": [
+		"VisitBrussels": {
+			"domains": [
 				"visit.brussels"
 			]
 		}
 	},
-    "paid": {
+	"paid": {
 		"Google Ads": {
-			"domain": [
-				"ads.google.com", "googleads.g.doubleclick.net"
+			"domains": [
+				"ads.google.com",
+				"googleads.g.doubleclick.net"
 			]
 		}
-    },
+	},
 	"search": {
 		"Qwant": {
-			"domain": [
+			"domains": [
 				"qwant.com",
 				"lite.qwant.com",
 				"org.qwant.com"
 			]
 		},
 		"Bing": {
-			"domain": [
-				"bing.com", "cn.bing.com", "www4.bing.com", "www2.bing.com", "edgeservices.bing.com", "cc.bingj.com"
+			"domains": [
+				"bing.com",
+				"cn.bing.com",
+				"www4.bing.com",
+				"www2.bing.com",
+				"edgeservices.bing.com",
+				"cc.bingj.com"
 			]
 		},
 		"Ecosia": {
-			"domain": [
+			"domains": [
 				"ecosia.org"
 			]
 		},
 		"Yahoo": {
-			"domain": [
-				"yahoo.com", "fr-mg42.mail.yahoo.com", "fr.images.search.yahoo.com", "fr.yahoo.com", "fr.news.yahoo.com", "fr.style.yahoo.com", "r.search.yahoo.com", "at.search.yahoo.com", "search.brave.com"
+			"domains": [
+				"yahoo.com",
+				"fr-mg42.mail.yahoo.com",
+				"fr.images.search.yahoo.com",
+				"fr.yahoo.com",
+				"fr.news.yahoo.com",
+				"fr.style.yahoo.com",
+				"r.search.yahoo.com",
+				"at.search.yahoo.com",
+				"search.brave.com"
 			]
 		},
 		"DuckDuckGo": {
-			"domain": [
-				"duckduckgo.com", "r.duckduckgo.com", "html.duckduckgo.com", "start.duckduckgo.com", "ducksports.com", "next.duckduckgo.com", "safe.duckduckgo.com"
+			"domains": [
+				"duckduckgo.com",
+				"r.duckduckgo.com",
+				"html.duckduckgo.com",
+				"start.duckduckgo.com",
+				"ducksports.com",
+				"next.duckduckgo.com",
+				"safe.duckduckgo.com"
 			]
 		},
 		"Baidu ": {
-			"domain": [
-				"baidu.com", "m.baidu.com"
+			"domains": [
+				"baidu.com",
+				"m.baidu.com"
 			]
 		},
 		"Lilo": {
-			"domain": [
-				"lilo.org", "search.lilo.org", "lilo.org", "search.uselilo.org"
+			"domains": [
+				"lilo.org",
+				"search.lilo.org",
+				"lilo.org",
+				"search.uselilo.org"
 			]
 		},
 		"Apple Maps": {
-			"domain": [
+			"domains": [
 				"apple.com/maps"
 			]
 		},
 		"Yandex": {
-			"domain": [
+			"domains": [
 				"yandex.com"
 			]
 		},
 		"Startpage": {
-			"domain": [
-				"startpage.com", "www.startpage.com"
+			"domains": [
+				"startpage.com",
+				"www.startpage.com"
 			]
 		},
 		"Ask": {
-			"domain": [
-				"Ask.com", "int.search.tb.ask.com"
+			"domains": [
+				"Ask.com",
+				"int.search.tb.ask.com"
 			]
 		},
-        "ViaMichelin": {
-            "domain": [
-                "nl.viamichelin.be", "viamichelin.de", "viamichelin.it", "viamichelin.nl", "viamichelin.co.uk"
-            ]
-        }
+		"ViaMichelin": {
+			"domains": [
+				"nl.viamichelin.be",
+				"viamichelin.de",
+				"viamichelin.it",
+				"viamichelin.nl",
+				"viamichelin.co.uk"
+			]
+		}
 	},
 	"social": {
 		"Facebook": {
-			"domain": [
-				"facebook.com", "l.facebook.com", "m.facebook.com", "lm.facebook.com", "fr-fr.facebook.com", "nl-nl.facebook.com", "web.facebook.com", "business.facebook.com", "de-de.facebook.com", "es-es.facebook.com", "it-it.facebook.com", "developers.facebook.com"
+			"domains": [
+				"facebook.com",
+				"l.facebook.com",
+				"m.facebook.com",
+				"lm.facebook.com",
+				"fr-fr.facebook.com",
+				"nl-nl.facebook.com",
+				"web.facebook.com",
+				"business.facebook.com",
+				"de-de.facebook.com",
+				"es-es.facebook.com",
+				"it-it.facebook.com",
+				"developers.facebook.com"
 			]
 		},
 		"Facebook Messenger": {
-			"domain": [
-				"messenger.com", "l.messenger.com"
+			"domains": [
+				"messenger.com",
+				"l.messenger.com"
 			]
 		},
 		"Snapchat": {
-			"domain": [
+			"domains": [
 				"Snapchat.com"
 			]
 		}
