@@ -1,0 +1,258 @@
+{
+	"unknown": {
+		"Tripadvisor": {
+			"domains": [
+				"tripadvisor.com",
+				"tripadvisor.be",
+				"tripadvisor.ru",
+				"tripadvisor.nl",
+				"tripadvisor.de",
+				"tripadvisor.it",
+				"tripadvisor.es",
+				"fr.tripadvisor.ch",
+				"tripadvisor.com.br",
+				"tripadvisor.se",
+				"tripadvisor.ca",
+				"tripadvisor.jp",
+				"no.tripadvisor.com",
+				"tripadvisor.ie",
+				"tripadvisor.dk",
+				"tripadvisor.ch",
+				"tripadvisor.pt",
+				"tripadvisor.com.gr",
+				"tripadvisor.com.au",
+				"tripadvisor.at",
+				"tripadvisor.in",
+				"tripadvisor.com.tr",
+				"tripadvisor.co",
+				"fr.tripadvisor.ca",
+				"tripadvisor.co.id",
+				"tripadvisor.co.il"
+			]
+		},
+		"Yelp": {
+			"domains": [
+				"yelp.com",
+				"fr.m.yelp.be",
+				"fr.m.yelp.ca",
+				"yelp.com",
+				"fr.m.yelp.be",
+				"fr.m.yelp.ca",
+				"fr.m.yelp.ch",
+				"en.yelp.be",
+				"m.yelp.de",
+				"m.yelp.nl",
+				"yelp.it",
+				"fr.yelp.ca",
+				"m.yelp.com",
+				"m.yelp.fr",
+				"yelp.fr",
+				"m.yelp.it",
+				"nl.yelp.be",
+				"yelp.ie",
+				"m.yelp.ca",
+				"en.m.yelp.be"
+			]
+		},
+		"Guide Michelin": {
+			"domains": [
+				"guide.michelin.com"
+			]
+		},
+		"Restaurantguru": {
+			"domains": [
+				"restaurantguru.com",
+				"fr.restaurantguru.com",
+				"fr-restaurantguru-com.cdn.ampproject.org",
+				"search.restaurantguru.com",
+				"restaurantguru-com.cdn.ampproject.org"
+			]
+		},
+		"Resto": {
+			"domains": [
+				"resto.be",
+				"nl.resto.be",
+				"en.resto.be"
+			]
+		},
+		"LeFooding": {
+			"domains": [
+				"lefooding.com"
+			]
+		},
+		"Foursquare": {
+			"domains": [
+				"foursquare.com",
+				"redirect.foursquare.com",
+				"fr.foursquare.com",
+				"de.foursquare.com",
+				"it.foursquare.com",
+				"es.foursquare.com",
+				"pt.foursquare.com",
+				"ru.foursquare.com"
+			]
+		},
+		"VisitWallonia": {
+			"domains": [
+				"walloniebelgiquetourisme.be",
+				"walloniebelgietoerisme.be"
+			]
+		},
+		"Le Bonbon": {
+			"domains": [
+				"lebonbon.fr"
+			]
+		},
+		"Pages jaune": {
+			"domains": [
+				"pagesjaunes.fr"
+			]
+		},
+		"Gault&Milau": {
+			"domains": [
+				"gaultmillau.com",
+				"gaultmillau.be",
+				"be.gaultmillau.com",
+				"fr.gaultmillau.com",
+				"nl.gaultmillau.com",
+				"lu.gaultmillau.com",
+				"ro.gaultmillau.com"
+			]
+		},
+		"VisitBrussels": {
+			"domains": [
+				"visit.brussels"
+			]
+		}
+	},
+	"paid": {
+		"Google Ads": {
+			"domains": [
+				"ads.google.com",
+				"googleads.g.doubleclick.net"
+			]
+		}
+	},
+	"search": {
+		"Qwant": {
+			"domains": [
+				"qwant.com",
+				"lite.qwant.com",
+				"org.qwant.com"
+			]
+		},
+		"Bing": {
+			"domains": [
+				"bing.com",
+				"cn.bing.com",
+				"www4.bing.com",
+				"www2.bing.com",
+				"edgeservices.bing.com",
+				"cc.bingj.com"
+			]
+		},
+		"Ecosia": {
+			"domains": [
+				"ecosia.org"
+			]
+		},
+		"Yahoo": {
+			"domains": [
+				"yahoo.com",
+				"fr-mg42.mail.yahoo.com",
+				"fr.images.search.yahoo.com",
+				"fr.yahoo.com",
+				"fr.news.yahoo.com",
+				"fr.style.yahoo.com",
+				"r.search.yahoo.com",
+				"at.search.yahoo.com",
+				"search.brave.com"
+			]
+		},
+		"DuckDuckGo": {
+			"domains": [
+				"duckduckgo.com",
+				"r.duckduckgo.com",
+				"html.duckduckgo.com",
+				"start.duckduckgo.com",
+				"ducksports.com",
+				"next.duckduckgo.com",
+				"safe.duckduckgo.com"
+			]
+		},
+		"Baidu ": {
+			"domains": [
+				"baidu.com",
+				"m.baidu.com"
+			]
+		},
+		"Lilo": {
+			"domains": [
+				"lilo.org",
+				"search.lilo.org",
+				"lilo.org",
+				"search.uselilo.org"
+			]
+		},
+		"Apple Maps": {
+			"domains": [
+				"apple.com/maps"
+			]
+		},
+		"Yandex": {
+			"domains": [
+				"yandex.com"
+			]
+		},
+		"Startpage": {
+			"domains": [
+				"startpage.com",
+				"www.startpage.com"
+			]
+		},
+		"Ask": {
+			"domains": [
+				"Ask.com",
+				"int.search.tb.ask.com"
+			]
+		},
+		"ViaMichelin": {
+			"domains": [
+				"nl.viamichelin.be",
+				"viamichelin.de",
+				"viamichelin.it",
+				"viamichelin.nl",
+				"viamichelin.co.uk"
+			]
+		}
+	},
+	"social": {
+		"Facebook": {
+			"domains": [
+				"facebook.com",
+				"l.facebook.com",
+				"m.facebook.com",
+				"lm.facebook.com",
+				"fr-fr.facebook.com",
+				"nl-nl.facebook.com",
+				"web.facebook.com",
+				"business.facebook.com",
+				"de-de.facebook.com",
+				"es-es.facebook.com",
+				"it-it.facebook.com",
+				"developers.facebook.com"
+			]
+		},
+		"Facebook Messenger": {
+			"domains": [
+				"messenger.com",
+				"l.messenger.com"
+			]
+		},
+		"Snapchat": {
+			"domains": [
+				"Snapchat.com"
+			]
+		}
+	}
+}
