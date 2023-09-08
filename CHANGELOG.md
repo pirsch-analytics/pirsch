@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.5
+
+* prefer query parameters over header to extract referrer
+
 ## 5.10.4
 
 * added custom referrer mapping
