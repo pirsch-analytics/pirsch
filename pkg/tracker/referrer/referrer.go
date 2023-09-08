@@ -12,12 +12,15 @@ import (
 )
 
 // QueryParams is a list of query parameters to set the referrer.
-var QueryParams = []string{
-	"ref",
-	"referer",
-	"referrer",
-	"source",
-	"utm_source",
+var QueryParams = []struct {
+	param        string
+	preferHeader bool
+}{
+	{"ref", false},
+	{"referer", false},
+	{"referrer", false},
+	{"source", true},
+	{"utm_source", true},
 }
 
 var isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
@@ -117,19 +120,17 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 }
 
 func getFromHeaderOrQuery(r *http.Request) string {
-	referrer := r.Header.Get("Referer")
+	fromHeader := strings.TrimSpace(r.Header.Get("Referer"))
 
-	if referrer == "" {
-		for _, param := range QueryParams {
-			referrer = r.URL.Query().Get(param)
+	for _, param := range QueryParams {
+		referrer := r.URL.Query().Get(param.param)
 
-			if referrer != "" {
-				return referrer
-			}
+		if referrer != "" && !param.preferHeader || param.preferHeader && fromHeader == "" {
+			return referrer
 		}
 	}
 
-	return referrer
+	return fromHeader
 }
 
 func isIP(referrer string) bool {

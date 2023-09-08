@@ -104,16 +104,17 @@ func TestGetQuery(t *testing.T) {
 	}{
 		{"https://www.google.com", "Google"},
 		{"https://www.google.com", "Google"},
-		{"https://www.google.com", "Google"},
-		{"https://www.google.com", "Google"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
 		{"https://google.com", "Google"},
-		{"https://google.com", "Google"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
 		{"", "My Referrer"},
 		{"", "referrer"},
 	}
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
+		r.Header.Set("Referer", "https://overwrite-this.com")
 		referrer, referrerName, _ := Get(r, "", "")
 		assert.Equal(t, expected[i].referrer, referrer)
 		assert.Equal(t, expected[i].name, referrerName)
@@ -160,26 +161,27 @@ func TestGetFromHeaderOrQuery(t *testing.T) {
 		{"utm_source", "domain+space"},
 	}
 	expected := []string{
-		"",
-		"",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
 		"domain",
 		"domain space",
-		"",
+		"https://overwrite-this.com",
 		"domain",
 		"domain space",
-		"",
+		"https://overwrite-this.com",
 		"domain",
 		"domain space",
-		"",
-		"domain",
-		"domain space",
-		"",
-		"domain",
-		"domain space",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
 	}
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
+		r.Header.Set("Referer", "https://overwrite-this.com")
 		assert.Equal(t, expected[i], getFromHeaderOrQuery(r))
 	}
 }

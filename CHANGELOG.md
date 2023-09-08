@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.5
+
+* prefer query parameters over header to extract referrer
+
 ## 6.0.0
 
 * refactored package structure and a few method and struct names
