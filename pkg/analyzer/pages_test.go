@@ -1045,22 +1045,22 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
-		{VisitorID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
 
-		{VisitorID: 2, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
-		{VisitorID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
+		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
-			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
+			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
