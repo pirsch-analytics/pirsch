@@ -143,45 +143,55 @@ func TestGetSameDomain(t *testing.T) {
 
 func TestGetFromHeaderOrQuery(t *testing.T) {
 	input := [][]string{
-		{"", ""},
-		{"ref", ""},
-		{"ref", "domain"},
-		{"ref", "domain+space"},
-		{"referer", ""},
-		{"referer", "domain"},
-		{"referer", "domain+space"},
-		{"referrer", ""},
-		{"referrer", "domain"},
-		{"referrer", "domain+space"},
-		{"source", ""},
-		{"source", "domain"},
-		{"source", "domain+space"},
-		{"utm_source", ""},
-		{"utm_source", "domain"},
-		{"utm_source", "domain+space"},
+		{"", "", ""},
+		{"ref", "", ""},
+		{"ref", "domain", ""},
+		{"ref", "domain+space", ""},
+		{"ref", "domain+space", "https://overwrite-this.com"},
+		{"source", "domain+space", "https://overwrite-this.com"},
+		{"utm_source", "domain+space", "https://overwrite-this.com"},
+		{"referer", "", ""},
+		{"referer", "domain", ""},
+		{"referer", "domain+space", ""},
+		{"referrer", "", ""},
+		{"referrer", "domain", ""},
+		{"referrer", "domain+space", ""},
+		{"source", "", ""},
+		{"source", "domain", ""},
+		{"source", "domain+space", ""},
+		{"utm_source", "", ""},
+		{"utm_source", "domain", ""},
+		{"utm_source", "domain+space", ""},
 	}
 	expected := []string{
-		"https://overwrite-this.com",
-		"https://overwrite-this.com",
+		"",
+		"",
 		"domain",
 		"domain space",
-		"https://overwrite-this.com",
-		"domain",
-		"domain space",
-		"https://overwrite-this.com",
-		"domain",
 		"domain space",
 		"https://overwrite-this.com",
 		"https://overwrite-this.com",
-		"https://overwrite-this.com",
-		"https://overwrite-this.com",
-		"https://overwrite-this.com",
-		"https://overwrite-this.com",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
 	}
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
-		r.Header.Set("Referer", "https://overwrite-this.com")
+
+		if in[2] != "" {
+			r.Header.Set("Referer", in[2])
+		}
+
 		assert.Equal(t, expected[i], getFromHeaderOrQuery(r))
 	}
 }

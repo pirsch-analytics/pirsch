@@ -125,7 +125,7 @@ func getFromHeaderOrQuery(r *http.Request) string {
 	for _, param := range QueryParams {
 		referrer := r.URL.Query().Get(param.param)
 
-		if referrer != "" && !param.preferHeader || param.preferHeader && fromHeader == "" {
+		if referrer != "" && (!param.preferHeader || param.preferHeader && fromHeader == "") {
 			return referrer
 		}
 	}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.6
+
+* fixed query parameter preference
+
 ## 5.10.5
 
 * prefer query parameters over header to extract referrer
