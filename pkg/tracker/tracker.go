@@ -570,9 +570,9 @@ func (tracker *Tracker) getScreenWidthFromHeader(r *http.Request, header string)
 }
 
 func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *model.Session, ref, hostname string) bool {
-	ref, _, _ = referrer.Get(r, ref, hostname)
+	ref, refName, _ := referrer.Get(r, ref, hostname)
 
-	if ref != "" && ref != session.Referrer {
+	if ref != "" && ref != session.Referrer || refName != "" && refName != session.ReferrerName {
 		return true
 	}
 

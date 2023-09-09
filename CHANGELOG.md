@@ -15,6 +15,10 @@
 * upgraded to Go 1.21
 * updated dependencies
 
+## 5.10.7
+
+* fixed resetting sessions when referrer name changes
+
 ## 5.10.6
 
 * fixed query parameter preference
