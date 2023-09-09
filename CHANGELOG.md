@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.10.7
+
+* fixed resetting sessions when referrer name changes
+
 ## 5.10.6
 
 * fixed query parameter preference
