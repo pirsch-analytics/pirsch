@@ -55,9 +55,7 @@
 			]
 		},
 		"Guide Michelin": {
-			"domains": [
-				"guide.michelin.com"
-			]
+			"domains": ["guide.michelin.com"]
 		},
 		"Restaurantguru": {
 			"domains": [
@@ -69,16 +67,10 @@
 			]
 		},
 		"Resto": {
-			"domains": [
-				"resto.be",
-				"nl.resto.be",
-				"en.resto.be"
-			]
+			"domains": ["resto.be", "nl.resto.be", "en.resto.be"]
 		},
 		"LeFooding": {
-			"domains": [
-				"lefooding.com"
-			]
+			"domains": ["lefooding.com"]
 		},
 		"Foursquare": {
 			"domains": [
@@ -93,20 +85,13 @@
 			]
 		},
 		"VisitWallonia": {
-			"domains": [
-				"walloniebelgiquetourisme.be",
-				"walloniebelgietoerisme.be"
-			]
+			"domains": ["walloniebelgiquetourisme.be", "walloniebelgietoerisme.be"]
 		},
 		"Le Bonbon": {
-			"domains": [
-				"lebonbon.fr"
-			]
+			"domains": ["lebonbon.fr"]
 		},
 		"Pages jaune": {
-			"domains": [
-				"pagesjaunes.fr"
-			]
+			"domains": ["pagesjaunes.fr"]
 		},
 		"Gault&Milau": {
 			"domains": [
@@ -120,26 +105,38 @@
 			]
 		},
 		"VisitBrussels": {
-			"domains": [
-				"visit.brussels"
-			]
+			"domains": ["visit.brussels"]
+		},
+		"Etsy": {
+			"domains": ["etsy.com"]
+		},
+		"Gumroad": {
+			"domains": ["gumroad.com", "app.gumroad.com"]
+		},
+		"Universal Human Relevance System": {
+			"domains": ["prod.uhrs.playmsn.com", "uhrs.playmsn.com"]
+		},
+		"Planet Minecraft": {
+			"domains": ["planetminecraft.com"]
 		}
 	},
 	"paid": {
 		"Google Ads": {
-			"domains": [
-				"ads.google.com",
-				"googleads.g.doubleclick.net"
-			]
+			"domains": ["ads.google.com", "googleads.g.doubleclick.net"]
 		}
 	},
 	"search": {
+		"Google Lens": {
+			"domains": ["google.lens", "lens.google.com"]
+		},
+		"Google Translate": {
+			"domains": ["translate.google.com"]
+		},
+		"Brave Search": {
+			"domains": ["search.brave.com"]
+		},
 		"Qwant": {
-			"domains": [
-				"qwant.com",
-				"lite.qwant.com",
-				"org.qwant.com"
-			]
+			"domains": ["qwant.com", "lite.qwant.com", "org.qwant.com"]
 		},
 		"Bing": {
 			"domains": [
@@ -152,11 +149,12 @@
 			]
 		},
 		"Ecosia": {
-			"domains": [
-				"ecosia.org"
-			]
+			"domains": ["ecosia.org"]
 		},
-		"Yahoo": {
+		"Mail.ru": {
+			"domains": ["otvet.mail.ru"]
+		},
+		"Yahoo!": {
 			"domains": [
 				"yahoo.com",
 				"fr-mg42.mail.yahoo.com",
@@ -165,8 +163,27 @@
 				"fr.news.yahoo.com",
 				"fr.style.yahoo.com",
 				"r.search.yahoo.com",
+				"malaysia.search.yahoo.com",
 				"at.search.yahoo.com",
-				"search.brave.com"
+				"ch.search.yahoo.com",
+				"th.search.yahoo.com",
+				"ph.search.yahoo.com",
+				"co.search.yahoo.com",
+				"tr.search.yahoo.com",
+				"fi.search.yahoo.com",
+				"vn.search.yahoo.com",
+				"id.search.yahoo.com",
+				"sg.search.yahoo.com",
+				"pl.search.yahoo.com",
+				"pe.search.yahoo.com",
+				"cl.search.yahoo.com",
+				"de.search.yahoo.com",
+				"es.search.yahoo.com",
+				"fr.search.yahoo.com",
+				"it.search.yahoo.com",
+				"nl.search.yahoo.com",
+				"uk.search.yahoo.com",
+				"search.yahoo.com"
 			]
 		},
 		"DuckDuckGo": {
@@ -176,45 +193,41 @@
 				"html.duckduckgo.com",
 				"start.duckduckgo.com",
 				"ducksports.com",
+				"start.duckduckgo.com",
 				"next.duckduckgo.com",
 				"safe.duckduckgo.com"
 			]
 		},
+		"Opera": {
+			"domains": ["search.opera.com", "web.flow.opera.com", "pinboard.opera.com"]
+		},
 		"Baidu ": {
-			"domains": [
-				"baidu.com",
-				"m.baidu.com"
-			]
+			"domains": ["baidu.com", "m.baidu.com"]
 		},
 		"Lilo": {
-			"domains": [
-				"lilo.org",
-				"search.lilo.org",
-				"lilo.org",
-				"search.uselilo.org"
-			]
+			"domains": ["lilo.org", "search.lilo.org", "lilo.org", "search.uselilo.org"]
 		},
 		"Apple Maps": {
-			"domains": [
-				"apple.com/maps"
-			]
+			"domains": ["apple.com/maps"]
 		},
 		"Yandex": {
 			"domains": [
-				"yandex.com"
+				"yandex.com",
+				"ya.ru",
+				"yandex.kz",
+				"yandex.tr",
+				"yandex.com.tr",
+				"yandex.uz",
+				"yandex.ru",
+				"yandex.ua",
+				"yandex.by"
 			]
 		},
 		"Startpage": {
-			"domains": [
-				"startpage.com",
-				"www.startpage.com"
-			]
+			"domains": ["startpage.com"]
 		},
 		"Ask": {
-			"domains": [
-				"Ask.com",
-				"int.search.tb.ask.com"
-			]
+			"domains": ["ask.com", "int.search.tb.ask.com"]
 		},
 		"ViaMichelin": {
 			"domains": [
@@ -226,7 +239,40 @@
 			]
 		}
 	},
+	"mail": {
+		"Bluewin": {
+			"domains": ["bluewin.ch", "rich-v01.bluewin.ch", "rich-v02.bluewin.ch"]
+		},
+		"Web.de": {
+			"domains": [
+				"navigator.web.de",
+				"bs.navigator.web.de",
+				"bap.navigator.web.de",
+				"lightmailer-bs.web.de",
+				"lightmailer-bap.web.de",
+				"deref.web.de",
+				"deref-web.de"
+			]
+		},
+		"GMX": {
+			"domains": [
+				"navigator.gmx.net",
+				"bs.navigator.gmx.net",
+				"bap.navigator.gmx.net",
+				"lightmailer-bs.gmx.net",
+				"lightmailer-bap.gmx.net",
+				"deref.gmx.net",
+				"deref-gmx.net"
+			]
+		}
+	},
 	"social": {
+		"Reddit": {
+			"domains": ["old.reddit.com"]
+		},
+		"Telegram": {
+			"domains": ["telegram.org", "web.telegram.org"]
+		},
 		"Facebook": {
 			"domains": [
 				"facebook.com",
@@ -244,14 +290,232 @@
 			]
 		},
 		"Facebook Messenger": {
-			"domains": [
-				"messenger.com",
-				"l.messenger.com"
-			]
+			"domains": ["messenger.com", "l.messenger.com"]
 		},
 		"Snapchat": {
+			"domains": ["snapchat.com"]
+		},
+		"Twitch": {
+			"domains": ["twitch.tv", "m.twitch.tv"]
+		},
+		"TikTok": {
+			"domains": ["tiktok.com"]
+		},
+		"Quora": {
+			"domains": ["de.quora.com"]
+		},
+		"Linktree": {
+			"domains": ["linktr.ee"]
+		},
+		"Youtube": {
 			"domains": [
-				"Snapchat.com"
+				"youtube-nocookie.com",
+				"youtube.ae",
+				"youtube.al",
+				"youtube.am",
+				"youtube.at",
+				"youtube.az",
+				"youtube.ba",
+				"youtube.be",
+				"youtube.bg",
+				"youtube.bh",
+				"youtube.bo",
+				"youtube.by",
+				"youtube.ca",
+				"youtube.cat",
+				"youtube.ch",
+				"youtube.cl",
+				"youtube.co",
+				"youtube.co.ae",
+				"youtube.co.at",
+				"youtube.co.cr",
+				"youtube.co.hu",
+				"youtube.co.id",
+				"youtube.co.il",
+				"youtube.co.in",
+				"youtube.co.jp",
+				"youtube.co.ke",
+				"youtube.co.kr",
+				"youtube.co.ma",
+				"youtube.co.nz",
+				"youtube.co.th",
+				"youtube.co.tz",
+				"youtube.co.ug",
+				"youtube.co.uk",
+				"youtube.co.ve",
+				"youtube.co.za",
+				"youtube.co.zw",
+				"youtube.com.ar",
+				"youtube.com.au",
+				"youtube.com.az",
+				"youtube.com.bd",
+				"youtube.com.bh",
+				"youtube.com.bo",
+				"youtube.com.br",
+				"youtube.com.by",
+				"youtube.com.co",
+				"youtube.com.do",
+				"youtube.com.ec",
+				"youtube.com.ee",
+				"youtube.com.eg",
+				"youtube.com.es",
+				"youtube.com.gh",
+				"youtube.com.gr",
+				"youtube.com.gt",
+				"youtube.com.hk",
+				"youtube.com.hn",
+				"youtube.com.hr",
+				"youtube.com.jm",
+				"youtube.com.jo",
+				"youtube.com.kw",
+				"youtube.com.lb",
+				"youtube.com.lv",
+				"youtube.com.ly",
+				"youtube.com.mk",
+				"youtube.com.mt",
+				"youtube.com.mx",
+				"youtube.com.my",
+				"youtube.com.ng",
+				"youtube.com.ni",
+				"youtube.com.om",
+				"youtube.com.pa",
+				"youtube.com.pe",
+				"youtube.com.ph",
+				"youtube.com.pk",
+				"youtube.com.pt",
+				"youtube.com.py",
+				"youtube.com.qa",
+				"youtube.com.ro",
+				"youtube.com.sa",
+				"youtube.com.sg",
+				"youtube.com.sv",
+				"youtube.com.tn",
+				"youtube.com.tr",
+				"youtube.com.tw",
+				"youtube.com.ua",
+				"youtube.com.uy",
+				"youtube.com.ve",
+				"youtube.cr",
+				"youtube.cz",
+				"youtube.de",
+				"youtube.dk",
+				"youtube.ee",
+				"youtube.es",
+				"youtube.fi",
+				"youtube.fr",
+				"youtube.ge",
+				"youtube.gr",
+				"youtube.gt",
+				"youtube.hk",
+				"youtube.hr",
+				"youtube.hu",
+				"youtube.ie",
+				"youtube.in",
+				"youtube.iq",
+				"youtube.is",
+				"youtube.it",
+				"youtube.jo",
+				"youtube.jp",
+				"youtube.kr",
+				"youtube.kz",
+				"youtube.la",
+				"youtube.lk",
+				"youtube.lt",
+				"youtube.lu",
+				"youtube.lv",
+				"youtube.ly",
+				"youtube.ma",
+				"youtube.md",
+				"youtube.me",
+				"youtube.mk",
+				"youtube.mn",
+				"youtube.mx",
+				"youtube.my",
+				"youtube.ng",
+				"youtube.ni",
+				"youtube.nl",
+				"youtube.no",
+				"youtube.pa",
+				"youtube.pe",
+				"youtube.ph",
+				"youtube.pk",
+				"youtube.pl",
+				"youtube.pr",
+				"youtube.pt",
+				"youtube.qa",
+				"youtube.ro",
+				"youtube.rs",
+				"youtube.ru",
+				"youtube.sa",
+				"youtube.se",
+				"youtube.sg",
+				"youtube.si",
+				"youtube.sk",
+				"youtube.sn",
+				"youtube.soy",
+				"youtube.sv",
+				"youtube.tn",
+				"youtube.tv",
+				"youtube.ua",
+				"youtube.ug",
+				"youtube.uy",
+				"youtube.vn",
+				"youtubekids.com",
+				"yt.be",
+				"m.youtube.com"
+			]
+		},
+		"Pinterest": {
+			"domains": [
+				"pin.it",
+				"pinterest.at",
+				"pinterest.ca",
+				"pinterest.ch",
+				"pinterest.cl",
+				"pinterest.co.kr",
+				"pinterest.co.uk",
+				"pinterest.com",
+				"pinterest.com.au",
+				"pinterest.com.mx",
+				"pinterest.de",
+				"pinterest.dk",
+				"pinterest.es",
+				"pinterest.fr",
+				"pinterest.ie",
+				"pinterest.in",
+				"pinterest.info",
+				"pinterest.it",
+				"pinterest.jp",
+				"pinterest.net",
+				"pinterest.nz",
+				"pinterest.ph",
+				"pinterest.pt",
+				"pinterest.ru",
+				"pinterest.se",
+				"pinterest.sk",
+				"at.pinterest.com",
+				"ca.pinterest.com",
+				"ch.pinterest.com",
+				"cl.pinterest.com",
+				"kr.pinterest.com",
+				"uk.pinterest.com",
+				"au.pinterest.com",
+				"mx.pinterest.com",
+				"de.pinterest.com",
+				"dk.pinterest.com",
+				"es.pinterest.com",
+				"fr.pinterest.com",
+				"ie.pinterest.com",
+				"in.pinterest.com",
+				"it.pinterest.com",
+				"pl.pinterest.com",
+				"jp.pinterest.com",
+				"nz.pinterest.com",
+				"ph.pinterest.com",
+				"pt.pinterest.com",
+				"ru.pinterest.com",
+				"se.pinterest.com",
+				"sk.pinterest.com"
 			]
 		}
 	}
