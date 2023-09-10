@@ -129,8 +129,8 @@
 		"Google Lens": {
 			"domains": ["google.lens", "lens.google.com"]
 		},
-		"Yahoo!": {
-			"domains": ["r.search.yahoo.com", "at.search.yahoo.com"]
+		"Google Translate": {
+			"domains": ["translate.google.com"]
 		},
 		"Brave Search": {
 			"domains": ["search.brave.com"]
@@ -151,7 +151,7 @@
 		"Ecosia": {
 			"domains": ["ecosia.org", "www.ecosia.org"]
 		},
-		"Yahoo": {
+		"Yahoo!": {
 			"domains": [
 				"yahoo.com",
 				"fr-mg42.mail.yahoo.com",
@@ -160,8 +160,28 @@
 				"fr.news.yahoo.com",
 				"fr.style.yahoo.com",
 				"r.search.yahoo.com",
+				"malaysia.search.yahoo.com",
 				"at.search.yahoo.com",
-				"search.brave.com"
+				"ch.search.yahoo.com",
+				"th.search.yahoo.com",
+				"ph.search.yahoo.com",
+				"co.search.yahoo.com",
+				"tr.search.yahoo.com",
+				"fi.search.yahoo.com",
+				"vn.search.yahoo.com",
+				"id.search.yahoo.com",
+				"sg.search.yahoo.com",
+				"pl.search.yahoo.com",
+				"pe.search.yahoo.com",
+				"cl.search.yahoo.com",
+				"de.search.yahoo.com",
+				"es.search.yahoo.com",
+				"fr.search.yahoo.com",
+				"it.search.yahoo.com",
+				"nl.search.yahoo.com",
+				"uk.search.yahoo.com",
+				"www.yahoo.com",
+				"search.yahoo.com"
 			]
 		},
 		"DuckDuckGo": {
@@ -171,6 +191,7 @@
 				"html.duckduckgo.com",
 				"start.duckduckgo.com",
 				"ducksports.com",
+				"start.duckduckgo.com",
 				"next.duckduckgo.com",
 				"safe.duckduckgo.com"
 			]
@@ -185,7 +206,7 @@
 			"domains": ["apple.com/maps"]
 		},
 		"Yandex": {
-			"domains": ["yandex.com"]
+			"domains": ["yandex.com", "ya.ru", "yandex.tr", "yandex.com.tr", "yandex.ru", "yandex.ua", "yandex.by"]
 		},
 		"Startpage": {
 			"domains": ["startpage.com", "www.startpage.com"]
@@ -236,6 +257,15 @@
 		}
 	},
 	"social": {
+		"Reddit": {
+			"domains": ["old.reddit.com", "www.reddit.com"]
+		},
+		"Instagram": {
+			"domains": ["www.instagram.com"]
+		},
+		"Telegram": {
+			"domains": ["telegram.org", "web.telegram.org"]
+		},
 		"Facebook": {
 			"domains": [
 				"facebook.com",
@@ -446,6 +476,7 @@
 				"www.youtube.ch",
 				"www.youtube.cl",
 				"www.youtube.co",
+				"www.youtube.com",
 				"www.youtube.co.ae",
 				"www.youtube.co.at",
 				"www.youtube.co.cr",
