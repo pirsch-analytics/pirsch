@@ -151,6 +151,9 @@
 		"Ecosia": {
 			"domains": ["ecosia.org"]
 		},
+		"Mail.ru": {
+			"domains": ["otvet.mail.ru"]
+		},
 		"Yahoo!": {
 			"domains": [
 				"yahoo.com",
@@ -195,6 +198,9 @@
 				"safe.duckduckgo.com"
 			]
 		},
+		"Opera": {
+			"domains": ["search.opera.com", "web.flow.opera.com", "pinboard.opera.com"]
+		},
 		"Baidu ": {
 			"domains": ["baidu.com", "m.baidu.com"]
 		},
@@ -205,7 +211,16 @@
 			"domains": ["apple.com/maps"]
 		},
 		"Yandex": {
-			"domains": ["yandex.com", "ya.ru", "yandex.tr", "yandex.com.tr", "yandex.ru", "yandex.ua", "yandex.by"]
+			"domains": [
+				"yandex.com",
+				"ya.ru",
+				"yandex.kz",
+				"yandex.tr",
+				"yandex.com.tr",
+				"yandex.ru",
+				"yandex.ua",
+				"yandex.by"
+			]
 		},
 		"Startpage": {
 			"domains": ["startpage.com"]
@@ -225,11 +240,7 @@
 	},
 	"mail": {
 		"Bluewin": {
-			"domains": [
-				"bluewin.ch",
-				"rich-v01.bluewin.ch",
-				"rich-v02.bluewin.ch"
-			]
+			"domains": ["bluewin.ch", "rich-v01.bluewin.ch", "rich-v02.bluewin.ch"]
 		},
 		"WEB.DE": {
 			"domains": [
