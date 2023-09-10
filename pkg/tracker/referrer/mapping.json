@@ -226,7 +226,7 @@
 			"domains": ["startpage.com"]
 		},
 		"Ask": {
-			"domains": ["Ask.com", "int.search.tb.ask.com"]
+			"domains": ["ask.com", "int.search.tb.ask.com"]
 		},
 		"ViaMichelin": {
 			"domains": [
