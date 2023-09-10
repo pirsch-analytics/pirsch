@@ -217,6 +217,7 @@
 				"yandex.kz",
 				"yandex.tr",
 				"yandex.com.tr",
+				"yandex.uz",
 				"yandex.ru",
 				"yandex.ua",
 				"yandex.by"
@@ -242,7 +243,7 @@
 		"Bluewin": {
 			"domains": ["bluewin.ch", "rich-v01.bluewin.ch", "rich-v02.bluewin.ch"]
 		},
-		"WEB.DE": {
+		"Web.de": {
 			"domains": [
 				"navigator.web.de",
 				"bs.navigator.web.de",
@@ -507,6 +508,7 @@
 				"ie.pinterest.com",
 				"in.pinterest.com",
 				"it.pinterest.com",
+				"pl.pinterest.com",
 				"jp.pinterest.com",
 				"nz.pinterest.com",
 				"ph.pinterest.com",
