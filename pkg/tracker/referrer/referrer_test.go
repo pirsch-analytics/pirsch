@@ -39,6 +39,8 @@ func TestGet(t *testing.T) {
 		"https://t.co",
 		"HTTPS://T.CO",
 		"http%3A%2F%2Finstagram.com%2F",
+		"https://www.instagram.com",
+		"https://www.instagram.com/",
 	}
 	expected := []struct {
 		referrer string
@@ -73,6 +75,8 @@ func TestGet(t *testing.T) {
 		{"https://t.co", "Twitter"},
 		{"https://t.co", "Twitter"},
 		{"http://instagram.com", "Instagram"},
+		{"https://www.instagram.com", "Instagram"},
+		{"https://www.instagram.com", "Instagram"},
 	}
 
 	for i, in := range input {
