@@ -23,7 +23,7 @@ type TotalVisitorStats struct {
 	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
-// TotalVisitorsPageViewsStats is the result type for total visitor cound and number of page views statistics.
+// TotalVisitorsPageViewsStats is the result type for total visitor count and number of page views statistics.
 type TotalVisitorsPageViewsStats struct {
 	Visitors       int     `json:"visitors"`
 	Views          int     `json:"views"`
