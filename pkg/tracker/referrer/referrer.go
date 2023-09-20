@@ -113,7 +113,11 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 
 		// fall back to hostname
 		if name == "" {
-			name = hostname
+			if strings.HasPrefix(hostname, "www.") {
+				name = hostname[4:]
+			} else {
+				name = hostname
+			}
 		}
 	}
 
