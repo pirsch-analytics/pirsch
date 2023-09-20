@@ -101,23 +101,17 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 		return "", "", ""
 	}
 
+	if strings.HasPrefix(hostname, "www.") {
+		hostname = hostname[4:]
+	}
+
 	name := groups[hostname+u.Path]
 
 	if name == "" {
-		// try without path
-		if strings.HasPrefix(hostname, "www.") {
-			name = groups[hostname[4:]]
-		} else {
-			name = groups[hostname]
-		}
+		name = groups[hostname]
 
-		// fall back to hostname
 		if name == "" {
-			if strings.HasPrefix(hostname, "www.") {
-				name = hostname[4:]
-			} else {
-				name = hostname
-			}
+			name = hostname
 		}
 	}
 

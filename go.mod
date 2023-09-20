@@ -3,7 +3,7 @@ module github.com/pirsch-analytics/pirsch/v6
 go 1.21
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.14.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.14.1
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.0
 	github.com/emvi/null v1.3.1
@@ -26,7 +26,7 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect

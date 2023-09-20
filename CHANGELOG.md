@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.1.0
+
+* ignore www to get the referrer
+* updated referrer list
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.0.0
 
 * refactored package structure and a few method and struct names

@@ -13,6 +13,7 @@ func TestMergeGroups(t *testing.T) {
 				Domains: []string{
 					"tripadvisor.com",
 					"tripadvisor.be",
+					"www.tripadvisor.be",
 				},
 			},
 		},

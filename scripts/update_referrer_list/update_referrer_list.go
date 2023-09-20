@@ -76,7 +76,13 @@ func addGroups(groups map[string]string, l list) {
 	for key := range l {
 		for name, domains := range l[key] {
 			for _, domain := range domains.Domains {
-				groups[strings.ToLower(domain)] = name
+				domain = strings.ToLower(domain)
+
+				if strings.HasPrefix(domain, "www.") {
+					domain = domain[4:]
+				}
+
+				groups[domain] = name
 			}
 		}
 	}
