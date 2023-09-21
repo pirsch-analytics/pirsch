@@ -1387,6 +1387,34 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 }
 
+func TestAnalyzer_ReferrerGrouping(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), Referrer: "https://example.com", ReferrerName: "example.com", PageViews: 1},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), Referrer: "https://www.example.com", ReferrerName: "example.com", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), Referrer: "https://www.example.com", ReferrerName: "example.com", PageViews: 1},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Referrer: "https://example.com", ReferrerName: "example.com", PageViews: 1},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.Referrer(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "example.com", visitors[0].ReferrerName)
+	assert.Equal(t, 4, visitors[0].Visitors)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{ReferrerName: []string{"example.com"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "example.com", visitors[0].ReferrerName)
+	assert.Equal(t, "example.com", visitors[1].ReferrerName)
+	assert.Equal(t, "https://example.com", visitors[0].Referrer)
+	assert.Equal(t, "https://www.example.com", visitors[1].Referrer)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+}
+
 func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
