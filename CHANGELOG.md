@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.1.1
+
+* fixed time shift in daily visitor statistics
+
 ## 6.1.0
 
 * ignore www to get the referrer

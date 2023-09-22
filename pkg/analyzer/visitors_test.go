@@ -687,7 +687,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.Len(t, visitors, 4)
 	assert.InDelta(t, 0, visitors[0].CR, 0.001)
 	assert.InDelta(t, 0, visitors[1].CR, 0.001)
-	assert.InDelta(t, 0.25, visitors[2].CR, 0.001)
+	assert.InDelta(t, 1, visitors[2].CR, 0.001)
 	assert.InDelta(t, 0, visitors[3].CR, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
@@ -725,7 +725,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.Len(t, visitors, 6)
 }
 
-func TestAnalyzer_VisitorHours(t *testing.T) {
+func TestAnalyzer_ByHour(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
@@ -762,7 +762,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.Equal(t, 2, visitors[5].Visitors)
 	assert.Equal(t, 2, visitors[8].Visitors)
 	assert.Equal(t, 1, visitors[10].Visitors)
-	assert.Equal(t, 2, visitors[3].Views)
+	assert.Equal(t, 1, visitors[3].Views)
 	assert.Equal(t, 1, visitors[4].Views)
 	assert.Equal(t, 2, visitors[5].Views)
 	assert.Equal(t, 2, visitors[8].Views)
@@ -811,7 +811,7 @@ func TestAnalyzer_VisitorHours(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
+func TestAnalyzer_ByHourCRAndCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
@@ -969,6 +969,81 @@ func TestAnalyzer_VisitorHoursCRAndCustomMetric(t *testing.T) {
 	filter.To = util.Today()
 	_, err = analyzer.Visitors.ByHour(filter)
 	assert.NoError(t, err)
+}
+
+func TestAnalyzer_ByHourTimeShift(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 3), Start: time.Now(), PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 3), Start: time.Now(), PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 4), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(1).Add(time.Hour * 5), Start: time.Now(), PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 6), Start: time.Now(), PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 3), Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 4), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(1).Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 6), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{Name: "event", VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 4), Path: "/"},
+		{Name: "event", VisitorID: 2, Time: util.PastDay(1).Add(time.Hour * 5), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.ByHour(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 1, visitors[6].Visitors)
+	assert.Equal(t, 1, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 1, visitors[6].Views)
+	assert.Equal(t, 1, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 1, visitors[6].Sessions)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.Equal(t, 1, visitors[6].Bounces)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[6].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		EventName: []string{"event"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 0, visitors[6].Visitors)
+	assert.Equal(t, 1, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 0, visitors[6].Views)
+	assert.Equal(t, 1, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 0, visitors[6].Sessions)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.Equal(t, 0, visitors[6].Bounces)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[6].BounceRate, 0.01)
 }
 
 func TestAnalyzer_Growth(t *testing.T) {

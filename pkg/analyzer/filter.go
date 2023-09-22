@@ -330,14 +330,15 @@ func (filter *Filter) table(fields []Field) table {
 			(len(filter.Path) != 0 ||
 				len(filter.PathPattern) != 0 ||
 				filter.fieldsContain(fields, FieldPath) ||
-				filter.searchContains(FieldPath)) {
+				filter.searchContains(FieldPath) ||
+				filter.fieldsContain(fields, FieldHour)) {
 			return pageViews
 		}
 
 		if len(filter.EventName) != 0 || eventFilter {
 			return events
 		}
-	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) {
+	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) || filter.fieldsContain(fields, FieldHour) {
 		return pageViews
 	}
 
