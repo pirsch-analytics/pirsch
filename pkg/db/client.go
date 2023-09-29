@@ -605,6 +605,17 @@ func (client *Client) GetTotalVisitorStats(query string, includeCR, includeCusto
 	return result, nil
 }
 
+// GetTotalUniqueVisitorStats implements the Store interface.
+func (client *Client) GetTotalUniqueVisitorStats(query string, args ...any) (int, error) {
+	var result int
+
+	if err := client.QueryRow(query, args...).Scan(&result); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+
+	return result, nil
+}
+
 // GetTotalVisitorsPageViewsStats implements the Store interface.
 func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model.TotalVisitorsPageViewsStats, error) {
 	result := new(model.TotalVisitorsPageViewsStats)

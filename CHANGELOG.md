@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.2.0
+
+* added `TotalVisitors` to `Analyzer`
+* updated dependencies
+
 ## 6.1.1
 
 * fixed time shift in daily visitor statistics

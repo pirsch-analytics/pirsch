@@ -182,6 +182,11 @@ func (client *ClientMock) SelectVisitorStats(pkg.Period, string, bool, bool, ...
 	return nil, nil
 }
 
+// GetTotalUniqueVisitorStats implements the Store interface.
+func (client *ClientMock) GetTotalUniqueVisitorStats(string, ...any) (int, error) {
+	return 0, nil
+}
+
 // SelectTimeSpentStats implements the Store interface.
 func (client *ClientMock) SelectTimeSpentStats(pkg.Period, string, ...any) ([]model.TimeSpentStats, error) {
 	return nil, nil
