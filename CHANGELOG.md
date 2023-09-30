@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.2.1
+
+* fixed filter for total unique number of visitors
+
 ## 6.2.0
 
 * added `TotalVisitors` to `Analyzer`

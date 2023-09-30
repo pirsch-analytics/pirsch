@@ -248,7 +248,16 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 		IncludeCR: true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, visitors)
+	assert.Equal(t, 9, visitors)
+	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Sort: []Sort{
+			{Field: FieldRelativeVisitors, Direction: pkg.DirectionASC},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 9, visitors)
 }
 
 func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {

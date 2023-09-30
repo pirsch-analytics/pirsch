@@ -90,7 +90,13 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 // TotalVisitors returns the total unique visitor count.
 func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	q, args := filter.buildQuery([]Field{FieldVisitors}, nil, nil)
+	f := &Filter{
+		ClientID: filter.ClientID,
+		Timezone: filter.Timezone,
+		From:     filter.From,
+		To:       filter.To,
+	}
+	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil)
 	total, err := visitors.store.GetTotalUniqueVisitorStats(q, args...)
 
 	if err != nil {
