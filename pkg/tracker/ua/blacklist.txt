@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-08-19)
+# custom (last update: 2023-10-04)
 ://
 bot
 crawler
@@ -485,6 +485,36 @@ luasocket
 administrator
 benefithubwebview
 yqh24kes1y
+CascadeCMS
+hyperhost.ua
+Akregator
+syndication
+FileMaker
+productlists
+eniro.com
+aws-sdk
+script src
+abuse.xmco.fr
+Intellij
+dazeddigital
+roublez-mobile
+entrywallet
+AdsTxt
+Scrapr
+NmgoGDHUBIbFMaexRYXPmD
+zerossl.com
+igtorApp
+think you are smart
+1695575032021
+1695575060872
+1695575312811
+-debug
+Secragon
+FediAct
+SimpleFavPanel
+Livraisons
+myproject
+techiaith.cymru
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
