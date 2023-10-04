@@ -99,7 +99,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 	}
 
 	if !ignore {
-		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, 1, options)
+		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
 		var saveUserAgent *model.UserAgent
 
 		if session != nil {
@@ -110,33 +110,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			var pv *model.PageView
 
 			if !bounced {
-				pv = &model.PageView{
-					ClientID:        session.ClientID,
-					VisitorID:       session.VisitorID,
-					SessionID:       session.SessionID,
-					Time:            session.Time,
-					DurationSeconds: timeOnPage,
-					Path:            session.ExitPath,
-					Title:           session.ExitTitle,
-					Language:        session.Language,
-					CountryCode:     session.CountryCode,
-					City:            session.City,
-					Referrer:        session.Referrer,
-					ReferrerName:    session.ReferrerName,
-					ReferrerIcon:    session.ReferrerIcon,
-					OS:              session.OS,
-					OSVersion:       session.OSVersion,
-					Browser:         session.Browser,
-					BrowserVersion:  session.BrowserVersion,
-					Desktop:         session.Desktop,
-					Mobile:          session.Mobile,
-					ScreenClass:     session.ScreenClass,
-					UTMSource:       session.UTMSource,
-					UTMMedium:       session.UTMMedium,
-					UTMCampaign:     session.UTMCampaign,
-					UTMContent:      session.UTMContent,
-					UTMTerm:         session.UTMTerm,
-				}
+				pv = tracker.pageViewFromSession(session, timeOnPage)
 			}
 
 			tracker.data <- data{
@@ -177,7 +151,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 		}
 
 		if !ignore {
-			session, cancelSession, _, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, 0, options)
+			session, cancelSession, timeOnPage, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
 			var saveUserAgent *model.UserAgent
 
 			if session != nil {
@@ -185,41 +159,19 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 					saveUserAgent = &userAgent
 				}
 
+				var pv *model.PageView
+
+				if cancelSession == nil || (cancelSession != nil && cancelSession.PageViews < session.PageViews) {
+					pv = tracker.pageViewFromSession(session, timeOnPage)
+				}
+
 				metaKeys, metaValues := eventOptions.getMetaData()
 				tracker.data <- data{
 					session:       session,
 					cancelSession: cancelSession,
-					event: &model.Event{
-						ClientID:        clientID,
-						VisitorID:       session.VisitorID,
-						Time:            session.Time,
-						SessionID:       session.SessionID,
-						DurationSeconds: eventOptions.Duration,
-						Name:            eventOptions.Name,
-						MetaKeys:        metaKeys,
-						MetaValues:      metaValues,
-						Path:            session.ExitPath,
-						Title:           session.ExitTitle,
-						Language:        session.Language,
-						CountryCode:     session.CountryCode,
-						City:            session.City,
-						Referrer:        session.Referrer,
-						ReferrerName:    session.ReferrerName,
-						ReferrerIcon:    session.ReferrerIcon,
-						OS:              session.OS,
-						OSVersion:       session.OSVersion,
-						Browser:         session.Browser,
-						BrowserVersion:  session.BrowserVersion,
-						Desktop:         session.Desktop,
-						Mobile:          session.Mobile,
-						ScreenClass:     session.ScreenClass,
-						UTMSource:       session.UTMSource,
-						UTMMedium:       session.UTMMedium,
-						UTMCampaign:     session.UTMCampaign,
-						UTMContent:      session.UTMContent,
-						UTMTerm:         session.UTMTerm,
-					},
-					ua: saveUserAgent,
+					pageView:      pv,
+					event:         tracker.eventFromSession(session, clientID, eventOptions.Duration, eventOptions.Name, metaKeys, metaValues),
+					ua:            saveUserAgent,
 				}
 			}
 		} else {
@@ -253,7 +205,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 			now = options.Time
 		}
 
-		session, cancelSession, _, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, 0, options)
+		session, cancelSession, _, _ := tracker.getSession(sessionUpdate, clientID, r, now, userAgent, ipAddress, options)
 
 		if session != nil {
 			tracker.data <- data{
@@ -277,6 +229,69 @@ func (tracker *Tracker) Stop() {
 		tracker.stopped.Store(true)
 		tracker.stopWorker()
 		tracker.flushData()
+	}
+}
+
+func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage uint32) *model.PageView {
+	return &model.PageView{
+		ClientID:        session.ClientID,
+		VisitorID:       session.VisitorID,
+		SessionID:       session.SessionID,
+		Time:            session.Time,
+		DurationSeconds: timeOnPage,
+		Path:            session.ExitPath,
+		Title:           session.ExitTitle,
+		Language:        session.Language,
+		CountryCode:     session.CountryCode,
+		City:            session.City,
+		Referrer:        session.Referrer,
+		ReferrerName:    session.ReferrerName,
+		ReferrerIcon:    session.ReferrerIcon,
+		OS:              session.OS,
+		OSVersion:       session.OSVersion,
+		Browser:         session.Browser,
+		BrowserVersion:  session.BrowserVersion,
+		Desktop:         session.Desktop,
+		Mobile:          session.Mobile,
+		ScreenClass:     session.ScreenClass,
+		UTMSource:       session.UTMSource,
+		UTMMedium:       session.UTMMedium,
+		UTMCampaign:     session.UTMCampaign,
+		UTMContent:      session.UTMContent,
+		UTMTerm:         session.UTMTerm,
+	}
+}
+
+func (tracker *Tracker) eventFromSession(session *model.Session, clientID uint64, duration uint32, name string, metaKeys, metaValues []string) *model.Event {
+	return &model.Event{
+		ClientID:        clientID,
+		VisitorID:       session.VisitorID,
+		Time:            session.Time,
+		SessionID:       session.SessionID,
+		DurationSeconds: duration,
+		Name:            name,
+		MetaKeys:        metaKeys,
+		MetaValues:      metaValues,
+		Path:            session.ExitPath,
+		Title:           session.ExitTitle,
+		Language:        session.Language,
+		CountryCode:     session.CountryCode,
+		City:            session.City,
+		Referrer:        session.Referrer,
+		ReferrerName:    session.ReferrerName,
+		ReferrerIcon:    session.ReferrerIcon,
+		OS:              session.OS,
+		OSVersion:       session.OSVersion,
+		Browser:         session.Browser,
+		BrowserVersion:  session.BrowserVersion,
+		Desktop:         session.Desktop,
+		Mobile:          session.Mobile,
+		ScreenClass:     session.ScreenClass,
+		UTMSource:       session.UTMSource,
+		UTMMedium:       session.UTMMedium,
+		UTMCampaign:     session.UTMCampaign,
+		UTMContent:      session.UTMContent,
+		UTMTerm:         session.UTMTerm,
 	}
 }
 
@@ -374,7 +389,7 @@ func (tracker *Tracker) browserVersionBefore(version string, min int) bool {
 	return v < min
 }
 
-func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) (*model.Session, *model.Session, uint32, bool) {
+func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request, now time.Time, ua model.UserAgent, ip string, options Options) (*model.Session, *model.Session, uint32, bool) {
 	fingerprint := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, now)
 	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
 	m.Lock()
@@ -409,7 +424,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
-		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, pageViews, options)
+		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
 		if tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
@@ -426,7 +441,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	return session, cancelSession, timeOnPage, bounced
 }
 
-func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, pageViews uint16, options Options) *model.Session {
+func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, options Options) *model.Session {
 	ua.OS = util2.ShortenString(ua.OS, 20)
 	ua.OSVersion = util2.ShortenString(ua.OSVersion, 20)
 	ua.Browser = util2.ShortenString(ua.Browser, 20)
@@ -458,7 +473,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		Start:          now,
 		EntryPath:      options.Path,
 		ExitPath:       options.Path,
-		PageViews:      pageViews,
+		PageViews:      1,
 		IsBounce:       true,
 		EntryTitle:     options.Title,
 		ExitTitle:      options.Title,
@@ -498,6 +513,10 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 
 	if t == event {
 		session.IsBounce = false
+
+		if session.ExitPath != path {
+			session.PageViews++
+		}
 	} else if t == pageView {
 		session.IsBounce = session.IsBounce && path == session.ExitPath
 

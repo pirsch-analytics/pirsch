@@ -211,7 +211,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, userAgent, userAgents[0].UserAgent)
 }
 
-func TestTracker_PageViewRebounce(t *testing.T) {
+func TestTracker_PageViewBounce(t *testing.T) {
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store: client,
@@ -442,11 +442,11 @@ func TestTracker_Event(t *testing.T) {
 	sessions := client.GetSessions()
 	events := client.GetEvents()
 	assert.Len(t, sessions, 1)
-	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, client.GetPageViews(), 1)
 	assert.Len(t, events, 1)
 	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
 	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
-	assert.Equal(t, uint16(0), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
 
 	assert.Equal(t, uint64(123), events[0].ClientID)
 	assert.True(t, events[0].Time.After(now))
@@ -487,12 +487,12 @@ func TestTracker_Event(t *testing.T) {
 	sessions = client.GetSessions()
 	events = client.GetEvents()
 	assert.Len(t, sessions, 3)
-	assert.Len(t, client.GetPageViews(), 0)
+	assert.Len(t, client.GetPageViews(), 2)
 	assert.Len(t, events, 2)
 	assert.Equal(t, int8(1), sessions[0].Sign)
 	assert.Equal(t, int8(-1), sessions[1].Sign)
 	assert.Equal(t, int8(1), sessions[2].Sign)
-	assert.Equal(t, uint16(0), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
 
 	assert.Equal(t, uint64(123), events[1].ClientID)
 	assert.True(t, events[1].Time.After(now))
@@ -571,6 +571,94 @@ func TestTracker_EventOverwriteTime(t *testing.T) {
 	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
 	assert.True(t, now.After(sessions[0].Time))
 	assert.True(t, now.After(events[0].Time))
+}
+
+func TestTracker_EventPageView(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/event/page", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.Event(req, 123, EventOptions{
+		Name:     "event",
+		Duration: 42,
+		Meta:     map[string]string{"key0": "value0", "key1": "value1"},
+	}, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Len(t, events, 1)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.True(t, sessions[0].IsBounce)
+	assert.Equal(t, "/event/page", pageViews[0].Path)
+	assert.Equal(t, "event", events[0].Name)
+	assert.Equal(t, "/event/page", events[0].Path)
+
+	// do not track a new page view if another event is triggered on the same page
+	// no longer count as bounced
+	tracker.Event(req, 123, EventOptions{
+		Name: "event",
+	}, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 3) // first + cancel + new
+	assert.Len(t, pageViews, 1)
+	assert.Len(t, events, 2)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[1].PageViews)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
+	assert.True(t, sessions[0].IsBounce)
+	assert.True(t, sessions[1].IsBounce)
+	assert.False(t, sessions[2].IsBounce)
+	assert.Equal(t, "/event/page", pageViews[0].Path)
+	assert.Equal(t, "event", events[0].Name)
+	assert.Equal(t, "event", events[1].Name)
+	assert.Equal(t, "/event/page", events[0].Path)
+	assert.Equal(t, "/event/page", events[1].Path)
+
+	// track new page view if event is triggered on a different page
+	req = httptest.NewRequest(http.MethodGet, "/new/event/page", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.Event(req, 123, EventOptions{
+		Name: "event",
+	}, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 5) // cancel + new
+	assert.Len(t, pageViews, 2)
+	assert.Len(t, events, 3)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.Equal(t, uint16(1), sessions[1].PageViews)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
+	assert.Equal(t, uint16(1), sessions[3].PageViews)
+	assert.Equal(t, uint16(2), sessions[4].PageViews)
+	assert.True(t, sessions[0].IsBounce)
+	assert.True(t, sessions[1].IsBounce)
+	assert.False(t, sessions[2].IsBounce)
+	assert.False(t, sessions[3].IsBounce)
+	assert.False(t, sessions[4].IsBounce)
+	assert.Equal(t, "/event/page", pageViews[0].Path)
+	assert.Equal(t, "/new/event/page", pageViews[1].Path)
+	assert.Equal(t, "event", events[0].Name)
+	assert.Equal(t, "event", events[1].Name)
+	assert.Equal(t, "event", events[2].Name)
+	assert.Equal(t, "/event/page", events[0].Path)
+	assert.Equal(t, "/event/page", events[1].Path)
+	assert.Equal(t, "/new/event/page", events[2].Path)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
