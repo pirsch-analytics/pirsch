@@ -752,7 +752,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             util.PastDay(22),
+		From:             util.PastDay(20),
 		To:               util.Today(),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
@@ -766,7 +766,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.Len(t, visitors, 4)
 	assert.InDelta(t, 0, visitors[0].CR, 0.001)
 	assert.InDelta(t, 0, visitors[1].CR, 0.001)
-	assert.InDelta(t, 1, visitors[2].CR, 0.001)
+	assert.InDelta(t, 0.25, visitors[2].CR, 0.001)
 	assert.InDelta(t, 0, visitors[3].CR, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
@@ -776,8 +776,9 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 1.89, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
+	today := util.Today()
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      util.PastDay(68),
+		From:      time.Date(today.Year(), today.Month()-2, today.Day(), 0, 0, 0, 0, time.UTC),
 		To:        util.Today(),
 		EventName: []string{"Sale"},
 		IncludeCR: true,

@@ -664,7 +664,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_PageConversions(t *testing.T) {
+func TestAnalyzer_Conversions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
@@ -702,7 +702,7 @@ func TestAnalyzer_PageConversions(t *testing.T) {
 	assert.InDelta(t, 1, stats.CR, 0.01)
 	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{".*"}})
+	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{"(?i)^/.*$"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
 	assert.Equal(t, 6, stats.Views)
