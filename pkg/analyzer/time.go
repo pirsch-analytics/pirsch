@@ -6,7 +6,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"strings"
-	"time"
 )
 
 // Time aggregates statistics regarding the time on page and session duration.
@@ -36,7 +35,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			SELECT toDate(time, '%s') "day",
 			sum(duration_seconds*sign) duration,
 			uniq(visitor_id, session_id) n
-			FROM "session" s `, time.UTC.String()))
+			FROM "session" s `, filter.Timezone.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -100,7 +99,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 				SELECT session_id,
 				toDate(time, '%s') "day",
 				%s
-				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), time.UTC.String(), strings.Join(fields, ",")))
+				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filter.Timezone.String(), strings.Join(fields, ",")))
 
 	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (

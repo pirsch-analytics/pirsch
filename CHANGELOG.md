@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.3.1
+
+* fixed timezone for session duration and time on page
+
 ## 6.3.0
 
 * create page view when event is fired on a page that's different from the last page visited
