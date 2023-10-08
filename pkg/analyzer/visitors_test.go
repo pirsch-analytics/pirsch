@@ -260,6 +260,85 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	assert.Equal(t, 9, visitors)
 }
 
+func TestAnalyzer_TotalPageViews(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 7, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	pageViews, err := analyzer.Visitors.TotalPageViews(&Filter{From: util.PastDay(4), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 13, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: util.PastDay(2), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 6, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: util.Today(), IncludeTime: true, IncludeCR: true})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"foo": "val0"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 13, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Sort: []Sort{
+			{Field: FieldRelativeVisitors, Direction: pkg.DirectionASC},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 13, pageViews)
+}
+
 func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -646,37 +725,37 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: util.PastDay(5), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
-			{Sign: 1, VisitorID: 5, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, Time: util.PastDay(5), Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
-		{VisitorID: 3, Time: util.PastDay(4), Path: "/bar"},
-		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 5, Time: util.Today(), Path: "/"},
-		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Path: "/"},
+		{VisitorID: 2, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/foo"},
+		{VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/bar"},
+		{VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/"},
+		{VisitorID: 5, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Path: "/"},
+		{VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
-		{VisitorID: 3, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
-		{VisitorID: 4, Time: util.PastDay(4), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
-		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
-		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
+		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
+		{VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
+		{VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{
-		From:             util.PastDay(5),
-		To:               util.Today(),
+		From:             time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
+		To:               time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC),
 		EventName:        []string{"Sale"},
 		CustomMetricKey:  "amount",
 		CustomMetricType: pkg.CustomMetricTypeFloat,
@@ -684,27 +763,27 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, util.PastDay(5), visitors[0].Day.Time)
-	assert.Equal(t, util.PastDay(4), visitors[1].Day.Time)
-	assert.Equal(t, util.PastDay(3), visitors[2].Day.Time)
-	assert.Equal(t, util.PastDay(2), visitors[3].Day.Time)
-	assert.Equal(t, util.PastDay(1), visitors[4].Day.Time)
-	assert.Equal(t, util.Today(), visitors[5].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), visitors[0].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), visitors[1].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 4, 0, 0, 0, 0, time.UTC), visitors[2].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC), visitors[3].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 6, 0, 0, 0, 0, time.UTC), visitors[4].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 2.445, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 2.98, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 4.89, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 2.98, visitors[4].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             util.PastDay(5),
-		To:               util.Today(),
+		From:             time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
+		To:               time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",
@@ -713,18 +792,18 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, util.Today(), visitors[5].Day.Time)
+	assert.Equal(t, time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 3.12, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 2.98, visitors[4].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 3.12, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 2.98, visitors[4].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:             util.PastDay(5),
@@ -738,22 +817,22 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, util.Today(), visitors[5].Day.Time)
-	assert.InDelta(t, 1.89, visitors[0].CustomMetricAvg, 0.001)
+	assert.Equal(t, time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
+	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[4].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 1.89, visitors[0].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             util.PastDay(20),
-		To:               util.Today(),
+		From:             time.Date(2023, 9, 17, 0, 0, 0, 0, time.UTC),
+		To:               time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",
@@ -766,20 +845,19 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.Len(t, visitors, 4)
 	assert.InDelta(t, 0, visitors[0].CR, 0.001)
 	assert.InDelta(t, 0, visitors[1].CR, 0.001)
-	assert.InDelta(t, 0.25, visitors[2].CR, 0.001)
-	assert.InDelta(t, 0, visitors[3].CR, 0.001)
+	assert.InDelta(t, 0, visitors[2].CR, 0.001)
+	assert.InDelta(t, 0.1666, visitors[3].CR, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 1.89, visitors[2].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[3].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 1.89, visitors[2].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
-	today := util.Today()
+	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 1.89, visitors[3].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      time.Date(today.Year(), today.Month()-2, today.Day(), 0, 0, 0, 0, time.UTC),
-		To:        util.Today(),
+		From:      time.Date(2023, 8, 8, 0, 0, 0, 0, time.UTC),
+		To:        time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
 		EventName: []string{"Sale"},
 		IncludeCR: true,
 		Period:    pkg.PeriodMonth,
@@ -787,8 +865,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      util.PastDay(90),
-		To:        util.Today(),
+		From:      time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC),
+		To:        time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
 		EventName: []string{"Sale"},
 		IncludeCR: true,
 		Period:    pkg.PeriodYear,

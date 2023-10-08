@@ -106,6 +106,25 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	return total, nil
 }
 
+// TotalPageViews returns the total number of page views.
+func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	f := &Filter{
+		ClientID: filter.ClientID,
+		Timezone: filter.Timezone,
+		From:     filter.From,
+		To:       filter.To,
+	}
+	q, args := f.buildQuery([]Field{FieldViews}, nil, nil)
+	total, err := visitors.store.GetTotalPageViewStats(q, args...)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
 // TotalVisitorsPageViews returns the total visitor count and number of page views including the growth.
 func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVisitorsPageViewsStats, error) {
 	filter = visitors.analyzer.getFilter(filter)

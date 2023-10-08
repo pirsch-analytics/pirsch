@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.4.0
+
+* added `TotalPageViews` to `Analyzer`
+* updated dependencies
+
 ## 6.3.1
 
 * fixed timezone for session duration and time on page
