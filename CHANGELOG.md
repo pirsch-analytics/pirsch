@@ -2,7 +2,7 @@
 
 ## 6.4.0
 
-* added `TotalPageViews` to `Analyzer`
+* added `TotalPageViews` and `TotalSessions` to `Analyzer`
 * updated dependencies
 
 ## 6.3.1

@@ -41,6 +41,9 @@ type Store interface {
 	// GetTotalPageViewStats returns the total number of page views.
 	GetTotalPageViewStats(string, ...any) (int, error)
 
+	// GetTotalSessionStats returns the total number of sessions.
+	GetTotalSessionStats(string, ...any) (int, error)
+
 	// GetTotalVisitorsPageViewsStats returns the TotalVisitorsPageViewsStats.
 	GetTotalVisitorsPageViewsStats(string, ...any) (*model.TotalVisitorsPageViewsStats, error)
 

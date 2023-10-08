@@ -339,6 +339,85 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	assert.Equal(t, 13, pageViews)
 }
 
+func TestAnalyzer_TotalSessions(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 4, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 2, IsBounce: false, DurationSeconds: 300},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, ExitPath: "/bar", PageViews: 1, IsBounce: false, DurationSeconds: 600},
+			{Sign: 1, VisitorID: 7, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 8, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	pageViews, err := analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(4), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(2), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: util.Today(), IncludeTime: true, IncludeCR: true})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"foo": "val0"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Sort: []Sort{
+			{Field: FieldRelativeVisitors, Direction: pkg.DirectionASC},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, pageViews)
+}
+
 func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

@@ -627,6 +627,17 @@ func (client *Client) GetTotalPageViewStats(query string, args ...any) (int, err
 	return result, nil
 }
 
+// GetTotalSessionsStats implements the Store interface.
+func (client *Client) GetTotalSessionStats(query string, args ...any) (int, error) {
+	var result int
+
+	if err := client.QueryRow(query, args...).Scan(&result); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+
+	return result, nil
+}
+
 // GetTotalVisitorsPageViewsStats implements the Store interface.
 func (client *Client) GetTotalVisitorsPageViewsStats(query string, args ...any) (*model.TotalVisitorsPageViewsStats, error) {
 	result := new(model.TotalVisitorsPageViewsStats)
