@@ -885,8 +885,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             util.PastDay(5),
-		To:               util.Today(),
+		From:             time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC),
+		To:               time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",

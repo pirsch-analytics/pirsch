@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.4.1
+
+* optimized query builder
+* fixed limit for reading total number of sessions per page
+* fixed tests
+
 ## 6.4.0
 
 * added `TotalPageViews` and `TotalSessions` to `Analyzer`

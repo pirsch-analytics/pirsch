@@ -702,7 +702,12 @@ func TestAnalyzer_Conversions(t *testing.T) {
 	assert.InDelta(t, 1, stats.CR, 0.01)
 	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{"(?i)^/.*$"}})
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		From:        util.Today(),
+		To:          util.Today(),
+		PathPattern: []string{"(?i)^/.*$"},
+		Period:      pkg.PeriodDay,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, stats.Visitors)
 	assert.Equal(t, 6, stats.Views)

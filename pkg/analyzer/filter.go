@@ -287,7 +287,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		q.leftJoin = filter.leftJoinEvents(fields)
 	} else if q.from == pageViews || returnEventName || customMetric {
 		q.fields = fields
-		q.join = filter.joinSessions(fields)
+		q.join = filter.joinSessions(q.from, fields)
 
 		if q.join != nil {
 			q.join.parent = &q
@@ -345,11 +345,11 @@ func (filter *Filter) table(fields []Field) table {
 	return sessions
 }
 
-func (filter *Filter) joinSessions(fields []Field) *queryBuilder {
+func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 	if len(filter.EntryPath) != 0 ||
 		len(filter.ExitPath) != 0 ||
 		filter.fieldsContain(fields, FieldBounces) ||
-		filter.fieldsContain(fields, FieldViews) ||
+		(table == events && filter.fieldsContain(fields, FieldViews)) ||
 		filter.fieldsContain(fields, FieldEntryPath) ||
 		filter.fieldsContain(fields, FieldExitPath) {
 		sessionFields := []Field{FieldVisitorID, FieldSessionID}

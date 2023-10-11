@@ -310,8 +310,11 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	filter.EntryPath = nil
 	filter.ExitPath = nil
 	filter.AnyPath = paths
+	filter.Search = nil
 	filter.IncludeTitle = false
 	filter.Sort = nil
+	filter.Offset = 0
+	filter.Limit = 0
 	q, args := filter.buildQuery([]Field{
 		FieldPath,
 		FieldVisitors,
