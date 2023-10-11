@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.5.0
+
+* added sampling keys for all tables
+* fixed primary key for events table
+
 ## 6.4.1
 
 * optimized query builder
