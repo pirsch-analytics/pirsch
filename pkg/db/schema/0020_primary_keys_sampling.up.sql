@@ -1,8 +1,7 @@
 ALTER TABLE "page_view" MODIFY SAMPLE BY "visitor_id";
 ALTER TABLE "session" MODIFY SAMPLE BY "visitor_id";
-RENAME TABLE "event" TO "event_backup";
 
-CREATE TABLE "event"
+CREATE TABLE "event_new"
 (
     "client_id" UInt64,
     "time" DateTime64(3, 'UTC'),
@@ -38,3 +37,6 @@ PARTITION BY toYYYYMM(time)
 ORDER BY (client_id, visitor_id, session_id, time)
 SAMPLE BY "visitor_id"
 SETTINGS index_granularity = 8192;
+
+-- Run the following statements manually.
+-- TODO

@@ -2,6 +2,8 @@
 
 ## 6.5.0
 
+**This release requires a manual database migration. Check `pkg/db/schema/0020_primary_keys_sampling.up.sql` for details.**
+
 * added sampling keys for all tables
 * fixed primary key for events table
 
