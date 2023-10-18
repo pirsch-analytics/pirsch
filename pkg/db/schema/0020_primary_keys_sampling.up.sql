@@ -39,4 +39,10 @@ SAMPLE BY "visitor_id"
 SETTINGS index_granularity = 8192;
 
 -- Run the following statements manually.
--- TODO
+--INSERT INTO "event_new" SELECT * FROM "event" WHERE toDate(time) < today();
+--RENAME TABLE "event" TO "event_backup";
+--RENAME TABLE "event_new" TO "event";
+--INSERT INTO "event" SELECT * FROM "event_backup" WHERE toDate(time) >= today();
+
+-- If you're confident that everything is correct, drop the backup.
+--DROP TABLE "event_backup";

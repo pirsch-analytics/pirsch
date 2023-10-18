@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bufio"
 	"database/sql"
 	"embed"
 	"errors"
@@ -50,7 +51,7 @@ func createMigrationsTable(client *Client) error {
 	table := ""
 	err := client.QueryRow("SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
 
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
@@ -70,7 +71,7 @@ func getMigrationVersion(client *Client) (int, error) {
 	}{}
 	err := client.QueryRow("SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1").Scan(&migration.Version, &migration.Dirty)
 
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
@@ -162,10 +163,25 @@ func parseStatements(name string) ([]string, error) {
 	content, err := fs.ReadFile(migrationFiles, filepath.Join("schema", name))
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error reading migrationi file: %s", err))
+		return nil, errors.New(fmt.Sprintf("error reading migration file: %s", err))
 	}
 
-	statements := strings.Split(string(content), ";")
+	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+	var buffer strings.Builder
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if !strings.HasPrefix(line, "--") {
+			buffer.WriteString(fmt.Sprintf("%s\n", line))
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, errors.New(fmt.Sprintf("error parsing migration file: %s", err))
+	}
+
+	statements := strings.Split(buffer.String(), ";")
 	statementsClean := make([]string, 0, len(statements))
 
 	for _, statement := range statements {
