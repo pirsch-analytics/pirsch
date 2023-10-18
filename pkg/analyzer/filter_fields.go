@@ -39,7 +39,7 @@ var (
 	FieldEventPath = Field{
 		id:             1,
 		querySessions:  "path",
-		queryPageViews: "path",
+		queryPageViews: "t.path",
 		queryDirection: "ASC",
 		Name:           "path",
 	}

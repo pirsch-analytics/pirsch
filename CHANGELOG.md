@@ -7,6 +7,7 @@
 * added sampling keys for all tables
 * ignore comments in migration scripts
 * fixed primary key for events table
+* fixed alias for path when merging page view, session, and event table
 * updated dependencies
 
 ## 6.4.1
