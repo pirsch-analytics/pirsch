@@ -5,6 +5,7 @@
 **This release requires a manual database migration. Check `pkg/db/schema/0020_primary_keys_sampling.up.sql` for details.**
 
 * added sampling keys for all tables
+* added number of events to event statistics
 * ignore comments in migration scripts
 * fixed primary key for events table
 * fixed alias for path when merging page view, session, and event table

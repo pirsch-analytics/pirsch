@@ -131,6 +131,7 @@ type ConversionsStats struct {
 // EventStats is the result type for custom events.
 type EventStats struct {
 	Name                   string   `db:"event_name" json:"name"`
+	Count                  int      `json:"count"`
 	Visitors               int      `json:"visitors"`
 	Views                  int      `json:"views"`
 	CR                     float64  `json:"cr"`
