@@ -39,7 +39,7 @@ var (
 	FieldEventPath = Field{
 		id:             1,
 		querySessions:  "path",
-		queryPageViews: "path",
+		queryPageViews: "t.path",
 		queryDirection: "ASC",
 		Name:           "path",
 	}
@@ -85,7 +85,7 @@ var (
 		Name:           "visitors",
 	}
 
-	// FieldVisitors is a query result column.
+	// FieldVisitorsRaw is a query result column.
 	FieldVisitorsRaw = Field{
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",

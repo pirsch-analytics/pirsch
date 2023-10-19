@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -352,6 +353,21 @@ func TestAnalyzer_PagesEventPath(t *testing.T) {
 	assert.Len(t, visitors, 1)
 	assert.Empty(t, visitors[0].Path)  // "unknown"
 	assert.Empty(t, visitors[0].Title) // "unknown"
+	assert.Equal(t, 1, visitors[0].Visitors)
+	tz, err := timezone.Load("Europe/Berlin")
+	assert.NoError(t, err)
+	visitors, err = analyzer.Pages.ByEventPath(&Filter{
+		Timezone:  tz,
+		From:      util.PastDay(1),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		Path:      []string{"/foo"},
+		Period:    pkg.PeriodDay,
+		Limit:     10,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "/foo", visitors[0].Path)
 	assert.Equal(t, 1, visitors[0].Visitors)
 	_, err = analyzer.Pages.ByEventPath(&Filter{
 		EventName:         []string{"event"},

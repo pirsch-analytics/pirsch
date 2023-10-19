@@ -1320,6 +1320,7 @@ func (client *Client) SelectEventStats(breakdown bool, query string, args ...any
 			var result model.EventStats
 
 			if err := rows.Scan(&result.Name,
+				&result.Count,
 				&result.Visitors,
 				&result.Views,
 				&result.CR,
@@ -1335,6 +1336,7 @@ func (client *Client) SelectEventStats(breakdown bool, query string, args ...any
 			var result model.EventStats
 
 			if err := rows.Scan(&result.Name,
+				&result.Count,
 				&result.Visitors,
 				&result.Views,
 				&result.CR,
