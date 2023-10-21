@@ -30,11 +30,9 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 	var query strings.Builder
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
-	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(ifNotFinite(round(duration/n), 0)) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(round(avg(duration))) average_time_spent_seconds
 		FROM (
-			SELECT toDate(time, '%s') "day",
-			sum(duration_seconds*sign) duration,
-			uniq(visitor_id, session_id) n
+			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
 
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
@@ -57,11 +55,12 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 
 	query.WriteString(fmt.Sprintf(`AND duration_seconds != 0
-			GROUP BY "day"
+			GROUP BY "day", visitor_id, session_id
 			HAVING sum(sign) > 0
-			ORDER BY "day"
-			%s
-		)`, q.withFill()))
+		)
+		GROUP BY "day"
+		ORDER BY "day"
+		%s `, q.withFill()))
 	t.groupByPeriod(filter.Period, &query)
 	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
 

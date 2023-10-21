@@ -1065,25 +1065,29 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 
 func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
-
-		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
-	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 		},
 		{
-			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/"},
 			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar"},
 			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
+		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
+	}))
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo", Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*5), Path: "/foo", Name: "another event"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*9), Path: "/", Name: "event"},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Pages.avgTimeOnPage(nil, []string{"/", "/foo", "/bar"})
@@ -1097,6 +1101,33 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, 120)
 	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		EventName: []string{"event"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 3)
+	paths = []string{stats[0].Path, stats[1].Path, stats[2].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, (23+8)/2)
+	assert.Contains(t, top, 16)
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"key": "value",
+		},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	paths = []string{stats[0].Path, stats[1].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, 23)
 	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter("event"), []string{"/", "/foo", "/bar"})

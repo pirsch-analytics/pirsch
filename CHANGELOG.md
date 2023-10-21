@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.5.1
+
+* improved tests related to session duration and time on page
+* fixed average session duration calculation with path filter
+
 ## 6.5.0
 
 **This release requires a manual database migration. Check `pkg/db/schema/0020_primary_keys_sampling.up.sql` for details.**

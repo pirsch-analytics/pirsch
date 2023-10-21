@@ -1,5 +1,6 @@
 github.com/ClickHouse/ch-go v0.58.2 h1:jSm2szHbT9MCAB1rJ3WuCJqmGLi5UTjlNu+f530UTS0=
 github.com/ClickHouse/ch-go v0.58.2/go.mod h1:Ap/0bEmiLa14gYjCiRkYGbXvbe8vwdrfTYWhsuQ99aw=
+github.com/ClickHouse/clickhouse-go v1.5.4 h1:cKjXeYLNWVJIx2J1K6H2CqyRmfwVJVY1OV1coaaFcI0=
 github.com/ClickHouse/clickhouse-go/v2 v2.14.3 h1:s9SuU3PfJrfJ4SDbVRo6XM2ZWlr7efvW9Z/ppUpE1vo=
 github.com/ClickHouse/clickhouse-go/v2 v2.14.3/go.mod h1:qdw8IMGH4Y+PedKlf9QEhFO1ATTSFhh4exQRVIa3y2A=
 github.com/andybalholm/brotli v1.0.6 h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=
