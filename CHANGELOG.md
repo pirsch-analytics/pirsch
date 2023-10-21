@@ -2,6 +2,7 @@
 
 ## 6.5.1
 
+* improved tests related to session duration and time on page
 * fixed average session duration calculation with path filter
 
 ## 6.5.0
