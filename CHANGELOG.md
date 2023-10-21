@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.5.1
+
+* fixed average session duration calculation with path filter
+
 ## 6.5.0
 
 **This release requires a manual database migration. Check `pkg/db/schema/0020_primary_keys_sampling.up.sql` for details.**
