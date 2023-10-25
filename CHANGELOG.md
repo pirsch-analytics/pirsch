@@ -5,6 +5,7 @@
 * improved tests related to time on page
 * fixed average time on page calculation
 * fixed events resetting time the session was last seen
+* updated dependencies
 
 ## 6.5.1
 
