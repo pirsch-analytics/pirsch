@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/analyzer"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 )
@@ -800,6 +803,64 @@ func TestTrackerBots(t *testing.T) {
 	assert.Empty(t, bots[1].Event)
 	assert.Empty(t, bots[2].Event)
 	assert.Equal(t, "event", bots[3].Event)
+}
+
+func TestTrackerPageViewAndEvent(t *testing.T) {
+	pageViewsAndEvents := []struct {
+		path              string
+		timeOnPageSeconds int
+		event             string
+	}{
+		{"/", 2, "a"},
+		{"/foo", 3, "b"},
+		{"/bar", 1, "c"},
+	}
+
+	client := db.Connect()
+	defer db.Disconnect(client)
+	db.CleanupDB(t, client)
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+
+	for _, row := range pageViewsAndEvents {
+		req := httptest.NewRequest(http.MethodGet, row.path, nil)
+		req.Header.Add("User-Agent", userAgent)
+		tracker.PageView(req, 0, Options{})
+		time.Sleep(time.Duration(row.timeOnPageSeconds) * time.Second)
+		tracker.Event(req, 0, EventOptions{Name: row.event, Duration: 99}, Options{})
+		time.Sleep(time.Second)
+	}
+
+	tracker.Stop()
+	time.Sleep(time.Second)
+	a := analyzer.NewAnalyzer(client)
+	sessionDuration, err := a.Time.AvgSessionDuration(&analyzer.Filter{
+		From: util.Today(),
+		To:   util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, sessionDuration, 1)
+	assert.Equal(t, 8, sessionDuration[0].AverageTimeSpentSeconds)
+	timeOnPage, err := a.Pages.ByPath(&analyzer.Filter{
+		From:              util.Today(),
+		To:                util.Today(),
+		IncludeTimeOnPage: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, timeOnPage, 3)
+	slices.SortFunc(timeOnPage, func(a, b model.PageStats) int {
+		if a.Path > b.Path {
+			return 1
+		} else if a.Path < b.Path {
+			return -1
+		}
+
+		return 0
+	})
+	assert.Equal(t, "/", timeOnPage[0].Path)
+	assert.Equal(t, "/bar", timeOnPage[1].Path)
+	assert.Equal(t, "/foo", timeOnPage[2].Path)
 }
 
 func TestTracker_ignorePrefetch(t *testing.T) {

@@ -349,7 +349,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		search: filter.Search,
 	}
 	fields := q.getFields()
-	fields = append(fields, "duration_seconds")
+	fields = append(fields, "duration_seconds", "time")
 	hasPath := false
 
 	for _, field := range fields {
@@ -364,14 +364,11 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path,
-		ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT path, ifNull(toUInt64(avg(nullIf(time_on_page, 0))), 0) average_time_spent_seconds
 		FROM (
-			SELECT path,
-			%s time_on_page
+			SELECT path, %s time_on_page, sid, neighbor(sid, 1, null) next_sid
 			FROM (
-				SELECT v.session_id sid,
-				%s
+				SELECT v.session_id sid, %s
 				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
 	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
@@ -413,9 +410,20 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	whereTime := q.whereTime()[len("WHERE "):]
-	q.whereFields()
+	pathInQuery := queryBuilder{
+		filter: &Filter{
+			AnyPath: paths,
+		},
+	}
+	pathInQuery.whereFieldPathIn()
+	pathIn := pathInQuery.where[len(pathInQuery.where)-1].eqContains[0]
+	q.args = append(q.args, pathInQuery.args...)
 	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY v.visitor_id, v.session_id, time)
-		WHERE time_on_page > 0 AND sid = neighbor(sid, 1, null) %s) GROUP BY path`, whereTime, q.q.String()))
+		ORDER BY "time")
+		WHERE time_on_page > 0
+		AND sid = next_sid
+		AND %s
+		GROUP BY path`, whereTime, pathIn))
 	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), q.args...)
 
 	if err != nil {

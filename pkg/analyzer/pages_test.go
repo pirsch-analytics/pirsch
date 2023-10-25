@@ -1102,6 +1102,8 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:      util.PastDay(1),
+		To:        util.Today(),
 		EventName: []string{"event"},
 	}, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
@@ -1115,6 +1117,8 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:      util.PastDay(1),
+		To:        util.Today(),
 		EventName: []string{"event"},
 		EventMeta: map[string]string{
 			"key": "value",
