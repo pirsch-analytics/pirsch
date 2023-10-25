@@ -512,24 +512,26 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	}
 
 	if t == event {
+		session.Time = session.Time.Add(time.Millisecond)
 		session.IsBounce = false
 
 		if session.ExitPath != path {
 			session.PageViews++
 		}
 	} else if t == pageView {
+		session.Time = now
 		session.IsBounce = session.IsBounce && path == session.ExitPath
 
 		if !session.IsBounce {
 			session.PageViews++
 		}
 	} else if session.Extended < math.MaxUint16-1 {
+		session.Time = now
 		session.Extended++
 	}
 
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
-	session.Time = now
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top), session.IsBounce

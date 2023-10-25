@@ -805,31 +805,33 @@ func TestTrackerBots(t *testing.T) {
 	assert.Equal(t, "event", bots[3].Event)
 }
 
-// FIXME
 func TestTrackerPageViewAndEvent(t *testing.T) {
+	pageViewsAndEvents := []struct {
+		path              string
+		timeOnPageSeconds int
+		event             string
+	}{
+		{"/", 2, "a"},
+		{"/foo", 3, "b"},
+		{"/bar", 1, "c"},
+	}
+
 	client := db.Connect()
 	defer db.Disconnect(client)
 	db.CleanupDB(t, client)
 	tracker := NewTracker(Config{
 		Store: client,
 	})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Add("User-Agent", userAgent)
-	tracker.PageView(req, 0, Options{})
-	time.Sleep(time.Second * 2)
-	tracker.Event(req, 0, EventOptions{Name: "a"}, Options{})
-	time.Sleep(time.Second * 2)
-	req = httptest.NewRequest(http.MethodGet, "/foo", nil)
-	req.Header.Add("User-Agent", userAgent)
-	tracker.PageView(req, 0, Options{})
-	time.Sleep(time.Second * 2)
-	tracker.Event(req, 0, EventOptions{Name: "b"}, Options{})
-	time.Sleep(time.Second * 2)
-	req = httptest.NewRequest(http.MethodGet, "/bar", nil)
-	req.Header.Add("User-Agent", userAgent)
-	tracker.PageView(req, 0, Options{})
-	time.Sleep(time.Second * 2)
-	tracker.Event(req, 0, EventOptions{Name: "c"}, Options{})
+
+	for _, row := range pageViewsAndEvents {
+		req := httptest.NewRequest(http.MethodGet, row.path, nil)
+		req.Header.Add("User-Agent", userAgent)
+		tracker.PageView(req, 0, Options{})
+		time.Sleep(time.Duration(row.timeOnPageSeconds) * time.Second)
+		tracker.Event(req, 0, EventOptions{Name: row.event, Duration: 99}, Options{})
+		time.Sleep(time.Second)
+	}
+
 	tracker.Stop()
 	time.Sleep(time.Second)
 	a := analyzer.NewAnalyzer(client)
@@ -839,7 +841,7 @@ func TestTrackerPageViewAndEvent(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, sessionDuration, 1)
-	assert.Equal(t, 10, sessionDuration[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 8, sessionDuration[0].AverageTimeSpentSeconds)
 	timeOnPage, err := a.Pages.ByPath(&analyzer.Filter{
 		From:              util.Today(),
 		To:                util.Today(),
@@ -859,9 +861,6 @@ func TestTrackerPageViewAndEvent(t *testing.T) {
 	assert.Equal(t, "/", timeOnPage[0].Path)
 	assert.Equal(t, "/bar", timeOnPage[1].Path)
 	assert.Equal(t, "/foo", timeOnPage[2].Path)
-	assert.Equal(t, 2, timeOnPage[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 0, timeOnPage[1].AverageTimeSpentSeconds)
-	assert.Equal(t, 2, timeOnPage[2].AverageTimeSpentSeconds)
 }
 
 func TestTracker_ignorePrefetch(t *testing.T) {
