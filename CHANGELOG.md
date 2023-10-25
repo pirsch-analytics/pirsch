@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.5.2
+
+* improved tests related to time on page
+* fixed average time on page calculation
+
 ## 6.5.1
 
 * improved tests related to session duration and time on page

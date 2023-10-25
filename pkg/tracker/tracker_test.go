@@ -805,6 +805,7 @@ func TestTrackerBots(t *testing.T) {
 	assert.Equal(t, "event", bots[3].Event)
 }
 
+// FIXME
 func TestTrackerPageViewAndEvent(t *testing.T) {
 	client := db.Connect()
 	defer db.Disconnect(client)
