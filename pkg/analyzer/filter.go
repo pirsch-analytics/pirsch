@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"strings"
@@ -11,6 +12,9 @@ import (
 // Fields can be inverted by adding a "!" in front of the string.
 // To compare to none/unknown/empty, set the value to "null" (case-insensitive).
 type Filter struct {
+	// Ctx can be used to set a timeout or to cancel queries.
+	Ctx context.Context
+
 	// ClientID is the optional.
 	ClientID int64
 
@@ -169,6 +173,10 @@ func NewFilter(clientID int64) *Filter {
 }
 
 func (filter *Filter) validate() {
+	if filter.Ctx == nil {
+		filter.Ctx = context.Background()
+	}
+
 	if filter.Timezone == nil {
 		filter.Timezone = time.UTC
 	}

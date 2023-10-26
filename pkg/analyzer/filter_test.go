@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -60,7 +61,7 @@ func TestFilter_RemoveDuplicates(t *testing.T) {
 
 func TestFilter_BuildQuery(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo"},
 		{VisitorID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo"},

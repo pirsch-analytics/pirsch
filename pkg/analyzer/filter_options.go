@@ -97,12 +97,12 @@ func (options *FilterOptions) EventMetadataValues(filter *Filter) ([]string, err
 		AND length(event_meta_values) > 0
 		%s
 		ORDER BY "values" ASC`, timeQuery, builder.q.String())
-	return options.store.SelectOptions(q, args...)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
 	timeQuery, args := filter.buildTimeQuery()
 	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %s %s ORDER BY %s ASC`, field, table, timeQuery, field)
-	return options.store.SelectOptions(q, args...)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
 }

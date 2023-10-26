@@ -22,7 +22,7 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 		FieldRelativePlatformMobile,
 		FieldRelativePlatformUnknown,
 	}, nil, nil)
-	stats, err := device.store.GetPlatformStats(q, args...)
+	stats, err := device.store.GetPlatformStats(filter.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -33,19 +33,20 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 
 // Browser returns the visitor count grouped by browser.
 func (device *Device) Browser(filter *Filter) ([]model.BrowserStats, error) {
-	q, args := device.analyzer.selectByAttribute(filter, FieldBrowser)
-	return device.store.SelectBrowserStats(q, args...)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldBrowser)
+	return device.store.SelectBrowserStats(ctx, q, args...)
 }
 
 // OS returns the visitor count grouped by operating system.
 func (device *Device) OS(filter *Filter) ([]model.OSStats, error) {
-	q, args := device.analyzer.selectByAttribute(filter, FieldOS)
-	return device.store.SelectOSStats(q, args...)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldOS)
+	return device.store.SelectOSStats(ctx, q, args...)
 }
 
 // OSVersion returns the visitor count grouped by operating systems and version.
 func (device *Device) OSVersion(filter *Filter) ([]model.OSVersionStats, error) {
-	q, args := device.analyzer.getFilter(filter).buildQuery([]Field{
+	filter = device.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
 		FieldOS,
 		FieldOSVersion,
 		FieldVisitors,
@@ -58,7 +59,7 @@ func (device *Device) OSVersion(filter *Filter) ([]model.OSVersionStats, error) 
 		FieldOS,
 		FieldOSVersion,
 	})
-	stats, err := device.store.SelectOSVersionStats(q, args...)
+	stats, err := device.store.SelectOSVersionStats(filter.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +70,8 @@ func (device *Device) OSVersion(filter *Filter) ([]model.OSVersionStats, error) 
 
 // BrowserVersion returns the visitor count grouped by browser and version.
 func (device *Device) BrowserVersion(filter *Filter) ([]model.BrowserVersionStats, error) {
-	q, args := device.analyzer.getFilter(filter).buildQuery([]Field{
+	filter = device.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
 		FieldBrowser,
 		FieldBrowserVersion,
 		FieldVisitors,
@@ -82,7 +84,7 @@ func (device *Device) BrowserVersion(filter *Filter) ([]model.BrowserVersionStat
 		FieldBrowser,
 		FieldBrowserVersion,
 	})
-	stats, err := device.store.SelectBrowserVersionStats(q, args...)
+	stats, err := device.store.SelectBrowserVersionStats(filter.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -93,6 +95,6 @@ func (device *Device) BrowserVersion(filter *Filter) ([]model.BrowserVersionStat
 
 // ScreenClass returns the visitor count grouped by screen class.
 func (device *Device) ScreenClass(filter *Filter) ([]model.ScreenClassStats, error) {
-	q, args := device.analyzer.selectByAttribute(filter, FieldScreenClass)
-	return device.store.SelectScreenClassStats(q, args...)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldScreenClass)
+	return device.store.SelectScreenClassStats(ctx, q, args...)
 }

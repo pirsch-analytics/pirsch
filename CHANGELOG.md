@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.6.0
+
+* added optional context to cancel queries
+* fixed insert parameter placeholders
+
 ## 6.5.2
 
 * improved tests related to time on page

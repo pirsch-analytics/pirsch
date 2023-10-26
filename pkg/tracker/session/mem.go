@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sync"
@@ -44,7 +45,7 @@ func (cache *MemCache) Get(clientID, fingerprint uint64, maxAge time.Time) *mode
 		return &session
 	}
 
-	s, _ := cache.client.Session(clientID, fingerprint, maxAge)
+	s, _ := cache.client.Session(context.Background(), clientID, fingerprint, maxAge)
 	return s
 }
 

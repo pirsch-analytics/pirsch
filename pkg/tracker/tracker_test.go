@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
@@ -750,7 +751,7 @@ func TestTracker_Flush(t *testing.T) {
 
 	time.Sleep(time.Second)
 	tracker.Flush()
-	count, err := dbClient.Count(`SELECT count(*) FROM event`)
+	count, err := dbClient.Count(context.Background(), `SELECT count(*) FROM event`)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, count)
 }

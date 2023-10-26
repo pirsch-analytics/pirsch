@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_SavePageViews(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -57,7 +58,7 @@ func TestClient_SavePageViews(t *testing.T) {
 
 func TestClient_SaveSessions(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
 		{
 			Sign:            1,
 			ClientID:        1,
@@ -138,7 +139,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		sessions[i], sessions[j] = sessions[j], sessions[i]
 	})
 
-	assert.NoError(t, dbClient.SaveSessions(sessions))
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), sessions))
 	count := 0
 	assert.NoError(t, dbClient.QueryRow(`SELECT count(*) FROM "session" GROUP BY page_views HAVING sum(sign) > 0`).Scan(&count))
 	assert.Equal(t, 1, count)
@@ -146,7 +147,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 
 func TestClient_SaveEvents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -183,7 +184,7 @@ func TestClient_SaveEvents(t *testing.T) {
 
 func TestClient_SaveUserAgents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveUserAgents([]model.UserAgent{
+	assert.NoError(t, dbClient.SaveUserAgents(context.Background(), []model.UserAgent{
 		{
 			Time:      time.Now(),
 			UserAgent: "ua1",
@@ -197,7 +198,7 @@ func TestClient_SaveUserAgents(t *testing.T) {
 
 func TestClient_SaveBots(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveBots([]model.Bot{
+	assert.NoError(t, dbClient.SaveBots(context.Background(), []model.Bot{
 		{
 			ClientID:  1,
 			VisitorID: 1,
@@ -219,7 +220,7 @@ func TestClient_SaveBots(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	CleanupDB(t, dbClient)
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
 		{
 			Sign:      1,
 			ClientID:  1,
@@ -254,7 +255,7 @@ func TestClient_Session(t *testing.T) {
 			PageViews: 4,
 		},
 	}))
-	session, err := dbClient.Session(1, 1, time.Now().UTC().Add(-time.Minute))
+	session, err := dbClient.Session(context.Background(), 1, 1, time.Now().UTC().Add(-time.Minute))
 	assert.NoError(t, err)
 	assert.Equal(t, now.Unix(), session.Time.Unix())
 	assert.Equal(t, uint32(123456), session.SessionID)

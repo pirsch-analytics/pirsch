@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -71,6 +72,7 @@ func getMaxFilter(eventName string) *Filter {
 	}
 
 	return &Filter{
+		Ctx:            context.Background(),
 		ClientID:       42,
 		From:           util.PastDay(5),
 		To:             util.PastDay(2),
@@ -101,7 +103,7 @@ func getMaxFilter(eventName string) *Filter {
 
 func saveSessions(t *testing.T, sessions [][]model.Session) {
 	for _, entries := range sessions {
-		assert.NoError(t, dbClient.SaveSessions(entries))
+		assert.NoError(t, dbClient.SaveSessions(context.Background(), entries))
 		time.Sleep(time.Millisecond * 20)
 	}
 }

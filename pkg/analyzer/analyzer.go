@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
@@ -66,14 +67,16 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (string, []any) {
+func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (context.Context, string, []any) {
 	fields := make([]Field, 0, len(attr)+2)
 	fields = append(fields, attr...)
 	fields = append(fields, FieldVisitors, FieldRelativeVisitors)
 	orderBy := make([]Field, 0, len(attr)+1)
 	orderBy = append(orderBy, FieldVisitors)
 	orderBy = append(orderBy, attr...)
-	return analyzer.getFilter(filter).buildQuery(fields, attr, orderBy)
+	filter = analyzer.getFilter(filter)
+	query, args := filter.buildQuery(fields, attr, orderBy)
+	return filter.Ctx, query, args
 }
 
 func (analyzer *Analyzer) getFilter(filter *Filter) *Filter {
