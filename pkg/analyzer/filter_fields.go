@@ -25,6 +25,7 @@ var (
 		queryPageViews: "count(*)",
 		Name:           "count",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 	}
 
 	// FieldPath is a query result column.
@@ -57,6 +58,7 @@ var (
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "entries",
 	}
 
@@ -73,6 +75,7 @@ var (
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "exits",
 	}
 
@@ -82,6 +85,7 @@ var (
 		queryPageViews: "uniq(t.visitor_id)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "visitors",
 	}
 
@@ -90,13 +94,14 @@ var (
 		querySessions:  "uniq(visitor_id)",
 		queryPageViews: "uniq(visitor_id)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "visitors",
 	}
 
 	// FieldRelativeVisitors is a query result column.
 	FieldRelativeVisitors = Field{
-		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
-		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -104,8 +109,8 @@ var (
 
 	// FieldCR is a query result column.
 	FieldCR = Field{
-		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
-		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE %s), 1))`,
+		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",
@@ -116,6 +121,7 @@ var (
 		querySessions:  `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
 		queryPageViews: `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
 		queryDirection: "DESC",
+		sampleType:     sampleTypeFloat,
 		Name:           "cr",
 	}
 
@@ -125,6 +131,7 @@ var (
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "sessions",
 	}
 
@@ -135,13 +142,14 @@ var (
 		queryEvents:    "sum(views)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "views",
 	}
 
 	// FieldRelativeViews is a query result column.
 	FieldRelativeViews = Field{
-		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
-		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign) views FROM "session" WHERE %s), 1))`,
+		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",
@@ -153,6 +161,7 @@ var (
 		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
 		Name:           "bounces",
 	}
 
@@ -410,6 +419,7 @@ var (
 	FieldEventTimeSpent = Field{
 		querySessions:  "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
 		queryPageViews: "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
+		sampleType:     sampleTypeInt,
 		Name:           "average_time_spent_seconds",
 	}
 
@@ -417,6 +427,7 @@ var (
 	FieldEventMetaCustomMetricAvg = Field{
 		querySessions:  "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
 		queryPageViews: "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		sampleType:     sampleTypeFloat,
 		Name:           "custom_metric_avg",
 	}
 
@@ -424,6 +435,7 @@ var (
 	FieldEventMetaCustomMetricTotal = Field{
 		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
 		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		sampleType:     sampleTypeInt,
 		Name:           "custom_metric_total",
 	}
 
@@ -431,6 +443,7 @@ var (
 	FieldPlatformDesktop = Field{
 		querySessions:  "uniqIf(visitor_id, desktop = 1)",
 		queryPageViews: "desktop = 1,mobile = 0",
+		sampleType:     sampleTypeInt,
 		Name:           "platform_desktop",
 	}
 
@@ -438,6 +451,7 @@ var (
 	FieldPlatformMobile = Field{
 		querySessions:  "uniqIf(visitor_id, mobile = 1)",
 		queryPageViews: "desktop = 0,mobile = 1",
+		sampleType:     sampleTypeInt,
 		Name:           "platform_mobile",
 	}
 
@@ -445,6 +459,7 @@ var (
 	FieldPlatformUnknown = Field{
 		querySessions:  "uniq(visitor_id)-platform_desktop-platform_mobile",
 		queryPageViews: "desktop = 0,mobile = 0",
+		sampleType:     sampleTypeInt,
 		Name:           "platform_unknown",
 	}
 
@@ -473,9 +488,17 @@ var (
 	FieldEventDurationSeconds = Field{
 		querySessions:  "sum(duration_seconds)",
 		queryPageViews: "sum(duration_seconds)",
+		sampleType:     sampleTypeInt,
 		Name:           "duration_seconds",
 	}
 )
+
+const (
+	sampleTypeInt   = sampleType(1)
+	sampleTypeFloat = sampleType(2)
+)
+
+type sampleType int
 
 // Field is a column for a query.
 type Field struct {
@@ -489,5 +512,6 @@ type Field struct {
 	withFill       bool
 	timezone       bool
 	filterTime     bool
+	sampleType     sampleType
 	Name           string
 }
