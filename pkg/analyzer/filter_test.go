@@ -198,4 +198,20 @@ func TestFilter_BuildQuery(t *testing.T) {
 	}
 
 	assert.Len(t, visitors, 1)
+
+	// join and filter with sampling (from page views)
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}, Sample: 10_000_000}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	stats = stats[:0]
+	rows, err = dbClient.Query(q, args...)
+	assert.NoError(t, err)
+
+	for rows.Next() {
+		var stat model.PageStats
+		assert.NoError(t, rows.Scan(&stat.Path, &stat.Visitors))
+		stats = append(stats, stat)
+	}
+
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "/foo", stats[0].Path)
+	assert.Equal(t, 1, stats[0].Visitors)
 }

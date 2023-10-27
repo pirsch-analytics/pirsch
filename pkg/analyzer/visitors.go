@@ -453,6 +453,7 @@ func (visitors *Visitors) totalEventDuration(filter *Filter) (int, error) {
 		fields: []Field{FieldEventDurationSeconds},
 		from:   events,
 		search: filter.Search,
+		sample: filter.Sample,
 	}
 	query, args := q.query()
 	averageTimeSpentSeconds, err := visitors.store.Count(filter.Ctx, query, args...)
