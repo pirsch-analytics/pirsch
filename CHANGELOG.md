@@ -4,6 +4,7 @@
 
 * added optional context to cancel queries
 * fixed insert parameter placeholders
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 6.5.2
