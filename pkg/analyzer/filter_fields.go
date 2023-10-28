@@ -435,7 +435,7 @@ var (
 	FieldEventMetaCustomMetricTotal = Field{
 		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
 		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
-		sampleType:     sampleTypeInt,
+		sampleType:     sampleTypeAuto,
 		Name:           "custom_metric_total",
 	}
 
@@ -496,6 +496,7 @@ var (
 const (
 	sampleTypeInt   = sampleType(1)
 	sampleTypeFloat = sampleType(2)
+	sampleTypeAuto  = sampleType(3) // selected by query builder
 )
 
 type sampleType int

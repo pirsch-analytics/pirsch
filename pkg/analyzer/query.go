@@ -168,7 +168,12 @@ func (query *queryBuilder) selectFields() bool {
 				}
 			} else if query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal {
 				query.args = append(query.args, query.filter.CustomMetricKey)
-				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.CustomMetricType), query.fields[i].Name))
+
+				if query.fields[i].sampleType == sampleTypeAuto {
+					q.WriteString(fmt.Sprintf("%s(%s) %s,", string(query.filter.CustomMetricType), fmt.Sprintf(query.selectField(query.fields[i]), query.filter.CustomMetricType), query.fields[i].Name))
+				} else {
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.CustomMetricType), query.fields[i].Name))
+				}
 			} else if query.parent != nil && (query.fields[i] == FieldEntryTitle || query.fields[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.fields[i]) + ",")
 			} else {

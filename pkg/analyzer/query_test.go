@@ -175,7 +175,7 @@ func TestQueryPlatformPageView(t *testing.T) {
 	assert.Equal(t, `SELECT toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY visitor_id,session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 AND path = ? )) platform_desktop,toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY visitor_id,session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 AND path = ? )) platform_mobile `, queryStr)
 }
 
-func TestQueryCustomMetric(t *testing.T) {
+func TestQueryCustomMetricFloat(t *testing.T) {
 	filter := &Filter{
 		ClientID:         42,
 		From:             util.PastDay(7),
@@ -198,7 +198,33 @@ func TestQueryCustomMetric(t *testing.T) {
 	assert.Equal(t, "Custom Meta Value", args[0])
 	assert.Equal(t, "Custom Meta Value", args[1])
 	assert.Equal(t, "Event", args[5])
-	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0) custom_metric_avg,sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))) custom_metric_total,uniq(t.visitor_id) visitors FROM "event" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
+	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0) custom_metric_avg,toFloat64OrZero(sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))) custom_metric_total,uniq(t.visitor_id) visitors FROM "event" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
+}
+
+func TestQueryCustomMetricInt(t *testing.T) {
+	filter := &Filter{
+		ClientID:         42,
+		From:             util.PastDay(7),
+		To:               util.Today(),
+		EventName:        []string{"Event"},
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+		CustomMetricKey:  "Custom Meta Value",
+	}
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{
+			FieldEventMetaCustomMetricAvg,
+			FieldEventMetaCustomMetricTotal,
+			FieldVisitors,
+		},
+		from: events,
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 6)
+	assert.Equal(t, "Custom Meta Value", args[0])
+	assert.Equal(t, "Custom Meta Value", args[1])
+	assert.Equal(t, "Event", args[5])
+	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0) custom_metric_avg,toInt64OrZero(sum(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))) custom_metric_total,uniq(t.visitor_id) visitors FROM "event" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
 }
 
 func TestQuerySampling(t *testing.T) {
@@ -270,7 +296,7 @@ func TestQueryCustomMetricSampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 6)
-	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,toUInt64(sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor)) custom_metric_total,toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
+	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,toFloat64OrZero(sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor)) custom_metric_total,toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
 }
 
 func TestQuerySelectFieldPageViewsSampling(t *testing.T) {

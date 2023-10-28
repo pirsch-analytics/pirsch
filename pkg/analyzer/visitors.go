@@ -95,6 +95,7 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 		Timezone: filter.Timezone,
 		From:     filter.From,
 		To:       filter.To,
+		Sample:   filter.Sample,
 	}
 	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil)
 	total, err := visitors.store.GetTotalUniqueVisitorStats(filter.Ctx, q, args...)
@@ -114,6 +115,7 @@ func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 		Timezone: filter.Timezone,
 		From:     filter.From,
 		To:       filter.To,
+		Sample:   filter.Sample,
 	}
 	q, args := f.buildQuery([]Field{FieldViews}, nil, nil)
 	total, err := visitors.store.GetTotalPageViewStats(filter.Ctx, q, args...)
@@ -133,6 +135,7 @@ func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 		Timezone: filter.Timezone,
 		From:     filter.From,
 		To:       filter.To,
+		Sample:   filter.Sample,
 	}
 	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil)
 	total, err := visitors.store.GetTotalSessionStats(filter.Ctx, q, args...)
