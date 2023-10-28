@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-10-04)
+# custom (last update: 2023-10-27)
 ://
 bot
 crawler
@@ -515,6 +515,15 @@ SimpleFavPanel
 Livraisons
 myproject
 techiaith.cymru
+kirkland
+sandbox
+mh-software
+radio.pl
+force-mn02
+symbolicator
+metamatrix
+promotion
+database
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

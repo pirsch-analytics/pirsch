@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -12,7 +13,7 @@ import (
 
 func TestAnalyzer_Platform(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: time.Now(), Path: "/", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/foo", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/bar", Desktop: true},

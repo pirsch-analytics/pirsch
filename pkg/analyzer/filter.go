@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"strings"
@@ -11,6 +12,9 @@ import (
 // Fields can be inverted by adding a "!" in front of the string.
 // To compare to none/unknown/empty, set the value to "null" (case-insensitive).
 type Filter struct {
+	// Ctx can be used to set a timeout or to cancel queries.
+	Ctx context.Context
+
 	// ClientID is the optional.
 	ClientID int64
 
@@ -146,6 +150,9 @@ type Filter struct {
 	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
+
+	// Sample sets the (optional) sampling size.
+	Sample uint
 }
 
 // Search filters results by searching for the given input for given field.
@@ -169,6 +176,10 @@ func NewFilter(clientID int64) *Filter {
 }
 
 func (filter *Filter) validate() {
+	if filter.Ctx == nil {
+		filter.Ctx = context.Background()
+	}
+
 	if filter.Timezone == nil {
 		filter.Timezone = time.UTC
 	}
@@ -276,6 +287,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		orderBy: orderBy,
 		offset:  filter.Offset,
 		limit:   filter.Limit,
+		sample:  filter.Sample,
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
@@ -390,6 +402,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 			fields:  sessionFields,
 			from:    sessions,
 			groupBy: groupBy,
+			sample:  filter.Sample,
 		}
 	}
 
@@ -413,6 +426,7 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 			fields:  pageViewFields,
 			from:    pageViews,
 			groupBy: pageViewFields,
+			sample:  filter.Sample,
 		}
 	}
 
@@ -445,6 +459,7 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 			fields:  eventFields,
 			from:    events,
 			groupBy: eventFields,
+			sample:  filter.Sample,
 		}
 	}
 
@@ -478,6 +493,7 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		fields:  eventFields,
 		from:    events,
 		groupBy: eventFields,
+		sample:  filter.Sample,
 	}
 }
 
@@ -503,6 +519,7 @@ func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilde
 			fields:  []Field{groupBy, FieldVisitorsRaw},
 			from:    sessions,
 			groupBy: []Field{groupBy},
+			sample:  filter.Sample,
 		}
 	}
 

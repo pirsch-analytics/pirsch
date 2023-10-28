@@ -62,7 +62,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 		ORDER BY "day"
 		%s `, q.withFill()))
 	t.groupByPeriod(filter.Period, &query)
-	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
+	stats, err := t.store.SelectTimeSpentStats(filter.Ctx, filter.Period, query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		ORDER BY "day"
 		%s`, where, q.withFill()))
 	t.groupByPeriod(filter.Period, &query)
-	stats, err := t.store.SelectTimeSpentStats(filter.Period, query.String(), q.args...)
+	stats, err := t.store.SelectTimeSpentStats(filter.Ctx, filter.Period, query.String(), q.args...)
 
 	if err != nil {
 		return nil, err

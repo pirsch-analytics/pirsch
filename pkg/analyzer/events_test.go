@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -26,7 +27,7 @@ func TestAnalyzer_Events(t *testing.T) {
 		})
 	}
 
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, VisitorID: 1, Time: util.Today(), Path: "/"},
 		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, VisitorID: 2, Time: util.Today().Add(time.Second), Path: "/simple/page"},
 		{Name: "event1", DurationSeconds: 3, VisitorID: 3, Time: util.Today().Add(time.Second * 2), Path: "/simple/page/1"},
@@ -197,7 +198,7 @@ func TestAnalyzer_EventsSortCR(t *testing.T) {
 		})
 	}
 
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event1", VisitorID: 1, Time: util.Today(), Path: "/"},
 		{Name: "event1", VisitorID: 2, Time: util.Today().Add(time.Second), Path: "/"},
 		{Name: "event1", VisitorID: 3, Time: util.Today().Add(time.Second * 2), Path: "/"},
@@ -247,7 +248,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 		})
 	}
 
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 1, Time: util.Today(), Path: "/"},
 		{Name: "event1", MetaKeys: []string{"b", "a"}, MetaValues: []string{"42", "foo"}, VisitorID: 2, Time: util.Today(), Path: "/foo"},
 		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"bar", "42"}, VisitorID: 1, Time: util.Today(), Path: "/bar"},
@@ -319,7 +320,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 
 func TestAnalyzer_EventFilter(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
 		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
@@ -335,7 +336,7 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, Time: util.Today(), Name: "event1", MetaKeys: []string{"k0", "k1"}, MetaValues: []string{"v0", "v1"}},
 		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3"}, MetaValues: []string{"v2", "v3"}},
 	}))

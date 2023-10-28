@@ -36,6 +36,7 @@ type queryBuilder struct {
 	limit              int
 	offset             int
 	includeEventFilter bool
+	sample             uint
 
 	where []where
 	q     strings.Builder
@@ -136,7 +137,14 @@ func (query *queryBuilder) selectFields() bool {
 		for i := range query.fields {
 			if query.fields[i].filterTime {
 				timeQuery := query.whereTime()[len("WHERE "):]
-				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), timeQuery), query.fields[i].Name))
+				sampleFactor, sampleQuery := "", ""
+
+				if query.sample > 0 {
+					sampleFactor = "*any(_sample_factor)"
+					sampleQuery = fmt.Sprintf(" SAMPLE %d", query.sample)
+				}
+
+				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
 			} else if query.fields[i].timezone {
 				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 					switch query.filter.Period {
@@ -160,7 +168,17 @@ func (query *queryBuilder) selectFields() bool {
 				}
 			} else if query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal {
 				query.args = append(query.args, query.filter.CustomMetricKey)
-				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.CustomMetricType), query.fields[i].Name))
+				fieldCopy := query.fields[i]
+
+				if fieldCopy.sampleType == sampleTypeAuto {
+					if query.filter.CustomMetricType == pkg.CustomMetricTypeInteger {
+						fieldCopy.sampleType = sampleTypeInt
+					} else {
+						fieldCopy.sampleType = sampleTypeFloat
+					}
+				}
+
+				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(fieldCopy), query.filter.CustomMetricType), fieldCopy.Name))
 			} else if query.parent != nil && (query.fields[i] == FieldEntryTitle || query.fields[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.fields[i]) + ",")
 			} else {
@@ -176,13 +194,25 @@ func (query *queryBuilder) selectFields() bool {
 }
 
 func (query *queryBuilder) selectField(field Field) string {
+	queryField := ""
+
 	if query.from == sessions {
-		return field.querySessions
+		queryField = field.querySessions
 	} else if query.from == events && field.queryEvents != "" {
-		return field.queryEvents
+		queryField = field.queryEvents
+	} else {
+		queryField = field.queryPageViews
 	}
 
-	return field.queryPageViews
+	if query.sample > 0 && field.sampleType != 0 {
+		if field.sampleType == sampleTypeInt {
+			return fmt.Sprintf("toUInt64(%s*any(_sample_factor))", queryField)
+		}
+
+		return fmt.Sprintf("%s*any(_sample_factor)", queryField)
+	}
+
+	return queryField
 }
 
 func (query *queryBuilder) selectPlatform(field Field) string {
@@ -208,6 +238,7 @@ func (query *queryBuilder) selectPlatform(field Field) string {
 			// use notEq so they are connected by AND
 			{notEq: strings.Split(field.queryPageViews, ",")},
 		},
+		sample: query.sample,
 	}
 	subquery, args := q.query()
 	query.args = append(query.args, args...)
@@ -215,7 +246,11 @@ func (query *queryBuilder) selectPlatform(field Field) string {
 }
 
 func (query *queryBuilder) fromTable() {
-	query.q.WriteString(fmt.Sprintf("FROM %s ", query.from))
+	if query.sample > 0 {
+		query.q.WriteString(fmt.Sprintf("FROM %s SAMPLE %d ", query.from, query.sample))
+	} else {
+		query.q.WriteString(fmt.Sprintf("FROM %s ", query.from))
+	}
 }
 
 func (query *queryBuilder) joinQuery() {

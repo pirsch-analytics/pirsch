@@ -68,7 +68,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	}
 
 	q, args := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectPageStats(filter.IncludeTitle, false, q, args...)
+	stats, err := pages.store.SelectPageStats(filter.Ctx, filter.IncludeTitle, false, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	q, args := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectEntryStats(filter.IncludeTitle, q, args...)
+	stats, err := pages.store.SelectEntryStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	}
 
 	q, args := filter.buildQuery(fields, groupBy, orderBy)
-	stats, err := pages.store.SelectExitStats(filter.IncludeTitle, q, args...)
+	stats, err := pages.store.SelectExitStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -278,7 +278,7 @@ func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error)
 	}
 
 	q, args := filter.buildQuery(fields, nil, []Field{FieldVisitors})
-	stats, err := pages.store.GetConversionsStats(q, includeCustomMetric, args...)
+	stats, err := pages.store.GetConversionsStats(filter.Ctx, q, includeCustomMetric, args...)
 
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (pages *Pages) totalSessions(filter *Filter) (int, error) {
 	filter = pages.analyzer.getFilter(filter)
 	filterQuery, filterArgs := filter.buildTimeQuery()
 	query := fmt.Sprintf("SELECT uniq(visitor_id, session_id) FROM session %s HAVING sum(sign) > 0", filterQuery)
-	stats, err := pages.store.SelectTotalSessions(query, filterArgs...)
+	stats, err := pages.store.SelectTotalSessions(filter.Ctx, query, filterArgs...)
 
 	if err != nil {
 		return 0, err
@@ -326,7 +326,7 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 		FieldVisitors,
 		FieldSessions,
 	})
-	stats, err := pages.store.SelectTotalVisitorSessionStats(q, args...)
+	stats, err := pages.store.SelectTotalVisitorSessionStats(filter.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
@@ -424,7 +424,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		AND sid = next_sid
 		AND %s
 		GROUP BY path`, whereTime, pathIn))
-	stats, err := pages.store.SelectAvgTimeSpentStats(query.String(), q.args...)
+	stats, err := pages.store.SelectAvgTimeSpentStats(filter.Ctx, query.String(), q.args...)
 
 	if err != nil {
 		return nil, err
