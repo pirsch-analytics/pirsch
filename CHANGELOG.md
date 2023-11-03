@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.6.1
+
+* removed "dalvik" from the User-Agent blacklist
+
 ## 6.6.0
 
 * added optional context to cancel queries

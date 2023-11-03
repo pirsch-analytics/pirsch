@@ -104,7 +104,6 @@ wxplr
 unshortenit
 barracuda sentinel
 kaspersky
-dalvik
 statping
 uptime
 matrix-media-repo

@@ -266,7 +266,6 @@ var Blacklist = []string{
 	"cyberwarcon",
 	"d038eacf-ab1a-408e-9f28-d05703d0433c",
 	"daemon",
-	"dalvik",
 	"dap",
 	"darcyripper",
 	"dareboost",
