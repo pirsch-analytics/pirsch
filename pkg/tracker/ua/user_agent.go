@@ -418,7 +418,7 @@ func parseProductsFromCH(header string) []string {
 				return []string{pkg.BrowserEdge, parseProductVersion(version)}
 			} else if strings.Contains(product, "Opera") {
 				return []string{pkg.BrowserOpera, parseProductVersion(version)}
-			} else if !strings.Contains(product, "Brand") && !strings.Contains(product, "Chromium") {
+			} else if !strings.Contains(product, "Not") && !strings.Contains(product, "Brand") && !strings.Contains(product, "Chromium") {
 				genericProduct = strings.Trim(product, `"' `)
 				genericVersion = parseProductVersion(version)
 			}

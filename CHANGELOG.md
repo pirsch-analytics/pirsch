@@ -3,6 +3,7 @@
 ## 6.6.1
 
 * removed "dalvik" from the User-Agent blacklist
+* fixed parsing generic Sec-CH-UA for "Not", "Not A", and "Not)A"
 
 ## 6.6.0
 
