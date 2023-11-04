@@ -38,7 +38,6 @@ var (
 
 	// FieldEventPath is a query result column.
 	FieldEventPath = Field{
-		id:             1,
 		querySessions:  "path",
 		queryPageViews: "t.path",
 		queryDirection: "ASC",
@@ -329,9 +328,9 @@ var (
 
 	// FieldEventTitle is a query result column.
 	FieldEventTitle = Field{
-		id:             2,
 		querySessions:  "title",
-		queryPageViews: "title",
+		queryPageViews: "t.title",
+		queryEvents:    "title",
 		queryDirection: "ASC",
 		Name:           "title",
 	}
@@ -503,7 +502,6 @@ type sampleType int
 
 // Field is a column for a query.
 type Field struct {
-	id             uint8
 	querySessions  string
 	queryPageViews string
 	queryEvents    string

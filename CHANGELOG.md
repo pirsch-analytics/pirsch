@@ -3,8 +3,10 @@
 ## 6.6.1
 
 * removed "dalvik" from the User-Agent blacklist
+* removed id field from filter fields
 * do not log context cancelled errors
 * fixed parsing generic Sec-CH-UA for "Not", "Not A", and "Not)A"
+* fixed reading event pages with title and sampling
 
 ## 6.6.0
 
