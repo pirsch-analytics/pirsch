@@ -495,7 +495,10 @@ func (client *Client) Session(ctx context.Context, clientID, fingerprint uint64,
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		} else {
-			client.logger.Error("error reading session", "err", err)
+			if !errors.Is(err, context.Canceled) {
+				client.logger.Error("error reading session", "err", err)
+			}
+
 			return nil, err
 		}
 	}
@@ -511,7 +514,10 @@ func (client *Client) Count(ctx context.Context, query string, args ...any) (int
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
 		} else {
-			client.logger.Error("error counting results", "err", err)
+			if !errors.Is(err, context.Canceled) {
+				client.logger.Error("error counting results", "err", err)
+			}
+
 			return 0, err
 		}
 	}
