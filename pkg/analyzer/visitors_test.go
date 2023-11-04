@@ -570,46 +570,152 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 15), Start: time.Now(), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 2, Time: util.PastDay(9), Start: time.Now(), ExitPath: "/", PageViews: 5, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 15), Start: time.Now(), SessionID: 4, ExitPath: "/bar", DurationSeconds: 600, PageViews: 3, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, Time: util.PastDay(4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(9), Start: time.Now(), EntryPath: "/foo", ExitPath: "/", PageViews: 5},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(4), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 5), Start: time.Now(), SessionID: 3, ExitPath: "/foo", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 6, Time: util.PastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: util.PastDay(3), Start: time.Now(), SessionID: 3, ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), SessionID: 31, ExitPath: "/bar", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 8, Time: util.PastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 9, Time: util.PastDay(3), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 10, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 2, ExitPath: "/bar", DurationSeconds: 300, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 11, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 12, Time: util.PastDay(2), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 13, Time: util.Today(), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 3},
+			{Sign: 1, VisitorID: 7, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 2},
+			{Sign: 1, VisitorID: 8, Time: util.PastDay(3), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 9, Time: util.PastDay(3), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 10, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 2},
+			{Sign: 1, VisitorID: 11, Time: util.PastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 12, Time: util.PastDay(2), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 13, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 10), Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 12), Path: "/foo"},
+		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 15), Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 10), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 12), Path: "/foo"},
+		{VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 15), Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 5, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 12), Path: "/foo"},
+		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 15), Path: "/"},
+		{VisitorID: 7, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 7, Time: util.PastDay(3).Add(time.Minute * 10), Path: "/bar"},
+		{VisitorID: 8, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 9, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 10, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 10, Time: util.PastDay(2).Add(time.Minute * 5), Path: "/bar"},
+		{VisitorID: 11, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 12, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 13, Time: util.Today(), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "b"}},
+		{VisitorID: 3, Time: util.PastDay(9), Path: "/", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "b"}},
+		{VisitorID: 4, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "d"}},
+		{VisitorID: 6, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "b"}},
+		{VisitorID: 8, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"c", "b"}},
+		{VisitorID: 8, Time: util.PastDay(9), Path: "/", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "b"}},
+		{VisitorID: 10, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "b"}},
+		{VisitorID: 11, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "d"}},
+		{VisitorID: 13, Time: util.PastDay(9), Path: "/", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"c", "d"}},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.TotalVisitorsPageViews(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, visitors)
-	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{From: util.PastDay(2), To: util.PastDay(2)})
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From: util.PastDay(2),
+		To:   util.PastDay(2),
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, visitors)
 	assert.Equal(t, 3, visitors.Visitors)
 	assert.Equal(t, 4, visitors.Views)
 	assert.InDelta(t, 0.5, visitors.VisitorsGrowth, 0.001)
 	assert.InDelta(t, -0.5, visitors.ViewsGrowth, 0.001)
-	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{From: util.PastDay(3), To: util.PastDay(2)})
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From: util.PastDay(3),
+		To:   util.PastDay(2),
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, visitors)
 	assert.Equal(t, 7, visitors.Visitors)
 	assert.Equal(t, 11, visitors.Views)
 	assert.InDelta(t, 1.3333, visitors.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1.2, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:   util.PastDay(9),
+		To:     util.PastDay(2),
+		Sample: 10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 12, visitors.Visitors)
+	assert.Equal(t, 24, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:   util.PastDay(9),
+		To:     util.PastDay(2),
+		Path:   []string{"/foo"},
+		Sample: 10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 4, visitors.Visitors)
+	assert.Equal(t, 5, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:      util.PastDay(9),
+		To:        util.PastDay(2),
+		EventName: []string{"event"},
+		Sample:    10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 7, visitors.Visitors)
+	assert.Equal(t, 14, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:      util.PastDay(9),
+		To:        util.PastDay(2),
+		Path:      []string{"/foo"},
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"foo": "a",
+		},
+		Sample: 10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 3, visitors.Visitors)
+	assert.Equal(t, 3, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:      util.PastDay(9),
+		To:        util.PastDay(2),
+		EntryPath: []string{"/"},
+		ExitPath:  []string{"/bar"},
+		Sample:    10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 4, visitors.Visitors)
+	assert.Equal(t, 10, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter("event"))
