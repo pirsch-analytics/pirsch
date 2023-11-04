@@ -206,7 +206,7 @@ func (query *queryBuilder) selectField(field Field) string {
 
 	if query.sample > 0 && field.sampleType != 0 {
 		if field.sampleType == sampleTypeInt {
-			return fmt.Sprintf("toUInt64(%s*any(_sample_factor))", queryField)
+			return fmt.Sprintf("toUInt64(greatest(%s*any(_sample_factor), 0))", queryField)
 		}
 
 		return fmt.Sprintf("%s*any(_sample_factor)", queryField)

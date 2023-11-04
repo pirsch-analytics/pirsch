@@ -416,8 +416,8 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
-		queryPageViews: "toUInt64(ifNotFinite(avg(duration_seconds), 0))",
+		querySessions:  "toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))",
+		queryPageViews: "toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))",
 		sampleType:     sampleTypeInt,
 		Name:           "average_time_spent_seconds",
 	}

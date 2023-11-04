@@ -251,7 +251,7 @@ func TestQuerySampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 12)
-	assert.Equal(t, `SELECT path path,toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors,toUInt64(count(1)*any(_sample_factor)) views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors,toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)*any(_sample_factor) views FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) cr FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY path `, queryStr)
+	assert.Equal(t, `SELECT path path,toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors,toUInt64(greatest(count(1)*any(_sample_factor), 0)) views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors,toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)*any(_sample_factor) views FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) cr FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY path `, queryStr)
 }
 
 func TestQueryPlatformSampling(t *testing.T) {
@@ -272,7 +272,7 @@ func TestQueryPlatformSampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 9)
-	assert.Equal(t, `SELECT toInt64OrDefault((SELECT toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 )) platform_desktop,toInt64OrDefault((SELECT toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 )) platform_mobile,toInt64OrDefault((SELECT toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 0 )) platform_unknown `, queryStr)
+	assert.Equal(t, `SELECT toInt64OrDefault((SELECT toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 )) platform_desktop,toInt64OrDefault((SELECT toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 )) platform_mobile,toInt64OrDefault((SELECT toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 0 )) platform_unknown `, queryStr)
 }
 
 func TestQueryCustomMetricFloatSampling(t *testing.T) {
@@ -296,7 +296,7 @@ func TestQueryCustomMetricFloatSampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 6)
-	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor) custom_metric_total,toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
+	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,sum(coalesce(toFloat64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor) custom_metric_total,toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
 }
 
 func TestQueryCustomMetricIntSampling(t *testing.T) {
@@ -320,7 +320,7 @@ func TestQueryCustomMetricIntSampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 6)
-	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,toUInt64(sum(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor)) custom_metric_total,toUInt64(uniq(t.visitor_id)*any(_sample_factor)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
+	assert.Equal(t, `SELECT ifNotFinite(avg(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)*any(_sample_factor) custom_metric_avg,toUInt64(greatest(sum(coalesce(toInt64OrZero(event_meta_values[indexOf(event_meta_keys, ?)])))*any(_sample_factor), 0)) custom_metric_total,toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors FROM "event" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND event_name = ? `, queryStr)
 }
 
 func TestQuerySelectFieldPageViewsSampling(t *testing.T) {
@@ -332,17 +332,17 @@ func TestQuerySelectFieldPageViewsSampling(t *testing.T) {
 		field    Field
 		expected string
 	}{
-		{FieldCount, "toUInt64(count(*)*any(_sample_factor))"},
-		{FieldEntries, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldExits, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldVisitors, "toUInt64(uniq(t.visitor_id)*any(_sample_factor))"},
-		{FieldVisitorsRaw, "toUInt64(uniq(visitor_id)*any(_sample_factor))"},
+		{FieldCount, "toUInt64(greatest(count(*)*any(_sample_factor), 0))"},
+		{FieldEntries, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldExits, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldVisitors, "toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0))"},
+		{FieldVisitorsRaw, "toUInt64(greatest(uniq(visitor_id)*any(_sample_factor), 0))"},
 		{FieldCRPeriod, "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))*any(_sample_factor)"},
-		{FieldSessions, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldViews, "toUInt64(count(1)*any(_sample_factor))"},
-		{FieldBounces, "toUInt64(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor))"},
-		{FieldEventTimeSpent, "toUInt64(toUInt64(ifNotFinite(avg(duration_seconds), 0))*any(_sample_factor))"},
-		{FieldEventDurationSeconds, "toUInt64(sum(duration_seconds)*any(_sample_factor))"},
+		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldViews, "toUInt64(greatest(count(1)*any(_sample_factor), 0))"},
+		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
 	for _, field := range fields {
@@ -359,17 +359,17 @@ func TestQuerySelectFieldSessionsSampling(t *testing.T) {
 		field    Field
 		expected string
 	}{
-		{FieldCount, "toUInt64(count(*)*any(_sample_factor))"},
-		{FieldEntries, "toUInt64(sum(sign)*any(_sample_factor))"},
-		{FieldExits, "toUInt64(sum(sign)*any(_sample_factor))"},
-		{FieldVisitors, "toUInt64(uniq(t.visitor_id)*any(_sample_factor))"},
-		{FieldVisitorsRaw, "toUInt64(uniq(visitor_id)*any(_sample_factor))"},
+		{FieldCount, "toUInt64(greatest(count(*)*any(_sample_factor), 0))"},
+		{FieldEntries, "toUInt64(greatest(sum(sign)*any(_sample_factor), 0))"},
+		{FieldExits, "toUInt64(greatest(sum(sign)*any(_sample_factor), 0))"},
+		{FieldVisitors, "toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0))"},
+		{FieldVisitorsRaw, "toUInt64(greatest(uniq(visitor_id)*any(_sample_factor), 0))"},
 		{FieldCRPeriod, "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))*any(_sample_factor)"},
-		{FieldSessions, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldViews, "toUInt64(sum(page_views*sign)*any(_sample_factor))"},
-		{FieldBounces, "toUInt64(sum(is_bounce*sign)*any(_sample_factor))"},
-		{FieldEventTimeSpent, "toUInt64(toUInt64(ifNotFinite(avg(duration_seconds), 0))*any(_sample_factor))"},
-		{FieldEventDurationSeconds, "toUInt64(sum(duration_seconds)*any(_sample_factor))"},
+		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldViews, "toUInt64(greatest(sum(page_views*sign)*any(_sample_factor), 0))"},
+		{FieldBounces, "toUInt64(greatest(sum(is_bounce*sign)*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
 	for _, field := range fields {
@@ -386,17 +386,17 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 		field    Field
 		expected string
 	}{
-		{FieldCount, "toUInt64(count(*)*any(_sample_factor))"},
-		{FieldEntries, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldExits, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldVisitors, "toUInt64(uniq(t.visitor_id)*any(_sample_factor))"},
-		{FieldVisitorsRaw, "toUInt64(uniq(visitor_id)*any(_sample_factor))"},
+		{FieldCount, "toUInt64(greatest(count(*)*any(_sample_factor), 0))"},
+		{FieldEntries, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldExits, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldVisitors, "toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0))"},
+		{FieldVisitorsRaw, "toUInt64(greatest(uniq(visitor_id)*any(_sample_factor), 0))"},
 		{FieldCRPeriod, "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))*any(_sample_factor)"},
-		{FieldSessions, "toUInt64(uniq(t.visitor_id, t.session_id)*any(_sample_factor))"},
-		{FieldViews, "toUInt64(sum(views)*any(_sample_factor))"},
-		{FieldBounces, "toUInt64(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor))"},
-		{FieldEventTimeSpent, "toUInt64(toUInt64(ifNotFinite(avg(duration_seconds), 0))*any(_sample_factor))"},
-		{FieldEventDurationSeconds, "toUInt64(sum(duration_seconds)*any(_sample_factor))"},
+		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
+		{FieldViews, "toUInt64(greatest(sum(views)*any(_sample_factor), 0))"},
+		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
 	for _, field := range fields {

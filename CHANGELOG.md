@@ -7,6 +7,7 @@
 * do not log context cancelled errors
 * fixed parsing generic Sec-CH-UA for "Not", "Not A", and "Not)A"
 * fixed reading event pages with title and sampling
+* fixed casting negative UInt64s due to broken data
 
 ## 6.6.0
 

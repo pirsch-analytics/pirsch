@@ -30,7 +30,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 	var query strings.Builder
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
-	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(round(avg(duration))) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(round(avg(duration)), 0)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
@@ -95,7 +95,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	}
 
 	fields = append(fields, "duration_seconds")
-	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(ifNotFinite(round(avg(time_on_page)), 0)) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
 			SELECT "day", %s time_on_page, sid, neighbor(sid, 1, null) next_sid %s
 			FROM (
@@ -140,11 +140,11 @@ func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builde
 	if period != pkg.PeriodDay {
 		switch period {
 		case pkg.PeriodWeek:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
+			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
 		case pkg.PeriodMonth:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
+			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:
-			query.WriteString(`SELECT toUInt64(round(avg(average_time_spent_seconds))) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
+			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
 		}
 	}
 }
