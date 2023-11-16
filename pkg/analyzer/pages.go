@@ -222,7 +222,6 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	pathList := getPathList(stats)
 	totalSessions, err := pages.totalSessions(filter)
 
 	if err != nil {
@@ -230,6 +229,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	}
 
 	totalSessionsFloat64 := float64(totalSessions)
+	pathList := getPathList(stats)
 	total, err := pages.totalVisitorsSessions(filter, pathList)
 
 	if err != nil {
@@ -241,7 +241,13 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 			if stats[i].Path == total[j].Path {
 				stats[i].Visitors = total[j].Visitors
 				stats[i].Sessions = total[j].Sessions
-				stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
+
+				if totalSessions == 0 {
+					stats[i].ExitRate = 1
+				} else {
+					stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
+				}
+
 				break
 			}
 		}

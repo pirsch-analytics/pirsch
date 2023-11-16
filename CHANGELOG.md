@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.6.2
+
+* fixed exit rate calculation
+
 ## 6.6.1
 
 * removed "dalvik" from the User-Agent blacklist

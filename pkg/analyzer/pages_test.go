@@ -569,7 +569,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 4, exits[0].Exits)
 	assert.Equal(t, 4, exits[1].Exits)
 	assert.Equal(t, 1, exits[2].Exits)
-	/*exits, err = analyzer.Pages.Exit(&Filter{From: util.PastDay(1), To: util.Today(), IncludeTitle: true})
+	exits, err = analyzer.Pages.Exit(&Filter{From: util.PastDay(1), To: util.Today(), IncludeTitle: true})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
 	assert.Equal(t, "/bar", exits[0].Path)
@@ -581,7 +581,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 4, exits[0].Exits)
 	assert.Equal(t, 1, exits[1].Exits)
 	assert.InDelta(t, 0.8, exits[0].ExitRate, 0.001)
-	assert.InDelta(t, 0.2, exits[1].ExitRate, 0.01)*/
+	assert.InDelta(t, 0.2, exits[1].ExitRate, 0.01)
 	exits, err = analyzer.Pages.Exit(&Filter{From: util.PastDay(1), To: util.Today(), ExitPath: []string{"/"}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 1)
