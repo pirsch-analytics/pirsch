@@ -57,7 +57,7 @@ func getOS(system []string) (string, string) {
 			os = pkg.OSWindows
 			version = getWindowsVersion(sys)
 			// leave a chance to detect IE...
-		} else if strings.HasPrefix(sys, "Intel Mac OS X") || strings.HasPrefix(sys, "PPC Mac OS X") {
+		} else if strings.HasPrefix(sys, "Intel Mac OS X") || strings.HasPrefix(sys, "PPC Mac OS X") || strings.HasPrefix(sys, "Mac OS X Version") {
 			os = pkg.OSMac
 			version = getMacVersion(sys)
 			break
@@ -123,6 +123,8 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 			productChrome = product
 		} else if strings.HasPrefix(product, "Safari/") {
 			productSafari = product
+		} else if strings.HasPrefix(product, "Arc/") {
+			return pkg.BrowserArc, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "CriOS/") {
 			return pkg.BrowserChrome, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Edg/") || strings.HasPrefix(product, "Edge/") || strings.HasPrefix(product, "EdgA/") || strings.HasPrefix(product, "EdgiOS/") {
@@ -136,8 +138,8 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 		}
 	}
 
-	// When we made it to this point, it's gone get ugly and inaccurate, as Safari and Chrome send almost identical
-	// user agents most of the time. But anything coming from Mac or iOS is most likely Safari, I guess...
+	// If we get to that point, it's going to get ugly and inaccurate, because Safari and Chrome send almost identical user agents most of the time.
+	// But anything coming from Mac or iOS is most likely Safari, I guess...
 	if (os == pkg.OSMac || os == pkg.OSiOS) && productSafari != "" && productChrome == "" {
 		browser = pkg.BrowserSafari
 		version = getSafariVersion(products, productSafari)
@@ -418,6 +420,8 @@ func parseProductsFromCH(header string) []string {
 				return []string{pkg.BrowserEdge, parseProductVersion(version)}
 			} else if strings.Contains(product, "Opera") {
 				return []string{pkg.BrowserOpera, parseProductVersion(version)}
+			} else if strings.Contains(product, "Arc") {
+				return []string{pkg.BrowserArc, parseProductVersion(version)}
 			} else if !strings.Contains(product, "Not") && !strings.Contains(product, "Brand") && !strings.Contains(product, "Chromium") {
 				genericProduct = strings.Trim(product, `"' `)
 				genericVersion = parseProductVersion(version)

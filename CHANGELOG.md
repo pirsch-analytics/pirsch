@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.6.3
+
+* added User-Agent and client hint detection for Arc
+* updated dependencies
+
 ## 6.6.2
 
 * fixed exit rate calculation

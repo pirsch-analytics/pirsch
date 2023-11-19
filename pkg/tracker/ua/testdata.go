@@ -564,12 +564,23 @@ var userAgentsIE = []testUserAgent{
 	},
 }
 
+var userAgentsArc = []testUserAgent{
+	{
+		ua:             "Arc/1.11.0 (Mac OS X Version 13.5.2 (Build 22G91))",
+		browser:        pkg.BrowserArc,
+		browserVersion: "1.11",
+		os:             pkg.OSMac,
+		osVersion:      "13.5",
+	},
+}
+
 var userAgentsAll = mergeUserAgentLists(userAgentsEdge,
 	userAgentsOpera,
 	userAgentsFirefox,
 	userAgentsChrome,
 	userAgentsSafari,
-	userAgentsIE)
+	userAgentsIE,
+	userAgentsArc)
 
 func mergeUserAgentLists(ua ...[]testUserAgent) []testUserAgent {
 	list := make([]testUserAgent, 0)

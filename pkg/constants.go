@@ -19,6 +19,9 @@ const (
 	// BrowserIE represents the Internet Explorer browser.
 	BrowserIE = "IE"
 
+	// BrowserArc represents the Arc browser.
+	BrowserArc = "Arc"
+
 	// OSWindows represents the Windows operating system.
 	OSWindows = "Windows"
 

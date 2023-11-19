@@ -111,6 +111,8 @@ var (
 		"iOS":         pkg.OSiOS,
 		"Linux":       pkg.OSLinux,
 		"macOS":       pkg.OSMac,
+		"Mac":         pkg.OSMac,
+		"MacOS":       pkg.OSMac,
 		"Windows":     pkg.OSWindows,
 	}
 )

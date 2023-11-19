@@ -184,6 +184,14 @@ func TestParseClientHints(t *testing.T) {
 	assert.Equal(t, "87", ua.BrowserVersion)
 	assert.Equal(t, pkg.OSWindows, ua.OS)
 	assert.Equal(t, "11", ua.OSVersion)
+	req.Header.Set("Sec-CH-UA", `"Arc";v="1.11", "Not A";v="99", "Chromium";v="115"`)
+	req.Header.Set("Sec-CH-UA-Platform", fmt.Sprintf(`"%s"`, pkg.OSMac))
+	req.Header.Set("Sec-CH-UA-Platform-Version", `"13.5.1"`)
+	ua = Parse(req)
+	assert.Equal(t, pkg.BrowserArc, ua.Browser)
+	assert.Equal(t, "1.11", ua.BrowserVersion)
+	assert.Equal(t, pkg.OSMac, ua.OS)
+	assert.Equal(t, "13.5", ua.OSVersion)
 }
 
 func TestParse(t *testing.T) {
