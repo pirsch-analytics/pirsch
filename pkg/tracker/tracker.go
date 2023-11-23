@@ -785,40 +785,85 @@ func (tracker *Tracker) aggregateData(ctx context.Context) {
 
 func (tracker *Tracker) savePageViews(pageViews []model.PageView) {
 	if len(pageViews) > 0 {
-		if err := tracker.config.Store.SavePageViews(context.Background(), pageViews); err != nil {
-			log.Panicf("error saving page views: %s", err)
+		for i := 5; i > -1; i-- {
+			if err := tracker.config.Store.SavePageViews(context.Background(), pageViews); err != nil {
+				if i > 0 {
+					tracker.config.Logger.Error("error saving page views", err, "retry", i)
+					time.Sleep(time.Second * time.Duration(5-i) * 10)
+				} else {
+					log.Panicf("error saving page views: %s", err)
+				}
+			} else {
+				break
+			}
 		}
 	}
 }
 
 func (tracker *Tracker) saveSessions(sessions []model.Session) {
 	if len(sessions) > 0 {
-		if err := tracker.config.Store.SaveSessions(context.Background(), sessions); err != nil {
-			log.Panicf("error saving sessions: %s", err)
+		for i := 5; i > -1; i-- {
+			if err := tracker.config.Store.SaveSessions(context.Background(), sessions); err != nil {
+				if i > 0 {
+					tracker.config.Logger.Error("error saving sessions", err, "retry", i)
+					time.Sleep(time.Second * time.Duration(5-i) * 10)
+				} else {
+					log.Panicf("error saving sessions: %s", err)
+				}
+			} else {
+				break
+			}
 		}
 	}
 }
 
 func (tracker *Tracker) saveEvents(events []model.Event) {
 	if len(events) > 0 {
-		if err := tracker.config.Store.SaveEvents(context.Background(), events); err != nil {
-			log.Panicf("error saving events: %s", err)
+		for i := 5; i > -1; i-- {
+			if err := tracker.config.Store.SaveEvents(context.Background(), events); err != nil {
+				if i > 0 {
+					tracker.config.Logger.Error("error saving events", err, "retry", i)
+					time.Sleep(time.Second * time.Duration(5-i) * 10)
+				} else {
+					log.Panicf("error saving events: %s", err)
+				}
+			} else {
+				break
+			}
 		}
 	}
 }
 
 func (tracker *Tracker) saveUserAgents(userAgents []model.UserAgent) {
 	if len(userAgents) > 0 {
-		if err := tracker.config.Store.SaveUserAgents(context.Background(), userAgents); err != nil {
-			tracker.config.Logger.Error("error saving user agents", "err", err)
+		for i := 5; i > -1; i-- {
+			if err := tracker.config.Store.SaveUserAgents(context.Background(), userAgents); err != nil {
+				if i > 0 {
+					tracker.config.Logger.Error("error saving user agents", err, "retry", i)
+					time.Sleep(time.Second * time.Duration(5-i) * 10)
+				} else {
+					log.Panicf("error saving user agents: %s", err)
+				}
+			} else {
+				break
+			}
 		}
 	}
 }
 
 func (tracker *Tracker) saveBots(bots []model.Bot) {
 	if len(bots) > 0 {
-		if err := tracker.config.Store.SaveBots(context.Background(), bots); err != nil {
-			tracker.config.Logger.Error("error saving bots", "err", err)
+		for i := 5; i > -1; i-- {
+			if err := tracker.config.Store.SaveBots(context.Background(), bots); err != nil {
+				if i > 0 {
+					tracker.config.Logger.Error("error saving bots", err, "retry", i)
+					time.Sleep(time.Second * time.Duration(5-i) * 10)
+				} else {
+					log.Panicf("error saving bots: %s", err)
+				}
+			} else {
+				break
+			}
 		}
 	}
 }

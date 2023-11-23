@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.6.4
+
+* added retries to `Tracker` when saving data
+* updated dependencies
+
 ## 6.6.3
 
 * added User-Agent and client hint detection for Arc
