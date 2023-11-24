@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dchest/siphash"
 	"github.com/emvi/iso-639-1"
+	"github.com/go-faster/errors"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
@@ -102,8 +103,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 		// TODO debug
 		defer func() {
 			if r := recover(); r != nil {
-				tracker.config.Logger.Error("1", r)
-				panic(r)
+				panic(errors.Errorf("1: %s", r))
 			}
 		}()
 
@@ -113,8 +113,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 		// TODO debug
 		defer func() {
 			if r := recover(); r != nil {
-				tracker.config.Logger.Error("2", r)
-				panic(r)
+				panic(errors.Errorf("2: %s", r))
 			}
 		}()
 
@@ -132,8 +131,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			// TODO debug
 			defer func() {
 				if r := recover(); r != nil {
-					tracker.config.Logger.Error("3", r)
-					panic(r)
+					panic(errors.Errorf("3: %s", r))
 				}
 			}()
 
@@ -442,8 +440,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("4", r)
-			panic(r)
+			panic(errors.Errorf("4: %s", r))
 		}
 	}()
 
@@ -459,8 +456,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		// TODO debug
 		defer func() {
 			if r := recover(); r != nil {
-				tracker.config.Logger.Error("5", r)
-				panic(r)
+				panic(errors.Errorf("5: %s", r))
 			}
 		}()
 
@@ -470,8 +466,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		// TODO debug
 		defer func() {
 			if r := recover(); r != nil {
-				tracker.config.Logger.Error("6", r)
-				panic(r)
+				panic(errors.Errorf("6: %s", r))
 			}
 		}()
 
@@ -488,8 +483,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		// TODO debug
 		defer func() {
 			if r := recover(); r != nil {
-				tracker.config.Logger.Error("7", r)
-				panic(r)
+				panic(errors.Errorf("7: %s", r))
 			}
 		}()
 	}
@@ -501,8 +495,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("8", r)
-			panic(r)
+			panic(errors.Errorf("8: %s", r))
 		}
 	}()
 
@@ -527,8 +520,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("9", r)
-			panic(r)
+			panic(errors.Errorf("9: %s", r))
 		}
 	}()
 
@@ -586,8 +578,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("10", r)
-			panic(r)
+			panic(errors.Errorf("10: %s", r))
 		}
 	}()
 
@@ -613,8 +604,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("11", r)
-			panic(r)
+			panic(errors.Errorf("11: %s", r))
 		}
 	}()
 
@@ -626,8 +616,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	// TODO debug
 	defer func() {
 		if r := recover(); r != nil {
-			tracker.config.Logger.Error("12", r)
-			panic(r)
+			panic(errors.Errorf("12: %s", r))
 		}
 	}()
 
