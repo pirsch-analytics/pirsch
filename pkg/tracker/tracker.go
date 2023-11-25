@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/dchest/siphash"
 	"github.com/emvi/iso-639-1"
-	"github.com/go-faster/errors"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
@@ -100,22 +99,8 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 	}
 
 	if !ignore {
-		// TODO debug
-		defer func() {
-			if r := recover(); r != nil {
-				panic(errors.Errorf("1: %s", r))
-			}
-		}()
-
 		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
 		var saveUserAgent *model.UserAgent
-
-		// TODO debug
-		defer func() {
-			if r := recover(); r != nil {
-				panic(errors.Errorf("2: %s", r))
-			}
-		}()
 
 		if session != nil {
 			if cancelSession == nil {
@@ -127,13 +112,6 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			if !bounced {
 				pv = tracker.pageViewFromSession(session, timeOnPage)
 			}
-
-			// TODO debug
-			defer func() {
-				if r := recover(); r != nil {
-					panic(errors.Errorf("3: %s", r))
-				}
-			}()
 
 			tracker.data <- data{
 				session:       session,
@@ -437,13 +415,6 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 
 	defer m.Unlock()
 
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("4: %s", r))
-		}
-	}()
-
 	if t == sessionUpdate && session == nil {
 		return nil, nil, 0, false
 	}
@@ -453,23 +424,9 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 	var cancelSession *model.Session
 
 	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
-		// TODO debug
-		defer func() {
-			if r := recover(); r != nil {
-				panic(errors.Errorf("5: %s", r))
-			}
-		}()
-
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
-		// TODO debug
-		defer func() {
-			if r := recover(); r != nil {
-				panic(errors.Errorf("6: %s", r))
-			}
-		}()
-
 		if tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
 			return nil, nil, 0, false
 		}
@@ -479,26 +436,12 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		cancelSession.Sign = -1
 		timeOnPage, bounced = tracker.updateSession(t, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
-
-		// TODO debug
-		defer func() {
-			if r := recover(); r != nil {
-				panic(errors.Errorf("7: %s", r))
-			}
-		}()
 	}
 
 	return session, cancelSession, timeOnPage, bounced
 }
 
 func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua model.UserAgent, ip string, options Options) *model.Session {
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("8: %s", r))
-		}
-	}()
-
 	ua.OS = util.ShortenString(ua.OS, 20)
 	ua.OSVersion = util.ShortenString(ua.OSVersion, 20)
 	ua.Browser = util.ShortenString(ua.Browser, 20)
@@ -516,13 +459,6 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
 	countryCode, city := "", ""
-
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("9: %s", r))
-		}
-	}()
 
 	if tracker.config.GeoDB != nil {
 		countryCode, city = tracker.config.GeoDB.GetLocation(ip)
@@ -575,13 +511,6 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 		duration = 0
 	}
 
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("10: %s", r))
-		}
-	}()
-
 	if t == event {
 		session.Time = session.Time.Add(time.Millisecond)
 		session.IsBounce = false
@@ -601,25 +530,10 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 		session.Extended++
 	}
 
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("11: %s", r))
-		}
-	}()
-
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.ExitPath = path
 	session.ExitTitle = title
-
-	// TODO debug
-	defer func() {
-		if r := recover(); r != nil {
-			panic(errors.Errorf("12: %s", r))
-		}
-	}()
-
 	return uint32(top), session.IsBounce
 }
 
