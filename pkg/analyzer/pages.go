@@ -381,7 +381,6 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		sessionsQuery := queryBuilder{
 			filter: filter,
 			from:   sessions,
-			search: filter.Search,
 			fields: []Field{
 				FieldVisitorID,
 				FieldSessionID,
@@ -400,7 +399,6 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		eventsQuery := queryBuilder{
 			filter: filter,
 			from:   events,
-			search: filter.Search,
 			fields: []Field{
 				FieldVisitorID,
 				FieldSessionID,
@@ -416,6 +414,13 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	whereTime := q.whereTime()[len("WHERE "):]
+	q.whereFields()
+	whereFields := q.q.String()
+
+	if whereFields != "" {
+		whereFields = "WHERE " + whereFields[len("AND "):]
+	}
+
 	pathInQuery := queryBuilder{
 		filter: &Filter{
 			AnyPath: paths,
@@ -425,11 +430,11 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	pathIn := pathInQuery.where[len(pathInQuery.where)-1].eqContains[0]
 	q.args = append(q.args, pathInQuery.args...)
 	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY v.visitor_id, v.session_id, time)
-		ORDER BY "time")
+		%s ORDER BY "time")
 		WHERE time_on_page > 0
 		AND sid = next_sid
 		AND %s
-		GROUP BY path`, whereTime, pathIn))
+		GROUP BY path`, whereTime, whereFields, pathIn))
 	stats, err := pages.store.SelectAvgTimeSpentStats(filter.Ctx, query.String(), q.args...)
 
 	if err != nil {

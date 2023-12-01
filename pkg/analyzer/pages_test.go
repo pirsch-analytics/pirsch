@@ -1167,6 +1167,42 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds}
 	assert.Contains(t, top, 120)
 	assert.Contains(t, top, 23)
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:      util.PastDay(1),
+		To:        util.Today(),
+		EntryPath: []string{"/"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	paths = []string{stats[0].Path, stats[1].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, 23)
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:     util.PastDay(1),
+		To:       util.Today(),
+		ExitPath: []string{"/", "/bar"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 3)
+	paths = []string{stats[0].Path, stats[1].Path, stats[2].Path}
+	assert.Contains(t, paths, "/")
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
+	assert.Contains(t, top, 120)
+	assert.Contains(t, top, (23+8)/2)
+	assert.Contains(t, top, 16)
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:      util.PastDay(1),
+		To:        util.Today(),
+		EntryPath: []string{"/foo"},
+		ExitPath:  []string{"/bar"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
 	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.avgTimeOnPage(getMaxFilter("event"), []string{"/", "/foo", "/bar"})

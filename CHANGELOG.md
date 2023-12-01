@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.6.5
+
+* fixed missing filter for time on page
+* updated dependencies
+
 ## 6.6.4
 
 * added retries to `Tracker` when saving data
