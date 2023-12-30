@@ -959,6 +959,11 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 		"0'XOR(if(now()=sysdate(),sleep(15),0))XOR'Z",
 		"1 waitfor delay '0:0:15' --",
 		"14wpthYh' OR 294=(SELECT 294 FROM PG_SLEEP(15))--",
+		"{{2959082-1}}",
+		"{{ 2959082-1 }}",
+		"7144de67-08ee-4fce-9997-49ef5af582d8",
+		"a9c4b36c-71e8-4cdf-81a8-e178edcc7f30",
+		"5b49398f-26bd-4bc3-ab16-3ca223d4d218",
 	}
 
 	for _, userAgent := range botUserAgent {

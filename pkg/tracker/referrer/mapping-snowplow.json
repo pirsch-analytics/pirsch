@@ -2556,6 +2556,14 @@
                 "q"
             ]
         }, 
+        "Coccoc": {
+            "domains": [
+                "coccoc.com"
+            ], 
+            "parameters": [
+                "q"
+            ]
+        }, 
         "Snapdo": {
             "domains": [
                 "search.snapdo.com"
@@ -4348,9 +4356,10 @@
                 "ok.ru"
             ]
         }, 
-        "GitHub": {
+        "Tildes": {
             "domains": [
-                "github.com"
+                "tildes.net", 
+                "com.talklittle.android.tildes"
             ]
         }, 
         "Classmates": {
@@ -4397,6 +4406,13 @@
         "Multiply": {
             "domains": [
                 "multiply.com"
+            ]
+        }, 
+        "Threads": {
+            "domains": [
+                "threads.net", 
+                "l.threads.net", 
+                "com.instagram.barcelona"
             ]
         }, 
         "myYearbook": {
@@ -4707,10 +4723,9 @@
                 "viadeo.com"
             ]
         }, 
-        "Tildes": {
+        "GitHub": {
             "domains": [
-                "tildes.net", 
-                "com.talklittle.android.tildes"
+                "github.com"
             ]
         }, 
         "StackOverflow": {

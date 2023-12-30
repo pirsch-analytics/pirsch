@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dchest/siphash"
 	"github.com/emvi/iso-639-1"
+	"github.com/google/uuid"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
@@ -301,11 +302,23 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 		return model.UserAgent{}, "", true
 	}
 
+	// ignore browsers pre-fetching data
+	xPurpose := r.Header.Get("X-Purpose")
+	purpose := r.Header.Get("Purpose")
+
+	if r.Header.Get("X-Moz") == "prefetch" ||
+		xPurpose == "prefetch" ||
+		xPurpose == "preview" ||
+		purpose == "prefetch" ||
+		purpose == "preview" {
+		return model.UserAgent{}, "", true
+	}
+
 	// empty User-Agents are usually bots
 	rawUserAgent := r.UserAgent()
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
 
-	if userAgent == "" || len(userAgent) < 10 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
+	if userAgent == "" || len(userAgent) <= 16 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
 		return model.UserAgent{}, "", true
 	}
 
@@ -324,15 +337,8 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 		return model.UserAgent{}, "", true
 	}
 
-	// ignore browsers pre-fetching data
-	xPurpose := r.Header.Get("X-Purpose")
-	purpose := r.Header.Get("Purpose")
-
-	if r.Header.Get("X-Moz") == "prefetch" ||
-		xPurpose == "prefetch" ||
-		xPurpose == "preview" ||
-		purpose == "prefetch" ||
-		purpose == "preview" {
+	// filter UUIDs
+	if _, err := uuid.Parse(rawUserAgent); err == nil {
 		return model.UserAgent{}, "", true
 	}
 

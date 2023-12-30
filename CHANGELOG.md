@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.6.6
+
+* improved User-Agent filter
+* updated User-Agent blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 6.6.5
 
 * fixed missing filter for time on page

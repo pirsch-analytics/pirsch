@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-10-27)
+# custom (last update: 2023-12-30)
 ://
 bot
 crawler
@@ -523,6 +523,43 @@ symbolicator
 metamatrix
 promotion
 database
+infrawatch
+ows.eu
+bun/
+paziresh24
+security
+assetnote
+graphy
+yqtw5kjopcjrnki3pqir0iy3g28ypsdwlwag
+xwords
+smta
+hello
+world
+hyscaler
+gnu social
+accelerate
+railway
+ticket
+bugbounty
+tunein
+radio
+mymind
+localhost
+go-network
+localdomain
+greeting
+your user agent
+middleton
+ntwebpageassist
+aggregation
+finicity.com
+vinebre
+breadcrum
+virginiatech
+w442j4wrscmtcmxdsrec687grytgv
+09z220t400145
+{{
+}}
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
