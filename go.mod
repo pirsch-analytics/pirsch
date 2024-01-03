@@ -9,6 +9,7 @@ require (
 	github.com/emvi/null v1.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.11.0
+	github.com/google/uuid v1.5.0
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/stretchr/testify v1.8.4
@@ -23,7 +24,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
-	github.com/google/uuid v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
