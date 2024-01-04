@@ -85,6 +85,10 @@ func TestTracker_PageView(t *testing.T) {
 		Title:        "Foo",
 		ScreenWidth:  1920,
 		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
 	})
 	tracker.Flush()
 	sessions := client.GetSessions()
@@ -145,6 +149,10 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, "Campaign", pageViews[0].UTMCampaign)
 	assert.Equal(t, "Content", pageViews[0].UTMContent)
 	assert.Equal(t, "Term", pageViews[0].UTMTerm)
+	assert.Contains(t, pageViews[0].TagKeys, "author")
+	assert.Contains(t, pageViews[0].TagKeys, "type")
+	assert.Contains(t, pageViews[0].TagValues, "John")
+	assert.Contains(t, pageViews[0].TagValues, "blog_post")
 
 	time.Sleep(time.Second)
 	req = httptest.NewRequest(http.MethodGet, "/test", nil)

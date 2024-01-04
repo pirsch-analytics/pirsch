@@ -111,7 +111,8 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			var pv *model.PageView
 
 			if !bounced {
-				pv = tracker.pageViewFromSession(session, timeOnPage)
+				tagKeys, tagValues := options.getTags()
+				pv = tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
 			}
 
 			tracker.data <- data{
@@ -163,7 +164,8 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				var pv *model.PageView
 
 				if cancelSession == nil || (cancelSession != nil && cancelSession.PageViews < session.PageViews) {
-					pv = tracker.pageViewFromSession(session, timeOnPage)
+					tagKeys, tagValues := options.getTags()
+					pv = tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
 				}
 
 				metaKeys, metaValues := eventOptions.getMetaData()
@@ -233,7 +235,7 @@ func (tracker *Tracker) Stop() {
 	}
 }
 
-func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage uint32) *model.PageView {
+func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage uint32, tagKeys, tagValues []string) *model.PageView {
 	return &model.PageView{
 		ClientID:        session.ClientID,
 		VisitorID:       session.VisitorID,
@@ -260,6 +262,8 @@ func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage u
 		UTMCampaign:     session.UTMCampaign,
 		UTMContent:      session.UTMContent,
 		UTMTerm:         session.UTMTerm,
+		TagKeys:         tagKeys,
+		TagValues:       tagValues,
 	}
 }
 

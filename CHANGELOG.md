@@ -3,6 +3,9 @@
 ## 6.7.0
 
 * added tags for segmentation to page views
+* added trimming to metadata keys
+* empty metadata keys and values are now ignored
+* removed `OptionsFromRequest`
 * updated dependencies
 
 ## 6.6.6

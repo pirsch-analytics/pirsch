@@ -16,9 +16,10 @@ func TestEventOptions_validate(t *testing.T) {
 func TestEventOptions_getMetaData(t *testing.T) {
 	options := EventOptions{
 		Meta: map[string]string{
-			"key":   "value",
-			"hello": "world",
-			"empty": "",
+			"key":     "value",
+			" hello ": " world ",
+			"empty":   "",
+			"":        "ignore",
 		},
 	}
 	k, v := options.getMetaData()

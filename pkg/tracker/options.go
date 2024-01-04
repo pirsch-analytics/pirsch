@@ -4,7 +4,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -19,6 +18,9 @@ type Options struct {
 	ScreenWidth  uint16
 	ScreenHeight uint16
 	Time         time.Time
+
+	// Tags are optional fields used to break down page views into segments.
+	Tags map[string]string
 }
 
 func (options *Options) validate(r *http.Request) {
@@ -48,27 +50,18 @@ func (options *Options) validate(r *http.Request) {
 	}
 }
 
-// OptionsFromRequest returns Options for the client request.
-func OptionsFromRequest(r *http.Request) Options {
-	query := r.URL.Query()
-	return Options{
-		URL:          getURLQueryParam(query.Get("url")),
-		Title:        strings.TrimSpace(query.Get("t")),
-		Referrer:     strings.TrimSpace(query.Get("ref")),
-		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
-		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
-	}
-}
+func (options *Options) getTags() ([]string, []string) {
+	keys, values := make([]string, 0, len(options.Tags)), make([]string, 0, len(options.Tags))
 
-func getIntQueryParam[T uint16 | uint64](param string) T {
-	i, _ := strconv.ParseUint(param, 10, 64)
-	return T(i)
-}
+	for k, v := range options.Tags {
+		k = strings.TrimSpace(k)
+		v = strings.TrimSpace(v)
 
-func getURLQueryParam(param string) string {
-	if _, err := url.ParseRequestURI(param); err != nil {
-		return ""
+		if k != "" && v != "" {
+			keys = append(keys, k)
+			values = append(values, v)
+		}
 	}
 
-	return param
+	return keys, values
 }

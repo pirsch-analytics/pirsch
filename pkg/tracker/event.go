@@ -23,9 +23,10 @@ func (options *EventOptions) getMetaData() ([]string, []string) {
 	keys, values := make([]string, 0, len(options.Meta)), make([]string, 0, len(options.Meta))
 
 	for k, v := range options.Meta {
+		k = strings.TrimSpace(k)
 		v = strings.TrimSpace(v)
 
-		if v != "" {
+		if k != "" && v != "" {
 			keys = append(keys, k)
 			values = append(values, v)
 		}
