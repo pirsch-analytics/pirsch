@@ -2,6 +2,7 @@
 
 ## 6.7.0
 
+* added tags for segmentation to page views
 * updated dependencies
 
 ## 6.6.6

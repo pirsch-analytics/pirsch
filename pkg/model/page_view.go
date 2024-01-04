@@ -32,6 +32,8 @@ type PageView struct {
 	UTMCampaign     string    `db:"utm_campaign" json:"utm_campaign"`
 	UTMContent      string    `db:"utm_content" json:"utm_content"`
 	UTMTerm         string    `db:"utm_term" json:"utm_term"`
+	TagKeys         []string  `db:"tag_keys" json:"tag_keys"`
+	TagValues       []string  `db:"tag_values" json:"tag_values"`
 }
 
 // String implements the Stringer interface.

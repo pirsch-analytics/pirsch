@@ -47,6 +47,8 @@ func TestClient_SavePageViews(t *testing.T) {
 			Desktop:         true,
 			Mobile:          false,
 			ScreenClass:     "XL",
+			TagKeys:         []string{"key0", "key1"},
+			TagValues:       []string{"value0", "value1"},
 		},
 		{
 			VisitorID: 1,
