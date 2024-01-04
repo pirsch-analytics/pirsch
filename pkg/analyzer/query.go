@@ -62,7 +62,7 @@ func (query *queryBuilder) query() (string, []any) {
 }
 
 func (query *queryBuilder) getFields() []string {
-	fields := make([]string, 0, 25)
+	fields := make([]string, 0, 30)
 
 	if query.from == sessions {
 		query.appendField(&fields, FieldEntryPath.Name, query.filter.EntryPath)
@@ -75,13 +75,17 @@ func (query *queryBuilder) getFields() []string {
 		}
 	}
 
+	if query.from == pageViews && len(query.filter.Tags) > 0 {
+		fields = append(fields, FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+	}
+
 	if query.from == events {
 		query.appendField(&fields, FieldEventName.Name, query.filter.EventName)
 
-		if len(query.filter.EventMeta) > 0 {
-			fields = append(fields, "event_meta_keys", "event_meta_values")
+		if len(query.filter.EventMeta) > 0 || len(query.filter.Tags) > 0 {
+			fields = append(fields, FieldEventMetaKeysRaw.Name, FieldEventMetaValuesRaw.Name)
 		} else {
-			query.appendField(&fields, "event_meta_keys", query.filter.EventMetaKey)
+			query.appendField(&fields, FieldEventMetaKeysRaw.Name, query.filter.EventMetaKey)
 		}
 	}
 
@@ -154,6 +158,8 @@ func (query *queryBuilder) selectFields() bool {
 						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					case pkg.PeriodYear:
 						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+					default:
+						panic("unknown case for filter period")
 					}
 				} else {
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
@@ -332,6 +338,7 @@ func (query *queryBuilder) whereFields() {
 		query.whereField(FieldPath.Name, query.filter.Path)
 		query.whereFieldPathPattern()
 		query.whereFieldPathIn()
+		query.whereFieldTag()
 	}
 
 	if query.from == events || query.includeEventFilter {
@@ -510,24 +517,54 @@ func (query *queryBuilder) whereFieldUInt16(field string, value []string) {
 	}
 }
 
+func (query *queryBuilder) whereFieldTag() {
+	if len(query.filter.Tags) != 0 {
+		values, keys := "tag_values", "tag_keys"
+
+		if query.from == events {
+			values, keys = "event_meta_values", "event_meta_keys"
+		}
+
+		var group where
+
+		for k, v := range query.filter.Tags {
+			comparator := "%s[indexOf(%s, ?)] = ? "
+
+			if strings.HasPrefix(v, "!") {
+				v = v[1:]
+				comparator = "%s[indexOf(%s, ?)] != ? "
+			} else if strings.HasPrefix(v, "~") {
+				v = fmt.Sprintf("%%%s%%", v[1:])
+				comparator = "ilike(%s[indexOf(%s, ?)], ?) = 1 "
+			}
+
+			// use notEq because they will all be joined using AND
+			query.args = append(query.args, k, query.nullValue(v))
+			group.notEq = append(group.notEq, fmt.Sprintf(comparator, values, keys))
+		}
+
+		query.where = append(query.where, group)
+	}
+}
+
 func (query *queryBuilder) whereFieldMeta() {
 	if len(query.filter.EventMeta) != 0 {
 		var group where
 
 		for k, v := range query.filter.EventMeta {
-			comparator := "event_meta_values[indexOf(event_meta_keys, '%s')] = ? "
+			comparator := "event_meta_values[indexOf(event_meta_keys, ?)] = ? "
 
 			if strings.HasPrefix(v, "!") {
 				v = v[1:]
-				comparator = "event_meta_values[indexOf(event_meta_keys, '%s')] != ? "
+				comparator = "event_meta_values[indexOf(event_meta_keys, ?)] != ? "
 			} else if strings.HasPrefix(v, "~") {
 				v = fmt.Sprintf("%%%s%%", v[1:])
-				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, '%s')], ?) = 1 "
+				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, ?)], ?) = 1 "
 			}
 
 			// use notEq because they will all be joined using AND
-			query.args = append(query.args, query.nullValue(v))
-			group.notEq = append(group.notEq, fmt.Sprintf(comparator, k))
+			query.args = append(query.args, k, query.nullValue(v))
+			group.notEq = append(group.notEq, comparator)
 		}
 
 		query.where = append(query.where, group)
@@ -611,6 +648,8 @@ func (query *queryBuilder) groupByFields() {
 					q.WriteString("month,")
 				case pkg.PeriodYear:
 					q.WriteString("year,")
+				default:
+					panic("unknown case for filter period")
 				}
 			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.groupBy[i]) + ",")
@@ -661,6 +700,8 @@ func (query *queryBuilder) orderByFields() {
 						name = "month"
 					case pkg.PeriodYear:
 						name = "year"
+					default:
+						panic("unknown case for filter period")
 					}
 				}
 

@@ -449,6 +449,7 @@ func TestTracker_Event(t *testing.T) {
 		Title:        "Foo",
 		ScreenWidth:  1920,
 		ScreenHeight: 1080,
+		Tags:         map[string]string{"key0": "override", "key2": "value2"},
 	})
 	tracker.Flush()
 	sessions := client.GetSessions()
@@ -463,8 +464,14 @@ func TestTracker_Event(t *testing.T) {
 	assert.Equal(t, uint64(123), events[0].ClientID)
 	assert.True(t, events[0].Time.After(now))
 	assert.Equal(t, "event", events[0].Name)
-	assert.Len(t, events[0].MetaKeys, 2)
-	assert.Len(t, events[0].MetaValues, 2)
+	assert.Len(t, events[0].MetaKeys, 3)
+	assert.Len(t, events[0].MetaValues, 3)
+	assert.Contains(t, events[0].MetaKeys, "key0")
+	assert.Contains(t, events[0].MetaKeys, "key1")
+	assert.Contains(t, events[0].MetaKeys, "key2")
+	assert.Contains(t, events[0].MetaValues, "value0")
+	assert.Contains(t, events[0].MetaValues, "value1")
+	assert.Contains(t, events[0].MetaValues, "value2")
 	assert.Equal(t, uint32(42), events[0].DurationSeconds)
 	assert.Equal(t, "/foo/bar", events[0].Path)
 	assert.Equal(t, "Foo", events[0].Title)

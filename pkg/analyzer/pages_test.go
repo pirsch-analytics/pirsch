@@ -419,6 +419,71 @@ func TestAnalyzer_PagesEventPath(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_PagesTags(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/", Title: "Home", TagKeys: []string{"author", "foo"}, TagValues: []string{"John", "bar"}},
+		{VisitorID: 1, Time: util.Today(), Path: "/foo", Title: "Foo", TagKeys: []string{"author", "title"}, TagValues: []string{"John", "Foo"}},
+		{VisitorID: 1, Time: util.Today(), Path: "/bar", Title: "Bar", TagKeys: []string{"foo"}, TagValues: []string{"bar"}},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo", Title: "Foo"},
+		{VisitorID: 3, Time: util.Today(), Path: "/", Title: "Home", TagKeys: []string{"author", "key"}, TagValues: []string{"Alice", "bar"}},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", EntryTitle: "Home", ExitTitle: "Foo", IsBounce: false, PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar", IsBounce: false, PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo", IsBounce: true, PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages.ByPath(&Filter{
+		Tags: map[string]string{"foo": "bar"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "/", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		Tags: map[string]string{"foo": "!bar"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, visitors[0].Path, "/foo")
+	assert.Equal(t, visitors[1].Path, "/")
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		Tags:         map[string]string{"foo": "bar"},
+		IncludeTitle: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "/", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, "Home", visitors[0].Title)
+	assert.Equal(t, "Bar", visitors[1].Title)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		Tags:         map[string]string{"foo": "!bar"},
+		IncludeTitle: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, visitors[0].Path, "/foo")
+	assert.Equal(t, visitors[1].Path, "/")
+	assert.Equal(t, visitors[0].Title, "Foo")
+	assert.Equal(t, visitors[1].Title, "Home")
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+}
+
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{

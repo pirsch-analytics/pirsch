@@ -104,6 +104,9 @@ type Filter struct {
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm []string
 
+	// Tags filters for tag key-value pairs.
+	Tags map[string]string
+
 	// EventName filters for an event by its name.
 	EventName []string
 
@@ -410,12 +413,12 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
+	// TODO tags?
 	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.searchContains(FieldPath) {
 		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
 
-		if len(filter.PathPattern) != 0 {
-			pageViewFields = append(pageViewFields, FieldPath)
-		} else if len(filter.Path) != 0 || filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
+		if len(filter.PathPattern) != 0 || len(filter.Path) != 0 ||
+			filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
 			pageViewFields = append(pageViewFields, FieldPath)
 		}
 
@@ -435,10 +438,6 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 
 func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 	if len(filter.EventName) != 0 {
-		filterCopy := *filter
-		filterCopy.Path = nil
-		filterCopy.AnyPath = nil
-		filterCopy.Sort = nil
 		eventFields := []Field{FieldVisitorID, FieldSessionID}
 
 		if filter.fieldsContain(fields, FieldEventPath) {
@@ -454,6 +453,10 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 			eventFields = append(eventFields, FieldEventMetaValuesRaw)
 		}
 
+		filterCopy := *filter
+		filterCopy.Path = nil
+		filterCopy.AnyPath = nil
+		filterCopy.Sort = nil
 		return &queryBuilder{
 			filter:  &filterCopy,
 			fields:  eventFields,
@@ -467,11 +470,6 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
-	filterCopy := *filter
-	filterCopy.EventName = nil
-	filterCopy.EventMetaKey = nil
-	filterCopy.EventMeta = nil
-	filterCopy.Sort = nil
 	eventFields := []Field{FieldVisitorID, FieldSessionID, FieldEventName}
 
 	if len(filter.EventMeta) != 0 || filter.fieldsContain(fields, FieldEventMeta) {
@@ -488,6 +486,11 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		eventFields = append(eventFields, FieldEventTitle)
 	}
 
+	filterCopy := *filter
+	filterCopy.EventName = nil
+	filterCopy.EventMetaKey = nil
+	filterCopy.EventMeta = nil
+	filterCopy.Sort = nil
 	return &queryBuilder{
 		filter:  &filterCopy,
 		fields:  eventFields,

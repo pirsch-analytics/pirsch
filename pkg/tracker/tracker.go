@@ -162,13 +162,13 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				}
 
 				var pv *model.PageView
+				tagKeys, tagValues := options.getTags()
 
 				if cancelSession == nil || (cancelSession != nil && cancelSession.PageViews < session.PageViews) {
-					tagKeys, tagValues := options.getTags()
 					pv = tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
 				}
 
-				metaKeys, metaValues := eventOptions.getMetaData()
+				metaKeys, metaValues := eventOptions.getMetaData(tagKeys, tagValues)
 				tracker.data <- data{
 					session:       session,
 					cancelSession: cancelSession,

@@ -35,15 +35,21 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
 
-	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tags) > 0 {
+		tagField := ""
+
+		if len(filter.Tags) > 0 {
+			tagField = fmt.Sprintf(", %s, %s", FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+		}
+
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
-			path
+			path %s
 			FROM page_view
 			WHERE %s
 		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, tagField, q.whereTime()[len("WHERE "):]))
 	}
 
 	query.WriteString(q.whereTime())

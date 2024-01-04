@@ -318,6 +318,20 @@ var (
 		Name:           "utm_term",
 	}
 
+	// FieldTagKeysRaw is a query result column.
+	FieldTagKeysRaw = Field{
+		querySessions:  "tag_keys",
+		queryPageViews: "tag_keys",
+		Name:           "tag_keys",
+	}
+
+	// FieldTagValuesRaw is a query result column.
+	FieldTagValuesRaw = Field{
+		querySessions:  "tag_values",
+		queryPageViews: "tag_values",
+		Name:           "tag_values",
+	}
+
 	// FieldTitle is a query result column.
 	FieldTitle = Field{
 		querySessions:  "title",

@@ -100,6 +100,22 @@ func (options *FilterOptions) EventMetadataValues(filter *Filter) ([]string, err
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
+// TagValues returns all tag values.
+func (options *FilterOptions) TagValues(filter *Filter) ([]string, error) {
+	if filter == nil {
+		return []string{}, nil
+	}
+
+	filter = options.analyzer.getFilter(filter)
+	timeQuery, args := filter.buildTimeQuery()
+	q := fmt.Sprintf(`SELECT DISTINCT arrayJoin(tag_values) AS "values"
+		FROM page_view
+		%s
+		AND length(tag_values) > 0
+		ORDER BY "values" ASC`, timeQuery)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
+}
+
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
 	timeQuery, args := filter.buildTimeQuery()

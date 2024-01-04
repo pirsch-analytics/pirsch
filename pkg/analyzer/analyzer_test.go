@@ -95,6 +95,7 @@ func getMaxFilter(eventName string) *Filter {
 		UTMCampaign:    []string{"campaign"},
 		UTMContent:     []string{"content"},
 		UTMTerm:        []string{"term"},
+		Tags:           map[string]string{"key": "value"},
 		EventName:      events,
 		Limit:          42,
 		IncludeCR:      true,

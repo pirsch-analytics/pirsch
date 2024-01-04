@@ -6,6 +6,7 @@
 * added trimming to metadata keys
 * empty metadata keys and values are now ignored
 * removed `OptionsFromRequest`
+* fixed SQL injection attack vector
 * updated dependencies
 
 ## 6.6.6
