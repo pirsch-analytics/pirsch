@@ -484,6 +484,45 @@ func TestAnalyzer_PagesTags(t *testing.T) {
 	assert.Equal(t, 1, visitors[1].Visitors)
 }
 
+func TestAnalyzer_PathPattern(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
+		{VisitorID: 3, Time: util.Today(), Path: "/siMple/page/"},
+		{VisitorID: 4, Time: util.Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/exit"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/exit"},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/"},
+			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page"},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), ExitPath: "/siMple/page/"},
+			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes"},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages.ByPath(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+$"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/slashes$"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 0)
+	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/.+/slashes$"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+}
+
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
@@ -780,149 +819,77 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_Conversions(t *testing.T) {
+func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
-		{VisitorID: 2, Time: util.Today().Add(time.Minute), Path: "/simple/page"},
-		{VisitorID: 3, Time: util.Today(), Path: "/siMple/page/"},
-		{VisitorID: 3, Time: util.Today().Add(time.Minute), Path: "/siMple/page/"},
-		{VisitorID: 4, Time: util.Today(), Path: "/simple/page/with/many/slashes"},
+		{VisitorID: 1, Time: util.Today(), SessionID: 1, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/", DurationSeconds: 8, TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo", DurationSeconds: 31, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 20), SessionID: 1, Path: "/", DurationSeconds: 9, TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 25), SessionID: 1, Path: "/bar", DurationSeconds: 21, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/", PageViews: 2},
-			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Minute), Start: time.Now(), ExitPath: "/simple/page", PageViews: 1},
-			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 1},
-			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Minute), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 2},
-			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 1, Time: util.Today().Add(time.Second), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar", PageViews: 3},
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"189", "EUR"}, Path: "/simple/page"},
-		{VisitorID: 2, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"312", "EUR"}, Path: "/simple"},
-		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"177", "USD"}, Path: "/simple/page"},
+		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	stats, err := analyzer.Pages.Conversions(nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, stats)
-	assert.Equal(t, 4, stats.Visitors)
-	assert.Equal(t, 7, stats.Views)
-	assert.InDelta(t, 1, stats.CR, 0.01)
-	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{
-		From:        util.Today(),
-		To:          util.Today(),
-		PathPattern: []string{"(?i)^/.*$"},
-		Period:      pkg.PeriodDay,
+	entries, err := analyzer.Pages.Entry(&Filter{
+		EventName:         []string{"event"},
+		Tags:              map[string]string{"author": "Alice"}, // references the event
+		IncludeTimeOnPage: true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 4, stats.Visitors)
-	assert.Equal(t, 6, stats.Views)
-	assert.InDelta(t, 1, stats.CR, 0.01)
-	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 3, stats.Views)
-	assert.InDelta(t, 0.5, stats.CR, 0.01)
-	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{
-		EventName:        []string{"Sale"},
-		CustomMetricKey:  "amount",
-		CustomMetricType: pkg.CustomMetricTypeInteger,
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 1, entries[0].Sessions)
+	assert.Equal(t, 1, entries[0].Entries)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 0, entries[0].AverageTimeSpentSeconds)
+	entries, err = analyzer.Pages.Entry(&Filter{
+		Tags:              map[string]string{"author": "John"}, // page view tag
+		IncludeTimeOnPage: true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 3, stats.Visitors)
-	assert.Equal(t, 4, stats.Views)
-	assert.InDelta(t, 0.75, stats.CR, 0.01)
-	assert.InDelta(t, 226, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 678, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{
-		EventName:        []string{"Sale"},
-		EventMeta:        map[string]string{"currency": "EUR"},
-		CustomMetricKey:  "amount",
-		CustomMetricType: pkg.CustomMetricTypeInteger,
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 1, entries[0].Sessions)
+	assert.Equal(t, 1, entries[0].Entries)
+	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 8, entries[0].AverageTimeSpentSeconds)
+	exits, err := analyzer.Pages.Exit(&Filter{
+		EventName: []string{"event"},
+		Tags:      map[string]string{"author": "Alice"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 3, stats.Views)
-	assert.InDelta(t, 0.5, stats.CR, 0.01)
-	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
-	stats, err = analyzer.Pages.Conversions(&Filter{
-		EventName:        []string{"Sale"},
-		EventMeta:        map[string]string{"currency": "EUR"},
-		CustomMetricKey:  "amount",
-		CustomMetricType: pkg.CustomMetricTypeInteger,
-		PathPattern:      []string{"(?i)^/.*"},
+	assert.Len(t, exits, 1)
+	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 1, exits[0].Sessions)
+	assert.Equal(t, 1, exits[0].Exits)
+	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
+	exits, err = analyzer.Pages.Exit(&Filter{
+		Tags: map[string]string{"author": "Alice"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, stats.Visitors)
-	assert.Equal(t, 3, stats.Views)
-	assert.InDelta(t, 0.5, stats.CR, 0.01)
-	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
-	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
-	_, err = analyzer.Pages.Conversions(getMaxFilter(""))
-	assert.NoError(t, err)
-	_, err = analyzer.Pages.Conversions(getMaxFilter("event"))
-	assert.NoError(t, err)
-	filter := getMaxFilter("Sale")
-	filter.CustomMetricType = pkg.CustomMetricTypeInteger
-	filter.CustomMetricKey = "amount"
-	filter.From = util.Today()
-	filter.To = util.Today()
-	_, err = analyzer.Pages.Conversions(filter)
-	assert.NoError(t, err)
-}
-
-func TestAnalyzer_PathPattern(t *testing.T) {
-	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
-		{VisitorID: 3, Time: util.Today(), Path: "/siMple/page/"},
-		{VisitorID: 4, Time: util.Today(), Path: "/simple/page/with/many/slashes"},
-	}))
-	saveSessions(t, [][]model.Session{
-		{
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/exit"},
-		},
-		{
-			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/exit"},
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/"},
-			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page"},
-			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), ExitPath: "/siMple/page/"},
-			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes"},
-		},
-	})
-	time.Sleep(time.Millisecond * 20)
-	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Pages.ByPath(nil)
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 4)
-	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+$"}})
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 1)
-	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 2)
-	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/slashes$"}})
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 0)
-	visitors, err = analyzer.Pages.ByPath(&Filter{PathPattern: []string{"(?i)^/simple/.+/slashes$"}})
-	assert.NoError(t, err)
-	assert.Len(t, visitors, 1)
+	assert.Len(t, exits, 1)
+	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 1, exits[0].Sessions)
+	assert.Equal(t, 1, exits[0].Exits)
+	assert.InDelta(t, 1, exits[0].ExitRate, 0.001)
 }
 
 func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
@@ -1163,6 +1130,112 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_Conversions(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
+		{VisitorID: 2, Time: util.Today().Add(time.Minute), Path: "/simple/page"},
+		{VisitorID: 3, Time: util.Today(), Path: "/siMple/page/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Minute), Path: "/siMple/page/"},
+		{VisitorID: 4, Time: util.Today(), Path: "/simple/page/with/many/slashes"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/foo", PageViews: 1},
+			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), ExitPath: "/", PageViews: 2},
+			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Minute), Start: time.Now(), ExitPath: "/simple/page", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Minute), Start: time.Now(), ExitPath: "/siMple/page/", PageViews: 2},
+			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"189", "EUR"}, Path: "/simple/page"},
+		{VisitorID: 2, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"312", "EUR"}, Path: "/simple"},
+		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"177", "USD"}, Path: "/simple/page"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.Pages.Conversions(nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, stats)
+	assert.Equal(t, 4, stats.Visitors)
+	assert.Equal(t, 7, stats.Views)
+	assert.InDelta(t, 1, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		From:        util.Today(),
+		To:          util.Today(),
+		PathPattern: []string{"(?i)^/.*$"},
+		Period:      pkg.PeriodDay,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 4, stats.Visitors)
+	assert.Equal(t, 6, stats.Views)
+	assert.InDelta(t, 1, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{PathPattern: []string{"(?i)^/simple/[^/]+/.*"}})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 3, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 0, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, stats.Visitors)
+	assert.Equal(t, 4, stats.Views)
+	assert.InDelta(t, 0.75, stats.CR, 0.01)
+	assert.InDelta(t, 226, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 678, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 3, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
+	stats, err = analyzer.Pages.Conversions(&Filter{
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeInteger,
+		PathPattern:      []string{"(?i)^/.*"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, stats.Visitors)
+	assert.Equal(t, 3, stats.Views)
+	assert.InDelta(t, 0.5, stats.CR, 0.01)
+	assert.InDelta(t, 250.5, stats.CustomMetricAvg, 0.001)
+	assert.InDelta(t, 501, stats.CustomMetricTotal, 0.001)
+	_, err = analyzer.Pages.Conversions(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Conversions(getMaxFilter("event"))
+	assert.NoError(t, err)
+	filter := getMaxFilter("Sale")
+	filter.CustomMetricType = pkg.CustomMetricTypeInteger
+	filter.CustomMetricKey = "amount"
+	filter.From = util.Today()
+	filter.To = util.Today()
+	_, err = analyzer.Pages.Conversions(filter)
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -1176,17 +1249,17 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23},
-		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120, TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo", Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*5), Path: "/foo", Name: "another event"},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*9), Path: "/", Name: "event"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*5), Path: "/foo", Name: "another event", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*9), Path: "/", Name: "event", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1246,6 +1319,34 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, top, 120)
 	assert.Contains(t, top, 23)
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "!John"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	paths = []string{stats[0].Path, stats[1].Path}
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "John"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, stats[0].Path, "/")
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
+		From:      util.PastDay(1),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		Tags:      map[string]string{"author": "Alice"},
+	}, []string{"/", "/foo", "/bar"})
+	assert.NoError(t, err)
+	paths = []string{stats[0].Path, stats[1].Path}
+	assert.Contains(t, paths, "/foo")
+	assert.Contains(t, paths, "/bar")
+	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
 		From:     util.PastDay(1),
 		To:       util.Today(),
 		ExitPath: []string{"/", "/bar"},
@@ -1277,15 +1378,15 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 1, SessionID: 2, Time: util.Today(), Path: "/foo"},
-		{VisitorID: 2, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/foo"},
-		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, SessionID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 2, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now()},
@@ -1296,7 +1397,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{Sign: 1, VisitorID: 3, SessionID: 1, Time: util.Today(), Start: time.Now()},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo"},
+		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1329,6 +1430,13 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.Equal(t, 1, total[0].Views)
 	assert.Equal(t, 1, total[0].Visitors)
 	assert.Equal(t, 1, total[0].Sessions)
+	total, err = analyzer.Pages.totalVisitorsSessions(&Filter{Tags: map[string]string{"author": "Alice"}}, []string{"/"})
+	assert.NoError(t, err)
+	assert.Len(t, total, 1)
+	assert.Equal(t, "/", total[0].Path)
+	assert.Equal(t, 3, total[0].Views)
+	assert.Equal(t, 3, total[0].Visitors)
+	assert.Equal(t, 3, total[0].Sessions)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter(""), []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.totalVisitorsSessions(getMaxFilter("event"), []string{"/", "/foo", "/bar"})

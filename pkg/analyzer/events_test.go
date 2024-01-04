@@ -321,11 +321,11 @@ func TestAnalyzer_EventList(t *testing.T) {
 func TestAnalyzer_EventFilter(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
-		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
-		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
-		{VisitorID: 3, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	saveSessions(t, [][]model.Session{
 		{
@@ -337,8 +337,8 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, Time: util.Today(), Name: "event1", MetaKeys: []string{"k0", "k1"}, MetaValues: []string{"v0", "v1"}},
-		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3"}, MetaValues: []string{"v2", "v3"}},
+		{VisitorID: 1, Time: util.Today(), Name: "event1", MetaKeys: []string{"k0", "k1", "author"}, MetaValues: []string{"v0", "v1", "John"}},
+		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3", "author"}, MetaValues: []string{"v2", "v3", "Alice"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -350,6 +350,19 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "event2", list[0].Name)
+	list, err = analyzer.Events.Events(&Filter{
+		EventName: []string{"event1"},
+		Tags:      map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "event1", list[0].Name)
+	list, err = analyzer.Events.Events(&Filter{
+		EventName: []string{"event1"},
+		Tags:      map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, list)
 
 	breakdown, err := analyzer.Events.Breakdown(&Filter{EventName: []string{"event1"}, EventMetaKey: []string{"k0"}})
 	assert.NoError(t, err)
@@ -359,6 +372,21 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, breakdown, 1)
 	assert.Equal(t, "event2", breakdown[0].Name)
+	breakdown, err = analyzer.Events.Breakdown(&Filter{
+		EventName:    []string{"!event1"},
+		EventMetaKey: []string{"k2"},
+		Tags:         map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, breakdown, 1)
+	assert.Equal(t, "event2", breakdown[0].Name)
+	breakdown, err = analyzer.Events.Breakdown(&Filter{
+		EventName:    []string{"!event1"},
+		EventMetaKey: []string{"k2"},
+		Tags:         map[string]string{"author": "!Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, breakdown)
 
 	eventList, err := analyzer.Events.List(&Filter{EventName: []string{"event1"}})
 	assert.NoError(t, err)
@@ -373,4 +401,20 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	assert.Len(t, eventList, 1)
 	assert.Equal(t, "event2", eventList[0].Name)
 	assert.Equal(t, "v2", eventList[0].Meta["k2"])
+	eventList, err = analyzer.Events.List(&Filter{
+		EventName: []string{"event2"},
+		EventMeta: map[string]string{"k2": "v2"},
+		Tags:      map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, eventList, 1)
+	assert.Equal(t, "event2", eventList[0].Name)
+	assert.Equal(t, "v2", eventList[0].Meta["k2"])
+	eventList, err = analyzer.Events.List(&Filter{
+		EventName: []string{"event2"},
+		EventMeta: map[string]string{"k2": "v2"},
+		Tags:      map[string]string{"author": "!Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, eventList)
 }

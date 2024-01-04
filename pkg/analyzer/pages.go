@@ -316,6 +316,7 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	filter.EntryPath = nil
 	filter.ExitPath = nil
 	filter.AnyPath = paths
+	filter.Tags = nil
 	filter.Search = nil
 	filter.IncludeTitle = false
 	filter.Sort = nil
