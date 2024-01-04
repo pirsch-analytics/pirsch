@@ -377,7 +377,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 				SELECT v.session_id sid, %s
 				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
-	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		sessionsQuery := queryBuilder{
 			filter: filter,
 			from:   sessions,

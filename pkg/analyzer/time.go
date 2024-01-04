@@ -108,7 +108,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 				SELECT session_id sid, toDate(time, '%s') "day", "time", %s
 				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filterFields, filter.Timezone.String(), strings.Join(fields, ",")))
 
-	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,

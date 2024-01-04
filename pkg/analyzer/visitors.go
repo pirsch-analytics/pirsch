@@ -300,7 +300,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 	var currentTimeSpent int
 
-	if len(filter.EventName) != 0 {
+	if len(filter.EventName) > 0 {
 		currentTimeSpent, err = visitors.totalEventDuration(filter)
 	} else if len(filter.Path) == 0 {
 		currentTimeSpent, err = visitors.totalSessionDuration(filter)
@@ -322,7 +322,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 
 	var previousTimeSpent int
 
-	if len(filter.EventName) != 0 {
+	if len(filter.EventName) > 0 {
 		previousTimeSpent, err = visitors.totalEventDuration(filter)
 	} else if len(filter.Path) == 0 {
 		previousTimeSpent, err = visitors.totalSessionDuration(filter)
@@ -366,7 +366,7 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		FieldReferrerName,
 	}
 
-	if len(filter.Referrer) != 0 || len(filter.ReferrerName) != 0 {
+	if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 {
 		fields = append(fields, FieldReferrer)
 		groupBy = append(groupBy, FieldReferrer)
 		orderBy = append(orderBy, FieldReferrer)
@@ -420,7 +420,7 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 			FROM session t `)
 
 	// TODO tags?
-	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 {
 		q.from = pageViews
 		whereTime := q.whereTime()
 		q.whereFields()
@@ -494,7 +494,7 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 				%s
 				FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
 
-	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		q.from = sessions
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,

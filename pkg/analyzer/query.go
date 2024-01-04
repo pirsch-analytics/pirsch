@@ -70,7 +70,7 @@ func (query *queryBuilder) getFields() []string {
 	} else {
 		query.appendField(&fields, FieldPath.Name, query.filter.Path)
 
-		if len(query.filter.Path) == 0 && (len(query.filter.PathPattern) != 0 || len(query.filter.AnyPath) != 0) {
+		if len(query.filter.Path) == 0 && (len(query.filter.PathPattern) > 0 || len(query.filter.AnyPath) > 0) {
 			fields = append(fields, FieldPath.Name)
 		}
 	}
@@ -126,7 +126,7 @@ func (query *queryBuilder) getFields() []string {
 }
 
 func (query *queryBuilder) appendField(fields *[]string, field string, value []string) {
-	if len(value) != 0 {
+	if len(value) > 0 {
 		*fields = append(*fields, field)
 	}
 }
@@ -392,7 +392,7 @@ func (query *queryBuilder) whereFields() {
 }
 
 func (query *queryBuilder) whereField(field string, value []string) {
-	if len(value) != 0 {
+	if len(value) > 0 {
 		var group where
 		eqContainsArgs := make([]any, 0, len(value))
 		notEqArgs := make([]any, 0, len(value))
@@ -472,7 +472,7 @@ func (query *queryBuilder) whereFieldSearch(field, value string) {
 }
 
 func (query *queryBuilder) whereFieldUInt16(field string, value []string) {
-	if len(value) != 0 {
+	if len(value) > 0 {
 		var group where
 		eqContainsArgs := make([]any, 0, len(value))
 		notEqArgs := make([]any, 0, len(value))
@@ -518,7 +518,7 @@ func (query *queryBuilder) whereFieldUInt16(field string, value []string) {
 }
 
 func (query *queryBuilder) whereFieldTag() {
-	if len(query.filter.Tags) != 0 {
+	if len(query.filter.Tags) > 0 {
 		values, keys := "tag_values", "tag_keys"
 
 		if query.from == events {
@@ -548,7 +548,7 @@ func (query *queryBuilder) whereFieldTag() {
 }
 
 func (query *queryBuilder) whereFieldMeta() {
-	if len(query.filter.EventMeta) != 0 {
+	if len(query.filter.EventMeta) > 0 {
 		var group where
 
 		for k, v := range query.filter.EventMeta {
@@ -596,7 +596,7 @@ func (query *queryBuilder) whereFieldPlatform() {
 }
 
 func (query *queryBuilder) whereFieldPathPattern() {
-	if len(query.filter.PathPattern) != 0 {
+	if len(query.filter.PathPattern) > 0 {
 		var group where
 
 		for _, pattern := range query.filter.PathPattern {
@@ -614,7 +614,7 @@ func (query *queryBuilder) whereFieldPathPattern() {
 }
 
 func (query *queryBuilder) whereFieldPathIn() {
-	if len(query.filter.AnyPath) != 0 {
+	if len(query.filter.AnyPath) > 0 {
 		for _, path := range query.filter.AnyPath {
 			query.args = append(query.args, path)
 		}
