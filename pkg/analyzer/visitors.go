@@ -419,8 +419,7 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 			SELECT sum(duration_seconds*sign) duration_seconds
 			FROM session t `)
 
-	// TODO tags?
-	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tags) > 0 {
 		q.from = pageViews
 		whereTime := q.whereTime()
 		q.whereFields()
