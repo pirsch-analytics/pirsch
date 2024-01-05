@@ -62,6 +62,10 @@ func TestAnalyzer_NoData(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Time.AvgTimeOnPage(nil)
 	assert.NoError(t, err)
+	_, err = analyzer.Tags.Keys(nil)
+	assert.NoError(t, err)
+	_, err = analyzer.Tags.Breakdown(nil)
+	assert.NoError(t, err)
 }
 
 func getMaxFilter(eventName string) *Filter {

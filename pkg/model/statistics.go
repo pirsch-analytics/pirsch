@@ -293,3 +293,10 @@ type AvgTimeSpentStats struct {
 	Path                    string
 	AverageTimeSpentSeconds int `db:"average_time_spent_seconds"`
 }
+
+// TagStats is the result type for tags.
+type TagStats struct {
+	Key      string `json:"key"`
+	Value    string `json:"value"`
+	Visitors int    `json:"visitors"`
+}

@@ -30,10 +30,10 @@ type Store interface {
 	// Count returns the number of results for given query.
 	Count(context.Context, string, ...any) (int, error)
 
-	// SelectActiveVisitorStats selects ActiveVisitorStats.
+	// SelectActiveVisitorStats selects model.ActiveVisitorStats.
 	SelectActiveVisitorStats(context.Context, bool, string, ...any) ([]model.ActiveVisitorStats, error)
 
-	// GetTotalVisitorStats returns the TotalVisitorStats.
+	// GetTotalVisitorStats returns the model.TotalVisitorStats.
 	GetTotalVisitorStats(context.Context, string, bool, bool, ...any) (*model.TotalVisitorStats, error)
 
 	// GetTotalUniqueVisitorStats returns the total number of unique visitors.
@@ -45,92 +45,95 @@ type Store interface {
 	// GetTotalSessionStats returns the total number of sessions.
 	GetTotalSessionStats(context.Context, string, ...any) (int, error)
 
-	// GetTotalVisitorsPageViewsStats returns the TotalVisitorsPageViewsStats.
+	// GetTotalVisitorsPageViewsStats returns the model.TotalVisitorsPageViewsStats.
 	GetTotalVisitorsPageViewsStats(context.Context, string, ...any) (*model.TotalVisitorsPageViewsStats, error)
 
-	// SelectVisitorStats selects VisitorStats.
+	// SelectVisitorStats selects model.VisitorStats.
 	SelectVisitorStats(context.Context, pkg.Period, string, bool, bool, ...any) ([]model.VisitorStats, error)
 
-	// SelectTimeSpentStats selects TimeSpentStats.
+	// SelectTimeSpentStats selects model.TimeSpentStats.
 	SelectTimeSpentStats(context.Context, pkg.Period, string, ...any) ([]model.TimeSpentStats, error)
 
-	// GetGrowthStats returns the GrowthStats.
+	// GetGrowthStats returns the model.GrowthStats.
 	GetGrowthStats(context.Context, string, bool, bool, ...any) (*model.GrowthStats, error)
 
-	// SelectVisitorHourStats selects VisitorHourStats.
+	// SelectVisitorHourStats selects model.VisitorHourStats.
 	SelectVisitorHourStats(context.Context, string, bool, bool, ...any) ([]model.VisitorHourStats, error)
 
-	// SelectPageStats selects PageStats.
+	// SelectPageStats selects model.PageStats.
 	SelectPageStats(context.Context, bool, bool, string, ...any) ([]model.PageStats, error)
 
-	// SelectAvgTimeSpentStats selects AvgTimeSpentStats.
+	// SelectAvgTimeSpentStats selects model.AvgTimeSpentStats.
 	SelectAvgTimeSpentStats(context.Context, string, ...any) ([]model.AvgTimeSpentStats, error)
 
-	// SelectEntryStats selects EntryStats.
+	// SelectEntryStats selects model.EntryStats.
 	SelectEntryStats(context.Context, bool, string, ...any) ([]model.EntryStats, error)
 
-	// SelectExitStats selects ExitStats.
+	// SelectExitStats selects model.ExitStats.
 	SelectExitStats(context.Context, bool, string, ...any) ([]model.ExitStats, error)
 
 	// SelectTotalSessions returns the total number of unique sessions.
 	SelectTotalSessions(context.Context, string, ...any) (int, error)
 
-	// SelectTotalVisitorSessionStats selects TotalVisitorSessionStats.
+	// SelectTotalVisitorSessionStats selects model.TotalVisitorSessionStats.
 	SelectTotalVisitorSessionStats(context.Context, string, ...any) ([]model.TotalVisitorSessionStats, error)
 
-	// GetConversionsStats returns the ConversionsStats.
+	// GetConversionsStats returns the model.ConversionsStats.
 	GetConversionsStats(context.Context, string, bool, ...any) (*model.ConversionsStats, error)
 
-	// SelectEventStats selects EventStats.
+	// SelectEventStats selects model.EventStats.
 	SelectEventStats(context.Context, bool, string, ...any) ([]model.EventStats, error)
 
-	// SelectEventListStats selects EventListStats.
+	// SelectEventListStats selects model.EventListStats.
 	SelectEventListStats(context.Context, string, ...any) ([]model.EventListStats, error)
 
-	// SelectReferrerStats selects ReferrerStats.
+	// SelectReferrerStats selects model.ReferrerStats.
 	SelectReferrerStats(context.Context, string, ...any) ([]model.ReferrerStats, error)
 
-	// GetPlatformStats returns the PlatformStats.
+	// GetPlatformStats returns the model.PlatformStats.
 	GetPlatformStats(context.Context, string, ...any) (*model.PlatformStats, error)
 
-	// SelectLanguageStats selects LanguageStats.
+	// SelectLanguageStats selects model.LanguageStats.
 	SelectLanguageStats(context.Context, string, ...any) ([]model.LanguageStats, error)
 
-	// SelectCountryStats selects CountryStats.
+	// SelectCountryStats selects model.CountryStats.
 	SelectCountryStats(context.Context, string, ...any) ([]model.CountryStats, error)
 
-	// SelectCityStats selects CityStats.
+	// SelectCityStats selects model.CityStats.
 	SelectCityStats(context.Context, string, ...any) ([]model.CityStats, error)
 
-	// SelectBrowserStats selects BrowserStats.
+	// SelectBrowserStats selects model.BrowserStats.
 	SelectBrowserStats(context.Context, string, ...any) ([]model.BrowserStats, error)
 
-	// SelectOSStats selects OSStats.
+	// SelectOSStats selects model.OSStats.
 	SelectOSStats(context.Context, string, ...any) ([]model.OSStats, error)
 
-	// SelectScreenClassStats selects ScreenClassStats.
+	// SelectScreenClassStats selects model.ScreenClassStats.
 	SelectScreenClassStats(context.Context, string, ...any) ([]model.ScreenClassStats, error)
 
-	// SelectUTMSourceStats selects UTMSourceStats.
+	// SelectUTMSourceStats selects model.UTMSourceStats.
 	SelectUTMSourceStats(context.Context, string, ...any) ([]model.UTMSourceStats, error)
 
-	// SelectUTMMediumStats selects UTMMediumStats.
+	// SelectUTMMediumStats selects model.UTMMediumStats.
 	SelectUTMMediumStats(context.Context, string, ...any) ([]model.UTMMediumStats, error)
 
-	// SelectUTMCampaignStats selects UTMCampaignStats.
+	// SelectUTMCampaignStats selects model.UTMCampaignStats.
 	SelectUTMCampaignStats(context.Context, string, ...any) ([]model.UTMCampaignStats, error)
 
-	// SelectUTMContentStats selects UTMContentStats.
+	// SelectUTMContentStats selects model.UTMContentStats.
 	SelectUTMContentStats(context.Context, string, ...any) ([]model.UTMContentStats, error)
 
-	// SelectUTMTermStats selects UTMTermStats.
+	// SelectUTMTermStats selects model.UTMTermStats.
 	SelectUTMTermStats(context.Context, string, ...any) ([]model.UTMTermStats, error)
 
-	// SelectOSVersionStats selects OSVersionStats.
+	// SelectOSVersionStats selects model.OSVersionStats.
 	SelectOSVersionStats(context.Context, string, ...any) ([]model.OSVersionStats, error)
 
-	// SelectBrowserVersionStats selects BrowserVersionStats.
+	// SelectBrowserVersionStats selects model.BrowserVersionStats.
 	SelectBrowserVersionStats(context.Context, string, ...any) ([]model.BrowserVersionStats, error)
+
+	// SelectTagStats selects model.TagStats.
+	SelectTagStats(context.Context, bool, string, ...any) ([]model.TagStats, error)
 
 	// SelectOptions selects a list of filter options.
 	SelectOptions(context.Context, string, ...any) ([]string, error)

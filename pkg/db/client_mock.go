@@ -337,3 +337,8 @@ func (client *ClientMock) SelectBrowserVersionStats(context.Context, string, ...
 func (client *ClientMock) SelectOptions(context.Context, string, ...any) ([]string, error) {
 	return nil, nil
 }
+
+// SelectTagStats implements the Store interface.
+func (client *ClientMock) SelectTagStats(context.Context, bool, string, ...any) ([]model.TagStats, error) {
+	return nil, nil
+}

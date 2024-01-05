@@ -16,6 +16,7 @@ type Analyzer struct {
 	UTM          UTM
 	Events       Events
 	Time         Time
+	Tags         Tags
 	Options      FilterOptions
 }
 
@@ -47,6 +48,10 @@ func NewAnalyzer(store db.Store) *Analyzer {
 		store:    store,
 	}
 	analyzer.Time = Time{
+		analyzer: analyzer,
+		store:    store,
+	}
+	analyzer.Tags = Tags{
 		analyzer: analyzer,
 		store:    store,
 	}

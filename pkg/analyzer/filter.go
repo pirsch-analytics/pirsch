@@ -107,7 +107,11 @@ type Filter struct {
 	// Tags filters for tag key-value pairs.
 	Tags map[string]string
 
-	// EventName filters for an event by its name.
+	// TODO add to query
+	// Tag filters for tags by their keys.
+	Tag []string
+
+	// EventName filters for events by their name.
 	EventName []string
 
 	// EventMetaKey filters for an event meta key.
@@ -255,6 +259,7 @@ func (filter *Filter) validate() {
 	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
+	filter.Tag = filter.removeDuplicates(filter.Tag)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
 	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
 }
@@ -344,8 +349,10 @@ func (filter *Filter) table(fields []Field) table {
 		if !eventFilter &&
 			(len(filter.Path) > 0 ||
 				len(filter.PathPattern) > 0 ||
+				len(filter.Tags) > 0 ||
 				filter.fieldsContain(fields, FieldPath) ||
 				filter.searchContains(FieldPath) ||
+				filter.fieldsContain(fields, FieldTagKey) ||
 				filter.fieldsContain(fields, FieldHour)) {
 			return pageViews
 		}

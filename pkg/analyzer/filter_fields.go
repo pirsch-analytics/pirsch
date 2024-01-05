@@ -332,6 +332,20 @@ var (
 		Name:           "tag_values",
 	}
 
+	// FieldTagKey is a query result column.
+	FieldTagKey = Field{
+		querySessions:  "arrayJoin(tag_keys)",
+		queryPageViews: "arrayJoin(tag_keys)",
+		Name:           "key",
+	}
+
+	// FieldTagValue is a query result column.
+	FieldTagValue = Field{
+		querySessions:  "arrayJoin(tag_values)",
+		queryPageViews: "arrayJoin(tag_values)",
+		Name:           "value",
+	}
+
 	// FieldTitle is a query result column.
 	FieldTitle = Field{
 		querySessions:  "title",

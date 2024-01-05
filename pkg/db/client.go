@@ -1769,6 +1769,36 @@ func (client *Client) SelectOptions(ctx context.Context, query string, args ...a
 	return results, nil
 }
 
+// SelectTagStats implements the Store interface.
+func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query string, args ...any) ([]model.TagStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.TagStats
+
+	for rows.Next() {
+		var result model.TagStats
+
+		if breakdown {
+			if err := rows.Scan(&result.Key, &result.Visitors, &result.Value); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := rows.Scan(&result.Key, &result.Visitors); err != nil {
+				return nil, err
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1
