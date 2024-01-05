@@ -53,6 +53,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 
 	query.WriteString(q.whereTime())
+	q.from = pageViews
 	q.whereFields()
 	where := q.q.String()
 
@@ -88,7 +89,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 
 	q := queryBuilder{
 		filter: filter,
-		from:   table,
+		from:   pageViews,
 		search: filter.Search,
 	}
 	var query strings.Builder
@@ -151,6 +152,8 @@ func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builde
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
+		default:
+			panic("unknown case for filter period")
 		}
 	}
 }
@@ -164,6 +167,8 @@ func (t *Time) groupByPeriod(period pkg.Period, query *strings.Builder) {
 			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
 		case pkg.PeriodYear:
 			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
+		default:
+			panic("unknown case for filter period")
 		}
 	}
 }
