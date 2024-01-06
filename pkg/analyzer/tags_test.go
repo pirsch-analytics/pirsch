@@ -41,6 +41,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 3, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 5, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
+	assert.InDelta(t, 1, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6666, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 1, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
@@ -52,6 +58,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From:     util.Today(),
 		To:       util.Today(),
@@ -63,6 +75,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 1, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.3333, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.2, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
@@ -74,6 +92,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 3, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
@@ -85,6 +109,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
@@ -96,6 +126,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
@@ -107,6 +143,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 3, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 5, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
+	assert.InDelta(t, 1, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6666, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 1, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From:      util.Today(),
 		To:        util.Today(),
@@ -118,6 +160,9 @@ func TestTags_Tags(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "author", stats[0].Key)
 	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.InDelta(t, 0.3333, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From:      util.Today(),
 		To:        util.Today(),
@@ -139,6 +184,12 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 1, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[0].Views)
+	assert.Equal(t, 1, stats[1].Views)
+	assert.InDelta(t, 0.3333, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.2, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
 }
 
 func TestTags_Breakdown(t *testing.T) {
@@ -179,6 +230,12 @@ func TestTags_Breakdown(t *testing.T) {
 	assert.Equal(t, "John", stats[1].Value)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 3, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6666, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.6, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Breakdown(&Filter{
 		From:      util.Today(),
 		To:        util.Today(),
@@ -191,6 +248,12 @@ func TestTags_Breakdown(t *testing.T) {
 	assert.Equal(t, "John", stats[1].Value)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
+	assert.InDelta(t, 0.6666, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4, stats[1].RelativeViews, 0.001)
 	stats, err = analyzer.Tags.Breakdown(&Filter{
 		From:      util.Today(),
 		To:        util.Today(),
@@ -204,4 +267,10 @@ func TestTags_Breakdown(t *testing.T) {
 	assert.Equal(t, "John", stats[1].Value)
 	assert.Equal(t, 1, stats[0].Visitors)
 	assert.Equal(t, 1, stats[1].Visitors)
+	assert.Equal(t, 1, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
+	assert.InDelta(t, 0.3333, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.2, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4, stats[1].RelativeViews, 0.001)
 }

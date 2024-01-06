@@ -17,6 +17,9 @@ func (events *Tags) Keys(filter *Filter) ([]model.TagStats, error) {
 	q, args := filter.buildQuery([]Field{
 		FieldTagKey,
 		FieldVisitors,
+		FieldViews,
+		FieldRelativeVisitors,
+		FieldRelativeViews,
 	}, []Field{
 		FieldTagKey,
 	}, []Field{
@@ -42,8 +45,11 @@ func (events *Tags) Breakdown(filter *Filter) ([]model.TagStats, error) {
 	}
 
 	q, args := filter.buildQuery([]Field{
-		FieldVisitors,
 		FieldTagValue,
+		FieldVisitors,
+		FieldViews,
+		FieldRelativeVisitors,
+		FieldRelativeViews,
 	}, []Field{
 		FieldTagValue,
 	}, []Field{

@@ -1784,11 +1784,19 @@ func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query 
 		var result model.TagStats
 
 		if breakdown {
-			if err := rows.Scan(&result.Visitors, &result.Value); err != nil {
+			if err := rows.Scan(&result.Value,
+				&result.Visitors,
+				&result.Views,
+				&result.RelativeVisitors,
+				&result.RelativeViews); err != nil {
 				return nil, err
 			}
 		} else {
-			if err := rows.Scan(&result.Key, &result.Visitors); err != nil {
+			if err := rows.Scan(&result.Key,
+				&result.Visitors,
+				&result.Views,
+				&result.RelativeVisitors,
+				&result.RelativeViews); err != nil {
 				return nil, err
 			}
 		}

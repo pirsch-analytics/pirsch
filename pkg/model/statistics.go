@@ -296,7 +296,10 @@ type AvgTimeSpentStats struct {
 
 // TagStats is the result type for tags.
 type TagStats struct {
-	Key      string `json:"key"`
-	Value    string `json:"value"`
-	Visitors int    `json:"visitors"`
+	Key              string  `json:"key"`
+	Value            string  `json:"value"`
+	Visitors         int     `json:"visitors"`
+	Views            int     `json:"views"`
+	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
+	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
 }
