@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func TestAnalyzer_PagesAndAvgTimeOnPage(t *testing.T) {
+func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home"},
@@ -244,7 +244,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
-func TestAnalyzer_PagesEvent(t *testing.T) {
+func TestAnalyzer_ByPathEvent(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
@@ -313,7 +313,7 @@ func TestAnalyzer_PagesEvent(t *testing.T) {
 	assert.Equal(t, 2, exits[0].Visitors)
 }
 
-func TestAnalyzer_PagesEventPath(t *testing.T) {
+func TestAnalyzer_ByPathEventPath(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/", Title: "Home"},
@@ -419,7 +419,7 @@ func TestAnalyzer_PagesEventPath(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_PagesTags(t *testing.T) {
+func TestAnalyzer_ByPathTags(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/", Title: "Home", TagKeys: []string{"author", "foo"}, TagValues: []string{"John", "bar"}},
@@ -430,8 +430,6 @@ func TestAnalyzer_PagesTags(t *testing.T) {
 	}))
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
-			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", EntryTitle: "Home", ExitTitle: "Foo", IsBounce: false, PageViews: 2},
 			{Sign: 1, VisitorID: 1, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", EntryTitle: "Home", ExitTitle: "Bar", IsBounce: false, PageViews: 3},
 			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo", IsBounce: true, PageViews: 1},
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
@@ -457,7 +455,6 @@ func TestAnalyzer_PagesTags(t *testing.T) {
 	assert.Equal(t, visitors[1].Path, "/")
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
-
 	visitors, err = analyzer.Pages.ByPath(&Filter{
 		Tags:         map[string]string{"foo": "bar"},
 		IncludeTitle: true,
@@ -482,6 +479,31 @@ func TestAnalyzer_PagesTags(t *testing.T) {
 	assert.Equal(t, visitors[1].Title, "Home")
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		EntryPath:    []string{"/"},
+		ExitPath:     []string{"/bar"},
+		Tags:         map[string]string{"foo": "bar"},
+		IncludeTitle: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, visitors[0].Path, "/")
+	assert.Equal(t, visitors[1].Path, "/bar")
+	assert.Equal(t, visitors[0].Title, "Home")
+	assert.Equal(t, visitors[1].Title, "Bar")
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	visitors, err = analyzer.Pages.ByPath(&Filter{
+		EntryPath:    []string{"/"},
+		ExitPath:     []string{"/bar"},
+		Tags:         map[string]string{"title": "Foo"},
+		IncludeTitle: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, visitors[0].Path, "/foo")
+	assert.Equal(t, visitors[0].Title, "Foo")
+	assert.Equal(t, 1, visitors[0].Visitors)
 }
 
 func TestAnalyzer_PathPattern(t *testing.T) {
