@@ -399,6 +399,10 @@ func (query *queryBuilder) whereFields() {
 
 func (query *queryBuilder) whereField(field string, value []string) {
 	if len(value) > 0 {
+		if query.from == events && field == FieldTagKeysRaw.Name {
+			field = FieldEventMetaKeysRaw.Name
+		}
+
 		var group where
 		eqContainsArgs := make([]any, 0, len(value))
 		notEqArgs := make([]any, 0, len(value))

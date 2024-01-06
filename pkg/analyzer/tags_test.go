@@ -28,7 +28,10 @@ func TestTags_Tags(t *testing.T) {
 		{VisitorID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author", "type"}, TagValues: []string{"John", "blog_post"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author", "type"}, TagValues: []string{"Alice", "blog_post"}},
 	}))
-	// TODO test with events
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
+		{VisitorID: 3, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Keys(nil)
@@ -104,6 +107,38 @@ func TestTags_Tags(t *testing.T) {
 	assert.Equal(t, "type", stats[1].Key)
 	assert.Equal(t, 3, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"key": "value"},
+		Tags:      map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "author", stats[0].Key)
+	assert.Equal(t, 1, stats[0].Visitors)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"key": "value"},
+		Tags:      map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		Tags:      map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "author", stats[0].Key)
+	assert.Equal(t, "type", stats[1].Key)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
 }
 
 func TestTags_Breakdown(t *testing.T) {
@@ -124,7 +159,10 @@ func TestTags_Breakdown(t *testing.T) {
 		{VisitorID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author", "type"}, TagValues: []string{"John", "blog_post"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author", "type"}, TagValues: []string{"Alice", "blog_post"}},
 	}))
-	// TODO test with events
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
+		{VisitorID: 3, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Breakdown(nil)
@@ -141,4 +179,29 @@ func TestTags_Breakdown(t *testing.T) {
 	assert.Equal(t, "John", stats[1].Value)
 	assert.Equal(t, 2, stats[0].Visitors)
 	assert.Equal(t, 2, stats[1].Visitors)
+	stats, err = analyzer.Tags.Breakdown(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		Tag:       []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "Alice", stats[0].Value)
+	assert.Equal(t, "John", stats[1].Value)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
+	stats, err = analyzer.Tags.Breakdown(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{"key": "value"},
+		Tag:       []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "Alice", stats[0].Value)
+	assert.Equal(t, "John", stats[1].Value)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 1, stats[1].Visitors)
 }
