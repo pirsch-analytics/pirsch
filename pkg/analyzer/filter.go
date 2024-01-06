@@ -107,7 +107,7 @@ type Filter struct {
 	// Tags filters for tag key-value pairs.
 	Tags map[string]string
 
-	// TODO add to query
+	// TODO joins, getFields?
 	// Tag filters for tags by their keys.
 	Tag []string
 
@@ -350,9 +350,11 @@ func (filter *Filter) table(fields []Field) table {
 			(len(filter.Path) > 0 ||
 				len(filter.PathPattern) > 0 ||
 				len(filter.Tags) > 0 ||
+				len(filter.Tag) > 0 ||
 				filter.fieldsContain(fields, FieldPath) ||
 				filter.searchContains(FieldPath) ||
 				filter.fieldsContain(fields, FieldTagKey) ||
+				filter.fieldsContain(fields, FieldTagValue) ||
 				filter.fieldsContain(fields, FieldHour)) {
 			return pageViews
 		}

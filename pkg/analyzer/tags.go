@@ -42,15 +42,12 @@ func (events *Tags) Breakdown(filter *Filter) ([]model.TagStats, error) {
 	}
 
 	q, args := filter.buildQuery([]Field{
-		FieldTagKey,
 		FieldVisitors,
 		FieldTagValue,
 	}, []Field{
-		FieldTagKey,
 		FieldTagValue,
 	}, []Field{
 		FieldVisitors,
-		FieldTagKey,
 		FieldTagValue,
 	})
 	stats, err := events.store.SelectTagStats(filter.Ctx, true, q, args...)

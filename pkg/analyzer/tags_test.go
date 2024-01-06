@@ -28,6 +28,7 @@ func TestTags_Tags(t *testing.T) {
 		{VisitorID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author", "type"}, TagValues: []string{"John", "blog_post"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author", "type"}, TagValues: []string{"Alice", "blog_post"}},
 	}))
+	// TODO test with events
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Keys(nil)
@@ -123,6 +124,7 @@ func TestTags_Breakdown(t *testing.T) {
 		{VisitorID: 2, Time: util.Today(), Path: "/foo", TagKeys: []string{"author", "type"}, TagValues: []string{"John", "blog_post"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author", "type"}, TagValues: []string{"Alice", "blog_post"}},
 	}))
+	// TODO test with events
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Breakdown(nil)
@@ -135,6 +137,8 @@ func TestTags_Breakdown(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 2)
-	assert.Equal(t, "author", stats[0].Key)
-	assert.Equal(t, "author", stats[1].Key)
+	assert.Equal(t, "Alice", stats[0].Value)
+	assert.Equal(t, "John", stats[1].Value)
+	assert.Equal(t, 2, stats[0].Visitors)
+	assert.Equal(t, 2, stats[1].Visitors)
 }

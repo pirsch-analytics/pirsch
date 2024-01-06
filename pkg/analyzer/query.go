@@ -172,6 +172,11 @@ func (query *queryBuilder) selectFields() bool {
 					query.args = append(query.args, query.filter.EventMetaKey[0])
 					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 				}
+			} else if query.fields[i] == FieldTagValue {
+				if len(query.filter.Tag) > 0 {
+					query.args = append(query.args, query.filter.Tag[0])
+					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
+				}
 			} else if query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal {
 				query.args = append(query.args, query.filter.CustomMetricKey)
 				fieldCopy := query.fields[i]
@@ -336,6 +341,7 @@ func (query *queryBuilder) whereFields() {
 		query.whereField(FieldExitPath.Name, query.filter.ExitPath)
 	} else {
 		query.whereField(FieldPath.Name, query.filter.Path)
+		query.whereField(FieldTagKeysRaw.Name, query.filter.Tag)
 		query.whereFieldPathPattern()
 		query.whereFieldPathIn()
 		query.whereFieldTag()
@@ -344,7 +350,7 @@ func (query *queryBuilder) whereFields() {
 	if query.from == events || query.includeEventFilter {
 		query.whereField(FieldPath.Name, query.filter.Path)
 		query.whereField(FieldEventName.Name, query.filter.EventName)
-		query.whereField("event_meta_keys", query.filter.EventMetaKey)
+		query.whereField(FieldEventMetaKeysRaw.Name, query.filter.EventMetaKey)
 		query.whereFieldMeta()
 	}
 
@@ -401,7 +407,7 @@ func (query *queryBuilder) whereField(field string, value []string) {
 			comparator := "%s = ? "
 			not := strings.HasPrefix(v, "!")
 
-			if field == "event_meta_keys" {
+			if field == FieldEventMetaKeysRaw.Name || field == FieldTagKeysRaw.Name {
 				if not {
 					v = v[1:]
 					comparator = "!has(%s, ?) "
@@ -519,10 +525,10 @@ func (query *queryBuilder) whereFieldUInt16(field string, value []string) {
 
 func (query *queryBuilder) whereFieldTag() {
 	if len(query.filter.Tags) > 0 {
-		values, keys := "tag_values", "tag_keys"
+		values, keys := FieldTagValuesRaw.Name, FieldTagKeysRaw.Name
 
 		if query.from == events {
-			values, keys = "event_meta_values", "event_meta_keys"
+			values, keys = FieldEventMetaValuesRaw.Name, FieldEventMetaKeysRaw.Name
 		}
 
 		var group where

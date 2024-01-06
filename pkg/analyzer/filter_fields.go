@@ -341,8 +341,8 @@ var (
 
 	// FieldTagValue is a query result column.
 	FieldTagValue = Field{
-		querySessions:  "arrayJoin(tag_values)",
-		queryPageViews: "arrayJoin(tag_values)",
+		querySessions:  "tag_values[indexOf(tag_keys, ?)]",
+		queryPageViews: "tag_values[indexOf(tag_keys, ?)]",
 		Name:           "value",
 	}
 
