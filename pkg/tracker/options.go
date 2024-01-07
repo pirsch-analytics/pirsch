@@ -10,14 +10,30 @@ import (
 
 // Options are optional parameters for page views and events.
 type Options struct {
-	URL          string
-	Hostname     string
-	Path         string
-	Title        string
-	Referrer     string
-	ScreenWidth  uint16
+	// URL is the full request URL.
+	URL string
+
+	// Hostname is used to check the Referrer. If it's the same as the hostname, it will be ignored.
+	Hostname string
+
+	// Path sets the path.
+	Path string
+
+	// Title sets the page title.
+	Title string
+
+	// Referrer overrides the referrer. If set to Hostname it will be ignored.
+	Referrer string
+
+	// ScreenWidth is the screen width which will be translated to a screen class.
+	ScreenWidth uint16
+
+	// ScreenHeight is the screen height which will be translated to a screen class.
 	ScreenHeight uint16
-	Time         time.Time
+
+	// Time overrides the time the page view should be recorded for.
+	// Usually this is set to the time the request arrives at the Tracker.
+	Time time.Time
 
 	// Tags are optional fields used to break down page views into segments.
 	Tags map[string]string
