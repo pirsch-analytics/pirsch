@@ -51,3 +51,24 @@ func BenchmarkUdger(b *testing.B) {
 		})
 	}
 }
+
+func TestUdger_Ignore(t *testing.T) {
+	accessKey := os.Getenv("UDGER_ACCESS_KEY")
+	ips := []string{
+		"46.114...",
+	}
+
+	if accessKey != "" {
+		udger := NewUdger(accessKey, "tmp")
+		assert.NoError(t, udger.DownloadAndUpdate())
+		ignored := make([]string, 0)
+
+		for _, ip := range ips {
+			if udger.Ignore(ip) {
+				ignored = append(ignored, ip)
+			}
+		}
+
+		assert.Empty(t, ignored)
+	}
+}
