@@ -364,9 +364,6 @@ drip
 ${
 print
 ***
-1B
-1C
-1D
 !(()&&!|*|*|
 1IMornNI4O
 1KB80glvxO
@@ -986,7 +983,6 @@ github.com
 gomezagent
 gooblog
 googal
-google
 goose
 gozilla
 grammarly
