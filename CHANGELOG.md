@@ -9,6 +9,10 @@
 * fixed SQL injection attack vector
 * updated dependencies
 
+## 6.6.7
+
+* improved User-Agent filter
+
 ## 6.6.6
 
 * improved User-Agent filter

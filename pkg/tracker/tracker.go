@@ -22,6 +22,9 @@ import (
 )
 
 const (
+	minUserAgentLength = 16
+	maxUserAgentLength = 500
+
 	minChromeVersion  = 70 // late 2019
 	minFirefoxVersion = 68 // mid 2019
 	minSafariVersion  = 12 // late 2018
@@ -322,7 +325,7 @@ func (tracker *Tracker) ignore(r *http.Request) (model.UserAgent, string, bool) 
 	rawUserAgent := r.UserAgent()
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
 
-	if userAgent == "" || len(userAgent) <= 16 || len(userAgent) > 300 || util.ContainsNonASCIICharacters(userAgent) {
+	if userAgent == "" || len(userAgent) <= minUserAgentLength || len(userAgent) > maxUserAgentLength || util.ContainsNonASCIICharacters(userAgent) {
 		return model.UserAgent{}, "", true
 	}
 
