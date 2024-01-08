@@ -256,3 +256,21 @@ func TestGetAndroidApp(t *testing.T) {
 	assert.Empty(t, name)
 	assert.Empty(t, icon)
 }
+
+func TestIgnore(t *testing.T) {
+	referrer := []string{
+		"https://www.adsensecustomsearchads.com/",
+	}
+	ignored := make([]string, 0)
+
+	for _, ref := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.Header.Set("Referer", ref)
+
+		if Ignore(req) {
+			ignored = append(ignored, ref)
+		}
+	}
+
+	assert.Empty(t, ignored)
+}

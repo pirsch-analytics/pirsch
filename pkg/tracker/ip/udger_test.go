@@ -54,9 +54,7 @@ func BenchmarkUdger(b *testing.B) {
 
 func TestUdger_Ignore(t *testing.T) {
 	accessKey := os.Getenv("UDGER_ACCESS_KEY")
-	ips := []string{
-		"46.114...",
-	}
+	ips := []string{}
 
 	if accessKey != "" {
 		udger := NewUdger(accessKey, "tmp")
