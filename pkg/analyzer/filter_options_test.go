@@ -255,6 +255,37 @@ func TestFilterOptions_EventMetadataValues(t *testing.T) {
 	assert.Equal(t, "val3", options[1])
 }
 
+func TestFilterOptions_TagKeys(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Path: "/", TagKeys: []string{"key0", "key1"}, TagValues: []string{"value0", "value1"}},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo", TagKeys: []string{"key2", "key1"}, TagValues: []string{"value2", "value1"}},
+		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Path: "/bar", TagKeys: []string{"key0"}, TagValues: []string{"value1"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	options, err := analyzer.Options.TagKeys(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 0)
+	options, err = analyzer.Options.TagKeys(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "key0", options[0])
+	assert.Equal(t, "key1", options[1])
+	assert.Equal(t, "key2", options[2])
+	options, err = analyzer.Options.TagKeys(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, options, 1)
+	assert.Equal(t, "key0", options[0])
+}
+
 func TestFilterOptions_TagValues(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
@@ -268,15 +299,27 @@ func TestFilterOptions_TagValues(t *testing.T) {
 	options, err := analyzer.Options.TagValues(nil)
 	assert.NoError(t, err)
 	assert.Len(t, options, 0)
-	options, err = analyzer.Options.TagValues(&Filter{From: util.PastDay(4), To: util.Today()})
+	options, err = analyzer.Options.TagValues(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+	})
 	assert.NoError(t, err)
-	assert.Len(t, options, 3)
-	assert.Equal(t, "value0", options[0])
-	assert.Equal(t, "value1", options[1])
-	assert.Equal(t, "value2", options[2])
-	options, err = analyzer.Options.TagValues(&Filter{From: util.PastDay(3), To: util.Today()})
+	assert.Len(t, options, 0)
+	options, err = analyzer.Options.TagValues(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Tag:  []string{"key0"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, options, 2)
+	assert.Equal(t, "value0", options[0])
+	assert.Equal(t, "value1", options[1])
+	options, err = analyzer.Options.TagValues(&Filter{
+		From: util.PastDay(3),
+		To:   util.Today(),
+		Tag:  []string{"key0"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, options, 1)
 	assert.Equal(t, "value1", options[0])
-	assert.Equal(t, "value2", options[1])
 }
