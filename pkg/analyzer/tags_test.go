@@ -84,6 +84,30 @@ func TestTags_Tags(t *testing.T) {
 	stats, err = analyzer.Tags.Keys(&Filter{
 		From: util.Today(),
 		To:   util.Today(),
+		Tag:  []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 2)
+	assert.Equal(t, "author", stats[0].Key)
+	assert.Equal(t, "type", stats[1].Key)
+	assert.Equal(t, 3, stats[0].Visitors)
+	assert.Equal(t, 2, stats[1].Visitors)
+	assert.Equal(t, 5, stats[0].Views)
+	assert.Equal(t, 2, stats[1].Views)
+	assert.InDelta(t, 1, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6666, stats[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 1, stats[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4, stats[1].RelativeViews, 0.001)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From: util.Today(),
+		To:   util.Today(),
+		Tag:  []string{"!author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 0)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From: util.Today(),
+		To:   util.Today(),
 		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
