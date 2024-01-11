@@ -414,9 +414,9 @@ func (query *queryBuilder) whereField(field string, value []string) {
 			if field == FieldEventMetaKeysRaw.Name || field == FieldTagKeysRaw.Name {
 				if not {
 					v = v[1:]
-					comparator = "!has(%s, ?) "
+					comparator = "has(%s, ?) = 0 "
 				} else {
-					comparator = "has(%s, ?) "
+					comparator = "has(%s, ?) = 1 "
 				}
 			} else if not {
 				v = v[1:]
