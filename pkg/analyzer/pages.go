@@ -356,7 +356,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		search: filter.Search,
 	}
 	fields := q.getFields()
-	fields = append(fields, "duration_seconds", "time")
+	fields = append(fields, FieldEventDurationSeconds.Name, "time")
 	hasPath := false
 
 	for _, field := range fields {

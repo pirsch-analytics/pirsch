@@ -422,7 +422,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
-	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tags) > 0 || filter.searchContains(FieldPath) {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 || filter.searchContains(FieldPath) {
 		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
 
 		if len(filter.PathPattern) > 0 || len(filter.Path) > 0 ||

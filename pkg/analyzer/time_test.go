@@ -59,6 +59,13 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 	assert.Len(t, stats, 1)
 	assert.Equal(t, 18, stats[0].AverageTimeSpentSeconds) // all
 	stats, err = analyzer.Time.AvgSessionDuration(&Filter{
+		Tag: []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, 18, stats[0].AverageTimeSpentSeconds) // (28+5+35+2)/5
+	stats, err = analyzer.Time.AvgSessionDuration(&Filter{
+		Tag:  []string{"author"},
 		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
@@ -278,6 +285,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
 		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
 		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:  []string{"author"},
 		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
@@ -286,22 +294,22 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 0, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 8, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
-
 	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
 		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
 		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:  []string{"author"},
 		Tags: map[string]string{"author": "!John"},
 	})
 	assert.NoError(t, err)
 	assert.Len(t, byDay, 4)
 	assert.Equal(t, 0, byDay[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 5, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 6, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
-
 	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
 		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
 		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:  []string{"author"},
 		Tags: map[string]string{"author": "Alice"},
 	})
 	assert.NoError(t, err)
@@ -309,6 +317,28 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 0, byDay[0].AverageTimeSpentSeconds)
 	assert.Equal(t, 5, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 6, byDay[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
+		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
+		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:  []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 4)
+	assert.Equal(t, 8, byDay[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 5, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 7, byDay[2].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
+		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
+		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:  []string{"!author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 4)
+	assert.Equal(t, 0, byDay[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 0, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
 	_, err = analyzer.Time.AvgTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)

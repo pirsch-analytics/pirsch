@@ -35,11 +35,13 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
 
-	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tags) > 0 {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 {
 		tagField := ""
 
 		if len(filter.Tags) > 0 {
 			tagField = fmt.Sprintf(", %s, %s", FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+		} else if len(filter.Tag) > 0 {
+			tagField = fmt.Sprintf(", %s", FieldTagKeysRaw.Name)
 		}
 
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -101,7 +103,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		filterFields = "," + filterFields
 	}
 
-	fields = append(fields, "duration_seconds")
+	fields = append(fields, FieldEventDurationSeconds.Name)
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
 			SELECT "day", %s time_on_page, sid, neighbor(sid, 1, null) next_sid %s

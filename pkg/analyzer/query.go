@@ -75,8 +75,12 @@ func (query *queryBuilder) getFields() []string {
 		}
 	}
 
-	if query.from == pageViews && len(query.filter.Tags) > 0 {
-		fields = append(fields, FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+	if query.from == pageViews {
+		if len(query.filter.Tags) > 0 {
+			fields = append(fields, FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+		} else if len(query.filter.Tag) > 0 {
+			fields = append(fields, FieldTagKeysRaw.Name)
+		}
 	}
 
 	if query.from == events {
