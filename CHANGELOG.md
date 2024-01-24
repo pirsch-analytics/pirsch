@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.6.8
+
+* updated dependencies
+
 ## 6.6.7
 
 * improved User-Agent filter
