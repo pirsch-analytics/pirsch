@@ -18,11 +18,8 @@ type Store interface {
 	// SaveEvents saves given events.
 	SaveEvents(context.Context, []model.Event) error
 
-	// SaveUserAgents saves given UserAgent headers.
-	SaveUserAgents(context.Context, []model.UserAgent) error
-
-	// SaveBots saves given bots.
-	SaveBots(context.Context, []model.Bot) error
+	// SaveRequests saves given requests.
+	SaveRequests(context.Context, []model.Request) error
 
 	// Session returns the last hit for given client, fingerprint, and maximum age.
 	Session(context.Context, uint64, uint64, time.Time) (*model.Session, error)

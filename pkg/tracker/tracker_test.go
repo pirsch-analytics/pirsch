@@ -218,9 +218,10 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, "Content", pageViews[1].UTMContent)
 	assert.Equal(t, "Term", pageViews[1].UTMTerm)
 
-	userAgents := client.GetUserAgents()
-	assert.Len(t, userAgents, 1)
-	assert.Equal(t, userAgent, userAgents[0].UserAgent)
+	requests := client.GetRequests()
+	assert.Len(t, requests, 1)
+	assert.Equal(t, userAgent, requests[0].UserAgent)
+	assert.False(t, requests[0].Bot)
 }
 
 func TestTracker_PageViewBounce(t *testing.T) {
@@ -539,9 +540,10 @@ func TestTracker_Event(t *testing.T) {
 	assert.Equal(t, "Content", events[1].UTMContent)
 	assert.Equal(t, "Term", events[1].UTMTerm)
 
-	userAgents := client.GetUserAgents()
-	assert.Len(t, userAgents, 1)
-	assert.Equal(t, userAgent, userAgents[0].UserAgent)
+	requests := client.GetRequests()
+	assert.Len(t, requests, 1)
+	assert.Equal(t, userAgent, requests[0].UserAgent)
+	assert.False(t, requests[0].Bot)
 }
 
 func TestTracker_EventDiscard(t *testing.T) {
@@ -771,7 +773,7 @@ func TestTracker_Flush(t *testing.T) {
 	assert.Equal(t, 10, count)
 }
 
-func TestTrackerBots(t *testing.T) {
+func TestTrackerRequests(t *testing.T) {
 	store := db.NewClientMock()
 	tracker := NewTracker(Config{
 		Store:        store,
@@ -797,28 +799,32 @@ func TestTrackerBots(t *testing.T) {
 	tracker.Flush()
 	pageViews := store.GetPageViews()
 	assert.Len(t, pageViews, 0)
-	bots := store.GetBots()
-	assert.Len(t, bots, 4)
-	assert.Equal(t, uint64(42), bots[0].ClientID)
-	assert.Equal(t, uint64(42), bots[1].ClientID)
-	assert.Equal(t, uint64(42), bots[2].ClientID)
-	assert.Equal(t, uint64(42), bots[3].ClientID)
-	assert.NotZero(t, bots[0].VisitorID)
-	assert.NotZero(t, bots[1].VisitorID)
-	assert.NotZero(t, bots[2].VisitorID)
-	assert.NotZero(t, bots[3].VisitorID)
-	assert.Equal(t, "Bot", bots[0].UserAgent)
-	assert.Equal(t, "Bot", bots[1].UserAgent)
-	assert.Equal(t, "Bot", bots[2].UserAgent)
-	assert.Equal(t, "Event Bot", bots[3].UserAgent)
-	assert.Equal(t, "/path", bots[0].Path)
-	assert.Equal(t, "/path", bots[1].Path)
-	assert.Equal(t, "/path", bots[2].Path)
-	assert.Equal(t, "/event/path", bots[3].Path)
-	assert.Empty(t, bots[0].Event)
-	assert.Empty(t, bots[1].Event)
-	assert.Empty(t, bots[2].Event)
-	assert.Equal(t, "event", bots[3].Event)
+	requests := store.GetRequests()
+	assert.Len(t, requests, 4)
+	assert.Equal(t, uint64(42), requests[0].ClientID)
+	assert.Equal(t, uint64(42), requests[1].ClientID)
+	assert.Equal(t, uint64(42), requests[2].ClientID)
+	assert.Equal(t, uint64(42), requests[3].ClientID)
+	assert.NotZero(t, requests[0].VisitorID)
+	assert.NotZero(t, requests[1].VisitorID)
+	assert.NotZero(t, requests[2].VisitorID)
+	assert.NotZero(t, requests[3].VisitorID)
+	assert.Equal(t, "Bot", requests[0].UserAgent)
+	assert.Equal(t, "Bot", requests[1].UserAgent)
+	assert.Equal(t, "Bot", requests[2].UserAgent)
+	assert.Equal(t, "Event Bot", requests[3].UserAgent)
+	assert.Equal(t, "/path", requests[0].Path)
+	assert.Equal(t, "/path", requests[1].Path)
+	assert.Equal(t, "/path", requests[2].Path)
+	assert.Equal(t, "/event/path", requests[3].Path)
+	assert.Empty(t, requests[0].Event)
+	assert.Empty(t, requests[1].Event)
+	assert.Empty(t, requests[2].Event)
+	assert.Equal(t, "event", requests[3].Event)
+	assert.True(t, requests[0].Bot)
+	assert.True(t, requests[1].Bot)
+	assert.True(t, requests[2].Bot)
+	assert.True(t, requests[3].Bot)
 }
 
 func TestTrackerPageViewAndEvent(t *testing.T) {
