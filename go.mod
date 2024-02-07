@@ -10,7 +10,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.11.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.19
+	github.com/mattn/go-sqlite3 v1.14.20
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.20.0
@@ -26,7 +26,7 @@ require (
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/compress v1.17.4 // indirect
+	github.com/klauspost/compress v1.17.5 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/paulmach/orb v0.11.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect

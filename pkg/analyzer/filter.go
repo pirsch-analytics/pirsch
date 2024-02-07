@@ -104,7 +104,14 @@ type Filter struct {
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm []string
 
-	// EventName filters for an event by its name.
+	// Tags filters for tag key-value pairs.
+	Tags map[string]string
+
+	// TODO joins, getFields?
+	// Tag filters for tags by their keys.
+	Tag []string
+
+	// EventName filters for events by their name.
 	EventName []string
 
 	// EventMetaKey filters for an event meta key.
@@ -211,7 +218,7 @@ func (filter *Filter) validate() {
 		filter.To = tomorrow
 	}
 
-	if len(filter.Path) != 0 && len(filter.PathPattern) != 0 {
+	if len(filter.Path) > 0 && len(filter.PathPattern) > 0 {
 		filter.PathPattern = nil
 	}
 
@@ -252,6 +259,7 @@ func (filter *Filter) validate() {
 	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
+	filter.Tag = filter.removeDuplicates(filter.Tag)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
 	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)
 }
@@ -339,15 +347,19 @@ func (filter *Filter) table(fields []Field) table {
 		eventFilter := filter.fieldsContain(fields, FieldEventName) || filter.CustomMetricType != "" && filter.CustomMetricKey != ""
 
 		if !eventFilter &&
-			(len(filter.Path) != 0 ||
-				len(filter.PathPattern) != 0 ||
+			(len(filter.Path) > 0 ||
+				len(filter.PathPattern) > 0 ||
+				len(filter.Tags) > 0 ||
+				len(filter.Tag) > 0 ||
 				filter.fieldsContain(fields, FieldPath) ||
 				filter.searchContains(FieldPath) ||
+				filter.fieldsContain(fields, FieldTagKey) ||
+				filter.fieldsContain(fields, FieldTagValue) ||
 				filter.fieldsContain(fields, FieldHour)) {
 			return pageViews
 		}
 
-		if len(filter.EventName) != 0 || eventFilter {
+		if len(filter.EventName) > 0 || eventFilter {
 			return events
 		}
 	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) || filter.fieldsContain(fields, FieldHour) {
@@ -358,8 +370,8 @@ func (filter *Filter) table(fields []Field) table {
 }
 
 func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
-	if len(filter.EntryPath) != 0 ||
-		len(filter.ExitPath) != 0 ||
+	if len(filter.EntryPath) > 0 ||
+		len(filter.ExitPath) > 0 ||
 		filter.fieldsContain(fields, FieldBounces) ||
 		(table == events && filter.fieldsContain(fields, FieldViews)) ||
 		filter.fieldsContain(fields, FieldEntryPath) ||
@@ -367,7 +379,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 		sessionFields := []Field{FieldVisitorID, FieldSessionID}
 		groupBy := []Field{FieldVisitorID, FieldSessionID}
 
-		if len(filter.EntryPath) != 0 || filter.fieldsContain(fields, FieldEntryPath) || filter.searchContains(FieldEntryPath) {
+		if len(filter.EntryPath) > 0 || filter.fieldsContain(fields, FieldEntryPath) || filter.searchContains(FieldEntryPath) {
 			sessionFields = append(sessionFields, FieldEntryPath)
 			groupBy = append(groupBy, FieldEntryPath)
 
@@ -377,7 +389,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 			}
 		}
 
-		if len(filter.ExitPath) != 0 || filter.fieldsContain(fields, FieldExitPath) || filter.searchContains(FieldExitPath) {
+		if len(filter.ExitPath) > 0 || filter.fieldsContain(fields, FieldExitPath) || filter.searchContains(FieldExitPath) {
 			sessionFields = append(sessionFields, FieldExitPath)
 			groupBy = append(groupBy, FieldExitPath)
 
@@ -410,12 +422,11 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
-	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 || filter.searchContains(FieldPath) {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 || filter.searchContains(FieldPath) {
 		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
 
-		if len(filter.PathPattern) != 0 {
-			pageViewFields = append(pageViewFields, FieldPath)
-		} else if len(filter.Path) != 0 || filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
+		if len(filter.PathPattern) > 0 || len(filter.Path) > 0 ||
+			filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
 			pageViewFields = append(pageViewFields, FieldPath)
 		}
 
@@ -434,11 +445,7 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
-	if len(filter.EventName) != 0 {
-		filterCopy := *filter
-		filterCopy.Path = nil
-		filterCopy.AnyPath = nil
-		filterCopy.Sort = nil
+	if len(filter.EventName) > 0 {
 		eventFields := []Field{FieldVisitorID, FieldSessionID}
 
 		if filter.fieldsContain(fields, FieldEventPath) {
@@ -454,6 +461,10 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 			eventFields = append(eventFields, FieldEventMetaValuesRaw)
 		}
 
+		filterCopy := *filter
+		filterCopy.Path = nil
+		filterCopy.AnyPath = nil
+		filterCopy.Sort = nil
 		return &queryBuilder{
 			filter:  &filterCopy,
 			fields:  eventFields,
@@ -467,16 +478,11 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
-	filterCopy := *filter
-	filterCopy.EventName = nil
-	filterCopy.EventMetaKey = nil
-	filterCopy.EventMeta = nil
-	filterCopy.Sort = nil
 	eventFields := []Field{FieldVisitorID, FieldSessionID, FieldEventName}
 
-	if len(filter.EventMeta) != 0 || filter.fieldsContain(fields, FieldEventMeta) {
+	if len(filter.EventMeta) > 0 || filter.fieldsContain(fields, FieldEventMeta) {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw, FieldEventMetaValuesRaw)
-	} else if len(filter.EventMetaKey) != 0 || filter.fieldsContain(fields, FieldEventMetaKeys) {
+	} else if len(filter.EventMetaKey) > 0 || filter.fieldsContain(fields, FieldEventMetaKeys) {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw)
 	}
 
@@ -488,6 +494,11 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		eventFields = append(eventFields, FieldEventTitle)
 	}
 
+	filterCopy := *filter
+	filterCopy.EventName = nil
+	filterCopy.EventMetaKey = nil
+	filterCopy.EventMeta = nil
+	filterCopy.Sort = nil
 	return &queryBuilder{
 		filter:  &filterCopy,
 		fields:  eventFields,

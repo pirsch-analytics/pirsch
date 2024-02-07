@@ -316,6 +316,7 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	filter.EntryPath = nil
 	filter.ExitPath = nil
 	filter.AnyPath = paths
+	filter.Tags = nil
 	filter.Search = nil
 	filter.IncludeTitle = false
 	filter.Sort = nil
@@ -355,7 +356,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		search: filter.Search,
 	}
 	fields := q.getFields()
-	fields = append(fields, "duration_seconds", "time")
+	fields = append(fields, FieldEventDurationSeconds.Name, "time")
 	hasPath := false
 
 	for _, field := range fields {
@@ -377,7 +378,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 				SELECT v.session_id sid, %s
 				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
-	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		sessionsQuery := queryBuilder{
 			filter: filter,
 			from:   sessions,

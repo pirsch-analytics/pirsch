@@ -100,6 +100,44 @@ func (options *FilterOptions) EventMetadataValues(filter *Filter) ([]string, err
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
+// TagKeys returns all tag keys.
+func (options *FilterOptions) TagKeys(filter *Filter) ([]string, error) {
+	if filter == nil {
+		return []string{}, nil
+	}
+
+	filter = options.analyzer.getFilter(filter)
+	timeQuery, args := filter.buildTimeQuery()
+	q := fmt.Sprintf(`SELECT DISTINCT arrayJoin(tag_keys) AS "values"
+		FROM page_view
+		%s
+		AND length(tag_values) > 0
+		ORDER BY "values" ASC`, timeQuery)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
+}
+
+// TagValues returns all tag values.
+// The Filter.Tag must be set to exactly one tag, or otherwise the result set will be empty.
+func (options *FilterOptions) TagValues(filter *Filter) ([]string, error) {
+	if filter == nil || len(filter.Tag) != 1 {
+		return []string{}, nil
+	}
+
+	filter = options.analyzer.getFilter(filter)
+	args := make([]any, 0)
+	args = append(args, filter.Tag[0])
+	timeQuery, timeArgs := filter.buildTimeQuery()
+	args = append(args, timeArgs...)
+	args = append(args, filter.Tag[0])
+	q := fmt.Sprintf(`SELECT DISTINCT tag_values[indexOf(tag_keys, ?)] AS "keys"
+		FROM page_view
+		%s
+		AND length(tag_values) > 0
+		AND has(tag_keys, ?)
+		ORDER BY "keys" ASC`, timeQuery)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
+}
+
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
 	timeQuery, args := filter.buildTimeQuery()

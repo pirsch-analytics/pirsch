@@ -4,21 +4,39 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
 
 // Options are optional parameters for page views and events.
 type Options struct {
-	URL          string
-	Hostname     string
-	Path         string
-	Title        string
-	Referrer     string
-	ScreenWidth  uint16
+	// URL is the full request URL.
+	URL string
+
+	// Hostname is used to check the Referrer. If it's the same as the hostname, it will be ignored.
+	Hostname string
+
+	// Path sets the path.
+	Path string
+
+	// Title sets the page title.
+	Title string
+
+	// Referrer overrides the referrer. If set to Hostname it will be ignored.
+	Referrer string
+
+	// ScreenWidth is the screen width which will be translated to a screen class.
+	ScreenWidth uint16
+
+	// ScreenHeight is the screen height which will be translated to a screen class.
 	ScreenHeight uint16
-	Time         time.Time
+
+	// Time overrides the time the page view should be recorded for.
+	// Usually this is set to the time the request arrives at the Tracker.
+	Time time.Time
+
+	// Tags are optional fields used to break down page views into segments.
+	Tags map[string]string
 }
 
 func (options *Options) validate(r *http.Request) {
@@ -48,27 +66,18 @@ func (options *Options) validate(r *http.Request) {
 	}
 }
 
-// OptionsFromRequest returns Options for the client request.
-func OptionsFromRequest(r *http.Request) Options {
-	query := r.URL.Query()
-	return Options{
-		URL:          getURLQueryParam(query.Get("url")),
-		Title:        strings.TrimSpace(query.Get("t")),
-		Referrer:     strings.TrimSpace(query.Get("ref")),
-		ScreenWidth:  getIntQueryParam[uint16](query.Get("w")),
-		ScreenHeight: getIntQueryParam[uint16](query.Get("h")),
-	}
-}
+func (options *Options) getTags() ([]string, []string) {
+	keys, values := make([]string, 0, len(options.Tags)), make([]string, 0, len(options.Tags))
 
-func getIntQueryParam[T uint16 | uint64](param string) T {
-	i, _ := strconv.ParseUint(param, 10, 64)
-	return T(i)
-}
+	for k, v := range options.Tags {
+		k = strings.TrimSpace(k)
+		v = strings.TrimSpace(v)
 
-func getURLQueryParam(param string) string {
-	if _, err := url.ParseRequestURI(param); err != nil {
-		return ""
+		if k != "" && v != "" {
+			keys = append(keys, k)
+			values = append(values, v)
+		}
 	}
 
-	return param
+	return keys, values
 }

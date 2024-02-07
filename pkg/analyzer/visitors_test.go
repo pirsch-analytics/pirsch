@@ -100,19 +100,19 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
-		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
-		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
 		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
@@ -172,6 +172,45 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 0, visitors.Bounces)
 	assert.InDelta(t, 0, visitors.BounceRate, 0.01)
 	assert.InDelta(t, 0.11, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		Tags:      map[string]string{"author": "John"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, visitors.Visitors)
+	assert.Equal(t, 6, visitors.Sessions)
+	assert.Equal(t, 7, visitors.Views)
+	assert.Equal(t, 4, visitors.Bounces)
+	assert.InDelta(t, 0.6666, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0.5555, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		Tags:      map[string]string{"author": "!John"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, visitors.Visitors)
+	assert.Equal(t, 6, visitors.Sessions)
+	assert.Equal(t, 6, visitors.Views)
+	assert.Equal(t, 4, visitors.Bounces)
+	assert.InDelta(t, 0.6666, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0.5555, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:      util.PastDay(4),
+		To:        util.Today(),
+		Tags:      map[string]string{"author": "Alice"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, visitors.Visitors)
+	assert.Equal(t, 2, visitors.Sessions)
+	assert.Equal(t, 2, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 0.5, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0.2222, visitors.CR, 0.01)
 
 	// ignore metadata when event name is not set
 	visitors, err = analyzer.Visitors.Total(&Filter{
@@ -208,19 +247,19 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
 		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
-		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
-		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
@@ -259,6 +298,13 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 9, visitors)
+	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 9, visitors)
 }
 
 func TestAnalyzer_TotalPageViews(t *testing.T) {
@@ -287,19 +333,19 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
-		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
-		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
@@ -338,6 +384,13 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 13, pageViews)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 13, pageViews)
 }
 
 func TestAnalyzer_TotalSessions(t *testing.T) {
@@ -366,19 +419,19 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 5), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
-		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar"},
-		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
@@ -414,6 +467,13 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		Sort: []Sort{
 			{Field: FieldRelativeVisitors, Direction: pkg.DirectionASC},
 		},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, pageViews)
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+		From: util.PastDay(4),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 11, pageViews)
@@ -590,12 +650,12 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 10), Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 10), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 12), Path: "/foo"},
 		{VisitorID: 1, Time: util.PastDay(9).Add(time.Minute * 15), Path: "/bar"},
 		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
-		{VisitorID: 2, Time: util.PastDay(4), Path: "/bar"},
-		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 2, Time: util.PastDay(4), Path: "/bar"},
 		{VisitorID: 2, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 3, Time: util.PastDay(4).Add(time.Minute * 10), Path: "/"},
@@ -604,16 +664,16 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 5, Time: util.PastDay(4), Path: "/bar"},
 		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 10), Path: "/"},
-		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 12), Path: "/foo"},
-		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 15), Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 12), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 6, Time: util.PastDay(3).Add(time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 7, Time: util.PastDay(3), Path: "/"},
 		{VisitorID: 7, Time: util.PastDay(3).Add(time.Minute * 10), Path: "/bar"},
-		{VisitorID: 8, Time: util.PastDay(3), Path: "/"},
-		{VisitorID: 9, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(3), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 9, Time: util.PastDay(3), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 10, Time: util.PastDay(2), Path: "/"},
 		{VisitorID: 10, Time: util.PastDay(2).Add(time.Minute * 5), Path: "/bar"},
-		{VisitorID: 11, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 12, Time: util.PastDay(2), Path: "/"},
+		{VisitorID: 11, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 12, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 13, Time: util.Today(), Path: "/"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
@@ -716,13 +776,46 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	assert.Equal(t, 10, visitors.Views)
 	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From: util.PastDay(9),
+		To:   util.PastDay(2),
+		Tags: map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 6, visitors.Visitors)
+	assert.Equal(t, 7, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From: util.PastDay(9),
+		To:   util.PastDay(2),
+		Tags: map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 9, visitors.Visitors)
+	assert.Equal(t, 17, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From: util.PastDay(9),
+		To:   util.PastDay(2),
+		Tags: map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, visitors)
+	assert.Equal(t, 2, visitors.Visitors)
+	assert.Equal(t, 2, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
+func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
@@ -748,20 +841,20 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar"},
-		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 4, Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 15), SessionID: 4, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/"},
 		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 10), SessionID: 3, Path: "/bar"},
-		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
-		{VisitorID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 4, Time: util.PastDay(4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
 		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 15), SessionID: 2, Path: "/bar"},
-		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 8), SessionID: 2, Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 8), SessionID: 2, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, Path: "/bar"},
 		{VisitorID: 7, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 8, Time: util.PastDay(2), Path: "/"},
-		{VisitorID: 9, Time: util.Today(), Path: "/"},
+		{VisitorID: 8, Time: util.PastDay(2), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 9, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{
@@ -871,6 +964,138 @@ func TestAnalyzer_VisitorsAndAvgSessionDuration(t *testing.T) {
 	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
 	assert.InDelta(t, 0.6666, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:   util.PastDay(4),
+		To:     util.Today(),
+		Period: pkg.PeriodDay,
+		Tags:   map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 0, visitors[4].Visitors)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 2, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 0, visitors[4].Sessions)
+	assert.Equal(t, 3, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 2, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 0, visitors[4].Views)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:   util.PastDay(4),
+		To:     util.Today(),
+		Period: pkg.PeriodDay,
+		Tags:   map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 3, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 4, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 3, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 4, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 4, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 4, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0.3333, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:   util.PastDay(4),
+		To:     util.Today(),
+		Period: pkg.PeriodDay,
+		Tags:   map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 0, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 0, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:   util.PastDay(4),
+		To:     util.Today(),
+		Period: pkg.PeriodDay,
+		Tags:   map[string]string{"author": "!all"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 5)
+	assert.Equal(t, 4, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 4, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 6, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 4, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 7, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 6, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 5, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 2, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.InDelta(t, 0.8333, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[2].BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
 	asd, err := analyzer.Time.AvgSessionDuration(nil)
@@ -1129,14 +1354,14 @@ func TestAnalyzer_ByHour(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.PastDay(2).Add(time.Hour*2 + time.Minute*30), Path: "/foo"},
+		{VisitorID: 1, Time: util.PastDay(2).Add(time.Hour*2 + time.Minute*30), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.PastDay(2).Add(time.Hour * 3), Path: "/"},
-		{VisitorID: 2, Time: util.PastDay(2).Add(time.Hour * 8), Path: "/"},
-		{VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 4), Path: "/"},
-		{VisitorID: 4, Time: util.PastDay(1).Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(2).Add(time.Hour * 8), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 4), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 4, Time: util.PastDay(1).Add(time.Hour * 5), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 5, Time: util.PastDay(1).Add(time.Hour * 8), Path: "/"},
-		{VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Path: "/"},
-		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -1191,6 +1416,89 @@ func TestAnalyzer_ByHour(t *testing.T) {
 	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
 	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
+
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 0, visitors[8].Visitors)
+	assert.Equal(t, 1, visitors[10].Visitors)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 0, visitors[8].Views)
+	assert.Equal(t, 1, visitors[10].Views)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 0, visitors[8].Sessions)
+	assert.Equal(t, 1, visitors[10].Sessions)
+	assert.Equal(t, 1, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.Equal(t, 0, visitors[8].Bounces)
+	assert.Equal(t, 1, visitors[10].Bounces)
+	assert.InDelta(t, 1, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[8].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[10].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 0, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 1, visitors[8].Visitors)
+	assert.Equal(t, 0, visitors[10].Visitors)
+	assert.Equal(t, 0, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 1, visitors[8].Views)
+	assert.Equal(t, 0, visitors[10].Views)
+	assert.Equal(t, 0, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 1, visitors[8].Sessions)
+	assert.Equal(t, 0, visitors[10].Sessions)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.Equal(t, 1, visitors[8].Bounces)
+	assert.Equal(t, 0, visitors[10].Bounces)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[8].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[10].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From: util.PastDay(1),
+		To:   util.Today(),
+		Tags: map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 0, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 0, visitors[8].Visitors)
+	assert.Equal(t, 0, visitors[10].Visitors)
+	assert.Equal(t, 0, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 0, visitors[8].Views)
+	assert.Equal(t, 0, visitors[10].Views)
+	assert.Equal(t, 0, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 0, visitors[8].Sessions)
+	assert.Equal(t, 0, visitors[10].Sessions)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.Equal(t, 0, visitors[8].Bounces)
+	assert.Equal(t, 0, visitors[10].Bounces)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[8].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[10].BounceRate, 0.01)
+
 	_, err = analyzer.Visitors.ByHour(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByHour(getMaxFilter("event"))
@@ -1758,6 +2066,99 @@ func TestAnalyzer_GrowthCustomMetric(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_GrowthTags(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(-time.Second), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(-time.Second), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: -1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 1, SessionID: 4, Time: util.PastDay(4).Add(time.Minute * 15), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4).Add(time.Second * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: -1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Second * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 4, SessionID: 3, Time: util.PastDay(3).Add(time.Minute * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", PageViews: 2},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(3).Add(time.Second * 5), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 5, SessionID: 3, Time: util.PastDay(3).Add(time.Second * 6), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 5, SessionID: 31, Time: util.PastDay(3).Add(time.Minute * 10), Start: time.Now(), EntryPath: "/bar", ExitPath: "/bar", PageViews: 1},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(3).Add(time.Second * 7), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+			{Sign: 1, VisitorID: 7, Time: util.PastDay(3).Add(time.Second * 8), Start: time.Now(), EntryPath: "/", ExitPath: "/", PageViews: 1},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Path: "/bar"},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/"},
+		{VisitorID: 4, SessionID: 3, Time: util.PastDay(3)},
+		{VisitorID: 4, SessionID: 3, Time: util.PastDay(3), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 4, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 5, SessionID: 3, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 5, SessionID: 31, Time: util.PastDay(3), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 6, Time: util.PastDay(3), Path: "/"},
+		{VisitorID: 7, Time: util.PastDay(3), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	growth, err := analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(5),
+		To:        util.PastDay(1),
+		IncludeCR: true,
+		Tags:      map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 1, growth.CRGrowth, 0.001)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(3),
+		To:        util.PastDay(1),
+		IncludeCR: true,
+		Tags:      map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 1, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 1, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 1, growth.CRGrowth, 0.001)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(3),
+		To:        util.PastDay(1),
+		IncludeCR: true,
+		Tags:      map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 0.3333, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0.6666, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0, growth.CRGrowth, 0.001)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(3),
+		To:        util.PastDay(1),
+		IncludeCR: true,
+		Tags:      map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 0, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, -0.2499, growth.CRGrowth, 0.001)
+}
+
 func TestAnalyzer_Referrer(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -1901,6 +2302,88 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 	assert.InDelta(t, 0.4, visitors[0].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+}
+
+func TestAnalyzer_ReferrerTags(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", ReferrerName: "ref1", PageViews: 2},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/foo", ReferrerName: "ref1", PageViews: 2},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 3), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", ReferrerName: "ref1", PageViews: 3},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4), Start: time.Now(), EntryPath: "/", ExitPath: "/", ReferrerName: "ref2", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: time.Now(), EntryPath: "/", ExitPath: "/", ReferrerName: "ref3", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(3).Add(time.Minute * 2), Start: time.Now(), EntryPath: "/", ExitPath: "/", ReferrerName: "ref1", PageViews: 3},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(3).Add(time.Minute), Start: time.Now(), EntryPath: "/", ExitPath: "/bar", ReferrerName: "ref2", PageViews: 2},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute), Path: "/", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 2), Path: "/foo", ReferrerName: "ref1"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 3), Path: "/bar", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, Time: util.PastDay(4), Path: "/", ReferrerName: "ref2"},
+		{VisitorID: 3, Time: util.PastDay(4), Path: "/", ReferrerName: "ref3"},
+		{VisitorID: 4, Time: util.PastDay(3), Path: "/", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 4, Time: util.PastDay(3).Add(time.Minute), Path: "/foo", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 4, Time: util.PastDay(3).Add(time.Minute * 2), Path: "/", ReferrerName: "ref1"},
+		{VisitorID: 5, Time: util.PastDay(3), Path: "/", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 5, Time: util.PastDay(3).Add(time.Minute), Path: "/bar", ReferrerName: "ref2", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.Referrer(&Filter{
+		Tags: map[string]string{"author": "John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "ref1", visitors[0].ReferrerName)
+	assert.Equal(t, "ref2", visitors[1].ReferrerName)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[1].Sessions)
+	assert.InDelta(t, 0.4, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2, visitors[1].RelativeVisitors, 0.01)
+	assert.Equal(t, 0, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		Tags: map[string]string{"author": "!John"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "ref1", visitors[0].ReferrerName)
+	assert.Equal(t, "ref2", visitors[1].ReferrerName)
+	assert.Equal(t, "ref3", visitors[2].ReferrerName)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 3, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[1].Sessions)
+	assert.Equal(t, 1, visitors[2].Sessions)
+	assert.InDelta(t, 0.6, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2, visitors[2].RelativeVisitors, 0.01)
+	assert.Equal(t, 0, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		Tags: map[string]string{"author": "Alice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref1", visitors[0].ReferrerName)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.InDelta(t, 0.4, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 0, visitors[0].Bounces)
+	assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_Timezone(t *testing.T) {

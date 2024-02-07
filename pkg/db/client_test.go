@@ -47,6 +47,8 @@ func TestClient_SavePageViews(t *testing.T) {
 			Desktop:         true,
 			Mobile:          false,
 			ScreenClass:     "XL",
+			TagKeys:         []string{"key0", "key1"},
+			TagValues:       []string{"value0", "value1"},
 		},
 		{
 			VisitorID: 1,
@@ -182,23 +184,9 @@ func TestClient_SaveEvents(t *testing.T) {
 	}))
 }
 
-func TestClient_SaveUserAgents(t *testing.T) {
+func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveUserAgents(context.Background(), []model.UserAgent{
-		{
-			Time:      time.Now(),
-			UserAgent: "ua1",
-		},
-		{
-			Time:      time.Now().Add(time.Second),
-			UserAgent: "ua2",
-		},
-	}))
-}
-
-func TestClient_SaveBots(t *testing.T) {
-	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveBots(context.Background(), []model.Bot{
+	assert.NoError(t, dbClient.SaveRequests(context.Background(), []model.Request{
 		{
 			ClientID:  1,
 			VisitorID: 1,
@@ -206,6 +194,7 @@ func TestClient_SaveBots(t *testing.T) {
 			UserAgent: "ua1",
 			Path:      "/foo",
 			Event:     "event",
+			Bot:       true,
 		},
 		{
 			ClientID:  2,

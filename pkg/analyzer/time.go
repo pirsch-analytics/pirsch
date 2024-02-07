@@ -35,18 +35,27 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
 
-	if len(filter.Path) != 0 || len(filter.PathPattern) != 0 {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 {
+		tagField := ""
+
+		if len(filter.Tags) > 0 {
+			tagField = fmt.Sprintf(", %s, %s", FieldTagKeysRaw.Name, FieldTagValuesRaw.Name)
+		} else if len(filter.Tag) > 0 {
+			tagField = fmt.Sprintf(", %s", FieldTagKeysRaw.Name)
+		}
+
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
-			path
+			path %s
 			FROM page_view
 			WHERE %s
 		) v
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, tagField, q.whereTime()[len("WHERE "):]))
 	}
 
 	query.WriteString(q.whereTime())
+	q.from = pageViews
 	q.whereFields()
 	where := q.q.String()
 
@@ -82,7 +91,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 
 	q := queryBuilder{
 		filter: filter,
-		from:   table,
+		from:   pageViews,
 		search: filter.Search,
 	}
 	var query strings.Builder
@@ -94,7 +103,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		filterFields = "," + filterFields
 	}
 
-	fields = append(fields, "duration_seconds")
+	fields = append(fields, FieldEventDurationSeconds.Name)
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
 			SELECT "day", %s time_on_page, sid, neighbor(sid, 1, null) next_sid %s
@@ -102,7 +111,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 				SELECT session_id sid, toDate(time, '%s') "day", "time", %s
 				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filterFields, filter.Timezone.String(), strings.Join(fields, ",")))
 
-	if len(filter.EntryPath) != 0 || len(filter.ExitPath) != 0 {
+	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
 			SELECT visitor_id,
 			session_id,
@@ -145,6 +154,8 @@ func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builde
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
+		default:
+			panic("unknown case for filter period")
 		}
 	}
 }
@@ -158,6 +169,8 @@ func (t *Time) groupByPeriod(period pkg.Period, query *strings.Builder) {
 			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
 		case pkg.PeriodYear:
 			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
+		default:
+			panic("unknown case for filter period")
 		}
 	}
 }

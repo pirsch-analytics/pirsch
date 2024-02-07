@@ -318,6 +318,34 @@ var (
 		Name:           "utm_term",
 	}
 
+	// FieldTagKeysRaw is a query result column.
+	FieldTagKeysRaw = Field{
+		querySessions:  "tag_keys",
+		queryPageViews: "tag_keys",
+		Name:           "tag_keys",
+	}
+
+	// FieldTagValuesRaw is a query result column.
+	FieldTagValuesRaw = Field{
+		querySessions:  "tag_values",
+		queryPageViews: "tag_values",
+		Name:           "tag_values",
+	}
+
+	// FieldTagKey is a query result column.
+	FieldTagKey = Field{
+		querySessions:  "arrayJoin(tag_keys)",
+		queryPageViews: "arrayJoin(tag_keys)",
+		Name:           "key",
+	}
+
+	// FieldTagValue is a query result column.
+	FieldTagValue = Field{
+		querySessions:  "tag_values[indexOf(tag_keys, ?)]",
+		queryPageViews: "tag_values[indexOf(tag_keys, ?)]",
+		Name:           "value",
+	}
+
 	// FieldTitle is a query result column.
 	FieldTitle = Field{
 		querySessions:  "title",

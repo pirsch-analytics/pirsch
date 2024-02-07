@@ -1,5 +1,17 @@
 # Changelog
 
+## 6.7.0
+
+* added tags for segmentation to page views
+* added trimming to metadata keys
+* added storing requests for new sessions with or without bot flag
+* empty metadata keys and values are now ignored
+* renamed bot table to request
+* removed `OptionsFromRequest`
+* removed `user_agent` table
+* fixed SQL injection attack vector
+* updated dependencies
+
 ## 6.6.8
 
 * updated dependencies

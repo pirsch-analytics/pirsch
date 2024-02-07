@@ -14,8 +14,7 @@ type ClientMock struct {
 	pageViews     []model.PageView
 	sessions      []model.Session
 	events        []model.Event
-	userAgents    []model.UserAgent
-	bots          []model.Bot
+	requests      []model.Request
 	ReturnSession *model.Session
 	m             sync.Mutex
 }
@@ -23,10 +22,10 @@ type ClientMock struct {
 // NewClientMock returns a new mock client.
 func NewClientMock() *ClientMock {
 	return &ClientMock{
-		pageViews:  make([]model.PageView, 0),
-		sessions:   make([]model.Session, 0),
-		events:     make([]model.Event, 0),
-		userAgents: make([]model.UserAgent, 0),
+		pageViews: make([]model.PageView, 0),
+		sessions:  make([]model.Session, 0),
+		events:    make([]model.Event, 0),
+		requests:  make([]model.Request, 0),
 	}
 }
 
@@ -78,28 +77,12 @@ func (client *ClientMock) GetEvents() []model.Event {
 	return data
 }
 
-// GetUserAgents returns a copy of the user agents slice.
-func (client *ClientMock) GetUserAgents() []model.UserAgent {
+// GetRequests returns a copy of the requests slice.
+func (client *ClientMock) GetRequests() []model.Request {
 	client.m.Lock()
 	defer client.m.Unlock()
-	data := make([]model.UserAgent, len(client.userAgents))
-	copy(data, client.userAgents)
-	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Before(data[j].Time) {
-			return true
-		}
-
-		return false
-	})
-	return data
-}
-
-// GetBots returns a copy of the bots slice.
-func (client *ClientMock) GetBots() []model.Bot {
-	client.m.Lock()
-	defer client.m.Unlock()
-	data := make([]model.Bot, len(client.bots))
-	copy(data, client.bots)
+	data := make([]model.Request, len(client.requests))
+	copy(data, client.requests)
 	sort.Slice(data, func(i, j int) bool {
 		if data[i].Time.Before(data[j].Time) {
 			return true
@@ -134,18 +117,11 @@ func (client *ClientMock) SaveEvents(_ context.Context, events []model.Event) er
 	return nil
 }
 
-// SaveUserAgents implements the Store interface.
-func (client *ClientMock) SaveUserAgents(_ context.Context, userAgents []model.UserAgent) error {
+// SaveRequests implements the Store interface.
+func (client *ClientMock) SaveRequests(_ context.Context, bots []model.Request) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.userAgents = append(client.userAgents, userAgents...)
-	return nil
-}
-
-func (client *ClientMock) SaveBots(_ context.Context, bots []model.Bot) error {
-	client.m.Lock()
-	defer client.m.Unlock()
-	client.bots = append(client.bots, bots...)
+	client.requests = append(client.requests, bots...)
 	return nil
 }
 
@@ -335,5 +311,10 @@ func (client *ClientMock) SelectBrowserVersionStats(context.Context, string, ...
 
 // SelectOptions implements the Store interface.
 func (client *ClientMock) SelectOptions(context.Context, string, ...any) ([]string, error) {
+	return nil, nil
+}
+
+// SelectTagStats implements the Store interface.
+func (client *ClientMock) SelectTagStats(context.Context, bool, string, ...any) ([]model.TagStats, error) {
 	return nil, nil
 }

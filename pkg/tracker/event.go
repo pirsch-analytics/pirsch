@@ -19,13 +19,21 @@ func (options *EventOptions) validate() {
 	options.Name = strings.TrimSpace(options.Name)
 }
 
-func (options *EventOptions) getMetaData() ([]string, []string) {
-	keys, values := make([]string, 0, len(options.Meta)), make([]string, 0, len(options.Meta))
+func (options *EventOptions) getMetaData(tagKeys, tagValues []string) ([]string, []string) {
+	meta := make(map[string]string)
+
+	for i := 0; i < len(tagKeys); i++ {
+		meta[strings.TrimSpace(tagKeys[i])] = strings.TrimSpace(tagValues[i])
+	}
 
 	for k, v := range options.Meta {
-		v = strings.TrimSpace(v)
+		meta[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
 
-		if v != "" {
+	keys, values := make([]string, 0, len(meta)), make([]string, 0, len(meta))
+
+	for k, v := range meta {
+		if k != "" && v != "" {
 			keys = append(keys, k)
 			values = append(values, v)
 		}

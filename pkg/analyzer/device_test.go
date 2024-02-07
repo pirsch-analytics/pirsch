@@ -396,6 +396,16 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL"},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: time.Now(), Path: "/", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: time.Now(), Path: "/foo", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 1, Time: time.Now(), Path: "/bar", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 2, Time: time.Now(), Path: "/", ScreenClass: "XL"},
+		{VisitorID: 3, Time: time.Now(), Path: "/", ScreenClass: "XL"},
+		{VisitorID: 4, Time: time.Now(), Path: "/", ScreenClass: "L", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 5, Time: time.Now(), Path: "/", ScreenClass: "XXL"},
+		{VisitorID: 6, Time: time.Now(), Path: "/", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.ScreenClass(nil)
@@ -410,16 +420,53 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
-	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenClass: []string{"XL"}})
+	visitors, err = analyzer.Device.ScreenClass(&Filter{
+		ScreenClass: []string{"XL"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "XL", visitors[0].ScreenClass)
 	assert.Equal(t, 2, visitors[0].Visitors)
 	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
-	visitors, err = analyzer.Device.ScreenClass(&Filter{ScreenClass: []string{"L"}})
+	visitors, err = analyzer.Device.ScreenClass(&Filter{
+		ScreenClass: []string{"L"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 1)
 	assert.Equal(t, "L", visitors[0].ScreenClass)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.InDelta(t, 0.1666, visitors[0].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Device.ScreenClass(&Filter{
+		Tag: []string{"author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "XXL", visitors[0].ScreenClass)
+	assert.Equal(t, "L", visitors[1].ScreenClass)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[1].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Device.ScreenClass(&Filter{
+		Tag: []string{"!author"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "XL", visitors[0].ScreenClass)
+	assert.Equal(t, "XXL", visitors[1].ScreenClass)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[1].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Device.ScreenClass(&Filter{
+		Tag: []string{"author"},
+		Tags: map[string]string{
+			"author": "Alice",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "XXL", visitors[0].ScreenClass)
 	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.InDelta(t, 0.1666, visitors[0].RelativeVisitors, 0.01)
 	_, err = analyzer.Device.ScreenClass(getMaxFilter(""))

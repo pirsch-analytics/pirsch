@@ -152,7 +152,8 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 	query, err := tx.PrepareContext(ctx, `INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
 		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+		tag_keys, tag_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -183,7 +184,9 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 			pageView.UTMMedium,
 			pageView.UTMCampaign,
 			pageView.UTMContent,
-			pageView.UTMTerm)
+			pageView.UTMTerm,
+			pageView.TagKeys,
+			pageView.TagValues)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -344,26 +347,26 @@ func (client *Client) SaveEvents(ctx context.Context, events []model.Event) erro
 	return nil
 }
 
-// SaveUserAgents implements the Store interface.
-func (client *Client) SaveUserAgents(ctx context.Context, userAgents []model.UserAgent) error {
+// SaveRequests implements the Store interface.
+func (client *Client) SaveRequests(ctx context.Context, requests []model.Request) error {
 	tx, err := client.Begin()
 
 	if err != nil {
 		return err
 	}
 
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "user_agent" (time, user_agent) VALUES (?,?)`)
+	query, err := tx.PrepareContext(ctx, `INSERT INTO "request" (client_id, visitor_id, time, user_agent, path, event_name, bot) VALUES (?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
 	}
 
-	for _, ua := range userAgents {
-		_, err := query.Exec(ua.Time, ua.UserAgent)
+	for _, req := range requests {
+		_, err := query.Exec(req.ClientID, req.VisitorID, req.Time, req.UserAgent, req.Path, req.Event, req.Bot)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save user agents", "err", err)
+				client.logger.Error("error rolling back transaction to save requests", "err", err)
 			}
 
 			return err
@@ -375,43 +378,7 @@ func (client *Client) SaveUserAgents(ctx context.Context, userAgents []model.Use
 	}
 
 	if client.debug {
-		client.logger.Debug("saved user agents", "count", len(userAgents))
-	}
-
-	return nil
-}
-
-func (client *Client) SaveBots(ctx context.Context, bots []model.Bot) error {
-	tx, err := client.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "bot" (client_id, visitor_id, time, user_agent, path, event_name) VALUES (?,?,?,?,?,?)`)
-
-	if err != nil {
-		return err
-	}
-
-	for _, bot := range bots {
-		_, err := query.Exec(bot.ClientID, bot.VisitorID, bot.Time, bot.UserAgent, bot.Path, bot.Event)
-
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save bots", "err", err)
-			}
-
-			return err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	if client.debug {
-		client.logger.Debug("saved bots", "count", len(bots))
+		client.logger.Debug("saved requests", "count", len(requests))
 	}
 
 	return nil
@@ -1758,6 +1725,44 @@ func (client *Client) SelectOptions(ctx context.Context, query string, args ...a
 
 		if err := rows.Scan(&result); err != nil {
 			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectTagStats implements the Store interface.
+func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query string, args ...any) ([]model.TagStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.TagStats
+
+	for rows.Next() {
+		var result model.TagStats
+
+		if breakdown {
+			if err := rows.Scan(&result.Value,
+				&result.Visitors,
+				&result.Views,
+				&result.RelativeVisitors,
+				&result.RelativeViews); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := rows.Scan(&result.Key,
+				&result.Visitors,
+				&result.Views,
+				&result.RelativeVisitors,
+				&result.RelativeViews); err != nil {
+				return nil, err
+			}
 		}
 
 		results = append(results, result)
