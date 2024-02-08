@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
@@ -29,7 +30,7 @@ func TestTags_Tags(t *testing.T) {
 		{VisitorID: 3, Time: util.Today(), Path: "/", TagKeys: []string{"author", "type"}, TagValues: []string{"Alice", "blog_post"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
+		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author", "amount"}, MetaValues: []string{"value", "John", "99.99"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
@@ -214,6 +215,24 @@ func TestTags_Tags(t *testing.T) {
 	assert.InDelta(t, 0.3333, stats[1].RelativeVisitors, 0.001)
 	assert.InDelta(t, 0.2, stats[0].RelativeViews, 0.001)
 	assert.InDelta(t, 0.2, stats[1].RelativeViews, 0.001)
+	stats, err = analyzer.Tags.Keys(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"author": "John",
+		},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		Sample:           10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "author", stats[0].Key)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 3, stats[0].Views)
+	assert.InDelta(t, 0.3333, stats[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.6, stats[0].RelativeViews, 0.001)
 }
 
 func TestTags_Breakdown(t *testing.T) {

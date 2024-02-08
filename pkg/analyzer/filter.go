@@ -107,7 +107,6 @@ type Filter struct {
 	// Tags filters for tag key-value pairs.
 	Tags map[string]string
 
-	// TODO joins, getFields?
 	// Tag filters for tags by their keys.
 	Tag []string
 
@@ -320,6 +319,12 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			} else {
 				q.joinSecond = filter.joinEvents(fields)
 			}
+		} else if q.from == events {
+			q.joinSecond = filter.joinPageViews(fields)
+
+			if q.joinSecond != nil {
+				q.joinSecond.parent = &q
+			}
 		}
 	} else {
 		q.fields = fields
@@ -422,12 +427,22 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
-	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 || filter.searchContains(FieldPath) {
+	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 || filter.searchContains(FieldPath) ||
+		filter.fieldsContain(fields, FieldTagKey) || filter.fieldsContain(fields, FieldTagValue) ||
+		filter.fieldsContain(fields, FieldTagKeysRaw) || filter.fieldsContain(fields, FieldTagValuesRaw) {
 		pageViewFields := []Field{FieldVisitorID, FieldSessionID}
 
 		if len(filter.PathPattern) > 0 || len(filter.Path) > 0 ||
 			filter.fieldsContain(fields, FieldPath) || filter.searchContains(FieldPath) {
 			pageViewFields = append(pageViewFields, FieldPath)
+		}
+
+		if filter.fieldsContain(fields, FieldTagKey) || filter.fieldsContain(fields, FieldTagKeysRaw) {
+			pageViewFields = append(pageViewFields, FieldTagKeysRaw)
+		}
+
+		if filter.fieldsContain(fields, FieldTagValue) || filter.fieldsContain(fields, FieldTagValuesRaw) {
+			pageViewFields = append(pageViewFields, FieldTagValuesRaw)
 		}
 
 		filterCopy := *filter
