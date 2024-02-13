@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	sessions   = `"session" t`
-	pageViews  = `"page_view" t`
-	events     = `"event" t`
+	sessions   = table(`"session" t`)
+	pageViews  = table(`"page_view" t`)
+	events     = table(`"event" t`)
 	dateFormat = "2006-01-02"
 )
 

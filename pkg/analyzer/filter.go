@@ -319,12 +319,6 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 			} else {
 				q.joinSecond = filter.joinEvents(fields)
 			}
-		} else if q.from == events {
-			q.joinSecond = filter.joinPageViews(fields)
-
-			if q.joinSecond != nil {
-				q.joinSecond.parent = &q
-			}
 		}
 	} else {
 		q.fields = fields
@@ -348,27 +342,41 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 }
 
 func (filter *Filter) table(fields []Field) table {
-	if !filter.fieldsContain(fields, FieldEntryPath) && !filter.fieldsContain(fields, FieldExitPath) {
-		eventFilter := filter.fieldsContain(fields, FieldEventName) || filter.CustomMetricType != "" && filter.CustomMetricKey != ""
+	tagKeyFilter := filter.fieldsContain(fields, FieldTagKey)
+	tagValueFilter := filter.fieldsContain(fields, FieldTagValue)
+	pageViewFilter := (len(filter.Path) > 0 ||
+		len(filter.PathPattern) > 0 ||
+		len(filter.Tags) > 0 ||
+		len(filter.Tag) > 0 ||
+		filter.fieldsContain(fields, FieldPath) ||
+		filter.fieldsContain(fields, FieldEntries) ||
+		filter.fieldsContain(fields, FieldExits) ||
+		filter.fieldsContain(fields, FieldHour) ||
+		filter.fieldsContain(fields, FieldTagKeysRaw) ||
+		filter.fieldsContain(fields, FieldTagValuesRaw) ||
+		tagKeyFilter ||
+		tagValueFilter ||
+		filter.searchContains(FieldPath)) &&
+		(filter.CustomMetricType == "" || filter.CustomMetricKey == "" ||
+			tagKeyFilter || tagValueFilter)
 
-		if !eventFilter &&
-			(len(filter.Path) > 0 ||
-				len(filter.PathPattern) > 0 ||
-				len(filter.Tags) > 0 ||
-				len(filter.Tag) > 0 ||
-				filter.fieldsContain(fields, FieldPath) ||
-				filter.searchContains(FieldPath) ||
-				filter.fieldsContain(fields, FieldTagKey) ||
-				filter.fieldsContain(fields, FieldTagValue) ||
-				filter.fieldsContain(fields, FieldHour)) {
-			return pageViews
-		}
-
-		if len(filter.EventName) > 0 || eventFilter {
-			return events
-		}
-	} else if filter.fieldsContain(fields, FieldEntries) || filter.fieldsContain(fields, FieldExits) || filter.fieldsContain(fields, FieldHour) {
+	if pageViewFilter {
 		return pageViews
+	}
+
+	sessionFilter := filter.fieldsContain(fields, FieldEntryPath) ||
+		filter.fieldsContain(fields, FieldExitPath)
+
+	if sessionFilter {
+		return sessions
+	}
+
+	eventFilter := len(filter.EventName) > 0 ||
+		filter.fieldsContain(fields, FieldEventName) ||
+		filter.CustomMetricType != "" && filter.CustomMetricKey != ""
+
+	if eventFilter {
+		return events
 	}
 
 	return sessions
@@ -460,8 +468,12 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 }
 
 func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
-	if len(filter.EventName) > 0 {
+	if len(filter.EventName) > 0 || filter.fieldsContain(fields, FieldEventName) {
 		eventFields := []Field{FieldVisitorID, FieldSessionID}
+
+		if filter.fieldsContain(fields, FieldEventName) {
+			eventFields = append(eventFields, FieldEventName)
+		}
 
 		if filter.fieldsContain(fields, FieldEventPath) {
 			eventFields = append(eventFields, FieldEventPath)
@@ -474,6 +486,18 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 		if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
 			eventFields = append(eventFields, FieldEventMetaKeysRaw)
 			eventFields = append(eventFields, FieldEventMetaValuesRaw)
+		} else {
+			if filter.fieldsContain(fields, FieldEventMetaKeysRaw) ||
+				filter.fieldsContain(fields, FieldEventMetaKeys) ||
+				filter.fieldsContain(fields, FieldEventMeta) {
+				eventFields = append(eventFields, FieldEventMetaKeysRaw)
+			}
+
+			if filter.fieldsContain(fields, FieldEventMetaValuesRaw) ||
+				filter.fieldsContain(fields, FieldEventMetaValues) ||
+				filter.fieldsContain(fields, FieldEventMeta) {
+				eventFields = append(eventFields, FieldEventMetaValuesRaw)
+			}
 		}
 
 		filterCopy := *filter
@@ -495,7 +519,7 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 	eventFields := []Field{FieldVisitorID, FieldSessionID, FieldEventName}
 
-	if len(filter.EventMeta) > 0 || filter.fieldsContain(fields, FieldEventMeta) {
+	if len(filter.EventMeta) > 0 || filter.fieldsContain(fields, FieldEventMeta) || filter.fieldsContain(fields, FieldEventMetaValues) {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw, FieldEventMetaValuesRaw)
 	} else if len(filter.EventMetaKey) > 0 || filter.fieldsContain(fields, FieldEventMetaKeys) {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw)
