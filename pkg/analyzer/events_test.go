@@ -248,6 +248,14 @@ func TestAnalyzer_EventList(t *testing.T) {
 		})
 	}
 
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
+		{VisitorID: 3, Time: util.Today(), Path: "/"},
+		{VisitorID: 4, Time: util.Today(), Path: "/"},
+		{VisitorID: 5, Time: util.Today(), Path: "/foo"},
+	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event1", MetaKeys: []string{"a", "b"}, MetaValues: []string{"foo", "42"}, VisitorID: 1, Time: util.Today(), Path: "/"},
 		{Name: "event1", MetaKeys: []string{"b", "a"}, MetaValues: []string{"42", "foo"}, VisitorID: 2, Time: util.Today(), Path: "/foo"},
@@ -276,7 +284,10 @@ func TestAnalyzer_EventList(t *testing.T) {
 	assert.Equal(t, "42", stats[2].Meta["b"])
 	assert.Equal(t, "foo", stats[3].Meta["a"])
 	assert.Equal(t, "56", stats[3].Meta["b"])
-	stats, err = analyzer.Events.List(&Filter{EventName: []string{"event1"}, Path: []string{"/foo"}})
+	stats, err = analyzer.Events.List(&Filter{
+		EventName: []string{"event1"},
+		Path:      []string{"/foo"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, "event1", stats[0].Name)

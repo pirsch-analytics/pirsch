@@ -578,6 +578,10 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: util.PastDay(1).Add(time.Minute), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
 		},
 	})
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2).Add(time.Second), Path: "/", Name: "event", MetaKeys: []string{"key", "author", "amount"}, MetaValues: []string{"value", "John", "99.99"}},
+		{VisitorID: 3, SessionID: 2, Time: util.PastDay(2), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
+	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{IncludeTimeOnPage: true})
@@ -659,6 +663,23 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 		IncludeTimeOnPage: true,
 	})
 	assert.NoError(t, err)
+	entries, err = analyzer.Pages.Entry(&Filter{
+		From:      util.PastDay(2),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"author": "John",
+		},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		Sample:           10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 1, entries[0].Entries)
+	assert.InDelta(t, 0.1111, entries[0].EntryRate, 0.001)
 	exits, err := analyzer.Pages.Exit(nil)
 	assert.NoError(t, err)
 	assert.Len(t, exits, 3)
@@ -715,6 +736,23 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 3, exits[0].Visitors)
 	assert.Equal(t, 1, exits[0].Exits)
 	assert.InDelta(t, 0.2, exits[0].ExitRate, 0.01)
+	exits, err = analyzer.Pages.Exit(&Filter{
+		From:      util.PastDay(2),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"author": "John",
+		},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		Sample:           10_000_000,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 1, entries[0].Entries)
+	assert.InDelta(t, 0.1111, entries[0].EntryRate, 0.001)
 	_, err = analyzer.Pages.Exit(&Filter{Path: []string{"/bar"}, IncludeTitle: true})
 	assert.NoError(t, err)
 	_, err = analyzer.Pages.Exit(getMaxFilter(""))

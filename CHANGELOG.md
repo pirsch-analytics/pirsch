@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.7.1
+
+* fixed filtering for custom metrics and tags
+
 ## 6.7.0
 
 * added tags for segmentation to page views
