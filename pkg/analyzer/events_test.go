@@ -27,6 +27,19 @@ func TestAnalyzer_Events(t *testing.T) {
 		})
 	}
 
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Second), Path: "/simple/page"},
+		{VisitorID: 3, Time: util.Today().Add(time.Second * 2), Path: "/simple/page/1"},
+		{VisitorID: 3, Time: util.Today().Add(time.Minute), Path: "/simple/page/2"},
+		{VisitorID: 4, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Second * 4), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Second * 5), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Minute), Path: "/simple/page"},
+		{VisitorID: 3, Time: util.Today().Add(time.Second * 6), Path: "/simple/page"},
+		{VisitorID: 4, Time: util.Today().Add(time.Second * 7), Path: "/"},
+		{VisitorID: 5, Time: util.Today().Add(time.Second * 8), Path: "/"},
+	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event1", DurationSeconds: 5, MetaKeys: []string{"status", "price"}, MetaValues: []string{"in", "34.56"}, VisitorID: 1, Time: util.Today(), Path: "/"},
 		{Name: "event1", DurationSeconds: 8, MetaKeys: []string{"status", "price"}, MetaValues: []string{"out", "34.56"}, VisitorID: 2, Time: util.Today().Add(time.Second), Path: "/simple/page"},
@@ -174,6 +187,19 @@ func TestAnalyzer_Events(t *testing.T) {
 	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
 	assert.InDelta(t, 9, stats[0].AverageDurationSeconds, 0.001)
 	assert.Equal(t, "param", stats[0].MetaValue)
+	stats, err = analyzer.Events.Breakdown(&Filter{
+		EventName:    []string{"event1"},
+		EventMetaKey: []string{"status"},
+		PathPattern:  []string{"(?i)/simple/.*$"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event1", stats[0].Name)
+	assert.Equal(t, 2, stats[0].Count)
+	assert.Equal(t, 1, stats[0].Visitors)
+	assert.Equal(t, 2, stats[0].Views)
+	assert.InDelta(t, 0.1, stats[0].CR, 0.001)
+	assert.Equal(t, "out", stats[0].MetaValue)
 	stats, err = analyzer.Events.Breakdown(&Filter{EventName: []string{"does-not-exist"}, EventMetaKey: []string{"status"}})
 	assert.NoError(t, err)
 	assert.Empty(t, stats)

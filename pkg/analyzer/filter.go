@@ -492,7 +492,8 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 		} else {
 			if filter.fieldsContain(fields, FieldEventMetaKeysRaw) ||
 				filter.fieldsContain(fields, FieldEventMetaKeys) ||
-				filter.fieldsContain(fields, FieldEventMeta) {
+				filter.fieldsContain(fields, FieldEventMeta) ||
+				filter.fieldsContain(fields, FieldEventMetaValues) {
 				eventFields = append(eventFields, FieldEventMetaKeysRaw)
 			}
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.7.2
+
+* fixed reading event breakdown
+* updated dependencies
+
 ## 6.7.1
 
 * fixed filtering for custom metrics and tags
