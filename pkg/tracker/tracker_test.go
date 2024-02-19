@@ -428,6 +428,31 @@ func TestTracker_PageViewFindSessionRedis(t *testing.T) {
 	assert.Len(t, pageViews, 2)
 }
 
+func TestTracker_PageViewClientHints(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 Chrome/121.0.0.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
+	req.Header.Set("Sec-Ch-Ua", "\"Not A(Brand\";v=\"99\", \"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\"")
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.PageView(req, 123, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, "Chrome", sessions[0].Browser)
+	assert.Equal(t, "121", sessions[0].BrowserVersion)
+	assert.False(t, sessions[0].Mobile)
+	assert.Equal(t, "Linux", sessions[0].OS)
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
@@ -680,6 +705,34 @@ func TestTracker_EventPageView(t *testing.T) {
 	assert.Equal(t, "/event/page", events[0].Path)
 	assert.Equal(t, "/event/page", events[1].Path)
 	assert.Equal(t, "/new/event/page", events[2].Path)
+}
+
+func TestTracker_EventClientHints(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 Chrome/121.0.0.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
+	req.Header.Set("Sec-Ch-Ua", "\"Not A(Brand\";v=\"99\", \"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\"")
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.PageView(req, 123, Options{})
+	tracker.Event(req, 123, EventOptions{
+		Name: "event",
+	}, Options{})
+	tracker.Flush()
+	events := client.GetEvents()
+	assert.Len(t, events, 1)
+	assert.Equal(t, "Chrome", events[0].Browser)
+	assert.Equal(t, "121", events[0].BrowserVersion)
+	assert.False(t, events[0].Mobile)
+	assert.Equal(t, "Linux", events[0].OS)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
