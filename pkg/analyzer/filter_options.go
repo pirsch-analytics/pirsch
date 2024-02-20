@@ -5,6 +5,10 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 )
 
+const (
+	maxOptions = 200
+)
+
 // FilterOptions returns options that can be used to filter results.
 // This includes distinct pages, referrers, ... for a given period.
 // Common options, like the operating system or browser, are not read from the database.
@@ -96,7 +100,8 @@ func (options *FilterOptions) EventMetadataValues(filter *Filter) ([]string, err
 		%s
 		AND length(event_meta_values) > 0
 		%s
-		ORDER BY "values" ASC`, timeQuery, builder.q.String())
+		ORDER BY "values" ASC
+		LIMIT %d`, timeQuery, builder.q.String(), maxOptions)
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
@@ -112,7 +117,8 @@ func (options *FilterOptions) TagKeys(filter *Filter) ([]string, error) {
 		FROM page_view
 		%s
 		AND length(tag_values) > 0
-		ORDER BY "values" ASC`, timeQuery)
+		ORDER BY "values" ASC
+		LIMIT %d`, timeQuery, maxOptions)
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
@@ -134,13 +140,14 @@ func (options *FilterOptions) TagValues(filter *Filter) ([]string, error) {
 		%s
 		AND length(tag_values) > 0
 		AND has(tag_keys, ?)
-		ORDER BY "keys" ASC`, timeQuery)
+		ORDER BY "keys" ASC
+		LIMIT %d`, timeQuery, maxOptions)
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }
 
 func (options *FilterOptions) selectFilterOptions(filter *Filter, field, table string) ([]string, error) {
 	filter = options.analyzer.getFilter(filter)
 	timeQuery, args := filter.buildTimeQuery()
-	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %s %s ORDER BY %s ASC`, field, table, timeQuery, field)
+	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %s %s ORDER BY %s ASC LIMIT %d`, field, table, timeQuery, field, maxOptions)
 	return options.store.SelectOptions(filter.Ctx, q, args...)
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.7.3
+
+* added a fixed limit to the number of filter options that are returned
+* updated dependencies
+
 ## 6.7.2
 
 * fixed reading event breakdown
