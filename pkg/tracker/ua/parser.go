@@ -363,7 +363,7 @@ func parseSystem(ua string, systemStart, systemEnd int) []string {
 		for i := range systemParts {
 			systemParts[i] = strings.TrimSpace(systemParts[i])
 
-			if systemParts[i] != "" {
+			if !ignoreSystemString(systemParts[i]) {
 				system = append(system, systemParts[i])
 			}
 		}
@@ -392,6 +392,10 @@ func parseProducts(ua string, systemStart, systemEnd int) []string {
 	return products
 }
 
+func ignoreSystemString(system string) bool {
+	return system == "" || strings.ContainsAny(system, "\"'`=")
+}
+
 func ignoreProductString(product string) bool {
 	for _, prefix := range filterProductPrefix {
 		if strings.HasPrefix(product, prefix) {
@@ -399,7 +403,7 @@ func ignoreProductString(product string) bool {
 		}
 	}
 
-	return false
+	return strings.ContainsAny(product, "\"'`=")
 }
 
 func parseProductsFromCH(header string) []string {

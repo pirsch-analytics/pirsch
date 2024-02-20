@@ -215,6 +215,9 @@ func TestParse(t *testing.T) {
 
 		// multiple system entries and versions
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+
+		// garbage
+		`\'user-agent=\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36\"\'`,
 	}
 	expected := [][][]string{
 		{{}, {}},
@@ -229,6 +232,7 @@ func TestParse(t *testing.T) {
 		{{"system"}, {"version"}},
 		{{"system"}, {"version"}},
 		{{"Macintosh", "Intel Mac OS X 10_10_5"}, {"Chrome/63.0.3239.132", "Safari/537.36"}},
+		{{"Windows NT 10.0", "WOW64"}, {"Chrome/51.0.2704.103"}},
 	}
 
 	for i, in := range input {

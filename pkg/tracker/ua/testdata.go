@@ -253,6 +253,27 @@ var userAgentsFirefox = []testUserAgent{
 		os:             pkg.OSLinux,
 		osVersion:      "",
 	},
+	{
+		ua:             "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0",
+		browser:        pkg.BrowserFirefox,
+		browserVersion: "122.0",
+		os:             pkg.OSLinux,
+		osVersion:      "",
+	},
+	{
+		ua:             `"Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"`,
+		browser:        pkg.BrowserFirefox,
+		browserVersion: "122.0",
+		os:             pkg.OSLinux,
+		osVersion:      "",
+	},
+	{
+		ua:             `\"Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0\"`,
+		browser:        pkg.BrowserFirefox,
+		browserVersion: "122.0",
+		os:             pkg.OSLinux,
+		osVersion:      "",
+	},
 }
 
 var userAgentsChrome = []testUserAgent{

@@ -3,6 +3,7 @@
 ## 6.7.3
 
 * added a fixed limit to the number of filter options that are returned
+* improved browser and OS parsing
 * updated dependencies
 
 ## 6.7.2
