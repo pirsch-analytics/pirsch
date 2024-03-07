@@ -88,9 +88,10 @@ func NewTracker(config Config) *Tracker {
 }
 
 // PageView tracks a page view.
-func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Options) {
+// Returns true if the page view has been accepted and false otherwise.
+func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Options) bool {
 	if tracker.stopped.Load() {
-		return
+		return false
 	}
 
 	now := time.Now().UTC()
@@ -123,6 +124,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 				pageView:      pv,
 				request:       saveRequest,
 			}
+			return true
 		}
 	} else {
 		tracker.data <- data{
@@ -136,12 +138,15 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			},
 		}
 	}
+
+	return false
 }
 
 // Event tracks an event.
-func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions EventOptions, options Options) {
+// Returns true if the event has been accepted and false otherwise.
+func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions EventOptions, options Options) bool {
 	if tracker.stopped.Load() {
-		return
+		return false
 	}
 
 	now := time.Now().UTC()
@@ -179,6 +184,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 					event:         tracker.eventFromSession(session, clientID, eventOptions.Duration, eventOptions.Name, metaKeys, metaValues),
 					request:       saveRequest,
 				}
+				return true
 			}
 		} else {
 			tracker.data <- data{
@@ -194,12 +200,15 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 			}
 		}
 	}
+
+	return false
 }
 
 // ExtendSession extends an existing session.
-func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options Options) {
+// Returns true if the session has been extended and false otherwise.
+func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options Options) bool {
 	if tracker.stopped.Load() {
-		return
+		return false
 	}
 
 	now := time.Now().UTC()
@@ -219,8 +228,11 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 				session:       session,
 				cancelSession: cancelSession,
 			}
+			return true
 		}
 	}
+
+	return false
 }
 
 // Flush flushes all buffered data.
