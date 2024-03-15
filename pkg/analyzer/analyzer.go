@@ -17,6 +17,7 @@ type Analyzer struct {
 	Events       Events
 	Time         Time
 	Tags         Tags
+	Sessions     Sessions
 	Options      FilterOptions
 }
 
@@ -52,6 +53,10 @@ func NewAnalyzer(store db.Store) *Analyzer {
 		store:    store,
 	}
 	analyzer.Tags = Tags{
+		analyzer: analyzer,
+		store:    store,
+	}
+	analyzer.Sessions = Sessions{
 		analyzer: analyzer,
 		store:    store,
 	}

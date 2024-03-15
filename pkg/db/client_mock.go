@@ -318,3 +318,13 @@ func (client *ClientMock) SelectOptions(context.Context, string, ...any) ([]stri
 func (client *ClientMock) SelectTagStats(context.Context, bool, string, ...any) ([]model.TagStats, error) {
 	return nil, nil
 }
+
+// SelectPageViews implements the Store interface.
+func (client *ClientMock) SelectPageViews(context.Context, string, ...any) ([]model.PageView, error) {
+	return nil, nil
+}
+
+// SelectEvents implements the Store interface.
+func (client *ClientMock) SelectEvents(context.Context, string, ...any) ([]model.Event, error) {
+	return nil, nil
+}

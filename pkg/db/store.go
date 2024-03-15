@@ -134,4 +134,10 @@ type Store interface {
 
 	// SelectOptions selects a list of filter options.
 	SelectOptions(context.Context, string, ...any) ([]string, error)
+
+	// SelectPageViews selects page views.
+	SelectPageViews(context.Context, string, ...any) ([]model.PageView, error)
+
+	// SelectEvents selects events.
+	SelectEvents(context.Context, string, ...any) ([]model.Event, error)
 }

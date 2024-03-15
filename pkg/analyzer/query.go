@@ -374,6 +374,7 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
 	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
 	query.whereFieldPlatform()
+	query.whereFieldVisitorSessionID()
 
 	for i := range query.search {
 		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
@@ -606,6 +607,17 @@ func (query *queryBuilder) whereFieldPlatform() {
 				query.where = append(query.where, where{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
 			}
 		}
+	}
+}
+
+func (query *queryBuilder) whereFieldVisitorSessionID() {
+	if query.filter.VisitorID != 0 && query.filter.SessionID != 0 {
+		query.where = append(query.where, where{
+			eqContains: []string{"visitor_id = ? "},
+		}, where{
+			eqContains: []string{"session_id = ? "},
+		})
+		query.args = append(query.args, query.filter.VisitorID, query.filter.SessionID)
 	}
 }
 

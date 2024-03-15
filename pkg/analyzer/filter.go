@@ -120,6 +120,14 @@ type Filter struct {
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
 
+	// VisitorID filters for a visitor.
+	// Must be used together with SessionID.
+	VisitorID uint64
+
+	// SessionID filters for a session.
+	// Must be used together with VisitorID.
+	SessionID uint32
+
 	// Search searches the results for given fields and inputs.
 	Search []Search
 
@@ -299,7 +307,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
 
-	if q.from == events && !returnEventName && !customMetric {
+	if q.from == events && !returnEventName && !customMetric && !filter.fieldsContain(fields, FieldEventsAll) {
 		q.from = sessions
 		q.fields = filter.excludeFields(fields, FieldPath)
 		q.includeEventFilter = true
@@ -351,6 +359,7 @@ func (filter *Filter) table(fields []Field) table {
 		len(filter.PathPattern) > 0 ||
 		len(filter.Tags) > 0 ||
 		len(filter.Tag) > 0 ||
+		filter.fieldsContain(fields, FieldPageViewsAll) ||
 		filter.fieldsContain(fields, FieldPath) ||
 		filter.fieldsContain(fields, FieldEntries) ||
 		filter.fieldsContain(fields, FieldExits) ||
@@ -376,6 +385,7 @@ func (filter *Filter) table(fields []Field) table {
 
 	eventFilter := len(filter.EventName) > 0 ||
 		filter.fieldsContain(fields, FieldEventName) ||
+		filter.fieldsContain(fields, FieldEventsAll) ||
 		filter.CustomMetricType != "" && filter.CustomMetricKey != ""
 
 	if eventFilter {

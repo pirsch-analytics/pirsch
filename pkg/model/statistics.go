@@ -303,3 +303,9 @@ type TagStats struct {
 	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
 	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
 }
+
+// SessionStep is the result type combining page views and events for a single session.
+type SessionStep struct {
+	PageView *PageView `json:"page_view"`
+	Event    *Event    `json:"event"`
+}

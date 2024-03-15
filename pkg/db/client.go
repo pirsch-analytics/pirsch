@@ -1771,6 +1771,105 @@ func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query 
 	return results, nil
 }
 
+// SelectPageViews implements the Store interface.
+func (client *Client) SelectPageViews(ctx context.Context, query string, args ...any) ([]model.PageView, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.PageView
+
+	for rows.Next() {
+		var result model.PageView
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.SessionID,
+			&result.Time,
+			&result.DurationSeconds,
+			&result.Path,
+			&result.Title,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm,
+			&result.TagKeys,
+			&result.TagValues); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectEvents implements the Store interface.
+func (client *Client) SelectEvents(ctx context.Context, query string, args ...any) ([]model.Event, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.Event
+
+	for rows.Next() {
+		var result model.Event
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.Time,
+			&result.SessionID,
+			&result.Name,
+			&result.MetaKeys,
+			&result.MetaValues,
+			&result.DurationSeconds,
+			&result.Path,
+			&result.Title,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1

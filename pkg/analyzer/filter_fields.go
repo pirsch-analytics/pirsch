@@ -5,6 +5,18 @@ import (
 )
 
 var (
+	// FieldPageViewsAll is a query result column.
+	FieldPageViewsAll = Field{
+		querySessions:  "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		queryPageViews: "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+	}
+
+	// FieldEventsAll is a query result column.
+	FieldEventsAll = Field{
+		querySessions:  "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		queryPageViews: "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+	}
+
 	// FieldVisitorID is a query result column.
 	FieldVisitorID = Field{
 		querySessions:  "visitor_id",

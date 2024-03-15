@@ -2,6 +2,7 @@
 
 ## 6.8.0
 
+* added reading individual sessions
 * updated User-Agent blacklist
 * updated dependencies
 
