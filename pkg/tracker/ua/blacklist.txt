@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2023-12-30)
+# custom (last update: 2024-03-15)
 ://
 bot
 crawler
@@ -557,6 +557,19 @@ w442j4wrscmtcmxdsrec687grytgv
 09z220t400145
 {{
 }}
+mountjoymusic
+alfred
+scalingo
+marleyspoon
+m39ua2rsvts7dj4zei1i
+netlify
+gtert453gtvewrt5wtwt54wtz45vt5z25vzt
+clashforwindows
+nftblockchain
+venomwalletbrowser
+oneartwalletbrowser
+vp-iphone
+elgato
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

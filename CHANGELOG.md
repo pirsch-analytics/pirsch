@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.8.0
+
+* updated user-Agent blacklist
+* updated dependencies
+
 ## 6.7.4
 
 * added boolean to Tracker returning whether a request has been dropped
