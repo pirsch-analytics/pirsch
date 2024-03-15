@@ -2,7 +2,7 @@
 
 ## 6.8.0
 
-* updated user-Agent blacklist
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 6.7.4
