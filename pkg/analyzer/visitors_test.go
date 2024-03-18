@@ -1126,6 +1126,18 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 900, tsd)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:        util.PastDay(2),
+		To:          util.PastDay(2).Add(time.Minute * 20),
+		Period:      pkg.PeriodMinute,
+		IncludeTime: true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, visitors[0].Minute.Valid)
+	assert.Len(t, visitors, 20)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[10].Visitors)
+	assert.Equal(t, 1, visitors[15].Visitors)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:   util.PastDay(90),
 		To:     util.Today(),
 		Period: pkg.PeriodWeek,

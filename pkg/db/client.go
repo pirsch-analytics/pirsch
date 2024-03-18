@@ -797,6 +797,60 @@ func (client *Client) SelectVisitorStats(ctx context.Context, period pkg.Period,
 
 			results = append(results, result)
 		}
+	case pkg.PeriodMinute:
+		for rows.Next() {
+			var result model.VisitorStats
+
+			if includeCustomMetric {
+				if includeCR {
+					if err := rows.Scan(&result.Minute,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Minute,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CustomMetricAvg,
+						&result.CustomMetricTotal); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				if includeCR {
+					if err := rows.Scan(&result.Minute,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate,
+						&result.CR); err != nil {
+						return nil, err
+					}
+				} else {
+					if err := rows.Scan(&result.Minute,
+						&result.Visitors,
+						&result.Sessions,
+						&result.Views,
+						&result.Bounces,
+						&result.BounceRate); err != nil {
+						return nil, err
+					}
+				}
+			}
+
+			results = append(results, result)
+		}
 	default:
 		for rows.Next() {
 			var result model.VisitorStats
@@ -893,6 +947,16 @@ func (client *Client) SelectTimeSpentStats(ctx context.Context, period pkg.Perio
 			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Year); err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+		}
+	case pkg.PeriodMinute:
+		for rows.Next() {
+			var result model.TimeSpentStats
+
+			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Minute); err != nil {
 				return nil, err
 			}
 

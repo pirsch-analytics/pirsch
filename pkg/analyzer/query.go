@@ -163,6 +163,8 @@ func (query *queryBuilder) selectFields() bool {
 						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
 					case pkg.PeriodYear:
 						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+					case pkg.PeriodMinute:
+						q.WriteString(fmt.Sprintf("toStartOfMinute(toDateTime(time, '%s')) minute,", query.filter.Timezone.String()))
 					default:
 						panic("unknown case for filter period")
 					}
@@ -298,6 +300,8 @@ func (query *queryBuilder) joinQuery() {
 
 		if query.filter.fieldsContain(query.groupBy, FieldHour) {
 			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON hour = uvd.hour ", q))
+		} else if query.filter.Period == pkg.PeriodMinute {
+			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON minute = uvd.minute ", q))
 		} else if query.filter.Period == pkg.PeriodDay {
 			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON day = uvd.day ", q))
 		} else if query.filter.Period == pkg.PeriodWeek {
@@ -679,6 +683,8 @@ func (query *queryBuilder) groupByFields() {
 					q.WriteString("month,")
 				case pkg.PeriodYear:
 					q.WriteString("year,")
+				case pkg.PeriodMinute:
+					q.WriteString("minute,")
 				default:
 					panic("unknown case for filter period")
 				}
@@ -733,6 +739,8 @@ func (query *queryBuilder) orderByFields() {
 						name = "month"
 					case pkg.PeriodYear:
 						name = "year"
+					case pkg.PeriodMinute:
+						name = "minute"
 					default:
 						panic("unknown case for filter period")
 					}
@@ -754,6 +762,9 @@ func (query *queryBuilder) withFill() string {
 		q := ""
 
 		switch query.filter.Period {
+		case pkg.PeriodMinute:
+			tz := query.filter.Timezone.String()
+			q = fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE ", tz, tz)
 		case pkg.PeriodDay:
 			q = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
 		case pkg.PeriodWeek:
@@ -764,7 +775,12 @@ func (query *queryBuilder) withFill() string {
 			q = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
 		}
 
-		query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
+		if query.filter.Period == pkg.PeriodMinute {
+			query.args = append(query.args, query.filter.From, query.filter.To)
+		} else {
+			query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
+		}
+
 		return q
 	}
 

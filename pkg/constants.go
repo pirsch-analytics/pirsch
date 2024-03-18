@@ -70,7 +70,7 @@ const (
 )
 
 const (
-	// PeriodDay groups the results by date.
+	// PeriodDay groups the results by day.
 	PeriodDay = Period(iota)
 
 	// PeriodWeek groups the results by week.
@@ -81,6 +81,9 @@ const (
 
 	// PeriodYear groups the result by year.
 	PeriodYear
+
+	// PeriodMinute groups the result by minute.
+	PeriodMinute
 )
 
 // Period is used to group results.

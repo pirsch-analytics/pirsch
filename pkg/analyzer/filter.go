@@ -225,6 +225,10 @@ func (filter *Filter) validate() {
 		filter.To = tomorrow
 	}
 
+	if filter.Period == pkg.PeriodMinute && filter.To.Sub(filter.From) > time.Hour {
+		filter.Period = pkg.PeriodDay
+	}
+
 	if len(filter.Path) > 0 && len(filter.PathPattern) > 0 {
 		filter.PathPattern = nil
 	}

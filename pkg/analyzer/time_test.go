@@ -71,6 +71,16 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, 23, stats[0].AverageTimeSpentSeconds) // (28+5+35)/3
+
+	stats, err = analyzer.Time.AvgSessionDuration(&Filter{
+		From:        util.Today(),
+		To:          util.Today().Add(time.Minute * 5),
+		Period:      pkg.PeriodMinute,
+		IncludeTime: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 5)
+	assert.Equal(t, 18, stats[0].AverageTimeSpentSeconds)
 }
 
 func TestAnalyzer_AvgSessionDurationPeriod(t *testing.T) {
@@ -282,6 +292,15 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Len(t, byDay, 1)
 	assert.Equal(t, 2023, byDay[0].Year.Time.Year())
 	assert.Equal(t, 5, byDay[0].AverageTimeSpentSeconds)
+	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
+		From:        time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
+		To:          time.Date(2023, 10, 22, 1, 0, 0, 0, time.UTC),
+		Period:      pkg.PeriodMinute,
+		IncludeTime: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 60)
+	assert.Equal(t, 8, byDay[0].AverageTimeSpentSeconds)
 	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
 		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
 		To:   time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),

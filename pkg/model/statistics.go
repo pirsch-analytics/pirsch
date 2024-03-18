@@ -37,6 +37,7 @@ type VisitorStats struct {
 	Week              null.Time `json:"week"`
 	Month             null.Time `json:"month"`
 	Year              null.Time `json:"year"`
+	Minute            null.Time `json:"minute"`
 	Visitors          int       `json:"visitors"`
 	Views             int       `json:"views"`
 	Sessions          int       `json:"sessions"`
@@ -176,6 +177,7 @@ type TimeSpentStats struct {
 	Week                    null.Time `json:"week"`
 	Month                   null.Time `json:"month"`
 	Year                    null.Time `json:"year"`
+	Minute                  null.Time `json:"minute"`
 	Path                    string    `json:"path"`
 	Title                   string    `json:"title"`
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`

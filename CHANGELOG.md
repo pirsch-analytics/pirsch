@@ -3,6 +3,7 @@
 ## 6.8.0
 
 * added listing and reading individual sessions
+* added grouping results by minute
 * updated User-Agent blacklist
 * updated dependencies
 
