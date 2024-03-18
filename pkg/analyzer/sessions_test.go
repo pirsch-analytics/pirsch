@@ -11,7 +11,59 @@ import (
 )
 
 func TestSessions_List(t *testing.T) {
-	// TODO
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 10), Start: util.Today(), EntryPath: "/", ExitPath: "/pricing", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 30), Start: util.Today(), EntryPath: "/blog", ExitPath: "/", PageViews: 8, IsBounce: false},
+			{Sign: 1, VisitorID: 3, SessionID: 3, Time: util.Today().Add(time.Minute * 45), Start: util.Today(), EntryPath: "/", ExitPath: "/about", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 4, SessionID: 4, Time: util.Today().Add(time.Minute * 47), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	analyzer := NewAnalyzer(dbClient)
+	stats, err := analyzer.Sessions.List(nil)
+	assert.NoError(t, err)
+	assert.Len(t, stats, 4)
+	assert.Equal(t, uint64(1), stats[0].VisitorID)
+	assert.Equal(t, uint64(2), stats[1].VisitorID)
+	assert.Equal(t, uint64(3), stats[2].VisitorID)
+	assert.Equal(t, uint64(4), stats[3].VisitorID)
+	assert.Equal(t, uint32(1), stats[0].SessionID)
+	assert.Equal(t, uint32(2), stats[1].SessionID)
+	assert.Equal(t, uint32(3), stats[2].SessionID)
+	assert.Equal(t, uint32(4), stats[3].SessionID)
+	assert.Equal(t, uint16(2), stats[0].PageViews)
+	assert.Equal(t, uint16(8), stats[1].PageViews)
+	assert.Equal(t, uint16(3), stats[2].PageViews)
+	assert.Equal(t, uint16(1), stats[3].PageViews)
+	assert.Equal(t, "/", stats[0].EntryPath)
+	assert.Equal(t, "/blog", stats[1].EntryPath)
+	assert.Equal(t, "/", stats[2].EntryPath)
+	assert.Equal(t, "/", stats[3].EntryPath)
+	assert.Equal(t, "/pricing", stats[0].ExitPath)
+	assert.Equal(t, "/", stats[1].ExitPath)
+	assert.Equal(t, "/about", stats[2].ExitPath)
+	assert.Equal(t, "/", stats[3].ExitPath)
+	assert.False(t, stats[0].IsBounce)
+	assert.False(t, stats[1].IsBounce)
+	assert.False(t, stats[2].IsBounce)
+	assert.True(t, stats[3].IsBounce)
+	stats, err = analyzer.Sessions.List(&Filter{
+		From:        util.Today().Add(time.Minute * 11),
+		To:          util.Today().Add(time.Minute * 46),
+		IncludeTime: true,
+		EntryPath:   []string{"/blog"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	_, err = analyzer.Sessions.List(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Sessions.List(getMaxFilter("event"))
+	assert.NoError(t, err)
 }
 
 func TestSessions_Breakdown(t *testing.T) {

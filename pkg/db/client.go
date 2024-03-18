@@ -1771,6 +1771,59 @@ func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query 
 	return results, nil
 }
 
+// SelectSessions implements the Store interface.
+func (client *Client) SelectSessions(ctx context.Context, query string, args ...any) ([]model.Session, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.Session
+
+	for rows.Next() {
+		var result model.Session
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.SessionID,
+			&result.Time,
+			&result.Start,
+			&result.DurationSeconds,
+			&result.EntryPath,
+			&result.ExitPath,
+			&result.PageViews,
+			&result.IsBounce,
+			&result.EntryTitle,
+			&result.ExitTitle,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm,
+			&result.Extended); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectPageViews implements the Store interface.
 func (client *Client) SelectPageViews(ctx context.Context, query string, args ...any) ([]model.PageView, error) {
 	rows, err := client.QueryContext(ctx, query, args...)

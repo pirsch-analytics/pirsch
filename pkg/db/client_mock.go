@@ -319,6 +319,11 @@ func (client *ClientMock) SelectTagStats(context.Context, bool, string, ...any) 
 	return nil, nil
 }
 
+// SelectSessions implements the Store interface.
+func (client *ClientMock) SelectSessions(ctx context.Context, query string, args ...any) ([]model.Session, error) {
+	return nil, nil
+}
+
 // SelectPageViews implements the Store interface.
 func (client *ClientMock) SelectPageViews(context.Context, string, ...any) ([]model.PageView, error) {
 	return nil, nil

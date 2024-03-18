@@ -37,6 +37,7 @@ type queryBuilder struct {
 	offset             int
 	includeEventFilter bool
 	sample             uint
+	final              bool
 
 	where []where
 	q     strings.Builder
@@ -265,6 +266,10 @@ func (query *queryBuilder) fromTable() {
 		query.q.WriteString(fmt.Sprintf("FROM %s SAMPLE %d ", query.from, query.sample))
 	} else {
 		query.q.WriteString(fmt.Sprintf("FROM %s ", query.from))
+	}
+
+	if query.from == sessions && query.final {
+		query.q.WriteString("FINAL ")
 	}
 }
 
@@ -677,6 +682,8 @@ func (query *queryBuilder) groupByFields() {
 				default:
 					panic("unknown case for filter period")
 				}
+			} else if query.groupBy[i] == FieldSessionsAll {
+				q.WriteString(query.groupBy[i].querySessions + ",")
 			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.groupBy[i]) + ",")
 			} else {

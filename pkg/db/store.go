@@ -135,6 +135,9 @@ type Store interface {
 	// SelectOptions selects a list of filter options.
 	SelectOptions(context.Context, string, ...any) ([]string, error)
 
+	// SelectSessions selects sessions.
+	SelectSessions(context.Context, string, ...any) ([]model.Session, error)
+
 	// SelectPageViews selects page views.
 	SelectPageViews(context.Context, string, ...any) ([]model.PageView, error)
 

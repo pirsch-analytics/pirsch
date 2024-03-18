@@ -5,6 +5,12 @@ import (
 )
 
 var (
+	// FieldSessionsAll is a query result column.
+	FieldSessionsAll = Field{
+		querySessions:  "visitor_id, session_id, time, start, duration_seconds, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended",
+		queryPageViews: "visitor_id, session_id, time, start, duration_seconds, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended",
+	}
+
 	// FieldPageViewsAll is a query result column.
 	FieldPageViewsAll = Field{
 		querySessions:  "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
@@ -389,6 +395,14 @@ var (
 		queryPageViews: "exit_title",
 		queryDirection: "ASC",
 		Name:           "title",
+	}
+
+	// FieldTime is a query result column.
+	FieldTime = Field{
+		querySessions:  "time",
+		queryPageViews: "time",
+		queryDirection: "ASC",
+		Name:           "time",
 	}
 
 	// FieldDay is a query result column.

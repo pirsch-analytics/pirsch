@@ -303,6 +303,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		offset:  filter.Offset,
 		limit:   filter.Limit,
 		sample:  filter.Sample,
+		final:   filter.fieldsContain(fields, FieldSessionsAll),
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
@@ -441,6 +442,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 			from:    sessions,
 			groupBy: groupBy,
 			sample:  filter.Sample,
+			final:   filter.fieldsContain(fields, FieldSessionsAll),
 		}
 	}
 
