@@ -7,8 +7,8 @@ import (
 var (
 	// FieldSessionsAll is a query result column.
 	FieldSessionsAll = Field{
-		querySessions:  "visitor_id, session_id, time, start, duration_seconds, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended",
-		queryPageViews: "visitor_id, session_id, time, start, duration_seconds, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended",
+		querySessions:  "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
+		queryPageViews: "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
 	}
 
 	// FieldPageViewsAll is a query result column.

@@ -24,6 +24,25 @@ func TestSessions_List(t *testing.T) {
 			{Sign: 1, VisitorID: 4, SessionID: 4, Time: util.Today().Add(time.Minute * 47), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 10), Path: "/pricing"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 30), Path: "/blog"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 31), Path: "/blog/1"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 32), Path: "/blog/2"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 33), Path: "/blog/3", TagKeys: []string{"author"}, TagValues: []string{"John"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 34), Path: "/blog/4"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 35), Path: "/blog/5"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 36), Path: "/blog/6"},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 45), Path: "/"},
+		{VisitorID: 3, SessionID: 3, Time: util.Today().Add(time.Minute * 42), Path: "/"},
+		{VisitorID: 3, SessionID: 3, Time: util.Today().Add(time.Minute * 43), Path: "/"},
+		{VisitorID: 3, SessionID: 3, Time: util.Today().Add(time.Minute * 45), Path: "/about"},
+		{VisitorID: 4, SessionID: 4, Time: util.Today().Add(time.Minute * 47), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 5), Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
+	}))
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Sessions.List(nil)
 	assert.NoError(t, err)
@@ -60,6 +79,30 @@ func TestSessions_List(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
+	assert.Equal(t, uint64(2), stats[0].VisitorID)
+	stats, err = analyzer.Sessions.List(&Filter{
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"key": "value",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, uint64(1), stats[0].VisitorID)
+	stats, err = analyzer.Sessions.List(&Filter{
+		Tags: map[string]string{
+			"author": "John",
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, uint64(2), stats[0].VisitorID)
+	stats, err = analyzer.Sessions.List(&Filter{
+		Path: []string{"/about"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, uint64(3), stats[0].VisitorID)
 	_, err = analyzer.Sessions.List(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Sessions.List(getMaxFilter("event"))

@@ -356,6 +356,7 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 func (filter *Filter) table(fields []Field) table {
 	tagKeyFilter := filter.fieldsContain(fields, FieldTagKey)
 	tagValueFilter := filter.fieldsContain(fields, FieldTagValue)
+	allSessionFilter := filter.fieldsContain(fields, FieldSessionsAll)
 	pageViewFilter := (len(filter.Path) > 0 ||
 		len(filter.PathPattern) > 0 ||
 		len(filter.Tags) > 0 ||
@@ -371,7 +372,8 @@ func (filter *Filter) table(fields []Field) table {
 		tagValueFilter ||
 		filter.searchContains(FieldPath)) &&
 		(filter.CustomMetricType == "" || filter.CustomMetricKey == "" ||
-			tagKeyFilter || tagValueFilter)
+			tagKeyFilter || tagValueFilter) &&
+		!allSessionFilter
 
 	if pageViewFilter {
 		return pageViews
@@ -384,10 +386,11 @@ func (filter *Filter) table(fields []Field) table {
 		return sessions
 	}
 
-	eventFilter := len(filter.EventName) > 0 ||
+	eventFilter := (len(filter.EventName) > 0 ||
 		filter.fieldsContain(fields, FieldEventName) ||
 		filter.fieldsContain(fields, FieldEventsAll) ||
-		filter.CustomMetricType != "" && filter.CustomMetricKey != ""
+		filter.CustomMetricType != "" && filter.CustomMetricKey != "") &&
+		!allSessionFilter
 
 	if eventFilter {
 		return events
