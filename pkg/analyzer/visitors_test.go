@@ -1517,6 +1517,71 @@ func TestAnalyzer_ByHour(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_ByHourEvent(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour*3 + time.Minute*15), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour*6 + time.Minute*15), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour*16 + time.Minute*5), Start: time.Now(), PageViews: 5, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: util.Today().Add(time.Hour * 19), Start: time.Now(), PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		{VisitorID: 1, Time: util.Today().Add(time.Hour * 3), Path: "/"},
+		{VisitorID: 1, Time: util.Today().Add(time.Hour*3 + time.Minute*15), Path: "/pricing"},
+		{VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 6), Path: "/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour*6 + time.Minute*15), Path: "/pricing"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 15), Path: "/"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*50), Path: "/about"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*55), Path: "/blog"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 16), Path: "/blog/1"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour*16 + time.Minute*5), Path: "/blog/2"},
+		{VisitorID: 5, Time: util.Today().Add(time.Hour * 19), Path: "/"},
+	}))
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: util.Today().Add(time.Hour*3 + time.Minute*10), Name: "event"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*52), Name: "event"},
+		{VisitorID: 5, Time: util.Today().Add(time.Hour*19 + time.Minute), Name: "event"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.ByHour(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Zero(t, visitors[0].Visitors)
+	assert.Zero(t, visitors[1].Visitors)
+	assert.Zero(t, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Zero(t, visitors[4].Visitors)
+	assert.Zero(t, visitors[5].Visitors)
+	assert.Zero(t, visitors[6].Visitors)
+	assert.Zero(t, visitors[7].Visitors)
+	assert.Zero(t, visitors[8].Visitors)
+	assert.Zero(t, visitors[9].Visitors)
+	assert.Zero(t, visitors[10].Visitors)
+	assert.Zero(t, visitors[11].Visitors)
+	assert.Zero(t, visitors[12].Visitors)
+	assert.Zero(t, visitors[13].Visitors)
+	assert.Zero(t, visitors[14].Visitors)
+	assert.Zero(t, visitors[15].Visitors)
+	assert.Equal(t, 1, visitors[16].Visitors)
+	assert.Zero(t, visitors[17].Visitors)
+	assert.Zero(t, visitors[18].Visitors)
+	assert.Equal(t, 1, visitors[19].Visitors)
+	assert.Zero(t, visitors[20].Visitors)
+	assert.Zero(t, visitors[21].Visitors)
+	assert.Zero(t, visitors[22].Visitors)
+	assert.Zero(t, visitors[23].Visitors)
+}
+
 func TestAnalyzer_ByHourCRAndCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

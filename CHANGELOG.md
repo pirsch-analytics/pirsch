@@ -4,6 +4,7 @@
 
 * added listing and reading individual sessions
 * added grouping results by minute
+* fixed joining time stats
 * updated User-Agent blacklist
 * updated dependencies
 

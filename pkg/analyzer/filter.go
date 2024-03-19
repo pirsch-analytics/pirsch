@@ -348,7 +348,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		}
 	}
 
-	q.leftJoinSecond = filter.lefJoinUniqueVisitorsByPeriod(fields)
+	q.joinThird = filter.lefJoinUniqueVisitorsByPeriod(fields)
 	return q.query()
 }
 

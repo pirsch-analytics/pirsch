@@ -28,8 +28,8 @@ type queryBuilder struct {
 	parent             *queryBuilder
 	join               *queryBuilder
 	joinSecond         *queryBuilder
+	joinThird          *queryBuilder
 	leftJoin           *queryBuilder
-	leftJoinSecond     *queryBuilder
 	search             []Search
 	groupBy            []Field
 	orderBy            []Field
@@ -294,22 +294,22 @@ func (query *queryBuilder) joinQuery() {
 		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
 
-	if query.leftJoinSecond != nil {
-		q, args := query.leftJoinSecond.query()
+	if query.joinThird != nil {
+		q, args := query.joinThird.query()
 		query.args = append(query.args, args...)
 
 		if query.filter.fieldsContain(query.groupBy, FieldHour) {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON hour = uvd.hour ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON hour = uvd.hour ", q))
 		} else if query.filter.Period == pkg.PeriodMinute {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON minute = uvd.minute ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON minute = uvd.minute ", q))
 		} else if query.filter.Period == pkg.PeriodDay {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON day = uvd.day ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON day = uvd.day ", q))
 		} else if query.filter.Period == pkg.PeriodWeek {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON week = uvd.week ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON week = uvd.week ", q))
 		} else if query.filter.Period == pkg.PeriodMonth {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON month = uvd.month ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON month = uvd.month ", q))
 		} else {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON year = uvd.year ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON year = uvd.year ", q))
 		}
 	}
 }
