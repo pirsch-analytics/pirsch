@@ -425,6 +425,16 @@ var (
 		Name:           "hour",
 	}
 
+	// FieldMinute is a query result column.
+	FieldMinute = Field{
+		querySessions:  "toMinute(time, '%s')",
+		queryPageViews: "toMinute(time, '%s')",
+		queryDirection: "ASC",
+		queryWithFill:  "WITH FILL FROM 0 TO 60",
+		timezone:       true,
+		Name:           "minute",
+	}
+
 	// FieldEventName is a query result column.
 	FieldEventName = Field{
 		querySessions:  "event_name",

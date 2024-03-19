@@ -189,6 +189,11 @@ func (client *ClientMock) SelectVisitorHourStats(context.Context, string, bool, 
 	return nil, nil
 }
 
+// SelectVisitorMinuteStats implements the Store interface.
+func (client *ClientMock) SelectVisitorMinuteStats(context.Context, string, bool, bool, ...any) ([]model.VisitorMinuteStats, error) {
+	return nil, nil
+}
+
 // SelectPageStats implements the Store interface.
 func (client *ClientMock) SelectPageStats(context.Context, bool, bool, string, ...any) ([]model.PageStats, error) {
 	return nil, nil

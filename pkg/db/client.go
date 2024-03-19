@@ -797,60 +797,6 @@ func (client *Client) SelectVisitorStats(ctx context.Context, period pkg.Period,
 
 			results = append(results, result)
 		}
-	case pkg.PeriodMinute:
-		for rows.Next() {
-			var result model.VisitorStats
-
-			if includeCustomMetric {
-				if includeCR {
-					if err := rows.Scan(&result.Minute,
-						&result.Visitors,
-						&result.Sessions,
-						&result.Views,
-						&result.Bounces,
-						&result.BounceRate,
-						&result.CR,
-						&result.CustomMetricAvg,
-						&result.CustomMetricTotal); err != nil {
-						return nil, err
-					}
-				} else {
-					if err := rows.Scan(&result.Minute,
-						&result.Visitors,
-						&result.Sessions,
-						&result.Views,
-						&result.Bounces,
-						&result.BounceRate,
-						&result.CustomMetricAvg,
-						&result.CustomMetricTotal); err != nil {
-						return nil, err
-					}
-				}
-			} else {
-				if includeCR {
-					if err := rows.Scan(&result.Minute,
-						&result.Visitors,
-						&result.Sessions,
-						&result.Views,
-						&result.Bounces,
-						&result.BounceRate,
-						&result.CR); err != nil {
-						return nil, err
-					}
-				} else {
-					if err := rows.Scan(&result.Minute,
-						&result.Visitors,
-						&result.Sessions,
-						&result.Views,
-						&result.Bounces,
-						&result.BounceRate); err != nil {
-						return nil, err
-					}
-				}
-			}
-
-			results = append(results, result)
-		}
 	default:
 		for rows.Next() {
 			var result model.VisitorStats
@@ -947,16 +893,6 @@ func (client *Client) SelectTimeSpentStats(ctx context.Context, period pkg.Perio
 			var result model.TimeSpentStats
 
 			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Year); err != nil {
-				return nil, err
-			}
-
-			results = append(results, result)
-		}
-	case pkg.PeriodMinute:
-		for rows.Next() {
-			var result model.TimeSpentStats
-
-			if err := rows.Scan(&result.AverageTimeSpentSeconds, &result.Minute); err != nil {
 				return nil, err
 			}
 
@@ -1080,6 +1016,74 @@ func (client *Client) SelectVisitorHourStats(ctx context.Context, query string, 
 				}
 			} else {
 				if err := rows.Scan(&result.Hour,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectVisitorMinuteStats implements the Store interface.
+func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string, includeCR, includeCustomMetrics bool, args ...any) ([]model.VisitorMinuteStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.VisitorMinuteStats
+
+	for rows.Next() {
+		var result model.VisitorMinuteStats
+
+		if includeCustomMetrics {
+			if includeCR {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			}
+		} else {
+			if includeCR {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Minute,
 					&result.Visitors,
 					&result.Sessions,
 					&result.Views,

@@ -39,30 +39,6 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Empty(t, filter.Path)
 	assert.Len(t, filter.PathPattern, 1)
 	assert.Equal(t, "pattern", filter.PathPattern[0])
-	filter = &Filter{
-		From:        util.PastDay(5),
-		To:          util.Today(),
-		Period:      pkg.PeriodMinute,
-		IncludeTime: true,
-	}
-	filter.validate()
-	assert.Equal(t, pkg.PeriodDay, filter.Period)
-	filter = &Filter{
-		From:        util.Today().Add(time.Hour * 6),
-		To:          util.Today().Add(time.Hour * 8),
-		Period:      pkg.PeriodMinute,
-		IncludeTime: true,
-	}
-	filter.validate()
-	assert.Equal(t, pkg.PeriodDay, filter.Period)
-	filter = &Filter{
-		From:        util.Today().Add(time.Hour * 6),
-		To:          util.Today().Add(time.Hour * 7),
-		Period:      pkg.PeriodMinute,
-		IncludeTime: true,
-	}
-	filter.validate()
-	assert.Equal(t, pkg.PeriodMinute, filter.Period)
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {

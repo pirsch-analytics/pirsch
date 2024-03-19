@@ -81,9 +81,6 @@ const (
 
 	// PeriodYear groups the result by year.
 	PeriodYear
-
-	// PeriodMinute groups the result by minute.
-	PeriodMinute
 )
 
 // Period is used to group results.

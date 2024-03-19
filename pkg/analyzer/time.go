@@ -32,8 +32,8 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(round(avg(duration)), 0)) average_time_spent_seconds
 		FROM (
-			SELECT %s(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
-			FROM "session" s `, t.getDateFunc(filter), filter.Timezone.String()))
+			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
+			FROM "session" s `, filter.Timezone.String()))
 
 	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 {
 		tagField := ""
@@ -108,8 +108,8 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		FROM (
 			SELECT "day", %s time_on_page, sid, neighbor(sid, 1, null) next_sid %s
 			FROM (
-				SELECT session_id sid, %s(time, '%s') "day", "time", %s
-				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filterFields, t.getDateFunc(filter), filter.Timezone.String(), strings.Join(fields, ",")))
+				SELECT session_id sid, toDate(time, '%s') "day", "time", %s
+				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filterFields, filter.Timezone.String(), strings.Join(fields, ",")))
 
 	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -145,16 +145,6 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	return stats, nil
 }
 
-func (t *Time) getDateFunc(filter *Filter) string {
-	toDateFunc := "toDate"
-
-	if filter.Period == pkg.PeriodMinute {
-		toDateFunc = "toDateTime"
-	}
-
-	return toDateFunc
-}
-
 func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builder) {
 	if period != pkg.PeriodDay {
 		switch period {
@@ -164,8 +154,6 @@ func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builde
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:
 			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
-		case pkg.PeriodMinute:
-			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMinute("day") minute FROM (`)
 		default:
 			panic("unknown case for filter period")
 		}
@@ -181,8 +169,6 @@ func (t *Time) groupByPeriod(period pkg.Period, query *strings.Builder) {
 			query.WriteString(`) GROUP BY month ORDER BY month ASC`)
 		case pkg.PeriodYear:
 			query.WriteString(`) GROUP BY year ORDER BY year ASC`)
-		case pkg.PeriodMinute:
-			query.WriteString(`) GROUP BY minute ORDER BY minute ASC`)
 		default:
 			panic("unknown case for filter period")
 		}

@@ -225,10 +225,6 @@ func (filter *Filter) validate() {
 		filter.To = tomorrow
 	}
 
-	if filter.Period == pkg.PeriodMinute && filter.To.Sub(filter.From) > time.Hour {
-		filter.Period = pkg.PeriodDay
-	}
-
 	if len(filter.Path) > 0 && len(filter.PathPattern) > 0 {
 		filter.PathPattern = nil
 	}
@@ -370,6 +366,7 @@ func (filter *Filter) table(fields []Field) table {
 		filter.fieldsContain(fields, FieldEntries) ||
 		filter.fieldsContain(fields, FieldExits) ||
 		filter.fieldsContain(fields, FieldHour) ||
+		filter.fieldsContain(fields, FieldMinute) ||
 		filter.fieldsContain(fields, FieldTagKeysRaw) ||
 		filter.fieldsContain(fields, FieldTagValuesRaw) ||
 		tagKeyFilter ||
@@ -576,6 +573,8 @@ func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilde
 
 		if filter.fieldsContain(fields, FieldDay) {
 			groupBy = FieldDay
+		} else if filter.fieldsContain(fields, FieldMinute) {
+			groupBy = FieldMinute
 		} else {
 			groupBy = FieldHour
 		}
