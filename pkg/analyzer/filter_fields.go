@@ -5,6 +5,24 @@ import (
 )
 
 var (
+	// FieldSessionsAll is a query result column.
+	FieldSessionsAll = Field{
+		querySessions:  "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
+		queryPageViews: "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
+	}
+
+	// FieldPageViewsAll is a query result column.
+	FieldPageViewsAll = Field{
+		querySessions:  "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		queryPageViews: "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+	}
+
+	// FieldEventsAll is a query result column.
+	FieldEventsAll = Field{
+		querySessions:  "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		queryPageViews: "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+	}
+
 	// FieldVisitorID is a query result column.
 	FieldVisitorID = Field{
 		querySessions:  "visitor_id",
@@ -379,6 +397,14 @@ var (
 		Name:           "title",
 	}
 
+	// FieldTime is a query result column.
+	FieldTime = Field{
+		querySessions:  "time",
+		queryPageViews: "time",
+		queryDirection: "ASC",
+		Name:           "time",
+	}
+
 	// FieldDay is a query result column.
 	FieldDay = Field{
 		querySessions:  "toDate(time, '%s')",
@@ -397,6 +423,16 @@ var (
 		queryWithFill:  "WITH FILL FROM 0 TO 24",
 		timezone:       true,
 		Name:           "hour",
+	}
+
+	// FieldMinute is a query result column.
+	FieldMinute = Field{
+		querySessions:  "toMinute(time, '%s')",
+		queryPageViews: "toMinute(time, '%s')",
+		queryDirection: "ASC",
+		queryWithFill:  "WITH FILL FROM 0 TO 60",
+		timezone:       true,
+		Name:           "minute",
 	}
 
 	// FieldEventName is a query result column.

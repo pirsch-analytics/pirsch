@@ -189,6 +189,11 @@ func (client *ClientMock) SelectVisitorHourStats(context.Context, string, bool, 
 	return nil, nil
 }
 
+// SelectVisitorMinuteStats implements the Store interface.
+func (client *ClientMock) SelectVisitorMinuteStats(context.Context, string, bool, bool, ...any) ([]model.VisitorMinuteStats, error) {
+	return nil, nil
+}
+
 // SelectPageStats implements the Store interface.
 func (client *ClientMock) SelectPageStats(context.Context, bool, bool, string, ...any) ([]model.PageStats, error) {
 	return nil, nil
@@ -316,5 +321,20 @@ func (client *ClientMock) SelectOptions(context.Context, string, ...any) ([]stri
 
 // SelectTagStats implements the Store interface.
 func (client *ClientMock) SelectTagStats(context.Context, bool, string, ...any) ([]model.TagStats, error) {
+	return nil, nil
+}
+
+// SelectSessions implements the Store interface.
+func (client *ClientMock) SelectSessions(ctx context.Context, query string, args ...any) ([]model.Session, error) {
+	return nil, nil
+}
+
+// SelectPageViews implements the Store interface.
+func (client *ClientMock) SelectPageViews(context.Context, string, ...any) ([]model.PageView, error) {
+	return nil, nil
+}
+
+// SelectEvents implements the Store interface.
+func (client *ClientMock) SelectEvents(context.Context, string, ...any) ([]model.Event, error) {
 	return nil, nil
 }

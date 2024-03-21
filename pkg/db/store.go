@@ -57,6 +57,9 @@ type Store interface {
 	// SelectVisitorHourStats selects model.VisitorHourStats.
 	SelectVisitorHourStats(context.Context, string, bool, bool, ...any) ([]model.VisitorHourStats, error)
 
+	// SelectVisitorMinuteStats selects model.VisitorMinuteStats.
+	SelectVisitorMinuteStats(context.Context, string, bool, bool, ...any) ([]model.VisitorMinuteStats, error)
+
 	// SelectPageStats selects model.PageStats.
 	SelectPageStats(context.Context, bool, bool, string, ...any) ([]model.PageStats, error)
 
@@ -134,4 +137,13 @@ type Store interface {
 
 	// SelectOptions selects a list of filter options.
 	SelectOptions(context.Context, string, ...any) ([]string, error)
+
+	// SelectSessions selects sessions.
+	SelectSessions(context.Context, string, ...any) ([]model.Session, error)
+
+	// SelectPageViews selects page views.
+	SelectPageViews(context.Context, string, ...any) ([]model.PageView, error)
+
+	// SelectEvents selects events.
+	SelectEvents(context.Context, string, ...any) ([]model.Event, error)
 }

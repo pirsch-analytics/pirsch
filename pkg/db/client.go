@@ -1032,6 +1032,74 @@ func (client *Client) SelectVisitorHourStats(ctx context.Context, query string, 
 	return results, nil
 }
 
+// SelectVisitorMinuteStats implements the Store interface.
+func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string, includeCR, includeCustomMetrics bool, args ...any) ([]model.VisitorMinuteStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.VisitorMinuteStats
+
+	for rows.Next() {
+		var result model.VisitorMinuteStats
+
+		if includeCustomMetrics {
+			if includeCR {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CustomMetricAvg,
+					&result.CustomMetricTotal); err != nil {
+					return nil, err
+				}
+			}
+		} else {
+			if includeCR {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate,
+					&result.CR); err != nil {
+					return nil, err
+				}
+			} else {
+				if err := rows.Scan(&result.Minute,
+					&result.Visitors,
+					&result.Sessions,
+					&result.Views,
+					&result.Bounces,
+					&result.BounceRate); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectPageStats implements the Store interface.
 func (client *Client) SelectPageStats(ctx context.Context, includeTitle, includeTimeSpent bool, query string, args ...any) ([]model.PageStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)
@@ -1763,6 +1831,158 @@ func (client *Client) SelectTagStats(ctx context.Context, breakdown bool, query 
 				&result.RelativeViews); err != nil {
 				return nil, err
 			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectSessions implements the Store interface.
+func (client *Client) SelectSessions(ctx context.Context, query string, args ...any) ([]model.Session, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.Session
+
+	for rows.Next() {
+		var result model.Session
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.SessionID,
+			&result.Time,
+			&result.Start,
+			&result.DurationSeconds,
+			&result.EntryPath,
+			&result.ExitPath,
+			&result.PageViews,
+			&result.IsBounce,
+			&result.EntryTitle,
+			&result.ExitTitle,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm,
+			&result.Extended); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectPageViews implements the Store interface.
+func (client *Client) SelectPageViews(ctx context.Context, query string, args ...any) ([]model.PageView, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.PageView
+
+	for rows.Next() {
+		var result model.PageView
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.SessionID,
+			&result.Time,
+			&result.DurationSeconds,
+			&result.Path,
+			&result.Title,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm,
+			&result.TagKeys,
+			&result.TagValues); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectEvents implements the Store interface.
+func (client *Client) SelectEvents(ctx context.Context, query string, args ...any) ([]model.Event, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.Event
+
+	for rows.Next() {
+		var result model.Event
+
+		if err := rows.Scan(&result.VisitorID,
+			&result.Time,
+			&result.SessionID,
+			&result.Name,
+			&result.MetaKeys,
+			&result.MetaValues,
+			&result.DurationSeconds,
+			&result.Path,
+			&result.Title,
+			&result.Language,
+			&result.CountryCode,
+			&result.City,
+			&result.Referrer,
+			&result.ReferrerName,
+			&result.ReferrerIcon,
+			&result.OS,
+			&result.OSVersion,
+			&result.Browser,
+			&result.BrowserVersion,
+			&result.Desktop,
+			&result.Mobile,
+			&result.ScreenClass,
+			&result.UTMSource,
+			&result.UTMMedium,
+			&result.UTMCampaign,
+			&result.UTMContent,
+			&result.UTMTerm); err != nil {
+			return nil, err
 		}
 
 		results = append(results, result)

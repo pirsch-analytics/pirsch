@@ -379,11 +379,15 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	list, err := analyzer.Events.Events(&Filter{EventName: []string{"event1"}})
+	list, err := analyzer.Events.Events(&Filter{
+		EventName: []string{"event1"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "event1", list[0].Name)
-	list, err = analyzer.Events.Events(&Filter{EventName: []string{"!event1"}})
+	list, err = analyzer.Events.Events(&Filter{
+		EventName: []string{"!event1"},
+	})
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 	assert.Equal(t, "event2", list[0].Name)
@@ -400,6 +404,22 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Empty(t, list)
+	list, err = analyzer.Events.Events(&Filter{
+		EventName: []string{"~event"},
+		EventMeta: map[string]string{"author": "~ice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "event2", list[0].Name)
+	assert.Contains(t, list[0].MetaKeys, "author")
+	list, err = analyzer.Events.Events(&Filter{
+		EventName: []string{"~event"},
+		Tags:      map[string]string{"author": "~ice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "event2", list[0].Name)
+	assert.Contains(t, list[0].MetaKeys, "author")
 
 	breakdown, err := analyzer.Events.Breakdown(&Filter{EventName: []string{"event1"}, EventMetaKey: []string{"k0"}})
 	assert.NoError(t, err)
@@ -424,6 +444,24 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Empty(t, breakdown)
+	breakdown, err = analyzer.Events.Breakdown(&Filter{
+		EventName:    []string{"~event"},
+		EventMetaKey: []string{"author"},
+		EventMeta:    map[string]string{"author": "~ice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, breakdown, 1)
+	assert.Equal(t, "event2", breakdown[0].Name)
+	assert.Equal(t, "Alice", breakdown[0].MetaValue)
+	breakdown, err = analyzer.Events.Breakdown(&Filter{
+		EventName:    []string{"~event"},
+		EventMetaKey: []string{"author"},
+		Tags:         map[string]string{"author": "~ice"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, breakdown, 1)
+	assert.Equal(t, "event2", breakdown[0].Name)
+	assert.Equal(t, "Alice", breakdown[0].MetaValue)
 
 	eventList, err := analyzer.Events.List(&Filter{EventName: []string{"event1"}})
 	assert.NoError(t, err)

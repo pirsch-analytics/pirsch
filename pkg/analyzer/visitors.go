@@ -261,6 +261,44 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 	return stats, nil
 }
 
+// ByMinute returns the visitor count grouped by the minute of the hour.
+func (visitors *Visitors) ByMinute(filter *Filter) ([]model.VisitorMinuteStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	fields := []Field{
+		FieldMinute,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+		FieldBounceRate,
+	}
+
+	if filter.IncludeCR {
+		fields = append(fields, FieldCRPeriod)
+	}
+
+	includeCustomMetric := false
+
+	if len(filter.EventName) > 0 && filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
+		fields = append(fields, FieldEventMetaCustomMetricAvg, FieldEventMetaCustomMetricTotal)
+		includeCustomMetric = true
+	}
+
+	q, args := filter.buildQuery(fields, []Field{
+		FieldMinute,
+	}, []Field{
+		FieldMinute,
+		FieldVisitors,
+	})
+	stats, err := visitors.store.SelectVisitorMinuteStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
 // The growth rate is relative to the previous time range or day.
 // The period or day for the filter must be set, else an error is returned.
