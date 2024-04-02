@@ -16,6 +16,7 @@ type Sessions struct {
 // List returns a list of sessions for given filter.
 func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 	filter = sessions.analyzer.getFilter(filter)
+	filter.Sample = 0
 	q, args := filter.buildQuery([]Field{FieldSessionsAll}, []Field{FieldSessionsAll}, []Field{FieldTime})
 	stats, err := sessions.store.SelectSessions(filter.Ctx, q, args...)
 
@@ -29,6 +30,7 @@ func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 // Breakdown returns the page views and events for a single session in chronological order.
 func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error) {
 	filter = sessions.analyzer.getFilter(filter)
+	filter.Sample = 0
 
 	if filter.VisitorID == 0 || filter.SessionID == 0 {
 		return nil, nil

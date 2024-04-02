@@ -107,6 +107,15 @@ func TestSessions_List(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Sessions.List(getMaxFilter("event"))
 	assert.NoError(t, err)
+	_, err = analyzer.Sessions.List(&Filter{
+		From:                 util.Today(),
+		To:                   util.Today(),
+		Limit:                200,
+		IncludeTime:          true,
+		MaxTimeOnPageSeconds: 3600,
+		Sample:               10_000_000,
+	})
+	assert.NoError(t, err)
 }
 
 func TestSessions_Breakdown(t *testing.T) {
@@ -147,4 +156,15 @@ func TestSessions_Breakdown(t *testing.T) {
 	assert.Equal(t, "event", steps[1].Event.Name)
 	assert.Equal(t, "key", steps[1].Event.MetaKeys[0])
 	assert.Equal(t, "value", steps[1].Event.MetaValues[0])
+	_, err = analyzer.Sessions.Breakdown(&Filter{
+		VisitorID:            1,
+		SessionID:            1,
+		From:                 util.Today(),
+		To:                   util.Today(),
+		Limit:                200,
+		IncludeTime:          true,
+		MaxTimeOnPageSeconds: 3600,
+		Sample:               10_000_000,
+	})
+	assert.NoError(t, err)
 }
