@@ -156,7 +156,7 @@ func TestSessions_Breakdown(t *testing.T) {
 	assert.Equal(t, "event", steps[1].Event.Name)
 	assert.Equal(t, "key", steps[1].Event.MetaKeys[0])
 	assert.Equal(t, "value", steps[1].Event.MetaValues[0])
-	_, err = analyzer.Sessions.Breakdown(&Filter{
+	steps, err = analyzer.Sessions.Breakdown(&Filter{
 		VisitorID:            1,
 		SessionID:            1,
 		From:                 util.Today(),
@@ -167,4 +167,5 @@ func TestSessions_Breakdown(t *testing.T) {
 		Sample:               10_000_000,
 	})
 	assert.NoError(t, err)
+	assert.Len(t, steps, 3)
 }
