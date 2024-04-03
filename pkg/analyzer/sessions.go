@@ -18,7 +18,7 @@ type Sessions struct {
 func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 	filter = sessions.analyzer.getFilter(filter)
 	filter.Sample = 0
-	q, args := filter.buildQuery([]Field{FieldSessionsAll}, []Field{FieldSessionsAll}, []Field{FieldTime})
+	q, args := filter.buildQuery([]Field{FieldSessionsAll}, []Field{FieldVisitorID, FieldSessionID}, []Field{FieldMaxTime})
 	stats, err := sessions.store.SelectSessions(filter.Ctx, q, args...)
 
 	if err != nil {

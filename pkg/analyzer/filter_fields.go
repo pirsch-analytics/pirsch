@@ -7,8 +7,8 @@ import (
 var (
 	// FieldSessionsAll is a query result column.
 	FieldSessionsAll = Field{
-		querySessions:  "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
-		queryPageViews: "t.visitor_id, t.session_id, t.time, t.start, t.duration_seconds, t.entry_path, t.exit_path, t.page_views, t.is_bounce, t.entry_title, t.exit_title, t.language, t.country_code, t.city, t.referrer, t.referrer_name, t.referrer_icon, t.os, t.os_version, t.browser, t.browser_version, t.desktop, t.mobile, t.screen_class, t.utm_source, t.utm_medium, t.utm_campaign, t.utm_content, t.utm_term, t.extended",
+		querySessions:  "t.visitor_id, t.session_id, max(t.time), any(t.start), any(t.duration_seconds), any(t.entry_path), any(t.exit_path), any(t.page_views), any(t.is_bounce), any(t.entry_title), any(t.exit_title), any(t.language), any(t.country_code), any(t.city), any(t.referrer), any(t.referrer_name), any(t.referrer_icon), any(t.os), any(t.os_version), any(t.browser), any(t.browser_version), any(t.desktop), any(t.mobile), any(t.screen_class), any(t.utm_source), any(t.utm_medium), any(t.utm_campaign), any(t.utm_content), any(t.utm_term), any(t.extended)",
+		queryPageViews: "t.visitor_id, t.session_id, max(t.time), any(t.start), any(t.duration_seconds), any(t.entry_path), any(t.exit_path), any(t.page_views), any(t.is_bounce), any(t.entry_title), any(t.exit_title), any(t.language), any(t.country_code), any(t.city), any(t.referrer), any(t.referrer_name), any(t.referrer_icon), any(t.os), any(t.os_version), any(t.browser), any(t.browser_version), any(t.desktop), any(t.mobile), any(t.screen_class), any(t.utm_source), any(t.utm_medium), any(t.utm_campaign), any(t.utm_content), any(t.utm_term), any(t.extended)",
 	}
 
 	// FieldPageViewsAll is a query result column.
@@ -403,6 +403,14 @@ var (
 		queryPageViews: "time",
 		queryDirection: "ASC",
 		Name:           "time",
+	}
+
+	// FieldMaxTime is a query result column.
+	FieldMaxTime = Field{
+		querySessions:  "max(time)",
+		queryPageViews: "max(time)",
+		queryDirection: "ASC",
+		Name:           "max(time)",
 	}
 
 	// FieldDay is a query result column.

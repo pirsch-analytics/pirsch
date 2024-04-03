@@ -684,10 +684,10 @@ func (query *queryBuilder) groupByFields() {
 				default:
 					panic("unknown case for filter period")
 				}
-			} else if query.groupBy[i] == FieldSessionsAll {
-				q.WriteString(query.groupBy[i].querySessions + ",")
 			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.groupBy[i]) + ",")
+			} else if query.groupBy[i] == FieldVisitorID || query.groupBy[i] == FieldSessionID {
+				q.WriteString("t." + query.groupBy[i].Name + ",")
 			} else {
 				q.WriteString(query.groupBy[i].Name + ",")
 			}
