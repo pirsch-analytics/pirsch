@@ -38,7 +38,7 @@ func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error)
 		return nil, nil
 	}
 
-	q, args := filter.buildQuery([]Field{FieldPageViewsAll}, nil, nil)
+	q, args := filter.buildQuery([]Field{FieldPageViewsAll}, nil, []Field{FieldTime})
 	pageViews, err := sessions.store.SelectPageViews(filter.Ctx, q, args...)
 
 	if err != nil {
