@@ -57,6 +57,8 @@ func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error)
 	for i := range pageViews {
 		if i < len(pageViews)-1 {
 			pageViews[i].DurationSeconds = uint32(math.Round(pageViews[i+1].Time.Sub(pageViews[i].Time).Seconds()))
+		} else if i == len(pageViews)-1 {
+			pageViews[i].DurationSeconds = 0
 		}
 
 		stats = append(stats, model.SessionStep{

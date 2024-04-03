@@ -127,11 +127,13 @@ func TestSessions_Breakdown(t *testing.T) {
 		{
 			{Sign: -1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 10), Start: util.Today(), EntryPath: "/", ExitPath: "/pricing", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
-		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 10), Path: "/pricing"},
+		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 10), Path: "/pricing", DurationSeconds: 10},
+		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", DurationSeconds: 0},
+		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/", DurationSeconds: 20},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 5), Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
