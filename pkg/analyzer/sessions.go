@@ -3,6 +3,7 @@ package analyzer
 import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"math"
 	"sort"
 	"time"
 )
@@ -31,6 +32,7 @@ func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error) {
 	filter = sessions.analyzer.getFilter(filter)
 	filter.Sample = 0
+	filter.IncludeTimeOnPage = false
 
 	if filter.VisitorID == 0 || filter.SessionID == 0 {
 		return nil, nil
@@ -53,6 +55,10 @@ func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error)
 	stats := make([]model.SessionStep, 0, len(pageViews)+len(events))
 
 	for i := range pageViews {
+		if i < len(pageViews)-1 {
+			pageViews[i].DurationSeconds = uint32(math.Round(pageViews[i+1].Time.Sub(pageViews[i].Time).Seconds()))
+		}
+
 		stats = append(stats, model.SessionStep{
 			PageView: &pageViews[i],
 		})

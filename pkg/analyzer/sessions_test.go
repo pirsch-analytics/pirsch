@@ -156,6 +156,8 @@ func TestSessions_Breakdown(t *testing.T) {
 	assert.Equal(t, "event", steps[1].Event.Name)
 	assert.Equal(t, "key", steps[1].Event.MetaKeys[0])
 	assert.Equal(t, "value", steps[1].Event.MetaValues[0])
+	assert.Equal(t, uint32(10), steps[0].PageView.DurationSeconds)
+	assert.Equal(t, uint32(0), steps[2].PageView.DurationSeconds)
 	steps, err = analyzer.Sessions.Breakdown(&Filter{
 		VisitorID:            1,
 		SessionID:            1,
