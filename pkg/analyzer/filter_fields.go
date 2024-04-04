@@ -19,8 +19,8 @@ var (
 
 	// FieldEventsAll is a query result column.
 	FieldEventsAll = Field{
-		querySessions:  "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
-		queryPageViews: "visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		querySessions:  "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		queryPageViews: "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
 	}
 
 	// FieldVisitorID is a query result column.
