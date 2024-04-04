@@ -13,8 +13,8 @@ var (
 
 	// FieldPageViewsAll is a query result column.
 	FieldPageViewsAll = Field{
-		querySessions:  "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
-		queryPageViews: "visitor_id, session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		querySessions:  "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		queryPageViews: "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
 	}
 
 	// FieldEventsAll is a query result column.

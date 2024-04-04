@@ -620,9 +620,9 @@ func (query *queryBuilder) whereFieldPlatform() {
 func (query *queryBuilder) whereFieldVisitorSessionID() {
 	if query.filter.VisitorID != 0 && query.filter.SessionID != 0 {
 		query.where = append(query.where, where{
-			eqContains: []string{"visitor_id = ? "},
+			eqContains: []string{"t.visitor_id = ? "},
 		}, where{
-			eqContains: []string{"session_id = ? "},
+			eqContains: []string{"t.session_id = ? "},
 		})
 		query.args = append(query.args, query.filter.VisitorID, query.filter.SessionID)
 	}

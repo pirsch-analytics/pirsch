@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
@@ -172,4 +173,18 @@ func TestSessions_Breakdown(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, steps, 3)
+	_, err = analyzer.Sessions.Breakdown(&Filter{
+		VisitorID: 1,
+		SessionID: 1,
+		From:      util.Today(),
+		To:        util.Today(),
+		Period:    pkg.PeriodDay,
+		EntryPath: []string{"/"},
+		EventName: []string{"event"},
+	})
+	assert.NoError(t, err)
+	_, err = analyzer.Sessions.Breakdown(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Sessions.Breakdown(getMaxFilter("event"))
+	assert.NoError(t, err)
 }
