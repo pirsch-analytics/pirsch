@@ -1,5 +1,13 @@
 # Changelog
 
+## 6.8.0
+
+* added listing and reading individual sessions
+* added grouping results by minute
+* fixed joining time stats
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.7.4
 
 * added boolean to Tracker returning whether a request has been dropped

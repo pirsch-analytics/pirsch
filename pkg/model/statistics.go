@@ -37,6 +37,7 @@ type VisitorStats struct {
 	Week              null.Time `json:"week"`
 	Month             null.Time `json:"month"`
 	Year              null.Time `json:"year"`
+	Minute            null.Time `json:"minute"`
 	Visitors          int       `json:"visitors"`
 	Views             int       `json:"views"`
 	Sessions          int       `json:"sessions"`
@@ -62,6 +63,19 @@ type Growth struct {
 // VisitorHourStats is the result type for visitor statistics grouped by time of day.
 type VisitorHourStats struct {
 	Hour              int     `json:"hour"`
+	Visitors          int     `json:"visitors"`
+	Views             int     `json:"views"`
+	Sessions          int     `json:"sessions"`
+	Bounces           int     `json:"bounces"`
+	BounceRate        float64 `db:"bounce_rate" json:"bounce_rate"`
+	CR                float64 `json:"cr"`
+	CustomMetricAvg   float64 `db:"custom_metric_avg" json:"custom_metric_avg"`
+	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
+}
+
+// VisitorMinuteStats is the result type for visitor statistics grouped by the minute of the hour.
+type VisitorMinuteStats struct {
+	Minute            int     `json:"minute"`
 	Visitors          int     `json:"visitors"`
 	Views             int     `json:"views"`
 	Sessions          int     `json:"sessions"`
@@ -176,6 +190,7 @@ type TimeSpentStats struct {
 	Week                    null.Time `json:"week"`
 	Month                   null.Time `json:"month"`
 	Year                    null.Time `json:"year"`
+	Minute                  null.Time `json:"minute"`
 	Path                    string    `json:"path"`
 	Title                   string    `json:"title"`
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
@@ -302,4 +317,10 @@ type TagStats struct {
 	Views            int     `json:"views"`
 	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
 	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
+}
+
+// SessionStep is the result type combining page views and events for a single session.
+type SessionStep struct {
+	PageView *PageView `json:"page_view"`
+	Event    *Event    `json:"event"`
 }

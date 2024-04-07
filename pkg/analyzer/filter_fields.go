@@ -5,6 +5,24 @@ import (
 )
 
 var (
+	// FieldSessionsAll is a query result column.
+	FieldSessionsAll = Field{
+		querySessions:  querySessionFields,
+		queryPageViews: querySessionFields,
+	}
+
+	// FieldPageViewsAll is a query result column.
+	FieldPageViewsAll = Field{
+		querySessions:  "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		queryPageViews: "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+	}
+
+	// FieldEventsAll is a query result column.
+	FieldEventsAll = Field{
+		querySessions:  "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		queryPageViews: "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+	}
+
 	// FieldVisitorID is a query result column.
 	FieldVisitorID = Field{
 		querySessions:  "visitor_id",
@@ -379,6 +397,30 @@ var (
 		Name:           "title",
 	}
 
+	// FieldSessionExitTitle is a query result column.
+	FieldSessionExitTitle = Field{
+		querySessions:  "exit_title",
+		queryPageViews: "exit_title",
+		queryDirection: "ASC",
+		Name:           "exit_title",
+	}
+
+	// FieldTime is a query result column.
+	FieldTime = Field{
+		querySessions:  "time",
+		queryPageViews: "time",
+		queryDirection: "ASC",
+		Name:           "time",
+	}
+
+	// FieldMaxTime is a query result column.
+	FieldMaxTime = Field{
+		querySessions:  "max(time)",
+		queryPageViews: "max(time)",
+		queryDirection: "ASC",
+		Name:           "max(time)",
+	}
+
 	// FieldDay is a query result column.
 	FieldDay = Field{
 		querySessions:  "toDate(time, '%s')",
@@ -397,6 +439,16 @@ var (
 		queryWithFill:  "WITH FILL FROM 0 TO 24",
 		timezone:       true,
 		Name:           "hour",
+	}
+
+	// FieldMinute is a query result column.
+	FieldMinute = Field{
+		querySessions:  "toMinute(time, '%s')",
+		queryPageViews: "toMinute(time, '%s')",
+		queryDirection: "ASC",
+		queryWithFill:  "WITH FILL FROM 0 TO 60",
+		timezone:       true,
+		Name:           "minute",
 	}
 
 	// FieldEventName is a query result column.
@@ -524,6 +576,37 @@ const (
 	sampleTypeInt   = sampleType(1)
 	sampleTypeFloat = sampleType(2)
 	sampleTypeAuto  = sampleType(3) // selected by query builder
+
+	querySessionFields = `t.visitor_id visitor_id,
+		t.session_id session_id,
+		max(t.time) session_time,
+		min(t.start) session_start,
+		max(t.duration_seconds) session_duration_seconds,
+		any(t.entry_path) session_entry_path,
+		t.exit_path session_exit_path,
+		max(t.page_views) session_page_views,
+		min(t.is_bounce) session_is_bounce,
+		any(t.entry_title) session_entry_title,
+		t.exit_title session_exit_title,
+		any(t.language) session_language,
+		any(t.country_code) session_country_code,
+		any(t.city) session_city,
+		any(t.referrer) session_referrer,
+		any(t.referrer_name) session_referrer_name,
+		any(t.referrer_icon) session_referrer_icon,
+		any(t.os) session_os,
+		any(t.os_version) session_os_version,
+		any(t.browser) session_browser,
+		any(t.browser_version) session_browser_version,
+		any(t.desktop) session_desktop,
+		any(t.mobile) session_mobile,
+		any(t.screen_class) session_screen_class,
+		any(t.utm_source) session_utm_source,
+		any(t.utm_medium) session_utm_medium,
+		any(t.utm_campaign) session_utm_campaign,
+		any(t.utm_content) session_utm_content,
+		any(t.utm_term) session_utm_term,
+		max(t.extended) session_extended`
 )
 
 type sampleType int

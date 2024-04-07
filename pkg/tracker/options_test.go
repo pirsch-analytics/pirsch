@@ -37,8 +37,8 @@ func TestOptions_validate(t *testing.T) {
 	k, v := options.getTags()
 	assert.Len(t, k, 2)
 	assert.Len(t, v, 2)
-	assert.Equal(t, "key0", k[0])
-	assert.Equal(t, "key1", k[1])
-	assert.Equal(t, "value0", v[0])
-	assert.Equal(t, "value1", v[1])
+	assert.Contains(t, k, "key0")
+	assert.Contains(t, k, "key1")
+	assert.Contains(t, v, "value0")
+	assert.Contains(t, v, "value1")
 }

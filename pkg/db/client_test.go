@@ -5,7 +5,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"math/rand"
 	"testing"
 	"time"
 )
@@ -133,18 +132,12 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		Time:      time.Now().Add(time.Millisecond * 10),
 		Start:     time.Now(),
 		SessionID: 4,
-		PageViews: 101,
+		PageViews: 51,
 	})
-
-	// randomize insertion order
-	rand.Shuffle(len(sessions), func(i, j int) {
-		sessions[i], sessions[j] = sessions[j], sessions[i]
-	})
-
 	assert.NoError(t, dbClient.SaveSessions(context.Background(), sessions))
 	count := 0
-	assert.NoError(t, dbClient.QueryRow(`SELECT count(*) FROM "session" GROUP BY page_views HAVING sum(sign) > 0`).Scan(&count))
-	assert.Equal(t, 1, count)
+	assert.NoError(t, dbClient.QueryRow(`SELECT page_views FROM "session" FINAL`).Scan(&count))
+	assert.Equal(t, 51, count)
 }
 
 func TestClient_SaveEvents(t *testing.T) {

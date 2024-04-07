@@ -120,6 +120,14 @@ type Filter struct {
 	// EventMeta filters for event metadata.
 	EventMeta map[string]string
 
+	// VisitorID filters for a visitor.
+	// Must be used together with SessionID.
+	VisitorID uint64
+
+	// SessionID filters for a session.
+	// Must be used together with VisitorID.
+	SessionID uint32
+
 	// Search searches the results for given fields and inputs.
 	Search []Search
 
@@ -295,11 +303,12 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		offset:  filter.Offset,
 		limit:   filter.Limit,
 		sample:  filter.Sample,
+		final:   filter.fieldsContain(fields, FieldSessionsAll),
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
 
-	if q.from == events && !returnEventName && !customMetric {
+	if q.from == events && !returnEventName && !customMetric && !filter.fieldsContain(fields, FieldEventsAll) {
 		q.from = sessions
 		q.fields = filter.excludeFields(fields, FieldPath)
 		q.includeEventFilter = true
@@ -335,7 +344,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		}
 	}
 
-	q.leftJoinSecond = filter.lefJoinUniqueVisitorsByPeriod(fields)
+	q.joinThird = filter.lefJoinUniqueVisitorsByPeriod(fields)
 	return q.query()
 }
 
@@ -347,21 +356,25 @@ func (filter *Filter) buildTimeQuery() (string, []any) {
 func (filter *Filter) table(fields []Field) table {
 	tagKeyFilter := filter.fieldsContain(fields, FieldTagKey)
 	tagValueFilter := filter.fieldsContain(fields, FieldTagValue)
+	allSessionFilter := filter.fieldsContain(fields, FieldSessionsAll)
 	pageViewFilter := (len(filter.Path) > 0 ||
 		len(filter.PathPattern) > 0 ||
 		len(filter.Tags) > 0 ||
 		len(filter.Tag) > 0 ||
+		filter.fieldsContain(fields, FieldPageViewsAll) ||
 		filter.fieldsContain(fields, FieldPath) ||
 		filter.fieldsContain(fields, FieldEntries) ||
 		filter.fieldsContain(fields, FieldExits) ||
 		filter.fieldsContain(fields, FieldHour) ||
+		filter.fieldsContain(fields, FieldMinute) ||
 		filter.fieldsContain(fields, FieldTagKeysRaw) ||
 		filter.fieldsContain(fields, FieldTagValuesRaw) ||
 		tagKeyFilter ||
 		tagValueFilter ||
 		filter.searchContains(FieldPath)) &&
 		(filter.CustomMetricType == "" || filter.CustomMetricKey == "" ||
-			tagKeyFilter || tagValueFilter)
+			tagKeyFilter || tagValueFilter) &&
+		!allSessionFilter
 
 	if pageViewFilter {
 		return pageViews
@@ -374,9 +387,11 @@ func (filter *Filter) table(fields []Field) table {
 		return sessions
 	}
 
-	eventFilter := len(filter.EventName) > 0 ||
+	eventFilter := (len(filter.EventName) > 0 ||
 		filter.fieldsContain(fields, FieldEventName) ||
-		filter.CustomMetricType != "" && filter.CustomMetricKey != ""
+		filter.fieldsContain(fields, FieldEventsAll) ||
+		filter.CustomMetricType != "" && filter.CustomMetricKey != "") &&
+		!allSessionFilter
 
 	if eventFilter {
 		return events
@@ -431,6 +446,7 @@ func (filter *Filter) joinSessions(table table, fields []Field) *queryBuilder {
 			from:    sessions,
 			groupBy: groupBy,
 			sample:  filter.Sample,
+			final:   filter.fieldsContain(fields, FieldSessionsAll),
 		}
 	}
 
@@ -557,6 +573,8 @@ func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilde
 
 		if filter.fieldsContain(fields, FieldDay) {
 			groupBy = FieldDay
+		} else if filter.fieldsContain(fields, FieldMinute) {
+			groupBy = FieldMinute
 		} else {
 			groupBy = FieldHour
 		}

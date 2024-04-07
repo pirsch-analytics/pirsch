@@ -28,8 +28,8 @@ type queryBuilder struct {
 	parent             *queryBuilder
 	join               *queryBuilder
 	joinSecond         *queryBuilder
+	joinThird          *queryBuilder
 	leftJoin           *queryBuilder
-	leftJoinSecond     *queryBuilder
 	search             []Search
 	groupBy            []Field
 	orderBy            []Field
@@ -37,6 +37,7 @@ type queryBuilder struct {
 	offset             int
 	includeEventFilter bool
 	sample             uint
+	final              bool
 
 	where []where
 	q     strings.Builder
@@ -266,6 +267,10 @@ func (query *queryBuilder) fromTable() {
 	} else {
 		query.q.WriteString(fmt.Sprintf("FROM %s ", query.from))
 	}
+
+	if query.from == sessions && query.final {
+		query.q.WriteString("FINAL ")
+	}
 }
 
 func (query *queryBuilder) joinQuery() {
@@ -287,20 +292,22 @@ func (query *queryBuilder) joinQuery() {
 		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
 
-	if query.leftJoinSecond != nil {
-		q, args := query.leftJoinSecond.query()
+	if query.joinThird != nil {
+		q, args := query.joinThird.query()
 		query.args = append(query.args, args...)
 
 		if query.filter.fieldsContain(query.groupBy, FieldHour) {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON hour = uvd.hour ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON hour = uvd.hour ", q))
+		} else if query.filter.fieldsContain(query.groupBy, FieldMinute) {
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON minute = uvd.minute ", q))
 		} else if query.filter.Period == pkg.PeriodDay {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON day = uvd.day ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON day = uvd.day ", q))
 		} else if query.filter.Period == pkg.PeriodWeek {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON week = uvd.week ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON week = uvd.week ", q))
 		} else if query.filter.Period == pkg.PeriodMonth {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON month = uvd.month ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON month = uvd.month ", q))
 		} else {
-			query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) uvd ON year = uvd.year ", q))
+			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON year = uvd.year ", q))
 		}
 	}
 }
@@ -374,6 +381,7 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
 	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
 	query.whereFieldPlatform()
+	query.whereFieldVisitorSessionID()
 
 	for i := range query.search {
 		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
@@ -609,6 +617,17 @@ func (query *queryBuilder) whereFieldPlatform() {
 	}
 }
 
+func (query *queryBuilder) whereFieldVisitorSessionID() {
+	if query.filter.VisitorID != 0 && query.filter.SessionID != 0 {
+		query.where = append(query.where, where{
+			eqContains: []string{"t.visitor_id = ? "},
+		}, where{
+			eqContains: []string{"t.session_id = ? "},
+		})
+		query.args = append(query.args, query.filter.VisitorID, query.filter.SessionID)
+	}
+}
+
 func (query *queryBuilder) whereFieldPathPattern() {
 	if len(query.filter.PathPattern) > 0 {
 		var group where
@@ -667,6 +686,8 @@ func (query *queryBuilder) groupByFields() {
 				}
 			} else if query.parent != nil && (query.groupBy[i] == FieldEntryTitle || query.groupBy[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.groupBy[i]) + ",")
+			} else if query.groupBy[i] == FieldVisitorID || query.groupBy[i] == FieldSessionID {
+				q.WriteString("t." + query.groupBy[i].Name + ",")
 			} else {
 				q.WriteString(query.groupBy[i].Name + ",")
 			}
@@ -746,6 +767,7 @@ func (query *queryBuilder) withFill() string {
 		}
 
 		query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
+
 		return q
 	}
 
