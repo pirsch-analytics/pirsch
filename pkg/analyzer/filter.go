@@ -490,6 +490,14 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 	if len(filter.EventName) > 0 || filter.fieldsContain(fields, FieldEventName) {
 		eventFields := []Field{FieldVisitorID, FieldSessionID}
 
+		if filter.fieldsContain(fields, FieldHour) {
+			eventFields = append(eventFields, FieldHour)
+		}
+
+		if filter.fieldsContain(fields, FieldMinute) {
+			eventFields = append(eventFields, FieldMinute)
+		}
+
 		if filter.fieldsContain(fields, FieldEventName) {
 			eventFields = append(eventFields, FieldEventName)
 		}
@@ -590,6 +598,7 @@ func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilde
 			},
 			fields:  []Field{groupBy, FieldVisitorsRaw},
 			from:    sessions,
+			orderBy: []Field{groupBy},
 			groupBy: []Field{groupBy},
 			sample:  filter.Sample,
 		}

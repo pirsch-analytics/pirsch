@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.8.1
+
+* fixed joining events when grouping by hours/minutes
+* updated dependencies
+
 ## 6.8.0
 
 * added listing and reading individual sessions
@@ -11,7 +16,7 @@
 ## 6.7.4
 
 * added boolean to Tracker returning whether a request has been dropped
-* updated dependencies 
+* updated dependencies
 
 ## 6.7.3
 

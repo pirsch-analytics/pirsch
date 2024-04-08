@@ -1512,6 +1512,14 @@ func TestAnalyzer_ByHourEvent(t *testing.T) {
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour*3 + time.Minute*15), Start: time.Now(), PageViews: 2, IsBounce: false},
 			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), PageViews: 1, IsBounce: true},
 			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour*6 + time.Minute*15), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour * 15), Start: time.Now(), PageViews: 1, IsBounce: true},
+			{Sign: -1, VisitorID: 4, Time: util.Today().Add(time.Hour * 15), Start: time.Now(), PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*50), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: -1, VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*50), Start: time.Now(), PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*55), Start: time.Now(), PageViews: 3, IsBounce: false},
+			{Sign: -1, VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*55), Start: time.Now(), PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour * 16), Start: time.Now(), PageViews: 4, IsBounce: false},
+			{Sign: -1, VisitorID: 4, Time: util.Today().Add(time.Hour * 16), Start: time.Now(), PageViews: 4, IsBounce: false},
 			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour*16 + time.Minute*5), Start: time.Now(), PageViews: 5, IsBounce: false},
 			{Sign: 1, VisitorID: 5, Time: util.Today().Add(time.Hour * 19), Start: time.Now(), PageViews: 1, IsBounce: true},
 		},
@@ -1559,8 +1567,8 @@ func TestAnalyzer_ByHourEvent(t *testing.T) {
 	assert.Zero(t, visitors[12].Visitors)
 	assert.Zero(t, visitors[13].Visitors)
 	assert.Zero(t, visitors[14].Visitors)
-	assert.Zero(t, visitors[15].Visitors)
-	assert.Equal(t, 1, visitors[16].Visitors)
+	assert.Equal(t, 1, visitors[15].Visitors)
+	assert.Zero(t, visitors[16].Visitors)
 	assert.Zero(t, visitors[17].Visitors)
 	assert.Zero(t, visitors[18].Visitors)
 	assert.Equal(t, 1, visitors[19].Visitors)
@@ -1568,6 +1576,14 @@ func TestAnalyzer_ByHourEvent(t *testing.T) {
 	assert.Zero(t, visitors[21].Visitors)
 	assert.Zero(t, visitors[22].Visitors)
 	assert.Zero(t, visitors[23].Visitors)
+	total, err := analyzer.Visitors.Total(&Filter{
+		From:      util.Today(),
+		To:        util.Today(),
+		EventName: []string{"event"},
+		IncludeCR: true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, total.Visitors)
 }
 
 func TestAnalyzer_ByHourCRAndCustomMetric(t *testing.T) {
@@ -1783,15 +1799,15 @@ func TestAnalyzer_ByHourTimeShift(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 24)
-	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
 	assert.Equal(t, 1, visitors[4].Visitors)
 	assert.Equal(t, 1, visitors[5].Visitors)
 	assert.Equal(t, 0, visitors[6].Visitors)
-	assert.Equal(t, 1, visitors[3].Views)
+	assert.Equal(t, 0, visitors[3].Views)
 	assert.Equal(t, 1, visitors[4].Views)
 	assert.Equal(t, 1, visitors[5].Views)
 	assert.Equal(t, 0, visitors[6].Views)
-	assert.Equal(t, 1, visitors[3].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
 	assert.Equal(t, 1, visitors[4].Sessions)
 	assert.Equal(t, 1, visitors[5].Sessions)
 	assert.Equal(t, 0, visitors[6].Sessions)
