@@ -1,15 +1,11 @@
 # Changelog
 
-## 6.8.1
-
-* fixed joining events when grouping by hours/minutes
-* updated dependencies
-
 ## 6.8.0
 
 * added listing and reading individual sessions
 * added grouping results by minute
 * fixed joining time stats
+* fixed joining events when grouping by hours/minutes
 * updated User-Agent blacklist
 * updated dependencies
 
