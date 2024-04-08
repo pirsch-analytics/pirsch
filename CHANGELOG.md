@@ -3,6 +3,7 @@
 ## 6.8.1
 
 * fixed joining events when grouping by hours/minutes
+* updated dependencies
 
 ## 6.8.0
 
