@@ -278,12 +278,24 @@ func (query *queryBuilder) joinQuery() {
 		q, args := query.join.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("JOIN (%s) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id ", q))
+
+		if query.filter.fieldsContain(query.join.groupBy, FieldHour) {
+			query.q.WriteString("AND j.hour = hour ")
+		} else if query.filter.fieldsContain(query.join.groupBy, FieldMinute) {
+			query.q.WriteString("AND j.minute = minute ")
+		}
 	}
 
 	if query.joinSecond != nil {
 		q, args := query.joinSecond.query()
 		query.args = append(query.args, args...)
 		query.q.WriteString(fmt.Sprintf("JOIN (%s) k ON k.visitor_id = t.visitor_id AND k.session_id = t.session_id ", q))
+
+		if query.filter.fieldsContain(query.joinSecond.groupBy, FieldHour) {
+			query.q.WriteString("AND k.hour = hour ")
+		} else if query.filter.fieldsContain(query.joinSecond.groupBy, FieldMinute) {
+			query.q.WriteString("AND k.minute = minute ")
+		}
 	}
 
 	if query.leftJoin != nil {
