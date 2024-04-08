@@ -16,7 +16,7 @@
 ## 6.7.4
 
 * added boolean to Tracker returning whether a request has been dropped
-* updated dependencies 
+* updated dependencies
 
 ## 6.7.3
 
