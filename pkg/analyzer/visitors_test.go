@@ -277,7 +277,12 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, visitors)
-	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: util.Today(), IncludeTime: true, IncludeCR: true})
+	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
+		From:        time.Now().UTC().Add(-time.Minute * 15),
+		To:          util.Today(),
+		IncludeTime: true,
+		IncludeCR:   true,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, visitors)
 	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
@@ -363,7 +368,12 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: util.Today(), IncludeTime: true, IncludeCR: true})
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From:        time.Now().UTC().Add(-time.Minute * 15),
+		To:          util.Today(),
+		IncludeTime: true,
+		IncludeCR:   true,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, pageViews)
 	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
@@ -449,7 +459,12 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: time.Now().UTC().Add(-time.Minute * 15), To: util.Today(), IncludeTime: true, IncludeCR: true})
+	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+		From:        time.Now().UTC().Add(-time.Minute * 15),
+		To:          util.Today(),
+		IncludeTime: true,
+		IncludeCR:   true,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, pageViews)
 	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{

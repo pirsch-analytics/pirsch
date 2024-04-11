@@ -91,11 +91,12 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID: filter.ClientID,
-		Timezone: filter.Timezone,
-		From:     filter.From,
-		To:       filter.To,
-		Sample:   filter.Sample,
+		ClientID:    filter.ClientID,
+		Timezone:    filter.Timezone,
+		From:        filter.From,
+		To:          filter.To,
+		Sample:      filter.Sample,
+		IncludeTime: filter.IncludeTime,
 	}
 	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil)
 	total, err := visitors.store.GetTotalUniqueVisitorStats(filter.Ctx, q, args...)

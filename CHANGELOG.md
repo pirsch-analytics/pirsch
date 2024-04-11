@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.8.1
+
+* fixed missing IncludeTime for TotalVisitors filter
+
 ## 6.8.0
 
 * added listing and reading individual sessions
