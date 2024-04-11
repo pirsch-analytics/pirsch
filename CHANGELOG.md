@@ -3,6 +3,7 @@
 ## 6.8.1
 
 * fixed missing IncludeTime for TotalVisitors filter
+* updated dependencies
 
 ## 6.8.0
 
