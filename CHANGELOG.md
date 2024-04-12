@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.8.2
+
+* fixed filter for session breakdown
+
 ## 6.8.1
 
 * fixed missing IncludeTime for TotalVisitors filter

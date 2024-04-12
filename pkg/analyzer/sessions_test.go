@@ -182,6 +182,15 @@ func TestSessions_Breakdown(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, steps, 3)
+	steps, err = analyzer.Sessions.Breakdown(&Filter{
+		VisitorID: 1,
+		SessionID: 1,
+		From:      util.Today(),
+		To:        util.Today(),
+		Path:      []string{"/"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, steps, 3)
 	_, err = analyzer.Sessions.Breakdown(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Sessions.Breakdown(getMaxFilter("event"))

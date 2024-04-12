@@ -79,22 +79,30 @@ func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 // Breakdown returns the page views and events for a single session in chronological order.
 func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error) {
 	filter = sessions.analyzer.getFilter(filter)
-	filter.Sample = 0
-	filter.IncludeTimeOnPage = false
 
 	if filter.VisitorID == 0 || filter.SessionID == 0 {
 		return nil, nil
 	}
 
-	q, args := filter.buildQuery([]Field{FieldPageViewsAll}, nil, []Field{FieldTime})
-	pageViews, err := sessions.store.SelectPageViews(filter.Ctx, q, args...)
+	f := &Filter{
+		Ctx:         filter.Ctx,
+		ClientID:    filter.ClientID,
+		Timezone:    filter.Timezone,
+		From:        filter.From,
+		To:          filter.To,
+		VisitorID:   filter.VisitorID,
+		SessionID:   filter.SessionID,
+		IncludeTime: filter.IncludeTime,
+	}
+	q, args := f.buildQuery([]Field{FieldPageViewsAll}, nil, []Field{FieldTime})
+	pageViews, err := sessions.store.SelectPageViews(f.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	q, args = filter.buildQuery([]Field{FieldEventsAll}, nil, nil)
-	events, err := sessions.store.SelectEvents(filter.Ctx, q, args...)
+	q, args = f.buildQuery([]Field{FieldEventsAll}, nil, nil)
+	events, err := sessions.store.SelectEvents(f.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
