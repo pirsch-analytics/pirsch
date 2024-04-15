@@ -355,14 +355,25 @@ func (client *Client) SaveRequests(ctx context.Context, requests []model.Request
 		return err
 	}
 
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "request" (client_id, visitor_id, time, user_agent, path, event_name, bot) VALUES (?,?,?,?,?,?,?)`)
+	query, err := tx.PrepareContext(ctx, `INSERT INTO "request" (client_id, visitor_id, time, ip, user_agent, path, event_name, referrer, utm_source, utm_medium, utm_campaign, bot) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
 	}
 
 	for _, req := range requests {
-		_, err := query.Exec(req.ClientID, req.VisitorID, req.Time, req.UserAgent, req.Path, req.Event, req.Bot)
+		_, err := query.Exec(req.ClientID,
+			req.VisitorID,
+			req.Time,
+			req.IP,
+			req.UserAgent,
+			req.Path,
+			req.Event,
+			req.Referrer,
+			req.UTMSource,
+			req.UTMMedium,
+			req.UTMCampaign,
+			req.Bot)
 
 		if err != nil {
 			if e := tx.Rollback(); e != nil {

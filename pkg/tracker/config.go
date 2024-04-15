@@ -35,6 +35,7 @@ type Config struct {
 	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
 	IPFilter            ip.Filter
+	LogIP               bool
 	Logger              *slog.Logger
 }
 

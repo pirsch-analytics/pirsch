@@ -220,7 +220,12 @@ func TestTracker_PageView(t *testing.T) {
 
 	requests := client.GetRequests()
 	assert.Len(t, requests, 1)
+	assert.Empty(t, requests[0].IP)
 	assert.Equal(t, userAgent, requests[0].UserAgent)
+	assert.Equal(t, "https://google.com", requests[0].Referrer)
+	assert.Equal(t, "Source", requests[0].UTMSource)
+	assert.Equal(t, "Medium", requests[0].UTMMedium)
+	assert.Equal(t, "Campaign", requests[0].UTMCampaign)
 	assert.False(t, requests[0].Bot)
 }
 
@@ -466,6 +471,7 @@ func TestTracker_Event(t *testing.T) {
 	tracker := NewTracker(Config{
 		Store: client,
 		GeoDB: geoDB,
+		LogIP: true,
 	})
 	tracker.Event(req, 123, EventOptions{
 		Name:     "event",
@@ -567,7 +573,12 @@ func TestTracker_Event(t *testing.T) {
 
 	requests := client.GetRequests()
 	assert.Len(t, requests, 1)
+	assert.Equal(t, "81.2.69.142", requests[0].IP)
 	assert.Equal(t, userAgent, requests[0].UserAgent)
+	assert.Equal(t, "https://google.com", requests[0].Referrer)
+	assert.Equal(t, "Source", requests[0].UTMSource)
+	assert.Equal(t, "Medium", requests[0].UTMMedium)
+	assert.Equal(t, "Campaign", requests[0].UTMCampaign)
 	assert.False(t, requests[0].Bot)
 }
 

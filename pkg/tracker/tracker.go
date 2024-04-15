@@ -108,7 +108,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 
 		if session != nil {
 			if cancelSession == nil {
-				saveRequest = tracker.requestFromSession(session, clientID, userAgent.UserAgent, "")
+				saveRequest = tracker.requestFromSession(session, clientID, ipAddress, userAgent.UserAgent, "")
 			}
 
 			var pv *model.PageView
@@ -127,16 +127,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			return true
 		}
 	} else {
-		tracker.data <- data{
-			request: &model.Request{
-				ClientID:  clientID,
-				VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
-				Time:      now,
-				UserAgent: r.UserAgent(),
-				Path:      options.Path,
-				Bot:       true,
-			},
-		}
+		tracker.captureRequest(now, clientID, r, ipAddress, options.Path, "", userAgent)
 	}
 
 	return false
@@ -166,13 +157,13 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 
 			if session != nil {
 				if cancelSession == nil {
-					saveRequest = tracker.requestFromSession(session, clientID, userAgent.UserAgent, eventOptions.Name)
+					saveRequest = tracker.requestFromSession(session, clientID, ipAddress, userAgent.UserAgent, eventOptions.Name)
 				}
 
 				var pv *model.PageView
 				tagKeys, tagValues := options.getTags()
 
-				if cancelSession == nil || (cancelSession != nil && cancelSession.PageViews < session.PageViews) {
+				if cancelSession == nil || cancelSession.PageViews < session.PageViews {
 					pv = tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
 				}
 
@@ -187,17 +178,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				return true
 			}
 		} else {
-			tracker.data <- data{
-				request: &model.Request{
-					ClientID:  clientID,
-					VisitorID: tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
-					Time:      now,
-					UserAgent: r.UserAgent(),
-					Path:      options.Path,
-					Event:     eventOptions.Name,
-					Bot:       true,
-				},
-			}
+			tracker.captureRequest(now, clientID, r, ipAddress, options.Path, eventOptions.Name, userAgent)
 		}
 	}
 
@@ -316,14 +297,51 @@ func (tracker *Tracker) eventFromSession(session *model.Session, clientID uint64
 	}
 }
 
-func (tracker *Tracker) requestFromSession(session *model.Session, clientID uint64, userAgent, event string) *model.Request {
+func (tracker *Tracker) requestFromSession(session *model.Session, clientID uint64, ipAddress, userAgent, event string) *model.Request {
+	logIP := ""
+
+	if tracker.config.LogIP {
+		logIP = ipAddress
+	}
+
 	return &model.Request{
-		ClientID:  clientID,
-		VisitorID: session.VisitorID,
-		Time:      session.Time,
-		UserAgent: userAgent,
-		Path:      session.ExitPath,
-		Event:     event,
+		ClientID:    clientID,
+		VisitorID:   session.VisitorID,
+		Time:        session.Time,
+		IP:          logIP,
+		UserAgent:   userAgent,
+		Path:        session.ExitPath,
+		Event:       event,
+		Referrer:    session.Referrer,
+		UTMSource:   session.UTMSource,
+		UTMMedium:   session.UTMMedium,
+		UTMCampaign: session.UTMCampaign,
+	}
+}
+
+func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.Request, ipAddress, path, event string, userAgent ua.UserAgent) {
+	logIP := ""
+
+	if tracker.config.LogIP {
+		logIP = ipAddress
+	}
+
+	query := r.URL.Query()
+	tracker.data <- data{
+		request: &model.Request{
+			ClientID:    clientID,
+			VisitorID:   tracker.fingerprint(tracker.config.Salt, userAgent.UserAgent, ipAddress, now),
+			Time:        now,
+			IP:          logIP,
+			UserAgent:   r.UserAgent(),
+			Path:        path,
+			Event:       event,
+			Referrer:    r.Referer(),
+			UTMSource:   strings.TrimSpace(query.Get("utm_source")),
+			UTMMedium:   strings.TrimSpace(query.Get("utm_medium")),
+			UTMCampaign: strings.TrimSpace(query.Get("utm_campaign")),
+			Bot:         true,
+		},
 	}
 }
 

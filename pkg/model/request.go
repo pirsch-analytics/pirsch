@@ -8,13 +8,18 @@ import (
 // Request represents a request that has or has not been flagged as a bot.
 // The creation time, User-Agent, path, and event name are stored in the database to find bots.
 type Request struct {
-	ClientID  uint64    `db:"client_id" json:"client_id"`
-	VisitorID uint64    `db:"visitor_id" json:"visitor_id"`
-	Time      time.Time `json:"time"`
-	UserAgent string    `db:"user_agent" json:"user_agent"`
-	Path      string    `json:"path"`
-	Event     string    `db:"event_name" json:"event_name"`
-	Bot       bool      `json:"bot"`
+	ClientID    uint64    `db:"client_id" json:"client_id"`
+	VisitorID   uint64    `db:"visitor_id" json:"visitor_id"`
+	Time        time.Time `json:"time"`
+	IP          string    `json:"ip"`
+	UserAgent   string    `db:"user_agent" json:"user_agent"`
+	Path        string    `json:"path"`
+	Event       string    `db:"event_name" json:"event_name"`
+	Referrer    string    `json:"referrer"`
+	UTMSource   string    `db:"utm_source" json:"utm_source"`
+	UTMMedium   string    `db:"utm_medium" json:"utm_medium"`
+	UTMCampaign string    `db:"utm_campaign" json:"utm_campaign"`
+	Bot         bool      `json:"bot"`
 }
 
 // String implements the Stringer interface.

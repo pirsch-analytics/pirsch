@@ -181,13 +181,18 @@ func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveRequests(context.Background(), []model.Request{
 		{
-			ClientID:  1,
-			VisitorID: 1,
-			Time:      time.Now(),
-			UserAgent: "ua1",
-			Path:      "/foo",
-			Event:     "event",
-			Bot:       true,
+			ClientID:    1,
+			VisitorID:   1,
+			Time:        time.Now(),
+			IP:          "123.456.789.9",
+			UserAgent:   "ua1",
+			Path:        "/foo",
+			Event:       "event",
+			Referrer:    "ref",
+			UTMSource:   "source",
+			UTMMedium:   "medium",
+			UTMCampaign: "campaign",
+			Bot:         true,
 		},
 		{
 			ClientID:  2,

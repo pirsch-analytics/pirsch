@@ -2,6 +2,7 @@
 
 ## 6.8.3
 
+* improved logging bot traffic
 * updated dependencies
 
 ## 6.8.2
