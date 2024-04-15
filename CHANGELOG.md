@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.8.3
+
+* updated dependencies
+
 ## 6.8.2
 
 * fixed filter for session breakdown
