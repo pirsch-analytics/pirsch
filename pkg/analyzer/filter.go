@@ -29,9 +29,6 @@ type Filter struct {
 	To time.Time
 
 	// Period sets the period to group results.
-	// This is only used by Analyzer.ByPeriod, Analyzer.AvgSessionDuration, and Analyzer.AvgTimeOnPage.
-	// Using it for other queries leads to wrong results and might return an error.
-	// This can either be PeriodDay (default), PeriodWeek, or PeriodYear.
 	Period pkg.Period
 
 	// Path filters for the path.
