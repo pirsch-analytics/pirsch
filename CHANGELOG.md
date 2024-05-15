@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.8.4
+
+* removed honoring DNT (nobody uses it)
+* updated dependencies
+
 ## 6.8.3
 
 * improved logging bot traffic

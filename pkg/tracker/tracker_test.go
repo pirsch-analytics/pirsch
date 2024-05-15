@@ -1130,22 +1130,6 @@ func TestTracker_ignoreBrowserVersion(t *testing.T) {
 	}
 }
 
-func TestTracker_ignoreDoNotTrack(t *testing.T) {
-	tracker := NewTracker(Config{})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("User-Agent", userAgent)
-
-	if _, _, ignore := tracker.ignore(req); ignore {
-		t.Fatal("Request must not have been ignored")
-	}
-
-	req.Header.Set("DNT", "1")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request must have been ignored")
-	}
-}
-
 func TestTracker_ignoreIP(t *testing.T) {
 	filter := ip.NewUdger("", "")
 	filter.Update([]string{"90.154.29.38"}, []string{}, []ip.Range{}, []ip.Range{})

@@ -346,11 +346,6 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 }
 
 func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
-	// respect do not track header
-	if r.Header.Get("DNT") == "1" {
-		return ua.UserAgent{}, "", true
-	}
-
 	// ignore browsers pre-fetching data
 	xPurpose := r.Header.Get("X-Purpose")
 	purpose := r.Header.Get("Purpose")
