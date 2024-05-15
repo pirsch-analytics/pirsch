@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.8.5
+
+* fixed logging IP address if configured for bot requests
+
 ## 6.8.4
 
 * removed honoring DNT (nobody uses it)

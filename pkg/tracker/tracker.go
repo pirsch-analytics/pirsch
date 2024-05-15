@@ -346,6 +346,8 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 }
 
 func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
+	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
+
 	// ignore browsers pre-fetching data
 	xPurpose := r.Header.Get("X-Purpose")
 	purpose := r.Header.Get("Purpose")
@@ -355,7 +357,9 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 		xPurpose == "preview" ||
 		purpose == "prefetch" ||
 		purpose == "preview" {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	// empty User-Agents are usually bots
@@ -363,14 +367,18 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
 
 	if userAgent == "" || len(userAgent) <= minUserAgentLength || len(userAgent) > maxUserAgentLength || util.ContainsNonASCIICharacters(userAgent) {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	// ignore User-Agents that are an IP address
 	host := rawUserAgent
 
 	if net.ParseIP(host) != nil {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	if strings.Contains(host, ":") {
@@ -378,36 +386,46 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	}
 
 	if net.ParseIP(host) != nil {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	// filter UUIDs
 	if _, err := uuid.Parse(rawUserAgent); err == nil {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	// filter referrer spammers
 	if referrer.Ignore(r) {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	userAgentResult := ua.Parse(r)
 
 	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	// filter for bot keywords
 	for _, botUserAgent := range ua.Blacklist {
 		if strings.Contains(userAgent, botUserAgent) {
-			return ua.UserAgent{}, "", true
+			return ua.UserAgent{
+				UserAgent: r.UserAgent(),
+			}, ipAddress, true
 		}
 	}
 
-	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
-
 	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
-		return ua.UserAgent{}, "", true
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, true
 	}
 
 	return userAgentResult, ipAddress, false
