@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.9.0
+
+* added regions to geolocation
+* updated User-Agent blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 6.8.5
 
 * fixed logging IP address if configured for bot requests
