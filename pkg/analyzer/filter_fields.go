@@ -240,12 +240,38 @@ var (
 		Name:           "country_code",
 	}
 
+	// FieldCountryRegion is a query result column.
+	// This field can only be used in combination with the FieldCountry.
+	FieldCountryRegion = Field{
+		querySessions:  "if(region = '', '', country_code)",
+		queryPageViews: "if(region = '', '', country_code)",
+		queryDirection: "ASC",
+		Name:           "country_code",
+	}
+
 	// FieldCountry is a query result column.
 	FieldCountry = Field{
 		querySessions:  "country_code",
 		queryPageViews: "country_code",
 		queryDirection: "ASC",
 		Name:           "country_code",
+	}
+
+	// FieldRegionCity is a query result column.
+	// This field can only be used in combination with the FieldCity.
+	FieldRegionCity = Field{
+		querySessions:  "if(city = '', '', region)",
+		queryPageViews: "if(city = '', '', region)",
+		queryDirection: "ASC",
+		Name:           "region",
+	}
+
+	// FieldRegion is a query result column.
+	FieldRegion = Field{
+		querySessions:  "region",
+		queryPageViews: "region",
+		queryDirection: "ASC",
+		Name:           "region",
 	}
 
 	// FieldCity is a query result column.

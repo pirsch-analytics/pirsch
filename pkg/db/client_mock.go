@@ -259,6 +259,11 @@ func (client *ClientMock) SelectCountryStats(context.Context, string, ...any) ([
 	return nil, nil
 }
 
+// SelectRegionStats implements the Store interface.
+func (client *ClientMock) SelectRegionStats(context.Context, string, ...any) ([]model.RegionStats, error) {
+	return nil, nil
+}
+
 // SelectCityStats implements the Store interface.
 func (client *ClientMock) SelectCityStats(context.Context, string, ...any) ([]model.CityStats, error) {
 	return nil, nil

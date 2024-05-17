@@ -107,6 +107,57 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.Len(t, visitors, 2)
 }
 
+func TestAnalyzer_Regions(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "no", City: "Oslo"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "no", City: "Oslo"},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "gb", Region: "England", City: "London"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "de", Region: "Berlin", City: "Berlin"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "de"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "jp", Region: "Tokyo", City: "Tokyo"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "gb", Region: "England", City: "London"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
+		},
+	})
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Demographics.Regions(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	assert.Empty(t, visitors[0].CountryCode)
+	assert.Equal(t, "gb", visitors[1].CountryCode)
+	assert.Equal(t, "de", visitors[2].CountryCode)
+	assert.Equal(t, "jp", visitors[3].CountryCode)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[3].RelativeVisitors, 0.01)
+	_, err = analyzer.Demographics.Regions(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Demographics.Regions(getMaxFilter("event"))
+	assert.NoError(t, err)
+	_, err = analyzer.Demographics.Regions(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldRegion,
+			Direction: pkg.DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldRegion,
+			Input: "England",
+		},
+	}})
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Cities(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -115,12 +166,12 @@ func TestAnalyzer_Cities(t *testing.T) {
 		},
 		{
 			{Sign: -1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "no", City: "Oslo"},
-			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: "London"},
-			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "de", City: "Berlin"},
-			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "de", City: ""},
-			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "jp", City: "Tokyo"},
-			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: "London"},
-			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb", City: ""},
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "gb", Region: "England", City: "London"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "de", Region: "Berlin", City: "Berlin"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "de"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "jp", Region: "Tokyo", City: "Tokyo"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "gb", Region: "England", City: "London"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
 		},
 	})
 	time.Sleep(time.Millisecond * 20)
@@ -132,6 +183,10 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.Equal(t, "gb", visitors[1].CountryCode)
 	assert.Equal(t, "de", visitors[2].CountryCode)
 	assert.Equal(t, "jp", visitors[3].CountryCode)
+	assert.Empty(t, visitors[0].Region)
+	assert.Equal(t, "England", visitors[1].Region)
+	assert.Equal(t, "Berlin", visitors[2].Region)
+	assert.Equal(t, "Tokyo", visitors[3].Region)
 	assert.Empty(t, visitors[0].City)
 	assert.Equal(t, "London", visitors[1].City)
 	assert.Equal(t, "Berlin", visitors[2].City)

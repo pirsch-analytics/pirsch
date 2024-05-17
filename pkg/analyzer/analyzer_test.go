@@ -56,6 +56,8 @@ func TestAnalyzer_NoData(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Demographics.Countries(nil)
 	assert.NoError(t, err)
+	_, err = analyzer.Demographics.Regions(nil)
+	assert.NoError(t, err)
 	_, err = analyzer.Demographics.Cities(nil)
 	assert.NoError(t, err)
 	_, err = analyzer.Time.AvgSessionDuration(nil)

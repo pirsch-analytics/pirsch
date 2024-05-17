@@ -1529,6 +1529,30 @@ func (client *Client) SelectCountryStats(ctx context.Context, query string, args
 	return results, nil
 }
 
+// SelectRegionStats implements the Store interface.
+func (client *Client) SelectRegionStats(ctx context.Context, query string, args ...any) ([]model.RegionStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.RegionStats
+
+	for rows.Next() {
+		var result model.RegionStats
+
+		if err := rows.Scan(&result.Region, &result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectCityStats implements the Store interface.
 func (client *Client) SelectCityStats(ctx context.Context, query string, args ...any) ([]model.CityStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)
@@ -1543,7 +1567,7 @@ func (client *Client) SelectCityStats(ctx context.Context, query string, args ..
 	for rows.Next() {
 		var result model.CityStats
 
-		if err := rows.Scan(&result.City, &result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
+		if err := rows.Scan(&result.City, &result.Region, &result.CountryCode, &result.Visitors, &result.RelativeVisitors); err != nil {
 			return nil, err
 		}
 
