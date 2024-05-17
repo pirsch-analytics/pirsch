@@ -96,6 +96,7 @@ func (query *queryBuilder) getFields() []string {
 
 	query.appendField(&fields, FieldLanguage.Name, query.filter.Language)
 	query.appendField(&fields, FieldCountry.Name, query.filter.Country)
+	query.appendField(&fields, FieldRegion.Name, query.filter.Region)
 	query.appendField(&fields, FieldCity.Name, query.filter.City)
 	query.appendField(&fields, FieldReferrer.Name, query.filter.Referrer)
 	query.appendField(&fields, FieldReferrerName.Name, query.filter.ReferrerName)
@@ -379,6 +380,7 @@ func (query *queryBuilder) whereFields() {
 
 	query.whereField(FieldLanguage.Name, query.filter.Language)
 	query.whereField(FieldCountry.Name, query.filter.Country)
+	query.whereField(FieldRegion.Name, query.filter.Region)
 	query.whereField(FieldCity.Name, query.filter.City)
 	query.whereField(FieldReferrer.Name, query.filter.Referrer)
 	query.whereField(FieldReferrerName.Name, query.filter.ReferrerName)

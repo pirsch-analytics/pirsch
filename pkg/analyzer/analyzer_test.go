@@ -87,6 +87,7 @@ func getMaxFilter(eventName string) *Filter {
 		ExitPath:       []string{"/exit"},
 		Language:       []string{"en"},
 		Country:        []string{"en"},
+		Region:         []string{"England"},
 		City:           []string{"London"},
 		Referrer:       []string{"ref"},
 		ReferrerName:   []string{"refname"},

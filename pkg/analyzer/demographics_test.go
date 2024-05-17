@@ -144,7 +144,7 @@ func TestAnalyzer_Regions(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Demographics.Regions(getMaxFilter("event"))
 	assert.NoError(t, err)
-	_, err = analyzer.Demographics.Regions(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+	visitors, err = analyzer.Demographics.Regions(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
 		{
 			Field:     FieldRegion,
 			Direction: pkg.DirectionASC,
@@ -152,10 +152,15 @@ func TestAnalyzer_Regions(t *testing.T) {
 	}, Search: []Search{
 		{
 			Field: FieldRegion,
-			Input: "England",
+			Input: "e",
 		},
 	}})
 	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "England", visitors[0].Region)
+	assert.Equal(t, "gb", visitors[0].CountryCode)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Cities(t *testing.T) {

@@ -2,7 +2,7 @@
 
 ## 6.9.0
 
-* added regions to geolocation
+* added regions
 * updated User-Agent blacklist
 * updated referrer mapping
 * updated dependencies
