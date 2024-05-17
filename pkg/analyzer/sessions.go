@@ -46,6 +46,7 @@ func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 				exit_titles[length(exit_titles)] exit_title,
 				any(t.session_language),
 				any(t.session_country_code),
+				any(t.session_region),
 				any(t.session_city),
 				any(t.session_referrer),
 				any(t.session_referrer_name),

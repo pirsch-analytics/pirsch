@@ -13,14 +13,14 @@ var (
 
 	// FieldPageViewsAll is a query result column.
 	FieldPageViewsAll = Field{
-		querySessions:  "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
-		queryPageViews: "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		querySessions:  "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
+		queryPageViews: "t.visitor_id, t.session_id, time, duration_seconds, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tag_keys, tag_values",
 	}
 
 	// FieldEventsAll is a query result column.
 	FieldEventsAll = Field{
-		querySessions:  "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
-		queryPageViews: "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		querySessions:  "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
+		queryPageViews: "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
 	}
 
 	// FieldVisitorID is a query result column.
@@ -616,6 +616,7 @@ const (
 		t.exit_title session_exit_title,
 		any(t.language) session_language,
 		any(t.country_code) session_country_code,
+		any(t.region) session_region,
 		any(t.city) session_city,
 		any(t.referrer) session_referrer,
 		any(t.referrer_name) session_referrer_name,
