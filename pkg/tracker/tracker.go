@@ -243,6 +243,7 @@ func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage u
 		Title:           session.ExitTitle,
 		Language:        session.Language,
 		CountryCode:     session.CountryCode,
+		Region:          session.Region,
 		City:            session.City,
 		Referrer:        session.Referrer,
 		ReferrerName:    session.ReferrerName,
@@ -278,6 +279,7 @@ func (tracker *Tracker) eventFromSession(session *model.Session, clientID uint64
 		Title:           session.ExitTitle,
 		Language:        session.Language,
 		CountryCode:     session.CountryCode,
+		Region:          session.Region,
 		City:            session.City,
 		Referrer:        session.Referrer,
 		ReferrerName:    session.ReferrerName,
@@ -526,10 +528,10 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
-	countryCode, city := "", ""
+	countryCode, region, city := "", "", ""
 
 	if tracker.config.GeoDB != nil {
-		countryCode, city = tracker.config.GeoDB.GetLocation(ip)
+		countryCode, region, city = tracker.config.GeoDB.GetLocation(ip)
 	}
 
 	return &model.Session{
@@ -547,6 +549,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		ExitTitle:      options.Title,
 		Language:       lang,
 		CountryCode:    countryCode,
+		Region:         region,
 		City:           city,
 		Referrer:       ref,
 		ReferrerName:   referrerName,

@@ -20,6 +20,7 @@ type Event struct {
 	Title           string    `json:"title"`
 	Language        string    `json:"language"`
 	CountryCode     string    `db:"country_code" json:"country_code"`
+	Region          string    `json:"region"`
 	City            string    `json:"city"`
 	Referrer        string    `json:"referrer"`
 	ReferrerName    string    `db:"referrer_name" json:"referrer_name"`

@@ -150,10 +150,10 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 	}
 
 	query, err := tx.PrepareContext(ctx, `INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
-		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-		tag_keys, tag_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		tag_keys, tag_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -169,6 +169,7 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 			pageView.Title,
 			pageView.Language,
 			pageView.CountryCode,
+			pageView.Region,
 			pageView.City,
 			pageView.Referrer,
 			pageView.ReferrerName,
@@ -217,10 +218,10 @@ func (client *Client) SaveSessions(ctx context.Context, sessions []model.Session
 	}
 
 	query, err := tx.PrepareContext(ctx, `INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
-		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
 	if err != nil {
 		return err
@@ -242,6 +243,7 @@ func (client *Client) SaveSessions(ctx context.Context, sessions []model.Session
 			session.ExitTitle,
 			session.Language,
 			session.CountryCode,
+			session.Region,
 			session.City,
 			session.Referrer,
 			session.ReferrerName,
@@ -289,7 +291,7 @@ func (client *Client) SaveEvents(ctx context.Context, events []model.Event) erro
 	}
 
 	query, err := tx.PrepareContext(ctx, `INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
-		path, title, language, country_code, city, referrer, referrer_name, referrer_icon, os, os_version,
+		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
@@ -310,6 +312,7 @@ func (client *Client) SaveEvents(ctx context.Context, events []model.Event) erro
 			event.Title,
 			event.Language,
 			event.CountryCode,
+			event.Region,
 			event.City,
 			event.Referrer,
 			event.ReferrerName,
@@ -412,6 +415,7 @@ func (client *Client) Session(ctx context.Context, clientID, fingerprint uint64,
 		exit_title,
 		language,
 		country_code,
+		region,
 		city,
 		referrer,
 		referrer_name,
@@ -451,6 +455,7 @@ func (client *Client) Session(ctx context.Context, clientID, fingerprint uint64,
 		&session.ExitTitle,
 		&session.Language,
 		&session.CountryCode,
+		&session.Region,
 		&session.City,
 		&session.Referrer,
 		&session.ReferrerName,
@@ -1877,6 +1882,7 @@ func (client *Client) SelectSessions(ctx context.Context, query string, args ...
 			&result.ExitTitle,
 			&result.Language,
 			&result.CountryCode,
+			&result.Region,
 			&result.City,
 			&result.Referrer,
 			&result.ReferrerName,
@@ -1925,6 +1931,7 @@ func (client *Client) SelectPageViews(ctx context.Context, query string, args ..
 			&result.Title,
 			&result.Language,
 			&result.CountryCode,
+			&result.Region,
 			&result.City,
 			&result.Referrer,
 			&result.ReferrerName,
@@ -1977,6 +1984,7 @@ func (client *Client) SelectEvents(ctx context.Context, query string, args ...an
 			&result.Title,
 			&result.Language,
 			&result.CountryCode,
+			&result.Region,
 			&result.City,
 			&result.Referrer,
 			&result.ReferrerName,
