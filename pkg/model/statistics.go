@@ -214,10 +214,18 @@ type CountryStats struct {
 	CountryCode string `db:"country_code" json:"country_code"`
 }
 
+// RegionStats is the result type for region statistics.
+type RegionStats struct {
+	MetaStats
+	CountryCode string `db:"country_code" json:"country_code"`
+	Region      string `json:"region"`
+}
+
 // CityStats is the result type for city statistics.
 type CityStats struct {
 	MetaStats
 	CountryCode string `db:"country_code" json:"country_code"`
+	Region      string `json:"region"`
 	City        string `json:"city"`
 }
 

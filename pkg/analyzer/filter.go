@@ -59,6 +59,9 @@ type Filter struct {
 	// Country filters for the ISO country code.
 	Country []string
 
+	// Region filters for the region.
+	Region []string
+
 	// City filters for the city name.
 	City []string
 
@@ -250,6 +253,7 @@ func (filter *Filter) validate() {
 	filter.PathPattern = filter.removeDuplicates(filter.PathPattern)
 	filter.Language = filter.removeDuplicates(filter.Language)
 	filter.Country = filter.removeDuplicates(filter.Country)
+	filter.Region = filter.removeDuplicates(filter.Region)
 	filter.City = filter.removeDuplicates(filter.City)
 	filter.Referrer = filter.removeDuplicates(filter.Referrer)
 	filter.ReferrerName = filter.removeDuplicates(filter.ReferrerName)

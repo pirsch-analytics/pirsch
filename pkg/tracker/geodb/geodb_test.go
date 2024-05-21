@@ -16,8 +16,9 @@ func TestGet(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, geoDB)
 		assert.NoFileExists(t, filepath.Join("tmp", geoLite2TarGzFilename))
-		countryCode, city := geoDB.GetLocation("81.2.69.142")
+		countryCode, region, city := geoDB.GetLocation("81.2.69.142")
 		assert.NotEmpty(t, countryCode)
+		assert.NotEmpty(t, region)
 		assert.NotEmpty(t, city)
 	}
 }
@@ -25,7 +26,8 @@ func TestGet(t *testing.T) {
 func TestGeoDB_GetLocation(t *testing.T) {
 	geoDB, _ := NewGeoDB("", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../../test/GeoIP2-City-Test.mmdb"))
-	countryCode, city := geoDB.GetLocation("81.2.69.142")
+	countryCode, region, city := geoDB.GetLocation("81.2.69.142")
 	assert.Equal(t, "gb", countryCode)
+	assert.Equal(t, "England", region)
 	assert.Equal(t, "London", city)
 }

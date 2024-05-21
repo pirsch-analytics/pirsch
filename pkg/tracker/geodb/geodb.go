@@ -49,11 +49,11 @@ func NewGeoDB(licenseKey, downloadPath string) (*GeoDB, error) {
 // GetLocation looks up the country code, subdivision (region), and city for given IP.
 // If the IP is invalid it will return an empty string.
 // The country code is returned in lowercase.
-func (db *GeoDB) GetLocation(ip string) (string, string) {
+func (db *GeoDB) GetLocation(ip string) (string, string, string) {
 	parsedIP := net.ParseIP(ip)
 
 	if parsedIP == nil {
-		return "", ""
+		return "", "", ""
 	}
 
 	record := struct {
@@ -62,6 +62,9 @@ func (db *GeoDB) GetLocation(ip string) (string, string) {
 		} `maxminddb:"country"`
 		Subdivisions []struct {
 			ISOCode string `maxminddb:"iso_code"`
+			Names   struct {
+				En string `maxminddb:"en"`
+			} `maxminddb:"names"`
 		} `maxminddb:"subdivisions"`
 		City struct {
 			Names struct {
@@ -74,14 +77,20 @@ func (db *GeoDB) GetLocation(ip string) (string, string) {
 	defer db.m.RUnlock()
 
 	if err := db.db.Lookup(parsedIP, &record); err != nil {
-		return "", ""
+		return "", "", ""
 	}
 
 	if record.Country.ISOCode == "US" && len(record.Subdivisions) > 0 && record.Subdivisions[0].ISOCode != "" {
 		record.City.Names.En += fmt.Sprintf(" (%s)", record.Subdivisions[0].ISOCode)
 	}
 
-	return strings.ToLower(record.Country.ISOCode), record.City.Names.En
+	subdivision := ""
+
+	if len(record.Subdivisions) > 0 {
+		subdivision = record.Subdivisions[0].Names.En
+	}
+
+	return strings.ToLower(record.Country.ISOCode), subdivision, record.City.Names.En
 }
 
 // Update downloads and unpacks the MaxMind GeoLite2 database.
@@ -152,14 +161,18 @@ func (db *GeoDB) unpackAndUpdate() error {
 		return err
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	gzipFile, err := gzip.NewReader(file)
 
 	if err != nil {
 		return err
 	}
 
-	defer gzipFile.Close()
+	defer func() {
+		_ = gzipFile.Close()
+	}()
 	r := tar.NewReader(gzipFile)
 	var out bytes.Buffer
 

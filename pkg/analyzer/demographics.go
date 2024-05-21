@@ -23,8 +23,14 @@ func (demographics *Demographics) Countries(filter *Filter) ([]model.CountryStat
 	return demographics.store.SelectCountryStats(ctx, q, args...)
 }
 
+// Regions returns the visitor count grouped by region.
+func (demographics *Demographics) Regions(filter *Filter) ([]model.RegionStats, error) {
+	ctx, q, args := demographics.analyzer.selectByAttribute(filter, FieldRegion, FieldCountryRegion)
+	return demographics.store.SelectRegionStats(ctx, q, args...)
+}
+
 // Cities returns the visitor count grouped by city.
 func (demographics *Demographics) Cities(filter *Filter) ([]model.CityStats, error) {
-	ctx, q, args := demographics.analyzer.selectByAttribute(filter, FieldCity, FieldCountryCity)
+	ctx, q, args := demographics.analyzer.selectByAttribute(filter, FieldCity, FieldRegionCity, FieldCountryCity)
 	return demographics.store.SelectCityStats(ctx, q, args...)
 }

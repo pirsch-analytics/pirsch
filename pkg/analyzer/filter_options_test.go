@@ -180,6 +180,29 @@ func TestFilterOptions_Countries(t *testing.T) {
 	assert.Equal(t, "ja", options[1])
 }
 
+func TestFilterOptions_Regions(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Region: "Florida"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Region: "Tokyo"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Region: "Tokyo"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Region: "Berlin"},
+	}))
+	time.Sleep(time.Millisecond * 20)
+	analyzer := NewAnalyzer(dbClient)
+	options, err := analyzer.Options.Regions(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "Berlin", options[0])
+	assert.Equal(t, "Florida", options[1])
+	assert.Equal(t, "Tokyo", options[2])
+	options, err = analyzer.Options.Regions(&Filter{From: util.PastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "Berlin", options[0])
+	assert.Equal(t, "Tokyo", options[1])
+}
+
 func TestFilterOptions_Cities(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{

@@ -99,6 +99,9 @@ type Store interface {
 	// SelectCountryStats selects model.CountryStats.
 	SelectCountryStats(context.Context, string, ...any) ([]model.CountryStats, error)
 
+	// SelectRegionStats selects model.RegionStats.
+	SelectRegionStats(context.Context, string, ...any) ([]model.RegionStats, error)
+
 	// SelectCityStats selects model.CityStats.
 	SelectCityStats(context.Context, string, ...any) ([]model.CityStats, error)
 

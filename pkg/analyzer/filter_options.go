@@ -68,6 +68,11 @@ func (options *FilterOptions) Countries(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "country_code", "session")
 }
 
+// Regions returns all regions.
+func (options *FilterOptions) Regions(filter *Filter) ([]string, error) {
+	return options.selectFilterOptions(filter, "region", "session")
+}
+
 // Cities returns all cities.
 func (options *FilterOptions) Cities(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "city", "session")
