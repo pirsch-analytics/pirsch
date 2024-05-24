@@ -39,6 +39,11 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Empty(t, filter.Path)
 	assert.Len(t, filter.PathPattern, 1)
 	assert.Equal(t, "pattern", filter.PathPattern[0])
+	filter = &Filter{Country: []string{"de", "gb", "invalid", ""}}
+	filter.validate()
+	assert.Len(t, filter.Country, 2)
+	assert.Contains(t, filter.Country, "de")
+	assert.Contains(t, filter.Country, "gb")
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {

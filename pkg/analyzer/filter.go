@@ -247,12 +247,21 @@ func (filter *Filter) validate() {
 		filter.CustomMetricType = ""
 	}
 
+	filter.Country = filter.removeDuplicates(filter.Country)
+	countries := make([]string, 0, len(filter.Country))
+
+	for i := range filter.Country {
+		if len(filter.Country[i]) == 2 {
+			countries = append(countries, filter.Country[i])
+		}
+	}
+
 	filter.Path = filter.removeDuplicates(filter.Path)
 	filter.EntryPath = filter.removeDuplicates(filter.EntryPath)
 	filter.ExitPath = filter.removeDuplicates(filter.ExitPath)
 	filter.PathPattern = filter.removeDuplicates(filter.PathPattern)
 	filter.Language = filter.removeDuplicates(filter.Language)
-	filter.Country = filter.removeDuplicates(filter.Country)
+	filter.Country = countries
 	filter.Region = filter.removeDuplicates(filter.Region)
 	filter.City = filter.removeDuplicates(filter.City)
 	filter.Referrer = filter.removeDuplicates(filter.Referrer)

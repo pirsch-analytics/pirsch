@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.9.1
+
+* added country filter validation
+* updated dependencies
+
 ## 6.9.0
 
 * added regions
