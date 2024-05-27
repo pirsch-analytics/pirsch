@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.9.2
+
+* improved bot filter
+
 ## 6.9.1
 
 * added country filter validation

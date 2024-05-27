@@ -426,7 +426,6 @@ search.marginalia.nu
 arquivo-web-crawler
 <default user agent>
 duckduckbot
-[fban
 sitescorebot
 bitdiscovery
 iubenda-radar

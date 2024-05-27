@@ -54,7 +54,6 @@ var Blacklist = []string{
 	"<default user agent>",
 	"<script>",
 	"<title>",
-	"[fban",
 	"a6-indexer",
 	"abonti",
 	"abuse.xmco.fr",
