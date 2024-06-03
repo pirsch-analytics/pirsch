@@ -15,17 +15,6 @@ func TestMigrate(t *testing.T) {
 		SSLSkipVerify: true,
 		Debug:         true,
 	}))
-
-	// manual migrations
-	statements := []string{
-		`DROP TABLE event`,
-		`RENAME TABLE event_new TO event`,
-	}
-
-	for _, statement := range statements {
-		_, err := dbClient.Exec(statement)
-		assert.NoError(t, err)
-	}
 }
 
 func TestParseVersion(t *testing.T) {

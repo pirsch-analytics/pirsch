@@ -5,6 +5,7 @@
 **WARNING: this release has a breaking configuration change for GeoDB and Udger!**
 
 * added configurable download URL for GeoDB and Udger
+* fully automated schema migrations (including steps that were previously run manually)
 * updated dependencies
 
 ## 6.9.2
