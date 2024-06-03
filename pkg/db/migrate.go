@@ -163,7 +163,7 @@ func parseStatements(name string) ([]string, error) {
 	content, err := fs.ReadFile(migrationFiles, filepath.Join("schema", name))
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error reading migration file: %s", err))
+		return nil, fmt.Errorf("error reading migration file: %s", err)
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(string(content)))
@@ -178,7 +178,7 @@ func parseStatements(name string) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, errors.New(fmt.Sprintf("error parsing migration file: %s", err))
+		return nil, fmt.Errorf("error parsing migration file: %s", err)
 	}
 
 	statements := strings.Split(buffer.String(), ";")

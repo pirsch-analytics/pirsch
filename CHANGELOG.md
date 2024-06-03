@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.10.0
+
+**WARNING: this release has a breaking configuration change for GeoDB and Udger!**
+
+* added configurable download URL for GeoDB and Udger
+* updated dependencies
+
 ## 6.9.2
 
 * improved bot filter

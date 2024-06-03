@@ -26,15 +26,22 @@ const (
 type GeoDB struct {
 	licenseKey   string
 	downloadPath string
+	downloadURL  string
 	db           *maxminddb.Reader
 	m            sync.RWMutex
 }
 
 // NewGeoDB creates a new GeoDB for given license key.
-func NewGeoDB(licenseKey, downloadPath string) (*GeoDB, error) {
+// The download URL is optional and will be set to the default if empty. It must contain "LICENSE_KEY" for the license key.
+func NewGeoDB(licenseKey, downloadPath, downloadURL string) (*GeoDB, error) {
+	if downloadURL == "" {
+		downloadURL = geoLite2Permalink
+	}
+
 	geoDB := &GeoDB{
 		licenseKey:   licenseKey,
 		downloadPath: downloadPath,
+		downloadURL:  downloadURL,
 	}
 
 	if licenseKey != "" && downloadPath != "" {
@@ -135,7 +142,7 @@ func (db *GeoDB) download() error {
 		return err
 	}
 
-	resp, err := http.Get(strings.Replace(geoLite2Permalink, geoLite2LicenseKey, db.licenseKey, 1))
+	resp, err := http.Get(strings.Replace(db.downloadURL, geoLite2LicenseKey, db.licenseKey, 1))
 
 	if err != nil {
 		return err

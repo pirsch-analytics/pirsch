@@ -12,7 +12,7 @@ func TestGet(t *testing.T) {
 	licenseKey := os.Getenv("GEOLITE2_LICENSE_KEY")
 
 	if licenseKey != "" {
-		geoDB, err := NewGeoDB(licenseKey, "tmp")
+		geoDB, err := NewGeoDB(licenseKey, "tmp", "")
 		assert.NoError(t, err)
 		assert.NotNil(t, geoDB)
 		assert.NoFileExists(t, filepath.Join("tmp", geoLite2TarGzFilename))
@@ -24,7 +24,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestGeoDB_GetLocation(t *testing.T) {
-	geoDB, _ := NewGeoDB("", "")
+	geoDB, _ := NewGeoDB("", "", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../../test/GeoIP2-City-Test.mmdb"))
 	countryCode, region, city := geoDB.GetLocation("81.2.69.142")
 	assert.Equal(t, "gb", countryCode)

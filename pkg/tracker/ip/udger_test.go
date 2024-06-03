@@ -7,7 +7,7 @@ import (
 )
 
 func TestUdger(t *testing.T) {
-	udger := NewUdger("", "")
+	udger := NewUdger("", "", "")
 	udger.Update([]string{
 		"90.154.29.38",
 	}, []string{
@@ -35,7 +35,7 @@ func BenchmarkUdger(b *testing.B) {
 	accessKey := os.Getenv("UDGER_ACCESS_KEY")
 
 	if accessKey != "" {
-		udger := NewUdger(accessKey, "tmp")
+		udger := NewUdger(accessKey, "tmp", "")
 		assert.NoError(b, udger.DownloadAndUpdate())
 
 		b.Run("IPv4", func(b *testing.B) {
@@ -57,7 +57,7 @@ func TestUdger_Ignore(t *testing.T) {
 	ips := []string{}
 
 	if accessKey != "" {
-		udger := NewUdger(accessKey, "tmp")
+		udger := NewUdger(accessKey, "tmp", "")
 		assert.NoError(t, udger.DownloadAndUpdate())
 		ignored := make([]string, 0)
 

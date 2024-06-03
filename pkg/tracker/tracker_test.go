@@ -74,7 +74,7 @@ func TestTracker_PageView(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, _ := geodb.NewGeoDB("", "")
+	geoDB, _ := geodb.NewGeoDB("", "", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{
@@ -445,7 +445,7 @@ func TestTracker_PageViewClientHints(t *testing.T) {
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, _ := geodb.NewGeoDB("", "")
+	geoDB, _ := geodb.NewGeoDB("", "", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{
@@ -469,7 +469,7 @@ func TestTracker_Event(t *testing.T) {
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, _ := geodb.NewGeoDB("", "")
+	geoDB, _ := geodb.NewGeoDB("", "", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{
@@ -732,7 +732,7 @@ func TestTracker_EventClientHints(t *testing.T) {
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	req.Header.Set("Sec-Ch-Ua-Platform", "\"Linux\"")
 	req.RemoteAddr = "81.2.69.142"
-	geoDB, _ := geodb.NewGeoDB("", "")
+	geoDB, _ := geodb.NewGeoDB("", "", "")
 	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{
@@ -1138,7 +1138,7 @@ func TestTracker_ignoreBrowserVersion(t *testing.T) {
 }
 
 func TestTracker_ignoreIP(t *testing.T) {
-	filter := ip.NewUdger("", "")
+	filter := ip.NewUdger("", "", "")
 	filter.Update([]string{"90.154.29.38"}, []string{}, []ip.Range{}, []ip.Range{})
 	tracker := NewTracker(Config{
 		IPFilter: filter,

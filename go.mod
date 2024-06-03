@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.24.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.25.0
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.0
 	github.com/emvi/null v1.3.1
@@ -13,7 +13,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/oschwald/maxminddb-golang v1.12.0
+	github.com/oschwald/maxminddb-golang v1.13.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.25.0
 )

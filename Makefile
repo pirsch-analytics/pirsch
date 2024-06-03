@@ -10,7 +10,7 @@ test:
 	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer
 	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session
 	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua
-	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/tracker
+	go test -cover -race -p 1 github.com/pirsch-analytics/pirsch/v6/pkg/tracker
 	go test -cover -race github.com/pirsch-analytics/pirsch/v6/pkg/util
 
 deps:

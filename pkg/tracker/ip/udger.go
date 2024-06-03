@@ -27,16 +27,23 @@ type ipRange struct {
 type Udger struct {
 	accessKey          string
 	downloadPath       string
+	downloadURL        string
 	ipsV4, ipsV6       map[string]struct{}
 	rangesV4, rangesV6 []ipRange
 	m                  sync.RWMutex
 }
 
 // NewUdger creates a new Filter using the IP lists provided by udger.com.
-func NewUdger(accessKey, downloadPath string) *Udger {
+// The download URL is optional and will be set to the default if empty. It must contain "%s" for the access key.
+func NewUdger(accessKey, downloadPath, downloadURL string) *Udger {
+	if downloadURL == "" {
+		downloadURL = udgerDownload
+	}
+
 	return &Udger{
 		accessKey:    accessKey,
 		downloadPath: downloadPath,
+		downloadURL:  downloadURL,
 	}
 }
 
@@ -130,7 +137,7 @@ func (udger *Udger) download() error {
 		return err
 	}
 
-	resp, err := http.Get(fmt.Sprintf(udgerDownload, udger.accessKey))
+	resp, err := http.Get(fmt.Sprintf(udger.downloadURL, udger.accessKey))
 
 	if err != nil {
 		return err
