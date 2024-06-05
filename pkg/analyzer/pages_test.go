@@ -177,11 +177,8 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_PageTitle(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		// TODO change this to see if it works with window functions
-		// these need to be at the same day, because otherwise they will be in different partitions
-		// and the neighbor function doesn't work for the time on page calculation (visitor ID 2 is unrelated, so next day is fine)
-		{VisitorID: 1, Time: util.PastDay(1).Add(time.Hour), SessionID: 1, Path: "/", Title: "Home 1"},
-		{VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 2), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
+		{VisitorID: 1, Time: util.PastDay(2).Add(time.Hour * 23).Add(time.Minute * 57), SessionID: 1, Path: "/", Title: "Home 1"},
+		{VisitorID: 1, Time: util.PastDay(1).Add(time.Second * 14), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 314},
 		{VisitorID: 2, Time: util.Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
 	saveSessions(t, [][]model.Session{
@@ -203,8 +200,8 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 	assert.Equal(t, "Home 1", visitors[0].Title)
 	assert.Equal(t, "Home 2", visitors[1].Title)
 	assert.Equal(t, "Foo", visitors[2].Title)
-	assert.Equal(t, 42, visitors[0].AverageTimeSpentSeconds)
-	assert.Equal(t, 42, visitors[1].AverageTimeSpentSeconds)
+	assert.Equal(t, 314, visitors[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 314, visitors[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, visitors[2].AverageTimeSpentSeconds)
 }
 
