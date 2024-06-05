@@ -356,7 +356,6 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		search: filter.Search,
 	}
 	fields := q.getFields()
-	fields = append(fields, FieldEventDurationSeconds.Name, "time")
 	hasPath := false
 
 	for _, field := range fields {
@@ -371,12 +370,11 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path, ifNull(toUInt64(greatest(avg(nullIf(time_on_page, 0)), 0)), 0) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT path, toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
-			SELECT path, %s time_on_page, sid, neighbor(sid, 1, null) next_sid
-			FROM (
-				SELECT v.session_id sid, %s
-				FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
+			SELECT nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page,
+				%s
+			FROM page_view v `, pages.analyzer.timeOnPageQuery(filter), strings.Join(fields, ",")))
 
 	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		sessionsQuery := queryBuilder{
@@ -414,14 +412,8 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		query.WriteString(fmt.Sprintf(`INNER JOIN (%s) ev ON v.visitor_id = ev.visitor_id AND v.session_id = ev.session_id `, str))
 	}
 
-	whereTime := q.whereTime()[len("WHERE "):]
+	whereTime := q.whereTime()
 	q.whereFields()
-	whereFields := q.q.String()
-
-	if whereFields != "" {
-		whereFields = "WHERE " + whereFields[len("AND "):]
-	}
-
 	pathInQuery := queryBuilder{
 		filter: &Filter{
 			AnyPath: paths,
@@ -430,12 +422,10 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	pathInQuery.whereFieldPathIn()
 	pathIn := pathInQuery.where[len(pathInQuery.where)-1].eqContains[0]
 	q.args = append(q.args, pathInQuery.args...)
-	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY v.visitor_id, v.session_id, time)
-		%s ORDER BY "time")
-		WHERE time_on_page > 0
-		AND sid = next_sid
+	query.WriteString(fmt.Sprintf(`%s)
+		WHERE time_on_page > 0 %s
 		AND %s
-		GROUP BY path`, whereTime, whereFields, pathIn))
+		GROUP BY path`, whereTime, q.q.String(), pathIn))
 	stats, err := pages.store.SelectAvgTimeSpentStats(filter.Ctx, query.String(), q.args...)
 
 	if err != nil {

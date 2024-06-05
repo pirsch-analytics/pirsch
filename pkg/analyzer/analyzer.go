@@ -68,10 +68,10 @@ func NewAnalyzer(store db.Store) *Analyzer {
 }
 
 func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
-	timeOnPage := "neighbor(duration_seconds, 1, 0)"
+	timeOnPage := "duration_seconds"
 
 	if filter.MaxTimeOnPageSeconds > 0 {
-		timeOnPage = fmt.Sprintf("least(neighbor(duration_seconds, 1, 0), %d)", filter.MaxTimeOnPageSeconds)
+		timeOnPage = fmt.Sprintf("least(duration_seconds, %d)", filter.MaxTimeOnPageSeconds)
 	}
 
 	return timeOnPage

@@ -106,10 +106,10 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	fields = append(fields, FieldEventDurationSeconds.Name)
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
-			SELECT "day", %s time_on_page, sid, neighbor(sid, 1, null) next_sid %s
-			FROM (
-				SELECT session_id sid, toDate(time, '%s') "day", "time", %s
-				FROM page_view v `, t.analyzer.timeOnPageQuery(filter), filterFields, filter.Timezone.String(), strings.Join(fields, ",")))
+			SELECT toDate(time, '%s') "day",
+				nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
+				%s
+			FROM page_view v `, filter.Timezone.String(), t.analyzer.timeOnPageQuery(filter), filterFields))
 
 	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -125,10 +125,8 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s ORDER BY visitor_id, sid, time)
-		ORDER BY "time")
-		WHERE time_on_page > 0
-		AND sid = next_sid `, q.whereTime()[len("WHERE "):]))
+	query.WriteString(fmt.Sprintf(`WHERE %s)
+		WHERE time_on_page > 0 `, q.whereTime()[len("WHERE "):]))
 	q.whereFields()
 	where := q.q.String()
 	query.WriteString(fmt.Sprintf(`%s

@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.11.0
+
+* replaced `neighbor` with window functions
+* updated dependencies
+
 ## 6.10.0
 
 **WARNING: this release has a breaking configuration change for GeoDB and Udger!**
