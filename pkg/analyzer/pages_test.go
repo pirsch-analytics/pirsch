@@ -177,6 +177,7 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 func TestAnalyzer_PageTitle(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+		// TODO change this to see if it works with window functions
 		// these need to be at the same day, because otherwise they will be in different partitions
 		// and the neighbor function doesn't work for the time on page calculation (visitor ID 2 is unrelated, so next day is fine)
 		{VisitorID: 1, Time: util.PastDay(1).Add(time.Hour), SessionID: 1, Path: "/", Title: "Home 1"},
@@ -928,7 +929,7 @@ func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 	assert.Equal(t, 1, entries[0].Sessions)
 	assert.Equal(t, 1, entries[0].Entries)
 	assert.InDelta(t, 1, entries[0].EntryRate, 0.001)
-	assert.Equal(t, 8, entries[0].AverageTimeSpentSeconds)
+	assert.Equal(t, 20, entries[0].AverageTimeSpentSeconds)
 	exits, err := analyzer.Pages.Exit(&Filter{
 		EventName: []string{"event"},
 		Tags:      map[string]string{"author": "Alice"},
@@ -1314,7 +1315,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
-		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 8, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
+		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 7, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
@@ -1332,8 +1333,8 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, paths, "/bar")
 	top := []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
 	assert.Contains(t, top, 120)
-	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
+	assert.Contains(t, top, 15)
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
 		From:      util.PastDay(1),
 		To:        util.Today(),
@@ -1347,8 +1348,8 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 	assert.Contains(t, paths, "/bar")
 	top = []int{stats[0].AverageTimeSpentSeconds, stats[1].AverageTimeSpentSeconds, stats[2].AverageTimeSpentSeconds}
 	assert.Contains(t, top, 120)
-	assert.Contains(t, top, (23+8)/2)
 	assert.Contains(t, top, 16)
+	assert.Contains(t, top, 15)
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
 		From:      util.PastDay(1),
 		To:        util.Today(),
@@ -1394,8 +1395,9 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 		Tags: map[string]string{"author": "John"},
 	}, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
-	assert.Len(t, stats, 1)
+	assert.Len(t, stats, 2)
 	assert.Equal(t, stats[0].Path, "/")
+	assert.Equal(t, stats[1].Path, "/foo")
 	stats, err = analyzer.Pages.avgTimeOnPage(&Filter{
 		From:      util.PastDay(1),
 		To:        util.Today(),

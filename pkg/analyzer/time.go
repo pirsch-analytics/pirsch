@@ -107,7 +107,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day",
-				nth_value(%s, 2) OVER (PARTITION BY visitor_id, session_id ORDER BY "time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
+				nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
 				%s
 			FROM page_view v `, filter.Timezone.String(), t.analyzer.timeOnPageQuery(filter), filterFields))
 

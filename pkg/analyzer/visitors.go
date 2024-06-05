@@ -525,12 +525,9 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 	var query strings.Builder
 	query.WriteString(fmt.Sprintf(`SELECT sum(time_on_page) average_time_spent_seconds
 		FROM (
-			SELECT %s time_on_page
-			FROM (
-				SELECT session_id,
-				sum(duration_seconds) duration_seconds
+			SELECT nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
 				%s
-				FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
+			FROM page_view v `, visitors.analyzer.timeOnPageQuery(filter), fieldsQuery))
 
 	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		q.from = sessions
@@ -548,12 +545,9 @@ func (visitors *Visitors) totalTimeOnPage(filter *Filter) (int, error) {
 		q.from = pageViews
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s
-				GROUP BY visitor_id, session_id, time %s
-				ORDER BY visitor_id, session_id, time
-			)
-			WHERE session_id = neighbor(session_id, 1, null)
-			AND time_on_page > 0 %s)`, q.whereTime()[len("WHERE "):], fieldsQuery, q.q.String()))
+	query.WriteString(fmt.Sprintf(`WHERE %s)
+		WHERE time_on_page > 0
+		%s`, q.whereTime()[len("WHERE "):], q.q.String()))
 	q.whereFields()
 	averageTimeSpentSeconds, err := visitors.store.Count(filter.Ctx, query.String(), q.args...)
 
