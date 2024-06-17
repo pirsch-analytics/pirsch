@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-05-17)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-06-17)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -693,6 +693,7 @@ var blacklist = map[string]struct{}{
 	"epcpolo.com":                          {},
 	"epicdiving.com":                       {},
 	"eraglass.com":                         {},
+	"erias.xyz":                            {},
 	"eric-artem.com":                       {},
 	"ericshome.store":                      {},
 	"erinhome.xyz":                         {},
@@ -867,6 +868,7 @@ var blacklist = map[string]struct{}{
 	"googlsucks.com":                       {},
 	"gorgaz.info":                          {},
 	"goyua.xyz":                            {},
+	"graceonline.shop ":                    {},
 	"grafaman.ru":                          {},
 	"greatblog.top":                        {},
 	"greentechsy.com":                      {},
@@ -1201,6 +1203,7 @@ var blacklist = map[string]struct{}{
 	"livejournal.top":                      {},
 	"livia-pache.ru":                       {},
 	"livingroomdecoratingideas.website":    {},
+	"livingsimply.com":                     {},
 	"lk-gosuslugi.ru":                      {},
 	"lk-lk-rt.ru":                          {},
 	"local-seo-for-multiple-locations.com": {},
@@ -1970,6 +1973,7 @@ var blacklist = map[string]struct{}{
 	"tocan.com.ua":                         {},
 	"tokshow.online":                       {},
 	"tomck.com":                            {},
+	"tommysautomotivecare.com":             {},
 	"top-gan.ru":                           {},
 	"top-instagram.info":                   {},
 	"top-kasyna.com":                       {},
@@ -1977,6 +1981,7 @@ var blacklist = map[string]struct{}{
 	"top1-seo-service.com":                 {},
 	"top10-online-games.com":               {},
 	"top10-way.com":                        {},
+	"topgurudeals.com":                     {},
 	"topmebeltorg.ru":                      {},
 	"toposvita.com":                        {},
 	"topquality.cf":                        {},
@@ -2046,6 +2051,7 @@ var blacklist = map[string]struct{}{
 	"uptime-eu.net":                        {},
 	"uptime-us.net":                        {},
 	"uptimechecker.com":                    {},
+	"urbanblog.shop":                       {},
 	"urblog.xyz":                           {},
 	"urlumbrella.com":                      {},
 	"uruto.ru":                             {},

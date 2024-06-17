@@ -3,6 +3,8 @@
 ## 6.11.1
 
 * fixed filter excluding countries
+* updated referrer blacklist
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 6.11.0

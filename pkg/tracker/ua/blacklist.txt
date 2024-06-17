@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist.go!
 
-# custom (last update: 2024-05-17)
+# custom (last update: 2024-06-17)
 ://
 bot
 crawler
@@ -599,6 +599,10 @@ glassflow
 hwp/t8030
 kmdjdheyytgebfghehhenegsdfsdf
 playsub
+defender self ping
+webinfoutil
+corrierede
+openai
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck
