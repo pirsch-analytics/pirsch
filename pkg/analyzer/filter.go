@@ -251,7 +251,9 @@ func (filter *Filter) validate() {
 	countries := make([]string, 0, len(filter.Country))
 
 	for i := range filter.Country {
-		if len(filter.Country[i]) == 2 {
+		n := len(filter.Country[i])
+
+		if n == 2 || n == 3 && strings.HasPrefix(filter.Country[i], "!") {
 			countries = append(countries, filter.Country[i])
 		}
 	}

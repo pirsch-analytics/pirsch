@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.11.1
+
+* fixed filter excluding countries
+* updated dependencies
+
 ## 6.11.0
 
 * replaced `neighbor` with window functions

@@ -88,6 +88,25 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1666, visitors[2].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Countries(&Filter{
+		Country: []string{"en"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "en", visitors[0].CountryCode)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Countries(&Filter{
+		Country: []string{"!en"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "de", visitors[0].CountryCode)
+	assert.Equal(t, "jp", visitors[1].CountryCode)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.InDelta(t, 0.33, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1666, visitors[1].RelativeVisitors, 0.01)
 	_, err = analyzer.Demographics.Countries(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Demographics.Countries(getMaxFilter("event"))
