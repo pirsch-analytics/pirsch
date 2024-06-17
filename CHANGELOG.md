@@ -2,6 +2,7 @@
 
 ## 6.11.1
 
+* added `not contains` filter option
 * fixed filter excluding countries
 * updated referrer blacklist
 * updated User-Agent blacklist

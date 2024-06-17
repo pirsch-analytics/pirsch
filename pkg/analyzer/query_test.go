@@ -15,7 +15,7 @@ func TestQuery(t *testing.T) {
 		Path:        []string{"/", "/foo"},
 		Country:     []string{"de", "!ja"},
 		Language:    []string{"nUlL"},
-		Referrer:    []string{"~Google"},
+		Referrer:    []string{"~Google", "^face"},
 		Platform:    pkg.PlatformDesktop,
 		PathPattern: []string{"/some/pattern"},
 		Offset:      10,
@@ -58,33 +58,42 @@ func TestQuery(t *testing.T) {
 		limit:  99,
 	}
 	queryStr, args := q.query()
-	assert.Len(t, args, 25)
-	assert.Equal(t, int64(42), args[0])
-	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[1])
-	assert.Equal(t, util.Today().Format(dateFormat), args[2])
-	assert.Equal(t, int64(42), args[3])
-	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[4])
-	assert.Equal(t, util.Today().Format(dateFormat), args[5])
-	assert.Equal(t, "", args[6])
-	assert.Equal(t, "de", args[7])
-	assert.Equal(t, "ja", args[8]) // null
-	assert.Equal(t, "%Google%", args[9])
-	assert.Equal(t, int64(42), args[10])
-	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[11])
-	assert.Equal(t, util.Today().Format(dateFormat), args[12])
-	assert.Equal(t, "/", args[13])
-	assert.Equal(t, "/foo", args[14])
-	assert.Equal(t, "/some/pattern", args[15])
-	assert.Equal(t, "author", args[16])
-	assert.Equal(t, "John", args[17])
-	assert.Equal(t, "", args[18])
-	assert.Equal(t, "de", args[19])
-	assert.Equal(t, "ja", args[20])
-	assert.Equal(t, "%Google%", args[21])
-	assert.Equal(t, "%search%", args[22])
-	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[23])
-	assert.Equal(t, util.Today().Format(dateFormat), args[24])
-	assert.Equal(t, `SELECT toDate(time, 'UTC') day,country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "page_view" t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND language = ? AND country_code = ? AND country_code != ? AND ilike(referrer, ?) = 1 AND desktop = 1 GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND (path = ? OR path = ? ) AND match("path", ?) = 1 AND tag_values[indexOf(tag_keys, ?)] = ? AND language = ? AND country_code = ? AND country_code != ? AND ilike(referrer, ?) = 1 AND desktop = 1 AND ilike(path, ?) = 1 GROUP BY country_code ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 `, queryStr)
+	assert.Len(t, args, 27)
+	expected := []any{
+		int64(42),
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+		int64(42),
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+		"",
+		"de",
+		"ja",
+		"%Google%",
+		"%face%",
+		int64(42),
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+		"/",
+		"/foo",
+		"/some/pattern",
+		"author",
+		"John",
+		"",
+		"de",
+		"ja",
+		"%Google%",
+		"%face%",
+		"%search%",
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+	}
+
+	for i, arg := range args {
+		assert.Equal(t, expected[i], arg)
+	}
+
+	assert.Equal(t, `SELECT toDate(time, 'UTC') day,country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "page_view" t JOIN (SELECT visitor_id visitor_id,session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND language = ? AND country_code = ? AND country_code != ? AND (ilike(referrer, ?) = 1 OR ilike(referrer, ?) != 1 ) AND desktop = 1 GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND (path = ? OR path = ? ) AND match("path", ?) = 1 AND tag_values[indexOf(tag_keys, ?)] = ? AND language = ? AND country_code = ? AND country_code != ? AND (ilike(referrer, ?) = 1 OR ilike(referrer, ?) != 1 ) AND desktop = 1 AND ilike(path, ?) = 1 GROUP BY country_code ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 `, queryStr)
 }
 
 func TestQueryAnyPath(t *testing.T) {

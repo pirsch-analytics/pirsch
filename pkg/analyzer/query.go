@@ -455,6 +455,14 @@ func (query *queryBuilder) whereField(field string, value []string) {
 					v = fmt.Sprintf("%%%s%%", v[1:])
 					comparator = "ilike(%s, ?) = 1 "
 				}
+			} else if strings.HasPrefix(v, "^") {
+				if field == FieldLanguage.Name || field == FieldCountry.Name {
+					v = v[1:]
+					comparator = "has(splitByChar(',', ?), %s) != 1 "
+				} else {
+					v = fmt.Sprintf("%%%s%%", v[1:])
+					comparator = "ilike(%s, ?) != 1 "
+				}
 			}
 
 			if not {
@@ -572,6 +580,9 @@ func (query *queryBuilder) whereFieldTag() {
 			} else if strings.HasPrefix(v, "~") {
 				v = fmt.Sprintf("%%%s%%", v[1:])
 				comparator = "ilike(%s[indexOf(%s, ?)], ?) = 1 "
+			} else if strings.HasPrefix(v, "^") {
+				v = fmt.Sprintf("%%%s%%", v[1:])
+				comparator = "ilike(%s[indexOf(%s, ?)], ?) != 1 "
 			}
 
 			// use notEq because they will all be joined using AND
@@ -596,6 +607,9 @@ func (query *queryBuilder) whereFieldMeta() {
 			} else if strings.HasPrefix(v, "~") {
 				v = fmt.Sprintf("%%%s%%", v[1:])
 				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, ?)], ?) = 1 "
+			} else if strings.HasPrefix(v, "^") {
+				v = fmt.Sprintf("%%%s%%", v[1:])
+				comparator = "ilike(event_meta_values[indexOf(event_meta_keys, ?)], ?) != 1 "
 			}
 
 			// use notEq because they will all be joined using AND
