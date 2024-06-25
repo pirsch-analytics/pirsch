@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.25.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.26.0
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.0
 	github.com/emvi/null v1.3.1

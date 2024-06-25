@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.12.0
+
+* updated dependencies
+
 ## 6.11.1
 
 * added `not contains` filter option
