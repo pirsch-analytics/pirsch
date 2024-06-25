@@ -2,6 +2,7 @@
 
 ## 6.12.0
 
+* added funnel
 * updated dependencies
 
 ## 6.11.1
