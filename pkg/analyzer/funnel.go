@@ -67,5 +67,17 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 		return nil, err
 	}
 
+	for i := range stats {
+		if i > 0 {
+			stats[i].RelativeVisitors = float64(stats[i].Visitors) / float64(stats[0].Visitors)
+			stats[i].PreviousVisitors = stats[i-1].Visitors
+			stats[i].RelativePreviousVisitors = stats[i-1].RelativeVisitors
+			stats[i].Dropped = stats[i].PreviousVisitors - stats[i].Visitors
+			stats[i].DropOff = 1 - float64(stats[i].Visitors)/float64(stats[i].PreviousVisitors)
+		} else {
+			stats[i].RelativeVisitors = 1
+		}
+	}
+
 	return stats, nil
 }
