@@ -79,7 +79,7 @@ func TestFunnel_Steps(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	_, err := analyzer.Funnel.Steps([]Filter{
+	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
 			Ctx:  context.Background(),
 			From: util.Today(),
@@ -100,6 +100,11 @@ func TestFunnel_Steps(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	// TODO
-	//assert.Len(t, funnel, 3)
+	assert.Len(t, funnel, 3)
+	assert.Equal(t, 0, funnel[0].Step)
+	assert.Equal(t, 1, funnel[1].Step)
+	assert.Equal(t, 2, funnel[2].Step)
+	assert.Equal(t, 3, funnel[0].Visitors)
+	assert.Equal(t, 2, funnel[1].Visitors)
+	assert.Equal(t, 1, funnel[2].Visitors)
 }

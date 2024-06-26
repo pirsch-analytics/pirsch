@@ -335,6 +335,7 @@ type SessionStep struct {
 
 // FunnelStep is the result type for a funnel step.
 type FunnelStep struct {
+	Step                     int     `json:"step"`
 	Visitors                 int     `json:"visitors"`
 	RelativeVisitors         float64 `db:"relative_visitors" json:"relative_visitors"`
 	PreviousVisitors         int     `db:"previous_visitors" json:"previous_visitors"`

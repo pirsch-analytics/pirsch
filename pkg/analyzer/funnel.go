@@ -1,11 +1,11 @@
 package analyzer
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"log"
 	"strings"
 )
 
@@ -16,7 +16,7 @@ type Funnel struct {
 }
 
 // Steps returns the funnel steps for given filter list.
-func (funnel *Funnel) Steps(filter []Filter) ([]model.FunnelStep, error) {
+func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.FunnelStep, error) {
 	if len(filter) < 2 {
 		return nil, errors.New("not enough steps")
 	}
@@ -26,6 +26,7 @@ func (funnel *Funnel) Steps(filter []Filter) ([]model.FunnelStep, error) {
 
 	for i := range filter {
 		f := funnel.analyzer.getFilter(&filter[i])
+		f.funnelStep = i
 		fields := []Field{
 			FieldClientID,
 			FieldVisitorID,
@@ -34,7 +35,13 @@ func (funnel *Funnel) Steps(filter []Filter) ([]model.FunnelStep, error) {
 		}
 		q, a := f.buildQuery(fields, nil, nil)
 		args = append(args, a...)
-		query.WriteString(fmt.Sprintf("WITH step%d AS ( ", i))
+
+		if i == 0 {
+			query.WriteString(fmt.Sprintf("WITH step%d AS ( ", i))
+		} else {
+			query.WriteString(fmt.Sprintf("step%d AS ( ", i))
+		}
+
 		query.WriteString(q)
 		query.WriteString(") ")
 
@@ -54,7 +61,11 @@ func (funnel *Funnel) Steps(filter []Filter) ([]model.FunnelStep, error) {
 	}
 
 	query.WriteString(") ORDER BY step")
-	log.Println(query.String())
+	stats, err := funnel.store.SelectFunnelSteps(ctx, query.String(), args...)
 
-	return nil, nil // TODO
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
