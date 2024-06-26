@@ -167,6 +167,8 @@ type Filter struct {
 
 	// Sample sets the (optional) sampling size.
 	Sample uint
+
+	funnelStep int
 }
 
 // Search filters results by searching for the given input for given field.
@@ -307,15 +309,16 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 
 func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
 	q := queryBuilder{
-		filter:  filter,
-		from:    filter.table(fields),
-		search:  filter.Search,
-		groupBy: groupBy,
-		orderBy: orderBy,
-		offset:  filter.Offset,
-		limit:   filter.Limit,
-		sample:  filter.Sample,
-		final:   filter.fieldsContain(fields, FieldSessionsAll),
+		filter:   filter,
+		from:     filter.table(fields),
+		joinStep: filter.funnelStep,
+		search:   filter.Search,
+		groupBy:  groupBy,
+		orderBy:  orderBy,
+		offset:   filter.Offset,
+		limit:    filter.Limit,
+		sample:   filter.Sample,
+		final:    filter.fieldsContain(fields, FieldSessionsAll),
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
@@ -356,7 +359,7 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []an
 		}
 	}
 
-	q.joinThird = filter.lefJoinUniqueVisitorsByPeriod(fields)
+	q.joinThird = filter.joinUniqueVisitorsByPeriod(fields)
 	return q.query()
 }
 
@@ -587,7 +590,7 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 	}
 }
 
-func (filter *Filter) lefJoinUniqueVisitorsByPeriod(fields []Field) *queryBuilder {
+func (filter *Filter) joinUniqueVisitorsByPeriod(fields []Field) *queryBuilder {
 	if filter.fieldsContain(fields, FieldCRPeriod) {
 		var groupBy Field
 

@@ -2034,6 +2034,31 @@ func (client *Client) SelectEvents(ctx context.Context, query string, args ...an
 	return results, nil
 }
 
+// SelectFunnelSteps implements the Store interface.
+func (client *Client) SelectFunnelSteps(ctx context.Context, query string, args ...any) ([]model.FunnelStep, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.FunnelStep
+
+	for rows.Next() {
+		var result model.FunnelStep
+
+		if err := rows.Scan(&result.Step,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1

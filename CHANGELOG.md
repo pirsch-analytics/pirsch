@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.12.0
+
+* added funnel
+* updated dependencies
+
 ## 6.11.1
 
 * added `not contains` filter option
