@@ -44,6 +44,16 @@ func TestFunnel_Steps(t *testing.T) {
 				IsBounce:  false,
 				PageViews: 2,
 			},
+			{
+				Sign:      1,
+				VisitorID: 4,
+				Time:      util.Today(),
+				Start:     time.Now(),
+				EntryPath: "/checkout",
+				ExitPath:  "/checkout",
+				IsBounce:  true,
+				PageViews: 1,
+			},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
@@ -58,15 +68,18 @@ func TestFunnel_Steps(t *testing.T) {
 
 		{VisitorID: 3, Time: util.Today(), Path: "/"},
 		{VisitorID: 3, Time: util.Today().Add(time.Second * 12), Path: "/product"},
+
+		{VisitorID: 4, Time: util.Today(), Path: "/checkout"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{VisitorID: 1, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"42"}},
 		{VisitorID: 1, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"89.90", "USD"}},
 		{VisitorID: 2, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"24"}},
+		{VisitorID: 4, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"29.95", "USD"}},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
-	analyzer.Funnel.Steps([]Filter{
+	_, err := analyzer.Funnel.Steps([]Filter{
 		{
 			Ctx:  context.Background(),
 			From: util.Today(),
@@ -86,4 +99,7 @@ func TestFunnel_Steps(t *testing.T) {
 			EventName: []string{"Purchase"},
 		},
 	})
+	assert.NoError(t, err)
+	// TODO
+	//assert.Len(t, funnel, 3)
 }

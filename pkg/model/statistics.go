@@ -332,3 +332,13 @@ type SessionStep struct {
 	PageView *PageView `json:"page_view"`
 	Event    *Event    `json:"event"`
 }
+
+// FunnelStep is the result type for a funnel step.
+type FunnelStep struct {
+	Visitors                 int     `json:"visitors"`
+	RelativeVisitors         float64 `db:"relative_visitors" json:"relative_visitors"`
+	PreviousVisitors         int     `db:"previous_visitors" json:"previous_visitors"`
+	RelativePreviousVisitors float64 `db:"relative_previous_visitors" json:"relative_previous_visitors"`
+	Dropped                  int     `json:"dropped"`
+	DropOff                  float64 `db:"drop_off" json:"drop_off"`
+}
