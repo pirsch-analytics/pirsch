@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	minFunnelSteps = 2
+	maxFunnelSteps = 8
+)
+
 // Funnel aggregates funnels.
 type Funnel struct {
 	analyzer *Analyzer
@@ -17,8 +22,10 @@ type Funnel struct {
 
 // Steps returns the funnel steps for given filter list.
 func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.FunnelStep, error) {
-	if len(filter) < 2 {
+	if len(filter) < minFunnelSteps {
 		return nil, errors.New("not enough steps")
+	} else if len(filter) > maxFunnelSteps {
+		return nil, errors.New("too many steps")
 	}
 
 	var query strings.Builder

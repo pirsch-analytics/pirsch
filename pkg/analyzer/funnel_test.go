@@ -79,6 +79,12 @@ func TestFunnel_Steps(t *testing.T) {
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
+	_, err := analyzer.Funnel.Steps(context.Background(), []Filter{})
+	assert.Equal(t, "not enough steps", err.Error())
+	_, err = analyzer.Funnel.Steps(context.Background(), []Filter{{}})
+	assert.Equal(t, "not enough steps", err.Error())
+	_, err = analyzer.Funnel.Steps(context.Background(), []Filter{{}, {}, {}, {}, {}, {}, {}, {}, {}})
+	assert.Equal(t, "too many steps", err.Error())
 	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
 			Ctx:  context.Background(),
