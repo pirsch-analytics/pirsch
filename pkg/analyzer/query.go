@@ -325,7 +325,7 @@ func (query *queryBuilder) joinQuery() {
 		}
 	}
 
-	if query.joinStep > 0 {
+	if query.joinStep > 1 {
 		query.q.WriteString(fmt.Sprintf("JOIN step%d s ON t.visitor_id = s.visitor_id AND t.session_id = s.session_id ", query.joinStep-1))
 	}
 }

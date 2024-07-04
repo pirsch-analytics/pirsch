@@ -33,7 +33,7 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 
 	for i := range filter {
 		f := funnel.analyzer.getFilter(&filter[i])
-		f.funnelStep = i
+		f.funnelStep = i + 1
 		fields := []Field{
 			FieldClientID,
 			FieldVisitorID,
@@ -44,9 +44,9 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 		args = append(args, a...)
 
 		if i == 0 {
-			query.WriteString(fmt.Sprintf("WITH step%d AS ( ", i))
+			query.WriteString(fmt.Sprintf("WITH step%d AS ( ", i+1))
 		} else {
-			query.WriteString(fmt.Sprintf("step%d AS ( ", i))
+			query.WriteString(fmt.Sprintf("step%d AS ( ", i+1))
 		}
 
 		query.WriteString(q)
@@ -60,7 +60,7 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 	query.WriteString("SELECT * FROM ( ")
 
 	for i := 0; i < len(filter); i++ {
-		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) FROM step%d ", i, i))
+		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) FROM step%d ", i+1, i+1))
 
 		if i != len(filter)-1 {
 			query.WriteString("UNION ALL ")

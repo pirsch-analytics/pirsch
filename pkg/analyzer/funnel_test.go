@@ -16,6 +16,7 @@ func TestFunnel_Steps(t *testing.T) {
 		{
 			{
 				Sign:      1,
+				ClientID:  1,
 				VisitorID: 1,
 				Time:      util.Today(),
 				Start:     time.Now(),
@@ -27,6 +28,7 @@ func TestFunnel_Steps(t *testing.T) {
 			},
 			{
 				Sign:      1,
+				ClientID:  1,
 				VisitorID: 2,
 				Time:      util.Today(),
 				Start:     time.Now(),
@@ -38,6 +40,7 @@ func TestFunnel_Steps(t *testing.T) {
 			},
 			{
 				Sign:      1,
+				ClientID:  1,
 				VisitorID: 3,
 				Time:      util.Today(),
 				Start:     time.Now(),
@@ -49,6 +52,7 @@ func TestFunnel_Steps(t *testing.T) {
 			},
 			{
 				Sign:      1,
+				ClientID:  1,
 				VisitorID: 4,
 				Time:      util.Today(),
 				Start:     time.Now(),
@@ -61,25 +65,25 @@ func TestFunnel_Steps(t *testing.T) {
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: util.Today(), Path: "/", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), Path: "/product", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 131), Path: "/cart", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 140), Path: "/checkout", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
-		{VisitorID: 1, Time: util.Today().Add(time.Second * 298), Path: "/thank-you", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 15), Path: "/product", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 131), Path: "/cart", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 140), Path: "/checkout", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 298), Path: "/thank-you", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 
-		{VisitorID: 2, Time: util.Today(), Path: "/product", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
-		{VisitorID: 2, Time: util.Today().Add(time.Second * 5), Path: "/cart", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 2, Time: util.Today(), Path: "/product", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 2, Time: util.Today().Add(time.Second * 5), Path: "/cart", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 
-		{VisitorID: 3, Time: util.Today(), Path: "/", Language: "de", TagKeys: []string{"currency"}, TagValues: []string{"EUR"}},
-		{VisitorID: 3, Time: util.Today().Add(time.Second * 12), Path: "/product", Language: "de", TagKeys: []string{"currency"}, TagValues: []string{"EUR"}},
+		{ClientID: 1, VisitorID: 3, Time: util.Today(), Path: "/", Language: "de", TagKeys: []string{"currency"}, TagValues: []string{"EUR"}},
+		{ClientID: 1, VisitorID: 3, Time: util.Today().Add(time.Second * 12), Path: "/product", Language: "de", TagKeys: []string{"currency"}, TagValues: []string{"EUR"}},
 
-		{VisitorID: 4, Time: util.Today(), Path: "/checkout", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
+		{ClientID: 1, VisitorID: 4, Time: util.Today(), Path: "/checkout", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"42"}, Language: "en"},
-		{VisitorID: 1, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"89.90", "USD"}, Language: "en"},
-		{VisitorID: 2, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"24"}, Language: "en"},
-		{VisitorID: 4, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"29.95", "USD"}, Language: "en"},
+		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"42"}, Language: "en"},
+		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"89.90", "USD"}, Language: "en"},
+		{ClientID: 1, VisitorID: 2, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"24"}, Language: "en"},
+		{ClientID: 1, VisitorID: 4, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"29.95", "USD"}, Language: "en"},
 	}))
 	time.Sleep(time.Millisecond * 20)
 	analyzer := NewAnalyzer(dbClient)
@@ -91,6 +95,7 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.Equal(t, "too many steps", err.Error())
 	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
+			ClientID:    1,
 			From:        util.Today(),
 			To:          util.Today(),
 			PathPattern: []string{"(?i)^/product.*$"},
@@ -98,6 +103,7 @@ func TestFunnel_Steps(t *testing.T) {
 			Sample:      1000,
 		},
 		{
+			ClientID:  1,
 			From:      util.Today(),
 			To:        util.Today(),
 			EntryPath: []string{"/", "/product"},
@@ -106,6 +112,7 @@ func TestFunnel_Steps(t *testing.T) {
 			Sample:    1000,
 		},
 		{
+			ClientID:  1,
 			From:      util.Today(),
 			To:        util.Today(),
 			EventName: []string{"Purchase"},
@@ -116,9 +123,9 @@ func TestFunnel_Steps(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, funnel, 3)
-	assert.Equal(t, 0, funnel[0].Step)
-	assert.Equal(t, 1, funnel[1].Step)
-	assert.Equal(t, 2, funnel[2].Step)
+	assert.Equal(t, 1, funnel[0].Step)
+	assert.Equal(t, 2, funnel[1].Step)
+	assert.Equal(t, 3, funnel[2].Step)
 	assert.Equal(t, 3, funnel[0].Visitors)
 	assert.Equal(t, 2, funnel[1].Visitors)
 	assert.Equal(t, 1, funnel[2].Visitors)
@@ -137,4 +144,23 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.InDelta(t, 0, funnel[0].DropOff, 0.01)
 	assert.InDelta(t, 0.3333, funnel[1].DropOff, 0.01)
 	assert.InDelta(t, 0.5, funnel[2].DropOff, 0.01)
+
+	funnel, err = analyzer.Funnel.Steps(context.Background(), []Filter{
+		{
+			ClientID:  1,
+			From:      util.Today(),
+			To:        util.Today(),
+			EntryPath: []string{"/"},
+			Sample:    1000,
+		},
+		{
+			ClientID: 1,
+			From:     util.Today(),
+			To:       util.Today(),
+			Path:     []string{"/pricing"},
+			Sample:   1000,
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, funnel, 2)
 }
