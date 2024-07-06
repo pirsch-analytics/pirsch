@@ -3,6 +3,8 @@
 ## 6.12.0
 
 * added funnel
+* updated referrer blacklist
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 6.11.1
