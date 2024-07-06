@@ -86,10 +86,8 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 
 			if stats[i].PreviousVisitors > 0 {
 				stats[i].DropOff = 1 - float64(stats[i].Visitors)/float64(stats[i].PreviousVisitors)
-			} else {
-				stats[i].DropOff = 1
 			}
-		} else {
+		} else if stats[i].Visitors > 0 {
 			stats[i].RelativeVisitors = 1
 		}
 	}

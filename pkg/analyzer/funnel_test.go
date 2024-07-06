@@ -93,6 +93,8 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.Equal(t, "not enough steps", err.Error())
 	_, err = analyzer.Funnel.Steps(context.Background(), []Filter{{}, {}, {}, {}, {}, {}, {}, {}, {}})
 	assert.Equal(t, "too many steps", err.Error())
+
+	// regular three-step funnel
 	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
 			ClientID:    1,
@@ -145,6 +147,7 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.InDelta(t, 0.3333, funnel[1].DropOff, 0.01)
 	assert.InDelta(t, 0.5, funnel[2].DropOff, 0.01)
 
+	// minimum two-step funnel
 	funnel, err = analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
 			ClientID:  1,
@@ -163,4 +166,38 @@ func TestFunnel_Steps(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, funnel, 2)
+
+	// start with no visitors
+	funnel, err = analyzer.Funnel.Steps(context.Background(), []Filter{
+		{
+			ClientID:  1,
+			From:      util.Today(),
+			To:        util.Today(),
+			EntryPath: []string{"/does-not-exist"},
+			Sample:    1000,
+		},
+		{
+			ClientID: 1,
+			From:     util.Today(),
+			To:       util.Today(),
+			Path:     []string{"/pricing"},
+			Sample:   1000,
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, funnel, 2)
+	assert.Equal(t, 1, funnel[0].Step)
+	assert.Equal(t, 2, funnel[1].Step)
+	assert.Equal(t, 0, funnel[0].Visitors)
+	assert.Equal(t, 0, funnel[1].Visitors)
+	assert.InDelta(t, 0, funnel[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0, funnel[1].RelativeVisitors, 0.01)
+	assert.Equal(t, 0, funnel[0].PreviousVisitors)
+	assert.Equal(t, 0, funnel[1].PreviousVisitors)
+	assert.InDelta(t, 0, funnel[0].RelativePreviousVisitors, 0.01)
+	assert.InDelta(t, 0, funnel[1].RelativePreviousVisitors, 0.01)
+	assert.Equal(t, 0, funnel[0].Dropped)
+	assert.Equal(t, 0, funnel[1].Dropped)
+	assert.InDelta(t, 0, funnel[0].DropOff, 0.01)
+	assert.InDelta(t, 0, funnel[1].DropOff, 0.01)
 }
