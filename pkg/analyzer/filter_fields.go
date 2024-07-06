@@ -23,17 +23,24 @@ var (
 		queryPageViews: "t.visitor_id, time, t.session_id, event_name, event_meta_keys, event_meta_values, duration_seconds, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version, browser, browser_version, desktop, mobile, screen_class, utm_source, utm_medium, utm_campaign, utm_content, utm_term",
 	}
 
+	// FieldClientID is a query result column.
+	FieldClientID = Field{
+		querySessions:  "t.client_id",
+		queryPageViews: "t.client_id",
+		Name:           "client_id",
+	}
+
 	// FieldVisitorID is a query result column.
 	FieldVisitorID = Field{
-		querySessions:  "visitor_id",
-		queryPageViews: "visitor_id",
+		querySessions:  "t.visitor_id",
+		queryPageViews: "t.visitor_id",
 		Name:           "visitor_id",
 	}
 
 	// FieldSessionID is a query result column.
 	FieldSessionID = Field{
-		querySessions:  "session_id",
-		queryPageViews: "session_id",
+		querySessions:  "t.session_id",
+		queryPageViews: "t.session_id",
 		Name:           "session_id",
 	}
 
@@ -433,8 +440,8 @@ var (
 
 	// FieldTime is a query result column.
 	FieldTime = Field{
-		querySessions:  "time",
-		queryPageViews: "time",
+		querySessions:  "t.time",
+		queryPageViews: "t.time",
 		queryDirection: "ASC",
 		Name:           "time",
 	}

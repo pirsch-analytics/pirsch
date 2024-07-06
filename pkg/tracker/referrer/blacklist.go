@@ -7,7 +7,7 @@ var blacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-06-17)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-07-06)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -2244,6 +2244,7 @@ var blacklist = map[string]struct{}{
 	"xrp-ripple.info":                                                  {},
 	"xtraffic.plus":                                                    {},
 	"xtrafficplus.com":                                                 {},
+	"xtrafficplus.xyz":                                                 {},
 	"xxxhamster.me":                                                    {},
 	"xxxvideochat.ru":                                                  {},
 	"xz618.com":                                                        {},

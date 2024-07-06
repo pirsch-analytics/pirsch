@@ -19,6 +19,7 @@ type Analyzer struct {
 	Tags         Tags
 	Sessions     Sessions
 	Options      FilterOptions
+	Funnel       Funnel
 }
 
 // NewAnalyzer returns a new Analyzer for given Store.
@@ -61,6 +62,10 @@ func NewAnalyzer(store db.Store) *Analyzer {
 		store:    store,
 	}
 	analyzer.Options = FilterOptions{
+		analyzer: analyzer,
+		store:    store,
+	}
+	analyzer.Funnel = Funnel{
 		analyzer: analyzer,
 		store:    store,
 	}

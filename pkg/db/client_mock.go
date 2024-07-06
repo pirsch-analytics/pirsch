@@ -343,3 +343,8 @@ func (client *ClientMock) SelectPageViews(context.Context, string, ...any) ([]mo
 func (client *ClientMock) SelectEvents(context.Context, string, ...any) ([]model.Event, error) {
 	return nil, nil
 }
+
+// SelectFunnelSteps implements the Store interface.
+func (client *ClientMock) SelectFunnelSteps(context.Context, string, ...any) ([]model.FunnelStep, error) {
+	return nil, nil
+}

@@ -149,4 +149,7 @@ type Store interface {
 
 	// SelectEvents selects events.
 	SelectEvents(context.Context, string, ...any) ([]model.Event, error)
+
+	// SelectFunnelSteps selects funnel steps.
+	SelectFunnelSteps(context.Context, string, ...any) ([]model.FunnelStep, error)
 }

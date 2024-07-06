@@ -30,6 +30,7 @@ type queryBuilder struct {
 	joinSecond         *queryBuilder
 	joinThird          *queryBuilder
 	leftJoin           *queryBuilder
+	joinStep           int
 	search             []Search
 	groupBy            []Field
 	orderBy            []Field
@@ -322,6 +323,10 @@ func (query *queryBuilder) joinQuery() {
 		} else {
 			query.q.WriteString(fmt.Sprintf("JOIN (%s) uvd ON year = uvd.year ", q))
 		}
+	}
+
+	if query.joinStep > 1 {
+		query.q.WriteString(fmt.Sprintf("JOIN step%d s ON t.visitor_id = s.visitor_id AND t.session_id = s.session_id ", query.joinStep-1))
 	}
 }
 
@@ -727,7 +732,7 @@ func (query *queryBuilder) groupByFields() {
 }
 
 func (query *queryBuilder) having() {
-	if query.from == sessions {
+	if query.from == sessions && query.joinStep == 0 {
 		query.q.WriteString("HAVING sum(sign) > 0 ")
 	}
 }
