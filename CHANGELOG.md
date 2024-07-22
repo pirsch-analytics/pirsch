@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.13.0
+
+* added merging imported statistics
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.12.0
 
 * added funnel
