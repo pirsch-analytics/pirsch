@@ -2063,6 +2063,436 @@ func (client *Client) SelectFunnelSteps(ctx context.Context, query string, args 
 	return results, nil
 }
 
+// SelectImportedBrowser implements the Store interface.
+func (client *Client) SelectImportedBrowser(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedBrowser, error) {
+	query := "SELECT * FROM imported_browser WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedBrowser
+
+	for rows.Next() {
+		var result model.ImportedBrowser
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Browser,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedCampaign implements the Store interface.
+func (client *Client) SelectImportedCampaign(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedCampaign, error) {
+	query := "SELECT * FROM imported_campaign WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedCampaign
+
+	for rows.Next() {
+		var result model.ImportedCampaign
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Campaign,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedCity implements the Store interface.
+func (client *Client) SelectImportedCity(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedCity, error) {
+	query := "SELECT * FROM imported_city WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedCity
+
+	for rows.Next() {
+		var result model.ImportedCity
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.City,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedCountry implements the Store interface.
+func (client *Client) SelectImportedCountry(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedCountry, error) {
+	query := "SELECT * FROM imported_country WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedCountry
+
+	for rows.Next() {
+		var result model.ImportedCountry
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.CountryCode,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedDevice implements the Store interface.
+func (client *Client) SelectImportedDevice(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedDevice, error) {
+	query := "SELECT * FROM imported_device WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedDevice
+
+	for rows.Next() {
+		var result model.ImportedDevice
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Category,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedEntryPage implements the Store interface.
+func (client *Client) SelectImportedEntryPage(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedEntryPage, error) {
+	query := "SELECT * FROM imported_entry_page WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedEntryPage
+
+	for rows.Next() {
+		var result model.ImportedEntryPage
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.EntryPath,
+			&result.Visitors,
+			&result.Sessions); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedExitPage implements the Store interface.
+func (client *Client) SelectImportedExitPage(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedExitPage, error) {
+	query := "SELECT * FROM imported_exit_page WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedExitPage
+
+	for rows.Next() {
+		var result model.ImportedExitPage
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.ExitPath,
+			&result.Visitors,
+			&result.Sessions); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedLanguage implements the Store interface.
+func (client *Client) SelectImportedLanguage(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedLanguage, error) {
+	query := "SELECT * FROM imported_language WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedLanguage
+
+	for rows.Next() {
+		var result model.ImportedLanguage
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Language,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedMedium implements the Store interface.
+func (client *Client) SelectImportedMedium(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedMedium, error) {
+	query := "SELECT * FROM imported_medium WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedMedium
+
+	for rows.Next() {
+		var result model.ImportedMedium
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Medium,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedOS implements the Store interface.
+func (client *Client) SelectImportedOS(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedOS, error) {
+	query := "SELECT * FROM imported_os WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedOS
+
+	for rows.Next() {
+		var result model.ImportedOS
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.OS,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedPage implements the Store interface.
+func (client *Client) SelectImportedPage(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedPage, error) {
+	query := "SELECT * FROM imported_page WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedPage
+
+	for rows.Next() {
+		var result model.ImportedPage
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Path,
+			&result.Visitors,
+			&result.PageViews,
+			&result.Sessions,
+			&result.Bounces); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedReferrer implements the Store interface.
+func (client *Client) SelectImportedReferrer(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedReferrer, error) {
+	query := "SELECT * FROM imported_referrer WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedReferrer
+
+	for rows.Next() {
+		var result model.ImportedReferrer
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Referrer,
+			&result.Visitors,
+			&result.Sessions,
+			&result.Bounces); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedRegion implements the Store interface.
+func (client *Client) SelectImportedRegion(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedRegion, error) {
+	query := "SELECT * FROM imported_region WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedRegion
+
+	for rows.Next() {
+		var result model.ImportedRegion
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Region,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedSource implements the Store interface.
+func (client *Client) SelectImportedSource(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedSource, error) {
+	query := "SELECT * FROM imported_source WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedSource
+
+	for rows.Next() {
+		var result model.ImportedSource
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Source,
+			&result.Visitors); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// SelectImportedVisitors implements the Store interface.
+func (client *Client) SelectImportedVisitors(ctx context.Context, clientID uint64, from, to time.Time) ([]model.ImportedVisitors, error) {
+	query := "SELECT * FROM imported_visitors WHERE client_id = ? AND date >= ? AND date <= ? ORDER BY date WITH FILL FROM toDate(?) TO toDate(?) STEP INTERVAL 1 DAY"
+	rows, err := client.QueryContext(ctx, query, clientID, from, to, from, to)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ImportedVisitors
+
+	for rows.Next() {
+		var result model.ImportedVisitors
+
+		if err := rows.Scan(&result.ClientID,
+			&result.Date,
+			&result.Visitors,
+			&result.PageViews,
+			&result.Sessions,
+			&result.Bounces,
+			&result.SessionDuration); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 func (client *Client) boolean(b bool) int8 {
 	if b {
 		return 1

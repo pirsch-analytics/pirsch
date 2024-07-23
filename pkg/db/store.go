@@ -152,4 +152,49 @@ type Store interface {
 
 	// SelectFunnelSteps selects funnel steps.
 	SelectFunnelSteps(context.Context, string, ...any) ([]model.FunnelStep, error)
+
+	// SelectImportedBrowser selects imported browser statistics.
+	SelectImportedBrowser(context.Context, uint64, time.Time, time.Time) ([]model.ImportedBrowser, error)
+
+	// SelectImportedCampaign selects imported campaign statistics.
+	SelectImportedCampaign(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCampaign, error)
+
+	// SelectImportedCity selects imported city statistics.
+	SelectImportedCity(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCity, error)
+
+	// SelectImportedCountry selects imported country statistics.
+	SelectImportedCountry(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCountry, error)
+
+	// SelectImportedDevice selects imported device statistics.
+	SelectImportedDevice(context.Context, uint64, time.Time, time.Time) ([]model.ImportedDevice, error)
+
+	// SelectImportedEntryPage selects imported entry page statistics.
+	SelectImportedEntryPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedEntryPage, error)
+
+	// SelectImportedExitPage selects imported exit page statistics.
+	SelectImportedExitPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedExitPage, error)
+
+	// SelectImportedLanguage selects imported language statistics.
+	SelectImportedLanguage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedLanguage, error)
+
+	// SelectImportedMedium selects imported medium statistics.
+	SelectImportedMedium(context.Context, uint64, time.Time, time.Time) ([]model.ImportedMedium, error)
+
+	// SelectImportedOS selects imported OS statistics.
+	SelectImportedOS(context.Context, uint64, time.Time, time.Time) ([]model.ImportedOS, error)
+
+	// SelectImportedPage selects imported page statistics.
+	SelectImportedPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedPage, error)
+
+	// SelectImportedReferrer selects imported referrer statistics.
+	SelectImportedReferrer(context.Context, uint64, time.Time, time.Time) ([]model.ImportedReferrer, error)
+
+	// SelectImportedRegion selects imported region statistics.
+	SelectImportedRegion(context.Context, uint64, time.Time, time.Time) ([]model.ImportedRegion, error)
+
+	// SelectImportedSource selects imported source statistics.
+	SelectImportedSource(context.Context, uint64, time.Time, time.Time) ([]model.ImportedSource, error)
+
+	// SelectImportedVisitors selects imported visitor statistics.
+	SelectImportedVisitors(context.Context, uint64, time.Time, time.Time) ([]model.ImportedVisitors, error)
 }

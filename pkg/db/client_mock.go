@@ -348,3 +348,78 @@ func (client *ClientMock) SelectEvents(context.Context, string, ...any) ([]model
 func (client *ClientMock) SelectFunnelSteps(context.Context, string, ...any) ([]model.FunnelStep, error) {
 	return nil, nil
 }
+
+// SelectImportedBrowser implements the Store interface.
+func (client *ClientMock) SelectImportedBrowser(context.Context, uint64, time.Time, time.Time) ([]model.ImportedBrowser, error) {
+	return nil, nil
+}
+
+// SelectImportedCampaign implements the Store interface.
+func (client *ClientMock) SelectImportedCampaign(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCampaign, error) {
+	return nil, nil
+}
+
+// SelectImportedCity implements the Store interface.
+func (client *ClientMock) SelectImportedCity(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCity, error) {
+	return nil, nil
+}
+
+// SelectImportedCountry implements the Store interface.
+func (client *ClientMock) SelectImportedCountry(context.Context, uint64, time.Time, time.Time) ([]model.ImportedCountry, error) {
+	return nil, nil
+}
+
+// SelectImportedDevice implements the Store interface.
+func (client *ClientMock) SelectImportedDevice(context.Context, uint64, time.Time, time.Time) ([]model.ImportedDevice, error) {
+	return nil, nil
+}
+
+// SelectImportedEntryPage implements the Store interface.
+func (client *ClientMock) SelectImportedEntryPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedEntryPage, error) {
+	return nil, nil
+}
+
+// SelectImportedExitPage implements the Store interface.
+func (client *ClientMock) SelectImportedExitPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedExitPage, error) {
+	return nil, nil
+}
+
+// SelectImportedLanguage implements the Store interface.
+func (client *ClientMock) SelectImportedLanguage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedLanguage, error) {
+	return nil, nil
+}
+
+// SelectImportedMedium implements the Store interface.
+func (client *ClientMock) SelectImportedMedium(context.Context, uint64, time.Time, time.Time) ([]model.ImportedMedium, error) {
+	return nil, nil
+}
+
+// SelectImportedOS implements the Store interface.
+func (client *ClientMock) SelectImportedOS(context.Context, uint64, time.Time, time.Time) ([]model.ImportedOS, error) {
+	return nil, nil
+}
+
+// SelectImportedPage implements the Store interface.
+func (client *ClientMock) SelectImportedPage(context.Context, uint64, time.Time, time.Time) ([]model.ImportedPage, error) {
+	return nil, nil
+}
+
+// SelectImportedReferrer implements the Store interface.
+func (client *ClientMock) SelectImportedReferrer(context.Context, uint64, time.Time, time.Time) ([]model.ImportedReferrer, error) {
+	return nil, nil
+}
+
+// SelectImportedRegion implements the Store interface.
+func (client *ClientMock) SelectImportedRegion(context.Context, uint64, time.Time, time.Time) ([]model.ImportedRegion, error) {
+	return nil, nil
+}
+
+// SelectImportedSource implements the Store interface.
+func (client *ClientMock) SelectImportedSource(context.Context, uint64, time.Time, time.Time) ([]model.ImportedSource, error) {
+	return nil, nil
+}
+
+// SelectImportedVisitors implements the Store interface.
+func (client *ClientMock) SelectImportedVisitors(context.Context, uint64, time.Time, time.Time) ([]model.ImportedVisitors, error) {
+	return nil, nil
+}
