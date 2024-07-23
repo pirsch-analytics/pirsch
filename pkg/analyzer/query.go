@@ -24,7 +24,9 @@ type where struct {
 type queryBuilder struct {
 	filter             *Filter
 	fields             []Field
+	fieldsImported     []Field
 	from               table
+	fromImported       string
 	parent             *queryBuilder
 	join               *queryBuilder
 	joinSecond         *queryBuilder
@@ -47,6 +49,15 @@ type queryBuilder struct {
 
 func (query *queryBuilder) query() (string, []any) {
 	query.args = make([]any, 0)
+	includeImported := !query.filter.ImportedUntil.IsZero()
+	fromImported := query.fromImported
+
+	if includeImported {
+		query.selectFields()
+		query.q.WriteString("FROM (")
+		query.fromImported = ""
+	}
+
 	combineResults := query.selectFields()
 
 	if !combineResults {
@@ -56,6 +67,13 @@ func (query *queryBuilder) query() (string, []any) {
 		query.whereFields()
 		query.groupByFields()
 		query.having()
+
+		if includeImported {
+			query.q.WriteString(") t ")
+			query.joinImported(fromImported)
+			query.groupByFields()
+		}
+
 		query.orderByFields()
 		query.withLimit()
 	}
@@ -155,7 +173,12 @@ func (query *queryBuilder) selectFields() bool {
 					sampleQuery = fmt.Sprintf(" SAMPLE %d", query.sample)
 				}
 
-				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
+				if query.fromImported == "" {
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
+				} else {
+					dateQuery := strings.ReplaceAll(timeQuery, "toDate(time", "toDate(date")
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery, query.fromImported, dateQuery), query.fields[i].Name))
+				}
 			} else if query.fields[i].timezone {
 				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 					switch query.filter.Period {
@@ -214,7 +237,9 @@ func (query *queryBuilder) selectFields() bool {
 func (query *queryBuilder) selectField(field Field) string {
 	queryField := ""
 
-	if query.from == sessions {
+	if query.fromImported != "" {
+		queryField = field.queryImported
+	} else if query.from == sessions {
 		queryField = field.querySessions
 	} else if query.from == events && field.queryEvents != "" {
 		queryField = field.queryEvents
@@ -330,6 +355,42 @@ func (query *queryBuilder) joinQuery() {
 	}
 }
 
+func (query *queryBuilder) joinImported(from string) {
+	fields := make([]string, 0, len(query.fieldsImported))
+
+	for _, field := range query.fieldsImported {
+		fields = append(fields, field.Name)
+	}
+
+	joinField := query.fieldsImported[0].Name
+	query.where = make([]where, 0)
+	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField)
+	query.whereFieldImported(FieldExitPath.Name, query.filter.ExitPath, joinField)
+	query.whereFieldImported(FieldPath.Name, query.filter.Path, joinField)
+	query.whereFieldImported(FieldLanguage.Name, query.filter.Language, joinField)
+	query.whereFieldImported(FieldCountry.Name, query.filter.Country, joinField)
+	query.whereFieldImported(FieldRegion.Name, query.filter.Region, joinField)
+	query.whereFieldImported(FieldCity.Name, query.filter.City, joinField)
+	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField)
+	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField)
+	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField)
+	//query.whereFieldImported(FieldScreenClass.Name, query.filter.ScreenClass, joinField) // TODO
+	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField)
+	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField)
+	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField)
+
+	if joinField == FieldPath.Name {
+		query.whereFieldPathPattern()
+	}
+
+	//query.whereFieldPlatform() // TODO
+
+	dateQuery := strings.ReplaceAll(query.whereTime(), "toDate(time", "toDate(date")
+	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
+	query.whereWrite()
+	query.q.WriteString(fmt.Sprintf(`) imp ON t.%s = imp.%s `, joinField, joinField))
+}
+
 func (query *queryBuilder) whereTime() string {
 	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
@@ -406,6 +467,10 @@ func (query *queryBuilder) whereFields() {
 		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
 	}
 
+	query.whereWrite()
+}
+
+func (query *queryBuilder) whereWrite() {
 	if len(query.where) > 0 {
 		query.q.WriteString("AND ")
 		parts := make([]string, 0, len(query.where))
@@ -488,6 +553,12 @@ func (query *queryBuilder) whereField(field string, value []string) {
 		}
 
 		query.where = append(query.where, group)
+	}
+}
+
+func (query *queryBuilder) whereFieldImported(field string, value []string, joinField string) {
+	if joinField == field {
+		query.whereField(field, value)
 	}
 }
 

@@ -417,3 +417,38 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 		assert.Equal(t, field.expected, q.selectField(field.field))
 	}
 }
+
+func TestQueryImported(t *testing.T) {
+	filter := &Filter{
+		ClientID:      42,
+		From:          util.PastDay(14),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(7),
+		Country:       []string{"jp"},
+	}
+	filter.validate()
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{
+			FieldCountry,
+			FieldVisitors,
+			FieldRelativeVisitors,
+		},
+		fieldsImported: []Field{
+			FieldCountry,
+			FieldVisitors,
+		},
+		from:         sessions,
+		fromImported: "imported_country",
+		orderBy: []Field{
+			FieldVisitors,
+		},
+		groupBy: []Field{
+			FieldCountry,
+		},
+		limit: 10,
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 14)
+	assert.NotEmpty(t, queryStr) // TODO
+}

@@ -107,6 +107,7 @@ var (
 	FieldVisitors = Field{
 		querySessions:  "uniq(t.visitor_id)",
 		queryPageViews: "uniq(t.visitor_id)",
+		queryImported:  "sum(t.visitors + imp.visitors)",
 		queryPeriod:    "sum(visitors)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
@@ -126,6 +127,7 @@ var (
 	FieldRelativeVisitors = Field{
 		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -260,6 +262,7 @@ var (
 	FieldCountry = Field{
 		querySessions:  "country_code",
 		queryPageViews: "country_code",
+		queryImported:  "coalesce(nullif(t.country_code, ''), imp.country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -650,6 +653,7 @@ type Field struct {
 	querySessions  string
 	queryPageViews string
 	queryEvents    string
+	queryImported  string
 	queryPeriod    string
 	queryDirection pkg.Direction
 	queryWithFill  string
