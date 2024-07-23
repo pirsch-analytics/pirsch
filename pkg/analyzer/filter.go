@@ -28,6 +28,10 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
+	// ImportedUntil is the date until which the imported statistics should be used.
+	// Set to zero to ignore imported statistics.
+	ImportedUntil time.Time
+
 	// Period sets the period to group results.
 	Period pkg.Period
 
@@ -168,7 +172,9 @@ type Filter struct {
 	// Sample sets the (optional) sampling size.
 	Sample uint
 
-	funnelStep int
+	funnelStep   int
+	importedFrom time.Time
+	importedTo   time.Time
 }
 
 // Search filters results by searching for the given input for given field.
@@ -218,6 +224,23 @@ func (filter *Filter) validate() {
 
 	if !filter.To.IsZero() && filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From
+	}
+
+	if !filter.ImportedUntil.IsZero() {
+		if filter.From.Before(filter.ImportedUntil) {
+			filter.importedFrom = filter.From
+			filter.From = filter.ImportedUntil
+
+			if filter.To.Before(filter.ImportedUntil) {
+				filter.importedTo = filter.To
+				filter.From = time.Time{}
+				filter.To = time.Time{}
+			} else {
+				filter.importedTo = filter.ImportedUntil.Add(-time.Hour * 24)
+			}
+		} else {
+			filter.ImportedUntil = time.Time{}
+		}
 	}
 
 	// use tomorrow instead of limiting to "today", so that all timezones are included

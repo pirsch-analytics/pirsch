@@ -45,6 +45,37 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Contains(t, filter.Country, "de")
 	assert.Contains(t, filter.Country, "gb")
 	assert.Contains(t, filter.Country, "!en")
+	filter = &Filter{
+		From:          util.PastDay(30),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(31),
+	}
+	filter.validate()
+	assert.True(t, filter.ImportedUntil.IsZero())
+	assert.True(t, filter.importedFrom.IsZero())
+	assert.True(t, filter.importedTo.IsZero())
+	filter = &Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(30),
+		ImportedUntil: util.PastDay(3),
+	}
+	filter.validate()
+	assert.True(t, filter.From.IsZero())
+	assert.True(t, filter.To.IsZero())
+	assert.Equal(t, util.PastDay(3), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(30), filter.importedFrom)
+	assert.Equal(t, util.PastDay(5), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(30),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(20),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(20), filter.From)
+	assert.Equal(t, util.PastDay(5), filter.To)
+	assert.Equal(t, util.PastDay(20), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(30), filter.importedFrom)
+	assert.Equal(t, util.PastDay(21), filter.importedTo)
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {
