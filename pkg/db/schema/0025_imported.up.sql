@@ -10,18 +10,6 @@ PARTITION BY toYYYYMM(date)
 ORDER BY (client_id, date)
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE "imported_utm_campaign"
-(
-    "client_id" UInt64,
-    "date" Date,
-    "utm_campaign" String,
-    "visitors" UInt32
-)
-ENGINE = MergeTree
-PARTITION BY toYYYYMM(date)
-ORDER BY (client_id, date)
-SETTINGS index_granularity = 8192;
-
 CREATE TABLE "imported_city"
 (
     "client_id" UInt64,
@@ -96,18 +84,6 @@ PARTITION BY toYYYYMM(date)
 ORDER BY (client_id, date)
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE "imported_utm_medium"
-(
-    "client_id" UInt64,
-    "date" Date,
-    "utm_medium" String,
-    "visitors" UInt32
-)
-ENGINE = MergeTree
-PARTITION BY toYYYYMM(date)
-ORDER BY (client_id, date)
-SETTINGS index_granularity = 8192;
-
 CREATE TABLE "imported_os"
 (
     "client_id" UInt64,
@@ -154,6 +130,30 @@ CREATE TABLE "imported_region"
     "client_id" UInt64,
     "date" Date,
     "region" String,
+    "visitors" UInt32
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(date)
+ORDER BY (client_id, date)
+SETTINGS index_granularity = 8192;
+
+CREATE TABLE "imported_utm_campaign"
+(
+    "client_id" UInt64,
+    "date" Date,
+    "utm_campaign" String,
+    "visitors" UInt32
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(date)
+ORDER BY (client_id, date)
+SETTINGS index_granularity = 8192;
+
+CREATE TABLE "imported_utm_medium"
+(
+    "client_id" UInt64,
+    "date" Date,
+    "utm_medium" String,
     "visitors" UInt32
 )
 ENGINE = MergeTree
