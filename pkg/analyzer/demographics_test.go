@@ -60,7 +60,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.Len(t, visitors, 2)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_language" (date, language, visitors) VALUES
 		('%s', 'ru', 2), ('%s', 'en', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
@@ -165,7 +165,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.Len(t, visitors, 2)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_country" (date, country_code, visitors) VALUES
 		('%s', 'ru', 2), ('%s', 'en', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
@@ -258,7 +258,7 @@ func TestAnalyzer_Regions(t *testing.T) {
 	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_region" (date, region, visitors) VALUES
 		('%s', 'Berlin', 2), ('%s', 'England', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
@@ -354,7 +354,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.NoError(t, err)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_city" (date, city, visitors) VALUES
 		('%s', 'Berlin', 2), ('%s', 'London', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)

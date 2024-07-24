@@ -62,7 +62,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.NoError(t, err)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_device" (date, category, visitors) VALUES
 		('%s', 'Desktop', 2), ('%s', 'mobile', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
@@ -138,7 +138,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 	assert.NoError(t, err)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_browser" (date, browser, visitors) VALUES
 		('%s', 'Chrome', 2), ('%s', 'Firefox', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
@@ -332,7 +332,7 @@ func TestAnalyzer_OS(t *testing.T) {
 	assert.NoError(t, err)
 
 	// imported statistics
-	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	yesterday := util.PastDay(1).Format(time.DateOnly)
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_os" (date, os, visitors) VALUES
 		('%s', 'Windows', 2), ('%s', 'Mac', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
