@@ -49,7 +49,7 @@ type queryBuilder struct {
 
 func (query *queryBuilder) query() (string, []any) {
 	query.args = make([]any, 0)
-	includeImported := !query.filter.ImportedUntil.IsZero()
+	includeImported := query.includeImported()
 	fromImported := query.fromImported
 
 	if includeImported {
@@ -157,6 +157,7 @@ func (query *queryBuilder) appendField(fields *[]string, field string, value []s
 }
 
 func (query *queryBuilder) selectFields() bool {
+	includeImported := query.includeImported()
 	combineResults := false
 
 	if len(query.fields) > 0 {
@@ -173,11 +174,11 @@ func (query *queryBuilder) selectFields() bool {
 					sampleQuery = fmt.Sprintf(" SAMPLE %d", query.sample)
 				}
 
-				if query.fromImported == "" {
-					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
-				} else {
+				if includeImported {
 					dateQuery := strings.ReplaceAll(timeQuery, "toDate(time", "toDate(date")
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery, query.fromImported, dateQuery), query.fields[i].Name))
+				} else {
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
 				}
 			} else if query.fields[i].timezone {
 				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
@@ -235,9 +236,10 @@ func (query *queryBuilder) selectFields() bool {
 }
 
 func (query *queryBuilder) selectField(field Field) string {
+	includeImported := query.includeImported()
 	queryField := ""
 
-	if query.fromImported != "" {
+	if includeImported {
 		queryField = field.queryImported
 	} else if query.from == sessions {
 		queryField = field.querySessions
@@ -361,6 +363,8 @@ func (query *queryBuilder) joinImported(from string) {
 	for _, field := range query.fieldsImported {
 		fields = append(fields, field.Name)
 	}
+
+	// TODO search?
 
 	joinField := query.fieldsImported[0].Name
 	query.where = make([]where, 0)
@@ -917,4 +921,8 @@ func (query *queryBuilder) withLimit() {
 	} else if query.limit > 0 {
 		query.q.WriteString(fmt.Sprintf("LIMIT %d ", query.limit))
 	}
+}
+
+func (query *queryBuilder) includeImported() bool {
+	return query.filter != nil && !query.filter.ImportedUntil.IsZero() && query.fromImported != ""
 }

@@ -38,14 +38,14 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	}
 
 	fields = append(fields, FieldVisitors)
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, nil, "")
 	stats, err := visitors.store.SelectActiveVisitorStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil)
+	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil, nil, "")
 	count, err := visitors.store.Count(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -77,7 +77,7 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil)
+	q, args := filter.buildQuery(fields, nil, nil, nil, "")
 	stats, err := visitors.store.GetTotalVisitorStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -98,7 +98,7 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 		Sample:      filter.Sample,
 		IncludeTime: filter.IncludeTime,
 	}
-	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil, nil, "")
 	total, err := visitors.store.GetTotalUniqueVisitorStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 		To:       filter.To,
 		Sample:   filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldViews}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldViews}, nil, nil, nil, "")
 	total, err := visitors.store.GetTotalPageViewStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -138,7 +138,7 @@ func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 		To:       filter.To,
 		Sample:   filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil, nil, "")
 	total, err := visitors.store.GetTotalSessionStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -159,7 +159,7 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args := filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil)
+	}, nil, nil, nil, "")
 	current, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -170,7 +170,7 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args = filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil)
+	}, nil, nil, nil, "")
 	previous, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -214,7 +214,7 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 	}, []Field{
 		FieldDay,
 		FieldVisitors,
-	})
+	}, nil, "")
 	stats, err := visitors.store.SelectVisitorStats(filter.Ctx, filter.Period, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -252,7 +252,7 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 	}, []Field{
 		FieldHour,
 		FieldVisitors,
-	})
+	}, nil, "")
 	stats, err := visitors.store.SelectVisitorHourStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -290,7 +290,7 @@ func (visitors *Visitors) ByMinute(filter *Filter) ([]model.VisitorMinuteStats, 
 	}, []Field{
 		FieldMinute,
 		FieldVisitors,
-	})
+	}, nil, "")
 	stats, err := visitors.store.SelectVisitorMinuteStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -330,7 +330,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil)
+	q, args := filter.buildQuery(fields, nil, nil, nil, "")
 	current, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -352,7 +352,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 	}
 
 	visitors.getPreviousPeriod(filter)
-	q, args = filter.buildQuery(fields, nil, nil)
+	q, args = filter.buildQuery(fields, nil, nil, nil, "")
 	previous, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -413,7 +413,7 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		fields = append(fields, FieldAnyReferrer)
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, nil, "")
 	stats, err := visitors.store.SelectReferrerStats(filter.Ctx, q, args...)
 
 	if err != nil {

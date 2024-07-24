@@ -172,10 +172,9 @@ type Filter struct {
 	// Sample sets the (optional) sampling size.
 	Sample uint
 
-	funnelStep    int
-	importedTable string
-	importedFrom  time.Time
-	importedTo    time.Time
+	funnelStep   int
+	importedFrom time.Time
+	importedTo   time.Time
 }
 
 // Search filters results by searching for the given input for given field.
@@ -331,19 +330,20 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
+func (filter *Filter) buildQuery(fields, groupBy, orderBy, fieldsImported []Field, fromImported string) (string, []any) {
 	q := queryBuilder{
-		filter:       filter,
-		from:         filter.table(fields),
-		fromImported: filter.importedTable,
-		joinStep:     filter.funnelStep,
-		search:       filter.Search,
-		groupBy:      groupBy,
-		orderBy:      orderBy,
-		offset:       filter.Offset,
-		limit:        filter.Limit,
-		sample:       filter.Sample,
-		final:        filter.fieldsContain(fields, FieldSessionsAll),
+		filter:         filter,
+		fieldsImported: fieldsImported,
+		from:           filter.table(fields),
+		fromImported:   fromImported,
+		joinStep:       filter.funnelStep,
+		search:         filter.Search,
+		groupBy:        groupBy,
+		orderBy:        orderBy,
+		offset:         filter.Offset,
+		limit:          filter.Limit,
+		sample:         filter.Sample,
+		final:          filter.fieldsContain(fields, FieldSessionsAll),
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
