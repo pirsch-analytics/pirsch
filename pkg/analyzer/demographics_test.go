@@ -84,6 +84,17 @@ func TestAnalyzer_Languages(t *testing.T) {
 	assert.InDelta(t, 0.2222, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.2222, visitors[2].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1111, visitors[3].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Languages(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Language:      []string{"en"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "en", visitors[0].Language)
+	assert.Equal(t, 4, visitors[0].Visitors)
+	assert.InDelta(t, 0.4444, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Countries(t *testing.T) {
@@ -178,6 +189,17 @@ func TestAnalyzer_Countries(t *testing.T) {
 	assert.InDelta(t, 0.2222, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.2222, visitors[2].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1111, visitors[3].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Countries(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Country:       []string{"ru"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ru", visitors[0].CountryCode)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.InDelta(t, 0.2222, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Regions(t *testing.T) {
@@ -260,6 +282,17 @@ func TestAnalyzer_Regions(t *testing.T) {
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.3333, visitors[2].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1111, visitors[3].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Regions(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Region:        []string{"Berlin"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "de", visitors[0].CountryCode)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_Cities(t *testing.T) {
@@ -353,4 +386,17 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.2222, visitors[2].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1111, visitors[3].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Demographics.Cities(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		City:          []string{"London"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "gb", visitors[0].CountryCode)
+	assert.Equal(t, "England", visitors[0].Region)
+	assert.Equal(t, "London", visitors[0].City)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
 }

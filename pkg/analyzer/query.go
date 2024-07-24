@@ -367,6 +367,7 @@ func (query *queryBuilder) joinImported(from string) {
 
 	// TODO search?
 
+	dateQuery := query.whereTimeImported()
 	joinField := query.fieldsImported[0].Name
 	query.where = make([]where, 0)
 	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField)
@@ -388,7 +389,7 @@ func (query *queryBuilder) joinImported(from string) {
 		query.whereFieldPathPattern()
 	}
 
-	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, query.whereTimeImported()))
+	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
 	query.whereWrite()
 	query.q.WriteString(fmt.Sprintf(`) imp ON t.%s = imp.%s `, joinField, joinField))
 }
