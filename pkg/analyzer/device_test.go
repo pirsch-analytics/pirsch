@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -52,13 +53,41 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.Equal(t, 1, platform.PlatformDesktop)
 	assert.Equal(t, 0, platform.PlatformMobile)
 	assert.Equal(t, 0, platform.PlatformUnknown)
-	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01) // FIXME this shouldn't be 100%
 	assert.InDelta(t, 0, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0, platform.RelativePlatformUnknown, 0.01)
 	_, err = analyzer.Device.Platform(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Device.Platform(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_device" (date, category, visitors) VALUES
+		('%s', 'Desktop', 2), ('%s', 'mobile', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	platform, err = analyzer.Device.Platform(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, platform.PlatformDesktop)
+	assert.Equal(t, 3, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5555, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1111, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Platform:      pkg.PlatformDesktop,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, platform.PlatformDesktop)
+	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01) // FIXME this shouldn't be 100%
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
@@ -107,6 +136,40 @@ func TestAnalyzer_Browser(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
+
+	// imported statistics
+	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_browser" (date, browser, visitors) VALUES
+		('%s', 'Chrome', 2), ('%s', 'Firefox', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Device.Browser(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, pkg.BrowserChrome, visitors[0].Browser)
+	assert.Equal(t, pkg.BrowserFirefox, visitors[1].Browser)
+	assert.Equal(t, pkg.BrowserSafari, visitors[2].Browser)
+	assert.Equal(t, 5, visitors[0].Visitors)
+	assert.Equal(t, 3, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5555, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1111, visitors[2].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Device.Browser(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Browser:       []string{pkg.BrowserFirefox},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, pkg.BrowserFirefox, visitors[0].Browser)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.33, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_BrowserVersion(t *testing.T) {
@@ -267,6 +330,40 @@ func TestAnalyzer_OS(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
+
+	// imported statistics
+	yesterday := time.Now().Add(-time.Hour * 24).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_os" (date, os, visitors) VALUES
+		('%s', 'Windows', 2), ('%s', 'Mac', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Device.OS(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, pkg.OSWindows, visitors[0].OS)
+	assert.Equal(t, pkg.OSMac, visitors[1].OS)
+	assert.Equal(t, pkg.OSAndroid, visitors[2].OS)
+	assert.Equal(t, 5, visitors[0].Visitors)
+	assert.Equal(t, 3, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.InDelta(t, 0.5555, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.33, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1111, visitors[2].RelativeVisitors, 0.01)
+	visitors, err = analyzer.Device.OS(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		OS:            []string{pkg.OSMac},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, pkg.OSMac, visitors[0].OS)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.33, visitors[0].RelativeVisitors, 0.01)
 }
 
 func TestAnalyzer_OSVersion(t *testing.T) {

@@ -362,7 +362,11 @@ func (query *queryBuilder) joinImported(from string) {
 	fields := make([]string, 0, len(query.fieldsImported))
 
 	for _, field := range query.fieldsImported {
-		fields = append(fields, field.Name)
+		if field.subqueryImported != "" {
+			fields = append(fields, fmt.Sprintf("%s %s", field.subqueryImported, field.Name))
+		} else {
+			fields = append(fields, field.Name)
+		}
 	}
 
 	// TODO search?

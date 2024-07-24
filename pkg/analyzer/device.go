@@ -21,7 +21,11 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 		FieldRelativePlatformDesktop,
 		FieldRelativePlatformMobile,
 		FieldRelativePlatformUnknown,
-	}, nil, nil, nil, "") // TODO
+	}, nil, nil, []Field{
+		FieldPlatformDesktop,
+		FieldPlatformMobile,
+		FieldPlatformUnknown,
+	}, "imported_device")
 	stats, err := device.store.GetPlatformStats(filter.Ctx, q, args...)
 
 	if err != nil {

@@ -571,32 +571,39 @@ var (
 
 	// FieldPlatformDesktop is a query result column.
 	FieldPlatformDesktop = Field{
-		querySessions:  "uniqIf(visitor_id, desktop = 1)",
-		queryPageViews: "desktop = 1,mobile = 0",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_desktop",
+		querySessions:    "uniqIf(visitor_id, desktop = 1)",
+		queryPageViews:   "desktop = 1,mobile = 0",
+		queryImported:    "sum(t.platform_desktop + imp.platform_desktop)",
+		subqueryImported: "sumIf(visitors, lower(category) = 'desktop')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_desktop",
 	}
 
 	// FieldPlatformMobile is a query result column.
 	FieldPlatformMobile = Field{
-		querySessions:  "uniqIf(visitor_id, mobile = 1)",
-		queryPageViews: "desktop = 0,mobile = 1",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_mobile",
+		querySessions:    "uniqIf(visitor_id, mobile = 1)",
+		queryPageViews:   "desktop = 0,mobile = 1",
+		queryImported:    "sum(t.platform_mobile + imp.platform_mobile)",
+		subqueryImported: "sumIf(visitors, lower(category) = 'mobile')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_mobile",
 	}
 
 	// FieldPlatformUnknown is a query result column.
 	FieldPlatformUnknown = Field{
-		querySessions:  "uniq(visitor_id)-platform_desktop-platform_mobile",
-		queryPageViews: "desktop = 0,mobile = 0",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_unknown",
+		querySessions:    "uniq(visitor_id)-platform_desktop-platform_mobile",
+		queryPageViews:   "desktop = 0,mobile = 0",
+		queryImported:    "sum(t.platform_unknown + imp.platform_unknown)",
+		subqueryImported: "sumIf(visitors, lower(category) != 'desktop' AND lower(category) != 'mobile')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_unknown",
 	}
 
 	// FieldRelativePlatformDesktop is a query result column.
 	FieldRelativePlatformDesktop = Field{
 		querySessions:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_desktop",
 	}
 
@@ -604,6 +611,7 @@ var (
 	FieldRelativePlatformMobile = Field{
 		querySessions:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_mobile",
 	}
 
@@ -611,6 +619,7 @@ var (
 	FieldRelativePlatformUnknown = Field{
 		querySessions:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_unknown",
 	}
 
@@ -665,16 +674,17 @@ type sampleType int
 
 // Field is a column for a query.
 type Field struct {
-	querySessions  string
-	queryPageViews string
-	queryEvents    string
-	queryImported  string
-	queryPeriod    string
-	queryDirection pkg.Direction
-	queryWithFill  string
-	withFill       bool
-	timezone       bool
-	filterTime     bool
-	sampleType     sampleType
-	Name           string
+	querySessions    string
+	queryPageViews   string
+	queryEvents      string
+	queryImported    string
+	subqueryImported string
+	queryPeriod      string
+	queryDirection   pkg.Direction
+	queryWithFill    string
+	withFill         bool
+	timezone         bool
+	filterTime       bool
+	sampleType       sampleType
+	Name             string
 }
