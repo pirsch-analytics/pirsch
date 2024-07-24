@@ -166,7 +166,6 @@ func (query *queryBuilder) selectFields() bool {
 
 		for i := range query.fields {
 			if query.fields[i].filterTime {
-				timeQuery := query.whereTime()[len("WHERE "):]
 				sampleFactor, sampleQuery := "", ""
 
 				if query.sample > 0 {
@@ -174,8 +173,10 @@ func (query *queryBuilder) selectFields() bool {
 					sampleQuery = fmt.Sprintf(" SAMPLE %d", query.sample)
 				}
 
+				timeQuery := query.whereTime()[len("WHERE "):]
+
 				if includeImported {
-					dateQuery := strings.ReplaceAll(timeQuery, "toDate(time", "toDate(date")
+					dateQuery := query.whereTimeImported()[len("WHERE "):]
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery, query.fromImported, dateQuery), query.fields[i].Name))
 				} else {
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
@@ -387,8 +388,7 @@ func (query *queryBuilder) joinImported(from string) {
 		query.whereFieldPathPattern()
 	}
 
-	dateQuery := strings.ReplaceAll(query.whereTime(), "toDate(time", "toDate(date")
-	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
+	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, query.whereTimeImported()))
 	query.whereWrite()
 	query.q.WriteString(fmt.Sprintf(`) imp ON t.%s = imp.%s `, joinField, joinField))
 }
@@ -420,6 +420,40 @@ func (query *queryBuilder) whereTime() string {
 			} else {
 				query.args = append(query.args, query.filter.To.Format(dateFormat))
 				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+			}
+		}
+	}
+
+	return q.String()
+}
+
+func (query *queryBuilder) whereTimeImported() string {
+	query.args = append(query.args, query.filter.ClientID)
+	var q strings.Builder
+	q.WriteString("WHERE client_id = ? ")
+	tz := query.filter.Timezone.String()
+
+	if !query.filter.importedFrom.IsZero() && !query.filter.importedTo.IsZero() && query.filter.importedFrom.Equal(query.filter.importedTo) {
+		query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
+		q.WriteString(fmt.Sprintf("AND toDate(date, '%s') = toDate(?) ", tz))
+	} else {
+		if !query.filter.importedFrom.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.importedFrom)
+				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') >= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
+				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') >= toDate(?) ", tz))
+			}
+		}
+
+		if !query.filter.importedTo.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.importedTo)
+				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') <= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.importedTo.Format(dateFormat))
+				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') <= toDate(?) ", tz))
 			}
 		}
 	}

@@ -250,7 +250,7 @@ var (
 	FieldCountryCity = Field{
 		querySessions:  "if(city = '', '', country_code)",
 		queryPageViews: "if(city = '', '', country_code)",
-		queryImported:  "coalesce(nullif(t.country_code, ''), imp.city)",
+		queryImported:  "if(city = '', '', country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -260,7 +260,7 @@ var (
 	FieldCountryRegion = Field{
 		querySessions:  "if(region = '', '', country_code)",
 		queryPageViews: "if(region = '', '', country_code)",
-		queryImported:  "coalesce(nullif(t.country_code, ''), imp.region)",
+		queryImported:  "if(region = '', '', country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -279,7 +279,7 @@ var (
 	FieldRegionCity = Field{
 		querySessions:  "if(city = '', '', region)",
 		queryPageViews: "if(city = '', '', region)",
-		queryImported:  "coalesce(nullif(t.region, ''), imp.region)",
+		queryImported:  "if(city = '', '', region)",
 		queryDirection: "ASC",
 		Name:           "region",
 	}
