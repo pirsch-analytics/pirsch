@@ -57,6 +57,7 @@ var (
 	FieldPath = Field{
 		querySessions:  "path",
 		queryPageViews: "path",
+		queryImported:  "coalesce(nullif(t.path, ''), imp.path)",
 		queryDirection: "ASC",
 		Name:           "path",
 	}
@@ -73,6 +74,7 @@ var (
 	FieldEntryPath = Field{
 		querySessions:  "entry_path",
 		queryPageViews: "entry_path",
+		queryImported:  "coalesce(nullif(t.entry_path, ''), imp.entry_path)",
 		queryDirection: "ASC",
 		Name:           "entry_path",
 	}
@@ -90,6 +92,7 @@ var (
 	FieldExitPath = Field{
 		querySessions:  "exit_path",
 		queryPageViews: "exit_path",
+		queryImported:  "coalesce(nullif(t.exit_path, ''), imp.exit_path)",
 		queryDirection: "ASC",
 		Name:           "exit_path",
 	}
@@ -204,6 +207,7 @@ var (
 	FieldReferrer = Field{
 		querySessions:  "referrer",
 		queryPageViews: "referrer",
+		queryImported:  "coalesce(nullif(t.referrer, ''), imp.referrer)",
 		queryDirection: "ASC",
 		Name:           "referrer",
 	}
@@ -236,6 +240,7 @@ var (
 	FieldLanguage = Field{
 		querySessions:  "language",
 		queryPageViews: "language",
+		queryImported:  "coalesce(nullif(t.language, ''), imp.language)",
 		queryDirection: "ASC",
 		Name:           "language",
 	}
@@ -245,6 +250,7 @@ var (
 	FieldCountryCity = Field{
 		querySessions:  "if(city = '', '', country_code)",
 		queryPageViews: "if(city = '', '', country_code)",
+		queryImported:  "coalesce(nullif(t.country_code, ''), imp.city)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -254,6 +260,7 @@ var (
 	FieldCountryRegion = Field{
 		querySessions:  "if(region = '', '', country_code)",
 		queryPageViews: "if(region = '', '', country_code)",
+		queryImported:  "coalesce(nullif(t.country_code, ''), imp.region)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -272,6 +279,7 @@ var (
 	FieldRegionCity = Field{
 		querySessions:  "if(city = '', '', region)",
 		queryPageViews: "if(city = '', '', region)",
+		queryImported:  "coalesce(nullif(t.region, ''), imp.region)",
 		queryDirection: "ASC",
 		Name:           "region",
 	}
@@ -280,6 +288,7 @@ var (
 	FieldRegion = Field{
 		querySessions:  "region",
 		queryPageViews: "region",
+		queryImported:  "coalesce(nullif(t.region, ''), imp.region)",
 		queryDirection: "ASC",
 		Name:           "region",
 	}
@@ -288,6 +297,7 @@ var (
 	FieldCity = Field{
 		querySessions:  "city",
 		queryPageViews: "city",
+		queryImported:  "coalesce(nullif(t.city, ''), imp.city)",
 		queryDirection: "ASC",
 		Name:           "city",
 	}
@@ -296,6 +306,7 @@ var (
 	FieldBrowser = Field{
 		querySessions:  "browser",
 		queryPageViews: "browser",
+		queryImported:  "coalesce(nullif(t.browser, ''), imp.browser)",
 		queryDirection: "ASC",
 		Name:           "browser",
 	}
@@ -312,6 +323,7 @@ var (
 	FieldOS = Field{
 		querySessions:  "os",
 		queryPageViews: "os",
+		queryImported:  "coalesce(nullif(t.os, ''), imp.os)",
 		queryDirection: "ASC",
 		Name:           "os",
 	}
@@ -336,6 +348,7 @@ var (
 	FieldUTMSource = Field{
 		querySessions:  "utm_source",
 		queryPageViews: "utm_source",
+		queryImported:  "coalesce(nullif(t.utm_source, ''), imp.utm_source)",
 		queryDirection: "ASC",
 		Name:           "utm_source",
 	}
@@ -344,6 +357,7 @@ var (
 	FieldUTMMedium = Field{
 		querySessions:  "utm_medium",
 		queryPageViews: "utm_medium",
+		queryImported:  "coalesce(nullif(t.utm_medium, ''), imp.utm_medium)",
 		queryDirection: "ASC",
 		Name:           "utm_medium",
 	}
@@ -352,6 +366,7 @@ var (
 	FieldUTMCampaign = Field{
 		querySessions:  "utm_campaign",
 		queryPageViews: "utm_campaign",
+		queryImported:  "coalesce(nullif(t.utm_campaign, ''), imp.utm_campaign)",
 		queryDirection: "ASC",
 		Name:           "utm_campaign",
 	}

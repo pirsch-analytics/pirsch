@@ -374,16 +374,14 @@ func (query *queryBuilder) joinImported(from string) {
 	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField)
 	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField)
 	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField)
-	//query.whereFieldImported(FieldScreenClass.Name, query.filter.ScreenClass, joinField) // TODO
 	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField)
 	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField)
 	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField)
+	query.whereFieldPlatformImported()
 
 	if joinField == FieldPath.Name {
 		query.whereFieldPathPattern()
 	}
-
-	//query.whereFieldPlatform() // TODO
 
 	dateQuery := strings.ReplaceAll(query.whereTime(), "toDate(time", "toDate(date")
 	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
@@ -716,6 +714,41 @@ func (query *queryBuilder) whereFieldPlatform() {
 				query.where = append(query.where, where{eqContains: []string{"mobile = 1 "}})
 			} else {
 				query.where = append(query.where, where{eqContains: []string{"desktop = 0 AND mobile = 0 "}})
+			}
+		}
+	}
+}
+
+func (query *queryBuilder) whereFieldPlatformImported() {
+	if query.filter.Platform != "" {
+		if strings.HasPrefix(query.filter.Platform, "!") {
+			platform := query.filter.Platform[1:]
+
+			if platform == pkg.PlatformDesktop {
+				query.where = append(query.where, where{notEq: []string{
+					"lower(category) != 'desktop' ",
+					"lower(category) != 'laptop' ",
+				}})
+			} else if platform == pkg.PlatformMobile {
+				query.where = append(query.where, where{notEq: []string{
+					"lower(category) != 'mobile' ",
+					"lower(category) != 'phone' ",
+					"lower(category) != 'tablet' ",
+				}})
+			} else {
+				query.where = append(query.where, where{notEq: []string{"category != '' "}})
+			}
+		} else {
+			if query.filter.Platform == pkg.PlatformDesktop {
+				query.where = append(query.where, where{notEq: []string{
+					"(lower(category) = 'desktop' OR lower(category) = 'laptop') ",
+				}})
+			} else if query.filter.Platform == pkg.PlatformMobile {
+				query.where = append(query.where, where{notEq: []string{
+					"(lower(category) = 'mobile' OR lower(category) = 'phone' OR lower(category) = 'tablet') ",
+				}})
+			} else {
+				query.where = append(query.where, where{notEq: []string{"category = '' "}})
 			}
 		}
 	}
