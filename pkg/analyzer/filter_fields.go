@@ -83,6 +83,7 @@ var (
 	FieldEntries = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
+		queryImported:  "sum(t.entries + imp.visitors)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
 		Name:           "entries",
@@ -101,6 +102,7 @@ var (
 	FieldExits = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
+		queryImported:  "sum(t.exits + imp.visitors)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
 		Name:           "exits",

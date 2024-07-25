@@ -856,6 +856,74 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 		IncludeTimeOnPage: true,
 	})
 	assert.NoError(t, err)
+
+	// imported statistics
+	past3Days := util.PastDay(3).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_page" (date, path, visitors, views, sessions) VALUES
+		('%s', '/bar', 2, 3, 3), ('%s', '/', 1, 1, 1)`, past3Days, past3Days))
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_entry_page" (date, entry_path, visitors, sessions) VALUES
+		('%s', '/bar', 2, 3), ('%s', '/', 1, 1)`, past3Days, past3Days))
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_exit_page" (date, exit_path, visitors, sessions) VALUES
+		('%s', '/bar', 2, 3), ('%s', '/', 1, 1)`, past3Days, past3Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	entries, err = analyzer.Pages.Entry(&Filter{
+		From:          util.PastDay(3),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(2),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "/bar", entries[1].Path)
+	assert.Equal(t, 8, entries[0].Entries)
+	assert.Equal(t, 4, entries[1].Entries)
+	assert.InDelta(t, 0.8888, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.4444, entries[1].EntryRate, 0.001)
+	exits, err = analyzer.Pages.Exit(&Filter{
+		From:          util.PastDay(3),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(2),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 3)
+	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, "/", exits[1].Path)
+	assert.Equal(t, "/foo", exits[2].Path)
+	assert.Equal(t, 6, exits[0].Exits)
+	assert.Equal(t, 5, exits[1].Exits)
+	assert.Equal(t, 1, exits[2].Exits)
+	assert.InDelta(t, 0.6666, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 0.5555, exits[1].ExitRate, 0.001)
+	assert.InDelta(t, 0.1111, exits[2].ExitRate, 0.001)
+	entries, err = analyzer.Pages.Entry(&Filter{
+		From:              util.PastDay(3),
+		To:                util.Today(),
+		ImportedUntil:     util.PastDay(2),
+		EntryPath:         []string{"/"},
+		IncludeTimeOnPage: true,
+		IncludeTitle:      true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "Home", entries[0].Title)
+	assert.Equal(t, 8, entries[0].Entries)
+	assert.InDelta(t, 0.8888, entries[0].EntryRate, 0.001)
+	assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
+	exits, err = analyzer.Pages.Exit(&Filter{
+		From:          util.PastDay(3),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(2),
+		ExitPath:      []string{"/bar"},
+		IncludeTitle:  true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 1)
+	assert.Equal(t, "/bar", exits[0].Path)
+	assert.Equal(t, "Bar", exits[0].Title)
+	assert.Equal(t, 6, exits[0].Exits)
+	assert.InDelta(t, 0.6666, exits[0].ExitRate, 0.001)
 }
 
 func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
