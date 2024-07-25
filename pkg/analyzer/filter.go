@@ -229,13 +229,11 @@ func (filter *Filter) validate() {
 	if !filter.ImportedUntil.IsZero() {
 		if filter.From.Before(filter.ImportedUntil) {
 			filter.importedFrom = filter.From
-			filter.From = filter.ImportedUntil
 
 			if filter.To.Before(filter.ImportedUntil) {
 				filter.importedTo = filter.To
-				filter.From = time.Time{}
-				filter.To = time.Time{}
 			} else {
+				filter.From = filter.ImportedUntil
 				filter.importedTo = filter.ImportedUntil.Add(-time.Hour * 24)
 			}
 		} else {

@@ -167,7 +167,10 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args := filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil, nil, "")
+	}, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+	}, "imported_visitors")
 	current, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -178,7 +181,10 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args = filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil, nil, "")
+	}, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+	}, "imported_visitors")
 	previous, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -459,25 +465,40 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 }
 
 func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
-	if filter.From.Equal(filter.To) {
-		if filter.To.Equal(util.Today()) {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = time.Now().UTC().Add(-time.Hour * 24 * 7)
+	from := filter.From
+	to := filter.To
+	imported := !filter.importedFrom.IsZero() && filter.importedFrom.Before(from)
+
+	if imported {
+		from = filter.importedFrom
+	}
+
+	if from.Equal(to) {
+		if to.Equal(util.Today()) {
+			from = from.Add(-time.Hour * 24 * 7)
+			to = time.Now().UTC().Add(-time.Hour * 24 * 7)
 			filter.IncludeTime = true
 		} else {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = filter.To.Add(-time.Hour * 24 * 7)
+			from = from.Add(-time.Hour * 24 * 7)
+			to = to.Add(-time.Hour * 24 * 7)
 		}
 	} else {
-		days := filter.To.Sub(filter.From)
+		days := to.Sub(from)
 
 		if days >= time.Hour*24 {
-			filter.To = filter.From.Add(-time.Hour * 24)
-			filter.From = filter.To.Add(-days)
+			to = from.Add(-time.Hour * 24)
+			from = to.Add(-days)
 		} else {
-			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = filter.To.Add(-time.Hour * 24)
+			from = from.Add(-time.Hour * 24)
+			to = to.Add(-time.Hour * 24)
 		}
+	}
+
+	filter.From = from
+	filter.To = to
+
+	if imported {
+		filter.validate()
 	}
 }
 

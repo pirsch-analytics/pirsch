@@ -890,6 +890,33 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past10Days := util.PastDay(10).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past10Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 15, visitors.Visitors)
+	assert.Equal(t, 29, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, visitors.Visitors)
+	assert.Equal(t, 17, visitors.Views)
+	assert.InDelta(t, 4.5, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1.125, visitors.ViewsGrowth, 0.001)
 }
 
 func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
