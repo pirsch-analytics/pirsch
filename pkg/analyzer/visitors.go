@@ -77,7 +77,12 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil, nil, "")
+	q, args := filter.buildQuery(fields, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.GetTotalVisitorStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -91,14 +96,15 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID:    filter.ClientID,
-		Timezone:    filter.Timezone,
-		From:        filter.From,
-		To:          filter.To,
-		Sample:      filter.Sample,
-		IncludeTime: filter.IncludeTime,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
+		IncludeTime:   filter.IncludeTime,
 	}
-	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil, nil, "")
+	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil, []Field{FieldVisitors}, "imported_visitors")
 	total, err := visitors.store.GetTotalUniqueVisitorStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -112,13 +118,14 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID: filter.ClientID,
-		Timezone: filter.Timezone,
-		From:     filter.From,
-		To:       filter.To,
-		Sample:   filter.Sample,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldViews}, nil, nil, nil, "")
+	q, args := f.buildQuery([]Field{FieldViews}, nil, nil, []Field{FieldViews}, "imported_visitors")
 	total, err := visitors.store.GetTotalPageViewStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -132,13 +139,14 @@ func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID: filter.ClientID,
-		Timezone: filter.Timezone,
-		From:     filter.From,
-		To:       filter.To,
-		Sample:   filter.Sample,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil, nil, "")
+	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil, []Field{FieldSessions}, "imported_visitors")
 	total, err := visitors.store.GetTotalSessionStats(filter.Ctx, q, args...)
 
 	if err != nil {

@@ -220,6 +220,25 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		EventMeta: map[string]string{"foo": "val0"},
 	})
 	assert.NoError(t, err)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, visitors.Visitors)
+	assert.Equal(t, 14, visitors.Sessions)
+	assert.Equal(t, 17, visitors.Views)
+	assert.Equal(t, 9, visitors.Bounces)
+	assert.InDelta(t, 0.6428, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors.CR, 0.01)
 }
 
 func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
@@ -311,6 +330,20 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 9, visitors)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, visitors)
 }
 
 func TestAnalyzer_TotalPageViews(t *testing.T) {
@@ -402,6 +435,20 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 13, pageViews)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 17, pageViews)
 }
 
 func TestAnalyzer_TotalSessions(t *testing.T) {
@@ -448,27 +495,27 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
 	}))
 	analyzer := NewAnalyzer(dbClient)
-	pageViews, err := analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(4), To: util.Today()})
+	sessions, err := analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(4), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(2), To: util.Today()})
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(2), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 5, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.Equal(t, 5, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From:        time.Now().UTC().Add(-time.Minute * 15),
 		To:          util.Today(),
 		IncludeTime: true,
 		IncludeCR:   true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From:      util.PastDay(4),
 		To:        util.Today(),
 		EventName: []string{"event"},
@@ -476,8 +523,8 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		IncludeCR: true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From: util.PastDay(4),
 		To:   util.Today(),
 		Sort: []Sort{
@@ -485,14 +532,28 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From: util.PastDay(4),
 		To:   util.Today(),
 		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
+	assert.Equal(t, 11, sessions)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 14, sessions)
 }
 
 func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
