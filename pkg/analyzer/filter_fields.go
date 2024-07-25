@@ -169,6 +169,7 @@ var (
 	FieldViews = Field{
 		querySessions:  "sum(page_views*sign)",
 		queryPageViews: "count(1)",
+		queryImported:  "sum(t.views + imp.views)",
 		queryEvents:    "sum(views)",
 		queryPeriod:    "sum(views)",
 		queryDirection: "DESC",
@@ -180,6 +181,7 @@ var (
 	FieldRelativeViews = Field{
 		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s) + (SELECT sum(views) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",

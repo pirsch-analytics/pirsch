@@ -67,7 +67,13 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 		}
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy, nil, "")
+	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
+		FieldPath,
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+	}, "imported_page")
 	stats, err := pages.store.SelectPageStats(filter.Ctx, filter.IncludeTitle, false, q, args...)
 
 	if err != nil {

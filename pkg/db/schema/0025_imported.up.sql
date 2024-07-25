@@ -102,7 +102,7 @@ CREATE TABLE "imported_page"
     "date" Date,
     "path" String,
     "visitors" UInt32,
-    "page_views" UInt32,
+    "views" UInt32,
     "sessions" UInt32,
     "bounces" UInt32
 )
@@ -178,7 +178,7 @@ CREATE TABLE "imported_visitors"
     "client_id" UInt64,
     "date" Date,
     "visitors" UInt32,
-    "page_views" UInt32,
+    "views" UInt32,
     "sessions" UInt32,
     "bounces" UInt32,
     "session_duration" UInt32
