@@ -158,6 +158,7 @@ var (
 	FieldSessions = Field{
 		querySessions:  "uniq(t.visitor_id, t.session_id)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
+		queryImported:  "sum(t.sessions + imp.sessions)",
 		queryPeriod:    "sum(sessions)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
@@ -188,6 +189,7 @@ var (
 	FieldBounces = Field{
 		querySessions:  "sum(is_bounce*sign)",
 		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
+		queryImported:  "sum(t.bounces + imp.bounces)",
 		queryPeriod:    "sum(bounces)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
@@ -198,6 +200,7 @@ var (
 	FieldBounceRate = Field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
+		queryImported:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPeriod:    "ifNotFinite(avg(bounce_rate), 0)",
 		queryDirection: "DESC",
 		Name:           "bounce_rate",
@@ -232,6 +235,24 @@ var (
 	FieldReferrerIcon = Field{
 		querySessions:  "any(referrer_icon)",
 		queryPageViews: "any(referrer_icon)",
+		queryDirection: "ASC",
+		Name:           "referrer_icon",
+	}
+
+	// FieldEmptyReferrerName is a query result column.
+	FieldEmptyReferrerName = Field{
+		querySessions:  "''",
+		queryPageViews: "''",
+		queryImported:  "''",
+		queryDirection: "ASC",
+		Name:           "referrer_name",
+	}
+
+	// FieldEmptyReferrerIcon is a query result column.
+	FieldEmptyReferrerIcon = Field{
+		querySessions:  "''",
+		queryPageViews: "''",
+		queryImported:  "''",
 		queryDirection: "ASC",
 		Name:           "referrer_icon",
 	}

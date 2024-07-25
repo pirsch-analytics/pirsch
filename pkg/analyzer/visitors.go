@@ -388,32 +388,59 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	fields := []Field{
-		FieldReferrerName,
-		FieldReferrerIcon,
+	var fields, groupBy, orderBy []Field
+
+	if filter.ImportedUntil.IsZero() {
+		fields = []Field{
+			FieldReferrerName,
+			FieldReferrerIcon,
+			FieldVisitors,
+			FieldSessions,
+			FieldRelativeVisitors,
+			FieldBounces,
+			FieldBounceRate,
+		}
+		groupBy = []Field{
+			FieldReferrerName,
+		}
+		orderBy = []Field{
+			FieldVisitors,
+			FieldReferrerName,
+		}
+
+		if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 {
+			fields = append(fields, FieldReferrer)
+			groupBy = append(groupBy, FieldReferrer)
+			orderBy = append(orderBy, FieldReferrer)
+		} else {
+			fields = append(fields, FieldAnyReferrer)
+		}
+	} else {
+		fields = []Field{
+			FieldEmptyReferrerName,
+			FieldEmptyReferrerIcon,
+			FieldVisitors,
+			FieldSessions,
+			FieldRelativeVisitors,
+			FieldBounces,
+			FieldBounceRate,
+			FieldReferrer,
+		}
+		groupBy = []Field{
+			FieldReferrer,
+		}
+		orderBy = []Field{
+			FieldVisitors,
+			FieldReferrer,
+		}
+	}
+
+	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
+		FieldReferrer,
 		FieldVisitors,
 		FieldSessions,
-		FieldRelativeVisitors,
 		FieldBounces,
-		FieldBounceRate,
-	}
-	groupBy := []Field{
-		FieldReferrerName,
-	}
-	orderBy := []Field{
-		FieldVisitors,
-		FieldReferrerName,
-	}
-
-	if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 {
-		fields = append(fields, FieldReferrer)
-		groupBy = append(groupBy, FieldReferrer)
-		orderBy = append(orderBy, FieldReferrer)
-	} else {
-		fields = append(fields, FieldAnyReferrer)
-	}
-
-	q, args := filter.buildQuery(fields, groupBy, orderBy, nil, "")
+	}, "imported_referrer")
 	stats, err := visitors.store.SelectReferrerStats(filter.Ctx, q, args...)
 
 	if err != nil {

@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -2429,6 +2430,71 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+
+	// imported statistics
+	yesterday := util.PastDay(1).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_referrer" (date, referrer, visitors, sessions, bounces) VALUES
+		('%s', 'ref2/foo', 2, 3, 1), ('%s', 'ref3/foo', 1, 1, 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, "ref3/foo", visitors[1].Referrer)
+	assert.Equal(t, "ref1/bar", visitors[2].Referrer)
+	assert.Equal(t, "ref1/foo", visitors[3].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.Equal(t, 1, visitors[3].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[3].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo", "ref3/foo"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, "ref3/foo", visitors[1].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[1].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerGrouping(t *testing.T) {
