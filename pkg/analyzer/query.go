@@ -69,6 +69,7 @@ func (query *queryBuilder) query() (string, []any) {
 		query.having()
 
 		if includeImported {
+			query.orderByFields()
 			query.q.WriteString(") t ")
 			query.joinImported(fromImported)
 			query.groupByFields()
@@ -182,19 +183,27 @@ func (query *queryBuilder) selectFields() bool {
 					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
 				}
 			} else if query.fields[i].timezone {
+				withTz := ""
+
+				if includeImported {
+					withTz = query.selectField(query.fields[i])
+				} else {
+					withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())
+				}
+
 				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
 					switch query.filter.Period {
 					case pkg.PeriodWeek:
-						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", withTz))
 					case pkg.PeriodMonth:
-						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", withTz))
 					case pkg.PeriodYear:
-						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
+						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", withTz))
 					default:
 						panic("unknown case for filter period")
 					}
 				} else {
-					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
+					q.WriteString(fmt.Sprintf("%s %s,", withTz, query.fields[i].Name))
 				}
 			} else if query.from != sessions && (query.fields[i] == FieldPlatformDesktop || query.fields[i] == FieldPlatformMobile || query.fields[i] == FieldPlatformUnknown) {
 				q.WriteString(query.selectPlatform(query.fields[i]))
@@ -209,7 +218,7 @@ func (query *queryBuilder) selectFields() bool {
 					query.args = append(query.args, query.filter.Tag[0])
 					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 				}
-			} else if query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal {
+			} else if !includeImported && (query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal) {
 				query.args = append(query.args, query.filter.CustomMetricKey)
 				fieldCopy := query.fields[i]
 
@@ -932,7 +941,14 @@ func (query *queryBuilder) orderByFields() {
 }
 
 func (query *queryBuilder) withFill() string {
-	if !query.filter.From.IsZero() && !query.filter.To.IsZero() {
+	from := query.filter.From
+	to := query.filter.To
+
+	if !query.filter.importedFrom.IsZero() && query.filter.importedFrom.Before(from) {
+		from = query.filter.importedFrom
+	}
+
+	if !from.IsZero() && !to.IsZero() {
 		q := ""
 
 		switch query.filter.Period {
@@ -946,8 +962,7 @@ func (query *queryBuilder) withFill() string {
 			q = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
 		}
 
-		query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
-
+		query.args = append(query.args, from.Format(dateFormat), to.Format(dateFormat))
 		return q
 	}
 

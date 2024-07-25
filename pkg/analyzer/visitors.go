@@ -228,7 +228,13 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 	}, []Field{
 		FieldDay,
 		FieldVisitors,
-	}, nil, "")
+	}, []Field{
+		FieldDay,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.SelectVisitorStats(filter.Ctx, filter.Period, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {

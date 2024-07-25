@@ -149,8 +149,9 @@ var (
 
 	// FieldCRPeriod is a query result column.
 	FieldCRPeriod = Field{
-		querySessions:  `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
-		queryPageViews: `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
+		querySessions:  "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))",
+		queryPageViews: "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))",
+		queryImported:  "any(t.cr)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeFloat,
 		Name:           "cr",
@@ -499,12 +500,14 @@ var (
 
 	// FieldDay is a query result column.
 	FieldDay = Field{
-		querySessions:  "toDate(time, '%s')",
-		queryPageViews: "toDate(time, '%s')",
-		queryDirection: "ASC",
-		withFill:       true,
-		timezone:       true,
-		Name:           "day",
+		querySessions:    "toDate(time, '%s')",
+		queryPageViews:   "toDate(time, '%s')",
+		queryImported:    "day",
+		subqueryImported: "date",
+		queryDirection:   "ASC",
+		withFill:         true,
+		timezone:         true,
+		Name:             "day",
 	}
 
 	// FieldHour is a query result column.
@@ -582,6 +585,7 @@ var (
 	FieldEventMetaCustomMetricAvg = Field{
 		querySessions:  "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
 		queryPageViews: "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		queryImported:  "any(custom_metric_avg)",
 		sampleType:     sampleTypeFloat,
 		Name:           "custom_metric_avg",
 	}
@@ -590,6 +594,7 @@ var (
 	FieldEventMetaCustomMetricTotal = Field{
 		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
 		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		queryImported:  "any(custom_metric_total)",
 		sampleType:     sampleTypeAuto,
 		Name:           "custom_metric_total",
 	}
