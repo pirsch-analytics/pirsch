@@ -118,7 +118,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, sessions[0].OS)
 	assert.Empty(t, sessions[0].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, sessions[0].Browser)
-	assert.Equal(t, "105.0", sessions[0].BrowserVersion)
+	assert.Equal(t, "128.0", sessions[0].BrowserVersion)
 	assert.True(t, sessions[0].Desktop)
 	assert.False(t, sessions[0].Mobile)
 	assert.Equal(t, "Full HD", sessions[0].ScreenClass)
