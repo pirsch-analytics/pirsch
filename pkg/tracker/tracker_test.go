@@ -1109,9 +1109,11 @@ func TestTracker_ignoreReferrer(t *testing.T) {
 	_, _, ignore = tracker.ignore(req)
 	assert.True(t, ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
+	req.Header.Set("User-Agent", userAgent)
 	_, _, ignore = tracker.ignore(req)
 	assert.True(t, ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
+	req.Header.Set("User-Agent", userAgent)
 	_, _, ignore = tracker.ignore(req)
 	assert.True(t, ignore)
 }
