@@ -95,14 +95,14 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 	}
 
 	now := time.Now().UTC()
-	userAgent, ipAddress, ignore := tracker.ignore(r)
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
 	options.validate(r)
 
 	if !options.Time.IsZero() {
 		now = options.Time
 	}
 
-	if !ignore {
+	if ignoreReason == "" {
 		session, cancelSession, timeOnPage, bounced := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
 		var saveRequest *model.Request
 
@@ -127,7 +127,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			return true
 		}
 	} else {
-		tracker.captureRequest(now, clientID, r, ipAddress, options.Path, "", userAgent)
+		tracker.captureRequest(now, clientID, r, ipAddress, options.Path, "", userAgent, ignoreReason)
 	}
 
 	return false
@@ -144,14 +144,14 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 	eventOptions.validate()
 
 	if eventOptions.Name != "" {
-		userAgent, ipAddress, ignore := tracker.ignore(r)
+		userAgent, ipAddress, ignoreReason := tracker.ignore(r)
 		options.validate(r)
 
 		if !options.Time.IsZero() {
 			now = options.Time
 		}
 
-		if !ignore {
+		if ignoreReason == "" {
 			session, cancelSession, timeOnPage, _ := tracker.getSession(event, clientID, r, now, userAgent, ipAddress, options)
 			var saveRequest *model.Request
 
@@ -178,7 +178,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				return true
 			}
 		} else {
-			tracker.captureRequest(now, clientID, r, ipAddress, options.Path, eventOptions.Name, userAgent)
+			tracker.captureRequest(now, clientID, r, ipAddress, options.Path, eventOptions.Name, userAgent, ignoreReason)
 		}
 	}
 
@@ -193,9 +193,9 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 	}
 
 	now := time.Now().UTC()
-	userAgent, ipAddress, ignore := tracker.ignore(r)
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
 
-	if !ignore {
+	if ignoreReason == "" {
 		options.validate(r)
 
 		if !options.Time.IsZero() {
@@ -321,7 +321,7 @@ func (tracker *Tracker) requestFromSession(session *model.Session, clientID uint
 	}
 }
 
-func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.Request, ipAddress, path, event string, userAgent ua.UserAgent) {
+func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.Request, ipAddress, path, event string, userAgent ua.UserAgent, botReason string) {
 	logIP := ""
 
 	if tracker.config.LogIP {
@@ -343,11 +343,12 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 			UTMMedium:   strings.TrimSpace(query.Get("utm_medium")),
 			UTMCampaign: strings.TrimSpace(query.Get("utm_campaign")),
 			Bot:         true,
+			BotReason:   botReason,
 		},
 	}
 }
 
-func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
+func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
 	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
 
 	// ignore browsers pre-fetching data
@@ -361,7 +362,7 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 		purpose == "preview" {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "prefetch"
 	}
 
 	// empty User-Agents are usually bots
@@ -371,7 +372,7 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	if userAgent == "" || len(userAgent) <= minUserAgentLength || len(userAgent) > maxUserAgentLength || util.ContainsNonASCIICharacters(userAgent) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "ua-chars"
 	}
 
 	// ignore User-Agents that are an IP address
@@ -380,7 +381,7 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	if net.ParseIP(host) != nil {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "ua-ip"
 	}
 
 	if strings.Contains(host, ":") {
@@ -390,21 +391,21 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	if net.ParseIP(host) != nil {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "ua-ip"
 	}
 
 	// filter UUIDs
 	if _, err := uuid.Parse(rawUserAgent); err == nil {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "ua-uuid"
 	}
 
 	// filter referrer spammers
 	if referrer.Ignore(r) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "referrer"
 	}
 
 	userAgentResult := ua.Parse(r)
@@ -412,7 +413,7 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "browser"
 	}
 
 	// filter for bot keywords
@@ -420,17 +421,17 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, bool) {
 		if strings.Contains(userAgent, botUserAgent) {
 			return ua.UserAgent{
 				UserAgent: r.UserAgent(),
-			}, ipAddress, true
+			}, ipAddress, "ua-keyword"
 		}
 	}
 
 	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
-		}, ipAddress, true
+		}, ipAddress, "ip"
 	}
 
-	return userAgentResult, ipAddress, false
+	return userAgentResult, ipAddress, ""
 }
 
 func (tracker *Tracker) ignoreBrowserVersion(browser, version string) bool {

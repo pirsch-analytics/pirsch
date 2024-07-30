@@ -20,6 +20,7 @@ type Request struct {
 	UTMMedium   string    `db:"utm_medium" json:"utm_medium"`
 	UTMCampaign string    `db:"utm_campaign" json:"utm_campaign"`
 	Bot         bool      `json:"bot"`
+	BotReason   string    `db:"bot_reason" json:"bot_reason"`
 }
 
 // String implements the Stringer interface.

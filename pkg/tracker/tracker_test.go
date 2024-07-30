@@ -960,91 +960,74 @@ func TestTracker_ignorePrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Set("X-Moz", "prefetch")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Session with X-Moz header must be ignored")
-	}
-
+	_, _, ignore := tracker.ignore(req)
+	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("X-Moz")
 	req.Header.Set("X-Purpose", "prefetch")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Session with X-Purpose header must be ignored")
-	}
-
+	_, _, ignore = tracker.ignore(req)
+	assert.Equal(t, "prefetch", ignore)
 	req.Header.Set("X-Purpose", "preview")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Session with X-Purpose header must be ignored")
-	}
-
+	_, _, ignore = tracker.ignore(req)
+	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("X-Purpose")
 	req.Header.Set("Purpose", "prefetch")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Session with Purpose header must be ignored")
-	}
-
+	_, _, ignore = tracker.ignore(req)
+	assert.Equal(t, "prefetch", ignore)
 	req.Header.Set("Purpose", "preview")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Session with Purpose header must be ignored")
-	}
-
+	_, _, ignore = tracker.ignore(req)
+	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("Purpose")
-
-	if _, _, ignore := tracker.ignore(req); ignore {
-		t.Fatal("Session must not be ignored")
-	}
+	_, _, ignore = tracker.ignore(req)
+	assert.Empty(t, ignore)
 }
 
 func TestTracker_ignoreUserAgent(t *testing.T) {
 	userAgents := []struct {
 		userAgent string
-		ignore    bool
+		ignore    string
 	}{
-		{"This is a bot request", true},
-		{"This is a crawler request", true},
-		{"This is a spider request", true},
-		{"Visit http://spam.com!", true},
-		{"", true},
-		{"172.22.0.11:30004", true},
-		{"172.22.0.11", true},
-		{"2345:0425:2CA1:0000:0000:0567:5673:23b5", true},
-		{"2345:425:2CA1:0000:0000:567:5673:23b5", true},
-		{"2345:0425:2CA1:0:0:0567:5673:23b5", true},
-		{"[2345:0425:2CA1:0:0:0567:5673:23b5]:8080", true},
-		{userAgent, false},
-		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21B101 Instagram 312.0.1.19.124 (iPhone14,2; iOS 17_1_2; de_FR; de; scale=3.00; 1170x2532; 548339486)", false},
-		{"Mozilla/5.0 (Linux; Android 9; SM-G950F Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36 trill_2023102050 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/31.2.5 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20130401 Firefox/31.0", true},
-		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/523CAEFB-209D-4BCF-A7A7-FEE8BD659140", false},
-		{"Mozilla/5.0 (Linux; Android 12; SM-G973F Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 11; SM-T500 Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.193 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; 22081212UG Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 12; M2102J20SG Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; RMX3511 Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-S901B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; SM-A725F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2021707000 JsSdk/1.0 NetType/WIFI Channel/tt_eu_samsung2020_yz1 AppName/musical_ly app_version/17.7.0 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-S916B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/MOBILE Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; SM-A225F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 Instagram 312.1.0.34.111 Android (33/13; 300dpi; 720x1452; samsung; SM-A225F; a22; mt6769t; de_DE; 548323754)", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-A546B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-A336B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/D99C3025-1798-4643-9FD5-00CFABA0DA30", false},
-		{"Mozilla/5.0 (Linux; Android 13; SM-A546B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; SM-G780G Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0", false},
-		{"Mozilla/5.0 (Linux; Android 13; 23053RN02Y Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 Instagram 312.1.0.34.111 Android (33/13; 440dpi; 1080x2226; Xiaomi/Redmi; 23053RN02Y; heat; mt6768; es_US; 548323755)", false},
-		{"Mozilla/5.0 (Linux; Android 10; M2003J15SC Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/es ByteFullLocale/es Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 13; SM-A145R Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2023000000 JsSdk/1.0 NetType/WIFI Channel/samsung_preload AppName/musical_ly app_version/30.0.0 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 10; PPA-LX2 Build/HUAWEIPPA-LX2; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/92.0.4515.105 Mobile Safari/537.36 musical_ly_2023206050 JsSdk/1.0 NetType/WIFI Channel/huaweiadsglobal_int AppName/musical_ly app_version/32.6.5 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.7.4-bugfix AppVersion/32.6.5 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 9; ZTE Blade A7 2020 Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/4G Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/6C26B20B-D898-4AA5-9455-688897104628", false},
-		{"Mozilla/5.0 (Linux; Android 13; 21051182G Build/TKQ1.221013.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; Pixel 6a Build/UP1A.231128.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E236 [FBAN/FBIOS;FBAV/465.0.1.41.103;FBBV/602060281;FBDV/iPhone13,4;FBMD/iPhone;FBSN/iOS;FBSV/17.4.1;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5;FBRV/603032588]", false},
+		{"This is a bot request", "ua-keyword"},
+		{"This is a crawler request", "ua-keyword"},
+		{"This is a spider request", "ua-keyword"},
+		{"Visit http://spam.com!", "ua-keyword"},
+		{"", "ua-chars"},
+		{"172.22.0.11:30004", "ua-ip"},
+		{"172.22.0.11", "ua-chars"},
+		{"2345:0425:2CA1:0000:0000:0567:5673:23b5", "ua-ip"},
+		{"2345:425:2CA1:0000:0000:567:5673:23b5", "ua-ip"},
+		{"2345:0425:2CA1:0:0:0567:5673:23b5", "ua-ip"},
+		{"[2345:0425:2CA1:0:0:0567:5673:23b5]:8080", "ua-ip"},
+		{userAgent, ""},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21B101 Instagram 312.0.1.19.124 (iPhone14,2; iOS 17_1_2; de_FR; de; scale=3.00; 1170x2532; 548339486)", ""},
+		{"Mozilla/5.0 (Linux; Android 9; SM-G950F Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36 trill_2023102050 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/31.2.5 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20130401 Firefox/31.0", "browser"},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/523CAEFB-209D-4BCF-A7A7-FEE8BD659140", ""},
+		{"Mozilla/5.0 (Linux; Android 12; SM-G973F Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 11; SM-T500 Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.193 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; 22081212UG Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 12; M2102J20SG Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; RMX3511 Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-S901B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; SM-A725F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2021707000 JsSdk/1.0 NetType/WIFI Channel/tt_eu_samsung2020_yz1 AppName/musical_ly app_version/17.7.0 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-S916B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/MOBILE Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; SM-A225F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 Instagram 312.1.0.34.111 Android (33/13; 300dpi; 720x1452; samsung; SM-A225F; a22; mt6769t; de_DE; 548323754)", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-A546B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-A336B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/WIFI Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/D99C3025-1798-4643-9FD5-00CFABA0DA30", ""},
+		{"Mozilla/5.0 (Linux; Android 13; SM-A546B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; SM-G780G Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0", ""},
+		{"Mozilla/5.0 (Linux; Android 13; 23053RN02Y Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 Instagram 312.1.0.34.111 Android (33/13; 440dpi; 1080x2226; Xiaomi/Redmi; 23053RN02Y; heat; mt6768; es_US; 548323755)", ""},
+		{"Mozilla/5.0 (Linux; Android 10; M2003J15SC Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/es ByteFullLocale/es Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 13; SM-A145R Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 trill_2023000000 JsSdk/1.0 NetType/WIFI Channel/samsung_preload AppName/musical_ly app_version/30.0.0 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 10; PPA-LX2 Build/HUAWEIPPA-LX2; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/92.0.4515.105 Mobile Safari/537.36 musical_ly_2023206050 JsSdk/1.0 NetType/WIFI Channel/huaweiadsglobal_int AppName/musical_ly app_version/32.6.5 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.7.4-bugfix AppVersion/32.6.5 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 9; ZTE Blade A7 2020 Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/4G Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/6C26B20B-D898-4AA5-9455-688897104628", ""},
+		{"Mozilla/5.0 (Linux; Android 13; 21051182G Build/TKQ1.221013.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (Linux; Android 14; Pixel 6a Build/UP1A.231128.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E236 [FBAN/FBIOS;FBAV/465.0.1.41.103;FBBV/602060281;FBDV/iPhone13,4;FBMD/iPhone;FBSN/iOS;FBSV/17.4.1;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5;FBRV/603032588]", ""},
 	}
 
 	tracker := NewTracker(Config{})
@@ -1052,14 +1035,8 @@ func TestTracker_ignoreUserAgent(t *testing.T) {
 
 	for _, userAgent := range userAgents {
 		req.Header.Set("User-Agent", userAgent.userAgent)
-
-		if _, _, ignore := tracker.ignore(req); ignore != userAgent.ignore {
-			if userAgent.ignore {
-				t.Fatalf("Request with User-Agent '%s' must be ignored", userAgent.userAgent)
-			} else {
-				t.Fatalf("Request with User-Agent '%s' must not be ignored", userAgent.userAgent)
-			}
-		}
+		_, _, ignore := tracker.ignore(req)
+		assert.Equal(t, userAgent.ignore, ignore, userAgent.userAgent)
 	}
 }
 
@@ -1069,10 +1046,8 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 	for _, botUserAgent := range ua.Blacklist {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
-
-		if _, _, ignore := tracker.ignore(req); !ignore {
-			t.Fatalf("Request with user agent '%v' must have been ignored", botUserAgent)
-		}
+		_, _, ignore := tracker.ignore(req)
+		assert.NotEmpty(t, ignore, botUserAgent)
 	}
 
 	botUserAgent := []string{
@@ -1090,10 +1065,8 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 	for _, userAgent := range botUserAgent {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", userAgent)
-
-		if _, _, ignore := tracker.ignore(req); !ignore {
-			t.Fatalf("Request with user agent '%v' must have been ignored", botUserAgent)
-		}
+		_, _, ignore := tracker.ignore(req)
+		assert.NotEmpty(t, ignore, botUserAgent)
 	}
 }
 
@@ -1104,35 +1077,30 @@ func TestTracker_ignoreReferrer(t *testing.T) {
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Referer", hostname)
 	_, _, ignore := tracker.ignore(req)
-	assert.True(t, ignore)
+	assert.Equal(t, "referrer", ignore)
 	req.Header.Set("Referer", fmt.Sprintf("subdomain.%s", hostname))
 	_, _, ignore = tracker.ignore(req)
-	assert.True(t, ignore)
+	assert.Equal(t, "referrer", ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
 	req.Header.Set("User-Agent", userAgent)
 	_, _, ignore = tracker.ignore(req)
-	assert.True(t, ignore)
+	assert.Equal(t, "referrer", ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
 	req.Header.Set("User-Agent", userAgent)
 	_, _, ignore = tracker.ignore(req)
-	assert.True(t, ignore)
+	assert.Equal(t, "referrer", ignore)
 }
 
 func TestTracker_ignoreBrowserVersion(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.4147.135 Safari/537.36")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request must have been ignored")
-	}
-
+	_, _, ignore := tracker.ignore(req)
+	assert.Equal(t, "browser", ignore)
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)
-
-	if _, _, ignore := tracker.ignore(req); ignore {
-		t.Fatal("Request must not have been ignored")
-	}
+	_, _, ignore = tracker.ignore(req)
+	assert.Empty(t, ignore)
 }
 
 func TestTracker_ignoreIP(t *testing.T) {
@@ -1143,16 +1111,11 @@ func TestTracker_ignoreIP(t *testing.T) {
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)
-
-	if _, _, ignore := tracker.ignore(req); ignore {
-		t.Fatal("Request must not have been ignored")
-	}
-
+	_, _, ignore := tracker.ignore(req)
+	assert.Empty(t, ignore)
 	req.RemoteAddr = "90.154.29.38"
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request must have been ignored")
-	}
+	_, _, ignore = tracker.ignore(req)
+	assert.Equal(t, "ip", ignore)
 }
 
 func TestTracker_ignorePageViews(t *testing.T) {

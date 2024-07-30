@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.12.1
+
+* added reason for bot traffic
+* updated dependencies
+
 ## 6.12.0
 
 * added funnel
