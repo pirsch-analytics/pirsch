@@ -1098,26 +1098,22 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 }
 
 func TestTracker_ignoreReferrer(t *testing.T) {
+	hostname := "2your.site"
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("User-Agent", "ua")
-	req.Header.Set("Referer", "2your.site")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request must have been ignored")
-	}
-
-	req.Header.Set("Referer", "subdomain.2your.site")
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request for subdomain must have been ignored")
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/?ref=2your.site", nil)
-
-	if _, _, ignore := tracker.ignore(req); !ignore {
-		t.Fatal("Request must have been ignored")
-	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Referer", hostname)
+	_, _, ignore := tracker.ignore(req)
+	assert.True(t, ignore)
+	req.Header.Set("Referer", fmt.Sprintf("subdomain.%s", hostname))
+	_, _, ignore = tracker.ignore(req)
+	assert.True(t, ignore)
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
+	_, _, ignore = tracker.ignore(req)
+	assert.True(t, ignore)
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
+	_, _, ignore = tracker.ignore(req)
+	assert.True(t, ignore)
 }
 
 func TestTracker_ignoreBrowserVersion(t *testing.T) {
