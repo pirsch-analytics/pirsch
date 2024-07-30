@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:105.0) Gecko/20100101 Firefox/105.0"
+	userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
 )
 
 func TestTracker(t *testing.T) {
@@ -118,7 +118,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, sessions[0].OS)
 	assert.Empty(t, sessions[0].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, sessions[0].Browser)
-	assert.Equal(t, "105.0", sessions[0].BrowserVersion)
+	assert.Equal(t, "128.0", sessions[0].BrowserVersion)
 	assert.True(t, sessions[0].Desktop)
 	assert.False(t, sessions[0].Mobile)
 	assert.Equal(t, "Full HD", sessions[0].ScreenClass)
@@ -142,7 +142,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, pageViews[0].OS)
 	assert.Empty(t, pageViews[0].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, pageViews[0].Browser)
-	assert.Equal(t, "105.0", pageViews[0].BrowserVersion)
+	assert.Equal(t, "128.0", pageViews[0].BrowserVersion)
 	assert.True(t, pageViews[0].Desktop)
 	assert.False(t, pageViews[0].Mobile)
 	assert.Equal(t, "Full HD", pageViews[0].ScreenClass)
@@ -188,7 +188,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, sessions[2].OS)
 	assert.Empty(t, sessions[2].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, sessions[2].Browser)
-	assert.Equal(t, "105.0", sessions[2].BrowserVersion)
+	assert.Equal(t, "128.0", sessions[2].BrowserVersion)
 	assert.True(t, sessions[2].Desktop)
 	assert.False(t, sessions[2].Mobile)
 	assert.Equal(t, "Full HD", sessions[2].ScreenClass)
@@ -212,7 +212,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, pageViews[1].OS)
 	assert.Empty(t, pageViews[1].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, pageViews[1].Browser)
-	assert.Equal(t, "105.0", pageViews[1].BrowserVersion)
+	assert.Equal(t, "128.0", pageViews[1].BrowserVersion)
 	assert.True(t, pageViews[1].Desktop)
 	assert.False(t, pageViews[1].Mobile)
 	assert.Equal(t, "Full HD", pageViews[1].ScreenClass)
@@ -520,7 +520,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, events[0].OS)
 	assert.Empty(t, events[0].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, events[0].Browser)
-	assert.Equal(t, "105.0", events[0].BrowserVersion)
+	assert.Equal(t, "128.0", events[0].BrowserVersion)
 	assert.True(t, events[0].Desktop)
 	assert.False(t, events[0].Mobile)
 	assert.Equal(t, "Full HD", events[0].ScreenClass)
@@ -567,7 +567,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Equal(t, pkg.OSLinux, events[1].OS)
 	assert.Empty(t, events[1].OSVersion)
 	assert.Equal(t, pkg.BrowserFirefox, events[1].Browser)
-	assert.Equal(t, "105.0", events[1].BrowserVersion)
+	assert.Equal(t, "128.0", events[1].BrowserVersion)
 	assert.True(t, events[1].Desktop)
 	assert.False(t, events[1].Mobile)
 	assert.Equal(t, "Full HD", events[1].ScreenClass)
@@ -1043,7 +1043,7 @@ func TestTracker_ignoreUserAgent(t *testing.T) {
 		{"Mozilla/5.0 (Linux; Android 9; ZTE Blade A7 2020 Build/PPR1.180610.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
 		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 musical_ly_32.7.0 JsSdk/2.0 NetType/4G Channel/App Store ByteLocale/de Region/DE isDarkMode/0 WKWebView/1 RevealType/Dialog BytedanceWebview/d8a21c6 FalconTag/6C26B20B-D898-4AA5-9455-688897104628", false},
 		{"Mozilla/5.0 (Linux; Android 13; 21051182G Build/TKQ1.221013.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
-		{"Mozilla/5.0 (Linux; Android 14; Pixel 6a Build/UP1A.231105.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
+		{"Mozilla/5.0 (Linux; Android 14; Pixel 6a Build/UP1A.231128.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", false},
 		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E236 [FBAN/FBIOS;FBAV/465.0.1.41.103;FBBV/602060281;FBDV/iPhone13,4;FBMD/iPhone;FBSN/iOS;FBSV/17.4.1;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5;FBRV/603032588]", false},
 	}
 
