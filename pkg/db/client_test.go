@@ -196,6 +196,7 @@ func TestClient_SaveRequests(t *testing.T) {
 			UTMMedium:   "medium",
 			UTMCampaign: "campaign",
 			Bot:         true,
+			BotReason:   "ip",
 		},
 		{
 			ClientID:  2,

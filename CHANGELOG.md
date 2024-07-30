@@ -6,6 +6,10 @@
 * updated User-Agent blacklist
 * updated dependencies
 
+## 6.12.2
+
+* fixed storing bot traffic reason
+
 ## 6.12.1
 
 * added reason for bot traffic
