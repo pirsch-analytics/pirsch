@@ -247,7 +247,7 @@ func (query *queryBuilder) selectFields() bool {
 
 func (query *queryBuilder) selectField(field Field) string {
 	includeImported := query.includeImported()
-	queryField := ""
+	queryField, sampleFactor := "", ""
 
 	if includeImported {
 		queryField = field.queryImported
@@ -259,12 +259,16 @@ func (query *queryBuilder) selectField(field Field) string {
 		queryField = field.queryPageViews
 	}
 
+	if !includeImported {
+		sampleFactor = "*any(_sample_factor)"
+	}
+
 	if query.sample > 0 && field.sampleType != 0 {
 		if field.sampleType == sampleTypeInt {
-			return fmt.Sprintf("toUInt64(greatest(%s*any(_sample_factor), 0))", queryField)
+			return fmt.Sprintf("toUInt64(greatest(%s%s, 0))", queryField, sampleFactor)
 		}
 
-		return fmt.Sprintf("%s*any(_sample_factor)", queryField)
+		return fmt.Sprintf("%s%s", queryField, sampleFactor)
 	}
 
 	return queryField

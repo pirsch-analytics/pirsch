@@ -1288,6 +1288,7 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 		To:            util.Today(),
 		ImportedUntil: util.PastDay(4),
 		IncludeCR:     true,
+		Sample:        10_000,
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
@@ -2678,6 +2679,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 		From:          util.PastDay(1),
 		To:            util.Today(),
 		ImportedUntil: util.Today(),
+		Sample:        10_000,
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 4)
