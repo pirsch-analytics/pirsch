@@ -2750,6 +2750,20 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo", "ref3/foo"},
+		Limit:         1,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerGrouping(t *testing.T) {
