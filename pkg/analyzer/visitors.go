@@ -480,6 +480,10 @@ func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
 	from := filter.From
 	to := filter.To
 
+	if !filter.importedFrom.IsZero() && filter.importedFrom.Before(from) {
+		from = filter.importedFrom
+	}
+
 	if from.Equal(to) {
 		if to.Equal(util.Today()) {
 			from = from.Add(-time.Hour * 24 * 7)

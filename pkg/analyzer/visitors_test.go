@@ -913,10 +913,10 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 		ImportedUntil: util.PastDay(9),
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, visitors.Visitors)
-	assert.Equal(t, 17, visitors.Views)
-	assert.InDelta(t, 4.5, visitors.VisitorsGrowth, 0.001)
-	assert.InDelta(t, 1.125, visitors.ViewsGrowth, 0.001)
+	assert.Equal(t, 13, visitors.Visitors)
+	assert.Equal(t, 21, visitors.Views)
+	assert.InDelta(t, 2.25, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0.75, visitors.ViewsGrowth, 0.001)
 }
 
 func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
@@ -2210,7 +2210,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.InDelta(t, 0.75, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2.2, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0.7187, growth.BouncesGrowth, 0.001)
-	assert.InDelta(t, 1, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.TimeSpentGrowth, 0.001)
 	assert.InDelta(t, 0, growth.CRGrowth, 0.001)
 }
 
@@ -2932,4 +2932,48 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	assert.InDelta(t, 1, growth, 0.001)
 	growth = calculateGrowth(50.0, 100.0)
 	assert.InDelta(t, -0.5, growth, 0.001)
+}
+
+func TestAnalyzer_GetPreviousPeriod(t *testing.T) {
+	analyzer := NewAnalyzer(dbClient)
+	f := &Filter{
+		From: util.PastDay(5),
+		To:   util.Today(),
+	}
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(11), f.From)
+	assert.Equal(t, util.PastDay(6), f.To)
+	f = &Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(6),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(6), f.From)
+	assert.Equal(t, util.PastDay(6), f.To)
+	assert.Equal(t, util.PastDay(11), f.importedFrom)
+	assert.Equal(t, util.PastDay(7), f.importedTo)
+	f = &Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(5),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(21), f.From)
+	assert.Equal(t, util.PastDay(11), f.To)
+	assert.Equal(t, util.PastDay(21), f.importedFrom)
+	assert.Equal(t, util.PastDay(11), f.importedTo)
+	f = &Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(21), f.From)
+	assert.Equal(t, util.PastDay(11), f.To)
+	assert.Equal(t, util.PastDay(21), f.importedFrom)
+	assert.Equal(t, util.PastDay(11), f.importedTo)
 }
