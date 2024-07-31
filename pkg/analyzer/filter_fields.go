@@ -142,6 +142,7 @@ var (
 	FieldCR = Field{
 		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",

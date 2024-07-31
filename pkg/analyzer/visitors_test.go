@@ -1470,7 +1470,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 1.89, visitors[2].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      util.PastDay(60),
+		From:      util.PastDay(61),
 		To:        util.Today(),
 		EventName: []string{"Sale"},
 		IncludeCR: true,
@@ -2181,6 +2181,27 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.Growth(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past10Days := util.PastDay(10).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past10Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+		IncludeCR:     true,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 2.25, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0.75, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2.2, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0.7187, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 1, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0, growth.CRGrowth, 0.001)
 }
 
 func TestAnalyzer_GrowthDay(t *testing.T) {

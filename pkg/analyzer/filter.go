@@ -236,8 +236,6 @@ func (filter *Filter) validate() {
 				filter.From = filter.ImportedUntil
 				filter.importedTo = filter.ImportedUntil.Add(-time.Hour * 24)
 			}
-		} else {
-			filter.ImportedUntil = time.Time{}
 		}
 	}
 

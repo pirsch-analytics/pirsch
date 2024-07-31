@@ -338,6 +338,12 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		FieldBounces,
 		FieldBounceRate,
 	}
+	fieldsImported := []Field{
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}
 
 	if filter.IncludeCR {
 		fields = append(fields, FieldCR)
@@ -350,7 +356,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil, nil, "")
+	q, args := filter.buildQuery(fields, nil, nil, fieldsImported, "imported_visitors")
 	current, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -372,7 +378,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 	}
 
 	visitors.getPreviousPeriod(filter)
-	q, args = filter.buildQuery(fields, nil, nil, nil, "")
+	q, args = filter.buildQuery(fields, nil, nil, fieldsImported, "imported_visitors")
 	previous, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -473,11 +479,6 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
 	from := filter.From
 	to := filter.To
-	imported := !filter.importedFrom.IsZero() && filter.importedFrom.Before(from)
-
-	if imported {
-		from = filter.importedFrom
-	}
 
 	if from.Equal(to) {
 		if to.Equal(util.Today()) {
@@ -503,7 +504,7 @@ func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
 	filter.From = from
 	filter.To = to
 
-	if imported {
+	if !filter.ImportedUntil.IsZero() {
 		filter.validate()
 	}
 }

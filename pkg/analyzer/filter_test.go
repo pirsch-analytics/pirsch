@@ -51,7 +51,7 @@ func TestFilter_Validate(t *testing.T) {
 		ImportedUntil: util.PastDay(31),
 	}
 	filter.validate()
-	assert.True(t, filter.ImportedUntil.IsZero())
+	assert.Equal(t, util.PastDay(31), filter.ImportedUntil)
 	assert.True(t, filter.importedFrom.IsZero())
 	assert.True(t, filter.importedTo.IsZero())
 	filter = &Filter{
