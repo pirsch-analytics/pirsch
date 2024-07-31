@@ -1333,6 +1333,16 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	assert.InDelta(t, 1, visitors[3].CR, 0.01)
 	assert.InDelta(t, 0, visitors[4].CR, 0.01)
 	assert.InDelta(t, 1, visitors[5].CR, 0.01)
+	f := &Filter{
+		Ctx:           context.Background(),
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	}
+	f.validate()
+	tsd, err = analyzer.Visitors.totalSessionDuration(f)
+	assert.NoError(t, err)
+	assert.Equal(t, 1400, tsd)
 }
 
 func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {

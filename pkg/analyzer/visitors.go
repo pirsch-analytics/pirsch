@@ -549,6 +549,24 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 		return 0, err
 	}
 
+	if !filter.importedFrom.IsZero() && !filter.importedTo.IsZero() {
+		q = queryBuilder{
+			filter: filter,
+			from:   sessions,
+			search: filter.Search,
+		}
+		query.Reset()
+		query.WriteString("SELECT sum(session_duration) FROM imported_visitors ")
+		query.WriteString(q.whereTimeImported())
+		averageTimeSpentSecondsImported, err := visitors.store.Count(filter.Ctx, query.String(), q.args...)
+
+		if err != nil {
+			return 0, err
+		}
+
+		averageTimeSpentSeconds += averageTimeSpentSecondsImported
+	}
+
 	return averageTimeSpentSeconds, nil
 }
 
