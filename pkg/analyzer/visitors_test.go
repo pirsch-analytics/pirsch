@@ -1284,11 +1284,13 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(time.Millisecond * 20)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:          util.PastDay(5),
-		To:            util.Today(),
-		ImportedUntil: util.PastDay(4),
-		IncludeCR:     true,
-		Sample:        10_000,
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodDay,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
@@ -1344,6 +1346,36 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	tsd, err = analyzer.Visitors.totalSessionDuration(f)
 	assert.NoError(t, err)
 	assert.Equal(t, 1400, tsd)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodWeek,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodMonth,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodYear,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {

@@ -191,16 +191,29 @@ func (query *queryBuilder) selectFields() bool {
 					withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())
 				}
 
-				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
-					switch query.filter.Period {
-					case pkg.PeriodWeek:
-						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", withTz))
-					case pkg.PeriodMonth:
-						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", withTz))
-					case pkg.PeriodYear:
-						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", withTz))
-					default:
-						panic("unknown case for filter period")
+				if query.filter.Period != pkg.PeriodDay && query.fields[i] == FieldDay {
+					if includeImported {
+						switch query.filter.Period {
+						case pkg.PeriodWeek:
+							q.WriteString("week,")
+						case pkg.PeriodMonth:
+							q.WriteString("month,")
+						case pkg.PeriodYear:
+							q.WriteString("year,")
+						default:
+							panic("unknown case for filter period")
+						}
+					} else {
+						switch query.filter.Period {
+						case pkg.PeriodWeek:
+							q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", withTz))
+						case pkg.PeriodMonth:
+							q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", withTz))
+						case pkg.PeriodYear:
+							q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", withTz))
+						default:
+							panic("unknown case for filter period")
+						}
 					}
 				} else {
 					q.WriteString(fmt.Sprintf("%s %s,", withTz, query.fields[i].Name))
@@ -376,7 +389,20 @@ func (query *queryBuilder) joinImported(from string) {
 
 	for _, field := range query.fieldsImported {
 		if field.subqueryImported != "" {
-			fields = append(fields, fmt.Sprintf("%s %s", field.subqueryImported, field.Name))
+			if query.filter.Period != pkg.PeriodDay && field == FieldDay {
+				switch query.filter.Period {
+				case pkg.PeriodWeek:
+					fields = append(fields, "toStartOfWeek(date, 1) week")
+				case pkg.PeriodMonth:
+					fields = append(fields, "toStartOfMonth(date) month")
+				case pkg.PeriodYear:
+					fields = append(fields, "toStartOfYear(date) year")
+				default:
+					panic("unknown case for filter period")
+				}
+			} else {
+				fields = append(fields, fmt.Sprintf("%s %s", field.subqueryImported, field.Name))
+			}
 		} else {
 			fields = append(fields, field.Name)
 		}
@@ -413,7 +439,21 @@ func (query *queryBuilder) joinImported(from string) {
 
 	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
 	query.whereWrite()
-	query.q.WriteString(fmt.Sprintf(`) imp ON t.%s = imp.%s `, joinField, joinField))
+
+	if query.filter.Period != pkg.PeriodDay && joinField == FieldDay.Name {
+		switch query.filter.Period {
+		case pkg.PeriodWeek:
+			query.q.WriteString(") imp ON t.week = imp.week ")
+		case pkg.PeriodMonth:
+			query.q.WriteString(") imp ON t.month = imp.month ")
+		case pkg.PeriodYear:
+			query.q.WriteString(") imp ON t.year = imp.year ")
+		default:
+			panic("unknown case for filter period")
+		}
+	} else {
+		query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField, joinField))
+	}
 }
 
 func (query *queryBuilder) whereTime() string {
@@ -871,7 +911,7 @@ func (query *queryBuilder) groupByFields() {
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.groupBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
+			if query.filter.Period != pkg.PeriodDay && query.groupBy[i] == FieldDay {
 				switch query.filter.Period {
 				case pkg.PeriodWeek:
 					q.WriteString("week,")
@@ -925,7 +965,7 @@ func (query *queryBuilder) orderByFields() {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
-				if query.orderBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
+				if query.filter.Period != pkg.PeriodDay && query.orderBy[i] == FieldDay {
 					switch query.filter.Period {
 					case pkg.PeriodWeek:
 						name = "week"
