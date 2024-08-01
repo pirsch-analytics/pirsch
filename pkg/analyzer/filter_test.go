@@ -98,6 +98,17 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Equal(t, util.PastDay(5), filter.ImportedUntil)
 	assert.Equal(t, util.PastDay(30), filter.importedFrom)
 	assert.Equal(t, util.PastDay(15), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(4),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(5), filter.From)
+	assert.Equal(t, util.PastDay(5), filter.To)
+	assert.Equal(t, util.PastDay(4), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(5), filter.importedFrom)
+	assert.Equal(t, util.PastDay(5), filter.importedTo)
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {

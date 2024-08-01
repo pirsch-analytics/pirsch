@@ -70,6 +70,7 @@ func (query *queryBuilder) query() (string, []any) {
 
 		if includeImported {
 			query.orderByFields()
+			query.unionImported()
 			query.q.WriteString(") t ")
 			query.joinImported(fromImported)
 			query.groupByFields()
@@ -384,6 +385,26 @@ func (query *queryBuilder) joinQuery() {
 	}
 }
 
+func (query *queryBuilder) unionImported() {
+	if query.fieldsImported[0] == FieldVisitors ||
+		query.fieldsImported[0] == FieldSessions ||
+		query.fieldsImported[0] == FieldViews ||
+		query.fieldsImported[0] == FieldBounces {
+		query.q.WriteString("UNION ALL (SELECT ")
+
+		for i, field := range query.fields {
+			query.q.WriteString("NULL ")
+			query.q.WriteString(field.Name)
+
+			if i < len(query.fields)-1 {
+				query.q.WriteString(",")
+			}
+		}
+
+		query.q.WriteString(")")
+	}
+}
+
 func (query *queryBuilder) joinImported(from string) {
 	fields := make([]string, 0, len(query.fieldsImported))
 
@@ -453,26 +474,19 @@ func (query *queryBuilder) joinImported(from string) {
 		query.groupBy = groupBy
 	}
 
-	if joinField != FieldVisitors &&
-		joinField != FieldSessions &&
-		joinField != FieldViews &&
-		joinField != FieldBounces {
-		if query.filter.Period != pkg.PeriodDay && joinField == FieldDay {
-			switch query.filter.Period {
-			case pkg.PeriodWeek:
-				query.q.WriteString(") imp ON t.week = imp.week ")
-			case pkg.PeriodMonth:
-				query.q.WriteString(") imp ON t.month = imp.month ")
-			case pkg.PeriodYear:
-				query.q.WriteString(") imp ON t.year = imp.year ")
-			default:
-				panic("unknown case for filter period")
-			}
-		} else {
-			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
+	if query.filter.Period != pkg.PeriodDay && joinField == FieldDay {
+		switch query.filter.Period {
+		case pkg.PeriodWeek:
+			query.q.WriteString(") imp ON t.week = imp.week ")
+		case pkg.PeriodMonth:
+			query.q.WriteString(") imp ON t.month = imp.month ")
+		case pkg.PeriodYear:
+			query.q.WriteString(") imp ON t.year = imp.year ")
+		default:
+			panic("unknown case for filter period")
 		}
 	} else {
-		query.q.WriteString(") imp ON 1=1 ")
+		query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
 	}
 }
 

@@ -112,7 +112,7 @@ var (
 	FieldVisitors = Field{
 		querySessions:    "uniq(t.visitor_id)",
 		queryPageViews:   "uniq(t.visitor_id)",
-		queryImported:    "sum(t.visitors + imp.visitors)",
+		queryImported:    "sum(coalesce(t.visitors, 0) + imp.visitors)",
 		subqueryImported: "sum(visitors)",
 		queryPeriod:      "sum(visitors)",
 		queryDirection:   "DESC",
@@ -163,7 +163,7 @@ var (
 	FieldSessions = Field{
 		querySessions:    "uniq(t.visitor_id, t.session_id)",
 		queryPageViews:   "uniq(t.visitor_id, t.session_id)",
-		queryImported:    "sum(t.sessions + imp.sessions)",
+		queryImported:    "sum(coalesce(t.sessions, 0) + imp.sessions)",
 		subqueryImported: "sum(sessions)",
 		queryPeriod:      "sum(sessions)",
 		queryDirection:   "DESC",
@@ -173,9 +173,9 @@ var (
 
 	// FieldViews is a query result column.
 	FieldViews = Field{
-		querySessions:    "sum(page_views*sign)",
+		querySessions:    "toUInt64(sum(page_views*sign))",
 		queryPageViews:   "count(1)",
-		queryImported:    "sum(t.views + imp.views)",
+		queryImported:    "sum(coalesce(t.views, 0) + imp.views)",
 		subqueryImported: "sum(views)",
 		queryEvents:      "sum(views)",
 		queryPeriod:      "sum(views)",
@@ -196,9 +196,9 @@ var (
 
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
-		querySessions:    "sum(is_bounce*sign)",
+		querySessions:    "toUInt64(sum(is_bounce*sign))",
 		queryPageViews:   "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
-		queryImported:    "sum(t.bounces + imp.bounces)",
+		queryImported:    "sum(coalesce(t.bounces, 0) + imp.bounces)",
 		subqueryImported: "sum(bounces)",
 		queryPeriod:      "sum(bounces)",
 		queryDirection:   "DESC",
