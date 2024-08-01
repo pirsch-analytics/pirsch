@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -219,6 +220,37 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		EventMeta: map[string]string{"foo": "val0"},
 	})
 	assert.NoError(t, err)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, visitors.Visitors)
+	assert.Equal(t, 14, visitors.Sessions)
+	assert.Equal(t, 17, visitors.Views)
+	assert.Equal(t, 9, visitors.Bounces)
+	assert.InDelta(t, 0.6428, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, visitors.Visitors)
+	assert.Equal(t, 3, visitors.Sessions)
+	assert.Equal(t, 4, visitors.Views)
+	assert.Equal(t, 1, visitors.Bounces)
+	assert.InDelta(t, 0.3333, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors.CR, 0.01)
 }
 
 func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
@@ -310,6 +342,20 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 9, visitors)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 11, visitors)
 }
 
 func TestAnalyzer_TotalPageViews(t *testing.T) {
@@ -401,6 +447,20 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 13, pageViews)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 17, pageViews)
 }
 
 func TestAnalyzer_TotalSessions(t *testing.T) {
@@ -447,27 +507,27 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
 	}))
 	analyzer := NewAnalyzer(dbClient)
-	pageViews, err := analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(4), To: util.Today()})
+	sessions, err := analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(4), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(2), To: util.Today()})
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(2), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 5, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.Equal(t, 5, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{From: util.PastDay(1), To: util.Today()})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From:        time.Now().UTC().Add(-time.Minute * 15),
 		To:          util.Today(),
 		IncludeTime: true,
 		IncludeCR:   true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 1, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From:      util.PastDay(4),
 		To:        util.Today(),
 		EventName: []string{"event"},
@@ -475,8 +535,8 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		IncludeCR: true,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From: util.PastDay(4),
 		To:   util.Today(),
 		Sort: []Sort{
@@ -484,14 +544,28 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
-	pageViews, err = analyzer.Visitors.TotalSessions(&Filter{
+	assert.Equal(t, 11, sessions)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From: util.PastDay(4),
 		To:   util.Today(),
 		Tags: map[string]string{"author": "John"},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 11, pageViews)
+	assert.Equal(t, 11, sessions)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 14, sessions)
 }
 
 func TestAnalyzer_TotalVisitorsEvent(t *testing.T) {
@@ -828,6 +902,33 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.TotalVisitorsPageViews(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past10Days := util.PastDay(10).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past10Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 15, visitors.Visitors)
+	assert.Equal(t, 29, visitors.Views)
+	assert.InDelta(t, 1, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 1, visitors.ViewsGrowth, 0.001)
+	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 13, visitors.Visitors)
+	assert.Equal(t, 21, visitors.Views)
+	assert.InDelta(t, 2.25, visitors.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0.75, visitors.ViewsGrowth, 0.001)
 }
 
 func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
@@ -1187,43 +1288,143 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.totalSessionDuration(getMaxFilter(""))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodDay,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 6)
+	assert.Equal(t, util.PastDay(5), visitors[0].Day.Time)
+	assert.Equal(t, util.PastDay(4), visitors[1].Day.Time)
+	assert.Equal(t, util.PastDay(3), visitors[2].Day.Time)
+	assert.Equal(t, util.PastDay(2), visitors[3].Day.Time)
+	assert.Equal(t, util.PastDay(1), visitors[4].Day.Time)
+	assert.Equal(t, util.Today(), visitors[5].Day.Time)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 4, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[2].Visitors)
+	assert.Equal(t, 4, visitors[3].Visitors)
+	assert.Equal(t, 0, visitors[4].Visitors)
+	assert.Equal(t, 1, visitors[5].Visitors)
+	assert.Equal(t, 3, visitors[0].Sessions)
+	assert.Equal(t, 6, visitors[1].Sessions)
+	assert.Equal(t, 0, visitors[2].Sessions)
+	assert.Equal(t, 4, visitors[3].Sessions)
+	assert.Equal(t, 0, visitors[4].Sessions)
+	assert.Equal(t, 1, visitors[5].Sessions)
+	assert.Equal(t, 4, visitors[0].Views)
+	assert.Equal(t, 7, visitors[1].Views)
+	assert.Equal(t, 0, visitors[2].Views)
+	assert.Equal(t, 6, visitors[3].Views)
+	assert.Equal(t, 0, visitors[4].Views)
+	assert.Equal(t, 1, visitors[5].Views)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 5, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
+	assert.Equal(t, 2, visitors[3].Bounces)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 1, visitors[5].Bounces)
+	assert.InDelta(t, 0.3333, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.8333, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[0].CR, 0.01)
+	assert.InDelta(t, 1, visitors[1].CR, 0.01)
+	assert.InDelta(t, 0, visitors[2].CR, 0.01)
+	assert.InDelta(t, 1, visitors[3].CR, 0.01)
+	assert.InDelta(t, 0, visitors[4].CR, 0.01)
+	assert.InDelta(t, 1, visitors[5].CR, 0.01)
+	f := &Filter{
+		Ctx:           context.Background(),
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(4),
+	}
+	f.validate()
+	tsd, err = analyzer.Visitors.totalSessionDuration(f)
+	assert.NoError(t, err)
+	assert.Equal(t, 1400, tsd)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodWeek,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodMonth,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:                 util.PastDay(5),
+		To:                   util.Today(),
+		Period:               pkg.PeriodYear,
+		ImportedUntil:        util.PastDay(4),
+		IncludeCR:            true,
+		Sample:               10_000,
+		MaxTimeOnPageSeconds: 600,
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
 		{
-			{Sign: 1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(6), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 		{
-			{Sign: -1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
-			{Sign: 1, VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
-			{Sign: 1, VisitorID: 5, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: -1, VisitorID: 1, Time: util.PastDay(6), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(6), Start: util.PastDay(5), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(5), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(5), Start: util.PastDay(4), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(5), Start: util.PastDay(1), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
+			{Sign: 1, VisitorID: 5, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: util.Today(), EntryPath: "/foo", ExitPath: "/foo", PageViews: 1, IsBounce: false},
 		},
 	})
 	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
-		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Path: "/"},
-		{VisitorID: 2, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/foo"},
-		{VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/bar"},
-		{VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Path: "/"},
-		{VisitorID: 5, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Path: "/"},
-		{VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Path: "/foo"},
+		{VisitorID: 1, Time: util.PastDay(6), Path: "/"},
+		{VisitorID: 2, Time: util.PastDay(5), Path: "/foo"},
+		{VisitorID: 3, Time: util.PastDay(5), Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(5), Path: "/"},
+		{VisitorID: 5, Time: util.Today(), Path: "/"},
+		{VisitorID: 6, Time: util.Today(), Path: "/foo"},
 	}))
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
-		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
-		{VisitorID: 3, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
-		{VisitorID: 4, Time: time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
-		{VisitorID: 6, Time: time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
-		{VisitorID: 6, Time: time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
+		{VisitorID: 1, Time: util.PastDay(6), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.89", "EUR"}, Path: "/"},
+		{VisitorID: 3, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"3.12", "EUR"}, Path: "/bar"},
+		{VisitorID: 4, Time: util.PastDay(5), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"1.77", "USD"}, Path: "/"},
+		{VisitorID: 6, Time: util.PastDay(1), Name: "Sale", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "2.98"}, Path: "/foo"},
+		{VisitorID: 6, Time: util.Today(), Name: "Unrelated", MetaKeys: []string{"currency", "amount"}, MetaValues: []string{"EUR", "99"}, Path: "/foo"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{
-		From:             time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
-		To:               time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC),
+		From:             util.PastDay(6),
+		To:               util.PastDay(1),
 		EventName:        []string{"Sale"},
 		CustomMetricKey:  "amount",
 		CustomMetricType: pkg.CustomMetricTypeFloat,
@@ -1231,12 +1432,12 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), visitors[0].Day.Time)
-	assert.Equal(t, time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC), visitors[1].Day.Time)
-	assert.Equal(t, time.Date(2023, 10, 4, 0, 0, 0, 0, time.UTC), visitors[2].Day.Time)
-	assert.Equal(t, time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC), visitors[3].Day.Time)
-	assert.Equal(t, time.Date(2023, 10, 6, 0, 0, 0, 0, time.UTC), visitors[4].Day.Time)
-	assert.Equal(t, time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
+	assert.Equal(t, util.PastDay(6), visitors[0].Day.Time)
+	assert.Equal(t, util.PastDay(5), visitors[1].Day.Time)
+	assert.Equal(t, util.PastDay(4), visitors[2].Day.Time)
+	assert.Equal(t, util.PastDay(3), visitors[3].Day.Time)
+	assert.Equal(t, util.PastDay(2), visitors[4].Day.Time)
+	assert.Equal(t, util.PastDay(1), visitors[5].Day.Time)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 2.445, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
@@ -1250,8 +1451,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
-		To:               time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC),
+		From:             util.PastDay(6),
+		To:               util.PastDay(1),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",
@@ -1260,7 +1461,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
+	assert.Equal(t, util.PastDay(1), visitors[5].Day.Time)
 	assert.InDelta(t, 1.89, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 3.12, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
@@ -1274,8 +1475,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             time.Date(2023, 10, 3, 0, 0, 0, 0, time.UTC),
-		To:               time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
+		From:             util.PastDay(5),
+		To:               util.Today(),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",
@@ -1285,7 +1486,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
-	assert.Equal(t, time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC), visitors[5].Day.Time)
+	assert.Equal(t, util.Today(), visitors[5].Day.Time)
 	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
@@ -1299,8 +1500,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.InDelta(t, 0, visitors[4].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[5].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:             time.Date(2023, 9, 17, 0, 0, 0, 0, time.UTC),
-		To:               time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
+		From:             util.PastDay(21),
+		To:               util.Today(),
 		EventName:        []string{"Sale"},
 		EventMeta:        map[string]string{"currency": "EUR"},
 		CustomMetricKey:  "amount",
@@ -1313,19 +1514,19 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.Len(t, visitors, 4)
 	assert.InDelta(t, 0, visitors[0].CR, 0.001)
 	assert.InDelta(t, 0, visitors[1].CR, 0.001)
-	assert.InDelta(t, 0, visitors[2].CR, 0.001)
-	assert.InDelta(t, 0.1666, visitors[3].CR, 0.001)
+	assert.InDelta(t, 0.25, visitors[2].CR, 0.001)
+	assert.InDelta(t, 0, visitors[3].CR, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 0, visitors[2].CustomMetricAvg, 0.001)
-	assert.InDelta(t, 1.89, visitors[3].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 1.89, visitors[2].CustomMetricAvg, 0.001)
+	assert.InDelta(t, 0, visitors[3].CustomMetricAvg, 0.001)
 	assert.InDelta(t, 0, visitors[0].CustomMetricTotal, 0.001)
 	assert.InDelta(t, 0, visitors[1].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 0, visitors[2].CustomMetricTotal, 0.001)
-	assert.InDelta(t, 1.89, visitors[3].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 1.89, visitors[2].CustomMetricTotal, 0.001)
+	assert.InDelta(t, 0, visitors[3].CustomMetricTotal, 0.001)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      time.Date(2023, 8, 8, 0, 0, 0, 0, time.UTC),
-		To:        time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
+		From:      util.PastDay(61),
+		To:        util.Today(),
 		EventName: []string{"Sale"},
 		IncludeCR: true,
 		Period:    pkg.PeriodMonth,
@@ -1333,8 +1534,8 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 3)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
-		From:      time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC),
-		To:        time.Date(2023, 10, 8, 0, 0, 0, 0, time.UTC),
+		From:      util.PastDay(90),
+		To:        util.Today(),
 		EventName: []string{"Sale"},
 		IncludeCR: true,
 		Period:    pkg.PeriodYear,
@@ -1349,6 +1550,67 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	visitors, err = analyzer.Visitors.ByPeriod(filter)
 	assert.NoError(t, err)
 	assert.Len(t, visitors, 6)
+
+	// imported statistics
+	past5Days := util.PastDay(5).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past5Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
+		From:             util.PastDay(5),
+		To:               util.Today(),
+		ImportedUntil:    util.PastDay(4),
+		EventName:        []string{"Sale"},
+		EventMeta:        map[string]string{"currency": "EUR"},
+		CustomMetricKey:  "amount",
+		CustomMetricType: pkg.CustomMetricTypeFloat,
+		IncludeCR:        true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 6)
+	assert.Equal(t, util.PastDay(5), visitors[0].Day.Time)
+	assert.Equal(t, util.PastDay(4), visitors[1].Day.Time)
+	assert.Equal(t, util.PastDay(3), visitors[2].Day.Time)
+	assert.Equal(t, util.PastDay(2), visitors[3].Day.Time)
+	assert.Equal(t, util.PastDay(1), visitors[4].Day.Time)
+	assert.Equal(t, util.Today(), visitors[5].Day.Time)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 0, visitors[1].Visitors)
+	assert.Equal(t, 0, visitors[2].Visitors)
+	assert.Equal(t, 0, visitors[3].Visitors)
+	assert.Equal(t, 1, visitors[4].Visitors)
+	assert.Equal(t, 0, visitors[5].Visitors)
+	assert.Equal(t, 3, visitors[0].Sessions)
+	assert.Equal(t, 0, visitors[1].Sessions)
+	assert.Equal(t, 0, visitors[2].Sessions)
+	assert.Equal(t, 0, visitors[3].Sessions)
+	assert.Equal(t, 1, visitors[4].Sessions)
+	assert.Equal(t, 0, visitors[5].Sessions)
+	assert.Equal(t, 4, visitors[0].Views)
+	assert.Equal(t, 0, visitors[1].Views)
+	assert.Equal(t, 0, visitors[2].Views)
+	assert.Equal(t, 0, visitors[3].Views)
+	assert.Equal(t, 1, visitors[4].Views)
+	assert.Equal(t, 0, visitors[5].Views)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
+	assert.Equal(t, 0, visitors[3].Bounces)
+	assert.Equal(t, 0, visitors[4].Bounces)
+	assert.Equal(t, 0, visitors[5].Bounces)
+	assert.InDelta(t, 0.3333, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[3].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[4].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[5].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[0].CR, 0.01)
+	assert.InDelta(t, 0, visitors[1].CR, 0.01)
+	assert.InDelta(t, 0, visitors[2].CR, 0.01)
+	assert.InDelta(t, 0, visitors[3].CR, 0.01)
+	assert.InDelta(t, 1, visitors[4].CR, 0.01)
+	assert.InDelta(t, 0, visitors[5].CR, 0.01)
 }
 
 func TestAnalyzer_ByHour(t *testing.T) {
@@ -1974,6 +2236,27 @@ func TestAnalyzer_Growth(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.Growth(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past10Days := util.PastDay(10).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past10Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+		IncludeCR:     true,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, growth)
+	assert.InDelta(t, 2.25, growth.VisitorsGrowth, 0.001)
+	assert.InDelta(t, 0.75, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 2.2, growth.SessionsGrowth, 0.001)
+	assert.InDelta(t, 0.7187, growth.BouncesGrowth, 0.001)
+	assert.InDelta(t, 0.5, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0, growth.CRGrowth, 0.001)
 }
 
 func TestAnalyzer_GrowthDay(t *testing.T) {
@@ -2429,6 +2712,104 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+
+	// imported statistics
+	yesterday := util.PastDay(1).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_referrer" (date, referrer, visitors, sessions, bounces) VALUES
+		('%s', 'ref2/foo', 2, 3, 1), ('%s', 'ref3/foo', 1, 1, 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Sample:        10_000,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 4)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, "ref3/foo", visitors[1].Referrer)
+	assert.Equal(t, "ref1/bar", visitors[2].Referrer)
+	assert.Equal(t, "ref1/foo", visitors[3].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 1, visitors[3].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[3].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.Equal(t, 1, visitors[3].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[3].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo", "ref3/foo"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, "ref3/foo", visitors[1].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[1].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[1].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0.5, visitors[1].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Search: []Search{
+			{
+				Field: FieldReferrer,
+				Input: "ref2",
+			},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Referrer:      []string{"ref2/foo", "ref3/foo"},
+		Limit:         1,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 3, visitors[0].Visitors)
+	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerGrouping(t *testing.T) {
@@ -2629,4 +3010,48 @@ func TestAnalyzer_CalculateGrowth(t *testing.T) {
 	assert.InDelta(t, 1, growth, 0.001)
 	growth = calculateGrowth(50.0, 100.0)
 	assert.InDelta(t, -0.5, growth, 0.001)
+}
+
+func TestAnalyzer_GetPreviousPeriod(t *testing.T) {
+	analyzer := NewAnalyzer(dbClient)
+	f := &Filter{
+		From: util.PastDay(5),
+		To:   util.Today(),
+	}
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(11), f.From)
+	assert.Equal(t, util.PastDay(6), f.To)
+	f = &Filter{
+		From:          util.PastDay(5),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(6),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(6), f.From)
+	assert.Equal(t, util.PastDay(6), f.To)
+	assert.Equal(t, util.PastDay(11), f.importedFrom)
+	assert.Equal(t, util.PastDay(7), f.importedTo)
+	f = &Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(5),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(21), f.From)
+	assert.Equal(t, util.PastDay(11), f.To)
+	assert.Equal(t, util.PastDay(21), f.importedFrom)
+	assert.Equal(t, util.PastDay(11), f.importedTo)
+	f = &Filter{
+		From:          util.PastDay(10),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(9),
+	}
+	f.validate()
+	analyzer.Visitors.getPreviousPeriod(f)
+	assert.Equal(t, util.PastDay(21), f.From)
+	assert.Equal(t, util.PastDay(11), f.To)
+	assert.Equal(t, util.PastDay(21), f.importedFrom)
+	assert.Equal(t, util.PastDay(11), f.importedTo)
 }

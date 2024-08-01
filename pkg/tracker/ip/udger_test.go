@@ -57,12 +57,14 @@ func TestUdger_Ignore(t *testing.T) {
 	ips := []string{}
 
 	if accessKey != "" {
+		t.Log("Testing IPs...")
 		udger := NewUdger(accessKey, "tmp", "")
 		assert.NoError(t, udger.DownloadAndUpdate())
 		ignored := make([]string, 0)
 
 		for _, ip := range ips {
 			if udger.Ignore(ip) {
+				t.Logf("Ignored IP: %s", ip)
 				ignored = append(ignored, ip)
 			}
 		}

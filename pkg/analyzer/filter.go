@@ -28,6 +28,10 @@ type Filter struct {
 	// To is the end date of the selected period.
 	To time.Time
 
+	// ImportedUntil is the date until which the imported statistics should be used.
+	// Set to zero to ignore imported statistics.
+	ImportedUntil time.Time
+
 	// Period sets the period to group results.
 	Period pkg.Period
 
@@ -168,7 +172,9 @@ type Filter struct {
 	// Sample sets the (optional) sampling size.
 	Sample uint
 
-	funnelStep int
+	funnelStep   int
+	importedFrom time.Time
+	importedTo   time.Time
 }
 
 // Search filters results by searching for the given input for given field.
@@ -218,6 +224,19 @@ func (filter *Filter) validate() {
 
 	if !filter.To.IsZero() && filter.From.After(filter.To) {
 		filter.From, filter.To = filter.To, filter.From
+	}
+
+	if !filter.ImportedUntil.IsZero() {
+		if filter.From.Before(filter.ImportedUntil) {
+			filter.importedFrom = filter.From
+
+			if filter.To.Before(filter.ImportedUntil) {
+				filter.importedTo = filter.To
+			} else {
+				filter.From = filter.ImportedUntil
+				filter.importedTo = filter.ImportedUntil.Add(-time.Hour * 24)
+			}
+		}
 	}
 
 	// use tomorrow instead of limiting to "today", so that all timezones are included
@@ -307,18 +326,20 @@ func (filter *Filter) toDate(date time.Time) time.Time {
 	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (filter *Filter) buildQuery(fields, groupBy, orderBy []Field) (string, []any) {
+func (filter *Filter) buildQuery(fields, groupBy, orderBy, fieldsImported []Field, fromImported string) (string, []any) {
 	q := queryBuilder{
-		filter:   filter,
-		from:     filter.table(fields),
-		joinStep: filter.funnelStep,
-		search:   filter.Search,
-		groupBy:  groupBy,
-		orderBy:  orderBy,
-		offset:   filter.Offset,
-		limit:    filter.Limit,
-		sample:   filter.Sample,
-		final:    filter.fieldsContain(fields, FieldSessionsAll),
+		filter:         filter,
+		fieldsImported: fieldsImported,
+		from:           filter.table(fields),
+		fromImported:   fromImported,
+		joinStep:       filter.funnelStep,
+		search:         filter.Search,
+		groupBy:        groupBy,
+		orderBy:        orderBy,
+		offset:         filter.Offset,
+		limit:          filter.Limit,
+		sample:         filter.Sample,
+		final:          filter.fieldsContain(fields, FieldSessionsAll),
 	}
 	returnEventName := filter.fieldsContain(fields, FieldEventName)
 	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""

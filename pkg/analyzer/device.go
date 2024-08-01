@@ -21,7 +21,11 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 		FieldRelativePlatformDesktop,
 		FieldRelativePlatformMobile,
 		FieldRelativePlatformUnknown,
-	}, nil, nil)
+	}, nil, nil, []Field{
+		FieldPlatformDesktop,
+		FieldPlatformMobile,
+		FieldPlatformUnknown,
+	}, "imported_device")
 	stats, err := device.store.GetPlatformStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -33,13 +37,13 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 
 // Browser returns the visitor count grouped by browser.
 func (device *Device) Browser(filter *Filter) ([]model.BrowserStats, error) {
-	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldBrowser)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, "imported_browser", FieldBrowser)
 	return device.store.SelectBrowserStats(ctx, q, args...)
 }
 
 // OS returns the visitor count grouped by operating system.
 func (device *Device) OS(filter *Filter) ([]model.OSStats, error) {
-	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldOS)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, "imported_os", FieldOS)
 	return device.store.SelectOSStats(ctx, q, args...)
 }
 
@@ -58,7 +62,7 @@ func (device *Device) OSVersion(filter *Filter) ([]model.OSVersionStats, error) 
 		FieldVisitors,
 		FieldOS,
 		FieldOSVersion,
-	})
+	}, nil, "")
 	stats, err := device.store.SelectOSVersionStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -83,7 +87,7 @@ func (device *Device) BrowserVersion(filter *Filter) ([]model.BrowserVersionStat
 		FieldVisitors,
 		FieldBrowser,
 		FieldBrowserVersion,
-	})
+	}, nil, "")
 	stats, err := device.store.SelectBrowserVersionStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -95,6 +99,6 @@ func (device *Device) BrowserVersion(filter *Filter) ([]model.BrowserVersionStat
 
 // ScreenClass returns the visitor count grouped by screen class.
 func (device *Device) ScreenClass(filter *Filter) ([]model.ScreenClassStats, error) {
-	ctx, q, args := device.analyzer.selectByAttribute(filter, FieldScreenClass)
+	ctx, q, args := device.analyzer.selectByAttribute(filter, "", FieldScreenClass)
 	return device.store.SelectScreenClassStats(ctx, q, args...)
 }

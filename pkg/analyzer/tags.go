@@ -25,7 +25,7 @@ func (tags *Tags) Keys(filter *Filter) ([]model.TagStats, error) {
 	}, []Field{
 		FieldVisitors,
 		FieldTagKey,
-	})
+	}, nil, "")
 	stats, err := tags.store.SelectTagStats(filter.Ctx, false, q, args...)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (tags *Tags) Breakdown(filter *Filter) ([]model.TagStats, error) {
 	}, []Field{
 		FieldVisitors,
 		FieldTagValue,
-	})
+	}, nil, "")
 	stats, err := tags.store.SelectTagStats(filter.Ctx, true, q, args...)
 
 	if err != nil {

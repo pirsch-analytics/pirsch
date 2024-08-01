@@ -67,6 +67,8 @@ type ClientConfig struct {
 
 	// Debug will enable verbose logging.
 	Debug bool
+
+	dev bool
 }
 
 func (config *ClientConfig) validate() {
@@ -96,6 +98,7 @@ type Client struct {
 	*sql.DB
 	logger *slog.Logger
 	debug  bool
+	dev    bool
 }
 
 // NewClient returns a new client for given database connection string.
@@ -138,6 +141,7 @@ func NewClient(config *ClientConfig) (*Client, error) {
 		db,
 		config.Logger,
 		config.Debug,
+		config.dev,
 	}, nil
 }
 

@@ -1,9 +1,11 @@
 package analyzer
 
 import (
+	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -159,4 +161,98 @@ func TestAnalyzer_UTM(t *testing.T) {
 		},
 	}})
 	assert.NoError(t, err)
+
+	// imported statistics
+	yesterday := util.PastDay(1).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_utm_source" (date, utm_source, visitors) VALUES
+		('%s', 'source1', 2), ('%s', 'source2', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_utm_medium" (date, utm_medium, visitors) VALUES
+		('%s', 'medium1', 2), ('%s', 'medium2', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_utm_campaign" (date, utm_campaign, visitors) VALUES
+		('%s', 'campaign1', 2), ('%s', 'campaign2', 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 20)
+	source, err = analyzer.UTM.Source(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, source, 3)
+	assert.Equal(t, "source1", source[0].UTMSource)
+	assert.Equal(t, "source2", source[1].UTMSource)
+	assert.Equal(t, "source3", source[2].UTMSource)
+	assert.Equal(t, 5, source[0].Visitors)
+	assert.Equal(t, 3, source[1].Visitors)
+	assert.Equal(t, 1, source[2].Visitors)
+	assert.InDelta(t, 0.5555, source[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, source[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1111, source[2].RelativeVisitors, 0.01)
+	source, err = analyzer.UTM.Source(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		UTMSource:     []string{"source1"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, source, 1)
+	assert.Equal(t, "source1", source[0].UTMSource)
+	assert.Equal(t, 5, source[0].Visitors)
+	assert.InDelta(t, 0.5555, source[0].RelativeVisitors, 0.01)
+	medium, err = analyzer.UTM.Medium(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, medium, 3)
+	assert.Equal(t, "medium1", medium[0].UTMMedium)
+	assert.Equal(t, "medium2", medium[1].UTMMedium)
+	assert.Equal(t, "medium3", medium[2].UTMMedium)
+	assert.Equal(t, 5, medium[0].Visitors)
+	assert.Equal(t, 3, medium[1].Visitors)
+	assert.Equal(t, 1, medium[2].Visitors)
+	assert.InDelta(t, 0.5555, medium[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, medium[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1111, medium[2].RelativeVisitors, 0.01)
+	medium, err = analyzer.UTM.Medium(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		UTMMedium:     []string{"medium1"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, medium, 1)
+	assert.Equal(t, "medium1", medium[0].UTMMedium)
+	assert.Equal(t, 5, medium[0].Visitors)
+	assert.InDelta(t, 0.5555, medium[0].RelativeVisitors, 0.01)
+	campaign, err = analyzer.UTM.Campaign(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, campaign, 3)
+	assert.Equal(t, "campaign1", campaign[0].UTMCampaign)
+	assert.Equal(t, "campaign2", campaign[1].UTMCampaign)
+	assert.Equal(t, "campaign3", campaign[2].UTMCampaign)
+	assert.Equal(t, 5, campaign[0].Visitors)
+	assert.Equal(t, 3, campaign[1].Visitors)
+	assert.Equal(t, 1, campaign[2].Visitors)
+	assert.InDelta(t, 0.5555, campaign[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.3333, campaign[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1111, campaign[2].RelativeVisitors, 0.01)
+	campaign, err = analyzer.UTM.Campaign(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		UTMCampaign:   []string{"campaign1"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, campaign, 1)
+	assert.Equal(t, "campaign1", campaign[0].UTMCampaign)
+	assert.Equal(t, 5, campaign[0].Visitors)
+	assert.InDelta(t, 0.5555, campaign[0].RelativeVisitors, 0.01)
 }
