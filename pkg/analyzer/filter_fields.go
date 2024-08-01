@@ -110,13 +110,14 @@ var (
 
 	// FieldVisitors is a query result column.
 	FieldVisitors = Field{
-		querySessions:  "uniq(t.visitor_id)",
-		queryPageViews: "uniq(t.visitor_id)",
-		queryImported:  "sum(t.visitors + imp.visitors)",
-		queryPeriod:    "sum(visitors)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "visitors",
+		querySessions:    "uniq(t.visitor_id)",
+		queryPageViews:   "uniq(t.visitor_id)",
+		queryImported:    "sum(t.visitors + imp.visitors)",
+		subqueryImported: "sum(visitors)",
+		queryPeriod:      "sum(visitors)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "visitors",
 	}
 
 	// FieldVisitorsRaw is a query result column.
@@ -160,25 +161,27 @@ var (
 
 	// FieldSessions is a query result column.
 	FieldSessions = Field{
-		querySessions:  "uniq(t.visitor_id, t.session_id)",
-		queryPageViews: "uniq(t.visitor_id, t.session_id)",
-		queryImported:  "sum(t.sessions + imp.sessions)",
-		queryPeriod:    "sum(sessions)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "sessions",
+		querySessions:    "uniq(t.visitor_id, t.session_id)",
+		queryPageViews:   "uniq(t.visitor_id, t.session_id)",
+		queryImported:    "sum(t.sessions + imp.sessions)",
+		subqueryImported: "sum(sessions)",
+		queryPeriod:      "sum(sessions)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "sessions",
 	}
 
 	// FieldViews is a query result column.
 	FieldViews = Field{
-		querySessions:  "sum(page_views*sign)",
-		queryPageViews: "count(1)",
-		queryImported:  "sum(t.views + imp.views)",
-		queryEvents:    "sum(views)",
-		queryPeriod:    "sum(views)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "views",
+		querySessions:    "sum(page_views*sign)",
+		queryPageViews:   "count(1)",
+		queryImported:    "sum(t.views + imp.views)",
+		subqueryImported: "sum(views)",
+		queryEvents:      "sum(views)",
+		queryPeriod:      "sum(views)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "views",
 	}
 
 	// FieldRelativeViews is a query result column.
@@ -193,13 +196,14 @@ var (
 
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
-		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
-		queryImported:  "sum(t.bounces + imp.bounces)",
-		queryPeriod:    "sum(bounces)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "bounces",
+		querySessions:    "sum(is_bounce*sign)",
+		queryPageViews:   "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
+		queryImported:    "sum(t.bounces + imp.bounces)",
+		subqueryImported: "sum(bounces)",
+		queryPeriod:      "sum(bounces)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "bounces",
 	}
 
 	// FieldBounceRate is a query result column.

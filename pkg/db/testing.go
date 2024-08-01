@@ -72,7 +72,7 @@ func CleanupDB(t *testing.T, client *Client) {
 		assert.NoError(t, err)
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 200)
 }
 
 // DropDB drops all database tables.

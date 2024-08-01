@@ -409,30 +409,30 @@ func (query *queryBuilder) joinImported(from string) {
 	}
 
 	dateQuery := query.whereTimeImported()
-	joinField := query.fieldsImported[0].Name
+	joinField := query.fieldsImported[0]
 	query.where = make([]where, 0)
-	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField)
-	query.whereFieldImported(FieldExitPath.Name, query.filter.ExitPath, joinField)
-	query.whereFieldImported(FieldPath.Name, query.filter.Path, joinField)
-	query.whereFieldImported(FieldLanguage.Name, query.filter.Language, joinField)
-	query.whereFieldImported(FieldCountry.Name, query.filter.Country, joinField)
-	query.whereFieldImported(FieldRegion.Name, query.filter.Region, joinField)
-	query.whereFieldImported(FieldCity.Name, query.filter.City, joinField)
-	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField)
-	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField)
-	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField)
-	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField)
-	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField)
-	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField)
+	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField.Name)
+	query.whereFieldImported(FieldExitPath.Name, query.filter.ExitPath, joinField.Name)
+	query.whereFieldImported(FieldPath.Name, query.filter.Path, joinField.Name)
+	query.whereFieldImported(FieldLanguage.Name, query.filter.Language, joinField.Name)
+	query.whereFieldImported(FieldCountry.Name, query.filter.Country, joinField.Name)
+	query.whereFieldImported(FieldRegion.Name, query.filter.Region, joinField.Name)
+	query.whereFieldImported(FieldCity.Name, query.filter.City, joinField.Name)
+	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField.Name)
+	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField.Name)
+	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField.Name)
+	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField.Name)
+	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField.Name)
+	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField.Name)
 	query.whereFieldPlatformImported()
 
-	if joinField == FieldPath.Name {
+	if joinField == FieldPath {
 		query.whereFieldPathPattern()
 	}
 
 	for _, s := range query.search {
-		if s.Field.Name == joinField {
-			query.whereFieldSearch(joinField, s.Input)
+		if s.Field == joinField {
+			query.whereFieldSearch(joinField.Name, s.Input)
 			break
 		}
 	}
@@ -440,19 +440,39 @@ func (query *queryBuilder) joinImported(from string) {
 	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
 	query.whereWrite()
 
-	if query.filter.Period != pkg.PeriodDay && joinField == FieldDay.Name {
-		switch query.filter.Period {
-		case pkg.PeriodWeek:
-			query.q.WriteString(") imp ON t.week = imp.week ")
-		case pkg.PeriodMonth:
-			query.q.WriteString(") imp ON t.month = imp.month ")
-		case pkg.PeriodYear:
-			query.q.WriteString(") imp ON t.year = imp.year ")
-		default:
-			panic("unknown case for filter period")
+	if joinField != FieldPlatformDesktop &&
+		joinField != FieldPlatformMobile &&
+		joinField != FieldPlatformUnknown &&
+		joinField != FieldVisitors &&
+		joinField != FieldSessions &&
+		joinField != FieldViews &&
+		joinField != FieldBounces {
+		groupBy := query.groupBy
+		query.groupBy = []Field{joinField}
+		query.groupByFields()
+		query.groupBy = groupBy
+	}
+
+	if joinField != FieldVisitors &&
+		joinField != FieldSessions &&
+		joinField != FieldViews &&
+		joinField != FieldBounces {
+		if query.filter.Period != pkg.PeriodDay && joinField == FieldDay {
+			switch query.filter.Period {
+			case pkg.PeriodWeek:
+				query.q.WriteString(") imp ON t.week = imp.week ")
+			case pkg.PeriodMonth:
+				query.q.WriteString(") imp ON t.month = imp.month ")
+			case pkg.PeriodYear:
+				query.q.WriteString(") imp ON t.year = imp.year ")
+			default:
+				panic("unknown case for filter period")
+			}
+		} else {
+			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
 		}
 	} else {
-		query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField, joinField))
+		query.q.WriteString(") imp ON 1=1 ")
 	}
 }
 
