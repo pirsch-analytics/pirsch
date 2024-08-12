@@ -229,16 +229,27 @@ var (
 	FieldAnyReferrer = Field{
 		querySessions:  "any(referrer)",
 		queryPageViews: "any(referrer)",
+		queryImported:  "any(coalesce(nullif(t.referrer, ''), imp.referrer))",
+		queryDirection: "ASC",
+		Name:           "referrer",
+	}
+
+	// FieldAnyReferrerImported is a query result column.
+	FieldAnyReferrerImported = Field{
+		querySessions:  "referrer",
+		queryPageViews: "referrer",
+		queryImported:  "any(coalesce(nullif(t.referrer, ''), imp.referrer_name))",
 		queryDirection: "ASC",
 		Name:           "referrer",
 	}
 
 	// FieldReferrerName is a query result column.
 	FieldReferrerName = Field{
-		querySessions:  "referrer_name",
-		queryPageViews: "referrer_name",
-		queryDirection: "ASC",
-		Name:           "referrer_name",
+		querySessions:    "referrer_name",
+		queryPageViews:   "referrer_name",
+		subqueryImported: "referrer",
+		queryDirection:   "ASC",
+		Name:             "referrer_name",
 	}
 
 	// FieldReferrerIcon is a query result column.
@@ -249,20 +260,11 @@ var (
 		Name:           "referrer_icon",
 	}
 
-	// FieldEmptyReferrerName is a query result column.
-	FieldEmptyReferrerName = Field{
-		querySessions:  "''",
-		queryPageViews: "''",
-		queryImported:  "''",
-		queryDirection: "ASC",
-		Name:           "referrer_name",
-	}
-
-	// FieldEmptyReferrerIcon is a query result column.
-	FieldEmptyReferrerIcon = Field{
-		querySessions:  "''",
-		queryPageViews: "''",
-		queryImported:  "''",
+	// FieldAnyReferrerIcon is a query result column.
+	FieldAnyReferrerIcon = Field{
+		querySessions:  "any(referrer_icon)",
+		queryPageViews: "any(referrer_icon)",
+		queryImported:  "any(referrer_icon)",
 		queryDirection: "ASC",
 		Name:           "referrer_icon",
 	}

@@ -414,7 +414,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	var fields, groupBy, orderBy []Field
+	var fields, groupBy, orderBy, importedFields []Field
 
 	if filter.ImportedUntil.IsZero() {
 		fields = []Field{
@@ -443,30 +443,40 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		}
 	} else {
 		fields = []Field{
-			FieldEmptyReferrerName,
-			FieldEmptyReferrerIcon,
+			FieldReferrerName,
+			FieldAnyReferrerIcon,
 			FieldVisitors,
 			FieldSessions,
 			FieldRelativeVisitors,
 			FieldBounces,
 			FieldBounceRate,
-			FieldReferrer,
 		}
 		groupBy = []Field{
-			FieldReferrer,
+			FieldReferrerName,
 		}
 		orderBy = []Field{
 			FieldVisitors,
-			FieldReferrer,
+			FieldReferrerName,
 		}
+
+		if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 || filter.searchContains(FieldReferrer) {
+			fields = append(fields, FieldAnyReferrerImported)
+			groupBy = append(groupBy, FieldAnyReferrerImported)
+			orderBy = append(orderBy, FieldAnyReferrerImported)
+			importedFields = []Field{FieldReferrerName}
+		} else {
+			fields = append(fields, FieldAnyReferrer)
+			importedFields = []Field{FieldReferrer}
+		}
+
+		importedFields = append(importedFields, []Field{
+			FieldVisitors,
+			FieldSessions,
+			FieldBounces,
+		}...)
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
-		FieldReferrer,
-		FieldVisitors,
-		FieldSessions,
-		FieldBounces,
-	}, "imported_referrer")
+	q, args := filter.buildQuery(fields, groupBy, orderBy, importedFields, "imported_referrer")
 	stats, err := visitors.store.SelectReferrerStats(filter.Ctx, q, args...)
 
 	if err != nil {

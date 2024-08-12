@@ -65,7 +65,7 @@ func (query *queryBuilder) query() (string, []any) {
 		query.joinQuery()
 		query.q.WriteString(query.whereTime())
 		query.whereFields()
-		query.groupByFields()
+		query.groupByFields(false)
 		query.having()
 
 		if includeImported {
@@ -73,7 +73,7 @@ func (query *queryBuilder) query() (string, []any) {
 			query.unionImported()
 			query.q.WriteString(") t ")
 			query.joinImported(fromImported)
-			query.groupByFields()
+			query.groupByFields(true)
 		}
 
 		query.orderByFields()
@@ -440,6 +440,9 @@ func (query *queryBuilder) joinImported(from string) {
 	query.whereFieldImported(FieldRegion.Name, query.filter.Region, joinField.Name)
 	query.whereFieldImported(FieldCity.Name, query.filter.City, joinField.Name)
 	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField.Name)
+	query.whereFieldImported(FieldReferrerName.Name, query.filter.Referrer, joinField.Name)
+	query.whereFieldImported(FieldReferrer.Name, query.filter.ReferrerName, joinField.Name)
+	query.whereFieldImported(FieldReferrerName.Name, query.filter.ReferrerName, joinField.Name)
 	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField.Name)
 	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField.Name)
 	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField.Name)
@@ -452,7 +455,9 @@ func (query *queryBuilder) joinImported(from string) {
 	}
 
 	for _, s := range query.search {
-		if s.Field == joinField {
+		if s.Field == joinField ||
+			(s.Field == FieldReferrer && joinField == FieldReferrerName) ||
+			(s.Field == FieldReferrerName && joinField == FieldReferrer) {
 			query.whereFieldSearch(joinField.Name, s.Input)
 			break
 		}
@@ -470,7 +475,7 @@ func (query *queryBuilder) joinImported(from string) {
 		joinField != FieldBounces {
 		groupBy := query.groupBy
 		query.groupBy = []Field{joinField}
-		query.groupByFields()
+		query.groupByFields(false)
 		query.groupBy = groupBy
 	}
 
@@ -486,7 +491,11 @@ func (query *queryBuilder) joinImported(from string) {
 			panic("unknown case for filter period")
 		}
 	} else {
-		query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
+		if joinField == FieldReferrerName {
+			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", FieldReferrer.Name, joinField.Name))
+		} else {
+			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
+		}
 	}
 }
 
@@ -939,13 +948,15 @@ func (query *queryBuilder) nullValue(value string) string {
 	return value
 }
 
-func (query *queryBuilder) groupByFields() {
+func (query *queryBuilder) groupByFields(imported bool) {
 	if len(query.groupBy) > 0 {
 		query.q.WriteString("GROUP BY ")
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.filter.Period != pkg.PeriodDay && query.groupBy[i] == FieldDay {
+			if imported && query.groupBy[i] == FieldAnyReferrerImported {
+				continue
+			} else if query.filter.Period != pkg.PeriodDay && query.groupBy[i] == FieldDay {
 				switch query.filter.Period {
 				case pkg.PeriodWeek:
 					q.WriteString("week,")
