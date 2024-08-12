@@ -53,7 +53,7 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 			{Sign: 1, VisitorID: 9, Time: util.Today(), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -179,7 +179,7 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_page" (date, path, visitors, views, sessions, bounces) VALUES
 		('%s', '/bar', 2, 4, 3, 1), ('%s', '/', 1, 2, 1, 1)`, past5Days, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Pages.ByPath(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -271,7 +271,7 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), SessionID: 3, ExitPath: "/foo", EntryTitle: "Foo"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -308,7 +308,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 		{Name: "event", VisitorID: 1, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{Name: "event", VisitorID: 2, Time: util.Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{EventName: []string{"event"}, IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -343,7 +343,7 @@ func TestAnalyzer_ByPathEvent(t *testing.T) {
 		{VisitorID: 1, Time: util.Today(), Name: "event"},
 		{VisitorID: 3, Time: util.Today(), Name: "event"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{EventName: []string{"event"}})
 	assert.NoError(t, err)
@@ -412,7 +412,7 @@ func TestAnalyzer_ByPathEventPath(t *testing.T) {
 		{VisitorID: 1, Time: util.Today(), Name: "event", Path: "/", Title: "Home", DurationSeconds: 5},
 		{VisitorID: 3, Time: util.Today(), Name: "event", Path: "/foo", Title: "Foo", DurationSeconds: 9},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByEventPath(&Filter{
 		EventName: []string{"event"},
@@ -512,7 +512,7 @@ func TestAnalyzer_ByPathTags(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{
 		Tags: map[string]string{"foo": "bar"},
@@ -603,7 +603,7 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(nil)
 	assert.NoError(t, err)
@@ -659,7 +659,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2).Add(time.Second), Path: "/", Name: "event", MetaKeys: []string{"key", "author", "amount"}, MetaValues: []string{"value", "John", "99.99"}},
 		{VisitorID: 3, SessionID: 2, Time: util.PastDay(2), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -866,7 +866,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_exit_page" (date, exit_path, visitors, sessions) VALUES
 		('%s', '/bar', 2, 3), ('%s', '/', 1, 1)`, past3Days, past3Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	entries, err = analyzer.Pages.Entry(&Filter{
 		From:          util.PastDay(3),
 		To:            util.Today(),
@@ -940,7 +940,7 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 			{Sign: 1, VisitorID: 2, Time: util.PastDay(2), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionDESC}}})
 	assert.NoError(t, err)
@@ -995,7 +995,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{EventName: []string{"event"}, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -1047,7 +1047,7 @@ func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{
 		EventName:         []string{"event"},
@@ -1120,7 +1120,7 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 7, EntryPath: "/", ExitPath: "/integrations/wordpress/", PageViews: 5, IsBounce: false},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	filter := &Filter{
 		Path:  []string{"/account/billing/"},
@@ -1172,7 +1172,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: time.Now(), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 
 	// no filter
@@ -1363,7 +1363,7 @@ func TestAnalyzer_Conversions(t *testing.T) {
 		{VisitorID: 2, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"312", "EUR"}, Path: "/simple"},
 		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"177", "USD"}, Path: "/simple/page"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Pages.Conversions(nil)
 	assert.NoError(t, err)
@@ -1466,7 +1466,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*5), Path: "/foo", Name: "another event", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*9), Path: "/", Name: "event", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Pages.avgTimeOnPage(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)
@@ -1605,7 +1605,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	total, err := analyzer.Pages.totalVisitorsSessions(nil, []string{"/", "/foo", "/bar"})
 	assert.NoError(t, err)

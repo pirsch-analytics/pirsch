@@ -3,6 +3,7 @@
 ## 6.13.0
 
 * added merging imported statistics
+* updated and improved referrer blacklist
 * updated User-Agent blacklist
 * updated dependencies
 

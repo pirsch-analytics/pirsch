@@ -27,7 +27,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Language: "en"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Languages(nil)
 	assert.NoError(t, err)
@@ -64,7 +64,7 @@ func TestAnalyzer_Languages(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_language" (date, language, visitors) VALUES
 		('%s', 'ru', 2), ('%s', 'en', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Demographics.Languages(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -113,7 +113,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "en"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Countries(nil)
 	assert.NoError(t, err)
@@ -169,7 +169,7 @@ func TestAnalyzer_Countries(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_country" (date, country_code, visitors) VALUES
 		('%s', 'ru', 2), ('%s', 'en', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Demographics.Countries(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -218,7 +218,7 @@ func TestAnalyzer_Regions(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Regions(nil)
 	assert.NoError(t, err)
@@ -262,7 +262,7 @@ func TestAnalyzer_Regions(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_region" (date, region, visitors) VALUES
 		('%s', 'Berlin', 2), ('%s', 'England', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Demographics.Regions(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -311,7 +311,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Cities(nil)
 	assert.NoError(t, err)
@@ -358,7 +358,7 @@ func TestAnalyzer_Cities(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_city" (date, city, visitors) VALUES
 		('%s', 'Berlin', 2), ('%s', 'London', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Demographics.Cities(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),

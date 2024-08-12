@@ -27,7 +27,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	source, err := analyzer.UTM.Source(nil)
 	assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestAnalyzer_UTM(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_utm_campaign" (date, utm_campaign, visitors) VALUES
 		('%s', 'campaign1', 2), ('%s', 'campaign2', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	source, err = analyzer.UTM.Source(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),

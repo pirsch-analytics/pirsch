@@ -1,8 +1,8 @@
-# userAgentBlacklist contains all substrings (in lowercase) used to filter the User-Agent header.
+# This file contains all substrings (in lowercase) used to filter the User-Agent header.
 # Please add the reference in case you copy an existing list.
-# Don't forget to update the array by running scripts/update_ua_blacklist.go!
+# Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# custom (last update: 2024-06-06)
+# Custom (last update: 2024-06-06)
 ://
 bot
 crawler

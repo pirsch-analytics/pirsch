@@ -38,7 +38,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Desktop: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	platform, err := analyzer.Device.Platform(&Filter{From: util.PastDay(5), To: util.Today()})
 	assert.NoError(t, err)
@@ -66,7 +66,7 @@ func TestAnalyzer_Platform(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_device" (date, category, visitors) VALUES
 		('%s', 'Desktop', 2), ('%s', 'mobile', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	platform, err = analyzer.Device.Platform(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -106,7 +106,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.Browser(nil)
 	assert.NoError(t, err)
@@ -142,7 +142,7 @@ func TestAnalyzer_Browser(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_browser" (date, browser, visitors) VALUES
 		('%s', 'Chrome', 2), ('%s', 'Firefox', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Device.Browser(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -189,7 +189,7 @@ func TestAnalyzer_BrowserVersion(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "86.0"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.BrowserVersion(nil)
 	assert.NoError(t, err)
@@ -246,7 +246,7 @@ func TestAnalyzer_BrowserVersionSearchSort(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), Browser: pkg.BrowserChrome, BrowserVersion: "85.1"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.BrowserVersion(&Filter{Sort: []Sort{
 		{
@@ -300,7 +300,7 @@ func TestAnalyzer_OS(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.OS(nil)
 	assert.NoError(t, err)
@@ -336,7 +336,7 @@ func TestAnalyzer_OS(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_os" (date, os, visitors) VALUES
 		('%s', 'Windows', 2), ('%s', 'Mac', 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Device.OS(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -383,7 +383,7 @@ func TestAnalyzer_OSVersion(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: time.Now(), Start: time.Now(), OS: pkg.OSWindows, OSVersion: "8"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.OSVersion(nil)
 	assert.NoError(t, err)
@@ -439,7 +439,7 @@ func TestAnalyzer_OSVersionSearchSort(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), OS: pkg.OSMac, OSVersion: "14.0.0"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.OSVersion(&Filter{Sort: []Sort{
 		{
@@ -503,7 +503,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 		{VisitorID: 5, Time: time.Now(), Path: "/", ScreenClass: "XXL"},
 		{VisitorID: 6, Time: time.Now(), Path: "/", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Device.ScreenClass(nil)
 	assert.NoError(t, err)

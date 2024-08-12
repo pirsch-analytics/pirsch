@@ -112,6 +112,6 @@ func getMaxFilter(eventName string) *Filter {
 func saveSessions(t *testing.T, sessions [][]model.Session) {
 	for _, entries := range sessions {
 		assert.NoError(t, dbClient.SaveSessions(context.Background(), entries))
-		time.Sleep(time.Millisecond * 20)
+		time.Sleep(time.Millisecond * 100)
 	}
 }

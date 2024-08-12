@@ -53,7 +53,7 @@ func TestAnalyzer_Events(t *testing.T) {
 		{Name: "event2", DurationSeconds: 3, MetaKeys: []string{"price"}, MetaValues: []string{"34.56"}, VisitorID: 4, Time: util.Today().Add(time.Second * 7), Path: "/"},
 		{Name: "event2", DurationSeconds: 4, VisitorID: 5, Time: util.Today().Add(time.Second * 8), Path: "/"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events.Events(nil)
 	assert.NoError(t, err)
@@ -230,7 +230,7 @@ func TestAnalyzer_EventsSortCR(t *testing.T) {
 		{Name: "event1", VisitorID: 3, Time: util.Today().Add(time.Second * 2), Path: "/"},
 		{Name: "event2", VisitorID: 3, Time: util.Today().Add(time.Minute), Path: "/"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Events.Events(&Filter{Sort: []Sort{
 		{
@@ -377,7 +377,7 @@ func TestAnalyzer_EventFilter(t *testing.T) {
 		{VisitorID: 1, Time: util.Today(), Name: "event1", MetaKeys: []string{"k0", "k1", "author"}, MetaValues: []string{"v0", "v1", "John"}},
 		{VisitorID: 3, Time: util.Today(), Name: "event2", MetaKeys: []string{"k2", "k3", "author"}, MetaValues: []string{"v2", "v3", "Alice"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	list, err := analyzer.Events.Events(&Filter{
 		EventName: []string{"event1"},

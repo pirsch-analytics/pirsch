@@ -39,7 +39,7 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), Start: time.Now()},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, count, err := analyzer.Visitors.Active(nil, time.Minute*10)
 	assert.NoError(t, err)
@@ -226,7 +226,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.Total(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -348,7 +348,7 @@ func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.TotalVisitors(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -453,7 +453,7 @@ func TestAnalyzer_TotalPageViews(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	pageViews, err = analyzer.Visitors.TotalPageViews(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -558,7 +558,7 @@ func TestAnalyzer_TotalSessions(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	sessions, err = analyzer.Visitors.TotalSessions(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -776,7 +776,7 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 		{VisitorID: 11, Time: util.PastDay(9), Path: "/foo", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"a", "d"}},
 		{VisitorID: 13, Time: util.PastDay(9), Path: "/", Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"c", "d"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.TotalVisitorsPageViews(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
@@ -908,7 +908,7 @@ func TestAnalyzer_TotalVisitorsPageViews(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past10Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.TotalVisitorsPageViews(&Filter{
 		From:          util.PastDay(10),
 		To:            util.Today(),
@@ -1294,7 +1294,7 @@ func TestAnalyzer_ByPeriodAndAvgSessionDuration(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:                 util.PastDay(5),
 		To:                   util.Today(),
@@ -1556,7 +1556,7 @@ func TestAnalyzer_ByPeriodCustomMetric(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past5Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.ByPeriod(&Filter{
 		From:             util.PastDay(5),
 		To:               util.Today(),
@@ -1640,7 +1640,7 @@ func TestAnalyzer_ByHour(t *testing.T) {
 		{VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByHour(nil)
 	assert.NoError(t, err)
@@ -1819,7 +1819,7 @@ func TestAnalyzer_ByHourEvent(t *testing.T) {
 		{VisitorID: 4, Time: util.Today().Add(time.Hour*15 + time.Minute*52), Name: "event"},
 		{VisitorID: 5, Time: util.Today().Add(time.Hour*19 + time.Minute), Name: "event"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByHour(&Filter{
 		From:      util.Today(),
@@ -2046,7 +2046,7 @@ func TestAnalyzer_ByHourTimeShift(t *testing.T) {
 		{Name: "event", VisitorID: 1, Time: util.PastDay(1).Add(time.Hour * 4), Path: "/"},
 		{Name: "event", VisitorID: 2, Time: util.PastDay(1).Add(time.Hour * 5), Path: "/"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByHour(nil)
 	assert.NoError(t, err)
@@ -2125,7 +2125,7 @@ func TestAnalyzer_ByMinute(t *testing.T) {
 		{VisitorID: 6, Time: util.Today().Add(time.Minute * 5), Path: "/"},
 		{VisitorID: 7, Time: util.Today().Add(time.Minute * 10), Path: "/"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByMinute(nil)
 	assert.NoError(t, err)
@@ -2209,7 +2209,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 			{Sign: 1, VisitorID: 13, Time: util.Today(), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
@@ -2242,7 +2242,7 @@ func TestAnalyzer_Growth(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
 		('%s', 2, 4, 3, 1, 200)`, past10Days))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	growth, err = analyzer.Visitors.Growth(&Filter{
 		From:          util.PastDay(5),
 		To:            util.Today(),
@@ -2272,7 +2272,7 @@ func TestAnalyzer_GrowthDay(t *testing.T) {
 		{Sign: 1, VisitorID: 8, Time: util.Today().Add(time.Hour * 17), Start: time.Now()},
 		{Sign: 1, VisitorID: 9, Time: util.Today().Add(time.Hour * 21), Start: time.Now()},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 
 	// Testing for today is hard because it would require messing with the time.Now function.
@@ -2294,7 +2294,7 @@ func TestAnalyzer_GrowthDayFirstHour(t *testing.T) {
 		{Sign: 1, VisitorID: 2, Time: util.PastDay(1).Add(time.Hour * 4), Start: time.Now()},
 		{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now()},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(&Filter{From: util.Today(), To: util.Today().Add(time.Hour * 4), IncludeTime: true})
 	assert.NoError(t, err)
@@ -2421,7 +2421,7 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 		{Name: "event1", VisitorID: 10, Time: util.PastDay(2).Add(time.Second * 11), Path: "/"},
 		{Name: "event1", VisitorID: 11, Time: util.Today().Add(time.Second * 12), Path: "/"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
@@ -2568,7 +2568,7 @@ func TestAnalyzer_GrowthTags(t *testing.T) {
 		{VisitorID: 6, Time: util.PastDay(3), Path: "/"},
 		{VisitorID: 7, Time: util.PastDay(3), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(&Filter{
 		From:      util.PastDay(5),
@@ -2638,7 +2638,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
@@ -2718,7 +2718,7 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_referrer" (date, referrer, visitors, sessions, bounces) VALUES
 		('%s', 'ref2/foo', 2, 3, 1), ('%s', 'ref3/foo', 1, 1, 1)`, yesterday, yesterday))
 	assert.NoError(t, err)
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	visitors, err = analyzer.Visitors.Referrer(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),
@@ -2822,7 +2822,7 @@ func TestAnalyzer_ReferrerGrouping(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Referrer: "https://example.com", ReferrerName: "example.com", PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
@@ -2855,7 +2855,7 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(&Filter{Referrer: []string{pkg.Unknown}})
 	assert.NoError(t, err)
@@ -2894,7 +2894,7 @@ func TestAnalyzer_ReferrerTags(t *testing.T) {
 		{VisitorID: 5, Time: util.PastDay(3), Path: "/", ReferrerName: "ref1", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 5, Time: util.PastDay(3).Add(time.Minute), Path: "/bar", ReferrerName: "ref2", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(&Filter{
 		Tags: map[string]string{"author": "John"},
@@ -2961,7 +2961,7 @@ func TestAnalyzer_Timezone(t *testing.T) {
 		{VisitorID: 2, Time: util.PastDay(2), Path: "/"},                     // 00:00 UTC -> 09:00 Asia/Tokyo
 		{VisitorID: 3, Time: util.PastDay(1).Add(time.Hour * 19), Path: "/"}, // 19:00 UTC -> 04:00 Asia/Tokyo
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.ByPeriod(&Filter{From: util.PastDay(3), To: util.PastDay(1)})
 	assert.NoError(t, err)

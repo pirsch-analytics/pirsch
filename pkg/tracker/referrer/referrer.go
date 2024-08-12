@@ -40,7 +40,17 @@ func Ignore(r *http.Request) bool {
 	}
 
 	referrer = stripSubdomain(referrer)
-	_, found := blacklist[referrer]
+	_, found := hostnameBlacklist[referrer]
+
+	// filter for bot keywords
+	referrer = strings.ToLower(referrer)
+
+	for _, botReferrer := range Blacklist {
+		if strings.Contains(referrer, botReferrer) {
+			return true
+		}
+	}
+
 	return found
 }
 

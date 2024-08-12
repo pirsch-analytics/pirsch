@@ -12,8 +12,8 @@ import (
 
 // run this script from the root directory to update the blacklist.go
 func main() {
-	log.Println("Updating User-Agent blacklist")
-	list, err := os.Open("pkg/tracker/ua/blacklist.txt")
+	log.Println("Updating referrer blacklist")
+	list, err := os.Open("pkg/tracker/referrer/blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -40,27 +40,27 @@ func main() {
 		}
 	}
 
-	ua := make([]string, 0, len(entries))
+	keywords := make([]string, 0, len(entries))
 
 	for entry := range entries {
-		ua = append(ua, strings.ReplaceAll(entry, `"`, `\"`))
+		keywords = append(keywords, strings.ReplaceAll(entry, `"`, `\"`))
 	}
 
-	sort.Strings(ua)
+	sort.Strings(keywords)
 	var out strings.Builder
-	out.WriteString(`package ua
+	out.WriteString(`package referrer
 
-// Blacklist is a list of User-Agents to ignore.
+// Blacklist is a list of referrer keywords to ignore.
 var Blacklist = []string{
 `)
 
-	for _, entry := range ua {
+	for _, entry := range keywords {
 		out.WriteString(fmt.Sprintf("\"%s\",\n", entry))
 	}
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("pkg/tracker/ua/blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/tracker/referrer/blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 
