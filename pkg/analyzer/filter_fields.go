@@ -247,6 +247,17 @@ var (
 	FieldReferrerName = Field{
 		querySessions:    "referrer_name",
 		queryPageViews:   "referrer_name",
+		queryImported:    "coalesce(nullif(t.referrer_name, ''), imp.referrer)",
+		subqueryImported: "referrer",
+		queryDirection:   "ASC",
+		Name:             "referrer_name",
+	}
+
+	// FieldReferrerNameImported is a query result column.
+	FieldReferrerNameImported = Field{
+		querySessions:    "referrer_name",
+		queryPageViews:   "referrer_name",
+		queryImported:    "coalesce(nullif(t.referrer_name, ''), imp.referrer_name)",
 		subqueryImported: "referrer",
 		queryDirection:   "ASC",
 		Name:             "referrer_name",

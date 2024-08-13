@@ -448,15 +448,6 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 			fields = append(fields, FieldAnyReferrer)
 		}
 	} else {
-		fields = []Field{
-			FieldReferrerName,
-			FieldAnyReferrerIcon,
-			FieldVisitors,
-			FieldSessions,
-			FieldRelativeVisitors,
-			FieldBounces,
-			FieldBounceRate,
-		}
 		groupBy = []Field{
 			FieldReferrerName,
 		}
@@ -466,12 +457,30 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 		}
 
 		if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 || filter.searchContains(FieldReferrer) {
-			fields = append(fields, FieldAnyReferrerImported)
+			fields = []Field{
+				FieldReferrerNameImported,
+				FieldAnyReferrerIcon,
+				FieldVisitors,
+				FieldSessions,
+				FieldRelativeVisitors,
+				FieldBounces,
+				FieldBounceRate,
+				FieldAnyReferrerImported,
+			}
 			groupBy = append(groupBy, FieldAnyReferrerImported)
 			orderBy = append(orderBy, FieldAnyReferrerImported)
 			importedFields = []Field{FieldReferrerName}
 		} else {
-			fields = append(fields, FieldAnyReferrer)
+			fields = []Field{
+				FieldReferrerName,
+				FieldAnyReferrerIcon,
+				FieldVisitors,
+				FieldSessions,
+				FieldRelativeVisitors,
+				FieldBounces,
+				FieldBounceRate,
+				FieldAnyReferrer,
+			}
 			importedFields = []Field{FieldReferrer}
 		}
 
