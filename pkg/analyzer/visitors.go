@@ -272,7 +272,13 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 	}, []Field{
 		FieldHour,
 		FieldVisitors,
-	}, nil, "")
+	}, []Field{
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.SelectVisitorHourStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {

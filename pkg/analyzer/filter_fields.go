@@ -519,12 +519,13 @@ var (
 
 	// FieldHour is a query result column.
 	FieldHour = Field{
-		querySessions:  "toHour(time, '%s')",
-		queryPageViews: "toHour(time, '%s')",
-		queryDirection: "ASC",
-		queryWithFill:  "WITH FILL FROM 0 TO 24",
-		timezone:       true,
-		Name:           "hour",
+		querySessions:    "toHour(time, '%s')",
+		queryPageViews:   "toHour(time, '%s')",
+		subqueryImported: "0",
+		queryDirection:   "ASC",
+		queryWithFill:    "WITH FILL FROM 0 TO 24",
+		timezone:         true,
+		Name:             "hour",
 	}
 
 	// FieldMinute is a query result column.

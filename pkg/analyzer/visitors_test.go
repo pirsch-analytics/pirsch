@@ -1780,6 +1780,40 @@ func TestAnalyzer_ByHour(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByHour(getMaxFilter("event"))
 	assert.NoError(t, err)
+
+	// imported statistics
+	past3Days := util.PastDay(3).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_visitors" (date, visitors, views, sessions, bounces, session_duration) VALUES
+		('%s', 2, 4, 3, 1, 200)`, past3Days))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 100)
+	visitors, err = analyzer.Visitors.ByHour(&Filter{
+		From:          util.PastDay(3),
+		To:            util.PastDay(3),
+		Period:        pkg.PeriodDay,
+		ImportedUntil: util.PastDay(2),
+		IncludeCR:     true,
+		Sample:        10_000,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 24)
+	assert.Equal(t, 0, visitors[0].Hour)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 4, visitors[0].Views)
+	assert.Equal(t, 3, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.3333, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[0].CR, 0.01)
+
+	for i := 1; i < 24; i++ {
+		assert.Equal(t, i, visitors[i].Hour)
+		assert.Zero(t, visitors[i].Visitors)
+		assert.Zero(t, visitors[i].Views)
+		assert.Zero(t, visitors[i].Sessions)
+		assert.Zero(t, visitors[i].Bounces)
+		assert.InDelta(t, 0, visitors[i].BounceRate, 0.01)
+		assert.InDelta(t, 0, visitors[i].CR, 0.01)
+	}
 }
 
 func TestAnalyzer_ByHourEvent(t *testing.T) {
