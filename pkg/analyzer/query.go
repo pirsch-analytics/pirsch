@@ -24,7 +24,9 @@ type where struct {
 type queryBuilder struct {
 	filter             *Filter
 	fields             []Field
+	fieldsImported     []Field
 	from               table
+	fromImported       string
 	parent             *queryBuilder
 	join               *queryBuilder
 	joinSecond         *queryBuilder
@@ -47,6 +49,15 @@ type queryBuilder struct {
 
 func (query *queryBuilder) query() (string, []any) {
 	query.args = make([]any, 0)
+	includeImported := query.includeImported()
+	fromImported := query.fromImported
+
+	if includeImported {
+		query.selectFields()
+		query.q.WriteString("FROM (")
+		query.fromImported = ""
+	}
+
 	combineResults := query.selectFields()
 
 	if !combineResults {
@@ -54,8 +65,17 @@ func (query *queryBuilder) query() (string, []any) {
 		query.joinQuery()
 		query.q.WriteString(query.whereTime())
 		query.whereFields()
-		query.groupByFields()
+		query.groupByFields(false)
 		query.having()
+
+		if includeImported {
+			query.orderByFields()
+			query.unionImported()
+			query.q.WriteString(") t ")
+			query.joinImported(fromImported)
+			query.groupByFields(true)
+		}
+
 		query.orderByFields()
 		query.withLimit()
 	}
@@ -139,6 +159,7 @@ func (query *queryBuilder) appendField(fields *[]string, field string, value []s
 }
 
 func (query *queryBuilder) selectFields() bool {
+	includeImported := query.includeImported()
 	combineResults := false
 
 	if len(query.fields) > 0 {
@@ -147,7 +168,6 @@ func (query *queryBuilder) selectFields() bool {
 
 		for i := range query.fields {
 			if query.fields[i].filterTime {
-				timeQuery := query.whereTime()[len("WHERE "):]
 				sampleFactor, sampleQuery := "", ""
 
 				if query.sample > 0 {
@@ -155,21 +175,49 @@ func (query *queryBuilder) selectFields() bool {
 					sampleQuery = fmt.Sprintf(" SAMPLE %d", query.sample)
 				}
 
-				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
+				timeQuery := query.whereTime()[len("WHERE "):]
+
+				if includeImported {
+					dateQuery := query.whereTimeImported()[len("WHERE "):]
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery, query.fromImported, dateQuery), query.fields[i].Name))
+				} else {
+					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), sampleFactor, sampleQuery, timeQuery), query.fields[i].Name))
+				}
 			} else if query.fields[i].timezone {
-				if query.fields[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
-					switch query.filter.Period {
-					case pkg.PeriodWeek:
-						q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-					case pkg.PeriodMonth:
-						q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-					case pkg.PeriodYear:
-						q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())))
-					default:
-						panic("unknown case for filter period")
+				withTz := ""
+
+				if includeImported {
+					withTz = query.selectField(query.fields[i])
+				} else {
+					withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())
+				}
+
+				if query.filter.Period != pkg.PeriodDay && query.fields[i] == FieldDay {
+					if includeImported {
+						switch query.filter.Period {
+						case pkg.PeriodWeek:
+							q.WriteString("week,")
+						case pkg.PeriodMonth:
+							q.WriteString("month,")
+						case pkg.PeriodYear:
+							q.WriteString("year,")
+						default:
+							panic("unknown case for filter period")
+						}
+					} else {
+						switch query.filter.Period {
+						case pkg.PeriodWeek:
+							q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", withTz))
+						case pkg.PeriodMonth:
+							q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", withTz))
+						case pkg.PeriodYear:
+							q.WriteString(fmt.Sprintf("toStartOfYear(%s) year,", withTz))
+						default:
+							panic("unknown case for filter period")
+						}
 					}
 				} else {
-					q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String()), query.fields[i].Name))
+					q.WriteString(fmt.Sprintf("%s %s,", withTz, query.fields[i].Name))
 				}
 			} else if query.from != sessions && (query.fields[i] == FieldPlatformDesktop || query.fields[i] == FieldPlatformMobile || query.fields[i] == FieldPlatformUnknown) {
 				q.WriteString(query.selectPlatform(query.fields[i]))
@@ -184,7 +232,7 @@ func (query *queryBuilder) selectFields() bool {
 					query.args = append(query.args, query.filter.Tag[0])
 					q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 				}
-			} else if query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal {
+			} else if !includeImported && (query.fields[i] == FieldEventMetaCustomMetricAvg || query.fields[i] == FieldEventMetaCustomMetricTotal) {
 				query.args = append(query.args, query.filter.CustomMetricKey)
 				fieldCopy := query.fields[i]
 
@@ -212,9 +260,12 @@ func (query *queryBuilder) selectFields() bool {
 }
 
 func (query *queryBuilder) selectField(field Field) string {
-	queryField := ""
+	includeImported := query.includeImported()
+	queryField, sampleFactor := "", ""
 
-	if query.from == sessions {
+	if includeImported {
+		queryField = field.queryImported
+	} else if query.from == sessions {
 		queryField = field.querySessions
 	} else if query.from == events && field.queryEvents != "" {
 		queryField = field.queryEvents
@@ -222,12 +273,16 @@ func (query *queryBuilder) selectField(field Field) string {
 		queryField = field.queryPageViews
 	}
 
+	if !includeImported {
+		sampleFactor = "*any(_sample_factor)"
+	}
+
 	if query.sample > 0 && field.sampleType != 0 {
 		if field.sampleType == sampleTypeInt {
-			return fmt.Sprintf("toUInt64(greatest(%s*any(_sample_factor), 0))", queryField)
+			return fmt.Sprintf("toUInt64(greatest(%s%s, 0))", queryField, sampleFactor)
 		}
 
-		return fmt.Sprintf("%s*any(_sample_factor)", queryField)
+		return fmt.Sprintf("%s%s", queryField, sampleFactor)
 	}
 
 	return queryField
@@ -330,6 +385,120 @@ func (query *queryBuilder) joinQuery() {
 	}
 }
 
+func (query *queryBuilder) unionImported() {
+	if query.fieldsImported[0] == FieldVisitors ||
+		query.fieldsImported[0] == FieldSessions ||
+		query.fieldsImported[0] == FieldViews ||
+		query.fieldsImported[0] == FieldBounces {
+		query.q.WriteString("UNION ALL (SELECT ")
+
+		for i, field := range query.fields {
+			query.q.WriteString("NULL ")
+			query.q.WriteString(field.Name)
+
+			if i < len(query.fields)-1 {
+				query.q.WriteString(",")
+			}
+		}
+
+		query.q.WriteString(")")
+	}
+}
+
+func (query *queryBuilder) joinImported(from string) {
+	fields := make([]string, 0, len(query.fieldsImported))
+
+	for _, field := range query.fieldsImported {
+		if field.subqueryImported != "" {
+			if query.filter.Period != pkg.PeriodDay && field == FieldDay {
+				switch query.filter.Period {
+				case pkg.PeriodWeek:
+					fields = append(fields, "toStartOfWeek(date, 1) week")
+				case pkg.PeriodMonth:
+					fields = append(fields, "toStartOfMonth(date) month")
+				case pkg.PeriodYear:
+					fields = append(fields, "toStartOfYear(date) year")
+				default:
+					panic("unknown case for filter period")
+				}
+			} else {
+				fields = append(fields, fmt.Sprintf("%s %s", field.subqueryImported, field.Name))
+			}
+		} else {
+			fields = append(fields, field.Name)
+		}
+	}
+
+	dateQuery := query.whereTimeImported()
+	joinField := query.fieldsImported[0]
+	query.where = make([]where, 0)
+	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField.Name)
+	query.whereFieldImported(FieldExitPath.Name, query.filter.ExitPath, joinField.Name)
+	query.whereFieldImported(FieldPath.Name, query.filter.Path, joinField.Name)
+	query.whereFieldImported(FieldLanguage.Name, query.filter.Language, joinField.Name)
+	query.whereFieldImported(FieldCountry.Name, query.filter.Country, joinField.Name)
+	query.whereFieldImported(FieldRegion.Name, query.filter.Region, joinField.Name)
+	query.whereFieldImported(FieldCity.Name, query.filter.City, joinField.Name)
+	query.whereFieldImported(FieldReferrer.Name, query.filter.Referrer, joinField.Name)
+	query.whereFieldImported(FieldReferrerName.Name, query.filter.Referrer, joinField.Name)
+	query.whereFieldImported(FieldReferrer.Name, query.filter.ReferrerName, joinField.Name)
+	query.whereFieldImported(FieldReferrerName.Name, query.filter.ReferrerName, joinField.Name)
+	query.whereFieldImported(FieldOS.Name, query.filter.OS, joinField.Name)
+	query.whereFieldImported(FieldBrowser.Name, query.filter.Browser, joinField.Name)
+	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField.Name)
+	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField.Name)
+	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField.Name)
+	query.whereFieldPlatformImported()
+
+	if joinField == FieldPath {
+		query.whereFieldPathPattern()
+	}
+
+	for _, s := range query.search {
+		if s.Field == joinField ||
+			(s.Field == FieldReferrer && joinField == FieldReferrerName) ||
+			(s.Field == FieldReferrerName && joinField == FieldReferrer) {
+			query.whereFieldSearch(joinField.Name, s.Input)
+			break
+		}
+	}
+
+	query.q.WriteString(fmt.Sprintf(`FULL JOIN (SELECT %s FROM "%s" %s `, strings.Join(fields, ","), from, dateQuery))
+	query.whereWrite()
+
+	if joinField != FieldPlatformDesktop &&
+		joinField != FieldPlatformMobile &&
+		joinField != FieldPlatformUnknown &&
+		joinField != FieldVisitors &&
+		joinField != FieldSessions &&
+		joinField != FieldViews &&
+		joinField != FieldBounces {
+		groupBy := query.groupBy
+		query.groupBy = []Field{joinField}
+		query.groupByFields(false)
+		query.groupBy = groupBy
+	}
+
+	if query.filter.Period != pkg.PeriodDay && joinField == FieldDay {
+		switch query.filter.Period {
+		case pkg.PeriodWeek:
+			query.q.WriteString(") imp ON t.week = imp.week ")
+		case pkg.PeriodMonth:
+			query.q.WriteString(") imp ON t.month = imp.month ")
+		case pkg.PeriodYear:
+			query.q.WriteString(") imp ON t.year = imp.year ")
+		default:
+			panic("unknown case for filter period")
+		}
+	} else {
+		if joinField == FieldReferrerName {
+			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", FieldReferrer.Name, joinField.Name))
+		} else {
+			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
+		}
+	}
+}
+
 func (query *queryBuilder) whereTime() string {
 	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
@@ -357,6 +526,40 @@ func (query *queryBuilder) whereTime() string {
 			} else {
 				query.args = append(query.args, query.filter.To.Format(dateFormat))
 				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+			}
+		}
+	}
+
+	return q.String()
+}
+
+func (query *queryBuilder) whereTimeImported() string {
+	query.args = append(query.args, query.filter.ClientID)
+	var q strings.Builder
+	q.WriteString("WHERE client_id = ? ")
+	tz := query.filter.Timezone.String()
+
+	if !query.filter.importedFrom.IsZero() && !query.filter.importedTo.IsZero() && query.filter.importedFrom.Equal(query.filter.importedTo) {
+		query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
+		q.WriteString(fmt.Sprintf("AND toDate(date, '%s') = toDate(?) ", tz))
+	} else {
+		if !query.filter.importedFrom.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.importedFrom)
+				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') >= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
+				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') >= toDate(?) ", tz))
+			}
+		}
+
+		if !query.filter.importedTo.IsZero() {
+			if query.filter.IncludeTime {
+				query.args = append(query.args, query.filter.importedTo)
+				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') <= toDateTime(?, '%s') ", tz, tz))
+			} else {
+				query.args = append(query.args, query.filter.importedTo.Format(dateFormat))
+				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') <= toDate(?) ", tz))
 			}
 		}
 	}
@@ -406,6 +609,10 @@ func (query *queryBuilder) whereFields() {
 		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
 	}
 
+	query.whereWrite()
+}
+
+func (query *queryBuilder) whereWrite() {
 	if len(query.where) > 0 {
 		query.q.WriteString("AND ")
 		parts := make([]string, 0, len(query.where))
@@ -488,6 +695,12 @@ func (query *queryBuilder) whereField(field string, value []string) {
 		}
 
 		query.where = append(query.where, group)
+	}
+}
+
+func (query *queryBuilder) whereFieldImported(field string, value []string, joinField string) {
+	if joinField == field {
+		query.whereField(field, value)
 	}
 }
 
@@ -650,6 +863,41 @@ func (query *queryBuilder) whereFieldPlatform() {
 	}
 }
 
+func (query *queryBuilder) whereFieldPlatformImported() {
+	if query.filter.Platform != "" {
+		if strings.HasPrefix(query.filter.Platform, "!") {
+			platform := query.filter.Platform[1:]
+
+			if platform == pkg.PlatformDesktop {
+				query.where = append(query.where, where{notEq: []string{
+					"lower(category) != 'desktop' ",
+					"lower(category) != 'laptop' ",
+				}})
+			} else if platform == pkg.PlatformMobile {
+				query.where = append(query.where, where{notEq: []string{
+					"lower(category) != 'mobile' ",
+					"lower(category) != 'phone' ",
+					"lower(category) != 'tablet' ",
+				}})
+			} else {
+				query.where = append(query.where, where{notEq: []string{"category != '' "}})
+			}
+		} else {
+			if query.filter.Platform == pkg.PlatformDesktop {
+				query.where = append(query.where, where{notEq: []string{
+					"(lower(category) = 'desktop' OR lower(category) = 'laptop') ",
+				}})
+			} else if query.filter.Platform == pkg.PlatformMobile {
+				query.where = append(query.where, where{notEq: []string{
+					"(lower(category) = 'mobile' OR lower(category) = 'phone' OR lower(category) = 'tablet') ",
+				}})
+			} else {
+				query.where = append(query.where, where{notEq: []string{"category = '' "}})
+			}
+		}
+	}
+}
+
 func (query *queryBuilder) whereFieldVisitorSessionID() {
 	if query.filter.VisitorID != 0 && query.filter.SessionID != 0 {
 		query.where = append(query.where, where{
@@ -700,13 +948,15 @@ func (query *queryBuilder) nullValue(value string) string {
 	return value
 }
 
-func (query *queryBuilder) groupByFields() {
+func (query *queryBuilder) groupByFields(imported bool) {
 	if len(query.groupBy) > 0 {
 		query.q.WriteString("GROUP BY ")
 		var q strings.Builder
 
 		for i := range query.groupBy {
-			if query.groupBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
+			if imported && query.groupBy[i] == FieldAnyReferrerImported {
+				continue
+			} else if query.filter.Period != pkg.PeriodDay && query.groupBy[i] == FieldDay {
 				switch query.filter.Period {
 				case pkg.PeriodWeek:
 					q.WriteString("week,")
@@ -760,7 +1010,7 @@ func (query *queryBuilder) orderByFields() {
 				fillQuery := query.withFill()
 				name := query.orderBy[i].Name
 
-				if query.orderBy[i] == FieldDay && query.filter.Period != pkg.PeriodDay {
+				if query.filter.Period != pkg.PeriodDay && query.orderBy[i] == FieldDay {
 					switch query.filter.Period {
 					case pkg.PeriodWeek:
 						name = "week"
@@ -785,7 +1035,14 @@ func (query *queryBuilder) orderByFields() {
 }
 
 func (query *queryBuilder) withFill() string {
-	if !query.filter.From.IsZero() && !query.filter.To.IsZero() {
+	from := query.filter.From
+	to := query.filter.To
+
+	if !query.filter.importedFrom.IsZero() && query.filter.importedFrom.Before(from) {
+		from = query.filter.importedFrom
+	}
+
+	if !from.IsZero() && !to.IsZero() {
 		q := ""
 
 		switch query.filter.Period {
@@ -799,8 +1056,7 @@ func (query *queryBuilder) withFill() string {
 			q = "WITH FILL FROM toStartOfYear(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 YEAR "
 		}
 
-		query.args = append(query.args, query.filter.From.Format(dateFormat), query.filter.To.Format(dateFormat))
-
+		query.args = append(query.args, from.Format(dateFormat), to.Format(dateFormat))
 		return q
 	}
 
@@ -813,4 +1069,8 @@ func (query *queryBuilder) withLimit() {
 	} else if query.limit > 0 {
 		query.q.WriteString(fmt.Sprintf("LIMIT %d ", query.limit))
 	}
+}
+
+func (query *queryBuilder) includeImported() bool {
+	return query.filter != nil && !query.filter.ImportedUntil.IsZero() && query.fromImported != ""
 }

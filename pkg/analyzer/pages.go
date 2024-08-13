@@ -67,7 +67,13 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 		}
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
+		FieldPath,
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+	}, "imported_page")
 	stats, err := pages.store.SelectPageStats(filter.Ctx, filter.IncludeTitle, false, q, args...)
 
 	if err != nil {
@@ -123,7 +129,10 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		orderBy = append(orderBy, FieldEntryTitle)
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
+		FieldEntryPath,
+		FieldVisitors,
+	}, "imported_entry_page")
 	stats, err := pages.store.SelectEntryStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
@@ -215,7 +224,10 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		orderBy = append(orderBy, FieldExitTitle)
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, []Field{
+		FieldExitPath,
+		FieldVisitors,
+	}, "imported_exit_page")
 	stats, err := pages.store.SelectExitStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
@@ -283,7 +295,7 @@ func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error)
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, []Field{FieldVisitors})
+	q, args := filter.buildQuery(fields, nil, []Field{FieldVisitors}, nil, "")
 	stats, err := pages.store.GetConversionsStats(filter.Ctx, q, includeCustomMetric, args...)
 
 	if err != nil {
@@ -332,7 +344,7 @@ func (pages *Pages) totalVisitorsSessions(filter *Filter, paths []string) ([]mod
 	}, []Field{
 		FieldVisitors,
 		FieldSessions,
-	})
+	}, nil, "")
 	stats, err := pages.store.SelectTotalVisitorSessionStats(filter.Ctx, q, args...)
 
 	if err != nil {

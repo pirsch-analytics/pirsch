@@ -33,7 +33,7 @@ func TestTags_Tags(t *testing.T) {
 		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author", "amount"}, MetaValues: []string{"value", "John", "99.99"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Keys(nil)
 	assert.NoError(t, err)
@@ -257,7 +257,7 @@ func TestTags_Breakdown(t *testing.T) {
 		{VisitorID: 1, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
 		{VisitorID: 3, Time: util.Today(), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Tags.Breakdown(nil)
 	assert.NoError(t, err)

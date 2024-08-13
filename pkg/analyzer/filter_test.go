@@ -45,6 +45,70 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Contains(t, filter.Country, "de")
 	assert.Contains(t, filter.Country, "gb")
 	assert.Contains(t, filter.Country, "!en")
+	filter = &Filter{
+		From:          util.PastDay(30),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(31),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(31), filter.ImportedUntil)
+	assert.True(t, filter.importedFrom.IsZero())
+	assert.True(t, filter.importedTo.IsZero())
+	filter = &Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(30),
+		ImportedUntil: util.PastDay(3),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(30), filter.From)
+	assert.Equal(t, util.PastDay(5), filter.To)
+	assert.Equal(t, util.PastDay(3), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(30), filter.importedFrom)
+	assert.Equal(t, util.PastDay(5), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(30),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(20),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(20), filter.From)
+	assert.Equal(t, util.PastDay(5), filter.To)
+	assert.Equal(t, util.PastDay(20), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(30), filter.importedFrom)
+	assert.Equal(t, util.PastDay(21), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+	}
+	filter.validate()
+	assert.Equal(t, util.Today(), filter.From)
+	assert.Equal(t, util.Today(), filter.To)
+	assert.Equal(t, util.Today(), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(1), filter.importedFrom)
+	assert.Equal(t, util.PastDay(1), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(30),
+		To:            util.PastDay(15),
+		ImportedUntil: util.PastDay(5),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(30), filter.From)
+	assert.Equal(t, util.PastDay(15), filter.To)
+	assert.Equal(t, util.PastDay(5), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(30), filter.importedFrom)
+	assert.Equal(t, util.PastDay(15), filter.importedTo)
+	filter = &Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(4),
+	}
+	filter.validate()
+	assert.Equal(t, util.PastDay(5), filter.From)
+	assert.Equal(t, util.PastDay(5), filter.To)
+	assert.Equal(t, util.PastDay(4), filter.ImportedUntil)
+	assert.Equal(t, util.PastDay(5), filter.importedFrom)
+	assert.Equal(t, util.PastDay(5), filter.importedTo)
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {
@@ -99,7 +163,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	// no filter (from page views)
 	analyzer := NewAnalyzer(dbClient)
 	q, args := analyzer.getFilter(nil).buildQuery([]Field{FieldPath, FieldVisitors},
-		[]Field{FieldPath}, []Field{FieldVisitors, FieldPath})
+		[]Field{FieldPath}, []Field{FieldVisitors, FieldPath}, nil, "")
 	var stats []model.PageStats
 	rows, err := dbClient.Query(q, args...)
 	assert.NoError(t, err)
@@ -119,7 +183,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join (from page views)
-	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath}, nil, "")
 	stats = stats[:0]
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
@@ -139,7 +203,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[2].Path)
 
 	// join and filter (from page views)
-	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath}, nil, "")
 	stats = stats[:0]
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
@@ -155,7 +219,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 
 	// filter (from page views)
-	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath}, nil, "")
 	stats = stats[:0]
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
@@ -171,7 +235,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 2, stats[0].Visitors)
 
 	// no filter (from sessions)
-	q, args = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil)
+	q, args = analyzer.getFilter(nil).buildQuery([]Field{FieldVisitors, FieldSessions, FieldViews, FieldBounces, FieldBounceRate}, nil, nil, nil, "")
 	var vstats model.PageStats
 	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.Sessions, &vstats.Views, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 2, vstats.Visitors)
@@ -181,7 +245,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0, vstats.BounceRate, 0.01)
 
 	// filter (from page views)
-	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}, EntryPath: []string{"/"}}).buildQuery([]Field{FieldVisitors, FieldRelativeVisitors, FieldSessions, FieldViews, FieldRelativeViews, FieldBounces, FieldBounceRate}, nil, nil)
+	q, args = analyzer.getFilter(&Filter{Path: []string{"/foo"}, EntryPath: []string{"/"}}).buildQuery([]Field{FieldVisitors, FieldRelativeVisitors, FieldSessions, FieldViews, FieldRelativeViews, FieldBounces, FieldBounceRate}, nil, nil, nil, "")
 	assert.NoError(t, dbClient.QueryRow(q, args...).Scan(&vstats.Visitors, &vstats.RelativeVisitors, &vstats.Sessions, &vstats.Views, &vstats.RelativeViews, &vstats.Bounces, &vstats.BounceRate))
 	assert.Equal(t, 1, vstats.Visitors)
 	assert.Equal(t, 1, vstats.Sessions)
@@ -192,7 +256,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.InDelta(t, 0.3333, vstats.RelativeViews, 0.01)
 
 	// filter period
-	q, args = analyzer.getFilter(&Filter{Period: pkg.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay})
+	q, args = analyzer.getFilter(&Filter{Period: pkg.PeriodWeek}).buildQuery([]Field{FieldDay, FieldVisitors}, []Field{FieldDay}, []Field{FieldDay}, nil, "")
 	var visitors []model.VisitorStats
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)
@@ -206,7 +270,7 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Len(t, visitors, 1)
 
 	// join and filter with sampling (from page views)
-	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}, Sample: 10_000_000}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath})
+	q, args = analyzer.getFilter(&Filter{EntryPath: []string{"/"}, Path: []string{"/foo"}, Sample: 10_000_000}).buildQuery([]Field{FieldPath, FieldVisitors}, []Field{FieldPath}, []Field{FieldPath}, nil, "")
 	stats = stats[:0]
 	rows, err = dbClient.Query(q, args...)
 	assert.NoError(t, err)

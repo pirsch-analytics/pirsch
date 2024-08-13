@@ -40,7 +40,7 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 			FieldSessionID,
 			FieldTime,
 		}
-		q, a := f.buildQuery(fields, nil, nil)
+		q, a := f.buildQuery(fields, nil, nil, nil, "")
 		args = append(args, a...)
 
 		if i == 0 {

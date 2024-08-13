@@ -314,7 +314,7 @@ func TestTracker_PageViewTimeout(t *testing.T) {
 	})
 	assert.Len(t, client.GetSessions(), 0)
 	assert.Len(t, client.GetPageViews(), 0)
-	time.Sleep(time.Millisecond * 110)
+	time.Sleep(time.Millisecond * 200)
 	assert.Len(t, client.GetSessions(), 1)
 	assert.Len(t, client.GetPageViews(), 1)
 }
@@ -336,7 +336,7 @@ func TestTracker_PageViewBuffer(t *testing.T) {
 		tracker.PageView(req, 123, Options{})
 	}
 
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, client.GetSessions(), 7)
 	assert.Len(t, client.GetPageViews(), 4)
 	tracker.Stop()

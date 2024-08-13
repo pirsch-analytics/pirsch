@@ -27,7 +27,7 @@ func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	}, []Field{
 		FieldVisitors,
 		FieldEventName,
-	})
+	}, nil, "")
 	stats, err := events.store.SelectEventStats(filter.Ctx, false, q, args...)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func (events *Events) Breakdown(filter *Filter) ([]model.EventStats, error) {
 	}, []Field{
 		FieldVisitors,
 		FieldEventMetaValues,
-	})
+	}, nil, "")
 	stats, err := events.store.SelectEventStats(filter.Ctx, true, q, args...)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (events *Events) List(filter *Filter) ([]model.EventListStats, error) {
 	}, []Field{
 		FieldCount,
 		FieldEventName,
-	})
+	}, nil, "")
 	stats, err := events.store.SelectEventListStats(filter.Ctx, q, args...)
 
 	if err != nil {

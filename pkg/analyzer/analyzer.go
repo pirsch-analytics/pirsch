@@ -82,7 +82,7 @@ func (analyzer *Analyzer) timeOnPageQuery(filter *Filter) string {
 	return timeOnPage
 }
 
-func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (context.Context, string, []any) {
+func (analyzer *Analyzer) selectByAttribute(filter *Filter, fromImported string, attr ...Field) (context.Context, string, []any) {
 	fields := make([]Field, 0, len(attr)+2)
 	fields = append(fields, attr...)
 	fields = append(fields, FieldVisitors, FieldRelativeVisitors)
@@ -90,7 +90,7 @@ func (analyzer *Analyzer) selectByAttribute(filter *Filter, attr ...Field) (cont
 	orderBy = append(orderBy, FieldVisitors)
 	orderBy = append(orderBy, attr...)
 	filter = analyzer.getFilter(filter)
-	query, args := filter.buildQuery(fields, attr, orderBy)
+	query, args := filter.buildQuery(fields, attr, orderBy, []Field{attr[0], FieldVisitors}, fromImported)
 	return filter.Ctx, query, args
 }
 

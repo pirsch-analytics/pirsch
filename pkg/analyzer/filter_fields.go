@@ -57,6 +57,7 @@ var (
 	FieldPath = Field{
 		querySessions:  "path",
 		queryPageViews: "path",
+		queryImported:  "coalesce(nullif(t.path, ''), imp.path)",
 		queryDirection: "ASC",
 		Name:           "path",
 	}
@@ -73,6 +74,7 @@ var (
 	FieldEntryPath = Field{
 		querySessions:  "entry_path",
 		queryPageViews: "entry_path",
+		queryImported:  "coalesce(nullif(t.entry_path, ''), imp.entry_path)",
 		queryDirection: "ASC",
 		Name:           "entry_path",
 	}
@@ -81,6 +83,7 @@ var (
 	FieldEntries = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
+		queryImported:  "sum(t.entries + imp.visitors)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
 		Name:           "entries",
@@ -90,6 +93,7 @@ var (
 	FieldExitPath = Field{
 		querySessions:  "exit_path",
 		queryPageViews: "exit_path",
+		queryImported:  "coalesce(nullif(t.exit_path, ''), imp.exit_path)",
 		queryDirection: "ASC",
 		Name:           "exit_path",
 	}
@@ -98,6 +102,7 @@ var (
 	FieldExits = Field{
 		querySessions:  "sum(sign)",
 		queryPageViews: "uniq(t.visitor_id, t.session_id)",
+		queryImported:  "sum(t.exits + imp.visitors)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
 		Name:           "exits",
@@ -105,12 +110,14 @@ var (
 
 	// FieldVisitors is a query result column.
 	FieldVisitors = Field{
-		querySessions:  "uniq(t.visitor_id)",
-		queryPageViews: "uniq(t.visitor_id)",
-		queryPeriod:    "sum(visitors)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "visitors",
+		querySessions:    "uniq(t.visitor_id)",
+		queryPageViews:   "uniq(t.visitor_id)",
+		queryImported:    "sum(coalesce(t.visitors, 0) + imp.visitors)",
+		subqueryImported: "sum(visitors)",
+		queryPeriod:      "sum(visitors)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "visitors",
 	}
 
 	// FieldVisitorsRaw is a query result column.
@@ -126,6 +133,7 @@ var (
 	FieldRelativeVisitors = Field{
 		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_visitors",
@@ -135,6 +143,7 @@ var (
 	FieldCR = Field{
 		querySessions:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "cr",
@@ -142,8 +151,9 @@ var (
 
 	// FieldCRPeriod is a query result column.
 	FieldCRPeriod = Field{
-		querySessions:  `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
-		queryPageViews: `toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))`,
+		querySessions:  "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))",
+		queryPageViews: "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))",
+		queryImported:  "any(t.cr)",
 		queryDirection: "DESC",
 		sampleType:     sampleTypeFloat,
 		Name:           "cr",
@@ -151,29 +161,34 @@ var (
 
 	// FieldSessions is a query result column.
 	FieldSessions = Field{
-		querySessions:  "uniq(t.visitor_id, t.session_id)",
-		queryPageViews: "uniq(t.visitor_id, t.session_id)",
-		queryPeriod:    "sum(sessions)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "sessions",
+		querySessions:    "uniq(t.visitor_id, t.session_id)",
+		queryPageViews:   "uniq(t.visitor_id, t.session_id)",
+		queryImported:    "sum(coalesce(t.sessions, 0) + imp.sessions)",
+		subqueryImported: "sum(sessions)",
+		queryPeriod:      "sum(sessions)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "sessions",
 	}
 
 	// FieldViews is a query result column.
 	FieldViews = Field{
-		querySessions:  "sum(page_views*sign)",
-		queryPageViews: "count(1)",
-		queryEvents:    "sum(views)",
-		queryPeriod:    "sum(views)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "views",
+		querySessions:    "toUInt64(sum(page_views*sign))",
+		queryPageViews:   "count(1)",
+		queryImported:    "sum(coalesce(t.views, 0) + imp.views)",
+		subqueryImported: "sum(views)",
+		queryEvents:      "sum(views)",
+		queryPeriod:      "sum(views)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "views",
 	}
 
 	// FieldRelativeViews is a query result column.
 	FieldRelativeViews = Field{
 		querySessions:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
 		queryPageViews: `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)%s views FROM "session"%s WHERE %s) + (SELECT sum(views) FROM "%s" WHERE %s), 1))`,
 		queryDirection: "DESC",
 		filterTime:     true,
 		Name:           "relative_views",
@@ -181,18 +196,21 @@ var (
 
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
-		querySessions:  "sum(is_bounce*sign)",
-		queryPageViews: "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
-		queryPeriod:    "sum(bounces)",
-		queryDirection: "DESC",
-		sampleType:     sampleTypeInt,
-		Name:           "bounces",
+		querySessions:    "toUInt64(sum(is_bounce*sign))",
+		queryPageViews:   "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
+		queryImported:    "sum(coalesce(t.bounces, 0) + imp.bounces)",
+		subqueryImported: "sum(bounces)",
+		queryPeriod:      "sum(bounces)",
+		queryDirection:   "DESC",
+		sampleType:       sampleTypeInt,
+		Name:             "bounces",
 	}
 
 	// FieldBounceRate is a query result column.
 	FieldBounceRate = Field{
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
+		queryImported:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPeriod:    "ifNotFinite(avg(bounce_rate), 0)",
 		queryDirection: "DESC",
 		Name:           "bounce_rate",
@@ -202,6 +220,7 @@ var (
 	FieldReferrer = Field{
 		querySessions:  "referrer",
 		queryPageViews: "referrer",
+		queryImported:  "coalesce(nullif(t.referrer, ''), imp.referrer)",
 		queryDirection: "ASC",
 		Name:           "referrer",
 	}
@@ -210,16 +229,38 @@ var (
 	FieldAnyReferrer = Field{
 		querySessions:  "any(referrer)",
 		queryPageViews: "any(referrer)",
+		queryImported:  "any(coalesce(nullif(t.referrer, ''), imp.referrer))",
+		queryDirection: "ASC",
+		Name:           "referrer",
+	}
+
+	// FieldAnyReferrerImported is a query result column.
+	FieldAnyReferrerImported = Field{
+		querySessions:  "referrer",
+		queryPageViews: "referrer",
+		queryImported:  "any(coalesce(nullif(t.referrer, ''), imp.referrer_name))",
 		queryDirection: "ASC",
 		Name:           "referrer",
 	}
 
 	// FieldReferrerName is a query result column.
 	FieldReferrerName = Field{
-		querySessions:  "referrer_name",
-		queryPageViews: "referrer_name",
-		queryDirection: "ASC",
-		Name:           "referrer_name",
+		querySessions:    "referrer_name",
+		queryPageViews:   "referrer_name",
+		queryImported:    "coalesce(nullif(t.referrer_name, ''), imp.referrer)",
+		subqueryImported: "referrer",
+		queryDirection:   "ASC",
+		Name:             "referrer_name",
+	}
+
+	// FieldReferrerNameImported is a query result column.
+	FieldReferrerNameImported = Field{
+		querySessions:    "referrer_name",
+		queryPageViews:   "referrer_name",
+		queryImported:    "coalesce(nullif(t.referrer_name, ''), imp.referrer_name)",
+		subqueryImported: "referrer",
+		queryDirection:   "ASC",
+		Name:             "referrer_name",
 	}
 
 	// FieldReferrerIcon is a query result column.
@@ -230,10 +271,20 @@ var (
 		Name:           "referrer_icon",
 	}
 
+	// FieldAnyReferrerIcon is a query result column.
+	FieldAnyReferrerIcon = Field{
+		querySessions:  "any(referrer_icon)",
+		queryPageViews: "any(referrer_icon)",
+		queryImported:  "any(referrer_icon)",
+		queryDirection: "ASC",
+		Name:           "referrer_icon",
+	}
+
 	// FieldLanguage is a query result column.
 	FieldLanguage = Field{
 		querySessions:  "language",
 		queryPageViews: "language",
+		queryImported:  "coalesce(nullif(t.language, ''), imp.language)",
 		queryDirection: "ASC",
 		Name:           "language",
 	}
@@ -243,6 +294,7 @@ var (
 	FieldCountryCity = Field{
 		querySessions:  "if(city = '', '', country_code)",
 		queryPageViews: "if(city = '', '', country_code)",
+		queryImported:  "if(city = '', '', country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -252,6 +304,7 @@ var (
 	FieldCountryRegion = Field{
 		querySessions:  "if(region = '', '', country_code)",
 		queryPageViews: "if(region = '', '', country_code)",
+		queryImported:  "if(region = '', '', country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -260,6 +313,7 @@ var (
 	FieldCountry = Field{
 		querySessions:  "country_code",
 		queryPageViews: "country_code",
+		queryImported:  "coalesce(nullif(t.country_code, ''), imp.country_code)",
 		queryDirection: "ASC",
 		Name:           "country_code",
 	}
@@ -269,6 +323,7 @@ var (
 	FieldRegionCity = Field{
 		querySessions:  "if(city = '', '', region)",
 		queryPageViews: "if(city = '', '', region)",
+		queryImported:  "if(city = '', '', region)",
 		queryDirection: "ASC",
 		Name:           "region",
 	}
@@ -277,6 +332,7 @@ var (
 	FieldRegion = Field{
 		querySessions:  "region",
 		queryPageViews: "region",
+		queryImported:  "coalesce(nullif(t.region, ''), imp.region)",
 		queryDirection: "ASC",
 		Name:           "region",
 	}
@@ -285,6 +341,7 @@ var (
 	FieldCity = Field{
 		querySessions:  "city",
 		queryPageViews: "city",
+		queryImported:  "coalesce(nullif(t.city, ''), imp.city)",
 		queryDirection: "ASC",
 		Name:           "city",
 	}
@@ -293,6 +350,7 @@ var (
 	FieldBrowser = Field{
 		querySessions:  "browser",
 		queryPageViews: "browser",
+		queryImported:  "coalesce(nullif(t.browser, ''), imp.browser)",
 		queryDirection: "ASC",
 		Name:           "browser",
 	}
@@ -309,6 +367,7 @@ var (
 	FieldOS = Field{
 		querySessions:  "os",
 		queryPageViews: "os",
+		queryImported:  "coalesce(nullif(t.os, ''), imp.os)",
 		queryDirection: "ASC",
 		Name:           "os",
 	}
@@ -333,6 +392,7 @@ var (
 	FieldUTMSource = Field{
 		querySessions:  "utm_source",
 		queryPageViews: "utm_source",
+		queryImported:  "coalesce(nullif(t.utm_source, ''), imp.utm_source)",
 		queryDirection: "ASC",
 		Name:           "utm_source",
 	}
@@ -341,6 +401,7 @@ var (
 	FieldUTMMedium = Field{
 		querySessions:  "utm_medium",
 		queryPageViews: "utm_medium",
+		queryImported:  "coalesce(nullif(t.utm_medium, ''), imp.utm_medium)",
 		queryDirection: "ASC",
 		Name:           "utm_medium",
 	}
@@ -349,6 +410,7 @@ var (
 	FieldUTMCampaign = Field{
 		querySessions:  "utm_campaign",
 		queryPageViews: "utm_campaign",
+		queryImported:  "coalesce(nullif(t.utm_campaign, ''), imp.utm_campaign)",
 		queryDirection: "ASC",
 		Name:           "utm_campaign",
 	}
@@ -456,22 +518,25 @@ var (
 
 	// FieldDay is a query result column.
 	FieldDay = Field{
-		querySessions:  "toDate(time, '%s')",
-		queryPageViews: "toDate(time, '%s')",
-		queryDirection: "ASC",
-		withFill:       true,
-		timezone:       true,
-		Name:           "day",
+		querySessions:    "toDate(time, '%s')",
+		queryPageViews:   "toDate(time, '%s')",
+		queryImported:    "day",
+		subqueryImported: "date",
+		queryDirection:   "ASC",
+		withFill:         true,
+		timezone:         true,
+		Name:             "day",
 	}
 
 	// FieldHour is a query result column.
 	FieldHour = Field{
-		querySessions:  "toHour(time, '%s')",
-		queryPageViews: "toHour(time, '%s')",
-		queryDirection: "ASC",
-		queryWithFill:  "WITH FILL FROM 0 TO 24",
-		timezone:       true,
-		Name:           "hour",
+		querySessions:    "toHour(time, '%s')",
+		queryPageViews:   "toHour(time, '%s')",
+		subqueryImported: "0",
+		queryDirection:   "ASC",
+		queryWithFill:    "WITH FILL FROM 0 TO 24",
+		timezone:         true,
+		Name:             "hour",
 	}
 
 	// FieldMinute is a query result column.
@@ -539,6 +604,7 @@ var (
 	FieldEventMetaCustomMetricAvg = Field{
 		querySessions:  "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
 		queryPageViews: "ifNotFinite(avg(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)]))), 0)",
+		queryImported:  "any(custom_metric_avg)",
 		sampleType:     sampleTypeFloat,
 		Name:           "custom_metric_avg",
 	}
@@ -547,38 +613,46 @@ var (
 	FieldEventMetaCustomMetricTotal = Field{
 		querySessions:  "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
 		queryPageViews: "sum(coalesce(%s(event_meta_values[indexOf(event_meta_keys, ?)])))",
+		queryImported:  "any(custom_metric_total)",
 		sampleType:     sampleTypeAuto,
 		Name:           "custom_metric_total",
 	}
 
 	// FieldPlatformDesktop is a query result column.
 	FieldPlatformDesktop = Field{
-		querySessions:  "uniqIf(visitor_id, desktop = 1)",
-		queryPageViews: "desktop = 1,mobile = 0",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_desktop",
+		querySessions:    "uniqIf(visitor_id, desktop = 1)",
+		queryPageViews:   "desktop = 1,mobile = 0",
+		queryImported:    "sum(t.platform_desktop + imp.platform_desktop)",
+		subqueryImported: "sumIf(visitors, lower(category) = 'desktop')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_desktop",
 	}
 
 	// FieldPlatformMobile is a query result column.
 	FieldPlatformMobile = Field{
-		querySessions:  "uniqIf(visitor_id, mobile = 1)",
-		queryPageViews: "desktop = 0,mobile = 1",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_mobile",
+		querySessions:    "uniqIf(visitor_id, mobile = 1)",
+		queryPageViews:   "desktop = 0,mobile = 1",
+		queryImported:    "sum(t.platform_mobile + imp.platform_mobile)",
+		subqueryImported: "sumIf(visitors, lower(category) = 'mobile')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_mobile",
 	}
 
 	// FieldPlatformUnknown is a query result column.
 	FieldPlatformUnknown = Field{
-		querySessions:  "uniq(visitor_id)-platform_desktop-platform_mobile",
-		queryPageViews: "desktop = 0,mobile = 0",
-		sampleType:     sampleTypeInt,
-		Name:           "platform_unknown",
+		querySessions:    "uniq(visitor_id)-platform_desktop-platform_mobile",
+		queryPageViews:   "desktop = 0,mobile = 0",
+		queryImported:    "sum(t.platform_unknown + imp.platform_unknown)",
+		subqueryImported: "sumIf(visitors, lower(category) != 'desktop' AND lower(category) != 'mobile')",
+		sampleType:       sampleTypeInt,
+		Name:             "platform_unknown",
 	}
 
 	// FieldRelativePlatformDesktop is a query result column.
 	FieldRelativePlatformDesktop = Field{
 		querySessions:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_desktop",
 	}
 
@@ -586,6 +660,7 @@ var (
 	FieldRelativePlatformMobile = Field{
 		querySessions:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_mobile",
 	}
 
@@ -593,6 +668,7 @@ var (
 	FieldRelativePlatformUnknown = Field{
 		querySessions:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		queryImported:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
 		Name:           "relative_platform_unknown",
 	}
 
@@ -647,15 +723,17 @@ type sampleType int
 
 // Field is a column for a query.
 type Field struct {
-	querySessions  string
-	queryPageViews string
-	queryEvents    string
-	queryPeriod    string
-	queryDirection pkg.Direction
-	queryWithFill  string
-	withFill       bool
-	timezone       bool
-	filterTime     bool
-	sampleType     sampleType
-	Name           string
+	querySessions    string
+	queryPageViews   string
+	queryEvents      string
+	queryImported    string
+	subqueryImported string
+	queryPeriod      string
+	queryDirection   pkg.Direction
+	queryWithFill    string
+	withFill         bool
+	timezone         bool
+	filterTime       bool
+	sampleType       sampleType
+	Name             string
 }

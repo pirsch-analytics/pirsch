@@ -40,7 +40,7 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 		{VisitorID: 5, SessionID: 5, Time: util.Today().Add(time.Second * 2), Path: "/bar", DurationSeconds: 2, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 6, SessionID: 6, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Time.AvgSessionDuration(nil)
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestAnalyzer_AvgSessionDurationPeriod(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: time.Date(2023, 9, 27, 0, 0, 0, 0, time.UTC), Start: time.Now(), SessionID: 7, DurationSeconds: 12},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	stats, err := analyzer.Time.AvgSessionDuration(&Filter{
 		From: time.Date(2023, 9, 25, 0, 0, 0, 0, time.UTC),
@@ -128,7 +128,7 @@ func TestAnalyzer_AvgSessionDurationTz(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 9, 26, 0, 0, 0, 0, time.UTC), Start: time.Now(), SessionID: 6, DurationSeconds: 35},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	tz, err := time.LoadLocation("Europe/Berlin")
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 		{VisitorID: 6, Time: time.Date(2023, 10, 24, 0, 0, 0, 0, time.UTC), SessionID: 1, Path: "/", Title: "Home", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 6, Time: time.Date(2023, 10, 24, 0, 0, 0, 0, time.UTC).Add(time.Second * 6), SessionID: 1, Path: "/foo", DurationSeconds: 6, Title: "Foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	byDay, err := analyzer.Time.AvgTimeOnPage(&Filter{
 		From: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
@@ -376,7 +376,7 @@ func TestAnalyzer_AvgTimeOnPagePeriod(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 10, 4, 0, 0, 0, 0, time.UTC), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	byDay, err := analyzer.Time.AvgTimeOnPage(&Filter{
 		From:   time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC),
@@ -419,7 +419,7 @@ func TestAnalyzer_AvgTimeOnPageTz(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 10, 4, 0, 0, 0, 0, time.UTC), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
 		},
 	})
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	tz, err := time.LoadLocation("Europe/Berlin")
 	assert.NoError(t, err)

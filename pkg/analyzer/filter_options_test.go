@@ -18,7 +18,7 @@ func TestFilterOptions_Pages(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo"},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Path: "/bar"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Pages(nil)
 	assert.NoError(t, err)
@@ -41,7 +41,7 @@ func TestFilterOptions_Referrer(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Referrer: "https://twitter.com", ReferrerName: "Twitter"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Referrer(nil)
 	assert.NoError(t, err)
@@ -75,7 +75,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), UTMSource: "bar", UTMMedium: "bar", UTMCampaign: "bar", UTMContent: "bar", UTMTerm: "bar"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	utmSource, err := analyzer.Options.UTMSource(nil)
 	assert.NoError(t, err)
@@ -142,7 +142,7 @@ func TestFilterOptions_Events(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "foo"},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Name: "bar"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Events(nil)
 	assert.NoError(t, err)
@@ -165,7 +165,7 @@ func TestFilterOptions_Countries(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), CountryCode: "ja"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), CountryCode: "de"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Countries(nil)
 	assert.NoError(t, err)
@@ -188,7 +188,7 @@ func TestFilterOptions_Regions(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Region: "Tokyo"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Region: "Berlin"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Regions(nil)
 	assert.NoError(t, err)
@@ -211,7 +211,7 @@ func TestFilterOptions_Cities(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), City: "Tokio"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), City: "Berlin"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.Cities(nil)
 	assert.NoError(t, err)
@@ -234,7 +234,7 @@ func TestFilterOptions_Languages(t *testing.T) {
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Language: "ja"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Language: "de"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	utmSource, err := analyzer.Options.Languages(nil)
 	assert.NoError(t, err)
@@ -257,7 +257,7 @@ func TestFilterOptions_EventMetadataValues(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "event2", MetaKeys: []string{"key0", "key1"}, MetaValues: []string{"val1", "val2"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Name: "event3", MetaKeys: []string{"key1", "key2"}, MetaValues: []string{"val1", "val3"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.EventMetadataValues(nil)
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestFilterOptions_TagKeys(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo", TagKeys: []string{"key2", "key1"}, TagValues: []string{"value2", "value1"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Path: "/bar", TagKeys: []string{"key0"}, TagValues: []string{"value1"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.TagKeys(nil)
 	assert.NoError(t, err)
@@ -317,7 +317,7 @@ func TestFilterOptions_TagValues(t *testing.T) {
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo", TagKeys: []string{"key2", "key1"}, TagValues: []string{"value2", "value1"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Path: "/bar", TagKeys: []string{"key0"}, TagValues: []string{"value1"}},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	options, err := analyzer.Options.TagValues(nil)
 	assert.NoError(t, err)

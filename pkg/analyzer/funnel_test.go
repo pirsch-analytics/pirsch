@@ -85,7 +85,7 @@ func TestFunnel_Steps(t *testing.T) {
 		{ClientID: 1, VisitorID: 2, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"24"}, Language: "en"},
 		{ClientID: 1, VisitorID: 4, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"29.95", "USD"}, Language: "en"},
 	}))
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	_, err := analyzer.Funnel.Steps(context.Background(), []Filter{})
 	assert.Equal(t, "not enough steps", err.Error())

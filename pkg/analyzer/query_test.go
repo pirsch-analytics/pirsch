@@ -380,8 +380,8 @@ func TestQuerySelectFieldSessionsSampling(t *testing.T) {
 		{FieldVisitorsRaw, "toUInt64(greatest(uniq(visitor_id)*any(_sample_factor), 0))"},
 		{FieldCRPeriod, "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))*any(_sample_factor)"},
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
-		{FieldViews, "toUInt64(greatest(sum(page_views*sign)*any(_sample_factor), 0))"},
-		{FieldBounces, "toUInt64(greatest(sum(is_bounce*sign)*any(_sample_factor), 0))"},
+		{FieldViews, "toUInt64(greatest(toUInt64(sum(page_views*sign))*any(_sample_factor), 0))"},
+		{FieldBounces, "toUInt64(greatest(toUInt64(sum(is_bounce*sign))*any(_sample_factor), 0))"},
 		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
@@ -416,4 +416,39 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 	for _, field := range fields {
 		assert.Equal(t, field.expected, q.selectField(field.field))
 	}
+}
+
+func TestQueryImported(t *testing.T) {
+	filter := &Filter{
+		ClientID:      42,
+		From:          util.PastDay(14),
+		To:            util.Today(),
+		ImportedUntil: util.PastDay(7),
+		Country:       []string{"jp"},
+	}
+	filter.validate()
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{
+			FieldCountry,
+			FieldVisitors,
+			FieldRelativeVisitors,
+		},
+		fieldsImported: []Field{
+			FieldCountry,
+			FieldVisitors,
+		},
+		from:         sessions,
+		fromImported: "imported_country",
+		orderBy: []Field{
+			FieldVisitors,
+		},
+		groupBy: []Field{
+			FieldCountry,
+		},
+		limit: 10,
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 17)
+	assert.Equal(t, `SELECT coalesce(nullif(t.country_code, ''), imp.country_code) country_code,sum(coalesce(t.visitors, 0) + imp.visitors) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ) + (SELECT sum(visitors) FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM (SELECT country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND country_code = ? GROUP BY country_code HAVING sum(sign) > 0 ORDER BY visitors DESC ) t FULL JOIN (SELECT country_code,sum(visitors) visitors FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?)  AND country_code = ? GROUP BY country_code ) imp ON t.country_code = imp.country_code GROUP BY country_code ORDER BY visitors DESC LIMIT 10 `, queryStr)
 }

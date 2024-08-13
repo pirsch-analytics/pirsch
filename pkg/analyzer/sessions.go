@@ -28,7 +28,7 @@ func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 		FieldSessionExitTitle,
 	}, []Field{
 		FieldMaxTime,
-	})
+	}, nil, "")
 	query := fmt.Sprintf(`SELECT * EXCEPT (exit_paths, exit_titles)
 		FROM (
 		    SELECT t.visitor_id,
@@ -95,14 +95,14 @@ func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error)
 		SessionID:   filter.SessionID,
 		IncludeTime: filter.IncludeTime,
 	}
-	q, args := f.buildQuery([]Field{FieldPageViewsAll}, nil, []Field{FieldTime})
+	q, args := f.buildQuery([]Field{FieldPageViewsAll}, nil, []Field{FieldTime}, nil, "")
 	pageViews, err := sessions.store.SelectPageViews(f.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	q, args = f.buildQuery([]Field{FieldEventsAll}, nil, nil)
+	q, args = f.buildQuery([]Field{FieldEventsAll}, nil, nil, nil, "")
 	events, err := sessions.store.SelectEvents(f.Ctx, q, args...)
 
 	if err != nil {

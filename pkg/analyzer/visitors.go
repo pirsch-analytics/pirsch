@@ -38,14 +38,14 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	}
 
 	fields = append(fields, FieldVisitors)
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, nil, "")
 	stats, err := visitors.store.SelectActiveVisitorStats(filter.Ctx, filter.IncludeTitle, q, args...)
 
 	if err != nil {
 		return nil, 0, err
 	}
 
-	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil)
+	q, args = filter.buildQuery([]Field{FieldVisitors}, nil, nil, nil, "")
 	count, err := visitors.store.Count(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -77,7 +77,12 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil)
+	q, args := filter.buildQuery(fields, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.GetTotalVisitorStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -91,14 +96,15 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID:    filter.ClientID,
-		Timezone:    filter.Timezone,
-		From:        filter.From,
-		To:          filter.To,
-		Sample:      filter.Sample,
-		IncludeTime: filter.IncludeTime,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
+		IncludeTime:   filter.IncludeTime,
 	}
-	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldVisitors}, nil, nil, []Field{FieldVisitors}, "imported_visitors")
 	total, err := visitors.store.GetTotalUniqueVisitorStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -112,13 +118,14 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID: filter.ClientID,
-		Timezone: filter.Timezone,
-		From:     filter.From,
-		To:       filter.To,
-		Sample:   filter.Sample,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldViews}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldViews}, nil, nil, []Field{FieldViews}, "imported_visitors")
 	total, err := visitors.store.GetTotalPageViewStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -132,13 +139,14 @@ func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID: filter.ClientID,
-		Timezone: filter.Timezone,
-		From:     filter.From,
-		To:       filter.To,
-		Sample:   filter.Sample,
+		ClientID:      filter.ClientID,
+		Timezone:      filter.Timezone,
+		From:          filter.From,
+		To:            filter.To,
+		ImportedUntil: filter.ImportedUntil,
+		Sample:        filter.Sample,
 	}
-	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil)
+	q, args := f.buildQuery([]Field{FieldSessions}, nil, nil, []Field{FieldSessions}, "imported_visitors")
 	total, err := visitors.store.GetTotalSessionStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -159,7 +167,10 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args := filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil)
+	}, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+	}, "imported_visitors")
 	current, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -170,7 +181,10 @@ func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVi
 	q, args = filter.buildQuery([]Field{
 		FieldVisitors,
 		FieldViews,
-	}, nil, nil)
+	}, nil, nil, []Field{
+		FieldVisitors,
+		FieldViews,
+	}, "imported_visitors")
 	previous, err := visitors.store.GetTotalVisitorsPageViewsStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -214,7 +228,13 @@ func (visitors *Visitors) ByPeriod(filter *Filter) ([]model.VisitorStats, error)
 	}, []Field{
 		FieldDay,
 		FieldVisitors,
-	})
+	}, []Field{
+		FieldDay,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.SelectVisitorStats(filter.Ctx, filter.Period, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -252,7 +272,13 @@ func (visitors *Visitors) ByHour(filter *Filter) ([]model.VisitorHourStats, erro
 	}, []Field{
 		FieldHour,
 		FieldVisitors,
-	})
+	}, []Field{
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, "imported_visitors")
 	stats, err := visitors.store.SelectVisitorHourStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -290,7 +316,7 @@ func (visitors *Visitors) ByMinute(filter *Filter) ([]model.VisitorMinuteStats, 
 	}, []Field{
 		FieldMinute,
 		FieldVisitors,
-	})
+	}, nil, "")
 	stats, err := visitors.store.SelectVisitorMinuteStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -318,6 +344,12 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		FieldBounces,
 		FieldBounceRate,
 	}
+	fieldsImported := []Field{
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}
 
 	if filter.IncludeCR {
 		fields = append(fields, FieldCR)
@@ -330,7 +362,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 		includeCustomMetric = true
 	}
 
-	q, args := filter.buildQuery(fields, nil, nil)
+	q, args := filter.buildQuery(fields, nil, nil, fieldsImported, "imported_visitors")
 	current, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -352,7 +384,7 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 	}
 
 	visitors.getPreviousPeriod(filter)
-	q, args = filter.buildQuery(fields, nil, nil)
+	q, args = filter.buildQuery(fields, nil, nil, fieldsImported, "imported_visitors")
 	previous, err := visitors.store.GetGrowthStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
 
 	if err != nil {
@@ -388,32 +420,78 @@ func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {
 // Referrer returns the visitor count and bounce rate grouped by referrer.
 func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
-	fields := []Field{
-		FieldReferrerName,
-		FieldReferrerIcon,
-		FieldVisitors,
-		FieldSessions,
-		FieldRelativeVisitors,
-		FieldBounces,
-		FieldBounceRate,
-	}
-	groupBy := []Field{
-		FieldReferrerName,
-	}
-	orderBy := []Field{
-		FieldVisitors,
-		FieldReferrerName,
-	}
+	var fields, groupBy, orderBy, importedFields []Field
 
-	if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 {
-		fields = append(fields, FieldReferrer)
-		groupBy = append(groupBy, FieldReferrer)
-		orderBy = append(orderBy, FieldReferrer)
+	if filter.ImportedUntil.IsZero() {
+		fields = []Field{
+			FieldReferrerName,
+			FieldReferrerIcon,
+			FieldVisitors,
+			FieldSessions,
+			FieldRelativeVisitors,
+			FieldBounces,
+			FieldBounceRate,
+		}
+		groupBy = []Field{
+			FieldReferrerName,
+		}
+		orderBy = []Field{
+			FieldVisitors,
+			FieldReferrerName,
+		}
+
+		if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 {
+			fields = append(fields, FieldReferrer)
+			groupBy = append(groupBy, FieldReferrer)
+			orderBy = append(orderBy, FieldReferrer)
+		} else {
+			fields = append(fields, FieldAnyReferrer)
+		}
 	} else {
-		fields = append(fields, FieldAnyReferrer)
+		groupBy = []Field{
+			FieldReferrerName,
+		}
+		orderBy = []Field{
+			FieldVisitors,
+			FieldReferrerName,
+		}
+
+		if len(filter.Referrer) > 0 || len(filter.ReferrerName) > 0 || filter.searchContains(FieldReferrer) {
+			fields = []Field{
+				FieldReferrerNameImported,
+				FieldAnyReferrerIcon,
+				FieldVisitors,
+				FieldSessions,
+				FieldRelativeVisitors,
+				FieldBounces,
+				FieldBounceRate,
+				FieldAnyReferrerImported,
+			}
+			groupBy = append(groupBy, FieldAnyReferrerImported)
+			orderBy = append(orderBy, FieldAnyReferrerImported)
+			importedFields = []Field{FieldReferrerName}
+		} else {
+			fields = []Field{
+				FieldReferrerName,
+				FieldAnyReferrerIcon,
+				FieldVisitors,
+				FieldSessions,
+				FieldRelativeVisitors,
+				FieldBounces,
+				FieldBounceRate,
+				FieldAnyReferrer,
+			}
+			importedFields = []Field{FieldReferrer}
+		}
+
+		importedFields = append(importedFields, []Field{
+			FieldVisitors,
+			FieldSessions,
+			FieldBounces,
+		}...)
 	}
 
-	q, args := filter.buildQuery(fields, groupBy, orderBy)
+	q, args := filter.buildQuery(fields, groupBy, orderBy, importedFields, "imported_referrer")
 	stats, err := visitors.store.SelectReferrerStats(filter.Ctx, q, args...)
 
 	if err != nil {
@@ -424,25 +502,39 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 }
 
 func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
-	if filter.From.Equal(filter.To) {
-		if filter.To.Equal(util.Today()) {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = time.Now().UTC().Add(-time.Hour * 24 * 7)
+	from := filter.From
+	to := filter.To
+
+	if !filter.importedFrom.IsZero() && filter.importedFrom.Before(from) {
+		from = filter.importedFrom
+	}
+
+	if from.Equal(to) {
+		if to.Equal(util.Today()) {
+			from = from.Add(-time.Hour * 24 * 7)
+			to = time.Now().UTC().Add(-time.Hour * 24 * 7)
 			filter.IncludeTime = true
 		} else {
-			filter.From = filter.From.Add(-time.Hour * 24 * 7)
-			filter.To = filter.To.Add(-time.Hour * 24 * 7)
+			from = from.Add(-time.Hour * 24 * 7)
+			to = to.Add(-time.Hour * 24 * 7)
 		}
 	} else {
-		days := filter.To.Sub(filter.From)
+		days := to.Sub(from)
 
 		if days >= time.Hour*24 {
-			filter.To = filter.From.Add(-time.Hour * 24)
-			filter.From = filter.To.Add(-days)
+			to = from.Add(-time.Hour * 24)
+			from = to.Add(-days)
 		} else {
-			filter.From = filter.From.Add(-time.Hour * 24)
-			filter.To = filter.To.Add(-time.Hour * 24)
+			from = from.Add(-time.Hour * 24)
+			to = to.Add(-time.Hour * 24)
 		}
+	}
+
+	filter.From = from
+	filter.To = to
+
+	if !filter.ImportedUntil.IsZero() {
+		filter.validate()
 	}
 }
 
@@ -484,6 +576,24 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 
 	if err != nil {
 		return 0, err
+	}
+
+	if !filter.importedFrom.IsZero() && !filter.importedTo.IsZero() {
+		q = queryBuilder{
+			filter: filter,
+			from:   sessions,
+			search: filter.Search,
+		}
+		query.Reset()
+		query.WriteString("SELECT sum(session_duration) FROM imported_visitors ")
+		query.WriteString(q.whereTimeImported())
+		averageTimeSpentSecondsImported, err := visitors.store.Count(filter.Ctx, query.String(), q.args...)
+
+		if err != nil {
+			return 0, err
+		}
+
+		averageTimeSpentSeconds += averageTimeSpentSecondsImported
 	}
 
 	return averageTimeSpentSeconds, nil
