@@ -650,25 +650,28 @@ var (
 
 	// FieldRelativePlatformDesktop is a query result column.
 	FieldRelativePlatformDesktop = Field{
-		querySessions:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryPageViews: "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryImported:  "platform_desktop / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		querySessions:  `platform_desktop / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryPageViews: `platform_desktop / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryImported:  `platform_desktop / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1)`,
+		filterTime:     true,
 		Name:           "relative_platform_desktop",
 	}
 
 	// FieldRelativePlatformMobile is a query result column.
 	FieldRelativePlatformMobile = Field{
-		querySessions:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryPageViews: "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryImported:  "platform_mobile / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		querySessions:  `platform_mobile / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryPageViews: `platform_mobile / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryImported:  `platform_mobile / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1)`,
+		filterTime:     true,
 		Name:           "relative_platform_mobile",
 	}
 
 	// FieldRelativePlatformUnknown is a query result column.
 	FieldRelativePlatformUnknown = Field{
-		querySessions:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryPageViews: "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
-		queryImported:  "platform_unknown / IF(platform_desktop + platform_mobile + platform_unknown = 0, 1, platform_desktop + platform_mobile + platform_unknown)",
+		querySessions:  `platform_unknown / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryPageViews: `platform_unknown / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s), 1)`,
+		queryImported:  `platform_unknown / greatest((SELECT uniq(visitor_id)%s FROM "session"%s WHERE %s) + (SELECT sum(visitors) FROM "%s" WHERE %s), 1)`,
+		filterTime:     true,
 		Name:           "relative_platform_unknown",
 	}
 

@@ -39,7 +39,10 @@ func TestAnalyzer_Platform(t *testing.T) {
 		},
 	})
 	analyzer := NewAnalyzer(dbClient)
-	platform, err := analyzer.Device.Platform(&Filter{From: util.PastDay(5), To: util.Today()})
+	platform, err := analyzer.Device.Platform(&Filter{
+		From: util.PastDay(5),
+		To:   util.Today(),
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, platform.PlatformDesktop)
 	assert.Equal(t, 2, platform.PlatformMobile)
@@ -47,14 +50,46 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
-	platform, err = analyzer.Device.Platform(&Filter{Path: []string{"/foo"}})
+	platform, err = analyzer.Device.Platform(&Filter{
+		Path: []string{"/foo"},
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, platform.PlatformDesktop)
 	assert.Equal(t, 0, platform.PlatformMobile)
 	assert.Equal(t, 0, platform.PlatformUnknown)
-	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01) // FIXME this shouldn't be 100%
+	assert.InDelta(t, 0.1666, platform.RelativePlatformDesktop, 0.01)
 	assert.InDelta(t, 0, platform.RelativePlatformMobile, 0.01)
 	assert.InDelta(t, 0, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		Platform: pkg.PlatformDesktop,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, platform.PlatformDesktop)
+	assert.Equal(t, 0, platform.PlatformMobile)
+	assert.Equal(t, 0, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		Platform: pkg.PlatformMobile,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, platform.PlatformDesktop)
+	assert.Equal(t, 2, platform.PlatformMobile)
+	assert.Equal(t, 0, platform.PlatformUnknown)
+	assert.InDelta(t, 0, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		Platform: pkg.PlatformUnknown,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, platform.PlatformDesktop)
+	assert.Equal(t, 0, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1666, platform.RelativePlatformUnknown, 0.01)
 	_, err = analyzer.Device.Platform(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Device.Platform(getMaxFilter("event"))
@@ -86,7 +121,25 @@ func TestAnalyzer_Platform(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 5, platform.PlatformDesktop)
-	assert.InDelta(t, 1, platform.RelativePlatformDesktop, 0.01) // FIXME this shouldn't be 100%
+	assert.InDelta(t, 0.5555, platform.RelativePlatformDesktop, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Platform:      pkg.PlatformMobile,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, platform.PlatformMobile)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Platform:      pkg.PlatformUnknown,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.1111, platform.RelativePlatformUnknown, 0.01)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {

@@ -6,6 +6,7 @@
 * improved creating and cleaning up test data
 * speed up tests
 * fixed logging error
+* fixed relative visitor calculation for platform
 
 ## 6.13.0
 
