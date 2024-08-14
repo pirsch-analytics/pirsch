@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.13.1
+
+* upgraded to Go 1.23
+* improved creating and cleaning up test data
+* speed up tests
+* fixed logging error
+
 ## 6.13.0
 
 * added merging imported statistics

@@ -27,7 +27,6 @@ func TestAnalyzer_UTM(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), UTMSource: "source1", UTMMedium: "medium1", UTMCampaign: "campaign1", UTMContent: "content1", UTMTerm: "term1"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	source, err := analyzer.UTM.Source(nil)
 	assert.NoError(t, err)

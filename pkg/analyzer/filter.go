@@ -416,10 +416,7 @@ func (filter *Filter) table(fields []Field) table {
 		return pageViews
 	}
 
-	sessionFilter := filter.fieldsContain(fields, FieldEntryPath) ||
-		filter.fieldsContain(fields, FieldExitPath)
-
-	if sessionFilter {
+	if filter.fieldsContain(fields, FieldEntryPath) || filter.fieldsContain(fields, FieldExitPath) {
 		return sessions
 	}
 

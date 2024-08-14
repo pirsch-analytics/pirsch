@@ -53,7 +53,6 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 			{Sign: 1, VisitorID: 9, Time: util.Today(), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -271,7 +270,6 @@ func TestAnalyzer_PageTitle(t *testing.T) {
 			{Sign: 1, VisitorID: 2, Time: util.Today(), Start: time.Now(), SessionID: 3, ExitPath: "/foo", EntryTitle: "Foo"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{IncludeTitle: true, IncludeTimeOnPage: true})
 	assert.NoError(t, err)
@@ -512,7 +510,6 @@ func TestAnalyzer_ByPathTags(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(&Filter{
 		Tags: map[string]string{"foo": "bar"},
@@ -603,7 +600,6 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Pages.ByPath(nil)
 	assert.NoError(t, err)
@@ -940,7 +936,6 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 			{Sign: 1, VisitorID: 2, Time: util.PastDay(2), Start: time.Now(), SessionID: 3, EntryPath: "/", ExitPath: "/", PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	entries, err := analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionDESC}}})
 	assert.NoError(t, err)
@@ -1120,7 +1115,6 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 14), Start: time.Now(), DurationSeconds: 7, EntryPath: "/", ExitPath: "/integrations/wordpress/", PageViews: 5, IsBounce: false},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	filter := &Filter{
 		Path:  []string{"/account/billing/"},
@@ -1172,7 +1166,6 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: time.Now(), ExitPath: "/", EntryPath: "/", PageViews: 3, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 
 	// no filter

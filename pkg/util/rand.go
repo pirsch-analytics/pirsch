@@ -1,6 +1,6 @@
 package util
 
-import "math/rand"
+import "math/rand/v2"
 
 const (
 	randStrChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -21,7 +21,7 @@ func RandString(n int) string {
 	randStr := make([]byte, n)
 
 	for i := range randStr {
-		randStr[i] = randStrChars[rand.Intn(len(randStrChars))]
+		randStr[i] = randStrChars[rand.IntN(len(randStrChars))]
 	}
 
 	return string(randStr)

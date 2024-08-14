@@ -27,7 +27,6 @@ func TestAnalyzer_Languages(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), Language: "en"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Languages(nil)
 	assert.NoError(t, err)
@@ -113,7 +112,6 @@ func TestAnalyzer_Countries(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "en"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Countries(nil)
 	assert.NoError(t, err)
@@ -218,7 +216,6 @@ func TestAnalyzer_Regions(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Regions(nil)
 	assert.NoError(t, err)
@@ -311,7 +308,6 @@ func TestAnalyzer_Cities(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "gb"},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Demographics.Cities(nil)
 	assert.NoError(t, err)

@@ -39,7 +39,6 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), Start: time.Now()},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, count, err := analyzer.Visitors.Active(nil, time.Minute*10)
 	assert.NoError(t, err)
@@ -2243,7 +2242,6 @@ func TestAnalyzer_Growth(t *testing.T) {
 			{Sign: 1, VisitorID: 13, Time: util.Today(), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
@@ -2672,7 +2670,6 @@ func TestAnalyzer_Referrer(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
@@ -2922,7 +2919,6 @@ func TestAnalyzer_ReferrerGrouping(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), Referrer: "https://example.com", ReferrerName: "example.com", PageViews: 1},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
@@ -2955,7 +2951,6 @@ func TestAnalyzer_ReferrerUnknown(t *testing.T) {
 			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1", PageViews: 1, IsBounce: true},
 		},
 	})
-	time.Sleep(time.Millisecond * 100)
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(&Filter{Referrer: []string{pkg.Unknown}})
 	assert.NoError(t, err)

@@ -3,8 +3,8 @@ package db
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
-	"time"
 )
 
 // Connect connects to the database.
@@ -66,13 +66,27 @@ func CleanupDB(t *testing.T, client *Client) {
 		"imported_utm_source",
 		"imported_visitors",
 	}
+	var wg sync.WaitGroup
+	wg.Add(len(tables))
 
 	for _, table := range tables {
-		_, err := client.Exec(fmt.Sprintf(`ALTER TABLE "%s" DELETE WHERE 1=1`, table))
-		assert.NoError(t, err)
+		go func() {
+			_, err := client.Exec(fmt.Sprintf(`ALTER TABLE "%s" DELETE WHERE 1=1`, table))
+			wg.Done()
+			assert.NoError(t, err)
+		}()
 	}
 
-	time.Sleep(time.Millisecond * 200)
+	wg.Wait()
+
+	for _, table := range tables {
+		count := 1
+
+		for count > 0 {
+			row := client.QueryRow(fmt.Sprintf(`SELECT count(*) FROM "%s"`, table))
+			assert.NoError(t, row.Scan(&count))
+		}
+	}
 }
 
 // DropDB drops all database tables.
