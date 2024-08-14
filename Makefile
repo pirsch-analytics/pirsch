@@ -7,6 +7,7 @@ test:
 
 deps:
 	go get -u -t ./...
+	go mod vendor
 
 referrer:
 	go run scripts/update_referrer_list/update_referrer_list.go
