@@ -140,6 +140,27 @@ func TestAnalyzer_Platform(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, platform.PlatformUnknown)
 	assert.InDelta(t, 0.1111, platform.RelativePlatformUnknown, 0.01)
+	platform, err = analyzer.Device.Platform(&Filter{
+		From:                 util.PastDay(1),
+		To:                   util.Today(),
+		ImportedUntil:        util.Today(),
+		Period:               pkg.PeriodMonth,
+		Limit:                10,
+		Sample:               10_000_000,
+		MaxTimeOnPageSeconds: 3600,
+		Path:                 []string{"/"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, platform.PlatformDesktop)
+	assert.Equal(t, 3, platform.PlatformMobile)
+	assert.Equal(t, 1, platform.PlatformUnknown)
+	assert.InDelta(t, 0.5555, platform.RelativePlatformDesktop, 0.01)
+	assert.InDelta(t, 0.3333, platform.RelativePlatformMobile, 0.01)
+	assert.InDelta(t, 0.1111, platform.RelativePlatformUnknown, 0.01)
+	maxFilter := getMaxFilter("event")
+	maxFilter.ImportedUntil = util.Today()
+	_, err = analyzer.Device.Platform(maxFilter)
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {

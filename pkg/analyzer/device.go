@@ -14,6 +14,17 @@ type Device struct {
 // Platform returns the visitor count grouped by platform.
 func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 	filter = device.analyzer.getFilter(filter)
+
+	if !filter.ImportedUntil.IsZero() && (filter.From.Before(filter.ImportedUntil) || filter.From.Equal(filter.ImportedUntil)) {
+		filter.Path = nil
+		filter.EntryPath = nil
+		filter.ExitPath = nil
+		filter.AnyPath = nil
+		filter.Tags = nil
+		filter.Search = nil
+		filter.IncludeTitle = false
+	}
+
 	q, args := filter.buildQuery([]Field{
 		FieldPlatformDesktop,
 		FieldPlatformMobile,

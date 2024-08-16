@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.13.2
+
+* fixed reading platform with imported statistics and page filter set
+
 ## 6.13.1
 
 * upgraded to Go 1.23
