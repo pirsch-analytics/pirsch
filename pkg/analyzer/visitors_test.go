@@ -2670,6 +2670,10 @@ func TestAnalyzer_Referrer(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/bar", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
 		},
 	})
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+		{VisitorID: 4, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Referrer(nil)
 	assert.NoError(t, err)
@@ -2907,6 +2911,69 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.InDelta(t, 0.2857, visitors[0].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
 	assert.InDelta(t, 0.3333, visitors[0].BounceRate, 0.01)
+}
+
+func TestAnalyzer_ReferrerEvents(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute), Start: time.Now(), ExitPath: "/bar", Referrer: "ref3/foo", ReferrerName: "Ref3", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref1/foo", ReferrerName: "Ref1", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Referrer: "ref2/foo", ReferrerName: "Ref2", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+		{VisitorID: 1, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+		{VisitorID: 4, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.Referrer(&Filter{
+		EventName: []string{"event"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "Ref2", visitors[0].ReferrerName)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.5, visitors[0].BounceRate, 0.01)
+
+	// imported statistics
+	yesterday := util.PastDay(1).Format(time.DateOnly)
+	_, err = dbClient.Exec(fmt.Sprintf(`INSERT INTO "imported_referrer" (date, referrer, visitors, sessions, bounces) VALUES
+		('%s', 'ref2/foo', 2, 3, 1), ('%s', 'ref1/bar', 1, 1, 1)`, yesterday, yesterday))
+	assert.NoError(t, err)
+	time.Sleep(time.Millisecond * 100)
+	visitors, err = analyzer.Visitors.Referrer(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		Sample:        10_000,
+		EventName:     []string{"event"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "Ref2", visitors[0].ReferrerName)
+	assert.Equal(t, "ref1/bar", visitors[1].ReferrerName)
+	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
+	assert.Equal(t, "ref1/bar", visitors[1].Referrer)
+	assert.Equal(t, 4, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 5, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[1].Sessions)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.InDelta(t, 0.5714, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.4, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
 }
 
 func TestAnalyzer_ReferrerGrouping(t *testing.T) {
