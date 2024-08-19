@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.13.3
+
+* fixed types for views and bounces result fields
+
 ## 6.13.2
 
 * fixed reading platform with imported statistics and page filter set

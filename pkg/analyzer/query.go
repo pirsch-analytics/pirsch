@@ -386,14 +386,12 @@ func (query *queryBuilder) joinQuery() {
 }
 
 func (query *queryBuilder) unionImported() {
-	if query.fieldsImported[0] == FieldVisitors ||
-		query.fieldsImported[0] == FieldSessions ||
-		query.fieldsImported[0] == FieldViews ||
-		query.fieldsImported[0] == FieldBounces {
+	// ensure we return at least one column for the main table so we can join the imported statistics
+	if query.joinImportedSum(query.fieldsImported[0]) {
 		query.q.WriteString("UNION ALL (SELECT ")
 
 		for i, field := range query.fields {
-			query.q.WriteString("NULL ")
+			query.q.WriteString("0 ")
 			query.q.WriteString(field.Name)
 
 			if i < len(query.fields)-1 {
@@ -469,10 +467,7 @@ func (query *queryBuilder) joinImported(from string) {
 	if joinField != FieldPlatformDesktop &&
 		joinField != FieldPlatformMobile &&
 		joinField != FieldPlatformUnknown &&
-		joinField != FieldVisitors &&
-		joinField != FieldSessions &&
-		joinField != FieldViews &&
-		joinField != FieldBounces {
+		!query.joinImportedSum(joinField) {
 		groupBy := query.groupBy
 		query.groupBy = []Field{joinField}
 		query.groupByFields(false)
@@ -497,6 +492,13 @@ func (query *queryBuilder) joinImported(from string) {
 			query.q.WriteString(fmt.Sprintf(") imp ON t.%s = imp.%s ", joinField.Name, joinField.Name))
 		}
 	}
+}
+
+func (query *queryBuilder) joinImportedSum(field Field) bool {
+	return field == FieldVisitors ||
+		field == FieldSessions ||
+		field == FieldViews ||
+		field == FieldBounces
 }
 
 func (query *queryBuilder) whereTime() string {
