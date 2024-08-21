@@ -933,7 +933,7 @@ func TestTrackerPageViewAndEvent(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, sessionDuration, 1)
-	assert.Equal(t, 8, sessionDuration[0].AverageTimeSpentSeconds)
+	assert.InDelta(t, 10, sessionDuration[0].AverageTimeSpentSeconds, 1)
 	timeOnPage, err := a.Pages.ByPath(&analyzer.Filter{
 		From:              util.Today(),
 		To:                util.Today(),

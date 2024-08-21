@@ -64,7 +64,7 @@ func TestFunnel_Steps(t *testing.T) {
 			},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 15), Path: "/product", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 		{ClientID: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 131), Path: "/cart", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
@@ -79,7 +79,7 @@ func TestFunnel_Steps(t *testing.T) {
 
 		{ClientID: 1, VisitorID: 4, Time: util.Today(), Path: "/checkout", Language: "en", TagKeys: []string{"currency"}, TagValues: []string{"USD"}},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"42"}, Language: "en"},
 		{ClientID: 1, VisitorID: 1, Time: util.Today(), Path: "/checkout", Name: "Purchase", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"89.90", "USD"}, Language: "en"},
 		{ClientID: 1, VisitorID: 2, Time: util.Today(), Path: "/product", Name: "Add to Cart", MetaKeys: []string{"product"}, MetaValues: []string{"24"}, Language: "en"},

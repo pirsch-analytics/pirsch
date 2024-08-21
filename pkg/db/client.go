@@ -12,6 +12,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -146,25 +147,14 @@ func NewClient(config *ClientConfig) (*Client, error) {
 }
 
 // SavePageViews implements the Store interface.
-func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageView) error {
-	tx, err := client.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
-		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-		tag_keys, tag_values) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-
-	if err != nil {
-		return err
-	}
+func (client *Client) SavePageViews(pageViews []model.PageView) error {
+	values := make([]string, 0, len(pageViews))
+	args := make([]any, 0, len(pageViews)*28)
 
 	for _, pageView := range pageViews {
-		_, err := query.Exec(pageView.ClientID,
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		args = append(args,
+			pageView.ClientID,
 			pageView.VisitorID,
 			pageView.SessionID,
 			pageView.Time,
@@ -192,17 +182,13 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 			pageView.UTMTerm,
 			pageView.TagKeys,
 			pageView.TagValues)
-
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save page views", "err", err)
-			}
-
-			return err
-		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
+		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+		tag_keys, tag_values) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -214,25 +200,14 @@ func (client *Client) SavePageViews(ctx context.Context, pageViews []model.PageV
 }
 
 // SaveSessions implements the Store interface.
-func (client *Client) SaveSessions(ctx context.Context, sessions []model.Session) error {
-	tx, err := client.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
-		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-
-	if err != nil {
-		return err
-	}
+func (client *Client) SaveSessions(sessions []model.Session) error {
+	values := make([]string, 0, len(sessions))
+	args := make([]any, 0, len(sessions)*33)
 
 	for _, session := range sessions {
-		_, err := query.Exec(session.Sign,
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		args = append(args,
+			session.Sign,
 			session.ClientID,
 			session.VisitorID,
 			session.SessionID,
@@ -265,17 +240,12 @@ func (client *Client) SaveSessions(ctx context.Context, sessions []model.Session
 			session.UTMContent,
 			session.UTMTerm,
 			session.Extended)
-
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save sessions", "err", err)
-			}
-
-			return err
-		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
+		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -287,24 +257,14 @@ func (client *Client) SaveSessions(ctx context.Context, sessions []model.Session
 }
 
 // SaveEvents implements the Store interface.
-func (client *Client) SaveEvents(ctx context.Context, events []model.Event) error {
-	tx, err := client.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
-		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
-		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-
-	if err != nil {
-		return err
-	}
+func (client *Client) SaveEvents(events []model.Event) error {
+	values := make([]string, 0, len(events))
+	args := make([]any, 0, len(events)*29)
 
 	for _, event := range events {
-		_, err := query.Exec(event.ClientID,
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		args = append(args,
+			event.ClientID,
 			event.VisitorID,
 			event.Time,
 			event.SessionID,
@@ -333,17 +293,12 @@ func (client *Client) SaveEvents(ctx context.Context, events []model.Event) erro
 			event.UTMCampaign,
 			event.UTMContent,
 			event.UTMTerm)
-
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save events", "err", err)
-			}
-
-			return err
-		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
+		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		browser, browser_version, desktop, mobile, screen_class,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -355,21 +310,14 @@ func (client *Client) SaveEvents(ctx context.Context, events []model.Event) erro
 }
 
 // SaveRequests implements the Store interface.
-func (client *Client) SaveRequests(ctx context.Context, requests []model.Request) error {
-	tx, err := client.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	query, err := tx.PrepareContext(ctx, `INSERT INTO "request" (client_id, visitor_id, time, ip, user_agent, path, event_name, referrer, utm_source, utm_medium, utm_campaign, bot, bot_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-
-	if err != nil {
-		return err
-	}
+func (client *Client) SaveRequests(requests []model.Request) error {
+	values := make([]string, 0, len(requests))
+	args := make([]any, 0, len(requests)*13)
 
 	for _, req := range requests {
-		_, err := query.Exec(req.ClientID,
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		args = append(args,
+			req.ClientID,
 			req.VisitorID,
 			req.Time,
 			req.IP,
@@ -382,17 +330,9 @@ func (client *Client) SaveRequests(ctx context.Context, requests []model.Request
 			req.UTMCampaign,
 			req.Bot,
 			req.BotReason)
-
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				client.logger.Error("error rolling back transaction to save requests", "err", err)
-			}
-
-			return err
-		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "request" (client_id, visitor_id, time, ip, user_agent, path, event_name, referrer, utm_source, utm_medium, utm_campaign, bot, bot_reason) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 

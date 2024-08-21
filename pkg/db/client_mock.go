@@ -94,7 +94,7 @@ func (client *ClientMock) GetRequests() []model.Request {
 }
 
 // SavePageViews implements the Store interface.
-func (client *ClientMock) SavePageViews(_ context.Context, pageViews []model.PageView) error {
+func (client *ClientMock) SavePageViews(pageViews []model.PageView) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.pageViews = append(client.pageViews, pageViews...)
@@ -102,7 +102,7 @@ func (client *ClientMock) SavePageViews(_ context.Context, pageViews []model.Pag
 }
 
 // SaveSessions implements the Store interface.
-func (client *ClientMock) SaveSessions(_ context.Context, sessions []model.Session) error {
+func (client *ClientMock) SaveSessions(sessions []model.Session) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.sessions = append(client.sessions, sessions...)
@@ -110,7 +110,7 @@ func (client *ClientMock) SaveSessions(_ context.Context, sessions []model.Sessi
 }
 
 // SaveEvents implements the Store interface.
-func (client *ClientMock) SaveEvents(_ context.Context, events []model.Event) error {
+func (client *ClientMock) SaveEvents(events []model.Event) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.events = append(client.events, events...)
@@ -118,7 +118,7 @@ func (client *ClientMock) SaveEvents(_ context.Context, events []model.Event) er
 }
 
 // SaveRequests implements the Store interface.
-func (client *ClientMock) SaveRequests(_ context.Context, bots []model.Request) error {
+func (client *ClientMock) SaveRequests(bots []model.Request) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.requests = append(client.requests, bots...)

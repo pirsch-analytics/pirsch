@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"fmt"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
@@ -14,7 +13,7 @@ import (
 
 func TestAnalyzer_Platform(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Now(), Path: "/", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/foo", Desktop: true},
 		{VisitorID: 1, Time: time.Now(), Path: "/bar", Desktop: true},
@@ -560,7 +559,7 @@ func TestAnalyzer_ScreenClass(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), ScreenClass: "XXL"},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Now(), Path: "/", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: time.Now(), Path: "/foo", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: time.Now(), Path: "/bar", ScreenClass: "XXL", TagKeys: []string{"author"}, TagValues: []string{"John"}},

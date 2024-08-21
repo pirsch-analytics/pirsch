@@ -24,7 +24,7 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_SavePageViews(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -60,7 +60,7 @@ func TestClient_SavePageViews(t *testing.T) {
 
 func TestClient_SaveSessions(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{
 			Sign:            1,
 			ClientID:        1,
@@ -136,7 +136,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		SessionID: 4,
 		PageViews: 51,
 	})
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), sessions))
+	assert.NoError(t, dbClient.SaveSessions(sessions))
 	count := 0
 	assert.NoError(t, dbClient.QueryRow(`SELECT page_views FROM "session" FINAL`).Scan(&count))
 	assert.Equal(t, 51, count)
@@ -144,7 +144,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 
 func TestClient_SaveEvents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{
 			ClientID:        1,
 			VisitorID:       1,
@@ -182,7 +182,7 @@ func TestClient_SaveEvents(t *testing.T) {
 
 func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveRequests(context.Background(), []model.Request{
+	assert.NoError(t, dbClient.SaveRequests([]model.Request{
 		{
 			ClientID:    1,
 			VisitorID:   1,
@@ -211,7 +211,7 @@ func TestClient_SaveRequests(t *testing.T) {
 func TestClient_Session(t *testing.T) {
 	CleanupDB(t, dbClient)
 	now := time.Now().UTC().Add(-time.Second * 20)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{
 			Sign:      1,
 			ClientID:  1,

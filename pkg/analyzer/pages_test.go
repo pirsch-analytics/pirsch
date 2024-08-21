@@ -15,7 +15,7 @@ import (
 
 func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo"},
 		{VisitorID: 1, Time: util.PastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home"},
@@ -254,7 +254,7 @@ func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 
 func TestAnalyzer_PageTitle(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(2).Add(time.Hour * 23).Add(time.Minute * 57), SessionID: 1, Path: "/", Title: "Home 1"},
 		{VisitorID: 1, Time: util.PastDay(1).Add(time.Second * 14), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 314},
 		{VisitorID: 2, Time: util.Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
@@ -295,13 +295,13 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 			{Sign: 1, VisitorID: 2, SessionID: 3, Time: util.PastDay(1), Start: time.Now(), EntryPath: "/foo", ExitPath: "/foo", EntryTitle: "Foo", ExitTitle: "Foo"},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/foo", Title: "Foo", DurationSeconds: 42},
 		{VisitorID: 1, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home 2"},
 		{VisitorID: 2, Time: util.PastDay(1), SessionID: 2, Path: "/foo", Title: "Foo"},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event", VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/", Title: "Home 1"},
 		{Name: "event", VisitorID: 1, Time: util.PastDay(1), SessionID: 1, Path: "/", Title: "Home 2", DurationSeconds: 42},
 		{Name: "event", VisitorID: 2, Time: util.Today(), SessionID: 3, Path: "/foo", Title: "Foo"},
@@ -321,7 +321,7 @@ func TestAnalyzer_PageTitleEvent(t *testing.T) {
 
 func TestAnalyzer_ByPathEvent(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
 		{VisitorID: 1, Time: util.Today(), Path: "/bar"},
@@ -337,7 +337,7 @@ func TestAnalyzer_ByPathEvent(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", IsBounce: true, PageViews: 1},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, Time: util.Today(), Name: "event"},
 		{VisitorID: 3, Time: util.Today(), Name: "event"},
 	}))
@@ -390,7 +390,7 @@ func TestAnalyzer_ByPathEvent(t *testing.T) {
 
 func TestAnalyzer_ByPathEventPath(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: util.Today(), Path: "/foo", Title: "Foo"},
 		{VisitorID: 1, Time: util.Today(), Path: "/bar", Title: "Bar"},
@@ -406,7 +406,7 @@ func TestAnalyzer_ByPathEventPath(t *testing.T) {
 			{Sign: 1, VisitorID: 3, Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home", IsBounce: true, PageViews: 1},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, Time: util.Today(), Name: "event", Path: "/", Title: "Home", DurationSeconds: 5},
 		{VisitorID: 3, Time: util.Today(), Name: "event", Path: "/foo", Title: "Foo", DurationSeconds: 9},
 	}))
@@ -496,7 +496,7 @@ func TestAnalyzer_ByPathEventPath(t *testing.T) {
 
 func TestAnalyzer_ByPathTags(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/", Title: "Home", TagKeys: []string{"author", "foo"}, TagValues: []string{"John", "bar"}},
 		{VisitorID: 1, Time: util.Today(), Path: "/foo", Title: "Foo", TagKeys: []string{"author", "title"}, TagValues: []string{"John", "Foo"}},
 		{VisitorID: 1, Time: util.Today(), Path: "/bar", Title: "Bar", TagKeys: []string{"foo"}, TagValues: []string{"bar"}},
@@ -582,7 +582,7 @@ func TestAnalyzer_ByPathTags(t *testing.T) {
 
 func TestAnalyzer_PathPattern(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
 		{VisitorID: 3, Time: util.Today(), Path: "/siMple/page/"},
@@ -620,7 +620,7 @@ func TestAnalyzer_PathPattern(t *testing.T) {
 
 func TestAnalyzer_EntryExitPages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: util.PastDay(2).Add(time.Second), SessionID: 2, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: util.PastDay(2).Add(time.Second * 10), SessionID: 2, DurationSeconds: 10, Path: "/foo", Title: "Foo"},
@@ -651,7 +651,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 			{Sign: 1, VisitorID: 7, Time: util.PastDay(1).Add(time.Minute), Start: time.Now(), SessionID: 2, EntryPath: "/", ExitPath: "/", EntryTitle: "Home", ExitTitle: "Home"},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2).Add(time.Second), Path: "/", Name: "event", MetaKeys: []string{"key", "author", "amount"}, MetaValues: []string{"value", "John", "99.99"}},
 		{VisitorID: 3, SessionID: 2, Time: util.PastDay(2), Path: "/", Name: "event", MetaKeys: []string{"author", "type"}, MetaValues: []string{"Alice", "blog_post"}},
 	}))
@@ -924,7 +924,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.PastDay(2), SessionID: 1, Path: "/"},
 		{VisitorID: 1, Time: util.PastDay(2), SessionID: 2, Path: "/foo"},
 		{VisitorID: 2, Time: util.PastDay(2), SessionID: 3, Path: "/"},
@@ -969,7 +969,7 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), SessionID: 1, Path: "/"},
 		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/", DurationSeconds: 8},
 		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo", DurationSeconds: 31},
@@ -987,7 +987,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar", PageViews: 3},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo"},
 	}))
 	time.Sleep(time.Millisecond * 100)
@@ -1021,7 +1021,7 @@ func TestAnalyzer_EntryExitPagesEvents(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), SessionID: 1, Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.Today().Add(time.Second), SessionID: 1, Path: "/", DurationSeconds: 8, TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: util.Today().Add(time.Second * 15), SessionID: 1, Path: "/foo", DurationSeconds: 31, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
@@ -1039,7 +1039,7 @@ func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Second * 2), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/bar", PageViews: 3},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
 	}))
 	time.Sleep(time.Millisecond * 100)
@@ -1094,7 +1094,7 @@ func TestAnalyzer_EntryExitPagesTags(t *testing.T) {
 
 func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), DurationSeconds: 0, Path: "/"},
 		{VisitorID: 1, Time: util.Today().Add(time.Second * 3), DurationSeconds: 3, Path: "/account/billing/"},
 		{VisitorID: 1, Time: util.Today().Add(time.Second * 5), DurationSeconds: 2, Path: "/settings/general/"},
@@ -1144,7 +1144,7 @@ func TestAnalyzer_EntryExitPagePathFilter(t *testing.T) {
 
 func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		// / -> /foo -> /bar -> /exit
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 10), Path: "/foo"},
@@ -1330,7 +1330,7 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 
 func TestAnalyzer_Conversions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 2, Time: util.Today(), Path: "/simple/page"},
 		{VisitorID: 2, Time: util.Today().Add(time.Minute), Path: "/simple/page"},
@@ -1351,7 +1351,7 @@ func TestAnalyzer_Conversions(t *testing.T) {
 			{Sign: 1, VisitorID: 4, Time: util.Today(), Start: time.Now(), ExitPath: "/simple/page/with/many/slashes", PageViews: 1},
 		},
 	})
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"189", "EUR"}, Path: "/simple/page"},
 		{VisitorID: 2, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"312", "EUR"}, Path: "/simple"},
 		{VisitorID: 4, Time: util.Today(), Name: "Sale", MetaKeys: []string{"amount", "currency"}, MetaValues: []string{"177", "USD"}, Path: "/simple/page"},
@@ -1446,7 +1446,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today(), Start: time.Now(), EntryPath: "/bar", ExitPath: "/"},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 2), Path: "/foo", DurationSeconds: 120, TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*23), Path: "/bar", DurationSeconds: 23, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
@@ -1454,7 +1454,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 16), Path: "/foo", DurationSeconds: 16, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*8), Path: "/", DurationSeconds: 7, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*2), Path: "/foo", Name: "event", MetaKeys: []string{"key", "author"}, MetaValues: []string{"value", "John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute*2 + time.Second*5), Path: "/foo", Name: "another event", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second*16 + time.Second*9), Path: "/", Name: "event", MetaKeys: []string{"author"}, MetaValues: []string{"Alice"}},
@@ -1576,7 +1576,7 @@ func TestAnalyzer_avgTimeOnPage(t *testing.T) {
 
 func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/bar", TagKeys: []string{"author"}, TagValues: []string{"John"}},
@@ -1587,7 +1587,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
 		{VisitorID: 3, SessionID: 1, Time: util.Today(), Path: "/foo", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.Today(), Start: time.Now()},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.Today(), Start: time.Now()},
 		{Sign: 1, VisitorID: 2, SessionID: 1, Time: util.Today(), Start: time.Now()},
@@ -1595,7 +1595,7 @@ func TestAnalyzer_totalVisitorsSessions(t *testing.T) {
 		{Sign: 1, VisitorID: 3, SessionID: 1, Time: util.Today(), Start: time.Now()},
 		{Sign: 1, VisitorID: 3, SessionID: 1, Time: util.Today(), Start: time.Now()},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{Name: "event", VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/foo", MetaKeys: []string{"author"}, MetaValues: []string{"John"}},
 	}))
 	time.Sleep(time.Millisecond * 100)

@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
@@ -12,7 +11,7 @@ import (
 
 func TestFilterOptions_Pages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Path: "/"},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Path: "/foo"},
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo"},
@@ -35,7 +34,7 @@ func TestFilterOptions_Pages(t *testing.T) {
 
 func TestFilterOptions_Referrer(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Referrer: "https://google.com", ReferrerName: "Google"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Referrer: "https://pirsch.io", ReferrerName: "Pirsch"},
@@ -69,7 +68,7 @@ func TestFilterOptions_Referrer(t *testing.T) {
 
 func TestFilterOptions_UTM(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), UTMSource: "source", UTMMedium: "medium", UTMCampaign: "campaign", UTMContent: "content", UTMTerm: "term"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), UTMSource: "foo", UTMMedium: "foo", UTMCampaign: "foo", UTMContent: "foo", UTMTerm: "foo"},
@@ -136,7 +135,7 @@ func TestFilterOptions_UTM(t *testing.T) {
 
 func TestFilterOptions_Events(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Name: "event"},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Name: "foo"},
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "foo"},
@@ -159,7 +158,7 @@ func TestFilterOptions_Events(t *testing.T) {
 
 func TestFilterOptions_Countries(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), CountryCode: "us"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), CountryCode: "ja"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), CountryCode: "ja"},
@@ -182,7 +181,7 @@ func TestFilterOptions_Countries(t *testing.T) {
 
 func TestFilterOptions_Regions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Region: "Florida"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Region: "Tokyo"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Region: "Tokyo"},
@@ -205,7 +204,7 @@ func TestFilterOptions_Regions(t *testing.T) {
 
 func TestFilterOptions_Cities(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), City: "Boston"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), City: "Tokio"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), City: "Tokio"},
@@ -228,7 +227,7 @@ func TestFilterOptions_Cities(t *testing.T) {
 
 func TestFilterOptions_Languages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Language: "en"},
 		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Language: "ja"},
 		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Language: "ja"},
@@ -251,7 +250,7 @@ func TestFilterOptions_Languages(t *testing.T) {
 
 func TestFilterOptions_EventMetadataValues(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Name: "event0", MetaKeys: []string{"key0", "key1"}, MetaValues: []string{"val0", "val1"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Name: "event1"},
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Name: "event2", MetaKeys: []string{"key0", "key1"}, MetaValues: []string{"val1", "val2"}},
@@ -280,7 +279,7 @@ func TestFilterOptions_EventMetadataValues(t *testing.T) {
 
 func TestFilterOptions_TagKeys(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Path: "/", TagKeys: []string{"key0", "key1"}, TagValues: []string{"value0", "value1"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Path: "/"},
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo", TagKeys: []string{"key2", "key1"}, TagValues: []string{"value2", "value1"}},
@@ -311,7 +310,7 @@ func TestFilterOptions_TagKeys(t *testing.T) {
 
 func TestFilterOptions_TagValues(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Path: "/", TagKeys: []string{"key0", "key1"}, TagValues: []string{"value0", "value1"}},
 		{VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Path: "/"},
 		{VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Path: "/foo", TagKeys: []string{"key2", "key1"}, TagValues: []string{"value2", "value1"}},

@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.14.0
+
+* switched to VersionedCollapsingMergeTree for session data
+* use batch inserts instead of prepared statements
+* updated dependencies
+
 ## 6.13.3
 
 * fixed types for views and bounces result fields

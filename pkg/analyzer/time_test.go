@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
@@ -27,7 +26,7 @@ func TestAnalyzer_AvgSessionDuration(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: util.Today(), Start: time.Now(), SessionID: 6, DurationSeconds: 0},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 25), Path: "/foo", DurationSeconds: 25, TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 28), Path: "/bar", DurationSeconds: 3, TagKeys: []string{"author"}, TagValues: []string{"Alice"}},
@@ -156,7 +155,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 			{Sign: 1, VisitorID: 6, Time: time.Date(2023, 10, 24, 0, 0, 0, 0, time.UTC), Start: time.Now(), SessionID: 1, EntryPath: "/", ExitPath: "/foo"},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 		{VisitorID: 1, Time: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
 		{VisitorID: 2, Time: time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home", TagKeys: []string{"author"}, TagValues: []string{"John"}},
@@ -346,7 +345,7 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 
 func TestAnalyzer_AvgTimeOnPagePeriod(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
 		{VisitorID: 2, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home"},
@@ -388,7 +387,7 @@ func TestAnalyzer_AvgTimeOnPagePeriod(t *testing.T) {
 
 func TestAnalyzer_AvgTimeOnPageTz(t *testing.T) {
 	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home"},
 		{VisitorID: 1, Time: time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC).Add(time.Second * 9), SessionID: 3, Path: "/foo", DurationSeconds: 9, Title: "Foo"},
 		{VisitorID: 2, Time: time.Date(2023, 10, 2, 23, 0, 0, 0, time.UTC), SessionID: 3, Path: "/", Title: "Home"},

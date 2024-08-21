@@ -3,7 +3,7 @@ module github.com/pirsch-analytics/pirsch/v6
 go 1.23
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.27.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.27.2
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.0
 	github.com/emvi/null v1.3.1
