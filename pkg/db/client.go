@@ -202,12 +202,13 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 // SaveSessions implements the Store interface.
 func (client *Client) SaveSessions(sessions []model.Session) error {
 	values := make([]string, 0, len(sessions))
-	args := make([]any, 0, len(sessions)*33)
+	args := make([]any, 0, len(sessions)*34)
 
 	for _, session := range sessions {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			session.Sign,
+			session.Version,
 			session.ClientID,
 			session.VisitorID,
 			session.SessionID,
@@ -242,7 +243,7 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 			session.Extended)
 	}
 
-	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "session" (sign, client_id, visitor_id, session_id, time, start, duration_seconds,
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "session" (sign, version, client_id, visitor_id, session_id, time, start, duration_seconds,
 		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended) VALUES %s`, strings.Join(values, ",")), args...); err != nil {

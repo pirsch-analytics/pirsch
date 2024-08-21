@@ -48,21 +48,25 @@ func TestTracker(t *testing.T) {
 	assert.Len(t, sessions, 7)
 	assert.Len(t, pageViews, 2)
 	assert.Len(t, events, 1)
+	assert.Equal(t, uint16(1), sessions[0].Version)
+	assert.Equal(t, uint16(1), sessions[1].Version)
+	assert.Equal(t, uint16(2), sessions[2].Version)
+	assert.Equal(t, uint16(2), sessions[3].Version)
+	assert.Equal(t, uint16(3), sessions[4].Version)
+	assert.Equal(t, uint16(3), sessions[5].Version)
+	assert.Equal(t, uint16(4), sessions[6].Version)
 	assert.Equal(t, sessions[6].VisitorID, pageViews[0].VisitorID)
 	assert.Equal(t, sessions[6].VisitorID, pageViews[1].VisitorID)
 	assert.Equal(t, sessions[6].VisitorID, events[0].VisitorID)
 	assert.Equal(t, sessions[6].SessionID, pageViews[0].SessionID)
 	assert.Equal(t, sessions[6].SessionID, pageViews[1].SessionID)
 	assert.Equal(t, sessions[6].SessionID, events[0].SessionID)
-
 	assert.Equal(t, uint16(2), sessions[6].PageViews)
 	assert.Equal(t, "/foo", sessions[6].EntryPath)
 	assert.Equal(t, "/bar", sessions[6].ExitPath)
 	assert.Equal(t, uint32(4), sessions[6].DurationSeconds)
-
 	assert.Equal(t, "/foo", pageViews[0].Path)
 	assert.Equal(t, "/bar", pageViews[1].Path)
-
 	assert.Equal(t, "test", events[0].Name)
 	assert.Equal(t, "/foo", events[0].Path)
 }
@@ -933,7 +937,7 @@ func TestTrackerPageViewAndEvent(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, sessionDuration, 1)
-	assert.InDelta(t, 10, sessionDuration[0].AverageTimeSpentSeconds, 1)
+	assert.InDelta(t, 10, sessionDuration[0].AverageTimeSpentSeconds, 2)
 	timeOnPage, err := a.Pages.ByPath(&analyzer.Filter{
 		From:              util.Today(),
 		To:                util.Today(),

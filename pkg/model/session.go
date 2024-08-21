@@ -8,6 +8,7 @@ import (
 // Session represents a single visitor.
 type Session struct {
 	Sign            int8      `json:"sign"`
+	Version         uint16    `json:"version"`
 	ClientID        uint64    `db:"client_id" json:"client_id"`
 	VisitorID       uint64    `db:"visitor_id" json:"visitor_id"`
 	SessionID       uint32    `db:"session_id" json:"session_id"`

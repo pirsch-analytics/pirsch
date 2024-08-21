@@ -70,51 +70,6 @@ func TestAnalyzer_NoData(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO
-/*func TestAnalyzer_ReferrerCorruptData(t *testing.T) {
-	db.CleanupDB(t, dbClient)
-	now := time.Now()
-	saveSessions(t, [][]model.Session{
-		{
-			// cancelled without update
-			{Sign: 1, VisitorID: 1, Time: now, Start: now, PageViews: 2, IsBounce: false},
-			{Sign: -1, VisitorID: 1, Time: now, Start: now, PageViews: 2, IsBounce: false},
-
-			// updated without cancel
-			{Sign: 1, VisitorID: 2, Time: now, Start: now, PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 2, Time: now.Add(time.Minute), Start: now, PageViews: 2, IsBounce: false},
-
-			// cancel only
-			{Sign: -1, VisitorID: 3, Time: now, Start: now, PageViews: 3, IsBounce: false},
-			{Sign: -1, VisitorID: 4, Time: now, Start: now, PageViews: 4, IsBounce: false},
-			{Sign: -1, VisitorID: 4, Time: now, Start: now, PageViews: 5, IsBounce: false},
-
-			// two sessions with one broken
-			{Sign: -1, VisitorID: 5, SessionID: 1, Time: now, Start: now, PageViews: 2, IsBounce: false},
-			{Sign: 1, VisitorID: 5, SessionID: 2, Time: now.Add(time.Hour), Start: now, PageViews: 1, IsBounce: true},
-			{Sign: -1, VisitorID: 5, SessionID: 2, Time: now.Add(time.Hour), Start: now, PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 5, SessionID: 2, Time: now.Add(time.Hour).Add(time.Minute), Start: now, PageViews: 2, IsBounce: false},
-
-			// regular bounced session
-			{Sign: 1, VisitorID: 6, Time: now, Start: now, PageViews: 1, IsBounce: true},
-
-			// regular session
-			{Sign: 1, VisitorID: 7, Time: now, Start: now, PageViews: 1, IsBounce: true},
-			{Sign: -1, VisitorID: 7, Time: now, Start: now, PageViews: 1, IsBounce: true},
-			{Sign: 1, VisitorID: 7, Time: now.Add(time.Minute), Start: now, PageViews: 2, IsBounce: false},
-		},
-	})
-	analyzer := NewAnalyzer(dbClient)
-	visitors, err := analyzer.Visitors.Total(&Filter{
-		Sample: 10_000_000,
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 6, visitors.Visitors)
-	assert.Equal(t, 7, visitors.Sessions)
-	assert.Equal(t, 0, visitors.Views)
-	assert.Equal(t, 2, visitors.Bounces)
-}*/
-
 func getMaxFilter(eventName string) *Filter {
 	var events []string
 

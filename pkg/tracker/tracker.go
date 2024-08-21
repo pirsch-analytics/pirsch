@@ -537,6 +537,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 
 	return &model.Session{
 		Sign:           1,
+		Version:        1,
 		ClientID:       clientID,
 		VisitorID:      fingerprint,
 		SessionID:      util.RandUint32(),
@@ -604,6 +605,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
+	session.Version++
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top), session.IsBounce
