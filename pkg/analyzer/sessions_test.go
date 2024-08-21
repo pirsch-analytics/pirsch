@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
@@ -24,7 +23,7 @@ func TestSessions_List(t *testing.T) {
 			{Sign: 1, VisitorID: 4, SessionID: 4, Time: util.Today().Add(time.Minute * 47), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/"},
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 10), Path: "/pricing"},
 		{VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Minute * 30), Path: "/blog"},
@@ -40,7 +39,7 @@ func TestSessions_List(t *testing.T) {
 		{VisitorID: 3, SessionID: 3, Time: util.Today().Add(time.Minute * 45), Path: "/about"},
 		{VisitorID: 4, SessionID: 4, Time: util.Today().Add(time.Minute * 47), Path: "/"},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Minute * 5), Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
 	}))
 	analyzer := NewAnalyzer(dbClient)
@@ -130,12 +129,12 @@ func TestSessions_Breakdown(t *testing.T) {
 			{Sign: 1, VisitorID: 2, SessionID: 2, Time: util.Today().Add(time.Second * 20), Start: util.Today(), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
 		},
 	})
-	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 10), Path: "/pricing", DurationSeconds: 10},
 		{VisitorID: 1, SessionID: 1, Time: util.Today(), Path: "/", DurationSeconds: 0},
 		{VisitorID: 2, SessionID: 2, Time: util.Today(), Path: "/", DurationSeconds: 20},
 	}))
-	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
 		{VisitorID: 1, SessionID: 1, Time: util.Today().Add(time.Second * 5), Name: "event", MetaKeys: []string{"key"}, MetaValues: []string{"value"}},
 	}))
 	analyzer := NewAnalyzer(dbClient)

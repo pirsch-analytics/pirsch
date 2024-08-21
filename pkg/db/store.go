@@ -10,16 +10,16 @@ import (
 // Store is the database storage interface.
 type Store interface {
 	// SavePageViews saves given hits.
-	SavePageViews(context.Context, []model.PageView) error
+	SavePageViews([]model.PageView) error
 
 	// SaveSessions saves given sessions.
-	SaveSessions(context.Context, []model.Session) error
+	SaveSessions([]model.Session) error
 
 	// SaveEvents saves given events.
-	SaveEvents(context.Context, []model.Event) error
+	SaveEvents([]model.Event) error
 
 	// SaveRequests saves given requests.
-	SaveRequests(context.Context, []model.Request) error
+	SaveRequests([]model.Request) error
 
 	// Session returns the last hit for given client, fingerprint, and maximum age.
 	Session(context.Context, uint64, uint64, time.Time) (*model.Session, error)

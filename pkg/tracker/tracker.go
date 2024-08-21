@@ -537,6 +537,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 
 	return &model.Session{
 		Sign:           1,
+		Version:        1,
 		ClientID:       clientID,
 		VisitorID:      fingerprint,
 		SessionID:      util.RandUint32(),
@@ -604,6 +605,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
+	session.Version++
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top), session.IsBounce
@@ -837,11 +839,11 @@ func (tracker *Tracker) aggregateData(ctx context.Context) {
 
 func (tracker *Tracker) savePageViews(pageViews []model.PageView) {
 	if len(pageViews) > 0 {
-		for i := 5; i > -1; i-- {
-			if err := tracker.config.Store.SavePageViews(context.Background(), pageViews); err != nil {
-				if i > 0 {
-					tracker.config.Logger.Error("error saving page views", "err", err, "retry", i)
-					time.Sleep(time.Second * time.Duration(5-i) * 10)
+		for retries := 5; retries > -1; retries-- {
+			if err := tracker.config.Store.SavePageViews(pageViews); err != nil {
+				if retries > 0 {
+					tracker.config.Logger.Error("error saving page views", "err", err, "retry", retries)
+					time.Sleep(time.Second * time.Duration(5-retries) * 10)
 				} else {
 					log.Panicf("error saving page views: %s", err)
 				}
@@ -854,11 +856,11 @@ func (tracker *Tracker) savePageViews(pageViews []model.PageView) {
 
 func (tracker *Tracker) saveSessions(sessions []model.Session) {
 	if len(sessions) > 0 {
-		for i := 5; i > -1; i-- {
-			if err := tracker.config.Store.SaveSessions(context.Background(), sessions); err != nil {
-				if i > 0 {
-					tracker.config.Logger.Error("error saving sessions", "err", err, "retry", i)
-					time.Sleep(time.Second * time.Duration(5-i) * 10)
+		for retries := 5; retries > -1; retries-- {
+			if err := tracker.config.Store.SaveSessions(sessions); err != nil {
+				if retries > 0 {
+					tracker.config.Logger.Error("error saving sessions", "err", err, "retry", retries)
+					time.Sleep(time.Second * time.Duration(5-retries) * 10)
 				} else {
 					log.Panicf("error saving sessions: %s", err)
 				}
@@ -871,11 +873,11 @@ func (tracker *Tracker) saveSessions(sessions []model.Session) {
 
 func (tracker *Tracker) saveEvents(events []model.Event) {
 	if len(events) > 0 {
-		for i := 5; i > -1; i-- {
-			if err := tracker.config.Store.SaveEvents(context.Background(), events); err != nil {
-				if i > 0 {
-					tracker.config.Logger.Error("error saving events", "err", err, "retry", i)
-					time.Sleep(time.Second * time.Duration(5-i) * 10)
+		for retries := 5; retries > -1; retries-- {
+			if err := tracker.config.Store.SaveEvents(events); err != nil {
+				if retries > 0 {
+					tracker.config.Logger.Error("error saving events", "err", err, "retry", retries)
+					time.Sleep(time.Second * time.Duration(5-retries) * 10)
 				} else {
 					log.Panicf("error saving events: %s", err)
 				}
@@ -888,11 +890,11 @@ func (tracker *Tracker) saveEvents(events []model.Event) {
 
 func (tracker *Tracker) saveRequests(requests []model.Request) {
 	if len(requests) > 0 {
-		for i := 5; i > -1; i-- {
-			if err := tracker.config.Store.SaveRequests(context.Background(), requests); err != nil {
-				if i > 0 {
-					tracker.config.Logger.Error("error saving requests", "err", err, "retry", i)
-					time.Sleep(time.Second * time.Duration(5-i) * 10)
+		for retries := 5; retries > -1; retries-- {
+			if err := tracker.config.Store.SaveRequests(requests); err != nil {
+				if retries > 0 {
+					tracker.config.Logger.Error("error saving requests", "err", err, "retry", retries)
+					time.Sleep(time.Second * time.Duration(5-retries) * 10)
 				} else {
 					log.Panicf("error saving requests: %s", err)
 				}
