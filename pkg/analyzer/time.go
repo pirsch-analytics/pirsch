@@ -30,7 +30,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	}
 	var query strings.Builder
 	t.selectAvgTimeSpentPeriod(filter.Period, &query)
-	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(round(avg(duration)), 0)) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", round(avg(duration)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
 			FROM "session" s `, filter.Timezone.String()))
@@ -104,7 +104,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	}
 
 	fields = append(fields, FieldEventDurationSeconds.Name)
-	query.WriteString(fmt.Sprintf(`SELECT "day", toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT "day", round(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day",
 				nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
@@ -147,11 +147,11 @@ func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builde
 	if period != pkg.PeriodDay {
 		switch period {
 		case pkg.PeriodWeek:
-			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
+			query.WriteString(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
 		case pkg.PeriodMonth:
-			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
+			query.WriteString(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:
-			query.WriteString(`SELECT toUInt64(greatest(round(avg(average_time_spent_seconds)), 0)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
+			query.WriteString(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfYear("day") year FROM (`)
 		default:
 			panic("unknown case for filter period")
 		}

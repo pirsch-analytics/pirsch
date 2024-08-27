@@ -2,7 +2,7 @@ ALTER TABLE "session" ADD COLUMN version UInt16;
 ALTER TABLE "page_view" MODIFY COLUMN region LowCardinality(String);
 ALTER TABLE "event" MODIFY COLUMN region LowCardinality(String);
 
-CREATE TABLE "session_new" (
+CREATE TABLE IF NOT EXISTS "session_new" (
     sign Int8,
     version UInt16,
     client_id UInt64,
