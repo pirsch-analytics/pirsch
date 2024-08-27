@@ -196,7 +196,7 @@ var (
 
 	// FieldBounces is a query result column.
 	FieldBounces = Field{
-		querySessions:    "toUInt64OrDefault(sum(is_bounce*sign))",
+		querySessions:    "sum(is_bounce*sign)",
 		queryPageViews:   "uniqIf((t.visitor_id, t.session_id), bounces = 1)",
 		queryImported:    "sum(t.bounces + imp.bounces)",
 		subqueryImported: "sum(bounces)",
@@ -211,7 +211,7 @@ var (
 		querySessions:  "bounces / IF(sessions = 0, 1, sessions)",
 		queryPageViews: "bounces / IF(sessions = 0, 1, sessions)",
 		queryImported:  "bounces / IF(sessions = 0, 1, sessions)",
-		queryPeriod:    "ifNotFinite(avg(bounce_rate), 0)",
+		queryPeriod:    "avg(bounce_rate)",
 		queryDirection: "DESC",
 		Name:           "bounce_rate",
 	}
@@ -594,8 +594,8 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))",
-		queryPageViews: "toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))",
+		querySessions:  "toUInt64(avg(duration_seconds))",
+		queryPageViews: "toUInt64(avg(duration_seconds))",
 		sampleType:     sampleTypeInt,
 		Name:           "average_time_spent_seconds",
 	}

@@ -355,7 +355,7 @@ func TestQuerySelectFieldPageViewsSampling(t *testing.T) {
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
 		{FieldViews, "toUInt64(greatest(count(1)*any(_sample_factor), 0))"},
 		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
-		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
@@ -381,8 +381,8 @@ func TestQuerySelectFieldSessionsSampling(t *testing.T) {
 		{FieldCRPeriod, "toFloat64OrDefault(visitors / greatest(ifNull(max(uvd.visitors), visitors), 1))*any(_sample_factor)"},
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
 		{FieldViews, "toUInt64(greatest(toUInt64OrDefault(sum(page_views*sign))*any(_sample_factor), 0))"},
-		{FieldBounces, "toUInt64(greatest(toUInt64OrDefault(sum(is_bounce*sign))*any(_sample_factor), 0))"},
-		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldBounces, "toUInt64(greatest(sum(is_bounce*sign)*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
@@ -409,7 +409,7 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
 		{FieldViews, "toUInt64(greatest(sum(views)*any(_sample_factor), 0))"},
 		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
-		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(greatest(ifNotFinite(avg(duration_seconds), 0), 0))*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 

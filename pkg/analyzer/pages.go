@@ -382,7 +382,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	}
 
 	var query strings.Builder
-	query.WriteString(fmt.Sprintf(`SELECT path, toUInt64(greatest(ifNotFinite(round(avg(time_on_page)), 0), 0)) average_time_spent_seconds
+	query.WriteString(fmt.Sprintf(`SELECT path, round(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page,
 				%s

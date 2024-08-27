@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.14.1
+
+* removed boundary checks previously necessary to fix incorrect session data
+* fixed migration if migration table already exists
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.14.0
 
 * switched to VersionedCollapsingMergeTree for session data
