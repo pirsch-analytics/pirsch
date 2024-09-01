@@ -361,23 +361,12 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy, fieldsImported []Fiel
 		}
 
 		if q.from != events {
-			if filter.valuesContainPrefix(filter.EventName, "!") {
-				q.includeEventFilter = true
-				q.leftJoin = filter.leftJoinEvents(fields)
-			} else {
-				q.joinSecond = filter.joinEvents(fields)
-			}
+			filter.joinOrLeftJoinEvents(&q, fields)
 		}
 	} else {
 		q.fields = fields
 		q.join = filter.joinPageViews(fields)
-
-		if filter.valuesContainPrefix(filter.EventName, "!") {
-			q.includeEventFilter = true
-			q.leftJoin = filter.leftJoinEvents(fields)
-		} else {
-			q.joinSecond = filter.joinEvents(fields)
-		}
+		filter.joinOrLeftJoinEvents(&q, fields)
 	}
 
 	q.joinThird = filter.joinUniqueVisitorsByPeriod(fields)
@@ -517,6 +506,15 @@ func (filter *Filter) joinPageViews(fields []Field) *queryBuilder {
 	}
 
 	return nil
+}
+
+func (filter *Filter) joinOrLeftJoinEvents(q *queryBuilder, fields []Field) {
+	if filter.valuesContainPrefix(filter.EventName, "!") {
+		q.includeEventFilter = true
+		q.leftJoin = filter.leftJoinEvents(fields)
+	} else {
+		q.joinSecond = filter.joinEvents(fields)
+	}
 }
 
 func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
