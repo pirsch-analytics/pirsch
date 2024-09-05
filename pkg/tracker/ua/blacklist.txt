@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Custom (last update: 2024-08-27)
+# Custom (last update: 2024-09-05)
 ://
 bot
 crawler

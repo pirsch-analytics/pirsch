@@ -73,9 +73,12 @@ func getOS(system []string) (string, string) {
 			os = pkg.OSAndroid
 			version = getAndroidVersion(sys)
 			break
-		} else if strings.HasPrefix(sys, "CPU iPhone OS") || strings.HasPrefix(sys, "CPU OS") {
+		} else if strings.HasPrefix(sys, "CPU iPhone OS") ||
+			strings.HasPrefix(sys, "CPU OS") ||
+			strings.HasPrefix(sys, "iPad") ||
+			strings.HasPrefix(sys, "iPhone") {
 			os = pkg.OSiOS
-			version = getiOSVersion(sys)
+			version = getiOSVersion(system)
 			break
 		} else if strings.HasPrefix(sys, "CrOS") {
 			os = pkg.OSChrome
@@ -122,7 +125,7 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 			productChrome = product
 		} else if strings.HasPrefix(product, "Safari/") {
 			productSafari = product
-		} else if strings.HasPrefix(product, "Arc/") {
+		} else if strings.HasPrefix(product, "Arc/") || strings.HasPrefix(product, "ArcMobile2/") {
 			return pkg.BrowserArc, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "CriOS/") {
 			return pkg.BrowserChrome, getProductVersion(product, 1)
@@ -228,17 +231,22 @@ func getAndroidVersion(system string) string {
 	return ""
 }
 
-func getiOSVersion(system string) string {
-	parts := strings.Split(system, " ")
+func getiOSVersion(system []string) string {
+	for _, sys := range system {
+		// CPU iPhone OS <version> like ...
+		// CPU OS <version> like ...
+		// iOS <version>
+		parts := strings.Split(sys, " ")
 
-	// CPU iPhone OS <version> like ...
-	// CPU OS <version> like ...
-	if len(parts) > 3 {
-		if parts[2] == "OS" {
-			return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 1)
+		if len(parts) > 3 {
+			if parts[2] == "OS" {
+				return getOSVersion(strings.Replace(parts[3], "_", ".", -1), 1)
+			}
+
+			return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 1)
+		} else if len(parts) == 2 && parts[0] == "iOS" {
+			return getOSVersion(strings.Replace(parts[1], "_", ".", -1), 1)
 		}
-
-		return getOSVersion(strings.Replace(parts[2], "_", ".", -1), 1)
 	}
 
 	return ""

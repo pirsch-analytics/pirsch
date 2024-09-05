@@ -593,6 +593,13 @@ var userAgentsArc = []testUserAgent{
 		os:             pkg.OSMac,
 		osVersion:      "13.5",
 	},
+	{
+		ua:             "ArcMobile2/1.28.0 (iPad; iOS 17.6.1; Scale/2.00)",
+		browser:        pkg.BrowserArc,
+		browserVersion: "1.28",
+		os:             pkg.OSiOS,
+		osVersion:      "17.6",
+	},
 }
 
 var userAgentsAll = mergeUserAgentLists(userAgentsEdge,

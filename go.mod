@@ -3,14 +3,14 @@ module github.com/pirsch-analytics/pirsch/v6
 go 1.23
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.28.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.0
 	github.com/emvi/null v1.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.28.0
@@ -36,6 +36,6 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

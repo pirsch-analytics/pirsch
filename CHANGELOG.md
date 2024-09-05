@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.14.2
+
+* improved Arc browser detection
+* updated WebKit version list
+* updated dependencies
+
 ## 6.14.1
 
 * removed boundary checks previously necessary to fix incorrect session data

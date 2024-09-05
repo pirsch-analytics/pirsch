@@ -32,6 +32,7 @@ var (
 
 	// safariVersions maps a Safari user agent versions to the product versions.
 	// https://en.wikipedia.org/wiki/Safari_version_history
+	// https://github.com/mdn/browser-compat-data/blob/main/browsers/safari.json
 	safariVersions = map[string]string{
 		"533.16": "5.0",
 		"533.17": "5.0",
@@ -100,7 +101,22 @@ var (
 		"612.4":  "15.3",
 		"613.1":  "15.4",
 		"613.2":  "15.5",
+		"613.3":  "15.6",
+		"614.1":  "16",
+		"614.2":  "16.1",
 		"614.3":  "16.2",
+		"614.4":  "16.3",
+		"615.1":  "16.4",
+		"615.2":  "16.5",
+		"615.3":  "16.6",
+		"616.1":  "17",
+		"616.2":  "17.1",
+		"617.1":  "17.2",
+		"617.2":  "17.3",
+		"618.1":  "17.4",
+		"618.2":  "17.5",
+		"618.3":  "17.6",
+		"619.1":  "18",
 	}
 
 	// osMapping groups operating system names.
