@@ -239,6 +239,7 @@ func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage u
 		SessionID:       session.SessionID,
 		Time:            session.Time,
 		DurationSeconds: timeOnPage,
+		Hostname:        session.Hostname,
 		Path:            session.ExitPath,
 		Title:           session.ExitTitle,
 		Language:        session.Language,
@@ -275,6 +276,7 @@ func (tracker *Tracker) eventFromSession(session *model.Session, clientID uint64
 		Name:            name,
 		MetaKeys:        metaKeys,
 		MetaValues:      metaValues,
+		Hostname:        session.Hostname,
 		Path:            session.ExitPath,
 		Title:           session.ExitTitle,
 		Language:        session.Language,
@@ -312,6 +314,7 @@ func (tracker *Tracker) requestFromSession(session *model.Session, clientID uint
 		Time:        session.Time,
 		IP:          logIP,
 		UserAgent:   userAgent,
+		Hostname:    session.Hostname,
 		Path:        session.ExitPath,
 		Event:       event,
 		Referrer:    session.Referrer,
@@ -336,6 +339,7 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 			Time:        now,
 			IP:          logIP,
 			UserAgent:   r.UserAgent(),
+			Hostname:    util.StripWWW(r.Host),
 			Path:        path,
 			Event:       event,
 			Referrer:    r.Referer(),
@@ -505,7 +509,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		sessionCopy := *session
 		cancelSession = &sessionCopy
 		cancelSession.Sign = -1
-		timeOnPage, bounced = tracker.updateSession(t, session, now, options.Path, options.Title)
+		timeOnPage, bounced = tracker.updateSession(t, r, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	}
 
@@ -543,6 +547,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		SessionID:      util.RandUint32(),
 		Time:           now,
 		Start:          now,
+		Hostname:       r.Host,
 		EntryPath:      options.Path,
 		ExitPath:       options.Path,
 		PageViews:      1,
@@ -571,7 +576,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	}
 }
 
-func (tracker *Tracker) updateSession(t eventType, session *model.Session, now time.Time, path, title string) (uint32, bool) {
+func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *model.Session, now time.Time, path, title string) (uint32, bool) {
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {
@@ -606,6 +611,7 @@ func (tracker *Tracker) updateSession(t eventType, session *model.Session, now t
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.Version++
+	session.Hostname = r.Host
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top), session.IsBounce

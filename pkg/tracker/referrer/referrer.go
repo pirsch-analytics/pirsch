@@ -3,6 +3,7 @@ package referrer
 import (
 	"errors"
 	"fmt"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net"
 	"net/http"
 	"net/netip"
@@ -88,7 +89,7 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 		err = errors.New("not a URI")
 	}
 
-	if err != nil {
+	if u == nil || err != nil {
 		if isIP(referrer) {
 			return "", "", ""
 		}
@@ -97,7 +98,8 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 		return "", strings.TrimSpace(referrer), ""
 	}
 
-	hostname := strings.ToLower(u.Hostname())
+	// the subdomain for requestHostname is already stripped at this point (any, not just www)
+	hostname := util.StripWWW(strings.ToLower(u.Hostname()))
 
 	if hostname == requestHostname {
 		return "", "", ""
@@ -109,10 +111,6 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 
 	if isIP(hostname) {
 		return "", "", ""
-	}
-
-	if strings.HasPrefix(hostname, "www.") {
-		hostname = hostname[4:]
 	}
 
 	name := groups[hostname+u.Path]

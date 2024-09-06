@@ -73,7 +73,7 @@ func TestTracker(t *testing.T) {
 
 func TestTracker_PageView(t *testing.T) {
 	now := time.Now()
-	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
@@ -107,6 +107,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.True(t, sessions[0].Time.After(now))
 	assert.True(t, sessions[0].Start.After(now))
 	assert.Equal(t, uint32(0), sessions[0].DurationSeconds)
+	assert.Equal(t, "example.com", sessions[0].Hostname)
 	assert.Equal(t, "/foo/bar", sessions[0].EntryPath)
 	assert.Equal(t, "Foo", sessions[0].EntryTitle)
 	assert.Equal(t, "/foo/bar", sessions[0].ExitPath)
@@ -135,6 +136,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, uint64(123), pageViews[0].ClientID)
 	assert.True(t, pageViews[0].Time.After(now))
 	assert.Equal(t, uint32(0), pageViews[0].DurationSeconds)
+	assert.Equal(t, "example.com", pageViews[0].Hostname)
 	assert.Equal(t, "/foo/bar", pageViews[0].Path)
 	assert.Equal(t, "Foo", pageViews[0].Title)
 	assert.Equal(t, "fr", pageViews[0].Language)
@@ -177,6 +179,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, int8(1), sessions[2].Sign)
 
 	assert.Equal(t, uint32(1), sessions[2].DurationSeconds)
+	assert.Equal(t, "example.com", sessions[2].Hostname)
 	assert.Equal(t, "/foo/bar", sessions[2].EntryPath)
 	assert.Equal(t, "Foo", sessions[2].EntryTitle)
 	assert.Equal(t, "/test", sessions[2].ExitPath)
@@ -205,6 +208,7 @@ func TestTracker_PageView(t *testing.T) {
 	assert.Equal(t, uint64(123), pageViews[1].ClientID)
 	assert.True(t, pageViews[1].Time.After(now))
 	assert.Equal(t, uint32(1), pageViews[1].DurationSeconds)
+	assert.Equal(t, "example.com", pageViews[1].Hostname)
 	assert.Equal(t, "/test", pageViews[1].Path)
 	assert.Equal(t, "Bar", pageViews[1].Title)
 	assert.Equal(t, "fr", pageViews[1].Language)
@@ -468,7 +472,7 @@ func TestTracker_PageViewClientHints(t *testing.T) {
 
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
-	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
@@ -513,6 +517,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Contains(t, events[0].MetaValues, "value1")
 	assert.Contains(t, events[0].MetaValues, "value2")
 	assert.Equal(t, uint32(42), events[0].DurationSeconds)
+	assert.Equal(t, "example.com", events[0].Hostname)
 	assert.Equal(t, "/foo/bar", events[0].Path)
 	assert.Equal(t, "Foo", events[0].Title)
 	assert.Equal(t, "fr", events[0].Language)
@@ -560,6 +565,7 @@ func TestTracker_Event(t *testing.T) {
 	assert.Len(t, events[1].MetaKeys, 0)
 	assert.Len(t, events[1].MetaValues, 0)
 	assert.Zero(t, events[1].DurationSeconds)
+	assert.Equal(t, "example.com", events[1].Hostname)
 	assert.Equal(t, "/test", events[1].Path)
 	assert.Equal(t, "Bar", events[1].Title)
 	assert.Equal(t, "fr", events[1].Language)
@@ -757,7 +763,7 @@ func TestTracker_EventClientHints(t *testing.T) {
 }
 
 func TestTracker_ExtendSession(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
 	req.Header.Set("Referer", "https://google.com")
@@ -772,12 +778,14 @@ func TestTracker_ExtendSession(t *testing.T) {
 	tracker.Flush()
 	sessions := client.GetSessions()
 	assert.Len(t, sessions, 3)
+	assert.Equal(t, "example.com", sessions[2].Hostname)
 	assert.Equal(t, uint32(2), sessions[2].DurationSeconds)
 	assert.Equal(t, uint16(1), sessions[2].Extended)
 	tracker.ExtendSession(req, 123, Options{})
 	tracker.Flush()
 	sessions = client.GetSessions()
 	assert.Len(t, sessions, 5)
+	assert.Equal(t, "example.com", sessions[4].Hostname)
 	assert.Equal(t, uint16(2), sessions[4].Extended)
 }
 
@@ -855,7 +863,7 @@ func TestTrackerRequests(t *testing.T) {
 	})
 
 	for i := 0; i < 3; i++ {
-		req, _ := http.NewRequest(http.MethodGet, "https://example.com/path", nil)
+		req, _ := http.NewRequest(http.MethodGet, "https://www.example.com/path", nil)
 		req.RemoteAddr = "187.65.23.54"
 		req.Header.Set("User-Agent", "Bot")
 		req.Header.Set("Accept-Language", "en")
@@ -863,7 +871,7 @@ func TestTrackerRequests(t *testing.T) {
 		time.Sleep(time.Millisecond * 5)
 	}
 
-	req, _ := http.NewRequest(http.MethodGet, "https://example.com/event/path", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://www.example.com/event/path", nil)
 	req.RemoteAddr = "187.65.23.54"
 	req.Header.Set("User-Agent", "Event Bot")
 	req.Header.Set("Accept-Language", "en")
@@ -887,6 +895,10 @@ func TestTrackerRequests(t *testing.T) {
 	assert.Equal(t, "Bot", requests[1].UserAgent)
 	assert.Equal(t, "Bot", requests[2].UserAgent)
 	assert.Equal(t, "Event Bot", requests[3].UserAgent)
+	assert.Equal(t, "example.com", requests[0].Hostname)
+	assert.Equal(t, "example.com", requests[1].Hostname)
+	assert.Equal(t, "example.com", requests[2].Hostname)
+	assert.Equal(t, "example.com", requests[3].Hostname)
 	assert.Equal(t, "/path", requests[0].Path)
 	assert.Equal(t, "/path", requests[1].Path)
 	assert.Equal(t, "/path", requests[2].Path)

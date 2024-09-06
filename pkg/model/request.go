@@ -13,6 +13,7 @@ type Request struct {
 	Time        time.Time `json:"time"`
 	IP          string    `json:"ip"`
 	UserAgent   string    `db:"user_agent" json:"user_agent"`
+	Hostname    string    `json:"hostname"`
 	Path        string    `json:"path"`
 	Event       string    `db:"event_name" json:"event_name"`
 	Referrer    string    `json:"referrer"`

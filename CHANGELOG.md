@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.15.0
+
+* added storing hostname
+* added filtering for hostname
+
 ## 6.14.2
 
 * improved Arc browser detection
