@@ -86,6 +86,18 @@ type VisitorMinuteStats struct {
 	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
+// HostnameStats is the result type for hostname statistics.
+type HostnameStats struct {
+	Hostname         string  `json:"hostname"`
+	Visitors         int     `json:"visitors"`
+	Views            int     `json:"views"`
+	Sessions         int     `json:"sessions"`
+	Bounces          int     `json:"bounces"`
+	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
+	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
+	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`
+}
+
 // PageStats is the result type for page statistics.
 type PageStats struct {
 	Path                    string  `json:"path"`

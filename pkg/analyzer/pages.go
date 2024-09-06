@@ -15,6 +15,33 @@ type Pages struct {
 	store    db.Store
 }
 
+// Hostname returns the visitor count, session count, bounce rate, and views grouped by hostname.
+func (pages *Pages) Hostname(filter *Filter) ([]model.HostnameStats, error) {
+	filter = pages.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
+		FieldHostname,
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+		FieldRelativeVisitors,
+		FieldRelativeViews,
+		FieldBounceRate,
+	}, []Field{
+		FieldHostname,
+	}, []Field{
+		FieldVisitors,
+		FieldHostname,
+	}, nil, "")
+	stats, err := pages.store.SelectHostnameStats(filter.Ctx, q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 	return pages.byPath(filter, false)

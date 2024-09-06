@@ -60,6 +60,9 @@ type Store interface {
 	// SelectVisitorMinuteStats selects model.VisitorMinuteStats.
 	SelectVisitorMinuteStats(context.Context, string, bool, bool, ...any) ([]model.VisitorMinuteStats, error)
 
+	// SelectHostnameStats selects model.HostnameStats.
+	SelectHostnameStats(context.Context, string, ...any) ([]model.HostnameStats, error)
+
 	// SelectPageStats selects model.PageStats.
 	SelectPageStats(context.Context, bool, bool, string, ...any) ([]model.PageStats, error)
 

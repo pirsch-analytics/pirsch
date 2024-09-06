@@ -3,7 +3,7 @@
 ## 6.15.0
 
 * added storing hostname
-* added filtering for hostname
+* added reading and filtering for hostnames
 
 ## 6.14.2
 

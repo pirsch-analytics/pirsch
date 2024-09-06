@@ -1066,6 +1066,37 @@ func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string
 	return results, nil
 }
 
+// SelectHostnameStats implements the Store interface.
+func (client *Client) SelectHostnameStats(ctx context.Context, query string, args ...any) ([]model.HostnameStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.HostnameStats
+
+	for rows.Next() {
+		var result model.HostnameStats
+
+		if err := rows.Scan(&result.Hostname,
+			&result.Visitors,
+			&result.Views,
+			&result.Sessions,
+			&result.Bounces,
+			&result.RelativeVisitors,
+			&result.RelativeViews,
+			&result.BounceRate); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectPageStats implements the Store interface.
 func (client *Client) SelectPageStats(ctx context.Context, includeTitle, includeTimeSpent bool, query string, args ...any) ([]model.PageStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)

@@ -13,6 +13,110 @@ import (
 	"time"
 )
 
+func TestAnalyzer_Hostname(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 3), SessionID: 4, DurationSeconds: 180, Path: "/foo", Title: "Foo", Hostname: "example.com"},
+		{VisitorID: 1, Time: util.PastDay(4).Add(time.Hour), SessionID: 41, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 2, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home", Hostname: "foo.com"},
+		{VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 2), SessionID: 4, DurationSeconds: 120, Path: "/bar", Title: "Bar", Hostname: "foo.com"},
+		{VisitorID: 3, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 4, Time: util.PastDay(4), SessionID: 4, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 5, Time: util.PastDay(2), SessionID: 2, Path: "/", Title: "Home", Hostname: "foo.com"},
+		{VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), SessionID: 21, Path: "/bar", Title: "Bar", Hostname: "foo.com"},
+		{VisitorID: 6, Time: util.PastDay(2), SessionID: 2, Path: "/", Title: "Home", Hostname: "foo.com"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), SessionID: 2, DurationSeconds: 600, Path: "/bar", Title: "Bar", Hostname: "foo.com"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 11), SessionID: 21, Path: "/bar", Title: "Bar", Hostname: "foo.com"},
+		{VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 21), SessionID: 21, DurationSeconds: 600, Path: "/foo", Title: "Foo", Hostname: "foo.com"},
+		{VisitorID: 7, Time: util.PastDay(2), SessionID: 2, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 8, Time: util.PastDay(2), SessionID: 2, Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 9, Time: util.Today(), SessionID: 2, Path: "/", Title: "Home", Hostname: "bar.com"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Minute * 3), Start: time.Now(), SessionID: 4, DurationSeconds: 180, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 1, Time: util.PastDay(4).Add(time.Hour), Start: time.Now(), SessionID: 41, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 2, Time: util.PastDay(4).Add(time.Minute * 2), Start: time.Now(), SessionID: 4, DurationSeconds: 120, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2, Hostname: "foo.com"},
+			{Sign: 1, VisitorID: 3, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+		},
+		{
+			{Sign: -1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 4, Time: util.PastDay(4), Start: time.Now(), SessionID: 4, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "foo.com"},
+			{Sign: 1, VisitorID: 5, Time: util.PastDay(2).Add(time.Minute * 5), Start: time.Now(), SessionID: 21, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: true, PageViews: 1, Hostname: "foo.com"},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 10), Start: time.Now(), SessionID: 2, DurationSeconds: 600, ExitPath: "/bar", EntryTitle: "Bar", IsBounce: false, PageViews: 2, Hostname: "foo.com"},
+			{Sign: 1, VisitorID: 6, Time: util.PastDay(2).Add(time.Minute * 21), Start: time.Now(), SessionID: 21, DurationSeconds: 600, ExitPath: "/foo", EntryTitle: "Foo", IsBounce: false, PageViews: 2, Hostname: "foo.com"},
+			{Sign: 1, VisitorID: 7, Time: util.PastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 8, Time: util.PastDay(2), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "example.com"},
+			{Sign: 1, VisitorID: 9, Time: util.Today(), Start: time.Now(), SessionID: 2, ExitPath: "/", EntryTitle: "Home", IsBounce: true, PageViews: 1, Hostname: "bar.com"},
+		},
+	})
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages.Hostname(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "example.com", visitors[0].Hostname)
+	assert.Equal(t, "foo.com", visitors[1].Hostname)
+	assert.Equal(t, "bar.com", visitors[2].Hostname)
+	assert.Equal(t, 5, visitors[0].Visitors)
+	assert.Equal(t, 3, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 8, visitors[0].Views)
+	assert.Equal(t, 8, visitors[1].Views)
+	assert.Equal(t, 1, visitors[2].Views)
+	assert.Equal(t, 6, visitors[0].Sessions)
+	assert.Equal(t, 5, visitors[1].Sessions)
+	assert.Equal(t, 1, visitors[2].Sessions)
+	assert.Equal(t, 4, visitors[0].Bounces)
+	assert.Equal(t, 2, visitors[1].Bounces)
+	assert.Equal(t, 1, visitors[2].Bounces)
+	assert.InDelta(t, 0.5555, visitors[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3333, visitors[1].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.1111, visitors[2].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.4705, visitors[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.4705, visitors[1].RelativeViews, 0.001)
+	assert.InDelta(t, 0.0588, visitors[2].RelativeViews, 0.001)
+	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.001)
+	assert.InDelta(t, 0.4, visitors[1].BounceRate, 0.001)
+	assert.InDelta(t, 1, visitors[2].BounceRate, 0.001)
+
+	visitors, err = analyzer.Pages.Hostname(&Filter{
+		Hostname: []string{"bar.com"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "bar.com", visitors[0].Hostname)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[0].Views)
+	assert.Equal(t, 1, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.InDelta(t, 0.1111, visitors[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.0588, visitors[0].RelativeViews, 0.001)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.001)
+
+	visitors, err = analyzer.Pages.Hostname(&Filter{
+		Hostname: []string{"example.com"},
+		Path:     []string{"/"},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "example.com", visitors[0].Hostname)
+	assert.Equal(t, 5, visitors[0].Visitors)
+	assert.Equal(t, 6, visitors[0].Views)
+	assert.Equal(t, 6, visitors[0].Sessions)
+	assert.Equal(t, 4, visitors[0].Bounces)
+	assert.InDelta(t, 0.5555, visitors[0].RelativeVisitors, 0.001)
+	assert.InDelta(t, 0.3529, visitors[0].RelativeViews, 0.001)
+	assert.InDelta(t, 0.6666, visitors[0].BounceRate, 0.001)
+
+	_, err = analyzer.Pages.Hostname(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Pages.Hostname(getMaxFilter("event"))
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_ByPathAndAvgTimeOnPage(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

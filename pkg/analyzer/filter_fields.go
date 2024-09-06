@@ -53,6 +53,14 @@ var (
 		sampleType:     sampleTypeInt,
 	}
 
+	// FieldHostname is a query result column.
+	FieldHostname = Field{
+		querySessions:  "hostname",
+		queryPageViews: "hostname",
+		queryDirection: "ASC",
+		Name:           "hostname",
+	}
+
 	// FieldPath is a query result column.
 	FieldPath = Field{
 		querySessions:  "path",

@@ -82,6 +82,7 @@ func getMaxFilter(eventName string) *Filter {
 		ClientID:       42,
 		From:           util.PastDay(5),
 		To:             util.PastDay(2),
+		Hostname:       []string{"example.com"},
 		Path:           []string{"/path"},
 		EntryPath:      []string{"/entry"},
 		ExitPath:       []string{"/exit"},
