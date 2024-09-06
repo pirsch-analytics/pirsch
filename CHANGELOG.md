@@ -4,6 +4,7 @@
 
 * added storing hostname
 * added reading and filtering for hostnames
+* updated dependencies
 
 ## 6.14.2
 

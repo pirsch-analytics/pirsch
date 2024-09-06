@@ -13,7 +13,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.23
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/net v0.28.0
+	golang.org/x/net v0.29.0
 )
 
 require (
