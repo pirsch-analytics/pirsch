@@ -998,6 +998,35 @@ func (client *Client) SelectVisitorHourStats(ctx context.Context, query string, 
 	return results, nil
 }
 
+// SelectVisitorWeekdayHourStats selects model.VisitorWeekdayHourStats.
+func (client *Client) SelectVisitorWeekdayHourStats(ctx context.Context, query string, args ...any) ([]model.VisitorWeekdayHourStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.VisitorWeekdayHourStats
+
+	for rows.Next() {
+		var result model.VisitorWeekdayHourStats
+
+		if err := rows.Scan(&result.Weekday,
+			&result.Hour,
+			&result.Visitors,
+			&result.Sessions,
+			&result.Views,
+			&result.Bounces); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectVisitorMinuteStats implements the Store interface.
 func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string, includeCR, includeCustomMetrics bool, args ...any) ([]model.VisitorMinuteStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)

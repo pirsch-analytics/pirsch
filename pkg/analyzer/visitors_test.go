@@ -2217,6 +2217,40 @@ func TestAnalyzer_ByMinute(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_ByWeekdayAndHour(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour), Start: time.Now(), ExitPath: "/", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour * 4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.Today().Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: util.Today().Add(time.Hour), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 4), Path: "/"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 5, Time: util.Today().Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.ByWeekdayAndHour(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 168)
+	_, err = analyzer.Visitors.ByWeekdayAndHour(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Visitors.ByWeekdayAndHour(getMaxFilter("event"))
+	assert.NoError(t, err)
+}
+
 func TestAnalyzer_Growth(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

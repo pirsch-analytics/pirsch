@@ -557,6 +557,16 @@ var (
 		Name:           "minute",
 	}
 
+	// FieldWeekday is a query result column.
+	FieldWeekday = Field{
+		querySessions:  "toDayOfWeek(time, 1, '%s')",
+		queryPageViews: "toDayOfWeek(time, 1, '%s')",
+		queryDirection: "ASC",
+		queryWithFill:  "WITH FILL FROM 0 TO 7",
+		timezone:       true,
+		Name:           "weekday",
+	}
+
 	// FieldEventName is a query result column.
 	FieldEventName = Field{
 		querySessions:  "event_name",

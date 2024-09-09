@@ -326,6 +326,32 @@ func (visitors *Visitors) ByMinute(filter *Filter) ([]model.VisitorMinuteStats, 
 	return stats, nil
 }
 
+// ByWeekdayAndHour returns the visitor count grouped by time of day and weekday.
+func (visitors *Visitors) ByWeekdayAndHour(filter *Filter) ([]model.VisitorWeekdayHourStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
+		FieldWeekday,
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, []Field{
+		FieldWeekday,
+		FieldHour,
+	}, []Field{
+		FieldWeekday,
+		FieldHour,
+	}, nil, "")
+	stats, err := visitors.store.SelectVisitorWeekdayHourStats(filter.Ctx, q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 // Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
 // The growth rate is relative to the previous time range or day.
 // The period or day for the filter must be set, else an error is returned.

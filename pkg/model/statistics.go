@@ -86,6 +86,16 @@ type VisitorMinuteStats struct {
 	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
+// VisitorWeekdayHourStats is the result type for visitor statistics grouped by time of day and weekday.
+type VisitorWeekdayHourStats struct {
+	Weekday  int `json:"weekday"`
+	Hour     int `json:"hour"`
+	Visitors int `json:"visitors"`
+	Views    int `json:"views"`
+	Sessions int `json:"sessions"`
+	Bounces  int `json:"bounces"`
+}
+
 // HostnameStats is the result type for hostname statistics.
 type HostnameStats struct {
 	Hostname         string  `json:"hostname"`
