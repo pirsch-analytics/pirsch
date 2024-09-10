@@ -5,6 +5,7 @@
 * added storing hostname
 * added reading and filtering for hostnames
 * added reading visitors by weekday and hour
+* fixed storing milliseconds for timestamps
 * updated dependencies
 
 ## 6.14.2
