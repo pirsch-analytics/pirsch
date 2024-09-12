@@ -17,6 +17,11 @@ type FilterOptions struct {
 	store    db.Store
 }
 
+// Hostnames returns all hostnames.
+func (options *FilterOptions) Hostnames(filter *Filter) ([]string, error) {
+	return options.selectFilterOptions(filter, "hostname", "session")
+}
+
 // Pages returns all paths.
 // This can also be used for the entry and exit pages.
 func (options *FilterOptions) Pages(filter *Filter) ([]string, error) {
