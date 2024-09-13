@@ -1142,7 +1142,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1161,7 +1162,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1181,7 +1183,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1199,7 +1202,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1257,7 +1261,10 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 		for rows.Next() {
 			var result model.EntryStats
 
-			if err := rows.Scan(&result.Path, &result.Entries, &result.Title); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Entries,
+				&result.Title); err != nil {
 				return nil, err
 			}
 
@@ -1267,7 +1274,9 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 		for rows.Next() {
 			var result model.EntryStats
 
-			if err := rows.Scan(&result.Path, &result.Entries); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Entries); err != nil {
 				return nil, err
 			}
 
@@ -1293,7 +1302,10 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 		for rows.Next() {
 			var result model.ExitStats
 
-			if err := rows.Scan(&result.Path, &result.Exits, &result.Title); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Exits,
+				&result.Title); err != nil {
 				return nil, err
 			}
 
@@ -1303,7 +1315,9 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 		for rows.Next() {
 			var result model.ExitStats
 
-			if err := rows.Scan(&result.Path, &result.Exits); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Exits); err != nil {
 				return nil, err
 			}
 

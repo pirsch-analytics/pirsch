@@ -175,6 +175,11 @@ type Filter struct {
 	// Sample sets the (optional) sampling size.
 	Sample uint
 
+	// TODO remove after migration
+	// HostnameFallback is the hostname to use when it's empty.
+	// This is only required until the data has been fully migrated and will be removed in a future version.
+	HostnameFallback string
+
 	funnelStep   int
 	importedFrom time.Time
 	importedTo   time.Time

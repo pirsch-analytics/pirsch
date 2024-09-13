@@ -55,8 +55,8 @@ var (
 
 	// FieldHostname is a query result column.
 	FieldHostname = Field{
-		querySessions:  "hostname",
-		queryPageViews: "hostname",
+		querySessions:  "coalesce(nullif(t.hostname, ''), ?)", // TODO change back to just "hostname" after migration
+		queryPageViews: "t.hostname",
 		queryDirection: "ASC",
 		Name:           "hostname",
 	}

@@ -110,6 +110,7 @@ type HostnameStats struct {
 
 // PageStats is the result type for page statistics.
 type PageStats struct {
+	Hostname                string  `json:"hostname"`
 	Path                    string  `json:"path"`
 	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
@@ -128,6 +129,7 @@ func (stats PageStats) GetPath() string {
 
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
+	Hostname                string  `json:"hostname"`
 	Path                    string  `db:"entry_path" json:"path"`
 	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
@@ -143,6 +145,7 @@ func (stats EntryStats) GetPath() string {
 
 // ExitStats is the result type for exit page statistics.
 type ExitStats struct {
+	Hostname string  `json:"hostname"`
 	Path     string  `db:"exit_path" json:"path"`
 	Title    string  `json:"title"`
 	Visitors int     `json:"visitors"`

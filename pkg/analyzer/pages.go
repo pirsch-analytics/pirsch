@@ -65,6 +65,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	}
 
 	fields := []Field{
+		FieldHostname,
 		pathField,
 		FieldVisitors,
 		FieldSessions,
@@ -75,10 +76,12 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 		FieldBounceRate,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		pathField,
 	}
 	orderBy := []Field{
 		FieldVisitors,
+		FieldHostname,
 		pathField,
 	}
 
@@ -139,14 +142,17 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	fields := []Field{
+		FieldHostname,
 		FieldEntryPath,
 		FieldEntries,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		FieldEntryPath,
 	}
 	orderBy := []Field{
 		FieldEntries,
+		FieldHostname,
 		FieldEntryPath,
 	}
 
@@ -234,14 +240,17 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	}
 
 	fields := []Field{
+		FieldHostname,
 		FieldExitPath,
 		FieldExits,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		FieldExitPath,
 	}
 	orderBy := []Field{
 		FieldExits,
+		FieldHostname,
 		FieldExitPath,
 	}
 
