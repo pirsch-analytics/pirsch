@@ -473,7 +473,10 @@ func (client *Client) SelectActiveVisitorStats(ctx context.Context, includeTitle
 		for rows.Next() {
 			var result model.ActiveVisitorStats
 
-			if err := rows.Scan(&result.Path, &result.Title, &result.Visitors); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Title,
+				&result.Visitors); err != nil {
 				return nil, err
 			}
 
@@ -483,7 +486,9 @@ func (client *Client) SelectActiveVisitorStats(ctx context.Context, includeTitle
 		for rows.Next() {
 			var result model.ActiveVisitorStats
 
-			if err := rows.Scan(&result.Path, &result.Visitors); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Visitors); err != nil {
 				return nil, err
 			}
 

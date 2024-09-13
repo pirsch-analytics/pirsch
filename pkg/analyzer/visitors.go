@@ -21,15 +21,15 @@ type Visitors struct {
 	store    db.Store
 }
 
-// Active returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
+// Active returns the active visitors per hostname, path, and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]model.ActiveVisitorStats, int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
-	fields := []Field{FieldPath}
-	groupBy := []Field{FieldPath}
-	orderBy := []Field{FieldVisitors, FieldPath}
+	fields := []Field{FieldHostname, FieldPath}
+	groupBy := []Field{FieldHostname, FieldPath}
+	orderBy := []Field{FieldVisitors, FieldHostname, FieldPath}
 
 	if filter.IncludeTitle {
 		fields = append(fields, FieldTitle)

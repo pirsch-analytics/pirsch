@@ -6,6 +6,7 @@ import (
 
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
+	Hostname string `json:"hostname"`
 	Path     string `json:"path"`
 	Title    string `json:"title"`
 	Visitors int    `json:"visitors"`
