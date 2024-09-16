@@ -97,6 +97,16 @@ var (
 		Name:           "entries",
 	}
 
+	// FieldEntryRate is a query result column.
+	FieldEntryRate = Field{
+		querySessions:  `toFloat64OrDefault(entries / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(entries / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(entries / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s) + (SELECT sum(sessions) FROM "%s" WHERE %s), 1))`,
+		queryDirection: "DESC",
+		filterTime:     true,
+		Name:           "entry_rate",
+	}
+
 	// FieldExitPath is a query result column.
 	FieldExitPath = Field{
 		querySessions:  "exit_path",
@@ -114,6 +124,16 @@ var (
 		queryDirection: "DESC",
 		sampleType:     sampleTypeInt,
 		Name:           "exits",
+	}
+
+	// FieldExitRate is a query result column.
+	FieldExitRate = Field{
+		querySessions:  `toFloat64OrDefault(exits / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryPageViews: `toFloat64OrDefault(exits / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s), 1))`,
+		queryImported:  `toFloat64OrDefault(exits / greatest((SELECT uniq(visitor_id, session_id)%s FROM "session"%s WHERE %s) + (SELECT sum(sessions) FROM "%s" WHERE %s), 1))`,
+		queryDirection: "DESC",
+		filterTime:     true,
+		Name:           "exit_rate",
 	}
 
 	// FieldVisitors is a query result column.

@@ -1269,6 +1269,7 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 			if err := rows.Scan(&result.Hostname,
 				&result.Path,
 				&result.Entries,
+				&result.EntryRate,
 				&result.Title); err != nil {
 				return nil, err
 			}
@@ -1281,7 +1282,8 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 
 			if err := rows.Scan(&result.Hostname,
 				&result.Path,
-				&result.Entries); err != nil {
+				&result.Entries,
+				&result.EntryRate); err != nil {
 				return nil, err
 			}
 
@@ -1310,6 +1312,7 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 			if err := rows.Scan(&result.Hostname,
 				&result.Path,
 				&result.Exits,
+				&result.ExitRate,
 				&result.Title); err != nil {
 				return nil, err
 			}
@@ -1322,7 +1325,8 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 
 			if err := rows.Scan(&result.Hostname,
 				&result.Path,
-				&result.Exits); err != nil {
+				&result.Exits,
+				&result.ExitRate); err != nil {
 				return nil, err
 			}
 

@@ -145,6 +145,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		FieldHostname,
 		FieldEntryPath,
 		FieldEntries,
+		FieldEntryRate,
 	}
 	groupBy := []Field{
 		FieldHostname,
@@ -173,13 +174,6 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	pathList := getPathList(stats)
-	totalSessions, err := pages.totalSessions(filter)
-
-	if err != nil {
-		return nil, err
-	}
-
-	totalSessionsFloat64 := float64(totalSessions)
 	total, err := pages.totalVisitorsSessions(filter, pathList)
 
 	if err != nil {
@@ -191,7 +185,6 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 			if stats[i].Path == total[j].Path {
 				stats[i].Visitors = total[j].Visitors
 				stats[i].Sessions = total[j].Sessions
-				stats[i].EntryRate = float64(stats[i].Entries) / totalSessionsFloat64
 				break
 			}
 		}
@@ -243,6 +236,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		FieldHostname,
 		FieldExitPath,
 		FieldExits,
+		FieldExitRate,
 	}
 	groupBy := []Field{
 		FieldHostname,
@@ -270,13 +264,6 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	totalSessions, err := pages.totalSessions(filter)
-
-	if err != nil {
-		return nil, err
-	}
-
-	totalSessionsFloat64 := float64(totalSessions)
 	pathList := getPathList(stats)
 	total, err := pages.totalVisitorsSessions(filter, pathList)
 
@@ -289,13 +276,6 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 			if stats[i].Path == total[j].Path {
 				stats[i].Visitors = total[j].Visitors
 				stats[i].Sessions = total[j].Sessions
-
-				if totalSessions == 0 {
-					stats[i].ExitRate = 1
-				} else {
-					stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
-				}
-
 				break
 			}
 		}
@@ -336,19 +316,6 @@ func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error)
 
 	if err != nil {
 		return nil, err
-	}
-
-	return stats, nil
-}
-
-func (pages *Pages) totalSessions(filter *Filter) (int, error) {
-	filter = pages.analyzer.getFilter(filter)
-	filterQuery, filterArgs := filter.buildTimeQuery()
-	query := fmt.Sprintf("SELECT uniq(visitor_id, session_id) FROM session %s HAVING sum(sign) > 0", filterQuery)
-	stats, err := pages.store.SelectTotalSessions(filter.Ctx, query, filterArgs...)
-
-	if err != nil {
-		return 0, err
 	}
 
 	return stats, nil

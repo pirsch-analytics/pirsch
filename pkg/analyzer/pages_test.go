@@ -1061,8 +1061,8 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/bar", entries[1].Path)
 	assert.Equal(t, 8, entries[0].Entries)
 	assert.Equal(t, 4, entries[1].Entries)
-	assert.InDelta(t, 0.8888, entries[0].EntryRate, 0.001)
-	assert.InDelta(t, 0.4444, entries[1].EntryRate, 0.001)
+	assert.InDelta(t, 0.6153, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.3076, entries[1].EntryRate, 0.001)
 	exits, err = analyzer.Pages.Exit(&Filter{
 		From:          util.PastDay(3),
 		To:            util.Today(),
@@ -1076,9 +1076,9 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, 6, exits[0].Exits)
 	assert.Equal(t, 5, exits[1].Exits)
 	assert.Equal(t, 1, exits[2].Exits)
-	assert.InDelta(t, 0.6666, exits[0].ExitRate, 0.001)
-	assert.InDelta(t, 0.5555, exits[1].ExitRate, 0.001)
-	assert.InDelta(t, 0.1111, exits[2].ExitRate, 0.001)
+	assert.InDelta(t, 0.4615, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 0.3846, exits[1].ExitRate, 0.001)
+	assert.InDelta(t, 0.0769, exits[2].ExitRate, 0.001)
 	entries, err = analyzer.Pages.Entry(&Filter{
 		From:              util.PastDay(3),
 		To:                util.Today(),
@@ -1092,7 +1092,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/", entries[0].Path)
 	assert.Equal(t, "Home", entries[0].Title)
 	assert.Equal(t, 8, entries[0].Entries)
-	assert.InDelta(t, 0.8888, entries[0].EntryRate, 0.001)
+	assert.InDelta(t, 0.6153, entries[0].EntryRate, 0.001)
 	assert.Equal(t, 23, entries[0].AverageTimeSpentSeconds)
 	exits, err = analyzer.Pages.Exit(&Filter{
 		From:          util.PastDay(3),
@@ -1106,7 +1106,7 @@ func TestAnalyzer_EntryExitPages(t *testing.T) {
 	assert.Equal(t, "/bar", exits[0].Path)
 	assert.Equal(t, "Bar", exits[0].Title)
 	assert.Equal(t, 6, exits[0].Exits)
-	assert.InDelta(t, 0.6666, exits[0].ExitRate, 0.001)
+	assert.InDelta(t, 0.4615, exits[0].ExitRate, 0.001)
 }
 
 func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
@@ -1138,6 +1138,20 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 	assert.Equal(t, "/", entries[1].Path)
 	assert.Equal(t, 1, entries[0].Visitors)
 	assert.Equal(t, 2, entries[1].Visitors)
+	entries, err = analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldEntryRate, Direction: pkg.DirectionDESC}}})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/", entries[0].Path)
+	assert.Equal(t, "/foo", entries[1].Path)
+	assert.Equal(t, 2, entries[0].Visitors)
+	assert.Equal(t, 1, entries[1].Visitors)
+	entries, err = analyzer.Pages.Entry(&Filter{Sort: []Sort{{Field: FieldEntryRate, Direction: pkg.DirectionASC}}})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "/foo", entries[0].Path)
+	assert.Equal(t, "/", entries[1].Path)
+	assert.Equal(t, 1, entries[0].Visitors)
+	assert.Equal(t, 2, entries[1].Visitors)
 	exits, err := analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionDESC}}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
@@ -1146,6 +1160,20 @@ func TestAnalyzer_EntryExitPagesSortVisitors(t *testing.T) {
 	assert.Equal(t, 2, exits[0].Visitors)
 	assert.Equal(t, 1, exits[1].Visitors)
 	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldVisitors, Direction: pkg.DirectionASC}}})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 2)
+	assert.Equal(t, "/foo", exits[0].Path)
+	assert.Equal(t, "/", exits[1].Path)
+	assert.Equal(t, 1, exits[0].Visitors)
+	assert.Equal(t, 2, exits[1].Visitors)
+	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldExitRate, Direction: pkg.DirectionDESC}}})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 2)
+	assert.Equal(t, "/", exits[0].Path)
+	assert.Equal(t, "/foo", exits[1].Path)
+	assert.Equal(t, 2, exits[0].Visitors)
+	assert.Equal(t, 1, exits[1].Visitors)
+	exits, err = analyzer.Pages.Exit(&Filter{Sort: []Sort{{Field: FieldExitRate, Direction: pkg.DirectionASC}}})
 	assert.NoError(t, err)
 	assert.Len(t, exits, 2)
 	assert.Equal(t, "/foo", exits[0].Path)
