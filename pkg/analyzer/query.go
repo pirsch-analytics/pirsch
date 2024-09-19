@@ -115,6 +115,7 @@ func (query *queryBuilder) getFields() []string {
 		}
 	}
 
+	query.appendField(&fields, FieldHostname.Name, query.filter.Hostname)
 	query.appendField(&fields, FieldLanguage.Name, query.filter.Language)
 	query.appendField(&fields, FieldCountry.Name, query.filter.Country)
 	query.appendField(&fields, FieldRegion.Name, query.filter.Region)
@@ -247,6 +248,10 @@ func (query *queryBuilder) selectFields() bool {
 				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(fieldCopy), query.filter.CustomMetricType), fieldCopy.Name))
 			} else if query.parent != nil && (query.fields[i] == FieldEntryTitle || query.fields[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.fields[i]) + ",")
+			} else if query.fields[i] == FieldHostname {
+				// TODO remove this case after migration
+				query.args = append(query.args, query.filter.HostnameFallback)
+				q.WriteString(fmt.Sprintf("%s %s,", query.fields[i].querySessions, query.fields[i].Name))
 			} else {
 				q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 			}
@@ -430,6 +435,7 @@ func (query *queryBuilder) joinImported(from string) {
 	dateQuery := query.whereTimeImported()
 	joinField := query.fieldsImported[0]
 	query.where = make([]where, 0)
+	query.whereFieldImported(FieldHostname.Name, query.filter.Hostname, joinField.Name)
 	query.whereFieldImported(FieldEntryPath.Name, query.filter.EntryPath, joinField.Name)
 	query.whereFieldImported(FieldExitPath.Name, query.filter.ExitPath, joinField.Name)
 	query.whereFieldImported(FieldPath.Name, query.filter.Path, joinField.Name)
@@ -588,6 +594,7 @@ func (query *queryBuilder) whereFields() {
 		query.whereFieldMeta()
 	}
 
+	query.whereField(FieldHostname.Name, query.filter.Hostname)
 	query.whereField(FieldLanguage.Name, query.filter.Language)
 	query.whereField(FieldCountry.Name, query.filter.Country)
 	query.whereField(FieldRegion.Name, query.filter.Region)

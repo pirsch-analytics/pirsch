@@ -6,6 +6,7 @@ import (
 
 // ActiveVisitorStats is the result type for active visitor statistics.
 type ActiveVisitorStats struct {
+	Hostname string `json:"hostname"`
 	Path     string `json:"path"`
 	Title    string `json:"title"`
 	Visitors int    `json:"visitors"`
@@ -86,8 +87,31 @@ type VisitorMinuteStats struct {
 	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
+// VisitorWeekdayHourStats is the result type for visitor statistics grouped by time of day and weekday.
+type VisitorWeekdayHourStats struct {
+	Weekday  int `json:"weekday"`
+	Hour     int `json:"hour"`
+	Visitors int `json:"visitors"`
+	Views    int `json:"views"`
+	Sessions int `json:"sessions"`
+	Bounces  int `json:"bounces"`
+}
+
+// HostnameStats is the result type for hostname statistics.
+type HostnameStats struct {
+	Hostname         string  `json:"hostname"`
+	Visitors         int     `json:"visitors"`
+	Views            int     `json:"views"`
+	Sessions         int     `json:"sessions"`
+	Bounces          int     `json:"bounces"`
+	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
+	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
+	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`
+}
+
 // PageStats is the result type for page statistics.
 type PageStats struct {
+	Hostname                string  `json:"hostname"`
 	Path                    string  `json:"path"`
 	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
@@ -106,6 +130,7 @@ func (stats PageStats) GetPath() string {
 
 // EntryStats is the result type for entry page statistics.
 type EntryStats struct {
+	Hostname                string  `json:"hostname"`
 	Path                    string  `db:"entry_path" json:"path"`
 	Title                   string  `json:"title"`
 	Visitors                int     `json:"visitors"`
@@ -121,6 +146,7 @@ func (stats EntryStats) GetPath() string {
 
 // ExitStats is the result type for exit page statistics.
 type ExitStats struct {
+	Hostname string  `json:"hostname"`
 	Path     string  `db:"exit_path" json:"path"`
 	Title    string  `json:"title"`
 	Visitors int     `json:"visitors"`

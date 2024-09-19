@@ -15,6 +15,7 @@ type Session struct {
 	Time            time.Time `json:"time"`
 	Start           time.Time `json:"start"`
 	DurationSeconds uint32    `db:"duration_seconds" json:"duration_seconds"`
+	Hostname        string    `json:"hostname"`
 	EntryPath       string    `db:"entry_path" json:"entry_path"`
 	ExitPath        string    `db:"exit_path" json:"exit_path"`
 	PageViews       uint16    `db:"page_views" json:"page_views"`

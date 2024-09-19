@@ -189,8 +189,18 @@ func (client *ClientMock) SelectVisitorHourStats(context.Context, string, bool, 
 	return nil, nil
 }
 
+// SelectVisitorWeekdayHourStats selects model.VisitorWeekdayHourStats.
+func (client *ClientMock) SelectVisitorWeekdayHourStats(ctx context.Context, query string, args ...any) ([]model.VisitorWeekdayHourStats, error) {
+	return nil, nil
+}
+
 // SelectVisitorMinuteStats implements the Store interface.
 func (client *ClientMock) SelectVisitorMinuteStats(context.Context, string, bool, bool, ...any) ([]model.VisitorMinuteStats, error) {
+	return nil, nil
+}
+
+// SelectHostnameStats implements the Store interface.
+func (client *ClientMock) SelectHostnameStats(context.Context, string, ...any) ([]model.HostnameStats, error) {
 	return nil, nil
 }
 

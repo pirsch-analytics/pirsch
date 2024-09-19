@@ -9,6 +9,29 @@ import (
 	"time"
 )
 
+func TestFilterOptions_Hostnames(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Hostname: "foo.com"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Hostname: "example.com"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Hostname: "example.com"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Hostname: "bar.com"},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	options, err := analyzer.Options.Hostnames(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "bar.com", options[0])
+	assert.Equal(t, "example.com", options[1])
+	assert.Equal(t, "foo.com", options[2])
+	options, err = analyzer.Options.Hostnames(&Filter{From: util.PastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "bar.com", options[0])
+	assert.Equal(t, "example.com", options[1])
+}
+
 func TestFilterOptions_Pages(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

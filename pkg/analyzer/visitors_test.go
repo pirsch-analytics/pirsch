@@ -74,6 +74,58 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_ActiveVisitorsHostname(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home", Hostname: "example.com"},
+		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar", Hostname: "example.com"},
+		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
+		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
+		{VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home", Hostname: "foo.com"},
+		{VisitorID: 4, Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
+	}))
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now(), Hostname: "example.com"},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now(), Hostname: "example.com"},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Start: time.Now(), Hostname: "example.com"},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Start: time.Now()},
+			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now(), Hostname: "example.com"},
+		},
+		{
+			{Sign: -1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now(), Hostname: "example.com"},
+			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Start: time.Now(), Hostname: "example.com"},
+			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), Start: time.Now()},
+		},
+	})
+	analyzer := NewAnalyzer(dbClient)
+	visitors, count, err := analyzer.Visitors.Active(&Filter{
+		Path: []string{"/bar"},
+	}, time.Minute*30)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
+	assert.Len(t, visitors, 2)
+	assert.Empty(t, visitors[0].Hostname)
+	assert.Equal(t, "example.com", visitors[1].Hostname)
+	assert.Equal(t, "/bar", visitors[0].Path)
+	assert.Equal(t, "/bar", visitors[1].Path)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	visitors, count, err = analyzer.Visitors.Active(&Filter{
+		Path:             []string{"/bar"},
+		HostnameFallback: "example.com",
+	}, time.Minute*30)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, count)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "example.com", visitors[0].Hostname)
+	assert.Equal(t, "/bar", visitors[0].Path)
+	assert.Equal(t, 2, visitors[0].Visitors)
+}
+
 func TestAnalyzer_TotalVisitors(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{
@@ -2214,6 +2266,40 @@ func TestAnalyzer_ByMinute(t *testing.T) {
 	_, err = analyzer.Visitors.ByMinute(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Visitors.ByMinute(getMaxFilter("event"))
+	assert.NoError(t, err)
+}
+
+func TestAnalyzer_ByWeekdayAndHour(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: util.Today().Add(time.Hour), Start: time.Now(), ExitPath: "/", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: util.Today().Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 3, Time: util.Today().Add(time.Hour * 4), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 5, Time: util.Today().Add(time.Hour * 8), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Start: time.Now(), ExitPath: "/", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+		{VisitorID: 1, Time: util.Today(), Path: "/foo"},
+		{VisitorID: 1, Time: util.Today().Add(time.Hour), Path: "/"},
+		{VisitorID: 2, Time: util.Today().Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 3, Time: util.Today().Add(time.Hour * 4), Path: "/"},
+		{VisitorID: 4, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 5, Time: util.Today().Add(time.Hour * 8), Path: "/"},
+		{VisitorID: 6, Time: util.Today().Add(time.Hour * 5), Path: "/"},
+		{VisitorID: 7, Time: util.Today().Add(time.Hour * 10), Path: "/"},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.ByWeekdayAndHour(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 168)
+	_, err = analyzer.Visitors.ByWeekdayAndHour(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Visitors.ByWeekdayAndHour(getMaxFilter("event"))
 	assert.NoError(t, err)
 }
 

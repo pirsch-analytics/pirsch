@@ -12,6 +12,7 @@ type PageView struct {
 	SessionID       uint32    `db:"session_id" json:"session_id"`
 	Time            time.Time `json:"time"`
 	DurationSeconds uint32    `db:"duration_seconds" json:"duration_seconds"`
+	Hostname        string    `json:"hostname"`
 	Path            string    `json:"path"`
 	Title           string    `json:"title"`
 	Language        string    `json:"language"`

@@ -21,15 +21,15 @@ type Visitors struct {
 	store    db.Store
 }
 
-// Active returns the active visitors per path and (optional) page title and the total number of active visitors for given duration.
+// Active returns the active visitors per hostname, path, and (optional) page title and the total number of active visitors for given duration.
 // Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
 func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]model.ActiveVisitorStats, int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
-	fields := []Field{FieldPath}
-	groupBy := []Field{FieldPath}
-	orderBy := []Field{FieldVisitors, FieldPath}
+	fields := []Field{FieldHostname, FieldPath}
+	groupBy := []Field{FieldHostname, FieldPath}
+	orderBy := []Field{FieldVisitors, FieldHostname, FieldPath}
 
 	if filter.IncludeTitle {
 		fields = append(fields, FieldTitle)
@@ -318,6 +318,32 @@ func (visitors *Visitors) ByMinute(filter *Filter) ([]model.VisitorMinuteStats, 
 		FieldVisitors,
 	}, nil, "")
 	stats, err := visitors.store.SelectVisitorMinuteStats(filter.Ctx, q, filter.IncludeCR, includeCustomMetric, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// ByWeekdayAndHour returns the visitor count grouped by time of day and weekday.
+func (visitors *Visitors) ByWeekdayAndHour(filter *Filter) ([]model.VisitorWeekdayHourStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
+		FieldWeekday,
+		FieldHour,
+		FieldVisitors,
+		FieldSessions,
+		FieldViews,
+		FieldBounces,
+	}, []Field{
+		FieldWeekday,
+		FieldHour,
+	}, []Field{
+		FieldWeekday,
+		FieldHour,
+	}, nil, "")
+	stats, err := visitors.store.SelectVisitorWeekdayHourStats(filter.Ctx, q, args...)
 
 	if err != nil {
 		return nil, err

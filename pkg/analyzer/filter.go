@@ -35,6 +35,9 @@ type Filter struct {
 	// Period sets the period to group results.
 	Period pkg.Period
 
+	// Hostname filters for the hostname.
+	Hostname []string
+
 	// Path filters for the path.
 	// Note that if this and PathPattern are both set, Path will be preferred.
 	Path []string
@@ -172,6 +175,11 @@ type Filter struct {
 	// Sample sets the (optional) sampling size.
 	Sample uint
 
+	// TODO remove after migration
+	// HostnameFallback is the hostname to use when it's empty.
+	// This is only required until the data has been fully migrated and will be removed in a future version.
+	HostnameFallback string
+
 	funnelStep   int
 	importedFrom time.Time
 	importedTo   time.Time
@@ -279,6 +287,7 @@ func (filter *Filter) validate() {
 		}
 	}
 
+	filter.Hostname = filter.removeDuplicates(filter.Hostname)
 	filter.Path = filter.removeDuplicates(filter.Path)
 	filter.EntryPath = filter.removeDuplicates(filter.EntryPath)
 	filter.ExitPath = filter.removeDuplicates(filter.ExitPath)

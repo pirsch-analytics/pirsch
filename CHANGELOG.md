@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.15.0
+
+* added storing hostname
+* added reading and filtering for hostnames
+* added reading visitors by weekday and hour
+* added sorting by entry and exit rate
+* improved entry and exit rate calculation
+* fixed storing milliseconds for timestamps
+* updated dependencies
+
 ## 6.14.2
 
 * improved Arc browser detection

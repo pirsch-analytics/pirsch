@@ -15,12 +15,39 @@ type Pages struct {
 	store    db.Store
 }
 
-// ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by path and (optional) page title.
+// Hostname returns the visitor count, session count, bounce rate, and views grouped by hostname.
+func (pages *Pages) Hostname(filter *Filter) ([]model.HostnameStats, error) {
+	filter = pages.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
+		FieldHostname,
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+		FieldRelativeVisitors,
+		FieldRelativeViews,
+		FieldBounceRate,
+	}, []Field{
+		FieldHostname,
+	}, []Field{
+		FieldVisitors,
+		FieldHostname,
+	}, nil, "")
+	stats, err := pages.store.SelectHostnameStats(filter.Ctx, q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by hostname, path, and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 	return pages.byPath(filter, false)
 }
 
-// ByEventPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by event path and (optional) title.
+// ByEventPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by hostname, event path, and (optional) title.
 func (pages *Pages) ByEventPath(filter *Filter) ([]model.PageStats, error) {
 	if len(filter.EventName) == 0 {
 		return []model.PageStats{}, nil
@@ -38,6 +65,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	}
 
 	fields := []Field{
+		FieldHostname,
 		pathField,
 		FieldVisitors,
 		FieldSessions,
@@ -48,10 +76,12 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 		FieldBounceRate,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		pathField,
 	}
 	orderBy := []Field{
 		FieldVisitors,
+		FieldHostname,
 		pathField,
 	}
 
@@ -101,7 +131,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	return stats, nil
 }
 
-// Entry returns the visitor count and time on page grouped by path and (optional) page title for the first page visited.
+// Entry returns the visitor count and time on page grouped by hostname, path, and (optional) page title for the first page visited.
 func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	filter = pages.analyzer.getFilter(filter)
 	var sortVisitors pkg.Direction
@@ -112,14 +142,18 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	fields := []Field{
+		FieldHostname,
 		FieldEntryPath,
 		FieldEntries,
+		FieldEntryRate,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		FieldEntryPath,
 	}
 	orderBy := []Field{
 		FieldEntries,
+		FieldHostname,
 		FieldEntryPath,
 	}
 
@@ -140,13 +174,6 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	}
 
 	pathList := getPathList(stats)
-	totalSessions, err := pages.totalSessions(filter)
-
-	if err != nil {
-		return nil, err
-	}
-
-	totalSessionsFloat64 := float64(totalSessions)
 	total, err := pages.totalVisitorsSessions(filter, pathList)
 
 	if err != nil {
@@ -158,7 +185,6 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 			if stats[i].Path == total[j].Path {
 				stats[i].Visitors = total[j].Visitors
 				stats[i].Sessions = total[j].Sessions
-				stats[i].EntryRate = float64(stats[i].Entries) / totalSessionsFloat64
 				break
 			}
 		}
@@ -196,7 +222,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	return stats, nil
 }
 
-// Exit returns the visitor count and time on page grouped by path and (optional) page title for the last page visited.
+// Exit returns the visitor count and time on page grouped by hostname, path, and (optional) page title for the last page visited.
 func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	filter = pages.analyzer.getFilter(filter)
 	var sortVisitors pkg.Direction
@@ -207,14 +233,18 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	}
 
 	fields := []Field{
+		FieldHostname,
 		FieldExitPath,
 		FieldExits,
+		FieldExitRate,
 	}
 	groupBy := []Field{
+		FieldHostname,
 		FieldExitPath,
 	}
 	orderBy := []Field{
 		FieldExits,
+		FieldHostname,
 		FieldExitPath,
 	}
 
@@ -234,13 +264,6 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	totalSessions, err := pages.totalSessions(filter)
-
-	if err != nil {
-		return nil, err
-	}
-
-	totalSessionsFloat64 := float64(totalSessions)
 	pathList := getPathList(stats)
 	total, err := pages.totalVisitorsSessions(filter, pathList)
 
@@ -253,13 +276,6 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 			if stats[i].Path == total[j].Path {
 				stats[i].Visitors = total[j].Visitors
 				stats[i].Sessions = total[j].Sessions
-
-				if totalSessions == 0 {
-					stats[i].ExitRate = 1
-				} else {
-					stats[i].ExitRate = float64(stats[i].Exits) / totalSessionsFloat64
-				}
-
 				break
 			}
 		}
@@ -300,19 +316,6 @@ func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error)
 
 	if err != nil {
 		return nil, err
-	}
-
-	return stats, nil
-}
-
-func (pages *Pages) totalSessions(filter *Filter) (int, error) {
-	filter = pages.analyzer.getFilter(filter)
-	filterQuery, filterArgs := filter.buildTimeQuery()
-	query := fmt.Sprintf("SELECT uniq(visitor_id, session_id) FROM session %s HAVING sum(sign) > 0", filterQuery)
-	stats, err := pages.store.SelectTotalSessions(filter.Ctx, query, filterArgs...)
-
-	if err != nil {
-		return 0, err
 	}
 
 	return stats, nil

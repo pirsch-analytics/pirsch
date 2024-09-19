@@ -16,6 +16,7 @@ type Event struct {
 	MetaKeys        []string  `db:"event_meta_keys" json:"meta_keys"`
 	MetaValues      []string  `db:"event_meta_values" json:"meta_values"`
 	DurationSeconds uint32    `db:"duration_seconds" json:"duration_seconds"`
+	Hostname        string    `json:"hostname"`
 	Path            string    `json:"path"`
 	Title           string    `json:"title"`
 	Language        string    `json:"language"`

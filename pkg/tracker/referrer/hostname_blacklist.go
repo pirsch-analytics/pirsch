@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-08-27)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-09-19)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -310,6 +310,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"blogking.top":                         {},
 	"bloglag.com":                          {},
 	"blognet.top":                          {},
+	"blogorganictraffic.shop":              {},
 	"blogseo.xyz":                          {},
 	"blogstar.fun":                         {},
 	"blogtotal.de":                         {},
@@ -1381,6 +1382,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"nethouse.ru":                          {},
 	"nevapotolok.ru":                       {},
 	"newagebev.com":                        {},
+	"newbieseoblog.online":                 {},
 	"newsrosprom.ru":                       {},
 	"newstaffadsshop.club":                 {},
 	"nfocusdriver.com":                     {},

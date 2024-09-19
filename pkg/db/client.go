@@ -149,16 +149,17 @@ func NewClient(config *ClientConfig) (*Client, error) {
 // SavePageViews implements the Store interface.
 func (client *Client) SavePageViews(pageViews []model.PageView) error {
 	values := make([]string, 0, len(pageViews))
-	args := make([]any, 0, len(pageViews)*28)
+	args := make([]any, 0, len(pageViews)*29)
 
 	for _, pageView := range pageViews {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			pageView.ClientID,
 			pageView.VisitorID,
 			pageView.SessionID,
-			pageView.Time,
+			pageView.Time.UnixMilli(),
 			pageView.DurationSeconds,
+			pageView.Hostname,
 			pageView.Path,
 			pageView.Title,
 			pageView.Language,
@@ -185,7 +186,7 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 	}
 
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
-		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		hostname, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
 		tag_keys, tag_values) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
@@ -202,19 +203,20 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 // SaveSessions implements the Store interface.
 func (client *Client) SaveSessions(sessions []model.Session) error {
 	values := make([]string, 0, len(sessions))
-	args := make([]any, 0, len(sessions)*34)
+	args := make([]any, 0, len(sessions)*35)
 
 	for _, session := range sessions {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			session.Sign,
 			session.Version,
 			session.ClientID,
 			session.VisitorID,
 			session.SessionID,
-			session.Time,
+			session.Time.UnixMilli(),
 			session.Start,
 			session.DurationSeconds,
+			session.Hostname,
 			session.EntryPath,
 			session.ExitPath,
 			session.PageViews,
@@ -244,7 +246,7 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 	}
 
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "session" (sign, version, client_id, visitor_id, session_id, time, start, duration_seconds,
-		entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		hostname, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
@@ -260,19 +262,20 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 // SaveEvents implements the Store interface.
 func (client *Client) SaveEvents(events []model.Event) error {
 	values := make([]string, 0, len(events))
-	args := make([]any, 0, len(events)*29)
+	args := make([]any, 0, len(events)*30)
 
 	for _, event := range events {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			event.ClientID,
 			event.VisitorID,
-			event.Time,
+			event.Time.UnixMilli(),
 			event.SessionID,
 			event.Name,
 			event.MetaKeys,
 			event.MetaValues,
 			event.DurationSeconds,
+			event.Hostname,
 			event.Path,
 			event.Title,
 			event.Language,
@@ -297,7 +300,7 @@ func (client *Client) SaveEvents(events []model.Event) error {
 	}
 
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
-		path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
+		hostname, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
 		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
@@ -313,16 +316,17 @@ func (client *Client) SaveEvents(events []model.Event) error {
 // SaveRequests implements the Store interface.
 func (client *Client) SaveRequests(requests []model.Request) error {
 	values := make([]string, 0, len(requests))
-	args := make([]any, 0, len(requests)*13)
+	args := make([]any, 0, len(requests)*14)
 
 	for _, req := range requests {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			req.ClientID,
 			req.VisitorID,
-			req.Time,
+			req.Time.UnixMilli(),
 			req.IP,
 			req.UserAgent,
+			req.Hostname,
 			req.Path,
 			req.Event,
 			req.Referrer,
@@ -333,7 +337,7 @@ func (client *Client) SaveRequests(requests []model.Request) error {
 			req.BotReason)
 	}
 
-	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "request" (client_id, visitor_id, time, ip, user_agent, path, event_name, referrer, utm_source, utm_medium, utm_campaign, bot, bot_reason) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
+	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "request" (client_id, visitor_id, time, ip, user_agent, hostname, path, event_name, referrer, utm_source, utm_medium, utm_campaign, bot, bot_reason) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -469,7 +473,10 @@ func (client *Client) SelectActiveVisitorStats(ctx context.Context, includeTitle
 		for rows.Next() {
 			var result model.ActiveVisitorStats
 
-			if err := rows.Scan(&result.Path, &result.Title, &result.Visitors); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Title,
+				&result.Visitors); err != nil {
 				return nil, err
 			}
 
@@ -479,7 +486,9 @@ func (client *Client) SelectActiveVisitorStats(ctx context.Context, includeTitle
 		for rows.Next() {
 			var result model.ActiveVisitorStats
 
-			if err := rows.Scan(&result.Path, &result.Visitors); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Visitors); err != nil {
 				return nil, err
 			}
 
@@ -994,6 +1003,35 @@ func (client *Client) SelectVisitorHourStats(ctx context.Context, query string, 
 	return results, nil
 }
 
+// SelectVisitorWeekdayHourStats selects model.VisitorWeekdayHourStats.
+func (client *Client) SelectVisitorWeekdayHourStats(ctx context.Context, query string, args ...any) ([]model.VisitorWeekdayHourStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.VisitorWeekdayHourStats
+
+	for rows.Next() {
+		var result model.VisitorWeekdayHourStats
+
+		if err := rows.Scan(&result.Weekday,
+			&result.Hour,
+			&result.Visitors,
+			&result.Sessions,
+			&result.Views,
+			&result.Bounces); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectVisitorMinuteStats implements the Store interface.
 func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string, includeCR, includeCustomMetrics bool, args ...any) ([]model.VisitorMinuteStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)
@@ -1062,6 +1100,37 @@ func (client *Client) SelectVisitorMinuteStats(ctx context.Context, query string
 	return results, nil
 }
 
+// SelectHostnameStats implements the Store interface.
+func (client *Client) SelectHostnameStats(ctx context.Context, query string, args ...any) ([]model.HostnameStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.HostnameStats
+
+	for rows.Next() {
+		var result model.HostnameStats
+
+		if err := rows.Scan(&result.Hostname,
+			&result.Visitors,
+			&result.Views,
+			&result.Sessions,
+			&result.Bounces,
+			&result.RelativeVisitors,
+			&result.RelativeViews,
+			&result.BounceRate); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectPageStats implements the Store interface.
 func (client *Client) SelectPageStats(ctx context.Context, includeTitle, includeTimeSpent bool, query string, args ...any) ([]model.PageStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)
@@ -1078,7 +1147,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1097,7 +1167,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1117,7 +1188,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1135,7 +1207,8 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 			for rows.Next() {
 				var result model.PageStats
 
-				if err := rows.Scan(&result.Path,
+				if err := rows.Scan(&result.Hostname,
+					&result.Path,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1193,7 +1266,11 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 		for rows.Next() {
 			var result model.EntryStats
 
-			if err := rows.Scan(&result.Path, &result.Entries, &result.Title); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Entries,
+				&result.EntryRate,
+				&result.Title); err != nil {
 				return nil, err
 			}
 
@@ -1203,7 +1280,10 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 		for rows.Next() {
 			var result model.EntryStats
 
-			if err := rows.Scan(&result.Path, &result.Entries); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Entries,
+				&result.EntryRate); err != nil {
 				return nil, err
 			}
 
@@ -1229,7 +1309,11 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 		for rows.Next() {
 			var result model.ExitStats
 
-			if err := rows.Scan(&result.Path, &result.Exits, &result.Title); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Exits,
+				&result.ExitRate,
+				&result.Title); err != nil {
 				return nil, err
 			}
 
@@ -1239,7 +1323,10 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 		for rows.Next() {
 			var result model.ExitStats
 
-			if err := rows.Scan(&result.Path, &result.Exits); err != nil {
+			if err := rows.Scan(&result.Hostname,
+				&result.Path,
+				&result.Exits,
+				&result.ExitRate); err != nil {
 				return nil, err
 			}
 
