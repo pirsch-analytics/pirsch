@@ -7,13 +7,14 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-09-19)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-09-27)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
 	"03e.info":                             {},
 	"03p.info":                             {},
 	"0n-line.tv":                           {},
+	"1-88.vip":                             {},
 	"1-99seo.com":                          {},
 	"1-best-seo.com":                       {},
 	"1-free-share-buttons.com":             {},
@@ -45,6 +46,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"1xslots-casino.site":                  {},
 	"1xslots.africa":                       {},
 	"1xslots.site":                         {},
+	"16lv.com":                             {},
 	"2-best-seo.com":                       {},
 	"2-easy.xyz":                           {},
 	"2-go-now.xyz":                         {},
@@ -77,6 +79,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"7ooo.ru":                              {},
 	"7zap.com":                             {},
 	"8-best-seo.com":                       {},
+	"84lv.com":                             {},
 	"8xv8.com":                             {},
 	"9-best-seo.com":                       {},
 	"99-reasons-for-seo.com":               {},
@@ -1971,6 +1974,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"thesensehousehotel.com":               {},
 	"thesmartsearch.net":                   {},
 	"timmy.by":                             {},
+	"tip8.co":                              {},
 	"tocan.biz":                            {},
 	"tocan.com.ua":                         {},
 	"tokshow.online":                       {},
@@ -1983,6 +1987,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"top1-seo-service.com":                 {},
 	"top10-online-games.com":               {},
 	"top10-way.com":                        {},
+	"top8.co":                              {},
 	"topgurudeals.com":                     {},
 	"topmebeltorg.ru":                      {},
 	"toposvita.com":                        {},

@@ -767,6 +767,37 @@ func TestAnalyzer_ByPathTags(t *testing.T) {
 	assert.Equal(t, 1, visitors[0].Visitors)
 }
 
+func TestAnalyzer_ByPathManyPages(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	var sessions []model.Session
+	var pageViews []model.PageView
+
+	for i := 0; i < 100_000; i++ {
+		sessions = append(sessions, model.Session{
+			Sign:            1,
+			VisitorID:       uint64(i + 1),
+			Time:            util.Today(),
+			Start:           time.Now(),
+			SessionID:       1,
+			DurationSeconds: 60,
+			PageViews:       1,
+		})
+		pageViews = append(pageViews, model.PageView{
+			VisitorID: uint64(i + 1),
+			Time:      util.Today(),
+			SessionID: 1,
+			Path:      fmt.Sprintf("/relatively/long/unique/path/%d", i),
+		})
+	}
+
+	saveSessions(t, [][]model.Session{sessions})
+	assert.NoError(t, dbClient.SavePageViews(pageViews))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Pages.ByPath(&Filter{IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 100_000)
+}
+
 func TestAnalyzer_PathPattern(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{

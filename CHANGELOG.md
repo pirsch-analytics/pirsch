@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.15.1
+
+* read average time on page in batch rather than everything at once
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.15.0
 
 * added storing hostname

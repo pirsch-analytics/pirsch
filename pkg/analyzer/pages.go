@@ -111,18 +111,28 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	}
 
 	if filter.IncludeTimeOnPage {
-		pathList := getPathList(stats)
-		top, err := pages.avgTimeOnPage(filter, pathList)
+		n := len(stats)
 
-		if err != nil {
-			return nil, err
-		}
+		for start := 0; start < n; start += 1000 {
+			end := start + 1000
 
-		for i := range stats {
-			for j := range top {
-				if stats[i].Path == top[j].Path {
-					stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
-					break
+			if end > n {
+				end = n
+			}
+
+			pathList := getPathList(stats[start:end])
+			top, err := pages.avgTimeOnPage(filter, pathList)
+
+			if err != nil {
+				return nil, err
+			}
+
+			for i := range stats {
+				for j := range top {
+					if stats[i].Path == top[j].Path {
+						stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
+						break
+					}
 				}
 			}
 		}
