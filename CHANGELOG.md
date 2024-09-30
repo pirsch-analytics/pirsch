@@ -3,6 +3,7 @@
 ## 6.15.2
 
 * read entry/exit pages in batch rather than everything at once
+* fixed regex filter for imported statistics and platforms
 
 ## 6.15.1
 

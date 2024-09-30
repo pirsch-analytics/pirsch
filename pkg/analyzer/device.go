@@ -20,6 +20,7 @@ func (device *Device) Platform(filter *Filter) (*model.PlatformStats, error) {
 		filter.EntryPath = nil
 		filter.ExitPath = nil
 		filter.AnyPath = nil
+		filter.PathPattern = nil
 		filter.Tags = nil
 		filter.Search = nil
 		filter.IncludeTitle = false

@@ -160,6 +160,14 @@ func TestAnalyzer_Platform(t *testing.T) {
 	maxFilter.ImportedUntil = util.Today()
 	_, err = analyzer.Device.Platform(maxFilter)
 	assert.NoError(t, err)
+	_, err = analyzer.Device.Platform(&Filter{
+		From:          util.PastDay(1),
+		To:            util.Today(),
+		ImportedUntil: util.Today(),
+		PathPattern:   []string{"(?i)^/.*$"},
+		Sample:        10_000_000,
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_Browser(t *testing.T) {
