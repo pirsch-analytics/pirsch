@@ -183,35 +183,45 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 		return nil, err
 	}
 
-	pathList := getPathList(stats)
-	total, err := pages.totalVisitorsSessions(filter, pathList)
+	n := len(stats)
 
-	if err != nil {
-		return nil, err
-	}
+	for start := 0; start < n; start += 1000 {
+		end := start + 1000
 
-	for i := range stats {
-		for j := range total {
-			if stats[i].Path == total[j].Path {
-				stats[i].Visitors = total[j].Visitors
-				stats[i].Sessions = total[j].Sessions
-				break
-			}
+		if end > n {
+			end = n
 		}
-	}
 
-	if filter.IncludeTimeOnPage {
-		top, err := pages.avgTimeOnPage(filter, pathList)
+		pathList := getPathList(stats[start:end])
+		total, err := pages.totalVisitorsSessions(filter, pathList)
 
 		if err != nil {
 			return nil, err
 		}
 
 		for i := range stats {
-			for j := range top {
-				if stats[i].Path == top[j].Path {
-					stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
+			for j := range total {
+				if stats[i].Path == total[j].Path {
+					stats[i].Visitors = total[j].Visitors
+					stats[i].Sessions = total[j].Sessions
 					break
+				}
+			}
+		}
+
+		if filter.IncludeTimeOnPage {
+			top, err := pages.avgTimeOnPage(filter, pathList)
+
+			if err != nil {
+				return nil, err
+			}
+
+			for i := range stats {
+				for j := range top {
+					if stats[i].Path == top[j].Path {
+						stats[i].AverageTimeSpentSeconds = top[j].AverageTimeSpentSeconds
+						break
+					}
 				}
 			}
 		}
@@ -274,19 +284,29 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 		return nil, err
 	}
 
-	pathList := getPathList(stats)
-	total, err := pages.totalVisitorsSessions(filter, pathList)
+	n := len(stats)
 
-	if err != nil {
-		return nil, err
-	}
+	for start := 0; start < n; start += 1000 {
+		end := start + 1000
 
-	for i := range stats {
-		for j := range total {
-			if stats[i].Path == total[j].Path {
-				stats[i].Visitors = total[j].Visitors
-				stats[i].Sessions = total[j].Sessions
-				break
+		if end > n {
+			end = n
+		}
+
+		pathList := getPathList(stats[start:end])
+		total, err := pages.totalVisitorsSessions(filter, pathList)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range stats {
+			for j := range total {
+				if stats[i].Path == total[j].Path {
+					stats[i].Visitors = total[j].Visitors
+					stats[i].Sessions = total[j].Sessions
+					break
+				}
 			}
 		}
 	}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.15.2
+
+* read entry/exit pages in batch rather than everything at once
+
 ## 6.15.1
 
 * read average time on page in batch rather than everything at once

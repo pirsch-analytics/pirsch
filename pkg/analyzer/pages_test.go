@@ -1574,6 +1574,42 @@ func TestAnalyzer_EntryExitPageFilterCombination(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestAnalyzer_EntryExitManyPages(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	var sessions []model.Session
+	var pageViews []model.PageView
+
+	for i := 0; i < 100_000; i++ {
+		sessions = append(sessions, model.Session{
+			Sign:            1,
+			VisitorID:       uint64(i + 1),
+			Time:            util.Today(),
+			Start:           time.Now(),
+			SessionID:       1,
+			DurationSeconds: 60,
+			PageViews:       1,
+			EntryPath:       fmt.Sprintf("/relatively/long/unique/entry/%d", i),
+			ExitPath:        fmt.Sprintf("/relatively/long/unique/exit/%d", i),
+		})
+		pageViews = append(pageViews, model.PageView{
+			VisitorID: uint64(i + 1),
+			Time:      util.Today(),
+			SessionID: 1,
+			Path:      fmt.Sprintf("/relatively/long/unique/path/%d", i),
+		})
+	}
+
+	saveSessions(t, [][]model.Session{sessions})
+	assert.NoError(t, dbClient.SavePageViews(pageViews))
+	analyzer := NewAnalyzer(dbClient)
+	entries, err := analyzer.Pages.Entry(&Filter{IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, entries, 100_000)
+	exits, err := analyzer.Pages.Exit(&Filter{IncludeTimeOnPage: true})
+	assert.NoError(t, err)
+	assert.Len(t, exits, 100_000)
+}
+
 func TestAnalyzer_Conversions(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
