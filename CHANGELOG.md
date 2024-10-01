@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.15.3
+
+* fixed overwriting hostname in URL
+
 ## 6.15.2
 
 * read entry/exit pages in batch rather than everything at once

@@ -241,6 +241,53 @@ func TestTracker_PageView(t *testing.T) {
 	assert.False(t, requests[0].Bot)
 }
 
+func TestTracker_PageViewHostnameEmpty(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.RemoteAddr = "81.2.69.142"
+	req.Host = ""
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.PageView(req, 123, Options{
+		Hostname: "example.com",
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, "example.com", sessions[0].Hostname)
+	assert.Equal(t, "example.com", pageViews[0].Hostname)
+}
+
+func TestTracker_PageViewHostnameOverwrite(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://foo.com/foo/bar", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.PageView(req, 123, Options{
+		Hostname: "example.com",
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, "example.com", sessions[0].Hostname)
+	assert.Equal(t, "example.com", pageViews[0].Hostname)
+}
+
 func TestTracker_PageViewBounce(t *testing.T) {
 	client := db.NewClientMock()
 	tracker := NewTracker(Config{

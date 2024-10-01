@@ -47,7 +47,9 @@ func (options *Options) validate(r *http.Request) {
 	u, err := url.ParseRequestURI(options.URL)
 
 	if err == nil {
-		options.Hostname = strings.ToLower(u.Hostname())
+		if options.Hostname == "" {
+			options.Hostname = u.Hostname()
+		}
 
 		if options.Path != "" {
 			// change path and re-assemble URL
