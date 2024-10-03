@@ -2544,7 +2544,12 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	growth, err := analyzer.Visitors.Growth(nil)
 	assert.ErrorIs(t, err, ErrNoPeriodOrDay)
 	assert.Nil(t, growth)
-	growth, err = analyzer.Visitors.Growth(&Filter{From: util.PastDay(2), To: util.PastDay(2), EventName: []string{"event1"}, IncludeCR: true})
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(2),
+		To:        util.PastDay(2),
+		EventName: []string{"event1"},
+		IncludeCR: true,
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 0.5, growth.VisitorsGrowth, 0.001)
@@ -2552,21 +2557,32 @@ func TestAnalyzer_GrowthEvents(t *testing.T) {
 	assert.InDelta(t, 0.5, growth.SessionsGrowth, 0.001)
 	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	assert.InDelta(t, 1, growth.CRGrowth, 0.001)
-	growth, err = analyzer.Visitors.Growth(&Filter{From: util.PastDay(3), To: util.PastDay(2), EventName: []string{"event1"}, IncludeCR: true})
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(3),
+		To:        util.PastDay(2),
+		EventName: []string{"event1"},
+		IncludeCR: true,
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1.3333, growth.VisitorsGrowth, 0.001)
 	assert.InDelta(t, 1.2, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 2, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, -0.3333, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, 0, growth.TimeSpentGrowth, 0.001)
 	assert.InDelta(t, 0, growth.CRGrowth, 0.001)
-	growth, err = analyzer.Visitors.Growth(&Filter{From: util.PastDay(3), To: util.PastDay(2), EventName: []string{"event1"}, Path: []string{"/bar"}, IncludeCR: true})
+	growth, err = analyzer.Visitors.Growth(&Filter{
+		From:      util.PastDay(3),
+		To:        util.PastDay(2),
+		EventName: []string{"event1"},
+		Path:      []string{"/bar"},
+		IncludeCR: true,
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, growth)
 	assert.InDelta(t, 1, growth.VisitorsGrowth, 0.001)
-	assert.InDelta(t, 1, growth.ViewsGrowth, 0.001)
+	assert.InDelta(t, 0, growth.ViewsGrowth, 0.001)
 	assert.InDelta(t, 1, growth.SessionsGrowth, 0.001)
-	assert.InDelta(t, -0.5, growth.TimeSpentGrowth, 0.001)
+	assert.InDelta(t, -1, growth.TimeSpentGrowth, 0.001)
 	assert.InDelta(t, -0.1428, growth.CRGrowth, 0.001)
 	_, err = analyzer.Visitors.Growth(getMaxFilter("event1"))
 	assert.NoError(t, err)

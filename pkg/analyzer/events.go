@@ -16,7 +16,7 @@ func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	filter = events.analyzer.getFilter(filter)
 	q, args := filter.buildQuery([]Field{
 		FieldEventName,
-		FieldCount,
+		FieldEventCount,
 		FieldVisitors,
 		FieldViews,
 		FieldCR,

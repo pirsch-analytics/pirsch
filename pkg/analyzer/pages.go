@@ -468,7 +468,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 	pathInQuery.whereFieldPathIn()
 	pathIn := pathInQuery.where[len(pathInQuery.where)-1].eqContains[0]
 	q.args = append(q.args, pathInQuery.args...)
-	query.WriteString(fmt.Sprintf(`%s)
+	query.WriteString(fmt.Sprintf(`%s) t
 		WHERE time_on_page > 0 %s
 		AND %s
 		GROUP BY path`, whereTime, q.q.String(), pathIn))

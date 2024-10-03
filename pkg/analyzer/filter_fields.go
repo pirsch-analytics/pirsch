@@ -53,6 +53,16 @@ var (
 		sampleType:     sampleTypeInt,
 	}
 
+	// FieldEventCount is a query result column.
+	FieldEventCount = Field{
+		querySessions:  "countIf(t.path = k.path)",
+		queryPageViews: "countIf(t.path = k.path)",
+		queryEvents:    "count(*)",
+		Name:           "count",
+		queryDirection: "DESC",
+		sampleType:     sampleTypeInt,
+	}
+
 	// FieldHostname is a query result column.
 	FieldHostname = Field{
 		querySessions:  "coalesce(nullif(t.hostname, ''), ?)", // TODO change back to just "hostname" after migration
@@ -63,8 +73,8 @@ var (
 
 	// FieldPath is a query result column.
 	FieldPath = Field{
-		querySessions:  "path",
-		queryPageViews: "path",
+		querySessions:  "t.path",
+		queryPageViews: "t.path",
 		queryImported:  "coalesce(nullif(t.path, ''), imp.path)",
 		queryDirection: "ASC",
 		Name:           "path",
@@ -632,8 +642,9 @@ var (
 
 	// FieldEventTimeSpent is a query result column.
 	FieldEventTimeSpent = Field{
-		querySessions:  "toUInt64(avg(duration_seconds))",
-		queryPageViews: "toUInt64(avg(duration_seconds))",
+		querySessions:  "toUInt64(avg(k.duration_seconds))",
+		queryPageViews: "toUInt64(avg(k.duration_seconds))",
+		queryEvents:    "toUInt64(avg(duration_seconds))",
 		sampleType:     sampleTypeInt,
 		Name:           "average_time_spent_seconds",
 	}
@@ -717,6 +728,7 @@ var (
 	FieldEventDurationSeconds = Field{
 		querySessions:  "sum(duration_seconds)",
 		queryPageViews: "sum(duration_seconds)",
+		queryEvents:    "duration_seconds",
 		sampleType:     sampleTypeInt,
 		Name:           "duration_seconds",
 	}

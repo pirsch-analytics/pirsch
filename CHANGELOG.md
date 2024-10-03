@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.15.4
+
+* fixed number of events when filtering for a path regex
+
 ## 6.15.3
 
 * fixed overwriting hostname in URL

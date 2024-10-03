@@ -56,6 +56,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 
 	query.WriteString(q.whereTime())
 	q.from = pageViews
+	q.noTablePrefix = true
 	q.whereFields()
 	where := q.q.String()
 
@@ -107,9 +108,9 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	query.WriteString(fmt.Sprintf(`SELECT "day", round(avg(time_on_page)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day",
-				nth_value(%s, 2) OVER (PARTITION BY v.visitor_id, v.session_id ORDER BY v."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
+				nth_value(%s, 2) OVER (PARTITION BY t.visitor_id, t.session_id ORDER BY t."time" ASC Rows BETWEEN CURRENT ROW AND 1 FOLLOWING) AS time_on_page
 				%s
-			FROM page_view v `, filter.Timezone.String(), t.analyzer.timeOnPageQuery(filter), filterFields))
+			FROM page_view t `, filter.Timezone.String(), t.analyzer.timeOnPageQuery(filter), filterFields))
 
 	if len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 {
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -122,10 +123,10 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 			GROUP BY visitor_id, session_id, entry_path, exit_path
 			HAVING sum(sign) > 0
 		) s
-		ON v.visitor_id = s.visitor_id AND v.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
+		ON t.visitor_id = s.visitor_id AND t.session_id = s.session_id `, q.whereTime()[len("WHERE "):]))
 	}
 
-	query.WriteString(fmt.Sprintf(`WHERE %s)
+	query.WriteString(fmt.Sprintf(`WHERE %s) t
 		WHERE time_on_page > 0 `, q.whereTime()[len("WHERE "):]))
 	q.whereFields()
 	where := q.q.String()
