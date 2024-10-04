@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.15.5
+
+* fixed reading events with path or regex filter
+
 ## 6.15.4
 
 * fixed reading events with path or regex filter
