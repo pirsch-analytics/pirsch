@@ -728,8 +728,14 @@ var (
 	FieldEventDurationSeconds = Field{
 		querySessions:  "sum(duration_seconds)",
 		queryPageViews: "sum(duration_seconds)",
-		queryEvents:    "duration_seconds",
 		sampleType:     sampleTypeInt,
+		Name:           "duration_seconds",
+	}
+
+	// FieldEventDurationSecondsRaw is a query result column.
+	FieldEventDurationSecondsRaw = Field{
+		querySessions:  "duration_seconds",
+		queryPageViews: "duration_seconds",
 		Name:           "duration_seconds",
 	}
 )

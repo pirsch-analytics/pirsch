@@ -552,7 +552,7 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 		}
 
 		if filter.fieldsContain(fields, FieldEventTimeSpent) {
-			eventFields = append(eventFields, FieldEventDurationSeconds)
+			eventFields = append(eventFields, FieldEventDurationSecondsRaw)
 		}
 
 		if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
@@ -608,7 +608,7 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 	}
 
 	if filter.fieldsContain(fields, FieldEventTimeSpent) {
-		eventFields = append(eventFields, FieldEventDurationSeconds)
+		eventFields = append(eventFields, FieldEventDurationSecondsRaw)
 	}
 
 	filterCopy := *filter

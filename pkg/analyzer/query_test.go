@@ -410,6 +410,7 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 		{FieldViews, "toUInt64(greatest(sum(views)*any(_sample_factor), 0))"},
 		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
 		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
+		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
 	for _, field := range fields {
