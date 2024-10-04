@@ -350,15 +350,23 @@ func (filter *Filter) buildQuery(fields, groupBy, orderBy, fieldsImported []Fiel
 		sample:         filter.Sample,
 		final:          filter.fieldsContain(fields, FieldSessionsAll),
 	}
-	returnEventName := filter.fieldsContain(fields, FieldEventName)
-	customMetric := filter.CustomMetricKey != "" || filter.CustomMetricType != ""
 
-	if q.from == events && !returnEventName && !customMetric && !filter.fieldsContain(fields, FieldEventsAll) {
+	if (filter.fieldsContain(fields, FieldEventName) ||
+		filter.CustomMetricKey != "" ||
+		filter.CustomMetricType != "" ||
+		filter.fieldsContain(fields, FieldEventsAll)) &&
+		!filter.fieldsContain(fields, FieldTagKey) &&
+		!filter.fieldsContain(fields, FieldTagValue) {
+		q.from = events
+		q.fields = fields
+		q.includeEventFilter = true
+		q.join = filter.joinSessions(q.from, fields)
+	} else if q.from == events {
 		q.from = sessions
 		q.fields = filter.excludeFields(fields, FieldPath)
 		q.includeEventFilter = true
 		q.leftJoin = filter.leftJoinEvents(fields)
-	} else if q.from == pageViews || returnEventName || customMetric {
+	} else if q.from == pageViews {
 		q.fields = fields
 
 		if q.from != sessions {
@@ -391,7 +399,8 @@ func (filter *Filter) table(fields []Field) table {
 	tagKeyFilter := filter.fieldsContain(fields, FieldTagKey)
 	tagValueFilter := filter.fieldsContain(fields, FieldTagValue)
 	allSessionFilter := filter.fieldsContain(fields, FieldSessionsAll)
-	pageViewFilter := (len(filter.Path) > 0 ||
+
+	if (len(filter.Path) > 0 ||
 		len(filter.PathPattern) > 0 ||
 		len(filter.Tags) > 0 ||
 		len(filter.Tag) > 0 ||
@@ -408,9 +417,7 @@ func (filter *Filter) table(fields []Field) table {
 		filter.searchContains(FieldPath)) &&
 		(filter.CustomMetricType == "" || filter.CustomMetricKey == "" ||
 			tagKeyFilter || tagValueFilter) &&
-		!allSessionFilter
-
-	if pageViewFilter {
+		!allSessionFilter {
 		return pageViews
 	}
 
@@ -418,13 +425,11 @@ func (filter *Filter) table(fields []Field) table {
 		return sessions
 	}
 
-	eventFilter := (len(filter.EventName) > 0 ||
+	if (len(filter.EventName) > 0 ||
 		filter.fieldsContain(fields, FieldEventName) ||
 		filter.fieldsContain(fields, FieldEventsAll) ||
 		filter.CustomMetricType != "" && filter.CustomMetricKey != "") &&
-		!allSessionFilter
-
-	if eventFilter {
+		!allSessionFilter {
 		return events
 	}
 
