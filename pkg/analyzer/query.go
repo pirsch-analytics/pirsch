@@ -932,14 +932,19 @@ func (query *queryBuilder) whereFieldVisitorSessionID() {
 func (query *queryBuilder) whereFieldPathPattern() {
 	if len(query.filter.PathPattern) > 0 {
 		var group where
+		prefix := "t."
+
+		if query.noTablePrefix {
+			prefix = ""
+		}
 
 		for _, pattern := range query.filter.PathPattern {
 			if strings.HasPrefix(pattern, "!") {
 				query.args = append(query.args, pattern[1:])
-				group.notEq = append(group.notEq, `match(t.path, ?) = 0 `)
+				group.notEq = append(group.notEq, fmt.Sprintf(`match(%spath, ?) = 0 `, prefix))
 			} else {
 				query.args = append(query.args, pattern)
-				group.eqContains = append(group.eqContains, `match(t.path, ?) = 1 `)
+				group.eqContains = append(group.eqContains, fmt.Sprintf(`match(%spath, ?) = 1 `, prefix))
 			}
 		}
 
