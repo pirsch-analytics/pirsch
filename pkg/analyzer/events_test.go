@@ -531,4 +531,14 @@ func TestAnalyzer_EventsPathRegex(t *testing.T) {
 	assert.Equal(t, 3, stats[0].Visitors)
 	assert.Equal(t, 3, stats[0].Count)
 	assert.InDelta(t, 5, stats[0].AverageDurationSeconds, 0.001)
+	stats, err = analyzer.Events.Events(&Filter{
+		EventName:   []string{"event"},
+		PathPattern: []string{`\/.*`},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, "event", stats[0].Name)
+	assert.Equal(t, 3, stats[0].Visitors)
+	assert.Equal(t, 3, stats[0].Count)
+	assert.InDelta(t, 5, stats[0].AverageDurationSeconds, 0.001)
 }
