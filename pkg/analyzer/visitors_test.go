@@ -167,7 +167,7 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 		{VisitorID: 9, Time: time.Now().UTC().Add(-time.Minute * 15), Path: "/", TagKeys: []string{"author"}, TagValues: []string{"John"}},
 	}))
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
-		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+		{VisitorID: 1, SessionID: 4, Time: util.PastDay(4), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}, Path: "/"},
 	}))
 	analyzer := NewAnalyzer(dbClient)
 	visitors, err := analyzer.Visitors.Total(&Filter{From: util.PastDay(4), To: util.Today()})
@@ -263,6 +263,20 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 1, visitors.Bounces)
 	assert.InDelta(t, 0.5, visitors.BounceRate, 0.01)
 	assert.InDelta(t, 0.2222, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:        util.PastDay(4),
+		To:          util.Today(),
+		EventName:   []string{"event"},
+		PathPattern: []string{`\/.*`},
+		IncludeCR:   true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, visitors.Visitors)
+	assert.Equal(t, 1, visitors.Sessions)
+	assert.Equal(t, 2, visitors.Views)
+	assert.Equal(t, 0, visitors.Bounces)
+	assert.InDelta(t, 0, visitors.BounceRate, 0.01)
+	assert.InDelta(t, 0.1111, visitors.CR, 0.01)
 
 	// ignore metadata when event name is not set
 	visitors, err = analyzer.Visitors.Total(&Filter{
