@@ -936,10 +936,10 @@ func (query *queryBuilder) whereFieldPathPattern() {
 		for _, pattern := range query.filter.PathPattern {
 			if strings.HasPrefix(pattern, "!") {
 				query.args = append(query.args, pattern[1:])
-				group.notEq = append(group.notEq, `match("path", ?) = 0 `)
+				group.notEq = append(group.notEq, `match(t.path, ?) = 0 `)
 			} else {
 				query.args = append(query.args, pattern)
-				group.eqContains = append(group.eqContains, `match("path", ?) = 1 `)
+				group.eqContains = append(group.eqContains, `match(t.path, ?) = 1 `)
 			}
 		}
 
