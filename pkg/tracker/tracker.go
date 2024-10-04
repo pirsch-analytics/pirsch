@@ -127,7 +127,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 			return true
 		}
 	} else {
-		tracker.captureRequest(now, clientID, r, ipAddress, options.Hostname, options.Path, "", userAgent, ignoreReason)
+		tracker.captureRequest(now, clientID, r, ipAddress, options.Path, "", userAgent, ignoreReason)
 	}
 
 	return false
@@ -178,7 +178,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				return true
 			}
 		} else {
-			tracker.captureRequest(now, clientID, r, ipAddress, options.Hostname, options.Path, eventOptions.Name, userAgent, ignoreReason)
+			tracker.captureRequest(now, clientID, r, ipAddress, options.Path, eventOptions.Name, userAgent, ignoreReason)
 		}
 	}
 
@@ -324,15 +324,11 @@ func (tracker *Tracker) requestFromSession(session *model.Session, clientID uint
 	}
 }
 
-func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.Request, ipAddress, hostname, path, event string, userAgent ua.UserAgent, botReason string) {
+func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.Request, ipAddress, path, event string, userAgent ua.UserAgent, botReason string) {
 	logIP := ""
 
 	if tracker.config.LogIP {
 		logIP = ipAddress
-	}
-
-	if hostname == "" {
-		hostname = r.Host
 	}
 
 	query := r.URL.Query()
@@ -343,7 +339,7 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 			Time:        now,
 			IP:          logIP,
 			UserAgent:   r.UserAgent(),
-			Hostname:    util.StripWWW(hostname),
+			Hostname:    util.StripWWW(r.Host),
 			Path:        path,
 			Event:       event,
 			Referrer:    r.Referer(),
@@ -513,7 +509,7 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		sessionCopy := *session
 		cancelSession = &sessionCopy
 		cancelSession.Sign = -1
-		timeOnPage, bounced = tracker.updateSession(t, r, session, now, options.Hostname, options.Path, options.Title)
+		timeOnPage, bounced = tracker.updateSession(t, r, session, now, options.Path, options.Title)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	}
 
@@ -543,12 +539,6 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		countryCode, region, city = tracker.config.GeoDB.GetLocation(ip)
 	}
 
-	hostname := options.Hostname
-
-	if hostname == "" {
-		hostname = r.Host
-	}
-
 	return &model.Session{
 		Sign:           1,
 		Version:        1,
@@ -557,7 +547,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		SessionID:      util.RandUint32(),
 		Time:           now,
 		Start:          now,
-		Hostname:       hostname,
+		Hostname:       r.Host,
 		EntryPath:      options.Path,
 		ExitPath:       options.Path,
 		PageViews:      1,
@@ -586,7 +576,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	}
 }
 
-func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *model.Session, now time.Time, hostname, path, title string) (uint32, bool) {
+func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *model.Session, now time.Time, path, title string) (uint32, bool) {
 	top := now.Unix() - session.Time.Unix()
 
 	if top < 0 {
@@ -618,14 +608,10 @@ func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *mod
 		session.Extended++
 	}
 
-	if hostname == "" {
-		hostname = r.Host
-	}
-
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.Version++
-	session.Hostname = hostname
+	session.Hostname = r.Host
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top), session.IsBounce

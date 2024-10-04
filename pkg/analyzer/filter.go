@@ -542,17 +542,12 @@ func (filter *Filter) joinEvents(fields []Field) *queryBuilder {
 			eventFields = append(eventFields, FieldEventName)
 		}
 
-		if filter.fieldsContain(fields, FieldEventPath) || filter.fieldsContain(fields, FieldEventCount) ||
-			len(filter.Path) > 0 || len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 || len(filter.PathPattern) > 0 {
+		if filter.fieldsContain(fields, FieldEventPath) {
 			eventFields = append(eventFields, FieldEventPath)
 		}
 
 		if filter.fieldsContain(fields, FieldEventTitle) {
 			eventFields = append(eventFields, FieldEventTitle)
-		}
-
-		if filter.fieldsContain(fields, FieldEventTimeSpent) {
-			eventFields = append(eventFields, FieldEventDurationSecondsRaw)
 		}
 
 		if filter.CustomMetricType != "" && filter.CustomMetricKey != "" {
@@ -598,17 +593,12 @@ func (filter *Filter) leftJoinEvents(fields []Field) *queryBuilder {
 		eventFields = append(eventFields, FieldEventMetaKeysRaw)
 	}
 
-	if filter.fieldsContain(fields, FieldEventPath) || filter.fieldsContain(fields, FieldEventCount) ||
-		len(filter.Path) > 0 || len(filter.EntryPath) > 0 || len(filter.ExitPath) > 0 || len(filter.PathPattern) > 0 {
+	if filter.fieldsContain(fields, FieldEventPath) {
 		eventFields = append(eventFields, FieldEventPath)
 	}
 
 	if filter.fieldsContain(fields, FieldEventTitle) {
 		eventFields = append(eventFields, FieldEventTitle)
-	}
-
-	if filter.fieldsContain(fields, FieldEventTimeSpent) {
-		eventFields = append(eventFields, FieldEventDurationSecondsRaw)
 	}
 
 	filterCopy := *filter

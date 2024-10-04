@@ -93,7 +93,7 @@ func TestQuery(t *testing.T) {
 		assert.Equal(t, expected[i], arg)
 	}
 
-	assert.Equal(t, `SELECT toDate(time, 'UTC') day,country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND t.language = ? AND t.country_code = ? AND t.country_code != ? AND (ilike(t.referrer, ?) = 1 OR ilike(t.referrer, ?) != 1 ) AND desktop = 1 GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND (t.path = ? OR t.path = ? ) AND match(t.path, ?) = 1 AND tag_values[indexOf(tag_keys, ?)] = ? AND t.language = ? AND t.country_code = ? AND t.country_code != ? AND (ilike(t.referrer, ?) = 1 OR ilike(t.referrer, ?) != 1 ) AND desktop = 1 AND ilike(path, ?) = 1 GROUP BY country_code ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 `, queryStr)
+	assert.Equal(t, `SELECT toDate(time, 'UTC') day,country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND language = ? AND country_code = ? AND country_code != ? AND (ilike(referrer, ?) = 1 OR ilike(referrer, ?) != 1 ) AND desktop = 1 GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND (path = ? OR path = ? ) AND match("path", ?) = 1 AND tag_values[indexOf(tag_keys, ?)] = ? AND language = ? AND country_code = ? AND country_code != ? AND (ilike(referrer, ?) = 1 OR ilike(referrer, ?) != 1 ) AND desktop = 1 AND ilike(path, ?) = 1 GROUP BY country_code ORDER BY day ASC WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY ,visitors DESC,country_code ASC LIMIT 99 OFFSET 10 `, queryStr)
 }
 
 func TestQueryAnyPath(t *testing.T) {
@@ -120,7 +120,7 @@ func TestQueryAnyPath(t *testing.T) {
 	assert.Equal(t, util.Today().Format(dateFormat), args[2])
 	assert.Equal(t, "/", args[3])
 	assert.Equal(t, "/foo", args[4])
-	assert.Equal(t, `SELECT t.path path,uniq(t.visitor_id) visitors FROM "page_view" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND path IN (?,?) GROUP BY path `, queryStr)
+	assert.Equal(t, `SELECT path path,uniq(t.visitor_id) visitors FROM "page_view" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND path IN (?,?) GROUP BY path `, queryStr)
 }
 
 func TestQueryPlatformSession(t *testing.T) {
@@ -186,7 +186,7 @@ func TestQueryPlatformPageView(t *testing.T) {
 	assert.Equal(t, util.PastDay(7).Format(dateFormat), args[11])
 	assert.Equal(t, util.Today().Format(dateFormat), args[12])
 	assert.Equal(t, "/foo", args[13])
-	assert.Equal(t, `SELECT toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 AND t.path = ? )) platform_desktop,toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 AND t.path = ? )) platform_mobile `, queryStr)
+	assert.Equal(t, `SELECT toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 1 AND mobile = 0 AND path = ? )) platform_desktop,toInt64OrDefault((SELECT uniq(t.visitor_id) visitors FROM "page_view" t JOIN (SELECT t.visitor_id visitor_id,t.session_id session_id FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY t.visitor_id,t.session_id HAVING sum(sign) > 0 ) j ON j.visitor_id = t.visitor_id AND j.session_id = t.session_id WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND desktop = 0 AND mobile = 1 AND path = ? )) platform_mobile `, queryStr)
 }
 
 func TestQueryCustomMetricFloat(t *testing.T) {
@@ -265,7 +265,7 @@ func TestQuerySampling(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 12)
-	assert.Equal(t, `SELECT t.path path,toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors,toUInt64(greatest(count(1)*any(_sample_factor), 0)) views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors,toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)*any(_sample_factor) views FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) cr FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY path `, queryStr)
+	assert.Equal(t, `SELECT path path,toUInt64(greatest(uniq(t.visitor_id)*any(_sample_factor), 0)) visitors,toUInt64(greatest(count(1)*any(_sample_factor), 0)) views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors,toFloat64OrDefault(views / greatest((SELECT sum(page_views*sign)*any(_sample_factor) views FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_views,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id)*any(_sample_factor) FROM "session" SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) cr FROM "page_view" t SAMPLE 10000000 WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) GROUP BY path `, queryStr)
 }
 
 func TestQueryPlatformSampling(t *testing.T) {
@@ -355,7 +355,7 @@ func TestQuerySelectFieldPageViewsSampling(t *testing.T) {
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
 		{FieldViews, "toUInt64(greatest(count(1)*any(_sample_factor), 0))"},
 		{FieldBounces, "toUInt64(greatest(uniqIf((t.visitor_id, t.session_id), bounces = 1)*any(_sample_factor), 0))"},
-		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(k.duration_seconds))*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
@@ -382,7 +382,7 @@ func TestQuerySelectFieldSessionsSampling(t *testing.T) {
 		{FieldSessions, "toUInt64(greatest(uniq(t.visitor_id, t.session_id)*any(_sample_factor), 0))"},
 		{FieldViews, "toUInt64(greatest(toUInt64OrDefault(sum(page_views*sign))*any(_sample_factor), 0))"},
 		{FieldBounces, "toUInt64(greatest(sum(is_bounce*sign)*any(_sample_factor), 0))"},
-		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(k.duration_seconds))*any(_sample_factor), 0))"},
+		{FieldEventTimeSpent, "toUInt64(greatest(toUInt64(avg(duration_seconds))*any(_sample_factor), 0))"},
 		{FieldEventDurationSeconds, "toUInt64(greatest(sum(duration_seconds)*any(_sample_factor), 0))"},
 	}
 
@@ -450,5 +450,5 @@ func TestQueryImported(t *testing.T) {
 	}
 	queryStr, args := q.query()
 	assert.Len(t, args, 17)
-	assert.Equal(t, `SELECT coalesce(nullif(t.country_code, ''), imp.country_code) country_code,sum(t.visitors + imp.visitors) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ) + (SELECT sum(visitors) FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM (SELECT country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND t.country_code = ? GROUP BY country_code HAVING sum(sign) > 0 ORDER BY visitors DESC ) t FULL JOIN (SELECT country_code,sum(visitors) visitors FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?)  AND country_code = ? GROUP BY country_code ) imp ON t.country_code = imp.country_code GROUP BY country_code ORDER BY visitors DESC LIMIT 10 `, queryStr)
+	assert.Equal(t, `SELECT coalesce(nullif(t.country_code, ''), imp.country_code) country_code,sum(t.visitors + imp.visitors) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ) + (SELECT sum(visitors) FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM (SELECT country_code country_code,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "session" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND country_code = ? GROUP BY country_code HAVING sum(sign) > 0 ORDER BY visitors DESC ) t FULL JOIN (SELECT country_code,sum(visitors) visitors FROM "imported_country" WHERE client_id = ? AND toDate(date, 'UTC') >= toDate(?) AND toDate(date, 'UTC') <= toDate(?)  AND country_code = ? GROUP BY country_code ) imp ON t.country_code = imp.country_code GROUP BY country_code ORDER BY visitors DESC LIMIT 10 `, queryStr)
 }

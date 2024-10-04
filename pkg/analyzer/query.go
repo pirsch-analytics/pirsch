@@ -38,10 +38,9 @@ type queryBuilder struct {
 	orderBy            []Field
 	limit              int
 	offset             int
+	includeEventFilter bool
 	sample             uint
 	final              bool
-	includeEventFilter bool
-	noTablePrefix      bool
 
 	where []where
 	q     strings.Builder
@@ -364,7 +363,7 @@ func (query *queryBuilder) joinQuery() {
 	if query.leftJoin != nil {
 		q, args := query.leftJoin.query()
 		query.args = append(query.args, args...)
-		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) k ON k.visitor_id = t.visitor_id AND k.session_id = t.session_id ", q))
+		query.q.WriteString(fmt.Sprintf("LEFT JOIN (%s) l ON l.visitor_id = t.visitor_id AND l.session_id = t.session_id ", q))
 	}
 
 	if query.joinThird != nil {
@@ -578,40 +577,40 @@ func (query *queryBuilder) whereTimeImported() string {
 
 func (query *queryBuilder) whereFields() {
 	if query.from == sessions {
-		query.whereField(FieldEntryPath.Name, query.filter.EntryPath, false)
-		query.whereField(FieldExitPath.Name, query.filter.ExitPath, false)
+		query.whereField(FieldEntryPath.Name, query.filter.EntryPath)
+		query.whereField(FieldExitPath.Name, query.filter.ExitPath)
 	} else {
-		query.whereField(FieldPath.Name, query.filter.Path, false)
-		query.whereField(FieldTagKeysRaw.Name, query.filter.Tag, false)
+		query.whereField(FieldPath.Name, query.filter.Path)
+		query.whereField(FieldTagKeysRaw.Name, query.filter.Tag)
 		query.whereFieldPathPattern()
 		query.whereFieldPathIn()
 		query.whereFieldTag()
 	}
 
 	if query.from == events || query.includeEventFilter {
-		query.whereField(FieldPath.Name, query.filter.Path, false)
-		query.whereField(FieldEventName.Name, query.filter.EventName, false)
-		query.whereField(FieldEventMetaKeysRaw.Name, query.filter.EventMetaKey, false)
+		query.whereField(FieldPath.Name, query.filter.Path)
+		query.whereField(FieldEventName.Name, query.filter.EventName)
+		query.whereField(FieldEventMetaKeysRaw.Name, query.filter.EventMetaKey)
 		query.whereFieldMeta()
 	}
 
-	query.whereField(FieldHostname.Name, query.filter.Hostname, false)
-	query.whereField(FieldLanguage.Name, query.filter.Language, false)
-	query.whereField(FieldCountry.Name, query.filter.Country, false)
-	query.whereField(FieldRegion.Name, query.filter.Region, false)
-	query.whereField(FieldCity.Name, query.filter.City, false)
-	query.whereField(FieldReferrer.Name, query.filter.Referrer, false)
-	query.whereField(FieldReferrerName.Name, query.filter.ReferrerName, false)
-	query.whereField(FieldOS.Name, query.filter.OS, false)
-	query.whereField(FieldOSVersion.Name, query.filter.OSVersion, false)
-	query.whereField(FieldBrowser.Name, query.filter.Browser, false)
-	query.whereField(FieldBrowserVersion.Name, query.filter.BrowserVersion, false)
-	query.whereField(FieldScreenClass.Name, query.filter.ScreenClass, false)
-	query.whereField(FieldUTMSource.Name, query.filter.UTMSource, false)
-	query.whereField(FieldUTMMedium.Name, query.filter.UTMMedium, false)
-	query.whereField(FieldUTMCampaign.Name, query.filter.UTMCampaign, false)
-	query.whereField(FieldUTMContent.Name, query.filter.UTMContent, false)
-	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm, false)
+	query.whereField(FieldHostname.Name, query.filter.Hostname)
+	query.whereField(FieldLanguage.Name, query.filter.Language)
+	query.whereField(FieldCountry.Name, query.filter.Country)
+	query.whereField(FieldRegion.Name, query.filter.Region)
+	query.whereField(FieldCity.Name, query.filter.City)
+	query.whereField(FieldReferrer.Name, query.filter.Referrer)
+	query.whereField(FieldReferrerName.Name, query.filter.ReferrerName)
+	query.whereField(FieldOS.Name, query.filter.OS)
+	query.whereField(FieldOSVersion.Name, query.filter.OSVersion)
+	query.whereField(FieldBrowser.Name, query.filter.Browser)
+	query.whereField(FieldBrowserVersion.Name, query.filter.BrowserVersion)
+	query.whereField(FieldScreenClass.Name, query.filter.ScreenClass)
+	query.whereField(FieldUTMSource.Name, query.filter.UTMSource)
+	query.whereField(FieldUTMMedium.Name, query.filter.UTMMedium)
+	query.whereField(FieldUTMCampaign.Name, query.filter.UTMCampaign)
+	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
+	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
 	query.whereFieldPlatform()
 	query.whereFieldVisitorSessionID()
 
@@ -645,20 +644,10 @@ func (query *queryBuilder) whereWrite() {
 	}
 }
 
-func (query *queryBuilder) whereField(field string, value []string, imported bool) {
+func (query *queryBuilder) whereField(field string, value []string) {
 	if len(value) > 0 {
 		if query.from == events && field == FieldTagKeysRaw.Name {
 			field = FieldEventMetaKeysRaw.Name
-		}
-
-		prefix := "t."
-
-		if imported || query.noTablePrefix ||
-			field == FieldEventName.Name ||
-			field == FieldEventMeta.Name ||
-			field == FieldEventMetaKeys.Name ||
-			field == FieldEventMetaKeysRaw.Name {
-			prefix = ""
 		}
 
 		var group where
@@ -666,43 +655,43 @@ func (query *queryBuilder) whereField(field string, value []string, imported boo
 		notEqArgs := make([]any, 0, len(value))
 
 		for _, v := range value {
-			comparator := "%s%s = ? "
+			comparator := "%s = ? "
 			not := strings.HasPrefix(v, "!")
 
 			if field == FieldEventMetaKeysRaw.Name || field == FieldTagKeysRaw.Name {
 				if not {
 					v = v[1:]
-					comparator = "has(%s%s, ?) = 0 "
+					comparator = "has(%s, ?) = 0 "
 				} else {
-					comparator = "has(%s%s, ?) = 1 "
+					comparator = "has(%s, ?) = 1 "
 				}
 			} else if not {
 				v = v[1:]
-				comparator = "%s%s != ? "
+				comparator = "%s != ? "
 			} else if strings.HasPrefix(v, "~") {
 				if field == FieldLanguage.Name || field == FieldCountry.Name {
 					v = v[1:]
-					comparator = "has(splitByChar(',', ?), %s%s) = 1 "
+					comparator = "has(splitByChar(',', ?), %s) = 1 "
 				} else {
 					v = fmt.Sprintf("%%%s%%", v[1:])
-					comparator = "ilike(%s%s, ?) = 1 "
+					comparator = "ilike(%s, ?) = 1 "
 				}
 			} else if strings.HasPrefix(v, "^") {
 				if field == FieldLanguage.Name || field == FieldCountry.Name {
 					v = v[1:]
-					comparator = "has(splitByChar(',', ?), %s%s) != 1 "
+					comparator = "has(splitByChar(',', ?), %s) != 1 "
 				} else {
 					v = fmt.Sprintf("%%%s%%", v[1:])
-					comparator = "ilike(%s%s, ?) != 1 "
+					comparator = "ilike(%s, ?) != 1 "
 				}
 			}
 
 			if not {
 				notEqArgs = append(notEqArgs, query.nullValue(v))
-				group.notEq = append(group.notEq, fmt.Sprintf(comparator, prefix, field))
+				group.notEq = append(group.notEq, fmt.Sprintf(comparator, field))
 			} else {
 				eqContainsArgs = append(eqContainsArgs, query.nullValue(v))
-				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, prefix, field))
+				group.eqContains = append(group.eqContains, fmt.Sprintf(comparator, field))
 			}
 		}
 
@@ -720,7 +709,7 @@ func (query *queryBuilder) whereField(field string, value []string, imported boo
 
 func (query *queryBuilder) whereFieldImported(field string, value []string, joinField string) {
 	if joinField == field {
-		query.whereField(field, value, true)
+		query.whereField(field, value)
 	}
 }
 
@@ -932,19 +921,14 @@ func (query *queryBuilder) whereFieldVisitorSessionID() {
 func (query *queryBuilder) whereFieldPathPattern() {
 	if len(query.filter.PathPattern) > 0 {
 		var group where
-		prefix := "t."
-
-		if query.noTablePrefix {
-			prefix = ""
-		}
 
 		for _, pattern := range query.filter.PathPattern {
 			if strings.HasPrefix(pattern, "!") {
 				query.args = append(query.args, pattern[1:])
-				group.notEq = append(group.notEq, fmt.Sprintf(`match(%spath, ?) = 0 `, prefix))
+				group.notEq = append(group.notEq, `match("path", ?) = 0 `)
 			} else {
 				query.args = append(query.args, pattern)
-				group.eqContains = append(group.eqContains, fmt.Sprintf(`match(%spath, ?) = 1 `, prefix))
+				group.eqContains = append(group.eqContains, `match("path", ?) = 1 `)
 			}
 		}
 

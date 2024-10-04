@@ -578,7 +578,6 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 
 	if len(filter.Path) > 0 || len(filter.PathPattern) > 0 || len(filter.Tag) > 0 || len(filter.Tags) > 0 {
 		q.from = pageViews
-		q.noTablePrefix = true
 		whereTime := q.whereTime()
 		q.whereFields()
 		query.WriteString(fmt.Sprintf(`INNER JOIN (
@@ -586,7 +585,6 @@ func (visitors *Visitors) totalSessionDuration(filter *Filter) (int, error) {
 		) v
 		ON v.visitor_id = t.visitor_id AND v.session_id = t.session_id `, whereTime, q.q.String()))
 		q.from = sessions
-		q.noTablePrefix = false
 		q.q.Reset()
 		q.where = nil
 	}
