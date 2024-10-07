@@ -114,16 +114,6 @@ func TestAnalyzer_ActiveVisitorsHostname(t *testing.T) {
 	assert.Equal(t, "/bar", visitors[1].Path)
 	assert.Equal(t, 1, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
-	visitors, count, err = analyzer.Visitors.Active(&Filter{
-		Path:             []string{"/bar"},
-		HostnameFallback: "example.com",
-	}, time.Minute*30)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, count)
-	assert.Len(t, visitors, 1)
-	assert.Equal(t, "example.com", visitors[0].Hostname)
-	assert.Equal(t, "/bar", visitors[0].Path)
-	assert.Equal(t, 2, visitors[0].Visitors)
 }
 
 func TestAnalyzer_TotalVisitors(t *testing.T) {

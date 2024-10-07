@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.16.0
+
+* removed hostname fallback
+* updated dependencies
+
 ## 6.15.5
 
 * fixed reading events with path or regex filter

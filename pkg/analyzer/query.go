@@ -248,10 +248,6 @@ func (query *queryBuilder) selectFields() bool {
 				q.WriteString(fmt.Sprintf("%s %s,", fmt.Sprintf(query.selectField(fieldCopy), query.filter.CustomMetricType), fieldCopy.Name))
 			} else if query.parent != nil && (query.fields[i] == FieldEntryTitle || query.fields[i] == FieldExitTitle) {
 				q.WriteString(query.selectField(query.fields[i]) + ",")
-			} else if query.fields[i] == FieldHostname {
-				// TODO remove this case after migration
-				query.args = append(query.args, query.filter.HostnameFallback)
-				q.WriteString(fmt.Sprintf("%s %s,", query.fields[i].querySessions, query.fields[i].Name))
 			} else {
 				q.WriteString(fmt.Sprintf("%s %s,", query.selectField(query.fields[i]), query.fields[i].Name))
 			}
