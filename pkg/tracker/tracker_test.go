@@ -1168,7 +1168,7 @@ func TestTracker_ignoreBrowserVersion(t *testing.T) {
 
 func TestTracker_ignoreIP(t *testing.T) {
 	filter := ip.NewUdger("", "", "")
-	filter.Update([]string{"90.154.29.38"}, []string{}, []ip.Range{}, []ip.Range{})
+	filter.Update([]string{"90.154.29.38"}, []string{}, []string{}, []string{}, []ip.Range{}, []ip.Range{})
 	tracker := NewTracker(Config{
 		IPFilter: filter,
 	})

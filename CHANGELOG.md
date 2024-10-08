@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.16.1
+
+* fixed including VPNs based on IP address
+* improved logging
+
 ## 6.16.0
 
 * removed hostname fallback
