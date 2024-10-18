@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.16.2
+
+* removed hostname from page, entry page, exit page, and active visitor stats
+* updated dependencies
+
 ## 6.16.1
 
 * fixed including VPNs based on IP address

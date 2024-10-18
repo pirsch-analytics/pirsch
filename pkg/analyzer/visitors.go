@@ -27,9 +27,9 @@ func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]mode
 	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
 	filter.IncludeTime = true
-	fields := []Field{FieldHostname, FieldPath}
-	groupBy := []Field{FieldHostname, FieldPath}
-	orderBy := []Field{FieldVisitors, FieldHostname, FieldPath}
+	fields := []Field{FieldPath}
+	groupBy := []Field{FieldPath}
+	orderBy := []Field{FieldVisitors, FieldPath}
 
 	if filter.IncludeTitle {
 		fields = append(fields, FieldTitle)

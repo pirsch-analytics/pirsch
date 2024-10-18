@@ -74,48 +74,6 @@ func TestAnalyzer_ActiveVisitors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAnalyzer_ActiveVisitorsHostname(t *testing.T) {
-	db.CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
-		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 30), Path: "/", Title: "Home", Hostname: "example.com"},
-		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 20), Path: "/", Title: "Home", Hostname: "example.com"},
-		{VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Path: "/bar", Title: "Bar", Hostname: "example.com"},
-		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 4), Path: "/bar", Title: "Bar"},
-		{VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Path: "/foo", Title: "Foo"},
-		{VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Path: "/", Title: "Home", Hostname: "foo.com"},
-		{VisitorID: 4, Time: time.Now().Add(-time.Minute), Path: "/", Title: "Home"},
-	}))
-	saveSessions(t, [][]model.Session{
-		{
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now(), Hostname: "example.com"},
-		},
-		{
-			{Sign: -1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 25), Start: time.Now(), Hostname: "example.com"},
-			{Sign: 1, VisitorID: 1, Time: time.Now().Add(-time.Minute * 15), Start: time.Now(), Hostname: "example.com"},
-			{Sign: 1, VisitorID: 2, Time: time.Now().Add(-time.Minute * 3), Start: time.Now()},
-			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now(), Hostname: "example.com"},
-		},
-		{
-			{Sign: -1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 5), Start: time.Now(), Hostname: "example.com"},
-			{Sign: 1, VisitorID: 3, Time: time.Now().Add(-time.Minute * 3), Start: time.Now(), Hostname: "example.com"},
-			{Sign: 1, VisitorID: 4, Time: time.Now().Add(-time.Minute), Start: time.Now()},
-		},
-	})
-	analyzer := NewAnalyzer(dbClient)
-	visitors, count, err := analyzer.Visitors.Active(&Filter{
-		Path: []string{"/bar"},
-	}, time.Minute*30)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, count)
-	assert.Len(t, visitors, 2)
-	assert.Empty(t, visitors[0].Hostname)
-	assert.Equal(t, "example.com", visitors[1].Hostname)
-	assert.Equal(t, "/bar", visitors[0].Path)
-	assert.Equal(t, "/bar", visitors[1].Path)
-	assert.Equal(t, 1, visitors[0].Visitors)
-	assert.Equal(t, 1, visitors[1].Visitors)
-}
-
 func TestAnalyzer_TotalVisitors(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	saveSessions(t, [][]model.Session{

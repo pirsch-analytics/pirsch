@@ -2,7 +2,7 @@
 ## explicit; go 1.21
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
-# github.com/ClickHouse/clickhouse-go/v2 v2.29.0
+# github.com/ClickHouse/clickhouse-go/v2 v2.30.0
 ## explicit; go 1.21
 github.com/ClickHouse/clickhouse-go/v2
 github.com/ClickHouse/clickhouse-go/v2/contributors
@@ -13,7 +13,7 @@ github.com/ClickHouse/clickhouse-go/v2/lib/driver
 github.com/ClickHouse/clickhouse-go/v2/lib/proto
 github.com/ClickHouse/clickhouse-go/v2/lib/timezone
 github.com/ClickHouse/clickhouse-go/v2/resources
-# github.com/andybalholm/brotli v1.1.0
+# github.com/andybalholm/brotli v1.1.1
 ## explicit; go 1.13
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
@@ -65,7 +65,7 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
-# github.com/klauspost/compress v1.17.10
+# github.com/klauspost/compress v1.17.11
 ## explicit; go 1.21
 github.com/klauspost/compress
 github.com/klauspost/compress/fse
@@ -112,13 +112,13 @@ github.com/shopspring/decimal
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
-# go.opentelemetry.io/otel v1.30.0
+# go.opentelemetry.io/otel v1.31.0
 ## explicit; go 1.22
 go.opentelemetry.io/otel/attribute
 go.opentelemetry.io/otel/codes
 go.opentelemetry.io/otel/internal
 go.opentelemetry.io/otel/internal/attribute
-# go.opentelemetry.io/otel/trace v1.30.0
+# go.opentelemetry.io/otel/trace v1.31.0
 ## explicit; go 1.22
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
