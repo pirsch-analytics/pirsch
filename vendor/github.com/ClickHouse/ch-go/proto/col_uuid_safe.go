@@ -34,3 +34,12 @@ func (c ColUUID) EncodeColumn(b *Buffer) {
 	}
 	bswap.Swap64(b.Buf) // BE <-> LE
 }
+
+// WriteColumn encodes ColUUID rows to *Writer.
+func (c ColUUID) WriteColumn(w *Writer) {
+	if len(c) == 0 {
+		return
+	}
+	// Can't write UUID as-is: bswap is required.
+	w.ChainBuffer(c.EncodeColumn)
+}

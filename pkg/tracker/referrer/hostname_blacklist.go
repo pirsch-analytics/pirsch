@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-09-27)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-10-30)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -24,6 +24,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"12masterov.com":                       {},
 	"12u.info":                             {},
 	"15-reasons-for-seo.com":               {},
+	"16lv.com":                             {},
 	"1kreditzaim.ru":                       {},
 	"1pamm.ru":                             {},
 	"1st-urist.ru":                         {},
@@ -46,7 +47,6 @@ var hostnameBlacklist = map[string]struct{}{
 	"1xslots-casino.site":                  {},
 	"1xslots.africa":                       {},
 	"1xslots.site":                         {},
-	"16lv.com":                             {},
 	"2-best-seo.com":                       {},
 	"2-easy.xyz":                           {},
 	"2-go-now.xyz":                         {},
@@ -317,6 +317,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"blogseo.xyz":                          {},
 	"blogstar.fun":                         {},
 	"blogtotal.de":                         {},
+	"blogtraffic.shop":                     {},
 	"blogua.org":                           {},
 	"blue-square.biz":                      {},
 	"bluerobot.info":                       {},
@@ -749,6 +750,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"favoritki-msk.ru":                     {},
 	"fazika.ru":                            {},
 	"fbdownloader.com":                     {},
+	"feiacmr.shop":                         {},
 	"feminist.org.ua":                      {},
 	"fidalsa.de":                           {},
 	"fierrohack.ru":                        {},
@@ -2059,6 +2061,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"uptime-us.net":                        {},
 	"uptimechecker.com":                    {},
 	"urbanblog.shop":                       {},
+	"urbanchr.online":                      {},
 	"urblog.xyz":                           {},
 	"urlumbrella.com":                      {},
 	"uruto.ru":                             {},

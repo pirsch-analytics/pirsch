@@ -37,6 +37,10 @@ type Options struct {
 
 	// Tags are optional fields used to break down page views into segments.
 	Tags map[string]string
+
+	// MaxPageViews is an optional limit for the maximum number of page views per session.
+	// This overrides Config.MaxPageViews for the Tracker.
+	MaxPageViews uint16
 }
 
 func (options *Options) validate(r *http.Request) {

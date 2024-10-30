@@ -506,7 +506,8 @@ func (tracker *Tracker) getSession(t eventType, clientID uint64, r *http.Request
 		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
 		tracker.config.SessionCache.Put(clientID, fingerprint, session)
 	} else {
-		if tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
+		if options.MaxPageViews > 0 && session.PageViews >= options.MaxPageViews ||
+			options.MaxPageViews == 0 && tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
 			return nil, nil, 0, false
 		}
 

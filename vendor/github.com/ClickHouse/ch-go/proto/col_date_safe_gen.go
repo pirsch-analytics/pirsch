@@ -53,3 +53,7 @@ func (c ColDate) EncodeColumn(b *Buffer) {
 		offset += size
 	}
 }
+
+func (c ColDate) WriteColumn(w *Writer) {
+	w.ChainBuffer(c.EncodeColumn)
+}

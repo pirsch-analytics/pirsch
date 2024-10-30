@@ -53,3 +53,7 @@ func (c ColIPv4) EncodeColumn(b *Buffer) {
 		offset += size
 	}
 }
+
+func (c ColIPv4) WriteColumn(w *Writer) {
+	w.ChainBuffer(c.EncodeColumn)
+}

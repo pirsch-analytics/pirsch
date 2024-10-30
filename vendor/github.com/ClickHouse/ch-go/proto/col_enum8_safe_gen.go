@@ -42,3 +42,7 @@ func (c ColEnum8) EncodeColumn(b *Buffer) {
 		b.Buf[i+start] = uint8(v[i])
 	}
 }
+
+func (c ColEnum8) WriteColumn(w *Writer) {
+	w.ChainBuffer(c.EncodeColumn)
+}

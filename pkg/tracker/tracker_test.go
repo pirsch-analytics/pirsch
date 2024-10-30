@@ -1018,7 +1018,7 @@ func TestTrackerPageViewAndEvent(t *testing.T) {
 	assert.Equal(t, "/foo", timeOnPage[2].Path)
 }
 
-func TestTracker_ignorePrefetch(t *testing.T) {
+func TestTrackerIgnorePrefetch(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", userAgent)
@@ -1044,7 +1044,7 @@ func TestTracker_ignorePrefetch(t *testing.T) {
 	assert.Empty(t, ignore)
 }
 
-func TestTracker_ignoreUserAgent(t *testing.T) {
+func TestTrackerIgnoreUserAgent(t *testing.T) {
 	userAgents := []struct {
 		userAgent string
 		ignore    string
@@ -1103,7 +1103,7 @@ func TestTracker_ignoreUserAgent(t *testing.T) {
 	}
 }
 
-func TestTracker_ignoreBotUserAgent(t *testing.T) {
+func TestTrackerIgnoreBotUserAgent(t *testing.T) {
 	tracker := NewTracker(Config{})
 
 	for _, botUserAgent := range ua.Blacklist {
@@ -1133,7 +1133,7 @@ func TestTracker_ignoreBotUserAgent(t *testing.T) {
 	}
 }
 
-func TestTracker_ignoreReferrer(t *testing.T) {
+func TestTrackerIgnoreReferrer(t *testing.T) {
 	hostname := "2your.site"
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1154,7 +1154,7 @@ func TestTracker_ignoreReferrer(t *testing.T) {
 	assert.Equal(t, "referrer", ignore)
 }
 
-func TestTracker_ignoreBrowserVersion(t *testing.T) {
+func TestTrackerIgnoreBrowserVersion(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.4147.135 Safari/537.36")
@@ -1166,7 +1166,7 @@ func TestTracker_ignoreBrowserVersion(t *testing.T) {
 	assert.Empty(t, ignore)
 }
 
-func TestTracker_ignoreIP(t *testing.T) {
+func TestTrackerIgnoreIP(t *testing.T) {
 	filter := ip.NewUdger("", "", "")
 	filter.Update([]string{"90.154.29.38"}, []string{}, []string{}, []string{}, []ip.Range{}, []ip.Range{})
 	tracker := NewTracker(Config{
@@ -1181,7 +1181,7 @@ func TestTracker_ignoreIP(t *testing.T) {
 	assert.Equal(t, "ip", ignore)
 }
 
-func TestTracker_ignorePageViews(t *testing.T) {
+func TestTrackerPageViewsLimit(t *testing.T) {
 	client := db.NewClientMock()
 	cache := session.NewMemCache(client, 10)
 	tracker := NewTracker(Config{
@@ -1201,7 +1201,29 @@ func TestTracker_ignorePageViews(t *testing.T) {
 	assert.Len(t, client.GetPageViews(), 5)
 }
 
-func TestTracker_getLanguage(t *testing.T) {
+func TestTrackerPageViewsLimitOverride(t *testing.T) {
+	client := db.NewClientMock()
+	cache := session.NewMemCache(client, 10)
+	tracker := NewTracker(Config{
+		Store:        client,
+		SessionCache: cache,
+		MaxPageViews: 5,
+	})
+
+	for i := 0; i < 10; i++ {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%d", i), nil)
+		req.Header.Set("User-Agent", userAgent)
+		tracker.PageView(req, 0, Options{
+			MaxPageViews: 8,
+		})
+		time.Sleep(time.Millisecond * 5)
+	}
+
+	tracker.Stop()
+	assert.Len(t, client.GetPageViews(), 8)
+}
+
+func TestTrackerGetLanguage(t *testing.T) {
 	input := []string{
 		"",
 		"  \t ",
@@ -1230,7 +1252,7 @@ func TestTracker_getLanguage(t *testing.T) {
 	}
 }
 
-func TestTracker_getScreenClass(t *testing.T) {
+func TestTrackerGetScreenClass(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Sec-CH-Width", "1920")
 	req.Header.Set("Sec-CH-Viewport-Width", "1919")
@@ -1250,7 +1272,7 @@ func TestTracker_getScreenClass(t *testing.T) {
 	assert.Equal(t, "", tracker.getScreenClass(req, 0))
 }
 
-func TestTracker_referrerOrCampaignChanged(t *testing.T) {
+func TestTrackerReferrerOrCampaignChanged(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Referer", "https://referrer.com")

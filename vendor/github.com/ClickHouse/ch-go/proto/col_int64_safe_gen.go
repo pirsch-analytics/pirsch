@@ -53,3 +53,7 @@ func (c ColInt64) EncodeColumn(b *Buffer) {
 		offset += size
 	}
 }
+
+func (c ColInt64) WriteColumn(w *Writer) {
+	w.ChainBuffer(c.EncodeColumn)
+}

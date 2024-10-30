@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Custom (last update: 2024-09-05)
+# Custom (last update: 2024-10-30)
 ://
 bot
 crawler
@@ -615,6 +615,14 @@ network
 simpleanalytics
 user agents strings
 generateblocks
+keydrop
+dormouse
+playwright
+ally.cre.icu
+shareextension
+allie-alligator
+umar calib
+dynamic rendering mobile
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.17.0
+
+* added max page views configuration per request
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.16.2
 
 * removed hostname from page, entry page, exit page, and active visitor stats
