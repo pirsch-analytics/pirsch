@@ -2,6 +2,7 @@ package db
 
 import (
 	"bufio"
+	"bytes"
 	"database/sql"
 	"embed"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -30,7 +32,7 @@ func Migrate(config *ClientConfig) error {
 		return err
 	}
 
-	if err := createMigrationsTable(client); err != nil {
+	if err := createMigrationsTable(client, config.Cluster); err != nil {
 		return err
 	}
 
@@ -40,14 +42,14 @@ func Migrate(config *ClientConfig) error {
 		return err
 	}
 
-	if err := runMigrations(client, version); err != nil {
+	if err := runMigrations(client, version, config.Cluster); err != nil {
 		return err
 	}
 
 	return client.Close()
 }
 
-func createMigrationsTable(client *Client) error {
+func createMigrationsTable(client *Client, cluster string) error {
 	table := ""
 	err := client.QueryRow("SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
 
@@ -56,7 +58,15 @@ func createMigrationsTable(client *Client) error {
 	}
 
 	if table == "" {
-		if _, err := client.DB.Exec("CREATE TABLE schema_migrations (version Int64, dirty UInt8, sequence UInt64) Engine=TinyLog"); err != nil {
+		query := ""
+
+		if cluster != "" {
+			query = fmt.Sprintf("CREATE TABLE schema_migrations ON CLUSTER '%s' (version Int64, dirty UInt8, sequence UInt64) Engine=ReplicatedMergeTree ORDER BY (version, dirty, sequence)", cluster)
+		} else {
+			query = "CREATE TABLE schema_migrations (version Int64, dirty UInt8, sequence UInt64) Engine=MergeTree ORDER BY (version, dirty, sequence)"
+		}
+
+		if _, err := client.DB.Exec(query); err != nil {
 			return err
 		}
 	}
@@ -87,14 +97,14 @@ func setMigrationVersion(client *Client, version int, dirty bool) error {
 	return err
 }
 
-func runMigrations(client *Client, version int) error {
+func runMigrations(client *Client, version int, cluster string) error {
 	files, err := migrationFiles.ReadDir("schema")
 
 	if err != nil {
 		return err
 	}
 
-	migrations, err := loadMigrations(files, version)
+	migrations, err := loadMigrations(files, version, cluster)
 
 	if err != nil {
 		return err
@@ -119,7 +129,7 @@ func runMigrations(client *Client, version int) error {
 	return nil
 }
 
-func loadMigrations(files []fs.DirEntry, version int) ([]migration, error) {
+func loadMigrations(files []fs.DirEntry, version int, cluster string) ([]migration, error) {
 	migrations := make([]migration, 0)
 
 	for _, f := range files {
@@ -130,7 +140,7 @@ func loadMigrations(files []fs.DirEntry, version int) ([]migration, error) {
 				return nil, err
 			}
 
-			statements, err := parseStatements(f.Name())
+			statements, err := parseStatements(f.Name(), cluster)
 
 			if err != nil {
 				return nil, err
@@ -159,14 +169,30 @@ func parseVersion(name string) (int, error) {
 	return int(version), err
 }
 
-func parseStatements(name string) ([]string, error) {
+func parseStatements(name, cluster string) ([]string, error) {
 	content, err := fs.ReadFile(migrationFiles, filepath.Join("schema", name))
 
 	if err != nil {
 		return nil, fmt.Errorf("error reading migration file: %s", err)
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+	tpl, err := template.New("").Parse(string(content))
+
+	if err != nil {
+		return nil, fmt.Errorf("error parsing migration template: %s", err)
+	}
+
+	var out bytes.Buffer
+
+	if err := tpl.Execute(&out, struct {
+		Cluster string
+	}{
+		Cluster: cluster,
+	}); err != nil {
+		return nil, fmt.Errorf("error executing migration template: %s", err)
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(out.String()))
 	var buffer strings.Builder
 
 	for scanner.Scan() {

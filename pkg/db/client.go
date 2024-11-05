@@ -31,6 +31,9 @@ type ClientConfig struct {
 	// Port is the database port.
 	Port int
 
+	// Cluster is the optional database cluster to use.
+	Cluster string
+
 	// Database is the database schema.
 	Database string
 

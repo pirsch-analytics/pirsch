@@ -2,7 +2,7 @@
 
 ## 6.18.0
 
-**This release contains backwards incompatible changes!**
+**This release contains backward incompatible changes!**
 
 * added cluster support for ClickHouse
 
