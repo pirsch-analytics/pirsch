@@ -9,7 +9,7 @@ func TestMigrate(t *testing.T) {
 	DropDB(t, dbClient)
 	assert.NotNil(t, Migrate(nil))
 	assert.NoError(t, Migrate(&ClientConfig{
-		Hostname:      "127.0.0.1",
+		Hostnames:     []string{"127.0.0.1"},
 		Port:          9000,
 		Database:      "pirschtest",
 		SSLSkipVerify: true,

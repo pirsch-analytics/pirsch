@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.18.0
+
+**This release contains backwards incompatible changes!**
+
+* added cluster support for ClickHouse
+
 ## 6.17.0
 
 * added max page views configuration per request

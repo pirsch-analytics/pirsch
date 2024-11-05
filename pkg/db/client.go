@@ -25,8 +25,8 @@ const (
 
 // ClientConfig is the optional configuration for the Client.
 type ClientConfig struct {
-	// Hostname is the database hostname.
-	Hostname string
+	// Hostnames is the database hostname.
+	Hostnames []string
 
 	// Port is the database port.
 	Port int
@@ -118,8 +118,14 @@ func NewClient(config *ClientConfig) (*Client, error) {
 		}
 	}
 
+	addr := make([]string, len(config.Hostnames))
+
+	for i, hostname := range config.Hostnames {
+		addr[i] = fmt.Sprintf("%s:%d", hostname, config.Port)
+	}
+
 	db := clickhouse.OpenDB(&clickhouse.Options{
-		Addr: []string{fmt.Sprintf("%s:%d", config.Hostname, config.Port)},
+		Addr: addr,
 		Auth: clickhouse.Auth{
 			Database: config.Database,
 			Username: config.Username,
@@ -130,8 +136,8 @@ func NewClient(config *ClientConfig) (*Client, error) {
 		Debug:       config.Debug,
 	})
 	db.SetMaxOpenConns(config.MaxOpenConnections)
-	db.SetConnMaxLifetime(time.Duration(config.MaxConnectionLifetimeSeconds) * time.Second)
 	db.SetMaxIdleConns(config.MaxIdleConnections)
+	db.SetConnMaxLifetime(time.Duration(config.MaxConnectionLifetimeSeconds) * time.Second)
 	db.SetConnMaxIdleTime(time.Duration(config.MaxConnectionIdleTimeSeconds) * time.Second)
 
 	if err := db.Ping(); err != nil {

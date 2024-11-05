@@ -10,7 +10,7 @@ import (
 // Connect connects to the database.
 func Connect() *Client {
 	dbConfig := &ClientConfig{
-		Hostname:           "127.0.0.1",
+		Hostnames:          []string{"127.0.0.1"},
 		Port:               9000,
 		Database:           "pirschtest",
 		SSLSkipVerify:      true,

@@ -11,7 +11,7 @@ import (
 
 func TestNewClient(t *testing.T) {
 	client, err := NewClient(&ClientConfig{
-		Hostname:      "127.0.0.1",
+		Hostnames:     []string{"127.0.0.1"},
 		Port:          9000,
 		Database:      "pirschtest",
 		SSLSkipVerify: true,
