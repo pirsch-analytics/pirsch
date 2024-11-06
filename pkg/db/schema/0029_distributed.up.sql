@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS schema_migrations;
         `dirty` UInt8,
         `sequence` UInt64
     )
-    ENGINE = ReplicatedMergeTree
+    ENGINE = ReplicatedMergeTree('/clickhouse/tables/schema_migrations/{shard}', '{replica}')
     ORDER BY (version, dirty, sequence);
 {{else}}
     CREATE TABLE schema_migrations (

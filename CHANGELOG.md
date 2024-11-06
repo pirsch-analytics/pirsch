@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.18.1
+
+* fixed migration
+
 ## 6.18.0
 
 **This release contains backward incompatible changes!**
