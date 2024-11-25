@@ -1,5 +1,7 @@
 package ua
 
+import "regexp"
+
 // Blacklist is a list of User-Agents to ignore.
 var Blacklist = []string{
 	"!(()&&!|*|*|",
@@ -522,6 +524,7 @@ var Blacklist = []string{
 	"index",
 	"indy library",
 	"infestra",
+	"information",
 	"infox-wisg",
 	"infrawatch",
 	"ingrid",
@@ -765,6 +768,7 @@ var Blacklist = []string{
 	"notionembedder",
 	"ntwebpageassist",
 	"nu.nl",
+	"null (wwht",
 	"nullsoft",
 	"nutch",
 	"nuzzel",
@@ -882,6 +886,7 @@ var Blacklist = []string{
 	"qcg33mtl7hoskfh",
 	"qmez",
 	"qqdownload",
+	"qrapplink",
 	"qualys",
 	"quip",
 	"qwantify",
@@ -1101,6 +1106,7 @@ var Blacklist = []string{
 	"umar calib",
 	"unbekannt",
 	"undefined",
+	"uninteresting",
 	"unknown",
 	"unpaywall",
 	"unshortenit",
@@ -1156,6 +1162,7 @@ var Blacklist = []string{
 	"we7test",
 	"weavr",
 	"web app",
+	"webadmin",
 	"webbandit",
 	"webchk",
 	"webcloner",
@@ -1254,4 +1261,12 @@ var Blacklist = []string{
 	"}}",
 	"破解后的",
 	"脝脝陆芒潞贸碌脛",
+}
+
+// RegexBlacklist is a list of User-Agents to ignore.
+var RegexBlacklist = []*regexp.Regexp{
+	regexp.MustCompile(" *and *['\"(0-9a-za-z]* *(=|like) *['\"(0-9a-za-z]*"),
+	regexp.MustCompile("-[0-9]* *or *[0-9]*="),
+	regexp.MustCompile("case *when.*then.*else.*end"),
+	regexp.MustCompile("iif *(.*,.*,.*)"),
 }

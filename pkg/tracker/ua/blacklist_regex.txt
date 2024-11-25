@@ -1,0 +1,9 @@
+# This file contains all regex used to filter the User-Agent header.
+# Please add the reference in case you copy an existing list.
+# Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
+
+# Last update: 2024-11-25
+-[0-9]* *or *[0-9]*=
+ *and *['"(0-9a-zA-Z]* *(=|LIKE) *['"(0-9a-zA-Z]*
+case *when.*then.*else.*end
+iif *(.*,.*,.*)

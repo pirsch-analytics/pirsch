@@ -1239,6 +1239,11 @@ func TestTrackerIgnoreUserAgent(t *testing.T) {
 		{"Mozilla/5.0 (Linux; Android 13; 21051182G Build/TKQ1.221013.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
 		{"Mozilla/5.0 (Linux; Android 14; Pixel 6a Build/UP1A.231128.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.144 Mobile Safari/537.36 musical_ly_2023208030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/32.8.3 ByteLocale/de-DE ByteFullLocale/de-DE Region/DE AppId/1233 Spark/1.4.8.3-bugfix AppVersion/32.8.3 BytedanceWebview/d8a21c6", ""},
 		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E236 [FBAN/FBIOS;FBAV/465.0.1.41.103;FBBV/602060281;FBDV/iPhone13,4;FBMD/iPhone;FBSN/iOS;FBSV/17.4.1;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5;FBRV/603032588]", ""},
+		{"-8235OR 5208=5208", "ua-regex"},
+		{"-4368OR 2918=6019 AND ('Veeg'='Veeg", "ua-regex"},
+		{"-2985OR 6255=1124 AND ('lNxX' LIKE 'lNxX", "ua-regex"},
+		{"(CASE WHEN 3116=9361 THEN 3116 ELSE NULL END)", "ua-regex"},
+		{"IiF(3856=6771,3856,1/0)", "ua-regex"},
 	}
 
 	tracker := NewTracker(Config{})

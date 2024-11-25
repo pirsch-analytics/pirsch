@@ -3,6 +3,8 @@
 ## 6.19.0
 
 * added anonymous gclid and msclkid tracking
+* added regex User-Agent filtering
+* updated User-Agent blacklist
 * updated dependencies
 
 ## 6.18.1

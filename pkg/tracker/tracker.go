@@ -433,6 +433,15 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
 		}
 	}
 
+	// filter for bot regex
+	for _, botUserAgent := range ua.RegexBlacklist {
+		if botUserAgent.MatchString(userAgent) {
+			return ua.UserAgent{
+				UserAgent: r.UserAgent(),
+			}, ipAddress, "ua-regex"
+		}
+	}
+
 	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
