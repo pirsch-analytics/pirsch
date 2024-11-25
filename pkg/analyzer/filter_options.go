@@ -63,6 +63,11 @@ func (options *FilterOptions) UTMTerm(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "utm_term", "session")
 }
 
+// Channel returns all channels.
+func (options *FilterOptions) Channel(filter *Filter) ([]string, error) {
+	return options.selectFilterOptions(filter, "channel", "session")
+}
+
 // Events returns all event names.
 func (options *FilterOptions) Events(filter *Filter) ([]string, error) {
 	return options.selectFilterOptions(filter, "event_name", "event")

@@ -156,6 +156,29 @@ func TestFilterOptions_UTM(t *testing.T) {
 	assert.Equal(t, "foo", utmTerm[1])
 }
 
+func TestFilterOptions_Channel(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Channel: "Paid Social"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Channel: "Organic Search"},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Channel: "Organic Search"},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Channel: "Direct"},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	options, err := analyzer.Options.Channel(nil)
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "Direct", options[0])
+	assert.Equal(t, "Organic Search", options[1])
+	assert.Equal(t, "Paid Social", options[2])
+	options, err = analyzer.Options.Channel(&Filter{From: util.PastDay(3), To: util.Today()})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "Direct", options[0])
+	assert.Equal(t, "Organic Search", options[1])
+}
+
 func TestFilterOptions_Events(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveEvents([]model.Event{
