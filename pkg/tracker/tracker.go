@@ -534,7 +534,7 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	screenClass := tracker.getScreenClass(r, options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
-	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
+	utmMedium := tracker.getUTMMedium(r, referrerName)
 	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
@@ -694,7 +694,7 @@ func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *mode
 
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
-	utmMedium := strings.TrimSpace(query.Get("utm_medium"))
+	utmMedium := tracker.getUTMMedium(r, refName)
 	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
@@ -703,6 +703,19 @@ func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *mode
 		(utmCampaign != "" && utmCampaign != session.UTMCampaign) ||
 		(utmContent != "" && utmContent != session.UTMContent) ||
 		(utmTerm != "" && utmTerm != session.UTMTerm)
+}
+
+func (tracker *Tracker) getUTMMedium(r *http.Request, referrerName string) string {
+	query := r.URL.Query()
+	medium := query.Get("utm_medium")
+
+	if medium == "" && referrerName == "Google" && query.Get("gclid") != "" {
+		medium = "(gclid)"
+	} else if medium == "" && referrerName == "Bing" && query.Get("msclkid") != "" {
+		medium = "(msclkid)"
+	}
+
+	return medium
 }
 
 func (tracker *Tracker) fingerprint(salt, ua, ip string, now time.Time) uint64 {

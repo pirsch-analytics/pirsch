@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.19.0
+
+* added anonymous gclid and msclkid tracking
+* updated dependencies
+
 ## 6.18.1
 
 * fixed migration

@@ -48,7 +48,7 @@ func TestParseCluster(t *testing.T) {
         `+"`dirty`"+` UInt8,
         `+"`sequence`"+` UInt64
     )
-    ENGINE = ReplicatedMergeTree
+    ENGINE = ReplicatedMergeTree('/clickhouse/tables/schema_migrations/{shard}', '{replica}')
     ORDER BY (version, dirty, sequence)`, statements[1])
 	assert.Equal(t, `CREATE TABLE IF NOT EXISTS session ON CLUSTER 'pirsch' (
     `+"`sign`"+` Int8,

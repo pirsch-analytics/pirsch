@@ -517,6 +517,154 @@ func TestTracker_PageViewClientHints(t *testing.T) {
 	assert.Equal(t, "Linux", sessions[0].OS)
 }
 
+func TestTracker_PageViewGclid(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?gclid=xy123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, "https://google.com", sessions[0].Referrer)
+	assert.Equal(t, "Google", sessions[0].ReferrerName)
+	assert.Empty(t, sessions[0].UTMSource)
+	assert.Equal(t, "(gclid)", sessions[0].UTMMedium)
+	assert.Empty(t, sessions[0].UTMCampaign)
+	assert.Empty(t, sessions[0].UTMContent)
+	assert.Empty(t, sessions[0].UTMTerm)
+	assert.Equal(t, "https://google.com", pageViews[0].Referrer)
+	assert.Equal(t, "Google", pageViews[0].ReferrerName)
+	assert.Empty(t, pageViews[0].UTMSource)
+	assert.Equal(t, "(gclid)", pageViews[0].UTMMedium)
+	assert.Empty(t, pageViews[0].UTMCampaign)
+	assert.Empty(t, pageViews[0].UTMContent)
+	assert.Empty(t, pageViews[0].UTMTerm)
+
+	// do not override utm_medium
+	req = httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_medium=Medium&gclid=xy123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, pageViews, 2)
+	assert.Equal(t, sessions[1].VisitorID, pageViews[1].VisitorID)
+	assert.Equal(t, sessions[1].SessionID, pageViews[1].SessionID)
+	assert.Equal(t, "https://google.com", sessions[1].Referrer)
+	assert.Equal(t, "Google", sessions[1].ReferrerName)
+	assert.Equal(t, "Medium", sessions[1].UTMMedium)
+	assert.Equal(t, "https://google.com", pageViews[1].Referrer)
+	assert.Equal(t, "Google", pageViews[1].ReferrerName)
+	assert.Equal(t, "Medium", pageViews[1].UTMMedium)
+}
+
+func TestTracker_PageViewMsclkid(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?msclkid=xy123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://bing.com")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, "https://bing.com", sessions[0].Referrer)
+	assert.Equal(t, "Bing", sessions[0].ReferrerName)
+	assert.Empty(t, sessions[0].UTMSource)
+	assert.Equal(t, "(msclkid)", sessions[0].UTMMedium)
+	assert.Empty(t, sessions[0].UTMCampaign)
+	assert.Empty(t, sessions[0].UTMContent)
+	assert.Empty(t, sessions[0].UTMTerm)
+	assert.Equal(t, "https://bing.com", pageViews[0].Referrer)
+	assert.Equal(t, "Bing", pageViews[0].ReferrerName)
+	assert.Empty(t, pageViews[0].UTMSource)
+	assert.Equal(t, "(msclkid)", pageViews[0].UTMMedium)
+	assert.Empty(t, pageViews[0].UTMCampaign)
+	assert.Empty(t, pageViews[0].UTMContent)
+	assert.Empty(t, pageViews[0].UTMTerm)
+
+	// do not override utm_medium
+	req = httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_medium=Medium&msclkid=xy123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://bing.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, pageViews, 2)
+	assert.Equal(t, sessions[1].VisitorID, pageViews[1].VisitorID)
+	assert.Equal(t, sessions[1].SessionID, pageViews[1].SessionID)
+	assert.Equal(t, "https://bing.com", sessions[1].Referrer)
+	assert.Equal(t, "Bing", sessions[1].ReferrerName)
+	assert.Equal(t, "Medium", sessions[1].UTMMedium)
+	assert.Equal(t, "https://bing.com", pageViews[1].Referrer)
+	assert.Equal(t, "Bing", pageViews[1].ReferrerName)
+	assert.Equal(t, "Medium", pageViews[1].UTMMedium)
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
