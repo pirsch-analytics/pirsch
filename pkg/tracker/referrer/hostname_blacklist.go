@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-10-30)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2024-11-25)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},

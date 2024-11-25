@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-// run this script from the root directory to update the blacklist.go
+// run this script from the root directory to update the referrer_blacklist.go
 func main() {
 	log.Println("Updating referrer blacklist")
-	list, err := os.Open("pkg/tracker/referrer/blacklist.txt")
+	list, err := os.Open("pkg/tracker/referrer/referrer_blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -50,8 +50,7 @@ func main() {
 	var out strings.Builder
 	out.WriteString(`package referrer
 
-// Blacklist is a list of referrer keywords to ignore.
-var Blacklist = []string{
+var referrerBlacklist = []string{
 `)
 
 	for _, entry := range keywords {
@@ -60,7 +59,7 @@ var Blacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("pkg/tracker/referrer/blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/tracker/referrer/referrer_blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

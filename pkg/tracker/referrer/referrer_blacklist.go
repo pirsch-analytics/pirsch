@@ -1,7 +1,6 @@
 package referrer
 
-// Blacklist is a list of referrer keywords to ignore.
-var Blacklist = []string{
+var referrerBlacklist = []string{
 	" and ",
 	" or ",
 	" xor ",

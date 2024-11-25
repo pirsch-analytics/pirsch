@@ -23,7 +23,7 @@ type domain struct {
 
 type list map[string]map[string]domain
 
-// run this script from the root directory to generate the list.go
+// run this script from the root directory to generate the groups.go
 func main() {
 	downloadSnowplowList()
 	fromSnowplow := loadList(snowplowList)
@@ -116,7 +116,7 @@ var (
 	out.WriteString(`}
 )`)
 
-	if err := os.WriteFile("pkg/tracker/referrer/list.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/tracker/referrer/groups.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 }

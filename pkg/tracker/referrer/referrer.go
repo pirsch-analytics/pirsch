@@ -46,7 +46,7 @@ func Ignore(r *http.Request) bool {
 	// filter for bot keywords
 	referrer = strings.ToLower(referrer)
 
-	for _, botReferrer := range Blacklist {
+	for _, botReferrer := range referrerBlacklist {
 		if strings.Contains(referrer, botReferrer) {
 			return true
 		}
