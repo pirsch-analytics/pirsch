@@ -4,6 +4,7 @@
 
 * added anonymous gclid and msclkid tracking
 * added regex User-Agent filtering
+* added source attribution channels
 * updated User-Agent blacklist
 * updated dependencies
 

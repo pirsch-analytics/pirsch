@@ -665,6 +665,75 @@ func TestTracker_PageViewMsclkid(t *testing.T) {
 	assert.Equal(t, "Medium", pageViews[1].UTMMedium)
 }
 
+func TestTracker_PageViewChannel(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com?utm_medium=paid", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://suche.aol.de")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, pageViews, 1)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, "https://suche.aol.de", sessions[0].Referrer)
+	assert.Equal(t, "AOL", sessions[0].ReferrerName)
+	assert.Equal(t, "paid", sessions[0].UTMMedium)
+	assert.Equal(t, "Paid Search", sessions[0].Channel)
+	assert.Equal(t, "https://suche.aol.de", pageViews[0].Referrer)
+	assert.Equal(t, "AOL", pageViews[0].ReferrerName)
+	assert.Equal(t, "paid", pageViews[0].UTMMedium)
+	assert.Equal(t, "Paid Search", pageViews[0].Channel)
+
+	req = httptest.NewRequest(http.MethodGet, "https://example.com?gclid=xyz123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.PageView(req, 123, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags: map[string]string{
+			"author": "John",
+			"type":   "blog_post",
+		},
+	})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	pageViews = client.GetPageViews()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, pageViews, 2)
+	assert.Equal(t, sessions[1].VisitorID, pageViews[1].VisitorID)
+	assert.Equal(t, sessions[1].SessionID, pageViews[1].SessionID)
+	assert.Equal(t, "https://google.com", sessions[1].Referrer)
+	assert.Equal(t, "Google", sessions[1].ReferrerName)
+	assert.Equal(t, "(gclid)", sessions[1].UTMMedium)
+	assert.Equal(t, "Paid Search", sessions[1].Channel)
+	assert.Equal(t, "https://google.com", pageViews[1].Referrer)
+	assert.Equal(t, "Google", pageViews[1].ReferrerName)
+	assert.Equal(t, "(gclid)", pageViews[1].UTMMedium)
+	assert.Equal(t, "Paid Search", pageViews[1].Channel)
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
@@ -955,6 +1024,79 @@ func TestTracker_EventClientHints(t *testing.T) {
 	assert.Equal(t, "121", events[0].BrowserVersion)
 	assert.False(t, events[0].Mobile)
 	assert.Equal(t, "Linux", events[0].OS)
+}
+
+func TestTracker_EventChannel(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/?utm_medium=paid", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://suche.aol.de")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+		LogIP: true,
+	})
+	tracker.Event(req, 123, EventOptions{
+		Name:     "event",
+		Duration: 42,
+		Meta:     map[string]string{"key0": "value0", "key1": "value1"},
+	}, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags:         map[string]string{"key0": "override", "key2": "value2"},
+	})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, client.GetPageViews(), 1)
+	assert.Len(t, events, 1)
+	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
+	assert.Equal(t, "https://suche.aol.de", sessions[0].Referrer)
+	assert.Equal(t, "AOL", sessions[0].ReferrerName)
+	assert.Equal(t, "paid", sessions[0].UTMMedium)
+	assert.Equal(t, "Paid Search", sessions[0].Channel)
+	assert.Equal(t, "https://suche.aol.de", events[0].Referrer)
+	assert.Equal(t, "AOL", events[0].ReferrerName)
+	assert.Equal(t, "paid", events[0].UTMMedium)
+	assert.Equal(t, "Paid Search", events[0].Channel)
+
+	req = httptest.NewRequest(http.MethodGet, "https://example.com?gclid=xyz123", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	tracker.Event(req, 123, EventOptions{
+		Name:     "event",
+		Duration: 42,
+		Meta:     map[string]string{"key0": "value0", "key1": "value1"},
+	}, Options{
+		Title:        "Foo",
+		ScreenWidth:  1920,
+		ScreenHeight: 1080,
+		Tags:         map[string]string{"key0": "override", "key2": "value2"},
+	})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 2)
+	assert.Len(t, events, 2)
+	assert.Equal(t, sessions[1].VisitorID, events[1].VisitorID)
+	assert.Equal(t, sessions[1].SessionID, events[1].SessionID)
+	assert.Equal(t, "https://google.com", sessions[1].Referrer)
+	assert.Equal(t, "Google", sessions[1].ReferrerName)
+	assert.Equal(t, "(gclid)", sessions[1].UTMMedium)
+	assert.Equal(t, "Paid Search", sessions[1].Channel)
+	assert.Equal(t, "https://google.com", events[1].Referrer)
+	assert.Equal(t, "Google", events[1].ReferrerName)
+	assert.Equal(t, "(gclid)", events[1].UTMMedium)
+	assert.Equal(t, "Paid Search", events[1].Channel)
 }
 
 func TestTracker_ExtendSession(t *testing.T) {

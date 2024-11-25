@@ -313,6 +313,8 @@ type UTMTermStats struct {
 	UTMTerm string `db:"utm_term" json:"utm_term"`
 }
 
+// TODO channel
+
 // GrowthStats is the sum to calculate the growth rate.
 type GrowthStats struct {
 	Visitors          int

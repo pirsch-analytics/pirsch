@@ -12,19 +12,21 @@ import (
 	"strings"
 )
 
-// QueryParams is a list of query parameters to set the referrer.
-var QueryParams = []struct {
-	param        string
-	preferHeader bool
-}{
-	{"ref", false},
-	{"referer", false},
-	{"referrer", false},
-	{"source", true},
-	{"utm_source", true},
-}
+var (
+	// QueryParams is a list of query parameters to set the referrer.
+	QueryParams = []struct {
+		param        string
+		preferHeader bool
+	}{
+		{"ref", false},
+		{"referer", false},
+		{"referrer", false},
+		{"source", true},
+		{"utm_source", true},
+	}
 
-var isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
+	isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
+)
 
 // Ignore returns whether a referrer should be ignored or not.
 func Ignore(r *http.Request) bool {

@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/channel"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
@@ -263,6 +264,7 @@ func (tracker *Tracker) pageViewFromSession(session *model.Session, timeOnPage u
 		UTMTerm:         session.UTMTerm,
 		TagKeys:         tagKeys,
 		TagValues:       tagValues,
+		Channel:         session.Channel,
 	}
 }
 
@@ -298,6 +300,7 @@ func (tracker *Tracker) eventFromSession(session *model.Session, clientID uint64
 		UTMCampaign:     session.UTMCampaign,
 		UTMContent:      session.UTMContent,
 		UTMTerm:         session.UTMTerm,
+		Channel:         session.Channel,
 	}
 }
 
@@ -540,13 +543,14 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 	ref = util.ShortenString(ref, 200)
 	referrerName = util.ShortenString(referrerName, 200)
 	referrerIcon = util.ShortenString(referrerIcon, 2000)
-	screenClass := tracker.getScreenClass(r, options.ScreenWidth)
+	screen := tracker.getScreenClass(r, options.ScreenWidth)
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
-	utmMedium := tracker.getUTMMedium(r, referrerName)
+	utmMedium, clickID := tracker.getUTMMedium(r, referrerName)
 	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
+	sourceChannel := channel.Get(ref, referrerName, utmMedium, utmCampaign, utmSource, clickID)
 	countryCode, region, city := "", "", ""
 
 	if tracker.config.GeoDB != nil {
@@ -587,12 +591,13 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 		BrowserVersion: ua.BrowserVersion,
 		Desktop:        ua.IsDesktop(),
 		Mobile:         ua.IsMobile(),
-		ScreenClass:    screenClass,
+		ScreenClass:    screen,
 		UTMSource:      utmSource,
 		UTMMedium:      utmMedium,
 		UTMCampaign:    utmCampaign,
 		UTMContent:     utmContent,
 		UTMTerm:        utmTerm,
+		Channel:        sourceChannel,
 	}
 }
 
@@ -703,7 +708,7 @@ func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *mode
 
 	query := r.URL.Query()
 	utmSource := strings.TrimSpace(query.Get("utm_source"))
-	utmMedium := tracker.getUTMMedium(r, refName)
+	utmMedium, _ := tracker.getUTMMedium(r, refName)
 	utmCampaign := strings.TrimSpace(query.Get("utm_campaign"))
 	utmContent := strings.TrimSpace(query.Get("utm_content"))
 	utmTerm := strings.TrimSpace(query.Get("utm_term"))
@@ -714,17 +719,20 @@ func (tracker *Tracker) referrerOrCampaignChanged(r *http.Request, session *mode
 		(utmTerm != "" && utmTerm != session.UTMTerm)
 }
 
-func (tracker *Tracker) getUTMMedium(r *http.Request, referrerName string) string {
+func (tracker *Tracker) getUTMMedium(r *http.Request, referrerName string) (string, string) {
 	query := r.URL.Query()
 	medium := query.Get("utm_medium")
+	clickID := ""
 
 	if medium == "" && referrerName == "Google" && query.Get("gclid") != "" {
 		medium = "(gclid)"
+		clickID = medium
 	} else if medium == "" && referrerName == "Bing" && query.Get("msclkid") != "" {
 		medium = "(msclkid)"
+		clickID = medium
 	}
 
-	return medium
+	return medium, clickID
 }
 
 func (tracker *Tracker) fingerprint(salt, ua, ip string, now time.Time) uint64 {

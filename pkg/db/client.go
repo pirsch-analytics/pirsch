@@ -161,7 +161,7 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 	args := make([]any, 0, len(pageViews)*29)
 
 	for _, pageView := range pageViews {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			pageView.ClientID,
 			pageView.VisitorID,
@@ -190,6 +190,7 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 			pageView.UTMCampaign,
 			pageView.UTMContent,
 			pageView.UTMTerm,
+			pageView.Channel,
 			pageView.TagKeys,
 			pageView.TagValues)
 	}
@@ -197,7 +198,7 @@ func (client *Client) SavePageViews(pageViews []model.PageView) error {
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "page_view" (client_id, visitor_id, session_id, time, duration_seconds,
 		hostname, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term, channel,
 		tag_keys, tag_values) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
@@ -215,7 +216,7 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 	args := make([]any, 0, len(sessions)*35)
 
 	for _, session := range sessions {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			session.Sign,
 			session.Version,
@@ -251,13 +252,14 @@ func (client *Client) SaveSessions(sessions []model.Session) error {
 			session.UTMCampaign,
 			session.UTMContent,
 			session.UTMTerm,
+			session.Channel,
 			session.Extended)
 	}
 
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "session" (sign, version, client_id, visitor_id, session_id, time, start, duration_seconds,
 		hostname, entry_path, exit_path, page_views, is_bounce, entry_title, exit_title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term, extended) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term, channel, extended) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -274,7 +276,7 @@ func (client *Client) SaveEvents(events []model.Event) error {
 	args := make([]any, 0, len(events)*30)
 
 	for _, event := range events {
-		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		values = append(values, "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		args = append(args,
 			event.ClientID,
 			event.VisitorID,
@@ -305,13 +307,14 @@ func (client *Client) SaveEvents(events []model.Event) error {
 			event.UTMMedium,
 			event.UTMCampaign,
 			event.UTMContent,
-			event.UTMTerm)
+			event.UTMTerm,
+			event.Channel)
 	}
 
 	if _, err := client.Exec(fmt.Sprintf(`INSERT INTO "event" (client_id, visitor_id, time, session_id, event_name, event_meta_keys, event_meta_values, duration_seconds,
 		hostname, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, os, os_version,
 		browser, browser_version, desktop, mobile, screen_class,
-		utm_source, utm_medium, utm_campaign, utm_content, utm_term) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
+		utm_source, utm_medium, utm_campaign, utm_content, utm_term, channel) VALUES %s`, strings.Join(values, ",")), args...); err != nil {
 		return err
 	}
 
@@ -391,6 +394,7 @@ func (client *Client) Session(ctx context.Context, clientID, fingerprint uint64,
 		utm_campaign,
 		utm_content,
 		utm_term,
+		channel,
 		extended
 		FROM session
 		WHERE client_id = ?
@@ -431,6 +435,7 @@ func (client *Client) Session(ctx context.Context, clientID, fingerprint uint64,
 		&session.UTMCampaign,
 		&session.UTMContent,
 		&session.UTMTerm,
+		&session.Channel,
 		&session.Extended)
 
 	if err != nil {
