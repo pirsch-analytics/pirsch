@@ -3159,6 +3159,110 @@ func TestAnalyzer_ReferrerTags(t *testing.T) {
 	assert.InDelta(t, 0, visitors[0].BounceRate, 0.01)
 }
 
+func TestAnalyzer_Channel(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Channel: "Channel 2", PageViews: 3, IsBounce: true},
+		},
+		{
+			{Sign: -1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/exit", Channel: "Channel 2", PageViews: 3, IsBounce: true},
+			{Sign: 1, VisitorID: 1, Time: time.Now().Add(time.Minute * 2), Start: time.Now(), ExitPath: "/", Channel: "Channel 2", PageViews: 3, IsBounce: false},
+			{Sign: 1, VisitorID: 2, Time: time.Now().Add(time.Minute), Start: time.Now(), ExitPath: "/bar", Channel: "Channel 3", PageViews: 2, IsBounce: false},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), ExitPath: "/", Channel: "Channel 1", PageViews: 1, IsBounce: true},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), ExitPath: "/", Channel: "Channel 1", PageViews: 1, IsBounce: true},
+		},
+	})
+	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+		{VisitorID: 1, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+		{VisitorID: 4, Time: time.Now(), Name: "event", MetaKeys: []string{"foo", "bar"}, MetaValues: []string{"val0", "val1"}},
+	}))
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Visitors.Channel(nil)
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "Channel 1", visitors[0].Channel)
+	assert.Equal(t, "Channel 2", visitors[1].Channel)
+	assert.Equal(t, "Channel 3", visitors[2].Channel)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[2].Visitors)
+	assert.Equal(t, 2, visitors[0].Views)
+	assert.Equal(t, 3, visitors[1].Views)
+	assert.Equal(t, 2, visitors[2].Views)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[1].Sessions)
+	assert.Equal(t, 1, visitors[2].Sessions)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[2].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[0].RelativeViews, 0.01)
+	assert.InDelta(t, 0.4285, visitors[1].RelativeViews, 0.01)
+	assert.InDelta(t, 0.2857, visitors[2].RelativeViews, 0.01)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[2].Bounces)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[2].BounceRate, 0.01)
+	_, err = analyzer.Visitors.Channel(getMaxFilter(""))
+	assert.NoError(t, err)
+	_, err = analyzer.Visitors.Channel(getMaxFilter("event"))
+	assert.NoError(t, err)
+	visitors, err = analyzer.Visitors.Channel(&Filter{Limit: 1})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	_, err = analyzer.Visitors.Channel(&Filter{Offset: 1, Limit: 10, Sort: []Sort{
+		{
+			Field:     FieldChannel,
+			Direction: pkg.DirectionASC,
+		},
+	}, Search: []Search{
+		{
+			Field: FieldChannel,
+			Input: "cha",
+		},
+	}})
+	assert.NoError(t, err)
+
+	// filter for channel
+	visitors, err = analyzer.Visitors.Channel(&Filter{Channel: []string{"Channel 1"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 1)
+	assert.Equal(t, "Channel 1", visitors[0].Channel)
+	assert.Equal(t, 2, visitors[0].Visitors)
+	assert.Equal(t, 2, visitors[0].Views)
+	assert.Equal(t, 2, visitors[0].Sessions)
+	assert.Equal(t, 2, visitors[0].Bounces)
+	assert.InDelta(t, 0.5, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.2857, visitors[0].RelativeViews, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+
+	// filter for event
+	visitors, err = analyzer.Visitors.Channel(&Filter{EventName: []string{"event"}})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 2)
+	assert.Equal(t, "Channel 1", visitors[0].Channel)
+	assert.Equal(t, "Channel 2", visitors[1].Channel)
+	assert.Equal(t, 1, visitors[0].Visitors)
+	assert.Equal(t, 1, visitors[1].Visitors)
+	assert.Equal(t, 1, visitors[0].Views)
+	assert.Equal(t, 3, visitors[1].Views)
+	assert.Equal(t, 1, visitors[0].Sessions)
+	assert.Equal(t, 1, visitors[1].Sessions)
+	assert.Equal(t, 1, visitors[0].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
+	assert.InDelta(t, 0.25, visitors[0].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.25, visitors[1].RelativeVisitors, 0.01)
+	assert.InDelta(t, 0.1428, visitors[0].RelativeViews, 0.01)
+	assert.InDelta(t, 0.4285, visitors[1].RelativeViews, 0.01)
+	assert.InDelta(t, 1, visitors[0].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
+}
+
 func TestAnalyzer_Timezone(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	assert.NoError(t, dbClient.SaveSessions([]model.Session{

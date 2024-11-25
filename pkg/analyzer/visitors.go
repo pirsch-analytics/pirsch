@@ -527,6 +527,33 @@ func (visitors *Visitors) Referrer(filter *Filter) ([]model.ReferrerStats, error
 	return stats, nil
 }
 
+// Channel returns the visitor count, session count, bounce rate, and views grouped by channel.
+func (visitors *Visitors) Channel(filter *Filter) ([]model.ChannelStats, error) {
+	filter = visitors.analyzer.getFilter(filter)
+	q, args := filter.buildQuery([]Field{
+		FieldChannel,
+		FieldVisitors,
+		FieldViews,
+		FieldSessions,
+		FieldBounces,
+		FieldRelativeVisitors,
+		FieldRelativeViews,
+		FieldBounceRate,
+	}, []Field{
+		FieldChannel,
+	}, []Field{
+		FieldVisitors,
+		FieldChannel,
+	}, nil, "")
+	stats, err := visitors.store.SelectChannelStats(filter.Ctx, q, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 func (visitors *Visitors) getPreviousPeriod(filter *Filter) {
 	from := filter.From
 	to := filter.To

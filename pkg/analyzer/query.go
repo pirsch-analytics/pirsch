@@ -84,7 +84,7 @@ func (query *queryBuilder) query() (string, []any) {
 }
 
 func (query *queryBuilder) getFields() []string {
-	fields := make([]string, 0, 30)
+	fields := make([]string, 0, 40)
 
 	if query.from == sessions {
 		query.appendField(&fields, FieldEntryPath.Name, query.filter.EntryPath)
@@ -132,6 +132,7 @@ func (query *queryBuilder) getFields() []string {
 	query.appendField(&fields, FieldUTMCampaign.Name, query.filter.UTMCampaign)
 	query.appendField(&fields, FieldUTMContent.Name, query.filter.UTMContent)
 	query.appendField(&fields, FieldUTMTerm.Name, query.filter.UTMTerm)
+	query.appendField(&fields, FieldChannel.Name, query.filter.Channel)
 
 	if query.filter.Platform != "" {
 		platform := query.filter.Platform
@@ -607,6 +608,7 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldUTMCampaign.Name, query.filter.UTMCampaign)
 	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
 	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
+	query.whereField(FieldChannel.Name, query.filter.Channel)
 	query.whereFieldPlatform()
 	query.whereFieldVisitorSessionID()
 

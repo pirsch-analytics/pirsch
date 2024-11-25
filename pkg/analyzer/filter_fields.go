@@ -459,6 +459,14 @@ var (
 		Name:           "utm_term",
 	}
 
+	// FieldChannel is a query result column.
+	FieldChannel = Field{
+		querySessions:  "t.channel",
+		queryPageViews: "t.channel",
+		queryDirection: "ASC",
+		Name:           "channel",
+	}
+
 	// FieldTagKeysRaw is a query result column.
 	FieldTagKeysRaw = Field{
 		querySessions:  "tag_keys",

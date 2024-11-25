@@ -313,7 +313,17 @@ type UTMTermStats struct {
 	UTMTerm string `db:"utm_term" json:"utm_term"`
 }
 
-// TODO channel
+// ChannelStats is the result type for utm term statistics.
+type ChannelStats struct {
+	Channel          string  `json:"channel"`
+	Visitors         int     `json:"visitors"`
+	Views            int     `json:"views"`
+	Sessions         int     `json:"sessions"`
+	Bounces          int     `json:"bounces"`
+	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
+	RelativeViews    float64 `db:"relative_views" json:"relative_views"`
+	BounceRate       float64 `db:"bounce_rate" json:"bounce_rate"`
+}
 
 // GrowthStats is the sum to calculate the growth rate.
 type GrowthStats struct {

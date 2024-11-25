@@ -1806,6 +1806,37 @@ func (client *Client) SelectUTMTermStats(ctx context.Context, query string, args
 	return results, nil
 }
 
+// SelectChannelStats implements the Store interface.
+func (client *Client) SelectChannelStats(ctx context.Context, query string, args ...any) ([]model.ChannelStats, error) {
+	rows, err := client.QueryContext(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.closeRows(rows)
+	var results []model.ChannelStats
+
+	for rows.Next() {
+		var result model.ChannelStats
+
+		if err := rows.Scan(&result.Channel,
+			&result.Visitors,
+			&result.Views,
+			&result.Sessions,
+			&result.Bounces,
+			&result.RelativeVisitors,
+			&result.RelativeViews,
+			&result.BounceRate); err != nil {
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
 // SelectOSVersionStats implements the Store interface.
 func (client *Client) SelectOSVersionStats(ctx context.Context, query string, args ...any) ([]model.OSVersionStats, error) {
 	rows, err := client.QueryContext(ctx, query, args...)

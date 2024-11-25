@@ -111,6 +111,9 @@ type Filter struct {
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm []string
 
+	// Channel filters for the channel query parameter.
+	Channel []string
+
 	// Tags filters for tag key-value pairs.
 	Tags map[string]string
 
@@ -303,6 +306,7 @@ func (filter *Filter) validate() {
 	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
+	filter.Channel = filter.removeDuplicates(filter.Channel)
 	filter.Tag = filter.removeDuplicates(filter.Tag)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
 	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)

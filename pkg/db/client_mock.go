@@ -319,6 +319,11 @@ func (client *ClientMock) SelectUTMTermStats(context.Context, string, ...any) ([
 	return nil, nil
 }
 
+// SelectChannelStats implements the Store interface.
+func (client *ClientMock) SelectChannelStats(ctx context.Context, query string, args ...any) ([]model.ChannelStats, error) {
+	return nil, nil
+}
+
 // SelectOSVersionStats implements the Store interface.
 func (client *ClientMock) SelectOSVersionStats(context.Context, string, ...any) ([]model.OSVersionStats, error) {
 	return nil, nil

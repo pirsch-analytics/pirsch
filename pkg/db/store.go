@@ -135,6 +135,9 @@ type Store interface {
 	// SelectUTMTermStats selects model.UTMTermStats.
 	SelectUTMTermStats(context.Context, string, ...any) ([]model.UTMTermStats, error)
 
+	// SelectChannelStats selects model.ChannelStats.
+	SelectChannelStats(context.Context, string, ...any) ([]model.ChannelStats, error)
+
 	// SelectOSVersionStats selects model.OSVersionStats.
 	SelectOSVersionStats(context.Context, string, ...any) ([]model.OSVersionStats, error)
 
