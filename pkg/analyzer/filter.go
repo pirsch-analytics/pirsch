@@ -78,6 +78,9 @@ type Filter struct {
 	// ReferrerName filters for the referrer name.
 	ReferrerName []string
 
+	// Channel filters for the channel query parameter.
+	Channel []string
+
 	// OS filters for the operating system.
 	OS []string
 
@@ -110,9 +113,6 @@ type Filter struct {
 
 	// UTMTerm filters for the utm_term query parameter.
 	UTMTerm []string
-
-	// Channel filters for the channel query parameter.
-	Channel []string
 
 	// Tags filters for tag key-value pairs.
 	Tags map[string]string
@@ -296,6 +296,7 @@ func (filter *Filter) validate() {
 	filter.City = filter.removeDuplicates(filter.City)
 	filter.Referrer = filter.removeDuplicates(filter.Referrer)
 	filter.ReferrerName = filter.removeDuplicates(filter.ReferrerName)
+	filter.Channel = filter.removeDuplicates(filter.Channel)
 	filter.OS = filter.removeDuplicates(filter.OS)
 	filter.OSVersion = filter.removeDuplicates(filter.OSVersion)
 	filter.Browser = filter.removeDuplicates(filter.Browser)
@@ -306,7 +307,6 @@ func (filter *Filter) validate() {
 	filter.UTMCampaign = filter.removeDuplicates(filter.UTMCampaign)
 	filter.UTMContent = filter.removeDuplicates(filter.UTMContent)
 	filter.UTMTerm = filter.removeDuplicates(filter.UTMTerm)
-	filter.Channel = filter.removeDuplicates(filter.Channel)
 	filter.Tag = filter.removeDuplicates(filter.Tag)
 	filter.EventName = filter.removeDuplicates(filter.EventName)
 	filter.EventMetaKey = filter.removeDuplicates(filter.EventMetaKey)

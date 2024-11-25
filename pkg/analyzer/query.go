@@ -122,6 +122,7 @@ func (query *queryBuilder) getFields() []string {
 	query.appendField(&fields, FieldCity.Name, query.filter.City)
 	query.appendField(&fields, FieldReferrer.Name, query.filter.Referrer)
 	query.appendField(&fields, FieldReferrerName.Name, query.filter.ReferrerName)
+	query.appendField(&fields, FieldChannel.Name, query.filter.Channel)
 	query.appendField(&fields, FieldOS.Name, query.filter.OS)
 	query.appendField(&fields, FieldOSVersion.Name, query.filter.OSVersion)
 	query.appendField(&fields, FieldBrowser.Name, query.filter.Browser)
@@ -132,7 +133,6 @@ func (query *queryBuilder) getFields() []string {
 	query.appendField(&fields, FieldUTMCampaign.Name, query.filter.UTMCampaign)
 	query.appendField(&fields, FieldUTMContent.Name, query.filter.UTMContent)
 	query.appendField(&fields, FieldUTMTerm.Name, query.filter.UTMTerm)
-	query.appendField(&fields, FieldChannel.Name, query.filter.Channel)
 
 	if query.filter.Platform != "" {
 		platform := query.filter.Platform
@@ -598,6 +598,7 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldCity.Name, query.filter.City)
 	query.whereField(FieldReferrer.Name, query.filter.Referrer)
 	query.whereField(FieldReferrerName.Name, query.filter.ReferrerName)
+	query.whereField(FieldChannel.Name, query.filter.Channel)
 	query.whereField(FieldOS.Name, query.filter.OS)
 	query.whereField(FieldOSVersion.Name, query.filter.OSVersion)
 	query.whereField(FieldBrowser.Name, query.filter.Browser)
@@ -608,7 +609,6 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldUTMCampaign.Name, query.filter.UTMCampaign)
 	query.whereField(FieldUTMContent.Name, query.filter.UTMContent)
 	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
-	query.whereField(FieldChannel.Name, query.filter.Channel)
 	query.whereFieldPlatform()
 	query.whereFieldVisitorSessionID()
 
