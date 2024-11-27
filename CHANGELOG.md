@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.19.1
+
+* fixed sorting cities with non-ASCII characters in name
+
 ## 6.19.0
 
 * added anonymous gclid and msclkid tracking

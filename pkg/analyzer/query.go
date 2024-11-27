@@ -1031,6 +1031,8 @@ func (query *queryBuilder) orderByFields() {
 				}
 
 				q.WriteString(fmt.Sprintf("%s %s %s,", name, query.orderBy[i].queryDirection, fillQuery))
+			} else if query.orderBy[i].Name == FieldCity.Name {
+				q.WriteString(fmt.Sprintf("normalizeUTF8NFKD(%s) %s,", query.orderBy[i].Name, query.orderBy[i].queryDirection))
 			} else {
 				q.WriteString(fmt.Sprintf("%s %s,", query.orderBy[i].Name, query.orderBy[i].queryDirection))
 			}

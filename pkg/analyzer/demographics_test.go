@@ -396,3 +396,38 @@ func TestAnalyzer_Cities(t *testing.T) {
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.InDelta(t, 0.3333, visitors[0].RelativeVisitors, 0.01)
 }
+
+func TestAnalyzer_CitiesSort(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	saveSessions(t, [][]model.Session{
+		{
+			{Sign: 1, VisitorID: 1, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Agreda"},
+			{Sign: 1, VisitorID: 2, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Babina Greda"},
+			{Sign: 1, VisitorID: 3, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Ágreda"},
+			{Sign: 1, VisitorID: 4, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Ágreda"},
+			{Sign: 1, VisitorID: 5, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Ágreda"},
+			{Sign: 1, VisitorID: 6, Time: time.Now(), Start: time.Now(), CountryCode: "es", Region: "Spain", City: "Babina Greda"},
+		},
+	})
+	analyzer := NewAnalyzer(dbClient)
+	visitors, err := analyzer.Demographics.Cities(&Filter{
+		Sort: []Sort{
+			{Field: FieldCity, Direction: pkg.DirectionASC},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "Agreda", visitors[0].City)
+	assert.Equal(t, "Ágreda", visitors[1].City)
+	assert.Equal(t, "Babina Greda", visitors[2].City)
+	visitors, err = analyzer.Demographics.Cities(&Filter{
+		Sort: []Sort{
+			{Field: FieldCity, Direction: pkg.DirectionDESC},
+		},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, visitors, 3)
+	assert.Equal(t, "Babina Greda", visitors[0].City)
+	assert.Equal(t, "Ágreda", visitors[1].City)
+	assert.Equal(t, "Agreda", visitors[2].City)
+}
