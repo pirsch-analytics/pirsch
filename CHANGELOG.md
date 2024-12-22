@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.19.2
+
+* removed funnel step limit
+* updated dependencies
+
 ## 6.19.1
 
 * fixed sorting cities with non-ASCII characters in name

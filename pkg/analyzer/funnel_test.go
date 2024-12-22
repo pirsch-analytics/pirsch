@@ -91,8 +91,6 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.Equal(t, "not enough steps", err.Error())
 	_, err = analyzer.Funnel.Steps(context.Background(), []Filter{{}})
 	assert.Equal(t, "not enough steps", err.Error())
-	_, err = analyzer.Funnel.Steps(context.Background(), []Filter{{}, {}, {}, {}, {}, {}, {}, {}, {}})
-	assert.Equal(t, "too many steps", err.Error())
 
 	// regular three-step funnel
 	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
