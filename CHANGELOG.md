@@ -2,6 +2,7 @@
 
 ## 6.19.3
 
+* added `Equal` to filter
 * updated referrer blacklist
 * updated User-Agent blacklist
 * fixed tests

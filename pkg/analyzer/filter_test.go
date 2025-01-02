@@ -284,3 +284,29 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, "/foo", stats[0].Path)
 	assert.Equal(t, 1, stats[0].Visitors)
 }
+
+func TestFilter_Equal(t *testing.T) {
+	a := &Filter{
+		Path:      []string{"/foo", "/bar"},
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"foo": "bar",
+		},
+	}
+	b := &Filter{
+		Path:      []string{"/bar", "/foo"},
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"foo": "bar",
+		},
+	}
+	c := &Filter{
+		Path: []string{"/foo"},
+	}
+	assert.True(t, a.Equal(b))
+	assert.True(t, b.Equal(a))
+	assert.False(t, c.Equal(a))
+	assert.False(t, c.Equal(b))
+	assert.False(t, a.Equal(c))
+	assert.False(t, b.Equal(c))
+}

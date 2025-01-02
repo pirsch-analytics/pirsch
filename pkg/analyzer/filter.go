@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 )
@@ -201,6 +203,286 @@ func NewFilter(clientID int64) *Filter {
 	return &Filter{
 		ClientID: clientID,
 	}
+}
+
+// Equal returns true if the filter is equal to the argument.
+func (filter *Filter) Equal(other *Filter) bool {
+	simpleCmp := filter.ClientID == other.ClientID &&
+		filter.Timezone.String() == other.Timezone.String() &&
+		filter.From.Equal(other.From) &&
+		filter.To.Equal(other.To) &&
+		filter.ImportedUntil.Equal(other.ImportedUntil) &&
+		filter.Period == other.Period &&
+		filter.Platform == other.Platform &&
+		filter.VisitorID == other.VisitorID &&
+		filter.SessionID == other.SessionID &&
+		filter.Offset == other.Offset &&
+		filter.Limit == other.Limit &&
+		filter.CustomMetricKey == other.CustomMetricKey &&
+		filter.CustomMetricType == other.CustomMetricType &&
+		filter.IncludeTime == other.IncludeTime &&
+		filter.IncludeTitle == other.IncludeTitle &&
+		filter.IncludeTimeOnPage == other.IncludeTimeOnPage &&
+		filter.IncludeCR == other.IncludeCR &&
+		filter.MaxTimeOnPageSeconds == other.MaxTimeOnPageSeconds &&
+		filter.Sample == other.Sample
+
+	if !simpleCmp {
+		return false
+	}
+
+	slices.Sort(filter.Hostname)
+	slices.Sort(other.Hostname)
+
+	if !slices.Equal(filter.Hostname, other.Hostname) {
+		return false
+	}
+
+	slices.Sort(filter.Path)
+	slices.Sort(other.Path)
+
+	if !slices.Equal(filter.Path, other.Path) {
+		return false
+	}
+
+	slices.Sort(filter.AnyPath)
+	slices.Sort(other.AnyPath)
+
+	if !slices.Equal(filter.AnyPath, other.AnyPath) {
+		return false
+	}
+
+	slices.Sort(filter.EntryPath)
+	slices.Sort(other.EntryPath)
+
+	if !slices.Equal(filter.EntryPath, other.EntryPath) {
+		return false
+	}
+
+	slices.Sort(filter.ExitPath)
+	slices.Sort(other.ExitPath)
+
+	if !slices.Equal(filter.ExitPath, other.ExitPath) {
+		return false
+	}
+
+	slices.Sort(filter.PathPattern)
+	slices.Sort(other.PathPattern)
+
+	if !slices.Equal(filter.PathPattern, other.PathPattern) {
+		return false
+	}
+
+	slices.Sort(filter.Language)
+	slices.Sort(other.Language)
+
+	if !slices.Equal(filter.Language, other.Language) {
+		return false
+	}
+
+	slices.Sort(filter.Country)
+	slices.Sort(other.Country)
+
+	if !slices.Equal(filter.Country, other.Country) {
+		return false
+	}
+
+	slices.Sort(filter.Region)
+	slices.Sort(other.Region)
+
+	if !slices.Equal(filter.Region, other.Region) {
+		return false
+	}
+
+	slices.Sort(filter.City)
+	slices.Sort(other.City)
+
+	if !slices.Equal(filter.City, other.City) {
+		return false
+	}
+
+	slices.Sort(filter.Referrer)
+	slices.Sort(other.Referrer)
+
+	if !slices.Equal(filter.Referrer, other.Referrer) {
+		return false
+	}
+
+	slices.Sort(filter.ReferrerName)
+	slices.Sort(other.ReferrerName)
+
+	if !slices.Equal(filter.ReferrerName, other.ReferrerName) {
+		return false
+	}
+
+	slices.Sort(filter.Channel)
+	slices.Sort(other.Channel)
+
+	if !slices.Equal(filter.Channel, other.Channel) {
+		return false
+	}
+
+	slices.Sort(filter.OS)
+	slices.Sort(other.OS)
+
+	if !slices.Equal(filter.OS, other.OS) {
+		return false
+	}
+
+	slices.Sort(filter.OSVersion)
+	slices.Sort(other.OSVersion)
+
+	if !slices.Equal(filter.OSVersion, other.OSVersion) {
+		return false
+	}
+
+	slices.Sort(filter.Browser)
+	slices.Sort(other.Browser)
+
+	if !slices.Equal(filter.Browser, other.Browser) {
+		return false
+	}
+
+	slices.Sort(filter.BrowserVersion)
+	slices.Sort(other.BrowserVersion)
+
+	if !slices.Equal(filter.BrowserVersion, other.BrowserVersion) {
+		return false
+	}
+
+	slices.Sort(filter.ScreenClass)
+	slices.Sort(other.ScreenClass)
+
+	if !slices.Equal(filter.ScreenClass, other.ScreenClass) {
+		return false
+	}
+
+	slices.Sort(filter.UTMSource)
+	slices.Sort(other.UTMSource)
+
+	if !slices.Equal(filter.UTMSource, other.UTMSource) {
+		return false
+	}
+
+	slices.Sort(filter.UTMMedium)
+	slices.Sort(other.UTMMedium)
+
+	if !slices.Equal(filter.UTMMedium, other.UTMMedium) {
+		return false
+	}
+
+	slices.Sort(filter.UTMCampaign)
+	slices.Sort(other.UTMCampaign)
+
+	if !slices.Equal(filter.UTMCampaign, other.UTMCampaign) {
+		return false
+	}
+
+	slices.Sort(filter.UTMContent)
+	slices.Sort(other.UTMContent)
+
+	if !slices.Equal(filter.UTMContent, other.UTMContent) {
+		return false
+	}
+
+	slices.Sort(filter.UTMTerm)
+	slices.Sort(other.UTMTerm)
+
+	if !slices.Equal(filter.UTMTerm, other.UTMTerm) {
+		return false
+	}
+
+	slices.Sort(filter.Tag)
+	slices.Sort(other.Tag)
+
+	if !slices.Equal(filter.Tag, other.Tag) {
+		return false
+	}
+
+	slices.Sort(filter.Tag)
+	slices.Sort(other.Tag)
+
+	if !slices.Equal(filter.Tag, other.Tag) {
+		return false
+	}
+
+	slices.Sort(filter.EventName)
+	slices.Sort(other.EventName)
+
+	if !slices.Equal(filter.EventName, other.EventName) {
+		return false
+	}
+
+	slices.Sort(filter.EventMetaKey)
+	slices.Sort(other.EventMetaKey)
+
+	if !slices.Equal(filter.EventMetaKey, other.EventMetaKey) {
+		return false
+	}
+
+	slices.SortFunc(filter.Search, func(a, b Search) int {
+		if a.Input == b.Input {
+			return 0
+		}
+
+		if a.Input > b.Input {
+			return -1
+		}
+
+		return 1
+	})
+	slices.SortFunc(other.Search, func(a, b Search) int {
+		if a.Input == b.Input {
+			return 0
+		}
+
+		if a.Input > b.Input {
+			return -1
+		}
+
+		return 1
+	})
+
+	if !slices.Equal(filter.Search, other.Search) {
+		return false
+	}
+
+	slices.SortFunc(filter.Sort, func(a, b Sort) int {
+		if a.Direction == b.Direction {
+			return 0
+		}
+
+		if a.Direction > b.Direction {
+			return -1
+		}
+
+		return 1
+	})
+	slices.SortFunc(other.Sort, func(a, b Sort) int {
+		if a.Direction == b.Direction {
+			return 0
+		}
+
+		if a.Direction > b.Direction {
+			return -1
+		}
+
+		return 1
+	})
+
+	if !slices.Equal(filter.Sort, other.Sort) {
+		return false
+	}
+
+	if !maps.Equal(filter.Tags, other.Tags) {
+		return false
+	}
+
+	if !maps.Equal(filter.EventMeta, other.EventMeta) {
+		return false
+	}
+
+	return true
 }
 
 func (filter *Filter) validate() {
