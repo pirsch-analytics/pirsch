@@ -3,6 +3,7 @@
 ## 6.19.3
 
 * added `Equal` to filter
+* optimized funnels
 * updated referrer blacklist
 * updated User-Agent blacklist
 * fixed tests

@@ -199,3 +199,48 @@ func TestFunnel_Steps(t *testing.T) {
 	assert.InDelta(t, 0, funnel[0].DropOff, 0.01)
 	assert.InDelta(t, 0, funnel[1].DropOff, 0.01)
 }
+
+func TestFunnel_EqualSteps(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	s := make([]model.Session, 0)
+	pv := make([]model.PageView, 0)
+	now := time.Now()
+
+	for i := 0; i < 100; i++ {
+		s = append(s, model.Session{
+			Sign:      1,
+			VisitorID: uint64(i) + 1,
+			Time:      util.Today(),
+			Start:     now,
+			EntryPath: "/",
+			ExitPath:  "/thank-you",
+			IsBounce:  false,
+			PageViews: 5,
+			Language:  "en",
+		})
+		pv = append(pv, model.PageView{
+			VisitorID: 1,
+			Time:      util.Today(),
+			Path:      "/",
+		})
+	}
+
+	saveSessions(t, [][]model.Session{s})
+	assert.NoError(t, dbClient.SavePageViews(pv))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	steps := make([]Filter, 0)
+
+	for i := 0; i < 10; i++ {
+		steps = append(steps, Filter{
+			ClientID: 1,
+			From:     util.Today(),
+			To:       util.Today(),
+			Path:     []string{"/"},
+		})
+	}
+
+	funnel, err := analyzer.Funnel.Steps(context.Background(), steps)
+	assert.NoError(t, err)
+	assert.Len(t, funnel, 10)
+}

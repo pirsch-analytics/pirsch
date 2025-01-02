@@ -25,28 +25,36 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 		return nil, errors.New("not enough steps")
 	}
 
+	for i := range filter {
+		filter[i] = *funnel.analyzer.getFilter(&filter[i])
+		filter[i].funnelStep = i + 1
+	}
+
 	var query strings.Builder
 	args := make([]any, 0)
 
 	for i := range filter {
-		f := funnel.analyzer.getFilter(&filter[i])
-		f.funnelStep = i + 1
-		fields := []Field{
-			FieldClientID,
-			FieldVisitorID,
-			FieldSessionID,
-			FieldTime,
-		}
-		q, a := f.buildQuery(fields, nil, nil, nil, "")
-		args = append(args, a...)
-
 		if i == 0 {
 			query.WriteString(fmt.Sprintf("WITH step%d AS ( ", i+1))
 		} else {
 			query.WriteString(fmt.Sprintf("step%d AS ( ", i+1))
 		}
 
-		query.WriteString(q)
+		fields := []Field{
+			FieldClientID,
+			FieldVisitorID,
+			FieldSessionID,
+			FieldTime,
+		}
+
+		if i > 0 && filter[i].Equal(&filter[i-1]) {
+			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
+		} else {
+			q, a := filter[i].buildQuery(fields, nil, nil, nil, "")
+			args = append(args, a...)
+			query.WriteString(q)
+		}
+
 		query.WriteString(") ")
 
 		if i != len(filter)-1 {
