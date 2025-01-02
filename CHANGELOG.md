@@ -3,6 +3,7 @@
 ## 6.19.3
 
 * updated referrer blacklist
+* updated User-Agent blacklist
 * fixed tests
 
 ## 6.19.2
