@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.19.3
+
+* updated referrer blacklist
+* fixed tests
+
 ## 6.19.2
 
 * removed funnel step limit
