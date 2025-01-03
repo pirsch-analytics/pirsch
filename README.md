@@ -4,7 +4,6 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/pirsch-analytics/pirsch?status.svg)](https://pkg.go.dev/github.com/pirsch-analytics/pirsch/v6)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pirsch-analytics/pirsch/v6)](https://goreportcard.com/report/github.com/pirsch-analytics/pirsch/v6)
-<a href="https://discord.gg/fAYm4Cz"><img src="https://img.shields.io/discord/739184135649886288?logo=discord" alt="Chat on Discord"></a>
 
 This is the open-source core of [Pirsch Analytics](https://pirsch.io), a privacy-friendly web analytics solution. It originally started as an [experiment](https://marvinblum.de/blog/server-side-tracking-without-cookies-in-go-OxdzmGZ1Bl) to reliably analyze web traffic from the server-side using Go.
 
