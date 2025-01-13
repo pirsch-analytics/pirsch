@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-01-02)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-01-13)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -187,6 +187,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"apteka-pharm.ru":                      {},
 	"apteka.info":                          {},
 	"arabic-poetry.com":                    {},
+	"arcarticle.online":                    {},
 	"arendadogovor.ru":                     {},
 	"arendakvartir.kz":                     {},
 	"arendovalka.xyz":                      {},
@@ -1236,6 +1237,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"magicart.store":                       {},
 	"magicdiet.gq":                         {},
 	"magnetic-bracelets.ru":                {},
+	"maigralr.site":                        {},
 	"mainhunter.com":                       {},
 	"makemoneyonline.com":                  {},
 	"makeprogress.ga":                      {},
@@ -2042,6 +2044,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"ucban.xyz":                            {},
 	"ucoz.ru":                              {},
 	"ucsfstore.xyz":                        {},
+	"uctraffic.com":                        {},
 	"udav.net":                             {},
 	"ufolabs.net":                          {},
 	"uginekologa.com":                      {},

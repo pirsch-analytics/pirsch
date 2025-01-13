@@ -217,6 +217,29 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 	return false
 }
 
+// Accept runs the given request through the bot filters and returns the details if accepted.
+// This function does not update the session, nor does it save the page view or request.
+func (tracker *Tracker) Accept(r *http.Request, clientID uint64, options Options) *model.Session {
+	if tracker.stopped.Load() {
+		return nil
+	}
+
+	now := time.Now().UTC()
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
+	options.validate(r)
+
+	if !options.Time.IsZero() {
+		now = options.Time
+	}
+
+	if ignoreReason == "" {
+		session, _, _, _ := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, options)
+		return session
+	}
+
+	return nil
+}
+
 // Flush flushes all buffered data.
 func (tracker *Tracker) Flush() {
 	tracker.stopWorker()

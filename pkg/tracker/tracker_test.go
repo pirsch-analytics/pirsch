@@ -1170,6 +1170,27 @@ func TestTracker_ExtendSessionOverwriteTime(t *testing.T) {
 	assert.True(t, now.After(sessions[2].Time))
 }
 
+func TestTracker_Accept(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	geoDB, _ := geodb.NewGeoDB("", "", "")
+	assert.NoError(t, geoDB.UpdateFromFile("../../test/GeoIP2-City-Test.mmdb"))
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+		GeoDB: geoDB,
+	})
+	s := tracker.Accept(req, 123, Options{})
+	assert.NotNil(t, s)
+	assert.Equal(t, "example.com", s.Hostname)
+	assert.Equal(t, "fr", s.Language)
+	assert.Equal(t, "Linux", s.OS)
+	assert.Equal(t, "gb", s.CountryCode)
+}
+
 func TestTracker_Flush(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 	tracker := NewTracker(Config{
