@@ -61,6 +61,10 @@ func (c ColDateTime) Row(i int) time.Time {
 	return c.Data[i].Time().In(c.loc())
 }
 
+func (c *ColDateTime) AppendRaw(v DateTime) {
+	c.Data = append(c.Data, v)
+}
+
 func (c *ColDateTime) Append(v time.Time) {
 	c.Data = append(c.Data, ToDateTime(v))
 }

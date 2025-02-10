@@ -1,3 +1,54 @@
+# v2.30.3, 2025-02-03 <!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other Changes 🛠
+* fix enum parse logic when its last index is zero by @lobachpavel in https://github.com/ClickHouse/clickhouse-go/pull/1487
+
+## New Contributors
+* @lobachpavel made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1487
+
+**Full Changelog**: https://github.com/ClickHouse/clickhouse-go/compare/v2.30.2...v2.30.3
+
+# v2.30.2, 2025-01-30 <!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Bug fixes 🐛 
+* Handle json tag without name override by @matevzmihalic in https://github.com/ClickHouse/clickhouse-go/pull/1478
+* fix: JSON NestedMap + add tests by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1482
+
+## New Contributors
+* @matevzmihalic made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1478
+
+**Full Changelog**: https://github.com/ClickHouse/clickhouse-go/compare/v2.30.1...v2.30.2
+
+# v2.30.1, 2025-01-17 <!-- Release notes generated using configuration in .github/release.yml at v2.30.1 -->
+
+## What's Changed
+### Enhancements 🎉
+* [improvement] Some performance related changes to evaluate by @mdonkers in https://github.com/ClickHouse/clickhouse-go/pull/1426
+* Add Variant Type by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1453
+* Add Dynamic Type by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1454
+* Add JSON Type by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1455
+* stdlib sql return precision for DateTime64 by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1469
+
+### Fixes 🐛 
+* [FIX] Minor updates by @barkhayot in https://github.com/ClickHouse/clickhouse-go/pull/1451
+* Fix file descriptor leak in release utility script by @fengjun2016 in https://github.com/ClickHouse/clickhouse-go/pull/1460
+* Remove forced string conversions for Tuple by @SpencerTorres in https://github.com/ClickHouse/clickhouse-go/pull/1465
+
+### Other Changes 🛠
+* [Chore] Use defer to close rows in examples by @hayotbisonai in https://github.com/ClickHouse/clickhouse-go/pull/1431
+* Regenerate certificates used in tests by @jkaflik in https://github.com/ClickHouse/clickhouse-go/pull/1441
+
+
+## New Contributors
+* @hayotbisonai made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1431
+* @barkhayot made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1451
+* @fengjun2016 made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1460
+* @SpencerTorres made their first contribution in https://github.com/ClickHouse/clickhouse-go/pull/1453
+
+**Full Changelog**: https://github.com/ClickHouse/clickhouse-go/compare/v2.30.0...v2.30.1
+
 # v2.30.0, 2024-10-16 <!-- Release notes generated using configuration in .github/release.yml at main -->
 
 ## What's Changed
@@ -732,7 +783,7 @@ This release includes a guard to prevent release from being called more than onc
 ## 2.4.2, 2022-11-24
 ### Bug Fixes
 - Don't panic on `Send()` on batch after invalid `Append`. [#830](https://github.com/ClickHouse/clickhouse-go/pull/830)
-- Fix JSON issue with `nil` if column order is inconsisent. [#824](https://github.com/ClickHouse/clickhouse-go/pull/824)
+- Fix JSON issue with `nil` if column order is inconsistent. [#824](https://github.com/ClickHouse/clickhouse-go/pull/824)
 
 ## 2.4.1, 2022-11-23
 ### Bug Fixes

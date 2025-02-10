@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.19.5
+
+* updated dependencies
+
 ## 6.19.4
 
 * added function returning details for a request

@@ -250,6 +250,7 @@ const (
 	ColumnTypePoint          ColumnType = "Point"
 	ColumnTypeInterval       ColumnType = "Interval"
 	ColumnTypeNothing        ColumnType = "Nothing"
+	ColumnTypeJSON           ColumnType = "JSON"
 )
 
 // colWrap wraps Column with type t.
