@@ -264,6 +264,13 @@ func TestAnalyzer_TotalVisitors(t *testing.T) {
 	assert.Equal(t, 1, visitors.Bounces)
 	assert.InDelta(t, 0.3333, visitors.BounceRate, 0.01)
 	assert.InDelta(t, 0, visitors.CR, 0.01)
+	visitors, err = analyzer.Visitors.Total(&Filter{
+		From:          util.PastDay(5),
+		To:            util.PastDay(5),
+		ImportedUntil: util.PastDay(4),
+		Platform:      pkg.PlatformMobile,
+	})
+	assert.NoError(t, err)
 }
 
 func TestAnalyzer_TotalUniqueVisitors(t *testing.T) {

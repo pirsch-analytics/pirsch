@@ -449,7 +449,12 @@ func (query *queryBuilder) joinImported(from string) {
 	query.whereFieldImported(FieldUTMSource.Name, query.filter.UTMSource, joinField.Name)
 	query.whereFieldImported(FieldUTMMedium.Name, query.filter.UTMMedium, joinField.Name)
 	query.whereFieldImported(FieldUTMCampaign.Name, query.filter.UTMCampaign, joinField.Name)
-	query.whereFieldPlatformImported()
+
+	if joinField == FieldPlatformDesktop ||
+		joinField == FieldPlatformMobile ||
+		joinField == FieldPlatformUnknown {
+		query.whereFieldPlatformImported()
+	}
 
 	if joinField == FieldPath {
 		query.whereFieldPathPattern()
