@@ -212,7 +212,7 @@ func getWindowsVersion(system string) string {
 		return windowsVersions[getOSVersion(system[i+1:], 1)]
 	}
 
-	return ""
+	return "11" // assume Windows 11
 }
 
 func getMacVersion(system string) string {

@@ -92,6 +92,62 @@ var userAgentsEdge = []testUserAgent{
 		os:             pkg.OSWindows,
 		osVersion:      "10",
 	},
+	{
+		ua:             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/131.0.2903.86",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSWindows,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/131.0.2903.86",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSMac,
+		osVersion:      "10.15",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; HD1913) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.49 Mobile Safari/537.36 EdgA/131.0.2903.87",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.49 Mobile Safari/537.36 EdgA/131.0.2903.87",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; Pixel 3 XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.49 Mobile Safari/537.36 EdgA/131.0.2903.87",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (Linux; Android 10; ONEPLUS A6003) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.49 Mobile Safari/537.36 EdgA/131.0.2903.87",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.0",
+		os:             pkg.OSAndroid,
+		osVersion:      "10",
+	},
+	{
+		ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 EdgiOS/131.2903.92 Mobile/15E148 Safari/605.1.15",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "131.2903",
+		os:             pkg.OSiOS,
+		osVersion:      "17.7",
+	},
+	{
+		ua:             "Mozilla/5.0 (Windows Mobile 10; Android 10.0; Microsoft; Lumia 950XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36 Edge/40.15254.603",
+		browser:        pkg.BrowserEdge,
+		browserVersion: "40.15254",
+		os:             pkg.OSWindowsMobile,
+		osVersion:      "10",
+	},
 }
 
 var userAgentsOpera = []testUserAgent{

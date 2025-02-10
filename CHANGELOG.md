@@ -2,6 +2,8 @@
 
 ## 6.19.5
 
+* updated User-Agent blacklist
+* updated OS mapping
 * fixed reading imported statistics with platform filter
 * updated dependencies
 

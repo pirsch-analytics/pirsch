@@ -2,8 +2,10 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Last update: 2024-11-25
+# Last update: 2025-02-10
 -[0-9]* *or *[0-9]*=
  *and *['"(0-9a-zA-Z]* *(=|LIKE) *['"(0-9a-zA-Z]*
 case *when.*then.*else.*end
 iif *(.*,.*,.*)
+assert\\(base64_decode\\(
+expr [0-9]* - [0-9]*
