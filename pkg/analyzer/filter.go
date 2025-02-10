@@ -205,6 +205,42 @@ func NewFilter(clientID int64) *Filter {
 	}
 }
 
+// Empty returns whether the filter has fields or not. This does not apply to the time period and options.
+func (filter *Filter) Empty() bool {
+	return len(filter.Hostname) == 0 &&
+		len(filter.Path) == 0 &&
+		len(filter.AnyPath) == 0 &&
+		len(filter.EntryPath) == 0 &&
+		len(filter.ExitPath) == 0 &&
+		len(filter.PathPattern) == 0 &&
+		len(filter.Language) == 0 &&
+		len(filter.Country) == 0 &&
+		len(filter.Region) == 0 &&
+		len(filter.City) == 0 &&
+		len(filter.Referrer) == 0 &&
+		len(filter.ReferrerName) == 0 &&
+		len(filter.Channel) == 0 &&
+		len(filter.OS) == 0 &&
+		len(filter.OSVersion) == 0 &&
+		len(filter.Browser) == 0 &&
+		len(filter.BrowserVersion) == 0 &&
+		filter.Platform == "" &&
+		len(filter.ScreenClass) == 0 &&
+		len(filter.UTMSource) == 0 &&
+		len(filter.UTMMedium) == 0 &&
+		len(filter.UTMCampaign) == 0 &&
+		len(filter.UTMContent) == 0 &&
+		len(filter.UTMTerm) == 0 &&
+		len(filter.Tags) == 0 &&
+		len(filter.Tag) == 0 &&
+		len(filter.EventName) == 0 &&
+		len(filter.EventMetaKey) == 0 &&
+		len(filter.EventMeta) == 0 &&
+		filter.VisitorID == 0 &&
+		filter.SessionID == 0 &&
+		len(filter.Search) == 0
+}
+
 // Equal returns true if the filter is equal to the argument.
 func (filter *Filter) Equal(other *Filter) bool {
 	simpleCmp := filter.ClientID == other.ClientID &&

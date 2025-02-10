@@ -285,6 +285,22 @@ func TestFilter_BuildQuery(t *testing.T) {
 	assert.Equal(t, 1, stats[0].Visitors)
 }
 
+func TestFilter_Empty(t *testing.T) {
+	a := Filter{
+		Path:      []string{"/foo", "/bar"},
+		EventName: []string{"event"},
+		EventMeta: map[string]string{
+			"foo": "bar",
+		},
+	}
+	b := Filter{
+		From: time.Now(),
+		To:   time.Now(),
+	}
+	assert.False(t, a.Empty())
+	assert.True(t, b.Empty())
+}
+
 func TestFilter_Equal(t *testing.T) {
 	a := &Filter{
 		Path:      []string{"/foo", "/bar"},

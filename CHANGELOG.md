@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.19.6
+
+* added `Empty` method to filter
+
 ## 6.19.5
 
 * updated User-Agent blacklist
@@ -15,7 +19,7 @@
 
 ## 6.19.3
 
-* added `Equal` to filter
+* added `Equal` method to filter
 * optimized funnels
 * updated referrer blacklist
 * updated User-Agent blacklist
