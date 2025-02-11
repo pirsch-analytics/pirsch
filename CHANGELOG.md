@@ -2,6 +2,8 @@
 
 ## 6.19.7
 
+* always store a page view, even if bounced
+* fixed time on page when first page is reloaded multiple times
 * updated to Go 1.24
 
 ## 6.19.6
