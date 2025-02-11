@@ -734,6 +734,48 @@ func TestTracker_PageViewChannel(t *testing.T) {
 	assert.Equal(t, "Paid Search", pageViews[1].Channel)
 }
 
+func TestTracker_PageViewSessionDurationAndTimeOnPage(t *testing.T) {
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+
+	pages := []struct {
+		path  string
+		delay time.Duration
+	}{
+		{path: "/", delay: 9},
+		{path: "/pricing", delay: 5},
+		{path: "/about", delay: 10},
+		{path: "/", delay: 7},
+		{path: "/order", delay: 0},
+	}
+
+	for _, pv := range pages {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("https://example.com/%s", pv.path), nil)
+		req.Header.Add("User-Agent", userAgent)
+		req.Header.Set("Accept-Language", "en;q=0.8, de;q=0.7, *;q=0.5")
+		req.Header.Set("Referer", "https://google.com")
+		req.RemoteAddr = "81.2.69.142"
+		tracker.PageView(req, 123, Options{})
+		time.Sleep(pv.delay * time.Second)
+	}
+
+	tracker.Flush()
+	sessions := client.GetSessions()
+	pageViews := client.GetPageViews()
+	assert.Len(t, sessions, 9)
+	assert.Len(t, pageViews, 5)
+	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
+	assert.Equal(t, uint32(31), sessions[8].DurationSeconds)
+	assert.Equal(t, uint32(0), pageViews[0].DurationSeconds)
+	assert.Equal(t, uint32(9), pageViews[1].DurationSeconds)
+	assert.Equal(t, uint32(5), pageViews[2].DurationSeconds)
+	assert.Equal(t, uint32(10), pageViews[3].DurationSeconds)
+	assert.Equal(t, uint32(7), pageViews[4].DurationSeconds)
+}
+
 func TestTracker_Event(t *testing.T) {
 	now := time.Now()
 	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)

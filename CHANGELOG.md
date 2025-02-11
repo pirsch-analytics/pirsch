@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.19.7
+
+* updated to Go 1.24
+
 ## 6.19.6
 
 * added `Empty` method to filter
