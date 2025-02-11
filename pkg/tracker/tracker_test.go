@@ -746,6 +746,7 @@ func TestTracker_PageViewSessionDurationAndTimeOnPage(t *testing.T) {
 	}{
 		{path: "/", delay: 9},
 		{path: "/pricing", delay: 5},
+		{path: "/pricing", delay: 3},
 		{path: "/about", delay: 10},
 		{path: "/", delay: 7},
 		{path: "/order", delay: 0},
@@ -764,16 +765,17 @@ func TestTracker_PageViewSessionDurationAndTimeOnPage(t *testing.T) {
 	tracker.Flush()
 	sessions := client.GetSessions()
 	pageViews := client.GetPageViews()
-	assert.Len(t, sessions, 9)
-	assert.Len(t, pageViews, 5)
+	assert.Len(t, sessions, 11)
+	assert.Len(t, pageViews, 6)
 	assert.Equal(t, sessions[0].VisitorID, pageViews[0].VisitorID)
 	assert.Equal(t, sessions[0].SessionID, pageViews[0].SessionID)
-	assert.Equal(t, uint32(31), sessions[8].DurationSeconds)
+	assert.Equal(t, uint32(34), sessions[10].DurationSeconds)
 	assert.Equal(t, uint32(0), pageViews[0].DurationSeconds)
 	assert.Equal(t, uint32(9), pageViews[1].DurationSeconds)
 	assert.Equal(t, uint32(5), pageViews[2].DurationSeconds)
-	assert.Equal(t, uint32(10), pageViews[3].DurationSeconds)
-	assert.Equal(t, uint32(7), pageViews[4].DurationSeconds)
+	assert.Equal(t, uint32(3), pageViews[3].DurationSeconds)
+	assert.Equal(t, uint32(10), pageViews[4].DurationSeconds)
+	assert.Equal(t, uint32(7), pageViews[5].DurationSeconds)
 }
 
 func TestTracker_Event(t *testing.T) {
