@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.19.8
+
+* changed required Go version back to 1.23
+
 ## 6.19.7
 
 * always store a page view, even if bounced
