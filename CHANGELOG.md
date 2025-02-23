@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.20.0
+
+* upgraded required Go version to 1.24
+* fixed storing a page view for an event if the session hasn't been created yet
+* updated dependencies
+
 ## 6.19.8
 
 * changed required Go version back to 1.23

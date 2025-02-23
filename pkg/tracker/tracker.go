@@ -157,7 +157,13 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 				}
 
 				tagKeys, tagValues := options.getTags()
-				pv := tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
+				var pv *model.PageView
+
+				// If the session is new, also store a page view for the event.
+				if cancelSession == nil {
+					pv = tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
+				}
+
 				metaKeys, metaValues := eventOptions.getMetaData(tagKeys, tagValues)
 				tracker.data <- data{
 					session:       session,
@@ -629,7 +635,6 @@ func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *mod
 	if t == event {
 		session.Time = session.Time.Add(time.Millisecond)
 		session.IsBounce = false
-		session.PageViews++
 	} else if t == pageView {
 		session.Time = now
 		session.IsBounce = session.IsBounce && path == session.ExitPath

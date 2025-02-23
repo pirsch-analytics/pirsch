@@ -18,6 +18,7 @@ const (
 	LZ4
 	LZ4HC
 	ZSTD
+	NumMethods int = iota
 )
 
 type methodEncoding byte

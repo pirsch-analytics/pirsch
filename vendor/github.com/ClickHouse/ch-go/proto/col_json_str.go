@@ -34,6 +34,8 @@ var (
 	_ Column            = (*ColJSONStr)(nil)
 	_ ColumnOf[string]  = (*ColJSONStr)(nil)
 	_ Arrayable[string] = (*ColJSONStr)(nil)
+	_ StateEncoder      = (*ColJSONStr)(nil)
+	_ StateDecoder      = (*ColJSONStr)(nil)
 )
 
 // Type returns ColumnType of JSON.
@@ -51,19 +53,18 @@ func (c *ColJSONStr) Reset() {
 	c.Str.Reset()
 }
 
+// EncodeState encodes the JSON serialization version
+func (c *ColJSONStr) EncodeState(b *Buffer) {
+	b.PutUInt64(JSONStringSerializationVersion)
+}
+
 // EncodeColumn encodes String rows to *Buffer.
 func (c ColJSONStr) EncodeColumn(b *Buffer) {
-	b.PutUInt64(JSONStringSerializationVersion)
-
 	c.Str.EncodeColumn(b)
 }
 
 // WriteColumn writes JSON rows to *Writer.
 func (c ColJSONStr) WriteColumn(w *Writer) {
-	w.ChainBuffer(func(b *Buffer) {
-		b.PutUInt64(JSONStringSerializationVersion)
-	})
-
 	c.Str.WriteColumn(w)
 }
 
@@ -92,8 +93,8 @@ func (c ColJSONStr) ForEachBytes(f func(i int, b []byte) error) error {
 	return c.Str.ForEachBytes(f)
 }
 
-// DecodeColumn decodes String rows from *Reader.
-func (c *ColJSONStr) DecodeColumn(r *Reader, rows int) error {
+// DecodeState decodes the JSON serialization version
+func (c *ColJSONStr) DecodeState(r *Reader) error {
 	jsonSerializationVersion, err := r.UInt64()
 	if err != nil {
 		return errors.Wrap(err, "failed to read json serialization version")
@@ -103,6 +104,11 @@ func (c *ColJSONStr) DecodeColumn(r *Reader, rows int) error {
 		return errors.Errorf("received invalid JSON string serialization version %d. Setting \"output_format_native_write_json_as_string\" must be enabled.", jsonSerializationVersion)
 	}
 
+	return nil
+}
+
+// DecodeColumn decodes String rows from *Reader.
+func (c *ColJSONStr) DecodeColumn(r *Reader, rows int) error {
 	return c.Str.DecodeColumn(r, rows)
 }
 

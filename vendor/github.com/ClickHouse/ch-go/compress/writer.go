@@ -11,13 +11,16 @@ import (
 )
 
 const (
-	CompressionLevelLZ4HCDefault Level = 9
-	CompressionLevelLZ4HCMax     Level = 12
+	LevelZero         Level = 0
+	LevelLZ4HCDefault Level = 9
+	LevelLZ4HCMax     Level = 12
 )
 
 // Writer encodes compressed blocks.
 type Writer struct {
 	Data []byte
+
+	method Method
 
 	lz4   *lz4.Compressor
 	lz4hc *lz4.CompressorHC
@@ -25,15 +28,15 @@ type Writer struct {
 }
 
 // Compress buf into Data.
-func (w *Writer) Compress(m Method, buf []byte) error {
+func (w *Writer) Compress(buf []byte) error {
 	maxSize := lz4.CompressBlockBound(len(buf))
 	w.Data = append(w.Data[:0], make([]byte, maxSize+headerSize)...)
 	_ = w.Data[:headerSize]
-	w.Data[hMethod] = byte(methodTable[m])
+	w.Data[hMethod] = byte(methodTable[w.method])
 
 	var n int
 
-	switch m {
+	switch w.method {
 	case LZ4:
 		compressedSize, err := w.lz4.CompressBlock(buf, w.Data[headerSize:])
 		if err != nil {
@@ -53,8 +56,12 @@ func (w *Writer) Compress(m Method, buf []byte) error {
 		n = copy(w.Data[headerSize:], buf)
 	}
 
-	w.Data = w.Data[:n+headerSize]
+	// security: https://github.com/ClickHouse/ch-go/pull/1041
+	if uint64(n)+uint64(compressHeaderSize) > math.MaxUint32 {
+		return errors.New("compressed size overflows uint32")
+	}
 
+	w.Data = w.Data[:n+headerSize]
 	binary.LittleEndian.PutUint32(w.Data[hRawSize:], uint32(n+compressHeaderSize))
 	binary.LittleEndian.PutUint32(w.Data[hDataSize:], uint32(len(buf)))
 	h := city.CH128(w.Data[hMethod:])
@@ -64,31 +71,40 @@ func (w *Writer) Compress(m Method, buf []byte) error {
 	return nil
 }
 
-func NewWriterWithLevel(l Level) *Writer {
-	w, err := zstd.NewWriter(nil,
-		zstd.WithEncoderLevel(zstd.SpeedDefault),
-		zstd.WithEncoderConcurrency(1),
-		zstd.WithLowerEncoderMem(true),
-	)
-	if err != nil {
-		panic(err)
-	}
+// NewWriter creates a new Writer with the specified compression level that supports the specified method.
+func NewWriter(l Level, m Method) *Writer {
+	var err error
+	var zstdWriter *zstd.Encoder
+	var lz4Writer *lz4.Compressor
+	var lz4hcWriter *lz4.CompressorHC
 
-	// handle level for LZ4HC
-	levelLZ4HC := l
-	if levelLZ4HC == 0 {
-		levelLZ4HC = CompressionLevelLZ4HCDefault
-	} else {
-		levelLZ4HC = Level(math.Min(float64(levelLZ4HC), float64(CompressionLevelLZ4HCMax)))
+	switch m {
+	case LZ4:
+		lz4Writer = &lz4.Compressor{}
+	case LZ4HC:
+		levelLZ4HC := l
+		if levelLZ4HC == 0 {
+			levelLZ4HC = LevelLZ4HCDefault
+		} else {
+			levelLZ4HC = Level(math.Min(float64(levelLZ4HC), float64(LevelLZ4HCMax)))
+		}
+		lz4hcWriter = &lz4.CompressorHC{Level: lz4.CompressionLevel(1 << (8 + levelLZ4HC))}
+	case ZSTD:
+		zstdWriter, err = zstd.NewWriter(nil,
+			zstd.WithEncoderLevel(zstd.SpeedDefault),
+			zstd.WithEncoderConcurrency(1),
+			zstd.WithLowerEncoderMem(true),
+		)
+		if err != nil {
+			panic(err)
+		}
+	default:
 	}
 
 	return &Writer{
-		lz4:   &lz4.Compressor{},
-		lz4hc: &lz4.CompressorHC{Level: lz4.CompressionLevel(1 << (8 + levelLZ4HC))},
-		zstd:  w,
+		method: m,
+		lz4:    lz4Writer,
+		lz4hc:  lz4hcWriter,
+		zstd:   zstdWriter,
 	}
-}
-
-func NewWriter() *Writer {
-	return NewWriterWithLevel(0)
 }
