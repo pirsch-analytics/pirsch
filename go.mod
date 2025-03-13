@@ -13,7 +13,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/net v0.35.0
+	golang.org/x/net v0.36.0
 )
 
 require (
@@ -27,7 +27,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

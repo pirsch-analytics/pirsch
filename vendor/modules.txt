@@ -76,8 +76,6 @@ github.com/klauspost/compress/internal/le
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/kr/text v0.2.0
-## explicit
 # github.com/mattn/go-sqlite3 v1.14.24
 ## explicit; go 1.19
 github.com/mattn/go-sqlite3
@@ -125,8 +123,8 @@ go.opentelemetry.io/otel/internal/attribute
 ## explicit; go 1.22.0
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
-# golang.org/x/net v0.35.0
-## explicit; go 1.18
+# golang.org/x/net v0.36.0
+## explicit; go 1.23.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
 # golang.org/x/sys v0.30.0
