@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-01-13)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-03-27)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -888,6 +888,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"guardlink.org":                        {},
 	"guidetopetersburg.com":                {},
 	"gxcb.net":                             {},
+	"hagirkblog.space":                     {},
 	"halat.xyz":                            {},
 	"halefa.com":                           {},
 	"hamyshop.xyz":                         {},
@@ -995,6 +996,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"hydrazerkalo2020.com":                 {},
 	"hyip-zanoza.me":                       {},
 	"i-spare.ru":                           {},
+	"ialgramer.shop":                       {},
 	"ib-homecredit.ru":                     {},
 	"ib-rencredit.ru":                      {},
 	"iblogpress.xyz":                       {},
@@ -1304,6 +1306,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"mikrozaim.site":                       {},
 	"mikrozaym2you.ru":                     {},
 	"minegam.com":                          {},
+	"minghaimuyuan.net":                    {},
 	"miningblack.net":                      {},
 	"mirfairytale.ru":                      {},
 	"mirobuvi.com.ua":                      {},
@@ -1391,6 +1394,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"nevapotolok.ru":                       {},
 	"newagebev.com":                        {},
 	"newbieseoblog.online":                 {},
+	"newsfj.net":                           {},
 	"newsrosprom.ru":                       {},
 	"newstaffadsshop.club":                 {},
 	"nfocusdriver.com":                     {},
@@ -1402,6 +1406,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"niuting.org":                          {},
 	"no-rx.info":                           {},
 	"nomerounddec.cf":                      {},
+	"novalskincare.net":                    {},
 	"novosti-avto.ru":                      {},
 	"novosti-hi-tech.ru":                   {},
 	"novostic.ru":                          {},
@@ -2033,6 +2038,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"truebeauty.cc":                        {},
 	"tsatu.edu.ua":                         {},
 	"tsc-koleso.ru":                        {},
+	"ttechno.net":                          {},
 	"tudusale.xyz":                         {},
 	"tuningdom.ru":                         {},
 	"tvfru.org":                            {},

@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.21.0
+
+* updated referrer blacklist
+* updated referrer mapping
+* updated dependencies
+
 ## 6.20.0
 
 * upgraded required Go version to 1.24

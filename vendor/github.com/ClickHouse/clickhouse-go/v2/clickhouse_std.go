@@ -83,15 +83,15 @@ func (o *stdConnOpener) Connect(ctx context.Context) (_ driver.Conn, err error) 
 		return nil, ErrAcquireConnNoAddress
 	}
 
-	random := rand.Int()
 	for i := range o.opt.Addr {
 		var num int
 		switch o.opt.ConnOpenStrategy {
 		case ConnOpenInOrder:
 			num = i
 		case ConnOpenRoundRobin:
-			num = (int(connID) + i) % len(o.opt.Addr)
+			num = (connID + i) % len(o.opt.Addr)
 		case ConnOpenRandom:
+			random := rand.Int()
 			num = (random + i) % len(o.opt.Addr)
 		}
 		if conn, err = dialFunc(ctx, o.opt.Addr[num], connID, o.opt); err == nil {
@@ -306,8 +306,8 @@ func (std *stdDriver) ExecContext(ctx context.Context, query string, args []driv
 	}
 
 	var err error
-	if options := queryOptions(ctx); options.async.ok {
-		err = std.conn.asyncInsert(ctx, query, options.async.wait, rebind(args)...)
+	if asyncOpt := queryOptionsAsync(ctx); asyncOpt.ok {
+		err = std.conn.asyncInsert(ctx, query, asyncOpt.wait, rebind(args)...)
 	} else {
 		err = std.conn.exec(ctx, query, rebind(args)...)
 	}
