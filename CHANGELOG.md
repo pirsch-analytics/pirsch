@@ -2,6 +2,7 @@
 
 ## 6.21.0
 
+* added search field for filter options
 * updated referrer blacklist
 * updated referrer mapping
 * updated dependencies
