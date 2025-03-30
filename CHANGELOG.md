@@ -3,6 +3,7 @@
 ## 6.21.0
 
 * added search field for filter options
+* added AI to ingore list (User-Agent only)
 * updated referrer blacklist
 * updated referrer mapping
 * updated dependencies
