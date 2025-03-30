@@ -8,7 +8,8 @@ import (
 var searchChannel,
 	socialChannel,
 	shoppingChannel,
-	videoChannel []string
+	videoChannel,
+	aiChannel []string
 
 func init() {
 	for hostname, c := range channel {
@@ -24,6 +25,9 @@ func init() {
 			break
 		case "SOURCE_CATEGORY_VIDEO":
 			videoChannel = append(videoChannel, strings.ToLower(hostname))
+			break
+		case "SOURCE_CATEGORY_AI":
+			aiChannel = append(aiChannel, strings.ToLower(hostname))
 			break
 		default:
 			panic(fmt.Sprintf("unknown channel type: %s", c))

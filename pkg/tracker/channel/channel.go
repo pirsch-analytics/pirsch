@@ -125,5 +125,9 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		return "Mobile Push Notifications"
 	}
 
+	if slices.Contains(aiChannel, referrer) || slices.Contains(aiChannel, utmSource) {
+		return "AI"
+	}
+
 	return "Direct"
 }

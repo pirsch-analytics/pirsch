@@ -953,5 +953,14 @@ var (
 		"teams.microsoft.com":              "SOURCE_CATEGORY_SOCIAL",
 		"bing,microsoft":                   "SOURCE_CATEGORY_SEARCH",
 		"teams.microsoft.com.mcas.ms":      "SOURCE_CATEGORY_SOCIAL",
+		"perplexity.ai":                    "SOURCE_CATEGORY_AI",
+		"openai.com":                       "SOURCE_CATEGORY_AI",
+		"anthropic.com":                    "SOURCE_CATEGORY_AI",
+		"bard.google.com":                  "SOURCE_CATEGORY_AI",
+		"cohere.com":                       "SOURCE_CATEGORY_AI",
+		"meta.ai":                          "SOURCE_CATEGORY_AI",
+		"ai.meta.com":                      "SOURCE_CATEGORY_AI",
+		"jasper.ai":                        "SOURCE_CATEGORY_AI",
+		"mistral.ai":                       "SOURCE_CATEGORY_AI",
 	}
 )

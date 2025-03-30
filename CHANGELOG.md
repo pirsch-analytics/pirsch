@@ -3,7 +3,8 @@
 ## 6.21.0
 
 * added search field for filter options
-* added AI to ingore list (User-Agent only)
+* added AI to ignore list (User-Agent only)
+* added traffic source channel for AI
 * updated referrer blacklist
 * updated referrer mapping
 * updated dependencies
