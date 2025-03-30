@@ -313,6 +313,8 @@ var Blacklist = []string{
 	"dazeddigital",
 	"dbpedia",
 	"dc0c3uu2ppjwyph",
+	"ddg_android",
+	"ddg_win",
 	"de.cb.netz",
 	"defender self ping",
 	"dejaclick",

@@ -669,6 +669,8 @@ fark.com
 verifier
 bruno-runtime
 oo-app
+ddg_win
+ddg_android
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

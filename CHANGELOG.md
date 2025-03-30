@@ -5,6 +5,7 @@
 * added search field for filter options
 * added AI to ignore list (User-Agent only)
 * added traffic source channel for AI
+* added DuckDuckGo browser detection
 * updated referrer blacklist
 * updated referrer mapping
 * updated dependencies

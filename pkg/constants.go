@@ -22,6 +22,9 @@ const (
 	// BrowserArc represents the Arc browser.
 	BrowserArc = "Arc"
 
+	// BrowserDuckDuckGo represents the DuckDuckGo browser.
+	BrowserDuckDuckGo = "DuckDuckGo"
+
 	// OSWindows represents the Windows operating system.
 	OSWindows = "Windows"
 

@@ -650,13 +650,50 @@ var (
 			osVersion:      "17.6",
 		},
 	}
+	userAgentsDuckDuckGo = []testUserAgent{
+		{
+			ua:             "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile DuckDuckGo/5 Safari/537.36",
+			browser:        pkg.BrowserDuckDuckGo,
+			browserVersion: "5",
+			os:             pkg.OSAndroid,
+			osVersion:      "10",
+		},
+		{
+			ua:             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 DuckDuckGo/7",
+			browser:        pkg.BrowserDuckDuckGo,
+			browserVersion: "7",
+			os:             pkg.OSiOS,
+			osVersion:      "17.5",
+		},
+		{
+			ua:             "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/132.0.0.0 DuckDuckGo/5 Safari/537.36",
+			browser:        pkg.BrowserDuckDuckGo,
+			browserVersion: "5",
+			os:             pkg.OSLinux,
+		},
+		{
+			ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 DuckDuckGo/7 Safari/605.1.15.134",
+			browser:        pkg.BrowserDuckDuckGo,
+			browserVersion: "7",
+			os:             pkg.OSMac,
+			osVersion:      "10.15",
+		},
+		{
+			ua:             "Mozilla/5.0 (iPad; CPU OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 DuckDuckGo/7 Safari/605.1.15",
+			browser:        pkg.BrowserDuckDuckGo,
+			browserVersion: "7",
+			os:             pkg.OSiOS,
+			osVersion:      "15.6",
+		},
+	}
 	userAgentsAll = mergeUserAgentLists(userAgentsEdge,
 		userAgentsOpera,
 		userAgentsFirefox,
 		userAgentsChrome,
 		userAgentsSafari,
 		userAgentsIE,
-		userAgentsArc)
+		userAgentsArc,
+		userAgentsDuckDuckGo)
 )
 
 func mergeUserAgentLists(ua ...[]testUserAgent) []testUserAgent {

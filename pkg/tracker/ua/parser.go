@@ -125,6 +125,8 @@ func getBrowser(products []string, system []string, os string) (string, string) 
 			productChrome = product
 		} else if strings.HasPrefix(product, "Safari/") {
 			productSafari = product
+		} else if strings.HasPrefix(product, "DuckDuckGo/") {
+			return pkg.BrowserDuckDuckGo, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "Arc/") || strings.HasPrefix(product, "ArcMobile2/") {
 			return pkg.BrowserArc, getProductVersion(product, 1)
 		} else if strings.HasPrefix(product, "CriOS/") {
