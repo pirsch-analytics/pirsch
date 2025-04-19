@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.21.1
+
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.21.0
 
 * added search field for filter options
