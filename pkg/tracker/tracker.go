@@ -447,7 +447,18 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
 	}
 
 	// filter for bot keywords
-	for _, botUserAgent := range ua.Blacklist {
+	browser := strings.ToLower(userAgentResult.Browser)
+
+	for _, botBrowser := range ua.BrowserBlacklist {
+		if strings.Contains(browser, botBrowser) {
+			return ua.UserAgent{
+				UserAgent: r.UserAgent(),
+			}, ipAddress, "ch-browser"
+		}
+	}
+
+	// filter for bot keywords
+	for _, botUserAgent := range ua.UserAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			return ua.UserAgent{
 				UserAgent: r.UserAgent(),
@@ -456,7 +467,7 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
 	}
 
 	// filter for bot regex
-	for _, botUserAgent := range ua.RegexBlacklist {
+	for _, botUserAgent := range ua.UserAgentRegexBlacklist {
 		if botUserAgent.MatchString(userAgent) {
 			return ua.UserAgent{
 				UserAgent: r.UserAgent(),

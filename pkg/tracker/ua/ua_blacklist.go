@@ -2,8 +2,8 @@ package ua
 
 import "regexp"
 
-// Blacklist is a list of User-Agents to ignore.
-var Blacklist = []string{
+// UserAgentBlacklist is a list of User-Agents to ignore.
+var UserAgentBlacklist = []string{
 	"!(()&&!|*|*|",
 	"${",
 	"(null)",
@@ -1325,8 +1325,8 @@ var Blacklist = []string{
 	"脝脝陆芒潞贸碌脛",
 }
 
-// RegexBlacklist is a list of User-Agents to ignore.
-var RegexBlacklist = []*regexp.Regexp{
+// UserAgentRegexBlacklist is a list of User-Agents to ignore.
+var UserAgentRegexBlacklist = []*regexp.Regexp{
 	regexp.MustCompile(" *and *['\"(0-9a-za-z]* *(=|like) *['\"(0-9a-za-z]*"),
 	regexp.MustCompile("-[0-9]* *or *[0-9]*="),
 	regexp.MustCompile("assert\\(base64_decode\\("),

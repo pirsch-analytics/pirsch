@@ -1495,7 +1495,7 @@ func TestTrackerIgnoreUserAgent(t *testing.T) {
 func TestTrackerIgnoreBotUserAgent(t *testing.T) {
 	tracker := NewTracker(Config{})
 
-	for _, botUserAgent := range ua.Blacklist {
+	for _, botUserAgent := range ua.UserAgentBlacklist {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
 		_, _, ignore := tracker.ignore(req)
@@ -1541,6 +1541,15 @@ func TestTrackerIgnoreReferrer(t *testing.T) {
 	req.Header.Set("User-Agent", userAgent)
 	_, _, ignore = tracker.ignore(req)
 	assert.Equal(t, "referrer", ignore)
+}
+
+func TestTrackerIgnoreBrowserCH(t *testing.T) {
+	tracker := NewTracker(Config{})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
+	req.Header.Set("Sec-CH-UA", `"Chromium";v="135", "Google Chrome";v="135", "HeadlessChrome";v="135", " Not;A Brand";v="99"`)
+	_, _, ignore := tracker.ignore(req)
+	assert.Equal(t, "ch-browser", ignore)
 }
 
 func TestTrackerIgnoreBrowserVersion(t *testing.T) {

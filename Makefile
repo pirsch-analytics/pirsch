@@ -1,6 +1,6 @@
 .PHONY: test deps referrer referrer_blacklist ua
 
-all: deps referrer referrer_blacklist ua test
+all: deps referrer referrer_blacklist ua browser test
 
 test:
 	go test -cover -race -p 1 github.com/pirsch-analytics/pirsch/v6/pkg/...
@@ -17,3 +17,6 @@ referrer_blacklist:
 
 ua:
 	go run scripts/update_ua_blacklist/update_ua_blacklist.go
+
+browser:
+	go run scripts/update_browser_blacklist/update_browser_blacklist.go

@@ -18,7 +18,7 @@ const (
 	uaVersionDelimiter        = '.'
 )
 
-// Parse parses the User-Agent header for given request and returns the extracted information.
+// Parse parses the User-Agent header for the given request and returns the extracted information.
 // This supports major browsers and operating systems.
 func Parse(r *http.Request) UserAgent {
 	system, products, systemFromCH, productFromCH := parse(r)
@@ -418,6 +418,11 @@ func ignoreProductString(product string) bool {
 
 func parseProductsFromCH(header string) []string {
 	productStrings := strings.Split(header, ",")
+
+	if isHeadlessCH(productStrings) {
+		return []string{"Headless", ""}
+	}
+
 	genericProduct, genericVersion := "", ""
 
 	for _, str := range productStrings {
@@ -447,6 +452,16 @@ func parseProductsFromCH(header string) []string {
 	}
 
 	return nil
+}
+
+func isHeadlessCH(productStrings []string) bool {
+	for _, str := range productStrings {
+		if strings.Contains(strings.ToLower(str), "headless") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func parseProductVersion(version string) string {
