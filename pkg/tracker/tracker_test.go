@@ -1668,6 +1668,11 @@ func TestTrackerGetScreenClass(t *testing.T) {
 	assert.Equal(t, "HD", tracker.getScreenClass(req, 0))
 	req.Header.Del("Sec-CH-Viewport-Width")
 	assert.Equal(t, "", tracker.getScreenClass(req, 0))
+	req.Header.Set("Width", "1919")
+	req.Header.Set("Viewport-Width", "1920")
+	assert.Equal(t, "HD", tracker.getScreenClass(req, 0))
+	req.Header.Del("Width")
+	assert.Equal(t, "Full HD", tracker.getScreenClass(req, 0))
 }
 
 func TestTrackerReferrerOrCampaignChanged(t *testing.T) {

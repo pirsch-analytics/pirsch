@@ -694,6 +694,14 @@ func (tracker *Tracker) getScreenClass(r *http.Request, width uint16) string {
 		}
 
 		if width == 0 {
+			width = tracker.getScreenWidthFromHeader(r, "Width")
+		}
+
+		if width == 0 {
+			width = tracker.getScreenWidthFromHeader(r, "Viewport-Width")
+		}
+
+		if width == 0 {
 			return ""
 		}
 	}
