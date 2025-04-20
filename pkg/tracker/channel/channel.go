@@ -11,7 +11,7 @@ var (
 	paidShoppingCampaignRegex = regexp.MustCompile("^(.*(([^a-df-z]|^)shop|shopping).*)$")
 	paidMediumRegex           = regexp.MustCompile("^(.*cp.*|ppc|retargeting|paid.*)$")
 	organicShoppingRegex      = regexp.MustCompile("^(.*(([^a-df-z]|^)shop|shopping).*)$")
-	emailParams               = []string{"email", "e-mail", "e_mail", "e mail"}
+	emailParams               = []string{"email", "e-mail", "e_mail", "e mail", "gmail"}
 )
 
 // Get returns the acquisition channel.
@@ -22,6 +22,8 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		referrer = u.Hostname()
 	}
 
+	referrer = strings.ToLower(referrer)
+	referrerName = strings.ToLower(referrerName)
 	utmMedium = strings.ToLower(utmMedium)
 	utmCampaign = strings.ToLower(utmCampaign)
 	utmSource = strings.ToLower(utmSource)
@@ -37,11 +39,11 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		return "Paid Shopping"
 	}
 
-	isSearchChannel := slices.Contains(searchChannel, referrer)
+	isSearchChannel := slices.Contains(searchChannel, referrer) || slices.Contains(searchChannel, referrerName)
 
 	if isSearchChannel && isPaidMedium ||
-		referrerName == "Google" && clickID == "(gclid)" ||
-		referrerName == "Bing" && clickID == "(msclkid)" {
+		referrerName == "google" && clickID == "(gclid)" ||
+		referrerName == "bing" && clickID == "(msclkid)" {
 		return "Paid Search"
 	}
 
@@ -96,6 +98,9 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		utmMedium == "link" {
 		return "Referral"
 	}
+
+	// TODO
+	// "gmail": "SOURCE_CATEGORY_EMAIL",
 
 	if slices.Contains(emailParams, referrer) ||
 		slices.Contains(emailParams, utmSource) ||

@@ -2,7 +2,10 @@
 
 ## 6.21.1
 
+* added Bluesky referrer group
+* updated and improved channel attribution list
 * updated referrer blacklist
+* fixed organic search traffic attribution
 * updated dependencies
 
 ## 6.21.0

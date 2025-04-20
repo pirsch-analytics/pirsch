@@ -517,6 +517,12 @@
 				"se.pinterest.com",
 				"sk.pinterest.com"
 			]
+		},
+		"Bluesky": {
+			"domains": [
+				"bluesky",
+				"bsky.app"
+			]
 		}
 	}
 }
