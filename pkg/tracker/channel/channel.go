@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net/url"
 	"regexp"
 	"slices"
@@ -19,7 +20,7 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 	u, err := url.Parse(referrer)
 
 	if err == nil && u.Hostname() != "" {
-		referrer = u.Hostname()
+		referrer = util.StripWWW(u.Hostname())
 	}
 
 	referrer = strings.ToLower(referrer)
@@ -99,9 +100,6 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		return "Referral"
 	}
 
-	// TODO
-	// "gmail": "SOURCE_CATEGORY_EMAIL",
-
 	if slices.Contains(emailParams, referrer) ||
 		slices.Contains(emailParams, utmSource) ||
 		slices.Contains(emailParams, utmMedium) {
@@ -130,7 +128,9 @@ func Get(referrer, referrerName, utmMedium, utmCampaign, utmSource, clickID stri
 		return "Mobile Push Notifications"
 	}
 
-	if slices.Contains(aiChannel, referrer) || slices.Contains(aiChannel, utmSource) {
+	if slices.Contains(aiChannel, referrer) ||
+		slices.Contains(aiChannel, utmSource) ||
+		slices.Contains(aiChannel, util.StripWWW(utmSource)) {
 		return "AI"
 	}
 

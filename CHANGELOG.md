@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.21.2
+
+* fixed assigning some AI referrers/sources to channel
+
 ## 6.21.1
 
 * added Bluesky referrer group

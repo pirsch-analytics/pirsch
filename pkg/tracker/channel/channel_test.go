@@ -114,6 +114,14 @@ func TestGet(t *testing.T) {
 		{channel: "AI", utmSource: "ai.meta.com"},
 		{channel: "AI", utmSource: "jasper.ai"},
 		{channel: "AI", utmSource: "mistral.ai"},
+		{channel: "AI", referrer: "https://www.perplexity.ai/"},
+		{channel: "AI", referrer: "perplexity"},
+		{channel: "AI", referrer: "chatgpt"},
+		{channel: "AI", referrer: "https://chatgpt.com/"},
+		{channel: "AI", utmSource: "www.perplexity.ai"},
+		{channel: "AI", utmSource: "chatgpt.com"},
+		{channel: "AI", utmSource: "perplexity"},
+		{channel: "AI", utmSource: "chatgpt"},
 	}
 
 	for _, d := range data {
