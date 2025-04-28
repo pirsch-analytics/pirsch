@@ -198,6 +198,11 @@ func TestParseClientHints(t *testing.T) {
 	ua = Parse(req)
 	assert.Equal(t, "Headless", ua.Browser)
 	assert.Empty(t, ua.BrowserVersion)
+	req, _ = http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
+	req.Header.Set("Sec-CH-UA", `"Not/A)Brand";v="99", "Android WebView";v="115"`)
+	ua = Parse(req)
+	assert.Equal(t, "Android WebView", ua.Browser)
 }
 
 func TestParse(t *testing.T) {

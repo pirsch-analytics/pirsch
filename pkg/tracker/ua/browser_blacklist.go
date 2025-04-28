@@ -2,7 +2,6 @@ package ua
 
 // BrowserBlacklist is a list of User-Agents to ignore.
 var BrowserBlacklist = []string{
-	"android",
 	"bitdiscovery",
 	"bot",
 	"check",

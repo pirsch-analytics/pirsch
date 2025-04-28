@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.21.3
+
+* fixed Android WebView being filtered
+
 ## 6.21.2
 
 * fixed assigning some AI referrers/sources to channel
