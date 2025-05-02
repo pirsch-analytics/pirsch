@@ -25,10 +25,10 @@ type Options struct {
 	// Referrer overrides the referrer. If set to Hostname it will be ignored.
 	Referrer string
 
-	// ScreenWidth is the screen width which will be translated to a screen class.
+	// ScreenWidth is the screen width that will be translated to a screen class.
 	ScreenWidth uint16
 
-	// ScreenHeight is the screen height which will be translated to a screen class.
+	// ScreenHeight is the screen height that will be translated to a screen class.
 	ScreenHeight uint16
 
 	// Time overrides the time the page view should be recorded for.
@@ -56,7 +56,7 @@ func (options *Options) validate(r *http.Request) {
 		}
 
 		if options.Path != "" {
-			// change path and re-assemble URL
+			// change the path and re-assemble URL
 			u.Path = options.Path
 			options.URL = u.String()
 		} else {

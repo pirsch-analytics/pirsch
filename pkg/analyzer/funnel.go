@@ -19,7 +19,7 @@ type Funnel struct {
 	store    db.Store
 }
 
-// Steps returns the funnel steps for given filter list.
+// Steps return the funnel steps for a given filter list.
 func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.FunnelStep, error) {
 	if len(filter) < minFunnelSteps {
 		return nil, errors.New("not enough steps")

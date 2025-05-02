@@ -69,7 +69,7 @@ func (options *FilterOptions) Channel(filter *Filter, search string) ([]string, 
 	return options.selectFilterOptions(filter, "channel", "session", search)
 }
 
-// Events returns all event names.
+// Events return all event names.
 func (options *FilterOptions) Events(filter *Filter, search string) ([]string, error) {
 	return options.selectFilterOptions(filter, "event_name", "event", search)
 }

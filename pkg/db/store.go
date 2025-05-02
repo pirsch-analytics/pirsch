@@ -21,10 +21,10 @@ type Store interface {
 	// SaveRequests saves given requests.
 	SaveRequests([]model.Request) error
 
-	// Session returns the last hit for given client, fingerprint, and maximum age.
+	// Session returns the last hit for a given client, fingerprint, and maximum age.
 	Session(context.Context, uint64, uint64, time.Time) (*model.Session, error)
 
-	// Count returns the number of results for given query.
+	// Count returns the number of results for a given query.
 	Count(context.Context, string, ...any) (int, error)
 
 	// SelectActiveVisitorStats selects model.ActiveVisitorStats.

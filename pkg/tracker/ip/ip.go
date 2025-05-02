@@ -7,24 +7,24 @@ import (
 )
 
 var (
-	// CFConnectingIP is an HeaderParser.
+	// CFConnectingIP is a HeaderParser.
 	// https://support.cloudflare.com/hc/en-us/articles/206776727-What-is-True-Client-IP-
 	CFConnectingIP = HeaderParser{"CF-Connecting-IP", parseXForwardedForHeader}
 
-	// TrueClientIP is an HeaderParser.
+	// TrueClientIP is a HeaderParser.
 	TrueClientIP = HeaderParser{"True-Client-IP", parseXForwardedForHeader}
 
-	// XForwardedFor is an HeaderParser.
+	// XForwardedFor is a HeaderParser.
 	XForwardedFor = HeaderParser{"X-Forwarded-For", parseXForwardedForHeader}
 
-	// Forwarded is an HeaderParser.
+	// Forwarded is a HeaderParser.
 	Forwarded = HeaderParser{"Forwarded", parseForwardedHeader}
 
-	// XRealIP is an HeaderParser.
+	// XRealIP is a HeaderParser.
 	XRealIP = HeaderParser{"X-Real-IP", parseXRealIPHeader}
 
 	// DefaultHeaderParser is a list of headers and corresponding parsers to look up the real client IP.
-	// They will be check in order, the first non-empty one will be picked,
+	// They will be checked in order, the first non-empty one will be picked,
 	// or else the remote address is selected.
 	DefaultHeaderParser = []HeaderParser{
 		CFConnectingIP,
@@ -45,7 +45,7 @@ type HeaderParser struct {
 	Parser ParseHeaderFunc
 }
 
-// Get returns the IP from given request.
+// Get returns the IP from the given request.
 // It will try to extract the real client IP from headers if possible.
 func Get(r *http.Request, parser []HeaderParser, allowed []net.IPNet) string {
 	ip := cleanIP(r.RemoteAddr)

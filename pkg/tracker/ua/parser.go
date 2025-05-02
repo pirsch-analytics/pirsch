@@ -78,7 +78,7 @@ func getOS(system []string) (string, string) {
 			strings.HasPrefix(sys, "iPad") ||
 			strings.HasPrefix(sys, "iPhone") {
 			os = pkg.OSiOS
-			version = getiOSVersion(system)
+			version = getIOSVersion(system)
 			break
 		} else if strings.HasPrefix(sys, "CrOS") {
 			os = pkg.OSChrome
@@ -233,7 +233,7 @@ func getAndroidVersion(system string) string {
 	return ""
 }
 
-func getiOSVersion(system []string) string {
+func getIOSVersion(system []string) string {
 	for _, sys := range system {
 		// CPU iPhone OS <version> like ...
 		// CPU OS <version> like ...

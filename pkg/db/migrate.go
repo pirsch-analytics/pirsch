@@ -23,7 +23,7 @@ type migration struct {
 	statements []string
 }
 
-// Migrate runs the database migration for given connection string.
+// Migrate runs the database migration for a given connection string.
 // This will use the embedded schema migration scripts.
 func Migrate(config *ClientConfig) error {
 	client, err := NewClient(config)

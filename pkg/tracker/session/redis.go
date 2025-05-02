@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
@@ -38,7 +39,7 @@ func (m *RedisMutex) Unlock() {
 	}
 }
 
-// NewRedisCache creates a new cache for given maximum age and redis connection.
+// NewRedisCache creates a new cache for a given maximum age and redis connection.
 func NewRedisCache(maxAge time.Duration, log *slog.Logger, redisOptions *redis.Options) *RedisCache {
 	if log == nil {
 		log = slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -58,7 +59,7 @@ func (cache *RedisCache) Get(clientID, fingerprint uint64, _ time.Time) *model.S
 	r, err := cache.rds.Get(context.Background(), getSessionKey(clientID, fingerprint)).Result()
 
 	if err != nil {
-		if err != redis.Nil {
+		if !errors.Is(err, redis.Nil) {
 			cache.logger.Error("error reading session from cache", "err", err)
 		}
 

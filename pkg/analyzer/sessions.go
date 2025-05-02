@@ -15,7 +15,7 @@ type Sessions struct {
 	store    db.Store
 }
 
-// List returns a list of sessions for given filter.
+// List returns a list of sessions for a given filter.
 func (sessions *Sessions) List(filter *Filter) ([]model.Session, error) {
 	filter = sessions.analyzer.getFilter(filter)
 	filter.Sample = 0

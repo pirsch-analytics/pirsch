@@ -57,7 +57,7 @@ func Ignore(r *http.Request) bool {
 	return found
 }
 
-// Get returns the referrer for given request.
+// Get returns the referrer for the given request.
 func Get(r *http.Request, ref, requestHostname string) (string, string, string) {
 	referrer := ""
 
@@ -96,7 +96,7 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 			return "", "", ""
 		}
 
-		// accept non-url referrers (from utm_source for example)
+		// accept non-url referrers (from utm_source, for example)
 		return "", strings.TrimSpace(referrer), ""
 	}
 

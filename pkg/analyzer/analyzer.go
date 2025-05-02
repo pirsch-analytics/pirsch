@@ -22,7 +22,7 @@ type Analyzer struct {
 	Funnel       Funnel
 }
 
-// NewAnalyzer returns a new Analyzer for given Store.
+// NewAnalyzer returns a new Analyzer for a given Store.
 func NewAnalyzer(store db.Store) *Analyzer {
 	analyzer := new(Analyzer)
 	analyzer.Visitors = Visitors{

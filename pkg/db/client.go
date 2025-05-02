@@ -105,7 +105,7 @@ type Client struct {
 	dev    bool
 }
 
-// NewClient returns a new client for given database connection string.
+// NewClient returns a new client for a given database connection string.
 // Pass nil for the config to use the defaults.
 func NewClient(config *ClientConfig) (*Client, error) {
 	if config == nil {

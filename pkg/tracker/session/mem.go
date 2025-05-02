@@ -21,7 +21,7 @@ type MemCache struct {
 	m           sync.RWMutex
 }
 
-// NewMemCache creates a new cache for given client and maximum size.
+// NewMemCache creates a new cache for a given client and maximum size.
 func NewMemCache(client db.Store, maxSessions int) *MemCache {
 	if maxSessions <= 0 {
 		maxSessions = defaultMaxSessions

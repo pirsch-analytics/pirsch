@@ -15,14 +15,14 @@ var (
 	ErrNoPeriodOrDay = errors.New("no period or day specified")
 )
 
-// Visitors aggregates statistics regarding visitors.
+// Visitors aggregate statistics regarding visitors.
 type Visitors struct {
 	analyzer *Analyzer
 	store    db.Store
 }
 
-// Active returns the active visitors per hostname, path, and (optional) page title and the total number of active visitors for given duration.
-// Use time.Minute*5 for example to get the active visitors for the past 5 minutes.
+// Active returns the active visitors per hostname, path, and (optional) page title and the total number of active visitors for a given duration.
+// Use time.Minute * 5, for example, to get the active visitors for the past 5 minutes.
 func (visitors *Visitors) Active(filter *Filter, duration time.Duration) ([]model.ActiveVisitorStats, int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	filter.From = time.Now().UTC().Add(-duration)
@@ -156,7 +156,7 @@ func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 	return total, nil
 }
 
-// TotalVisitorsPageViews returns the total visitor count and number of page views including the growth.
+// TotalVisitorsPageViews returns the total visitor count and number of page views, including the growth.
 func (visitors *Visitors) TotalVisitorsPageViews(filter *Filter) (*model.TotalVisitorsPageViewsStats, error) {
 	filter = visitors.analyzer.getFilter(filter)
 
@@ -352,7 +352,7 @@ func (visitors *Visitors) ByWeekdayAndHour(filter *Filter) ([]model.VisitorWeekd
 	return stats, nil
 }
 
-// Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on page (if path is set).
+// Growth returns the growth rate for visitor count, session count, bounces, views, and average session duration or average time on the page (if a path is set).
 // The growth rate is relative to the previous time range or day.
 // The period or day for the filter must be set, else an error is returned.
 func (visitors *Visitors) Growth(filter *Filter) (*model.Growth, error) {

@@ -14,7 +14,7 @@ var (
 		"QtWebEngine/",
 	}
 
-	// windowsVersions maps a Windows user agent versions to the product versions.
+	// windowsVersions maps a Windows user agent version to the product versions.
 	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
 	windowsVersions = map[string]string{
 		"5.0":  "2000",
@@ -31,7 +31,7 @@ var (
 		"CE":   "CE",
 	}
 
-	// safariVersions maps a Safari user agent versions to the product versions.
+	// safariVersions maps a Safari user agent version to the product versions.
 	// https://en.wikipedia.org/wiki/Safari_version_history
 	// https://github.com/mdn/browser-compat-data/blob/main/browsers/safari.json
 	safariVersions = map[string]string{

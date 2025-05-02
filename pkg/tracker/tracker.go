@@ -76,7 +76,7 @@ type Tracker struct {
 	stopped atomic.Bool
 }
 
-// NewTracker creates a new tracker for given client, salt and config.
+// NewTracker creates a new tracker for a given client, salt and config.
 func NewTracker(config Config) *Tracker {
 	config.validate()
 	tracker := &Tracker{

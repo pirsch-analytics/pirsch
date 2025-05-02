@@ -5,13 +5,13 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
-// Events aggregates statistics regarding events.
+// Events aggregate statistics regarding events.
 type Events struct {
 	analyzer *Analyzer
 	store    db.Store
 }
 
-// Events returns the visitor count, views, and conversion rate for custom events.
+// Events return the visitor count, views, and conversion rate for custom events.
 func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	filter = events.analyzer.getFilter(filter)
 	q, args := filter.buildQuery([]Field{
@@ -37,7 +37,7 @@ func (events *Events) Events(filter *Filter) ([]model.EventStats, error) {
 	return stats, nil
 }
 
-// Breakdown returns the visitor count, views, and conversion rate for a custom event grouping them by a meta value for given key.
+// Breakdown returns the visitor count, views, and conversion rate for a custom event grouping them by a meta-value for a given key.
 // The Filter.EventName and Filter.EventMetaKey must be set, or otherwise the result set will be empty.
 func (events *Events) Breakdown(filter *Filter) ([]model.EventStats, error) {
 	filter = events.analyzer.getFilter(filter)

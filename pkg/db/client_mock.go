@@ -45,7 +45,7 @@ func (client *ClientMock) GetPageViews() []model.PageView {
 	return data
 }
 
-// GetSessions returns a copy of the sessions slice.
+// GetSessions returns a copy of the session slice.
 func (client *ClientMock) GetSessions() []model.Session {
 	client.m.Lock()
 	defer client.m.Unlock()
@@ -77,7 +77,7 @@ func (client *ClientMock) GetEvents() []model.Event {
 	return data
 }
 
-// GetRequests returns a copy of the requests slice.
+// GetRequests returns a copy of the request slice.
 func (client *ClientMock) GetRequests() []model.Request {
 	client.m.Lock()
 	defer client.m.Unlock()

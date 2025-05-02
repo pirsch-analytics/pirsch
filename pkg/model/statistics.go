@@ -218,7 +218,7 @@ type TimeSpentStats struct {
 	AverageTimeSpentSeconds int       `db:"average_time_spent_seconds" json:"average_time_spent_seconds"`
 }
 
-// MetaStats is the base for meta result types (languages, countries, ...).
+// MetaStats is the base for meta-result types (languages, countries, ...).
 type MetaStats struct {
 	Visitors         int     `json:"visitors"`
 	RelativeVisitors float64 `db:"relative_visitors" json:"relative_visitors"`
@@ -337,7 +337,7 @@ type GrowthStats struct {
 	CustomMetricTotal float64 `db:"custom_metric_total" json:"custom_metric_total"`
 }
 
-// TotalVisitorSessionStats are the total amount of visitors, views, and sessions for a page.
+// TotalVisitorSessionStats are the total number of visitors, views, and sessions for a page.
 type TotalVisitorSessionStats struct {
 	Path     string
 	Visitors int

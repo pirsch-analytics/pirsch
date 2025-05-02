@@ -31,7 +31,7 @@ type GeoDB struct {
 	m            sync.RWMutex
 }
 
-// NewGeoDB creates a new GeoDB for given license key.
+// NewGeoDB creates a new GeoDB for a given license key.
 // The download URL is optional and will be set to the default if empty. It must contain "LICENSE_KEY" for the license key.
 func NewGeoDB(licenseKey, downloadPath, downloadURL string) (*GeoDB, error) {
 	if downloadURL == "" {
@@ -54,7 +54,7 @@ func NewGeoDB(licenseKey, downloadPath, downloadURL string) (*GeoDB, error) {
 }
 
 // GetLocation looks up the country code, subdivision (region), and city for given IP.
-// If the IP is invalid it will return an empty string.
+// If the IP is invalid, it will return an empty string.
 // The country code is returned in lowercase.
 func (db *GeoDB) GetLocation(ip string) (string, string, string) {
 	parsedIP := net.ParseIP(ip)
@@ -117,7 +117,7 @@ func (db *GeoDB) Update() error {
 	return nil
 }
 
-// UpdateFromFile updates GeoDB from given file instead of downloading the database.
+// UpdateFromFile updates GeoDB from a given file instead of downloading the database.
 func (db *GeoDB) UpdateFromFile(path string) error {
 	data, err := os.ReadFile(path)
 

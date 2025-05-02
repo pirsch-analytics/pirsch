@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Time aggregates statistics regarding the time on page and session duration.
+// Time aggregates statistics regarding the time on the page and session duration.
 type Time struct {
 	analyzer *Analyzer
 	store    db.Store
@@ -80,7 +80,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 	return stats, nil
 }
 
-// AvgTimeOnPage returns the average time on page grouped by day, week, month, or year.
+// AvgTimeOnPage returns the average time on the page grouped by day, week, month, or year.
 func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	filter = t.analyzer.getFilter(filter)
 	table := filter.table([]Field{})

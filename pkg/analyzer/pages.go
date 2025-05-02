@@ -42,12 +42,12 @@ func (pages *Pages) Hostname(filter *Filter) ([]model.HostnameStats, error) {
 	return stats, nil
 }
 
-// ByPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by hostname, path, and (optional) page title.
+// ByPath returns the visitor count, session count, bounce rate, views, and average time on the page grouped by hostname, path, and (optional) page title.
 func (pages *Pages) ByPath(filter *Filter) ([]model.PageStats, error) {
 	return pages.byPath(filter, false)
 }
 
-// ByEventPath returns the visitor count, session count, bounce rate, views, and average time on page grouped by hostname, event path, and (optional) title.
+// ByEventPath returns the visitor count, session count, bounce rate, views, and average time on the page grouped by hostname, event path, and (optional) title.
 func (pages *Pages) ByEventPath(filter *Filter) ([]model.PageStats, error) {
 	if len(filter.EventName) == 0 {
 		return []model.PageStats{}, nil
@@ -138,7 +138,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	return stats, nil
 }
 
-// Entry returns the visitor count and time on page grouped by hostname, path, and (optional) page title for the first page visited.
+// Entry returns the visitor count and time on the page grouped by hostname, path, and (optional) page title for the first page visited.
 func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	filter = pages.analyzer.getFilter(filter)
 	var sortVisitors pkg.Direction
@@ -236,7 +236,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	return stats, nil
 }
 
-// Exit returns the visitor count and time on page grouped by hostname, path, and (optional) page title for the last page visited.
+// Exit returns the visitor count and time on the page grouped by hostname, path, and (optional) page title for the last page visited.
 func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	filter = pages.analyzer.getFilter(filter)
 	var sortVisitors pkg.Direction
@@ -317,7 +317,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	return stats, nil
 }
 
-// Conversions returns the visitor count, views, conversion rate, and custom metric for conversion goals.
+// Conversions return the visitor count, views, conversion rate, and custom metric for conversion goals.
 func (pages *Pages) Conversions(filter *Filter) (*model.ConversionsStats, error) {
 	filter = pages.analyzer.getFilter(filter)
 	fields := []Field{

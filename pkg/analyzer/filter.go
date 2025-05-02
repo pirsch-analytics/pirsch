@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-// Filter are all fields that can be used to filter the result sets.
+// Filter is all fields that can be used to filter the result sets.
 // Fields can be inverted by adding a "!" in front of the string.
 // To compare to none/unknown/empty, set the value to "null" (case-insensitive).
 type Filter struct {
 	// Ctx can be used to set a timeout or to cancel queries.
 	Ctx context.Context
 
-	// ClientID is the optional.
+	// ClientID is optional.
 	ClientID int64
 
 	// Timezone sets the timezone used to interpret dates and times.
@@ -125,7 +125,7 @@ type Filter struct {
 	// EventName filters for events by their name.
 	EventName []string
 
-	// EventMetaKey filters for an event meta key.
+	// EventMetaKey filters for an event meta-key.
 	// This must be used together with an EventName.
 	EventMetaKey []string
 
@@ -166,14 +166,14 @@ type Filter struct {
 	// IncludeTitle indicates that the Analyzer.ByPath, Analyzer.Entry, and Analyzer.Exit should contain the page title.
 	IncludeTitle bool
 
-	// IncludeTimeOnPage indicates that the Analyzer.ByPath and Analyzer.Entry should contain the average time on page.
+	// IncludeTimeOnPage indicates that the Analyzer.ByPath and Analyzer.Entry should contain the average time on the page.
 	IncludeTimeOnPage bool
 
 	// IncludeCR indicates that Analyzer.Total and Analyzer.ByPeriod should contain the conversion rate.
 	IncludeCR bool
 
-	// MaxTimeOnPageSeconds is an optional maximum for the time spent on page.
-	// Visitors who are idle artificially increase the average time spent on a page, this option can be used to limit the effect.
+	// MaxTimeOnPageSeconds is an optional maximum for the time spent on a page.
+	// Visitors who are idle artificially increase the average time spent on a page; this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
 	MaxTimeOnPageSeconds int
 
@@ -185,7 +185,7 @@ type Filter struct {
 	importedTo   time.Time
 }
 
-// Search filters results by searching for the given input for given field.
+// Search filters results by searching for the given input for a given field.
 // The field needs to contain the search string and is performed case-insensitively.
 type Search struct {
 	Field Field
@@ -198,7 +198,7 @@ type Sort struct {
 	Direction pkg.Direction
 }
 
-// NewFilter creates a new filter for given client ID.
+// NewFilter creates a new filter for a given client ID.
 func NewFilter(clientID int64) *Filter {
 	return &Filter{
 		ClientID: clientID,
@@ -563,7 +563,7 @@ func (filter *Filter) validate() {
 		}
 	}
 
-	// use tomorrow instead of limiting to "today", so that all timezones are included
+	// use tomorrow instead of limiting "today", so that all timezones are included
 	tomorrow := util.Today().Add(time.Hour * 24)
 
 	if !filter.To.IsZero() && filter.To.After(tomorrow) {

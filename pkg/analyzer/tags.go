@@ -11,7 +11,7 @@ type Tags struct {
 	store    db.Store
 }
 
-// Keys returns the visitor count grouped by tag keys.
+// Keys return the visitor count grouped by tag keys.
 func (tags *Tags) Keys(filter *Filter) ([]model.TagStats, error) {
 	filter = tags.analyzer.getFilter(filter)
 	q, args := filter.buildQuery([]Field{
@@ -35,7 +35,7 @@ func (tags *Tags) Keys(filter *Filter) ([]model.TagStats, error) {
 	return stats, nil
 }
 
-// Breakdown returns the visitor count for tags grouping them by given key.
+// Breakdown returns the visitor count for tags grouping them by a given key.
 // The Filter.Tag must be set, or otherwise the result set will be empty.
 func (tags *Tags) Breakdown(filter *Filter) ([]model.TagStats, error) {
 	filter = tags.analyzer.getFilter(filter)
