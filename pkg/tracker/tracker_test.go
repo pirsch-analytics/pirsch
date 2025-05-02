@@ -1155,6 +1155,47 @@ func TestTracker_EventChannel(t *testing.T) {
 	assert.Equal(t, "Paid Search", events[1].Channel)
 }
 
+func TestTracker_EventBounced(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
+	req.Header.Add("User-Agent", userAgent)
+	req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
+	req.Header.Set("Referer", "https://google.com")
+	req.RemoteAddr = "81.2.69.142"
+	client := db.NewClientMock()
+	tracker := NewTracker(Config{
+		Store: client,
+	})
+	tracker.Event(req, 123, EventOptions{Name: "event 1"}, Options{})
+	tracker.Flush()
+	sessions := client.GetSessions()
+	events := client.GetEvents()
+	assert.Len(t, sessions, 1)
+	assert.Len(t, client.GetPageViews(), 1)
+	assert.Len(t, events, 1)
+	assert.Equal(t, sessions[0].VisitorID, events[0].VisitorID)
+	assert.Equal(t, sessions[0].SessionID, events[0].SessionID)
+	assert.Equal(t, uint16(1), sessions[0].PageViews)
+	assert.True(t, sessions[0].IsBounce)
+	tracker.Event(req, 123, EventOptions{Name: "event 2", NonInteractive: true}, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 3)
+	assert.Len(t, client.GetPageViews(), 1)
+	assert.Len(t, events, 2)
+	assert.Equal(t, uint16(1), sessions[2].PageViews)
+	assert.True(t, sessions[2].IsBounce)
+	tracker.Event(req, 123, EventOptions{Name: "event 3"}, Options{})
+	tracker.Flush()
+	sessions = client.GetSessions()
+	events = client.GetEvents()
+	assert.Len(t, sessions, 5)
+	assert.Len(t, client.GetPageViews(), 1)
+	assert.Len(t, events, 3)
+	assert.Equal(t, uint16(1), sessions[4].PageViews)
+	assert.False(t, sessions[4].IsBounce)
+}
+
 func TestTracker_ExtendSession(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "https://example.com/foo/bar?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", nil)
 	req.Header.Add("User-Agent", userAgent)

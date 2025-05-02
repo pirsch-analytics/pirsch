@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.22.0
+
+* added non-interactive events
+
 ## 6.21.3
 
 * fixed Android WebView being filtered

@@ -8,11 +8,15 @@ type EventOptions struct {
 	// Name is the name of the event (required).
 	Name string
 
-	// Duration is an optional duration that is used to calculate an average time on the dashboard.
+	// Duration is an optional duration used to calculate an average time on the dashboard.
 	Duration uint32
 
-	// Meta are optional fields used to break down the events that were send for a name.
+	// Meta are optional fields used to break down the events that were sent for a name.
 	Meta map[string]string
+
+	// NonInteractive is an optional field marking the event as non-interactive.
+	// A non-interactive event will keep the session counted as being bounced if there is a single page view.
+	NonInteractive bool
 }
 
 func (options *EventOptions) validate() {
