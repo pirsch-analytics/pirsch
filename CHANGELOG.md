@@ -4,6 +4,7 @@
 
 * added non-interactive events
 * added event meta keys to filter options
+* added browser and OS to filter options
 * removed the requirement for event to be set to filter for key/value options
 * updated dependencies
 

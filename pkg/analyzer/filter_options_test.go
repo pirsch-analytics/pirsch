@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
@@ -296,6 +297,60 @@ func TestFilterOptions_Languages(t *testing.T) {
 	assert.Len(t, utmSource, 2)
 	assert.Equal(t, "de", utmSource[0])
 	assert.Equal(t, "ja", utmSource[1])
+}
+
+func TestFilterOptions_OS(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), OS: pkg.OSLinux},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), OS: pkg.OSMac},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), OS: pkg.OSWindows},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), OS: pkg.OSWindows},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	os, err := analyzer.Options.OS(nil, "")
+	assert.NoError(t, err)
+	assert.Len(t, os, 3)
+	assert.Equal(t, pkg.OSLinux, os[0])
+	assert.Equal(t, pkg.OSMac, os[1])
+	assert.Equal(t, pkg.OSWindows, os[2])
+	os, err = analyzer.Options.OS(&Filter{From: util.PastDay(3), To: util.Today()}, "")
+	assert.NoError(t, err)
+	assert.Len(t, os, 2)
+	assert.Equal(t, pkg.OSMac, os[0])
+	assert.Equal(t, pkg.OSWindows, os[1])
+	os, err = analyzer.Options.OS(&Filter{From: util.PastDay(3), To: util.Today()}, "ma")
+	assert.NoError(t, err)
+	assert.Len(t, os, 1)
+	assert.Equal(t, pkg.OSMac, os[0])
+}
+
+func TestFilterOptions_Browser(t *testing.T) {
+	db.CleanupDB(t, dbClient)
+	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(4), Start: util.PastDay(4), Browser: pkg.BrowserFirefox},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(2), Start: util.PastDay(2), Browser: pkg.BrowserSafari},
+		{Sign: 1, VisitorID: 1, SessionID: 2, Time: util.PastDay(2), Start: util.PastDay(2), Browser: pkg.BrowserChrome},
+		{Sign: 1, VisitorID: 1, SessionID: 1, Time: util.PastDay(1), Start: util.PastDay(1), Browser: pkg.BrowserChrome},
+	}))
+	time.Sleep(time.Millisecond * 100)
+	analyzer := NewAnalyzer(dbClient)
+	browser, err := analyzer.Options.Browser(nil, "")
+	assert.NoError(t, err)
+	assert.Len(t, browser, 3)
+	assert.Equal(t, pkg.BrowserChrome, browser[0])
+	assert.Equal(t, pkg.BrowserFirefox, browser[1])
+	assert.Equal(t, pkg.BrowserSafari, browser[2])
+	browser, err = analyzer.Options.Browser(&Filter{From: util.PastDay(3), To: util.Today()}, "")
+	assert.NoError(t, err)
+	assert.Len(t, browser, 2)
+	assert.Equal(t, pkg.BrowserChrome, browser[0])
+	assert.Equal(t, pkg.BrowserSafari, browser[1])
+	browser, err = analyzer.Options.Browser(&Filter{From: util.PastDay(3), To: util.Today()}, "saf")
+	assert.NoError(t, err)
+	assert.Len(t, browser, 1)
+	assert.Equal(t, pkg.BrowserSafari, browser[0])
 }
 
 func TestFilterOptions_EventMetadataKeys(t *testing.T) {

@@ -94,6 +94,16 @@ func (options *FilterOptions) Languages(filter *Filter, search string) ([]string
 	return options.selectFilterOptions(filter, "language", "session", search)
 }
 
+// OS returns all operating systems.
+func (options *FilterOptions) OS(filter *Filter, search string) ([]string, error) {
+	return options.selectFilterOptions(filter, "os", "session", search)
+}
+
+// Browser returns all browsers.
+func (options *FilterOptions) Browser(filter *Filter, search string) ([]string, error) {
+	return options.selectFilterOptions(filter, "browser", "session", search)
+}
+
 // EventMetadataKeys returns all metadata keys.
 func (options *FilterOptions) EventMetadataKeys(filter *Filter, search string) ([]string, error) {
 	if filter == nil {
