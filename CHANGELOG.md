@@ -4,6 +4,7 @@
 
 * added non-interactive events
 * added event meta keys to filter options
+* updated dependencies
 
 ## 6.21.3
 
