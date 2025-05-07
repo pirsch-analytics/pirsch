@@ -140,7 +140,8 @@ func (options *FilterOptions) EventMetadataValues(filter *Filter, search string)
 	timeQuery, args := filter.buildTimeQuery()
 	builder := queryBuilder{
 		filter: &Filter{
-			EventName: filter.EventName,
+			EventName:    filter.EventName,
+			EventMetaKey: filter.EventMetaKey,
 		},
 		from:   events,
 		fields: []Field{FieldEventName},

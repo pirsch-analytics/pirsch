@@ -392,6 +392,13 @@ func TestFilterOptions_EventMetadataValues(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, options, 1)
 	assert.Equal(t, "val2", options[0])
+	options, err = analyzer.Options.EventMetadataValues(&Filter{
+		EventMetaKey: []string{"key2"},
+	}, "")
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
+	assert.Equal(t, "val1", options[0])
+	assert.Equal(t, "val3", options[1])
 }
 
 func TestFilterOptions_TagKeys(t *testing.T) {
