@@ -3,6 +3,7 @@
 ## 6.22.0
 
 * added non-interactive events
+* added event meta keys to filter options
 
 ## 6.21.3
 

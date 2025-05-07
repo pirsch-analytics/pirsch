@@ -94,7 +94,44 @@ func (options *FilterOptions) Languages(filter *Filter, search string) ([]string
 	return options.selectFilterOptions(filter, "language", "session", search)
 }
 
+// EventMetadataKeys returns all metadata keys.
+// The event name must be set in the filter.
+func (options *FilterOptions) EventMetadataKeys(filter *Filter, search string) ([]string, error) {
+	if filter == nil || len(filter.EventName) == 0 {
+		return []string{}, nil
+	}
+
+	filter = options.analyzer.getFilter(filter)
+	search = strings.TrimSpace(search)
+	timeQuery, args := filter.buildTimeQuery()
+	builder := queryBuilder{
+		filter: &Filter{
+			EventName: filter.EventName,
+		},
+		from:   events,
+		fields: []Field{FieldEventName},
+	}
+	builder.whereFields()
+	args = append(args, builder.args...)
+	searchQuery := ""
+
+	if search != "" {
+		searchQuery = `AND "keys" ILIKE ? `
+		args = append(args, fmt.Sprintf("%%%s%%", search))
+	}
+
+	q := fmt.Sprintf(`SELECT DISTINCT arrayJoin(event_meta_keys) AS "keys"
+		FROM event
+		%s
+		AND length(event_meta_keys) > 0
+		%s %s
+		ORDER BY "keys" ASC
+		LIMIT %d`, timeQuery, builder.q.String(), searchQuery, maxOptions)
+	return options.store.SelectOptions(filter.Ctx, q, args...)
+}
+
 // EventMetadataValues returns all metadata values.
+// The event name must be set in the filter.
 func (options *FilterOptions) EventMetadataValues(filter *Filter, search string) ([]string, error) {
 	if filter == nil || len(filter.EventName) == 0 {
 		return []string{}, nil
