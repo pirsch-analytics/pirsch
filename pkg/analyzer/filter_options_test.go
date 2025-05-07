@@ -312,6 +312,15 @@ func TestFilterOptions_EventMetadataKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, options, 0)
 	options, err = analyzer.Options.EventMetadataKeys(&Filter{
+		From: util.PastDay(3),
+		To:   util.Today(),
+	}, "")
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "key0", options[0])
+	assert.Equal(t, "key1", options[1])
+	assert.Equal(t, "key2", options[2])
+	options, err = analyzer.Options.EventMetadataKeys(&Filter{
 		From:      util.PastDay(3),
 		To:        util.Today(),
 		EventName: []string{"event0", "event1", "event2", "event3"},
@@ -350,6 +359,15 @@ func TestFilterOptions_EventMetadataValues(t *testing.T) {
 	options, err := analyzer.Options.EventMetadataValues(nil, "")
 	assert.NoError(t, err)
 	assert.Len(t, options, 0)
+	options, err = analyzer.Options.EventMetadataValues(&Filter{
+		From: util.PastDay(3),
+		To:   util.Today(),
+	}, "")
+	assert.NoError(t, err)
+	assert.Len(t, options, 3)
+	assert.Equal(t, "val1", options[0])
+	assert.Equal(t, "val2", options[1])
+	assert.Equal(t, "val3", options[2])
 	options, err = analyzer.Options.EventMetadataValues(&Filter{
 		From:      util.PastDay(3),
 		To:        util.Today(),

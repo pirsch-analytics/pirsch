@@ -95,9 +95,8 @@ func (options *FilterOptions) Languages(filter *Filter, search string) ([]string
 }
 
 // EventMetadataKeys returns all metadata keys.
-// The event name must be set in the filter.
 func (options *FilterOptions) EventMetadataKeys(filter *Filter, search string) ([]string, error) {
-	if filter == nil || len(filter.EventName) == 0 {
+	if filter == nil {
 		return []string{}, nil
 	}
 
@@ -131,9 +130,8 @@ func (options *FilterOptions) EventMetadataKeys(filter *Filter, search string) (
 }
 
 // EventMetadataValues returns all metadata values.
-// The event name must be set in the filter.
 func (options *FilterOptions) EventMetadataValues(filter *Filter, search string) ([]string, error) {
-	if filter == nil || len(filter.EventName) == 0 {
+	if filter == nil {
 		return []string{}, nil
 	}
 
