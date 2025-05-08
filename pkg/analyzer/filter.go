@@ -972,6 +972,7 @@ func (filter *Filter) joinUniqueVisitorsByPeriod(fields []Field) *queryBuilder {
 				To:          filter.To,
 				Period:      filter.Period,
 				IncludeTime: filter.IncludeTime,
+				WeekdayMode: filter.WeekdayMode,
 			},
 			fields:  []Field{groupBy, FieldVisitorsRaw},
 			from:    sessions,
