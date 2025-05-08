@@ -108,6 +108,16 @@ func TestAnalyzer_AvgSessionDurationPeriod(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, stats, 1)
 	assert.Equal(t, (28+5+35+2+10+12)/6, stats[0].AverageTimeSpentSeconds)
+	assert.Equal(t, time.Date(2023, 9, 25, 0, 0, 0, 0, time.UTC), stats[0].Week.Time)
+	stats, err = analyzer.Time.AvgSessionDuration(&Filter{
+		From:        time.Date(2023, 9, 25, 0, 0, 0, 0, time.UTC),
+		To:          time.Date(2023, 9, 28, 0, 0, 0, 0, time.UTC),
+		Period:      pkg.PeriodWeek,
+		WeekdayMode: WeekdaySunday,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, stats, 1)
+	assert.Equal(t, time.Date(2023, 9, 24, 0, 0, 0, 0, time.UTC), stats[0].Week.Time)
 }
 
 func TestAnalyzer_AvgSessionDurationTz(t *testing.T) {
@@ -337,6 +347,26 @@ func TestAnalyzer_AvgTimeOnPage(t *testing.T) {
 	assert.Equal(t, 4, byDay[1].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[2].AverageTimeSpentSeconds)
 	assert.Equal(t, 0, byDay[3].AverageTimeSpentSeconds)
+	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
+		From:   time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
+		To:     time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:    []string{"!author"},
+		Period: pkg.PeriodWeek,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 2)
+	assert.Equal(t, time.Date(2023, 10, 16, 0, 0, 0, 0, time.UTC), byDay[0].Week.Time)
+	assert.Equal(t, time.Date(2023, 10, 23, 0, 0, 0, 0, time.UTC), byDay[1].Week.Time)
+	byDay, err = analyzer.Time.AvgTimeOnPage(&Filter{
+		From:        time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC),
+		To:          time.Date(2023, 10, 25, 0, 0, 0, 0, time.UTC),
+		Tag:         []string{"!author"},
+		Period:      pkg.PeriodWeek,
+		WeekdayMode: WeekdaySunday,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, byDay, 1)
+	assert.Equal(t, time.Date(2023, 10, 22, 0, 0, 0, 0, time.UTC), byDay[0].Week.Time)
 	_, err = analyzer.Time.AvgTimeOnPage(getMaxFilter(""))
 	assert.NoError(t, err)
 	_, err = analyzer.Time.AvgTimeOnPage(getMaxFilter("event"))

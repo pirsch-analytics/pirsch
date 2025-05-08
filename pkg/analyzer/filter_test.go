@@ -18,6 +18,7 @@ func TestFilter_Validate(t *testing.T) {
 	assert.Equal(t, time.UTC, filter.Timezone)
 	assert.Zero(t, filter.From)
 	assert.Zero(t, filter.To)
+	assert.Equal(t, WeekdayMonday, filter.WeekdayMode)
 	filter = &Filter{From: util.PastDay(2), To: util.PastDay(5), Limit: 42}
 	filter.validate()
 	assert.Equal(t, util.PastDay(5), filter.From)

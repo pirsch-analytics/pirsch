@@ -29,7 +29,7 @@ func (t *Time) AvgSessionDuration(filter *Filter) ([]model.TimeSpentStats, error
 		search: filter.Search,
 	}
 	var query strings.Builder
-	t.selectAvgTimeSpentPeriod(filter.Period, &query)
+	t.selectAvgTimeSpentPeriod(filter.Period, &query, filter.WeekdayMode)
 	query.WriteString(fmt.Sprintf(`SELECT "day", round(avg(duration)) average_time_spent_seconds
 		FROM (
 			SELECT toDate(time, '%s') "day", sum(duration_seconds*sign)/sum(sign) duration
@@ -95,7 +95,7 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 		search: filter.Search,
 	}
 	var query strings.Builder
-	t.selectAvgTimeSpentPeriod(filter.Period, &query)
+	t.selectAvgTimeSpentPeriod(filter.Period, &query, filter.WeekdayMode)
 	fields := q.getFields()
 	filterFields := strings.Join(fields, ",")
 
@@ -143,11 +143,11 @@ func (t *Time) AvgTimeOnPage(filter *Filter) ([]model.TimeSpentStats, error) {
 	return stats, nil
 }
 
-func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builder) {
+func (t *Time) selectAvgTimeSpentPeriod(period pkg.Period, query *strings.Builder, weekdayMode WeekdayMode) {
 	if period != pkg.PeriodDay {
 		switch period {
 		case pkg.PeriodWeek:
-			query.WriteString(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfWeek("day", 1) week FROM (`)
+			query.WriteString(fmt.Sprintf(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfWeek("day", %d) week FROM (`, weekdayMode))
 		case pkg.PeriodMonth:
 			query.WriteString(`SELECT round(avg(average_time_spent_seconds)) average_time_spent_seconds, toStartOfMonth("day") month FROM (`)
 		case pkg.PeriodYear:

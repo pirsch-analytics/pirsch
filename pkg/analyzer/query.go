@@ -191,7 +191,11 @@ func (query *queryBuilder) selectFields() bool {
 				if includeImported {
 					withTz = query.selectField(query.fields[i])
 				} else {
-					withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())
+					if query.fields[i] == FieldWeekday {
+						withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.WeekdayMode, query.filter.Timezone.String())
+					} else {
+						withTz = fmt.Sprintf(query.selectField(query.fields[i]), query.filter.Timezone.String())
+					}
 				}
 
 				if query.filter.Period != pkg.PeriodDay && query.fields[i] == FieldDay {
@@ -209,7 +213,7 @@ func (query *queryBuilder) selectFields() bool {
 					} else {
 						switch query.filter.Period {
 						case pkg.PeriodWeek:
-							q.WriteString(fmt.Sprintf("toStartOfWeek(%s, 1) week,", withTz))
+							q.WriteString(fmt.Sprintf("toStartOfWeek(%s, %d) week,", withTz, query.filter.WeekdayMode))
 						case pkg.PeriodMonth:
 							q.WriteString(fmt.Sprintf("toStartOfMonth(%s) month,", withTz))
 						case pkg.PeriodYear:
@@ -413,7 +417,7 @@ func (query *queryBuilder) joinImported(from string) {
 			if query.filter.Period != pkg.PeriodDay && field == FieldDay {
 				switch query.filter.Period {
 				case pkg.PeriodWeek:
-					fields = append(fields, "toStartOfWeek(date, 1) week")
+					fields = append(fields, fmt.Sprintf("toStartOfWeek(date, %d) week", query.filter.WeekdayMode))
 				case pkg.PeriodMonth:
 					fields = append(fields, "toStartOfMonth(date) month")
 				case pkg.PeriodYear:
@@ -1063,7 +1067,7 @@ func (query *queryBuilder) withFill() string {
 		case pkg.PeriodDay:
 			q = "WITH FILL FROM toDate(?) TO toDate(?)+1 STEP INTERVAL 1 DAY "
 		case pkg.PeriodWeek:
-			q = "WITH FILL FROM toStartOfWeek(toDate(?), 1) TO toDate(?)+1 STEP INTERVAL 1 WEEK "
+			q = fmt.Sprintf("WITH FILL FROM toStartOfWeek(toDate(?), %d) TO toDate(?)+1 STEP INTERVAL 1 WEEK ", query.filter.WeekdayMode)
 		case pkg.PeriodMonth:
 			q = "WITH FILL FROM toStartOfMonth(toDate(?)) TO toDate(?)+1 STEP INTERVAL 1 MONTH "
 		case pkg.PeriodYear:

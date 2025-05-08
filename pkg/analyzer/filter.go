@@ -172,6 +172,8 @@ type Filter struct {
 	// IncludeCR indicates that Analyzer.Total and Analyzer.ByPeriod should contain the conversion rate.
 	IncludeCR bool
 
+	WeekdayMode WeekdayMode
+
 	// MaxTimeOnPageSeconds is an optional maximum for the time spent on a page.
 	// Visitors who are idle artificially increase the average time spent on a page; this option can be used to limit the effect.
 	// Set to 0 to disable this option (default).
@@ -197,6 +199,14 @@ type Sort struct {
 	Field     Field
 	Direction pkg.Direction
 }
+
+// WeekdayMode sets the start day of the week (WeekdayMonday or WeekdaySunday).
+type WeekdayMode int
+
+var (
+	WeekdayMonday WeekdayMode = 1
+	WeekdaySunday WeekdayMode = 2
+)
 
 // NewFilter creates a new filter for a given client ID.
 func NewFilter(clientID int64) *Filter {
@@ -590,6 +600,10 @@ func (filter *Filter) validate() {
 		filter.CustomMetricType != pkg.CustomMetricTypeInteger &&
 		filter.CustomMetricType != pkg.CustomMetricTypeFloat {
 		filter.CustomMetricType = ""
+	}
+
+	if filter.WeekdayMode != WeekdayMonday && filter.WeekdayMode != WeekdaySunday {
+		filter.WeekdayMode = WeekdayMonday
 	}
 
 	filter.Country = filter.removeDuplicates(filter.Country)
