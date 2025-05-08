@@ -172,6 +172,7 @@ type Filter struct {
 	// IncludeCR indicates that Analyzer.Total and Analyzer.ByPeriod should contain the conversion rate.
 	IncludeCR bool
 
+	// WeekdayMode sets the start day of the week (WeekdayMonday or WeekdaySunday).
 	WeekdayMode WeekdayMode
 
 	// MaxTimeOnPageSeconds is an optional maximum for the time spent on a page.
