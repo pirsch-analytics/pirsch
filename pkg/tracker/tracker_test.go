@@ -1613,7 +1613,7 @@ func TestTrackerIgnoreIP(t *testing.T) {
 	filter := ip.NewUdger("", "", "")
 	filter.Update([]string{"90.154.29.38"}, []string{}, []string{}, []string{}, []ip.Range{}, []ip.Range{})
 	tracker := NewTracker(Config{
-		IPFilter: filter,
+		IPFilter: []ip.Filter{filter},
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)

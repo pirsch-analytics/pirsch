@@ -475,10 +475,14 @@ func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
 		}
 	}
 
-	if tracker.config.IPFilter != nil && tracker.config.IPFilter.Ignore(ipAddress) {
-		return ua.UserAgent{
-			UserAgent: r.UserAgent(),
-		}, ipAddress, "ip"
+	if len(tracker.config.IPFilter) > 0 {
+		for _, filter := range tracker.config.IPFilter {
+			if filter.Ignore(ipAddress) {
+				return ua.UserAgent{
+					UserAgent: r.UserAgent(),
+				}, ipAddress, "ip"
+			}
+		}
 	}
 
 	return userAgentResult, ipAddress, ""

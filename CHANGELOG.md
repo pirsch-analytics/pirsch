@@ -6,6 +6,7 @@
 * added event meta keys to filter options
 * added browser and OS to filter options
 * added weekday mode configuration to filter
+* added the option to add multiple IP address filters
 * removed the requirement for event to be set to filter for key/value options
 * updated dependencies
 

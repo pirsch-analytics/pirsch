@@ -34,7 +34,7 @@ type Config struct {
 	AllowedProxySubnets []net.IPNet
 	MaxPageViews        uint16
 	GeoDB               *geodb.GeoDB
-	IPFilter            ip.Filter
+	IPFilter            []ip.Filter
 	LogIP               bool
 	Logger              *slog.Logger
 }
