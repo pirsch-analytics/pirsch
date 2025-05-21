@@ -365,6 +365,7 @@ const (
 	ErrTooManyRowsOrBytes                           Error = 396
 	ErrQueryIsNotSupportedInMaterializedView        Error = 397
 	ErrCannotParseDomainValueFromString             Error = 441
+	ErrAccessEntityNotFound                         Error = 492
 	ErrKeeperException                              Error = 999
 	ErrPocoException                                Error = 1000
 	ErrStdException                                 Error = 1001
