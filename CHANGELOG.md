@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.22.1
+
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.22.0
 
 * added non-interactive events

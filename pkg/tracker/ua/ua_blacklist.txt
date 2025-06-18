@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Custom (last update: 2025-04-19)
+# Custom (last update: 2025-06-18)
 ://
 bot
 crawler
@@ -694,6 +694,17 @@ adwords
 libreoffice
 denylistedbackend
 schannel
+internet suite
+summergo
+popilla
+medhub
+betterdoc
+conservative
+insider-gaming
+pocketexporter
+stripe
+webhook
+vsj69qr5eb8uzvtqzkko1th5iy
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

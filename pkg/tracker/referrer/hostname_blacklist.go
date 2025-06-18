@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-03-27)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-06-18)
 	"0-0.fr":                               {},
 	"01casino-x.ru":                        {},
 	"033nachtvandeliteratuur.nl":           {},
@@ -133,6 +133,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"alertomall.xyz":                       {},
 	"alexsander.ch":                        {},
 	"alfabot.xyz":                          {},
+	"alguiblog.online":                     {},
 	"alibestsale.com":                      {},
 	"aliexsale.ru":                         {},
 	"alinabaniecka.pl":                     {},
@@ -1294,6 +1295,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"metallo-konstruktsii.ru":              {},
 	"metallosajding.ru":                    {},
 	"meteocast.net":                        {},
+	"meuikcr.online":                       {},
 	"mhp.su":                               {},
 	"mhrdmall.xyz":                         {},
 	"miaxxx.com":                           {},
@@ -1817,6 +1819,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"skinali.com":                          {},
 	"skinali.photo-clip.ru":                {},
 	"sladkoevideo.com":                     {},
+	"slashpet.com":                         {},
 	"sledstvie-veli.net":                   {},
 	"slftsdybbg.ru":                        {},
 	"slkrm.ru":                             {},

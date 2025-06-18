@@ -6,7 +6,7 @@
 // not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -21,18 +21,13 @@ import (
 	"context"
 )
 
-func (h *httpConnect) exec(ctx context.Context, query string, args ...any) error {
-	options := queryOptions(ctx)
-	query, err := bindQueryOrAppendParameters(true, &options, query, h.handshake.Timezone, args...)
-	if err != nil {
-		return err
-	}
+// jwtAuthMarker is the marker for JSON Web Token authentication in ClickHouse Cloud.
+// At the protocol level this is used in place of a username.
+const jwtAuthMarker = " JWT AUTHENTICATION "
 
-	res, err := h.sendQuery(ctx, query, &options, nil)
-	if err != nil {
-		return err
-	}
-	defer discardAndClose(res.Body)
+type GetJWTFunc = func(ctx context.Context) (string, error)
 
-	return nil
+// useJWTAuth returns true if the client should use JWT auth
+func useJWTAuth(opt *Options) bool {
+	return opt.GetJWT != nil
 }
