@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"io"
 	"log"
 	"net"
@@ -356,6 +357,16 @@ func (c *connect) sendData(block *proto.Block, name string) error {
 	return nil
 }
 
+func serverVersionToContext(v ServerVersion) column.ServerContext {
+	return column.ServerContext{
+		Revision:     v.Revision,
+		VersionMajor: v.Version.Major,
+		VersionMinor: v.Version.Minor,
+		VersionPatch: v.Version.Patch,
+		Timezone:     v.Timezone,
+	}
+}
+
 func (c *connect) readData(ctx context.Context, packet byte, compressible bool) (*proto.Block, error) {
 	if c.isClosed() {
 		err := errors.New("attempted reading on closed connection")
@@ -385,7 +396,9 @@ func (c *connect) readData(ctx context.Context, packet byte, compressible bool) 
 		location = userLocation
 	}
 
-	block := proto.Block{Timezone: location}
+	serverContext := serverVersionToContext(c.server)
+	serverContext.Timezone = location
+	block := proto.Block{ServerContext: &serverContext}
 	if err := block.Decode(c.reader, c.revision); err != nil {
 		c.debugf("[read data] decode error: %v", err)
 		return nil, err
@@ -417,5 +430,38 @@ func (c *connect) flush() error {
 	}
 
 	c.buffer.Reset()
+	return nil
+}
+
+// startReadWriteTimeout applies the configured read timeout to conn.
+// If a context deadline is provided, a read and write deadline is set.
+// This should be matched with a deferred call to clearReadWriteTimeout.
+func (c *connect) startReadWriteTimeout(ctx context.Context) error {
+	err := c.conn.SetReadDeadline(time.Now().Add(c.readTimeout))
+	if err != nil {
+		return err
+	}
+
+	// context level deadlines override configured read timeout
+	if deadline, ok := ctx.Deadline(); ok {
+		return c.conn.SetDeadline(deadline)
+	}
+
+	return nil
+}
+
+// clearReadWriteTimeout removes the read timeout from conn.
+// If a context deadline is provided, the read and write timeout is cleared too.
+func (c *connect) clearReadWriteTimeout(ctx context.Context) error {
+	err := c.conn.SetReadDeadline(time.Time{})
+	if err != nil {
+		return err
+	}
+
+	// context level deadlines should clear read + write deadlines.
+	if _, ok := ctx.Deadline(); ok {
+		return c.conn.SetDeadline(time.Time{})
+	}
+
 	return nil
 }

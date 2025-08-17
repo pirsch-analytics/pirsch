@@ -1,8 +1,8 @@
 # This file contains all substrings (in lowercase) used to filter the referrer header.
 # Please add the reference in case you copy an existing list.
-# Don't forget to update the array by running scripts/update_referrer_blacklist/update_referrer_blacklist.go!
+# Remember to update the array by running scripts/update_referrer_blacklist/update_referrer_blacklist.go!
 
-# Custom (last update: 2024-09-05)
+# Custom (last update: 2025-08-17)
 select(
 from(
 sleep(
@@ -18,3 +18,6 @@ while (
 " xor "
 pg_sleep
 sysdate
+content-type
+/bin/cat
+/etc/passwd

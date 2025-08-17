@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Custom (last update: 2025-06-18)
+# Custom (last update: 2025-08-17)
 ://
 bot
 crawler
@@ -705,6 +705,33 @@ pocketexporter
 stripe
 webhook
 vsj69qr5eb8uzvtqzkko1th5iy
+grabyapi
+content extractor
+secweb
+sectxt
+protocoldb
+parakeet
+explosivelinkdiscovery
+bookmark
+a.r.c. scribe
+chatgpt
+markitdown
+zed/
+google-conversion-service
+isspinofficemobile
+rcsandrd
+next.js
+middleware
+appadviceapp
+link_cek
+example_android_app
+domain-verification
+ortc.me
+citysmecontacts
+contact@example.com
+branddiscovery
+redteam
+fullpathhunter
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

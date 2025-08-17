@@ -3,22 +3,22 @@ module github.com/pirsch-analytics/pirsch/v6
 go 1.24
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.37.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.40.1
 	github.com/dchest/siphash v1.2.3
-	github.com/emvi/iso-639-1 v1.1.0
+	github.com/emvi/iso-639-1 v1.1.1
 	github.com/emvi/null v1.3.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.43.0
 )
 
 require (
-	github.com/ClickHouse/ch-go v0.66.0 // indirect
-	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/ClickHouse/ch-go v0.67.0 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -34,8 +34,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	go.opentelemetry.io/otel v1.36.0 // indirect
-	go.opentelemetry.io/otel/trace v1.36.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	go.opentelemetry.io/otel v1.37.0 // indirect
+	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
