@@ -1431,24 +1431,24 @@ func TestTrackerIgnorePrefetch(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Add("User-Agent", userAgent)
 	req.Header.Set("X-Moz", "prefetch")
-	_, _, ignore := tracker.ignore(req)
+	_, _, ignore := tracker.ignore(req, Options{})
 	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("X-Moz")
 	req.Header.Set("X-Purpose", "prefetch")
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "prefetch", ignore)
 	req.Header.Set("X-Purpose", "preview")
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("X-Purpose")
 	req.Header.Set("Purpose", "prefetch")
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "prefetch", ignore)
 	req.Header.Set("Purpose", "preview")
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "prefetch", ignore)
 	req.Header.Del("Purpose")
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Empty(t, ignore)
 }
 
@@ -1528,7 +1528,7 @@ func TestTrackerIgnoreUserAgent(t *testing.T) {
 
 	for _, userAgent := range userAgents {
 		req.Header.Set("User-Agent", userAgent.userAgent)
-		_, _, ignore := tracker.ignore(req)
+		_, _, ignore := tracker.ignore(req, Options{})
 		assert.Equal(t, userAgent.ignore, ignore, userAgent.userAgent)
 	}
 }
@@ -1539,7 +1539,7 @@ func TestTrackerIgnoreBotUserAgent(t *testing.T) {
 	for _, botUserAgent := range ua.UserAgentBlacklist {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
-		_, _, ignore := tracker.ignore(req)
+		_, _, ignore := tracker.ignore(req, Options{})
 		assert.NotEmpty(t, ignore, botUserAgent)
 	}
 
@@ -1558,7 +1558,7 @@ func TestTrackerIgnoreBotUserAgent(t *testing.T) {
 	for _, userAgent := range botUserAgent {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", userAgent)
-		_, _, ignore := tracker.ignore(req)
+		_, _, ignore := tracker.ignore(req, Options{})
 		assert.NotEmpty(t, ignore, botUserAgent)
 	}
 }
@@ -1569,18 +1569,18 @@ func TestTrackerIgnoreReferrer(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Referer", hostname)
-	_, _, ignore := tracker.ignore(req)
+	_, _, ignore := tracker.ignore(req, Options{})
 	assert.Equal(t, "referrer", ignore)
 	req.Header.Set("Referer", fmt.Sprintf("subdomain.%s", hostname))
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "referrer", ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
 	req.Header.Set("User-Agent", userAgent)
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "referrer", ignore)
 	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?ref=%s", hostname), nil)
 	req.Header.Set("User-Agent", userAgent)
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "referrer", ignore)
 }
 
@@ -1589,11 +1589,11 @@ func TestTrackerIgnoreBrowserCH(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
 	req.Header.Set("Sec-CH-UA", `"Chromium";v="135", "Google Chrome";v="135", "HeadlessChrome";v="135", " Not;A Brand";v="99"`)
-	_, _, ignore := tracker.ignore(req)
+	_, _, ignore := tracker.ignore(req, Options{})
 	assert.Equal(t, "ch-browser", ignore)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
 	req.Header.Set("Sec-CH-UA", `"Android WebView";v="135", " Not;A Brand";v="99"`)
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Empty(t, ignore)
 }
 
@@ -1601,11 +1601,11 @@ func TestTrackerIgnoreBrowserVersion(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.4147.135 Safari/537.36")
-	_, _, ignore := tracker.ignore(req)
+	_, _, ignore := tracker.ignore(req, Options{})
 	assert.Equal(t, "browser", ignore)
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Empty(t, ignore)
 }
 
@@ -1617,10 +1617,10 @@ func TestTrackerIgnoreIP(t *testing.T) {
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", userAgent)
-	_, _, ignore := tracker.ignore(req)
+	_, _, ignore := tracker.ignore(req, Options{})
 	assert.Empty(t, ignore)
 	req.RemoteAddr = "90.154.29.38"
-	_, _, ignore = tracker.ignore(req)
+	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "ip", ignore)
 }
 

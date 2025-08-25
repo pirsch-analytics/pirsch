@@ -1,11 +1,12 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 // Options are optional parameters for page views and events.
@@ -41,6 +42,9 @@ type Options struct {
 	// MaxPageViews is an optional limit for the maximum number of page views per session.
 	// This overrides Config.MaxPageViews for the Tracker.
 	MaxPageViews uint16
+
+	// DisableBotFilter disables all bot filters if set to true.
+	DisableBotFilter bool
 }
 
 func (options *Options) validate(r *http.Request) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.23.0
+
+* added an option to disable the bot filter entirely
+* updated dependencies
+
 ## 6.22.2
 
 * updated referrer blacklist

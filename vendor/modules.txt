@@ -1,4 +1,4 @@
-# github.com/ClickHouse/ch-go v0.67.0
+# github.com/ClickHouse/ch-go v0.68.0
 ## explicit; go 1.23.0
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
@@ -110,7 +110,7 @@ github.com/segmentio/asm/cpu/x86
 # github.com/shopspring/decimal v1.4.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
-# github.com/stretchr/testify v1.10.0
+# github.com/stretchr/testify v1.11.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml

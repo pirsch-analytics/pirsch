@@ -2,6 +2,15 @@ package tracker
 
 import (
 	"context"
+	"log"
+	"math"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
+
 	"github.com/dchest/siphash"
 	"github.com/emvi/iso-639-1"
 	"github.com/google/uuid"
@@ -12,14 +21,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/referrer"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
-	"log"
-	"math"
-	"net"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time"
 )
 
 const (
@@ -96,7 +97,7 @@ func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Optio
 	}
 
 	now := time.Now().UTC()
-	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r, options)
 	options.validate(r)
 
 	if !options.Time.IsZero() {
@@ -140,7 +141,7 @@ func (tracker *Tracker) Event(r *http.Request, clientID uint64, eventOptions Eve
 	eventOptions.validate()
 
 	if eventOptions.Name != "" {
-		userAgent, ipAddress, ignoreReason := tracker.ignore(r)
+		userAgent, ipAddress, ignoreReason := tracker.ignore(r, options)
 		options.validate(r)
 
 		if !options.Time.IsZero() {
@@ -190,7 +191,7 @@ func (tracker *Tracker) ExtendSession(r *http.Request, clientID uint64, options 
 	}
 
 	now := time.Now().UTC()
-	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r, options)
 
 	if ignoreReason == "" {
 		options.validate(r)
@@ -221,7 +222,7 @@ func (tracker *Tracker) Accept(r *http.Request, clientID uint64, options Options
 	}
 
 	now := time.Now().UTC()
-	userAgent, ipAddress, ignoreReason := tracker.ignore(r)
+	userAgent, ipAddress, ignoreReason := tracker.ignore(r, options)
 	options.validate(r)
 
 	if !options.Time.IsZero() {
@@ -378,7 +379,11 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 	}
 }
 
-func (tracker *Tracker) ignore(r *http.Request) (ua.UserAgent, string, string) {
+func (tracker *Tracker) ignore(r *http.Request, options Options) (ua.UserAgent, string, string) {
+	if options.DisableBotFilter {
+		return ua.UserAgent{}, "", ""
+	}
+
 	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
 
 	// ignore browsers pre-fetching data
