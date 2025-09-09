@@ -1,5 +1,12 @@
 # Changelog
 
+## 6.23.1
+
+* improved bot filter
+* added ClickHouse default password
+* upgraded to Go version 1.25
+* updated dependencies
+
 ## 6.23.0
 
 * added an option to disable the bot filter entirely

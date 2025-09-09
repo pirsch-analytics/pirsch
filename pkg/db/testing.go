@@ -13,6 +13,7 @@ func Connect() *Client {
 		Hostnames:          []string{"127.0.0.1"},
 		Port:               9000,
 		Database:           "pirschtest",
+		Password:           "default",
 		SSLSkipVerify:      true,
 		Debug:              false,
 		MaxOpenConnections: 1,
