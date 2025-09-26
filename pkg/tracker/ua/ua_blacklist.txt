@@ -2,7 +2,7 @@
 # Please add the reference in case you copy an existing list.
 # Don't forget to update the array by running scripts/update_ua_blacklist/update_ua_blacklist.go!
 
-# Custom (last update: 2025-09-09)
+# Custom (last update: 2025-09-26)
 ://
 bot
 crawler
@@ -733,7 +733,28 @@ branddiscovery
 redteam
 fullpathhunter
 seraph-accel
-9999.99
+99999
+agent
+projekt
+collaborator
+okta-auth-swift
+func
+string
+layout
+topbar
+safbar
+commerce
+pregen
+grabber
+filamentdocslocal
+final-with-reasons
+lellellel
+webtonia
+enrich
+mixedbread
+unstructured
+askroi
+meshrom
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

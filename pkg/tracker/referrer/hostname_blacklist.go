@@ -7,7 +7,7 @@ var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-08-17)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-09-26)
 	"0-0.fr":                               {},
 	"007agent-i.fr":                        {},
 	"01casino-x.ru":                        {},
@@ -774,6 +774,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"firstblog.top":                        {},
 	"fit-discount.ru":                      {},
 	"fitodar.com.ua":                       {},
+	"fiuagts.online":                       {},
 	"fix-website-errors.com":               {},
 	"flexderek.com":                        {},
 	"floating-share-buttons.com":           {},

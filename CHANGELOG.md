@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.23.2
+
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.23.1
 
 * improved bot filter
