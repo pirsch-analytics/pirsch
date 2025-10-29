@@ -380,11 +380,11 @@ func (tracker *Tracker) captureRequest(now time.Time, clientID uint64, r *http.R
 }
 
 func (tracker *Tracker) ignore(r *http.Request, options Options) (ua.UserAgent, string, string) {
-	if options.DisableBotFilter {
-		return ua.Parse(r), "", ""
-	}
-
 	ipAddress := ip.Get(r, tracker.config.HeaderParser, tracker.config.AllowedProxySubnets)
+
+	if options.DisableBotFilter {
+		return ua.Parse(r), ipAddress, ""
+	}
 
 	// ignore browsers pre-fetching data
 	xPurpose := r.Header.Get("X-Purpose")

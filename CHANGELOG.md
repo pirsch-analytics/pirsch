@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.23.4
+
+* fixed parsing IP when bot filters are disabled
+
 ## 6.23.3
 
 * fixed parsing User-Agent when bot filters are disabled
