@@ -2,6 +2,7 @@
 
 ## 6.23.3
 
+* fixed parsing User-Agent when bot filters are disabled
 * updated dependencies
 
 ## 6.23.2
