@@ -83,7 +83,7 @@ func (m *Mutex) lockContext(ctx context.Context, tries int) error {
 	}
 
 	var timer *time.Timer
-	for i := 0; i < tries; i++ {
+	for i := range tries {
 		if i != 0 {
 			if timer == nil {
 				timer = time.NewTimer(m.delayFunc(i))
@@ -331,7 +331,7 @@ func (m *Mutex) actOnPoolsAsync(actFn func(redis.Pool) (bool, error)) (int, erro
 		}
 
 		if m.failFast {
-			// fast retrun
+			// fast return
 			if n >= m.quorum {
 				return n, err
 			}

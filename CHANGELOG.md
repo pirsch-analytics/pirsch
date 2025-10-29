@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.23.3
+
+* updated dependencies
+
 ## 6.23.2
 
 * updated referrer blacklist

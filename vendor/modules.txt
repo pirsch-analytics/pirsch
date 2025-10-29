@@ -1,5 +1,5 @@
-# github.com/ClickHouse/ch-go v0.68.0
-## explicit; go 1.23.0
+# github.com/ClickHouse/ch-go v0.69.0
+## explicit; go 1.24.0
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
 # github.com/ClickHouse/clickhouse-go/v2 v2.40.3
@@ -52,8 +52,8 @@ github.com/go-redis/redis/v8/internal/pool
 github.com/go-redis/redis/v8/internal/proto
 github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
-# github.com/go-redsync/redsync/v4 v4.13.0
-## explicit; go 1.22
+# github.com/go-redsync/redsync/v4 v4.14.0
+## explicit; go 1.24.0
 github.com/go-redsync/redsync/v4
 github.com/go-redsync/redsync/v4/redis
 github.com/go-redsync/redsync/v4/redis/goredis/v8
@@ -66,8 +66,8 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
-# github.com/klauspost/compress v1.18.0
-## explicit; go 1.22
+# github.com/klauspost/compress v1.18.1
+## explicit; go 1.23
 github.com/klauspost/compress
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
@@ -128,11 +128,11 @@ go.opentelemetry.io/otel/trace/internal/telemetry
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/net v0.44.0
+# golang.org/x/net v0.46.0
 ## explicit; go 1.24.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/sys v0.36.0
+# golang.org/x/sys v0.37.0
 ## explicit; go 1.24.0
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
