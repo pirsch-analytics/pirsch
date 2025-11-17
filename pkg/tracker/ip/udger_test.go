@@ -1,9 +1,10 @@
 package ip
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUdger(t *testing.T) {

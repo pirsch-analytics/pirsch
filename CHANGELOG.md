@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.24.0
+
+* added networks to IP filter list
+* updated dependencies
+
 ## 6.23.4
 
 * fixed parsing IP when bot filters are disabled

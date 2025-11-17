@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"log/slog"
 	"net"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
