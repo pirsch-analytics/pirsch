@@ -1,17 +1,18 @@
 package analyzer
 
 import (
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestFilter_Validate(t *testing.T) {
-	filter := NewFilter(pkg.NullClient)
+	filter := NewFilter([]int64{pkg.NullClient})
 	filter.validate()
 	assert.NotNil(t, filter)
 	assert.NotNil(t, filter.Timezone)
@@ -112,7 +113,7 @@ func TestFilter_Validate(t *testing.T) {
 }
 
 func TestFilter_RemoveDuplicates(t *testing.T) {
-	filter := NewFilter(pkg.NullClient)
+	filter := NewFilter([]int64{pkg.NullClient})
 	filter.Path = []string{
 		"/",
 		"/",

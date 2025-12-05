@@ -1,15 +1,16 @@
 package analyzer
 
 import (
+	"testing"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestQuery(t *testing.T) {
 	filter := &Filter{
-		ClientID:    42,
+		ClientIDs:   []int64{42},
 		From:        util.PastDay(7),
 		To:          util.Today(),
 		Path:        []string{"/", "/foo"},
@@ -99,10 +100,10 @@ func TestQuery(t *testing.T) {
 func TestQueryAnyPath(t *testing.T) {
 	q := queryBuilder{
 		filter: &Filter{
-			ClientID: 42,
-			From:     util.PastDay(7),
-			To:       util.Today(),
-			AnyPath:  []string{"/", "/foo"},
+			ClientIDs: []int64{42},
+			From:      util.PastDay(7),
+			To:        util.Today(),
+			AnyPath:   []string{"/", "/foo"},
 		},
 		fields: []Field{
 			FieldPath,
@@ -126,9 +127,9 @@ func TestQueryAnyPath(t *testing.T) {
 func TestQueryPlatformSession(t *testing.T) {
 	q := queryBuilder{
 		filter: &Filter{
-			ClientID: 42,
-			From:     util.PastDay(7),
-			To:       util.Today(),
+			ClientIDs: []int64{42},
+			From:      util.PastDay(7),
+			To:        util.Today(),
 		},
 		fields: []Field{
 			FieldPlatformDesktop,
@@ -145,10 +146,10 @@ func TestQueryPlatformSession(t *testing.T) {
 
 func TestQueryPlatformPageView(t *testing.T) {
 	filter := &Filter{
-		ClientID: 42,
-		From:     util.PastDay(7),
-		To:       util.Today(),
-		Path:     []string{"/foo"},
+		ClientIDs: []int64{42},
+		From:      util.PastDay(7),
+		To:        util.Today(),
+		Path:      []string{"/foo"},
 	}
 	q := queryBuilder{
 		filter: filter,
@@ -191,7 +192,7 @@ func TestQueryPlatformPageView(t *testing.T) {
 
 func TestQueryCustomMetricFloat(t *testing.T) {
 	filter := &Filter{
-		ClientID:         42,
+		ClientIDs:        []int64{42},
 		From:             util.PastDay(7),
 		To:               util.Today(),
 		EventName:        []string{"Event"},
@@ -217,7 +218,7 @@ func TestQueryCustomMetricFloat(t *testing.T) {
 
 func TestQueryCustomMetricInt(t *testing.T) {
 	filter := &Filter{
-		ClientID:         42,
+		ClientIDs:        []int64{42},
 		From:             util.PastDay(7),
 		To:               util.Today(),
 		EventName:        []string{"Event"},
@@ -243,9 +244,9 @@ func TestQueryCustomMetricInt(t *testing.T) {
 
 func TestQuerySampling(t *testing.T) {
 	filter := &Filter{
-		ClientID: 42,
-		From:     util.PastDay(7),
-		To:       util.Today(),
+		ClientIDs: []int64{42},
+		From:      util.PastDay(7),
+		To:        util.Today(),
 	}
 	q := queryBuilder{
 		filter: filter,
@@ -270,9 +271,9 @@ func TestQuerySampling(t *testing.T) {
 
 func TestQueryPlatformSampling(t *testing.T) {
 	filter := &Filter{
-		ClientID: 42,
-		From:     util.PastDay(7),
-		To:       util.Today(),
+		ClientIDs: []int64{42},
+		From:      util.PastDay(7),
+		To:        util.Today(),
 	}
 	q := queryBuilder{
 		filter: filter,
@@ -291,7 +292,7 @@ func TestQueryPlatformSampling(t *testing.T) {
 
 func TestQueryCustomMetricFloatSampling(t *testing.T) {
 	filter := &Filter{
-		ClientID:         42,
+		ClientIDs:        []int64{42},
 		From:             util.PastDay(7),
 		To:               util.Today(),
 		EventName:        []string{"Event"},
@@ -315,7 +316,7 @@ func TestQueryCustomMetricFloatSampling(t *testing.T) {
 
 func TestQueryCustomMetricIntSampling(t *testing.T) {
 	filter := &Filter{
-		ClientID:         42,
+		ClientIDs:        []int64{42},
 		From:             util.PastDay(7),
 		To:               util.Today(),
 		EventName:        []string{"Event"},
@@ -420,7 +421,7 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 
 func TestQueryImported(t *testing.T) {
 	filter := &Filter{
-		ClientID:      42,
+		ClientIDs:     []int64{42},
 		From:          util.PastDay(14),
 		To:            util.Today(),
 		ImportedUntil: util.PastDay(7),

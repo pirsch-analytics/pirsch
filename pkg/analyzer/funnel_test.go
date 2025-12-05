@@ -2,12 +2,13 @@ package analyzer
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestFunnel_Steps(t *testing.T) {
@@ -95,7 +96,7 @@ func TestFunnel_Steps(t *testing.T) {
 	// regular three-step funnel
 	funnel, err := analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
-			ClientID:    1,
+			ClientIDs:   []int64{1},
 			From:        util.Today(),
 			To:          util.Today(),
 			PathPattern: []string{"(?i)^/product.*$"},
@@ -103,7 +104,7 @@ func TestFunnel_Steps(t *testing.T) {
 			Sample:      1000,
 		},
 		{
-			ClientID:  1,
+			ClientIDs: []int64{1},
 			From:      util.Today(),
 			To:        util.Today(),
 			EntryPath: []string{"/", "/product"},
@@ -112,7 +113,7 @@ func TestFunnel_Steps(t *testing.T) {
 			Sample:    1000,
 		},
 		{
-			ClientID:  1,
+			ClientIDs: []int64{1},
 			From:      util.Today(),
 			To:        util.Today(),
 			EventName: []string{"Purchase"},
@@ -148,18 +149,18 @@ func TestFunnel_Steps(t *testing.T) {
 	// minimum two-step funnel
 	funnel, err = analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
-			ClientID:  1,
+			ClientIDs: []int64{1},
 			From:      util.Today(),
 			To:        util.Today(),
 			EntryPath: []string{"/"},
 			Sample:    1000,
 		},
 		{
-			ClientID: 1,
-			From:     util.Today(),
-			To:       util.Today(),
-			Path:     []string{"/pricing"},
-			Sample:   1000,
+			ClientIDs: []int64{1},
+			From:      util.Today(),
+			To:        util.Today(),
+			Path:      []string{"/pricing"},
+			Sample:    1000,
 		},
 	})
 	assert.NoError(t, err)
@@ -168,18 +169,18 @@ func TestFunnel_Steps(t *testing.T) {
 	// start with no visitors
 	funnel, err = analyzer.Funnel.Steps(context.Background(), []Filter{
 		{
-			ClientID:  1,
+			ClientIDs: []int64{1},
 			From:      util.Today(),
 			To:        util.Today(),
 			EntryPath: []string{"/does-not-exist"},
 			Sample:    1000,
 		},
 		{
-			ClientID: 1,
-			From:     util.Today(),
-			To:       util.Today(),
-			Path:     []string{"/pricing"},
-			Sample:   1000,
+			ClientIDs: []int64{1},
+			From:      util.Today(),
+			To:        util.Today(),
+			Path:      []string{"/pricing"},
+			Sample:    1000,
 		},
 	})
 	assert.NoError(t, err)
@@ -233,10 +234,10 @@ func TestFunnel_EqualSteps(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		steps = append(steps, Filter{
-			ClientID: 1,
-			From:     util.Today(),
-			To:       util.Today(),
-			Path:     []string{"/"},
+			ClientIDs: []int64{1},
+			From:      util.Today(),
+			To:        util.Today(),
+			Path:      []string{"/"},
 		})
 	}
 

@@ -2,13 +2,14 @@ package analyzer
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestAnalyzer_NoData(t *testing.T) {
@@ -79,7 +80,7 @@ func getMaxFilter(eventName string) *Filter {
 
 	return &Filter{
 		Ctx:            context.Background(),
-		ClientID:       42,
+		ClientIDs:      []int64{42},
 		From:           util.PastDay(5),
 		To:             util.PastDay(2),
 		Hostname:       []string{"example.com"},

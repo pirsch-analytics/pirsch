@@ -2,12 +2,13 @@ package analyzer
 
 import (
 	"context"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"maps"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 // Filter is all fields that can be used to filter the result sets.
@@ -18,7 +19,7 @@ type Filter struct {
 	Ctx context.Context
 
 	// ClientID is optional.
-	ClientID int64
+	ClientIDs []int64
 
 	// Timezone sets the timezone used to interpret dates and times.
 	// It will be set to UTC by default.
@@ -210,9 +211,9 @@ var (
 )
 
 // NewFilter creates a new filter for a given client ID.
-func NewFilter(clientID int64) *Filter {
+func NewFilter(clientIDs []int64) *Filter {
 	return &Filter{
-		ClientID: clientID,
+		ClientIDs: clientIDs,
 	}
 }
 
@@ -254,7 +255,7 @@ func (filter *Filter) Empty() bool {
 
 // Equal returns true if the filter is equal to the argument.
 func (filter *Filter) Equal(other *Filter) bool {
-	simpleCmp := filter.ClientID == other.ClientID &&
+	simpleCmp := slices.Equal(filter.ClientIDs, other.ClientIDs) && // NOTE: this could cause an error if the order is different
 		filter.Timezone.String() == other.Timezone.String() &&
 		filter.From.Equal(other.From) &&
 		filter.To.Equal(other.To) &&
@@ -966,7 +967,7 @@ func (filter *Filter) joinUniqueVisitorsByPeriod(fields []Field) *queryBuilder {
 
 		return &queryBuilder{
 			filter: &Filter{
-				ClientID:    filter.ClientID,
+				ClientIDs:   filter.ClientIDs,
 				Timezone:    filter.Timezone,
 				From:        filter.From,
 				To:          filter.To,

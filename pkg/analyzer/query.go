@@ -2,9 +2,10 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"strconv"
 	"strings"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 )
 
 const (
@@ -513,10 +514,30 @@ func (query *queryBuilder) joinImportedSum(field Field) bool {
 		field == FieldBounces
 }
 
+func clientIdsToString(clientIDs []int64) (string, []any) {
+	argsS := make([]string, len(clientIDs))
+	args := make([]any, len(clientIDs))
+	for i, id := range clientIDs {
+		args[i] = id
+		argsS[i] = "?"
+	}
+
+	return strings.Join(argsS, ","), args
+}
+
 func (query *queryBuilder) whereTime() string {
-	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
-	q.WriteString("WHERE client_id = ? ")
+
+	// NOTE: this is to support multiple client IDs in the filter
+	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
+	if len(clientIdArgs) > 0 {
+		query.args = append(query.args, clientIdArgs...)
+		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
+	}
+
+	// query.args = append(query.args, query.filter.ClientID)
+	// q.WriteString("WHERE client_id = ? ")
+
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.From.IsZero() && !query.filter.To.IsZero() && query.filter.From.Equal(query.filter.To) {
@@ -548,9 +569,17 @@ func (query *queryBuilder) whereTime() string {
 }
 
 func (query *queryBuilder) whereTimeImported() string {
-	query.args = append(query.args, query.filter.ClientID)
 	var q strings.Builder
-	q.WriteString("WHERE client_id = ? ")
+
+	// NOTE: this is to support multiple client IDs in the filter
+	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
+	if len(clientIdArgs) > 0 {
+		query.args = append(query.args, clientIdArgs...)
+		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
+	}
+	// query.args = append(query.args, query.filter.ClientID)
+	// q.WriteString("WHERE client_id = ? ")
+
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.importedFrom.IsZero() && !query.filter.importedTo.IsZero() && query.filter.importedFrom.Equal(query.filter.importedTo) {

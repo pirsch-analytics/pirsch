@@ -3,11 +3,12 @@ package analyzer
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
-	"strings"
-	"time"
 )
 
 var (
@@ -96,7 +97,7 @@ func (visitors *Visitors) Total(filter *Filter) (*model.TotalVisitorStats, error
 func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID:      filter.ClientID,
+		ClientIDs:     filter.ClientIDs,
 		Timezone:      filter.Timezone,
 		From:          filter.From,
 		To:            filter.To,
@@ -118,7 +119,7 @@ func (visitors *Visitors) TotalVisitors(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID:      filter.ClientID,
+		ClientIDs:     filter.ClientIDs,
 		Timezone:      filter.Timezone,
 		From:          filter.From,
 		To:            filter.To,
@@ -139,7 +140,7 @@ func (visitors *Visitors) TotalPageViews(filter *Filter) (int, error) {
 func (visitors *Visitors) TotalSessions(filter *Filter) (int, error) {
 	filter = visitors.analyzer.getFilter(filter)
 	f := &Filter{
-		ClientID:      filter.ClientID,
+		ClientIDs:     filter.ClientIDs,
 		Timezone:      filter.Timezone,
 		From:          filter.From,
 		To:            filter.To,

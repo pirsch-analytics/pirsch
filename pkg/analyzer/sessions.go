@@ -2,11 +2,12 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"math"
 	"sort"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 // Sessions aggregates statistics regarding single sessions.
@@ -87,7 +88,7 @@ func (sessions *Sessions) Breakdown(filter *Filter) ([]model.SessionStep, error)
 
 	f := &Filter{
 		Ctx:         filter.Ctx,
-		ClientID:    filter.ClientID,
+		ClientIDs:   filter.ClientIDs,
 		Timezone:    filter.Timezone,
 		From:        filter.From,
 		To:          filter.To,
