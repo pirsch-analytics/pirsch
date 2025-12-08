@@ -526,93 +526,83 @@ func clientIdsToString(clientIDs []int64) (string, []any) {
 }
 
 func (query *queryBuilder) whereTime() string {
-	var q strings.Builder
+	var queries []string
 
 	// NOTE: this is to support multiple client IDs in the filter
 	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
 	if len(clientIdArgs) > 0 {
 		query.args = append(query.args, clientIdArgs...)
-		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
-	} else {
-		q.WriteString("WHERE ")
+		queries = append(queries, "client_id IN ("+clientIdsToString+") ")
 	}
-
-	// query.args = append(query.args, query.filter.ClientID)
-	// q.WriteString("WHERE client_id = ? ")
 
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.From.IsZero() && !query.filter.To.IsZero() && query.filter.From.Equal(query.filter.To) {
 		query.args = append(query.args, query.filter.From.Format(dateFormat))
-		q.WriteString(fmt.Sprintf("AND toDate(time, '%s') = toDate(?) ", tz))
+		queries = append(queries, fmt.Sprintf("toDate(time, '%s') = toDate(?) ", tz))
 	} else {
 		if !query.filter.From.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.From)
-				q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
+				queries = append(queries, fmt.Sprintf("toDateTime(time, '%s') >= toDateTime(?, '%s') ", tz, tz))
 			} else {
 				query.args = append(query.args, query.filter.From.Format(dateFormat))
-				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') >= toDate(?) ", tz))
+				queries = append(queries, fmt.Sprintf("toDate(time, '%s') >= toDate(?) ", tz))
 			}
 		}
 
 		if !query.filter.To.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.To)
-				q.WriteString(fmt.Sprintf("AND toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
+				queries = append(queries, fmt.Sprintf("toDateTime(time, '%s') <= toDateTime(?, '%s') ", tz, tz))
 			} else {
 				query.args = append(query.args, query.filter.To.Format(dateFormat))
-				q.WriteString(fmt.Sprintf("AND toDate(time, '%s') <= toDate(?) ", tz))
+				queries = append(queries, fmt.Sprintf("toDate(time, '%s') <= toDate(?) ", tz))
 			}
 		}
 	}
 
-	return q.String()
+	return fmt.Sprint("WHERE ", strings.Join(queries, " AND "))
 }
 
 func (query *queryBuilder) whereTimeImported() string {
-	var q strings.Builder
+	var queries []string
 
 	// NOTE: this is to support multiple client IDs in the filter
 	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
 	if len(clientIdArgs) > 0 {
 		query.args = append(query.args, clientIdArgs...)
-		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
-	} else {
-		q.WriteString("WHERE ")
+		queries = append(queries, "client_id IN ("+clientIdsToString+") ")
 	}
-
-	// query.args = append(query.args, query.filter.ClientID)
-	// q.WriteString("WHERE client_id = ? ")
 
 	tz := query.filter.Timezone.String()
 
 	if !query.filter.importedFrom.IsZero() && !query.filter.importedTo.IsZero() && query.filter.importedFrom.Equal(query.filter.importedTo) {
 		query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
-		q.WriteString(fmt.Sprintf("AND toDate(date, '%s') = toDate(?) ", tz))
+		queries = append(queries, fmt.Sprintf("toDate(date, '%s') = toDate(?) ", tz))
 	} else {
 		if !query.filter.importedFrom.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.importedFrom)
-				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') >= toDateTime(?, '%s') ", tz, tz))
+				queries = append(queries, (fmt.Sprintf("toDateTime(date, '%s') >= toDateTime(?, '%s') ", tz, tz)))
 			} else {
 				query.args = append(query.args, query.filter.importedFrom.Format(dateFormat))
-				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') >= toDate(?) ", tz))
+				queries = append(queries, (fmt.Sprintf("toDate(date, '%s') >= toDate(?) ", tz)))
 			}
 		}
 
 		if !query.filter.importedTo.IsZero() {
 			if query.filter.IncludeTime {
 				query.args = append(query.args, query.filter.importedTo)
-				q.WriteString(fmt.Sprintf("AND toDateTime(date, '%s') <= toDateTime(?, '%s') ", tz, tz))
+				queries = append(queries, (fmt.Sprintf("toDateTime(date, '%s') <= toDateTime(?, '%s') ", tz, tz)))
 			} else {
 				query.args = append(query.args, query.filter.importedTo.Format(dateFormat))
-				q.WriteString(fmt.Sprintf("AND toDate(date, '%s') <= toDate(?) ", tz))
+				queries = append(queries, (fmt.Sprintf("toDate(date, '%s') <= toDate(?) ", tz)))
 			}
 		}
 	}
 
-	return q.String()
+	return fmt.Sprint("WHERE ", strings.Join(queries, " AND "))
 }
 
 func (query *queryBuilder) whereFields() {
