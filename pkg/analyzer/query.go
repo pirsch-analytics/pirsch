@@ -532,10 +532,10 @@ func (query *queryBuilder) whereTime() string {
 	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
 	if len(clientIdArgs) > 0 {
 		query.args = append(query.args, clientIdArgs...)
-		q.WriteString("WHERE client_id IN (" + clientIdsToString + ")")
+		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
+	} else {
+		q.WriteString("WHERE ")
 	}
-
-	q.WriteString(" ") // ensure there's a space
 
 	// query.args = append(query.args, query.filter.ClientID)
 	// q.WriteString("WHERE client_id = ? ")
@@ -577,9 +577,10 @@ func (query *queryBuilder) whereTimeImported() string {
 	clientIdsToString, clientIdArgs := clientIdsToString(query.filter.ClientIDs)
 	if len(clientIdArgs) > 0 {
 		query.args = append(query.args, clientIdArgs...)
-		q.WriteString("WHERE client_id IN (" + clientIdsToString + ")")
+		q.WriteString("WHERE client_id IN (" + clientIdsToString + ") ")
+	} else {
+		q.WriteString("WHERE ")
 	}
-	q.WriteString(" ") // ensure there's a space
 
 	// query.args = append(query.args, query.filter.ClientID)
 	// q.WriteString("WHERE client_id = ? ")
