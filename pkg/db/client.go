@@ -6,14 +6,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2"
-	_ "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 const (
@@ -1160,6 +1161,7 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
+					&result.Hostname,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1179,6 +1181,7 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
+					&result.Hostname,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1199,6 +1202,7 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
+					&result.Hostname,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1217,6 +1221,7 @@ func (client *Client) SelectPageStats(ctx context.Context, includeTitle, include
 				var result model.PageStats
 
 				if err := rows.Scan(&result.Path,
+					&result.Hostname,
 					&result.Visitors,
 					&result.Sessions,
 					&result.RelativeVisitors,
@@ -1275,6 +1280,7 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 			var result model.EntryStats
 
 			if err := rows.Scan(&result.Path,
+				&result.Hostname,
 				&result.Entries,
 				&result.EntryRate,
 				&result.Title); err != nil {
@@ -1288,6 +1294,7 @@ func (client *Client) SelectEntryStats(ctx context.Context, includeTitle bool, q
 			var result model.EntryStats
 
 			if err := rows.Scan(&result.Path,
+				&result.Hostname,
 				&result.Entries,
 				&result.EntryRate); err != nil {
 				return nil, err
@@ -1316,6 +1323,7 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 			var result model.ExitStats
 
 			if err := rows.Scan(&result.Path,
+				&result.Hostname,
 				&result.Exits,
 				&result.ExitRate,
 				&result.Title); err != nil {
@@ -1329,6 +1337,7 @@ func (client *Client) SelectExitStats(ctx context.Context, includeTitle bool, qu
 			var result model.ExitStats
 
 			if err := rows.Scan(&result.Path,
+				&result.Hostname,
 				&result.Exits,
 				&result.ExitRate); err != nil {
 				return nil, err

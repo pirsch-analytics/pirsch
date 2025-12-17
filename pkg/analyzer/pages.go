@@ -2,11 +2,12 @@ package analyzer
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"sort"
-	"strings"
 )
 
 // Pages aggregates statistics regarding pages.
@@ -66,6 +67,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 
 	fields := []Field{
 		pathField,
+		FieldHostname,
 		FieldVisitors,
 		FieldSessions,
 		FieldRelativeVisitors,
@@ -76,6 +78,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 	}
 	groupBy := []Field{
 		pathField,
+		FieldHostname,
 	}
 	orderBy := []Field{
 		FieldVisitors,
@@ -150,11 +153,13 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 
 	fields := []Field{
 		FieldEntryPath,
+		FieldHostname,
 		FieldEntries,
 		FieldEntryRate,
 	}
 	groupBy := []Field{
 		FieldEntryPath,
+		FieldHostname,
 	}
 	orderBy := []Field{
 		FieldEntries,
@@ -248,11 +253,13 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 
 	fields := []Field{
 		FieldExitPath,
+		FieldHostname,
 		FieldExits,
 		FieldExitRate,
 	}
 	groupBy := []Field{
 		FieldExitPath,
+		FieldHostname,
 	}
 	orderBy := []Field{
 		FieldExits,
