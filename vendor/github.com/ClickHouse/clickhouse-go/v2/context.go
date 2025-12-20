@@ -1,20 +1,3 @@
-// Licensed to ClickHouse, Inc. under one or more contributor
-// license agreements. See the NOTICE file distributed with
-// this work for additional information regarding copyright
-// ownership. ClickHouse, Inc. licenses this file to you under
-// the Apache License, Version 2.0 (the "License"); you may
-// not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-
 package clickhouse
 
 import (
@@ -73,6 +56,7 @@ type (
 		blockBufferSize     uint8
 		userLocation        *time.Location
 		columnNamesAndTypes []ColumnNameAndType
+		clientInfo          ClientInfo
 	}
 )
 
@@ -120,6 +104,16 @@ func WithJWT(jwt string) QueryOption {
 func WithColumnNamesAndTypes(columnNamesAndTypes []ColumnNameAndType) QueryOption {
 	return func(o *QueryOptions) error {
 		o.columnNamesAndTypes = columnNamesAndTypes
+		return nil
+	}
+}
+
+// WithClientInfo appends client info data to the query, visible in the system.query_log table.
+// This does not replace the client info provided in the connection options, it appends to it.
+// Can be called multiple times to append more info.
+func WithClientInfo(ci ClientInfo) QueryOption {
+	return func(o *QueryOptions) error {
+		o.clientInfo = o.clientInfo.Append(ci)
 		return nil
 	}
 }
@@ -173,6 +167,14 @@ func WithExternalTable(t ...*ext.Table) QueryOption {
 	}
 }
 
+func WithAsync(wait bool) QueryOption {
+	return func(o *QueryOptions) error {
+		o.async.ok, o.async.wait = true, wait
+		return nil
+	}
+}
+
+// Deprecated: use `WithAsync` instead.
 func WithStdAsync(wait bool) QueryOption {
 	return func(o *QueryOptions) error {
 		o.async.ok, o.async.wait = true, wait
@@ -269,7 +271,7 @@ func queryOptionsUserLocation(ctx context.Context) *time.Location {
 }
 
 func (q *QueryOptions) onProcess() *onProcess {
-	return &onProcess{
+	onProcess := &onProcess{
 		logs: func(logs []Log) {
 			if q.events.logs != nil {
 				for _, l := range logs {
@@ -287,12 +289,16 @@ func (q *QueryOptions) onProcess() *onProcess {
 				q.events.profileInfo(p)
 			}
 		},
-		profileEvents: func(events []ProfileEvent) {
-			if q.events.profileEvents != nil {
-				q.events.profileEvents(events)
-			}
-		},
 	}
+
+	profileEventsHandler := q.events.profileEvents
+	if profileEventsHandler != nil {
+		onProcess.profileEvents = func(events []ProfileEvent) {
+			profileEventsHandler(events)
+		}
+	}
+
+	return onProcess
 }
 
 // clone returns a copy of QueryOptions where Settings and Parameters are safely mutable.
@@ -321,6 +327,10 @@ func (q *QueryOptions) clone() QueryOptions {
 
 	if q.columnNamesAndTypes != nil {
 		c.columnNamesAndTypes = slices.Clone(q.columnNamesAndTypes)
+	}
+
+	if q.clientInfo.Products != nil || q.clientInfo.Comment != nil {
+		c.clientInfo = q.clientInfo.Append(ClientInfo{})
 	}
 
 	return c

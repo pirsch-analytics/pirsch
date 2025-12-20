@@ -321,16 +321,17 @@ Usage examples for [native API](examples/clickhouse_api/client_info.go) and [dat
 
 ## Async insert
 
-[Asynchronous insert](https://clickhouse.com/docs/en/optimize/asynchronous-inserts#enabling-asynchronous-inserts) is supported via dedicated `AsyncInsert` method. This allows to insert data with a non-blocking call.
-Effectively, it controls a `async_insert` setting for the query. 
+[Async insert](https://clickhouse.com/docs/optimize/asynchronous-inserts) is supported via `WithAsync()` helper on both Native and HTTP protocols. You can use it for both Go standard interface `OpenDB` and also ClickHouse interface `Open()`.
 
-### Using with batch API
+**NOTE**: You can use `WithSettings()` manually to add any async related settings. `WithAsync()` is just a simple wrapper that does that for you.
 
-Using native protocol, asynchronous insert does not support batching. It means, only inline query data is supported. Please see an example [here](examples/std/async.go).
+We have following examples to show Async Insert in action.
+1. [Native with OpenDB](examples/clickhouse_api/async_native.go)
+1. [HTTP with OpenDB](examples/clickhouse_api/async_http.go)
+1. [Native with Open](examples/std/async_native.go)
+1. [HTTP with Open](examples/std/async_http.go)
 
-HTTP protocol supports batching. It can be enabled by setting `async_insert` when using standard `Prepare` method.
-
-For more details please see [asynchronous inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts#enabling-asynchronous-inserts) documentation.
+**NOTE**: The old `AsyncInsert()` api is deprecated and will be removed in future versions. We highly recommend to use `WithAsync()` api for all the Async Insert use cases.
 
 ## PrepareBatch options
 
@@ -339,14 +340,14 @@ Available options:
 
 ## Benchmark
 
-| [V1 (READ)](benchmark/v1/read/main.go) | [V2 (READ) std](benchmark/v2/read/main.go) | [V2 (READ) clickhouse API](benchmark/v2/read-native/main.go) |
-| -------------------------------------- | ------------------------------------------ |--------------------------------------------------------------|
-| 1.218s                                 | 924.390ms                                  | 675.721ms                                                    |
+| [V2 (READ) std](benchmark/v2/read/main.go) | [V2 (READ) clickhouse API](benchmark/v2/read-native/main.go) |
+| ------------------------------------------ |--------------------------------------------------------------|
+| 924.390ms                                  | 675.721ms                                                    |
 
 
-| [V1 (WRITE)](benchmark/v1/write/main.go) | [V2 (WRITE) std](benchmark/v2/write/main.go) | [V2 (WRITE) clickhouse API](benchmark/v2/write-native/main.go) | [V2 (WRITE) by column](benchmark/v2/write-native-columnar/main.go) |
-| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
-| 1.899s                                   | 1.177s                                       | 699.203ms                                              | 661.973ms                                                          |
+| [V2 (WRITE) std](benchmark/v2/write/main.go) | [V2 (WRITE) clickhouse API](benchmark/v2/write-native/main.go) | [V2 (WRITE) by column](benchmark/v2/write-native-columnar/main.go) |
+| -------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
+| 1.177s                                       | 699.203ms                                              | 661.973ms                                                          |
 
 
 
@@ -362,7 +363,8 @@ go get -u github.com/ClickHouse/clickhouse-go/v2
 
 * [batch](examples/clickhouse_api/batch.go)
 * [batch with release connection](examples/clickhouse_api/batch_release_connection.go)
-* [async insert](examples/clickhouse_api/async.go)
+* [native async insert](examples/clickhouse_api/async_native.go)
+* [http async insert](examples/clickhouse_api/async_http.go)
 * [batch struct](examples/clickhouse_api/append_struct.go)
 * [columnar](examples/clickhouse_api/columnar_insert.go)
 * [scan struct](examples/clickhouse_api/scan_struct.go)
@@ -373,7 +375,8 @@ go get -u github.com/ClickHouse/clickhouse-go/v2
 ### std `database/sql` interface
 
 * [batch](examples/std/batch.go)
-* [async insert](examples/std/async.go)
+* [native async insert](examples/std/async_native.go)
+* [http async insert](examples/std/async_http.go)
 * [open db](examples/std/connect.go)
 * [query parameters](examples/std/query_parameters.go)
 * [bind params](examples/std/bind.go) (deprecated in favour of native query parameters)

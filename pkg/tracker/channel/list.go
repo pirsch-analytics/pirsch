@@ -309,6 +309,7 @@ var (
 		"classmates.com":                  "SOURCE_CATEGORY_SOCIAL",
 		"classquest":                      "SOURCE_CATEGORY_SOCIAL",
 		"classquest.com":                  "SOURCE_CATEGORY_SOCIAL",
+		"claude.ai":                       "SOURCE_CATEGORY_AI",
 		"cn.bing.com":                     "SOURCE_CATEGORY_SEARCH",
 		"cnn":                             "SOURCE_CATEGORY_SEARCH",
 		"co.pinterest.com":                "SOURCE_CATEGORY_SOCIAL",

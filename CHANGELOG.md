@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.25.0
+
+* added claude.ai to the AI channel
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.24.0
 
 * added networks to IP filter list
