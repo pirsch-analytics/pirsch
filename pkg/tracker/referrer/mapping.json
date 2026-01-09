@@ -126,6 +126,9 @@
 		}
 	},
 	"search": {
+        "Google": {
+            "domains": ["www.google.com.tr"]
+        },
 		"Google Lens": {
 			"domains": ["google.lens", "lens.google.com"]
 		},
@@ -271,7 +274,7 @@
 			"domains": ["old.reddit.com"]
 		},
 		"Telegram": {
-			"domains": ["telegram.org", "web.telegram.org"]
+			"domains": ["telegram.org", "web.telegram.org", "t.me"]
 		},
 		"Facebook": {
 			"domains": [
@@ -286,7 +289,9 @@
 				"de-de.facebook.com",
 				"es-es.facebook.com",
 				"it-it.facebook.com",
-				"developers.facebook.com"
+				"developers.facebook.com",
+                "en-gb.facebook.com",
+                "mobile.facebook.com"
 			]
 		},
 		"Facebook Messenger": {
@@ -295,6 +300,9 @@
 		"Snapchat": {
 			"domains": ["snapchat.com"]
 		},
+        "Threads": {
+            "domains": ["l.threads.com", "threads.com", "www.threads.com"]
+        },
 		"Twitch": {
 			"domains": ["twitch.tv", "m.twitch.tv"]
 		},
@@ -493,7 +501,9 @@
 				"pinterest.ru",
 				"pinterest.se",
 				"pinterest.sk",
+                "ar.pinterest.com",
 				"at.pinterest.com",
+                "br.pinterest.com",
 				"ca.pinterest.com",
 				"ch.pinterest.com",
 				"cl.pinterest.com",
@@ -505,6 +515,7 @@
 				"dk.pinterest.com",
 				"es.pinterest.com",
 				"fr.pinterest.com",
+                "id.pinterest.com",
 				"ie.pinterest.com",
 				"in.pinterest.com",
 				"it.pinterest.com",
@@ -515,7 +526,8 @@
 				"pt.pinterest.com",
 				"ru.pinterest.com",
 				"se.pinterest.com",
-				"sk.pinterest.com"
+				"sk.pinterest.com",
+                "tr.pinterest.com"
 			]
 		},
 		"Bluesky": {
@@ -523,6 +535,11 @@
 				"bluesky",
 				"bsky.app"
 			]
-		}
+		},
+        "X": {
+            "domains": [
+                "x.com"
+            ]
+        }
 	}
 }

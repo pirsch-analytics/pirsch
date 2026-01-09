@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.26.0
+
+* updated referrer groups
+* updated dependencies
+
 ## 6.25.0
 
 * added claude.ai to the AI channel
