@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.26.1
+
+* added Gemini to the AI channel list
+* updated dependencies
+
 ## 6.26.0
 
 * updated referrer groups

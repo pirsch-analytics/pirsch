@@ -155,6 +155,8 @@ var (
 		"vkontakte":                        "SOURCE_CATEGORY_SOCIAL",
 		"ecosia":                           "SOURCE_CATEGORY_SEARCH",
 		"brave":                            "SOURCE_CATEGORY_SEARCH",
+		"gemini.google.com":                "SOURCE_CATEGORY_AI",
+		"gemini.google":                    "SOURCE_CATEGORY_AI",
 
 		// https://support.google.com/analytics/answer/9756891 (last update: 2025-04-20)
 		"360.cn":                          "SOURCE_CATEGORY_SEARCH",
