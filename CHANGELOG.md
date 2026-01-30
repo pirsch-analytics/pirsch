@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.27.0
+
+* group search fields by OR instead of AND
+* updated dependencies
+
 ## 6.26.1
 
 * added Gemini to the AI channel list

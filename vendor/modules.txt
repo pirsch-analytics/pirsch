@@ -1,9 +1,9 @@
-# github.com/ClickHouse/ch-go v0.69.0
-## explicit; go 1.24.0
+# github.com/ClickHouse/ch-go v0.71.0
+## explicit; go 1.24.1
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
-# github.com/ClickHouse/clickhouse-go/v2 v2.42.0
-## explicit; go 1.24.0
+# github.com/ClickHouse/clickhouse-go/v2 v2.43.0
+## explicit; go 1.24.1
 github.com/ClickHouse/clickhouse-go/v2
 github.com/ClickHouse/clickhouse-go/v2/contributors
 github.com/ClickHouse/clickhouse-go/v2/ext

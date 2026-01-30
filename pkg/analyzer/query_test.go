@@ -418,6 +418,49 @@ func TestQuerySelectFieldEventsSampling(t *testing.T) {
 	}
 }
 
+func TestQuerySearch(t *testing.T) {
+	filter := &Filter{
+		ClientID: 42,
+		From:     util.PastDay(7),
+		To:       util.Today(),
+		Search: []Search{
+			{FieldPath, "search"},
+			{FieldTitle, "search"},
+		},
+	}
+	q := queryBuilder{
+		filter: filter,
+		fields: []Field{
+			FieldPath,
+			FieldVisitors,
+			FieldRelativeVisitors,
+		},
+		from: pageViews,
+		search: []Search{
+			{FieldPath, "search"},
+			{FieldTitle, "search"},
+		},
+	}
+	queryStr, args := q.query()
+	assert.Len(t, args, 8)
+	expected := []any{
+		int64(42),
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+		int64(42),
+		util.PastDay(7).Format(dateFormat),
+		util.Today().Format(dateFormat),
+		"%search%",
+		"%search%",
+	}
+
+	for i, arg := range args {
+		assert.Equal(t, expected[i], arg)
+	}
+
+	assert.Equal(t, `SELECT path path,uniq(t.visitor_id) visitors,toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session" WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) ), 1)) relative_visitors FROM "page_view" t WHERE client_id = ? AND toDate(time, 'UTC') >= toDate(?) AND toDate(time, 'UTC') <= toDate(?) AND (ilike(path, ?) = 1 OR ilike(title, ?) = 1 ) `, queryStr)
+}
+
 func TestQueryImported(t *testing.T) {
 	filter := &Filter{
 		ClientID:      42,

@@ -2,9 +2,10 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"strconv"
 	"strings"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 )
 
 const (
@@ -468,7 +469,7 @@ func (query *queryBuilder) joinImported(from string) {
 		if s.Field == joinField ||
 			(s.Field == FieldReferrer && joinField == FieldReferrerName) ||
 			(s.Field == FieldReferrerName && joinField == FieldReferrer) {
-			query.whereFieldSearch(joinField.Name, s.Input)
+			query.whereFieldSearch([]Search{s})
 			break
 		}
 	}
@@ -620,10 +621,7 @@ func (query *queryBuilder) whereFields() {
 	query.whereField(FieldUTMTerm.Name, query.filter.UTMTerm)
 	query.whereFieldPlatform()
 	query.whereFieldVisitorSessionID()
-
-	for i := range query.search {
-		query.whereFieldSearch(query.search[i].Field.Name, query.search[i].Input)
-	}
+	query.whereFieldSearch(query.search)
 
 	query.whereWrite()
 }
@@ -720,32 +718,43 @@ func (query *queryBuilder) whereFieldImported(field string, value []string, join
 	}
 }
 
-func (query *queryBuilder) whereFieldSearch(field, value string) {
-	if value != "" {
-		comparator := ""
-
-		if field == FieldLanguage.Name || field == FieldCountry.Name {
-			comparator = "has(splitByChar(',', ?), %s) = 1 "
-
-			if strings.HasPrefix(value, "!") {
-				value = value[1:]
-				comparator = "has(splitByChar(',', ?), %s) = 0 "
-			}
-
-			query.args = append(query.args, value)
-		} else {
-			comparator = "ilike(%s, ?) = 1 "
-
-			if strings.HasPrefix(value, "!") {
-				value = value[1:]
-				comparator = "ilike(%s, ?) = 0 "
-			}
-
-			query.args = append(query.args, fmt.Sprintf("%%%s%%", value))
+func (query *queryBuilder) whereFieldSearch(fields []Search) {
+	if len(fields) > 0 {
+		// create a single where group to group them all by OR
+		w := where{
+			eqContains: make([]string, 0, len(fields)),
 		}
 
-		// use eqContains because it doesn't matter for a single field
-		query.where = append(query.where, where{eqContains: []string{fmt.Sprintf(comparator, field)}})
+		for _, search := range fields {
+			if search.Input != "" {
+				comparator := ""
+
+				if search.Field.Name == FieldLanguage.Name || search.Field.Name == FieldCountry.Name {
+					comparator = "has(splitByChar(',', ?), %s) = 1 "
+
+					if strings.HasPrefix(search.Input, "!") {
+						search.Input = search.Input[1:]
+						comparator = "has(splitByChar(',', ?), %s) = 0 "
+					}
+
+					query.args = append(query.args, search.Input)
+				} else {
+					comparator = "ilike(%s, ?) = 1 "
+
+					if strings.HasPrefix(search.Input, "!") {
+						search.Input = search.Input[1:]
+						comparator = "ilike(%s, ?) = 0 "
+					}
+
+					query.args = append(query.args, fmt.Sprintf("%%%s%%", search.Input))
+				}
+
+				// use eqContains because it doesn't matter for a single field
+				w.eqContains = append(w.eqContains, fmt.Sprintf(comparator, search.Field.Name))
+			}
+		}
+
+		query.where = append(query.where, w)
 	}
 }
 
