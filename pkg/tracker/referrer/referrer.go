@@ -3,13 +3,14 @@ package referrer
 import (
 	"errors"
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 var (
@@ -134,6 +135,10 @@ func Get(r *http.Request, ref, requestHostname string) (string, string, string) 
 
 func getFromHeaderOrQuery(r *http.Request) string {
 	fromHeader := strings.TrimSpace(r.Header.Get("Referer"))
+
+	if index := strings.IndexAny(fromHeader, "\n\r"); index > 0 {
+		fromHeader = strings.TrimSpace(fromHeader[:index])
+	}
 
 	for _, param := range QueryParams {
 		referrer := r.URL.Query().Get(param.param)

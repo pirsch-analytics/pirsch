@@ -3,6 +3,7 @@
 ## 6.27.0
 
 * group search fields by OR instead of AND
+* improved referrer extraction if they include new line characters
 * updated dependencies
 
 ## 6.26.1

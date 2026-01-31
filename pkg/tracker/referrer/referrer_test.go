@@ -2,10 +2,11 @@ package referrer
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGet(t *testing.T) {
@@ -46,6 +47,8 @@ func TestGet(t *testing.T) {
 		"https://www.instagram.com/",
 		"https://www.ecosia.org",
 		"https://www.ecosia.org/",
+		"https://example.com\nSome additional text",
+		"https://example.com\r\nWith carriage return",
 	}
 	expected := []struct {
 		referrer string
@@ -87,6 +90,8 @@ func TestGet(t *testing.T) {
 		{"https://www.instagram.com", "Instagram"},
 		{"https://www.ecosia.org", "Ecosia"},
 		{"https://www.ecosia.org", "Ecosia"},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
 	}
 
 	for i, in := range input {
