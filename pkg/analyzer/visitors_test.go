@@ -2917,11 +2917,11 @@ func TestAnalyzer_Referrer(t *testing.T) {
 		Search: []Search{
 			{
 				Field: FieldReferrer,
-				Input: "ref",
+				Input: "ref2",
 			},
 			{
 				Field: FieldReferrerName,
-				Input: "ref2",
+				Input: "ref3",
 			},
 		},
 	})
@@ -2930,15 +2930,15 @@ func TestAnalyzer_Referrer(t *testing.T) {
 	assert.Equal(t, "ref2/foo", visitors[0].Referrer)
 	assert.Equal(t, "ref3/foo", visitors[1].Referrer)
 	assert.Equal(t, "Ref2", visitors[0].ReferrerName)
-	assert.Equal(t, "ref3/foo", visitors[1].ReferrerName)
+	assert.Equal(t, "Ref3", visitors[1].ReferrerName)
 	assert.Equal(t, 3, visitors[0].Visitors)
 	assert.Equal(t, 1, visitors[1].Visitors)
 	assert.InDelta(t, 0.4285, visitors[0].RelativeVisitors, 0.01)
 	assert.InDelta(t, 0.1428, visitors[1].RelativeVisitors, 0.01)
 	assert.Equal(t, 1, visitors[0].Bounces)
-	assert.Equal(t, 1, visitors[1].Bounces)
+	assert.Equal(t, 0, visitors[1].Bounces)
 	assert.InDelta(t, 0.25, visitors[0].BounceRate, 0.01)
-	assert.InDelta(t, 1, visitors[1].BounceRate, 0.01)
+	assert.InDelta(t, 0, visitors[1].BounceRate, 0.01)
 	visitors, err = analyzer.Visitors.Referrer(&Filter{
 		From:          util.PastDay(1),
 		To:            util.Today(),

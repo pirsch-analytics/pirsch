@@ -469,7 +469,12 @@ func (query *queryBuilder) joinImported(from string) {
 		if s.Field == joinField ||
 			(s.Field == FieldReferrer && joinField == FieldReferrerName) ||
 			(s.Field == FieldReferrerName && joinField == FieldReferrer) {
-			query.whereFieldSearch([]Search{s})
+			query.whereFieldSearch([]Search{
+				{
+					Field: joinField,
+					Input: s.Input,
+				},
+			})
 			break
 		}
 	}

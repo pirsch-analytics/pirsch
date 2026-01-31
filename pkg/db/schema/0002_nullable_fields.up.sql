@@ -8,7 +8,7 @@ ALTER TABLE hit UPDATE utm_campaign = '' WHERE utm_campaign IS NULL;
 ALTER TABLE hit UPDATE utm_content = '' WHERE utm_content IS NULL;
 ALTER TABLE hit UPDATE utm_term = '' WHERE utm_term IS NULL;
 
-ALTER TABLE "hit" MODIFY COLUMN "session" DateTime('UTC') DEFAULT 0;
+ALTER TABLE "hit" MODIFY COLUMN "session" DateTime('UTC') DEFAULT toDateTime(0, 'UTC');
 ALTER TABLE "hit" MODIFY COLUMN "referrer" String DEFAULT '';
 ALTER TABLE "hit" MODIFY COLUMN "referrer_name" String DEFAULT '';
 ALTER TABLE "hit" MODIFY COLUMN "referrer_icon" String DEFAULT '';

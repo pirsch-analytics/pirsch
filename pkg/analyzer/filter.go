@@ -2,12 +2,13 @@ package analyzer
 
 import (
 	"context"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"maps"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 // Filter is all fields that can be used to filter the result sets.
