@@ -1,11 +1,12 @@
 package channel
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"net/url"
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 var (

@@ -1,12 +1,13 @@
 package session
 
 import (
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestMemCache(t *testing.T) {
@@ -50,7 +51,7 @@ func TestMemCache(t *testing.T) {
 	session = cache.Get(1, 1, time.Now().Add(-time.Second*20))
 	assert.Nil(t, session)
 
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		cache.Put(1, uint64(i+2), &model.Session{
 			SessionID: util.RandUint32(),
 			Time:      time.Now(),

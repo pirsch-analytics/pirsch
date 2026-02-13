@@ -3,6 +3,7 @@ package analyzer
 import (
 	"context"
 	"fmt"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 )

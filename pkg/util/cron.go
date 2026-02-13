@@ -6,7 +6,7 @@ import (
 )
 
 // RunAtMidnight calls given function on each day of month on midnight (UTC),
-// unless it is cancelled by calling the cancel function.
+// unless it is canceled by calling the cancel function.
 func RunAtMidnight(f func()) context.CancelFunc {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 

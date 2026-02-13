@@ -2,8 +2,9 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"strings"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 )
 
 const (

@@ -6,14 +6,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2"
-	_ "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 const (

@@ -999,13 +999,7 @@ func (filter *Filter) excludeFields(fields []Field, exclude ...Field) []Field {
 }
 
 func (filter *Filter) fieldsContain(haystack []Field, needle Field) bool {
-	for i := range haystack {
-		if haystack[i] == needle {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(haystack, needle)
 }
 
 func (filter *Filter) valuesContainPrefix(haystack []string, prefix string) bool {

@@ -1,20 +1,21 @@
 package analyzer
 
 import (
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestAnalyzer_Events(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 
 	// create sessions for the conversion rate
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		saveSessions(t, [][]model.Session{
 			{
 				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
@@ -215,7 +216,7 @@ func TestAnalyzer_EventsSortCR(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 
 	// create sessions for the conversion rate
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		saveSessions(t, [][]model.Session{
 			{
 				{Sign: 1, VisitorID: uint64(i), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit", PageViews: 1},
@@ -261,7 +262,7 @@ func TestAnalyzer_EventList(t *testing.T) {
 	db.CleanupDB(t, dbClient)
 
 	// create sessions for the conversion rate
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		saveSessions(t, [][]model.Session{
 			{
 				{Sign: 1, VisitorID: uint64(i + 1), Time: util.Today(), Start: time.Now(), EntryPath: "/", ExitPath: "/exit"},

@@ -1,9 +1,10 @@
 package analyzer
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"os"
 	"testing"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 )
 
 var dbClient *db.Client

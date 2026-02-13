@@ -2,10 +2,11 @@ package session
 
 import (
 	"context"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sync"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 const (

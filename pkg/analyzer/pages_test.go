@@ -3,14 +3,15 @@ package analyzer
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestAnalyzer_Hostname(t *testing.T) {
@@ -689,7 +690,7 @@ func TestAnalyzer_ByPathManyPages(t *testing.T) {
 	var sessions []model.Session
 	var pageViews []model.PageView
 
-	for i := 0; i < 100_000; i++ {
+	for i := range 100_000 {
 		sessions = append(sessions, model.Session{
 			Sign:            1,
 			VisitorID:       uint64(i + 1),
@@ -1496,7 +1497,7 @@ func TestAnalyzer_EntryExitManyPages(t *testing.T) {
 	var sessions []model.Session
 	var pageViews []model.PageView
 
-	for i := 0; i < 100_000; i++ {
+	for i := range 100_000 {
 		sessions = append(sessions, model.Session{
 			Sign:            1,
 			VisitorID:       uint64(i + 1),

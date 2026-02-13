@@ -2,11 +2,12 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"math"
 	"sort"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 // Sessions aggregates statistics regarding single sessions.

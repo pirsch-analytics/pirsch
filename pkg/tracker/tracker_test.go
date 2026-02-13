@@ -3,6 +3,12 @@ package tracker
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"slices"
+	"testing"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/analyzer"
@@ -14,11 +20,6 @@ import (
 	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ua"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"slices"
-	"testing"
-	"time"
 )
 
 const (
@@ -392,7 +393,7 @@ func TestTracker_PageViewBuffer(t *testing.T) {
 		WorkerBufferSize: 5,
 	})
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/foo/bar/%d?utm_source=Source&utm_campaign=Campaign&utm_medium=Medium&utm_content=Content&utm_term=Term", i), nil)
 		req.Header.Add("User-Agent", userAgent)
 		req.Header.Set("Accept-Language", "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5")
@@ -1295,7 +1296,7 @@ func TestTracker_Flush(t *testing.T) {
 		SessionCache: session.NewMemCache(dbClient, 100),
 	})
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
 		req.RemoteAddr = "187.65.23.54"
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:79.0) Gecko/20220101 Firefox/100.0")
@@ -1317,7 +1318,7 @@ func TestTrackerRequests(t *testing.T) {
 		SessionCache: session.NewMemCache(store, 100),
 	})
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		req, _ := http.NewRequest(http.MethodGet, "https://www.example.com/path", nil)
 		req.RemoteAddr = "187.65.23.54"
 		req.Header.Set("User-Agent", "Bot")
@@ -1633,7 +1634,7 @@ func TestTrackerPageViewsLimit(t *testing.T) {
 		MaxPageViews: 5,
 	})
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%d", i), nil)
 		req.Header.Set("User-Agent", userAgent)
 		tracker.PageView(req, 0, Options{})
@@ -1653,7 +1654,7 @@ func TestTrackerPageViewsLimitOverride(t *testing.T) {
 		MaxPageViews: 5,
 	})
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%d", i), nil)
 		req.Header.Set("User-Agent", userAgent)
 		tracker.PageView(req, 0, Options{

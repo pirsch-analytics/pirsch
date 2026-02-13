@@ -3,11 +3,12 @@ package analyzer
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
-	"strings"
-	"time"
 )
 
 var (

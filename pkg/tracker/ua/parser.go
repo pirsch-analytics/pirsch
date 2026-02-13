@@ -1,12 +1,13 @@
 package ua
 
 import (
-	"github.com/emvi/null"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"net/http"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/emvi/null"
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
 )
 
 const (

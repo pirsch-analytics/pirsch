@@ -640,17 +640,8 @@ func (tracker *Tracker) newSession(clientID uint64, r *http.Request, fingerprint
 }
 
 func (tracker *Tracker) updateSession(t eventType, r *http.Request, session *model.Session, now time.Time, hostname, path, title string, eventNonInteractive bool) uint32 {
-	top := now.Unix() - session.Time.Unix()
-
-	if top < 0 {
-		top = 0
-	}
-
-	duration := now.Unix() - session.Start.Unix()
-
-	if duration < 0 {
-		duration = 0
-	}
+	top := max(now.Unix()-session.Time.Unix(), 0)
+	duration := max(now.Unix()-session.Start.Unix(), 0)
 
 	if t == event {
 		session.Time = session.Time.Add(time.Millisecond)

@@ -1,16 +1,17 @@
 package referrer
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAndroidAppCache(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(100)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			name, icon := androidAppCache.get(androidAppPrefix + "com.Slack")
 			assert.Equal(t, "Slack", name)

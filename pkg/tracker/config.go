@@ -1,16 +1,17 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"log/slog"
 	"net"
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/geodb"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/ip"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/tracker/session"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 )
 
 const (

@@ -2,11 +2,12 @@ package db
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestNewClient(t *testing.T) {
@@ -120,7 +121,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 	CleanupDB(t, dbClient)
 	sessions := make([]model.Session, 0, 101)
 
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		now := time.Now().Add(time.Millisecond * time.Duration(i))
 		sessions = append(sessions, model.Session{
 			Sign:      1,

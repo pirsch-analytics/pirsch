@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.27.1
+
+* applied go fix
+* sorted imports
+* updated dependencies
+
 ## 6.27.0
 
 * group search fields by OR instead of AND

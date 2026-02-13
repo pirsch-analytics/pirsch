@@ -1,11 +1,12 @@
 package tracker
 
 import (
-	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOptions_validate(t *testing.T) {

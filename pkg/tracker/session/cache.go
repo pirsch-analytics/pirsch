@@ -2,9 +2,10 @@ package session
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sync"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 // Cache is a session cache.

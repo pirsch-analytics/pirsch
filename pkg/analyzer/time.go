@@ -2,10 +2,11 @@ package analyzer
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"strings"
 )
 
 // Time aggregates statistics regarding the time on the page and session duration.

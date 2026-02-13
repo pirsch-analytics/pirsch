@@ -1,12 +1,13 @@
 package analyzer
 
 import (
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestSessions_List(t *testing.T) {

@@ -2,11 +2,12 @@ package referrer
 
 import (
 	"fmt"
-	"golang.org/x/net/html"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 const (

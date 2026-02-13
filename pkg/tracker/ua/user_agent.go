@@ -1,9 +1,10 @@
 package ua
 
 import (
+	"time"
+
 	"github.com/emvi/null"
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"time"
 )
 
 // UserAgent contains information extracted from the User-Agent header.

@@ -26,7 +26,7 @@ func (options *EventOptions) validate() {
 func (options *EventOptions) getMetaData(tagKeys, tagValues []string) ([]string, []string) {
 	meta := make(map[string]string)
 
-	for i := 0; i < len(tagKeys); i++ {
+	for i := range tagKeys {
 		meta[strings.TrimSpace(tagKeys[i])] = strings.TrimSpace(tagValues[i])
 	}
 

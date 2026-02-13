@@ -2,11 +2,12 @@ package db
 
 import (
 	"context"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 // ClientMock is a mock Store implementation.

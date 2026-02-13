@@ -2,9 +2,10 @@ package db
 
 import (
 	"context"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"time"
 )
 
 // Store is the database storage interface.

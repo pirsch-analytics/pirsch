@@ -2,12 +2,13 @@ package analyzer
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestFunnel_Steps(t *testing.T) {
@@ -206,7 +207,7 @@ func TestFunnel_EqualSteps(t *testing.T) {
 	pv := make([]model.PageView, 0)
 	now := time.Now()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		s = append(s, model.Session{
 			Sign:      1,
 			VisitorID: uint64(i) + 1,
@@ -231,7 +232,7 @@ func TestFunnel_EqualSteps(t *testing.T) {
 	analyzer := NewAnalyzer(dbClient)
 	steps := make([]Filter, 0)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		steps = append(steps, Filter{
 			ClientID: 1,
 			From:     util.Today(),

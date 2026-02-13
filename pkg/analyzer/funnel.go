@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"strings"
 )
 
 const (
@@ -64,7 +65,7 @@ func (funnel *Funnel) Steps(ctx context.Context, filter []Filter) ([]model.Funne
 
 	query.WriteString("SELECT * FROM ( ")
 
-	for i := 0; i < len(filter); i++ {
+	for i := range filter {
 		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) FROM step%d ", i+1, i+1))
 
 		if i != len(filter)-1 {

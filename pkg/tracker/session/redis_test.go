@@ -1,11 +1,12 @@
 package session
 
 import (
+	"testing"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestRedisCache(t *testing.T) {

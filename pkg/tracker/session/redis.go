@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/go-redis/redis/v8"
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
+	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
 )
 
 // RedisCache caches sessions in Redis.

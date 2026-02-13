@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"github.com/oschwald/maxminddb-golang"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/oschwald/maxminddb-golang"
 )
 
 const (

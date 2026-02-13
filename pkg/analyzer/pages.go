@@ -2,11 +2,13 @@ package analyzer
 
 import (
 	"fmt"
+	"slices"
+	"sort"
+	"strings"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/model"
-	"sort"
-	"strings"
 )
 
 // Pages aggregates statistics regarding pages.
@@ -111,12 +113,7 @@ func (pages *Pages) byPath(filter *Filter, eventPath bool) ([]model.PageStats, e
 		n := len(stats)
 
 		for start := 0; start < n; start += 1000 {
-			end := start + 1000
-
-			if end > n {
-				end = n
-			}
-
+			end := min(start+1000, n)
 			pathList := getPathList(stats[start:end])
 			top, err := pages.avgTimeOnPage(filter, pathList)
 
@@ -180,12 +177,7 @@ func (pages *Pages) Entry(filter *Filter) ([]model.EntryStats, error) {
 	n := len(stats)
 
 	for start := 0; start < n; start += 1000 {
-		end := start + 1000
-
-		if end > n {
-			end = n
-		}
-
+		end := min(start+1000, n)
 		pathList := getPathList(stats[start:end])
 		total, err := pages.totalVisitorsSessions(filter, pathList)
 
@@ -278,12 +270,7 @@ func (pages *Pages) Exit(filter *Filter) ([]model.ExitStats, error) {
 	n := len(stats)
 
 	for start := 0; start < n; start += 1000 {
-		end := start + 1000
-
-		if end > n {
-			end = n
-		}
-
+		end := min(start+1000, n)
 		pathList := getPathList(stats[start:end])
 		total, err := pages.totalVisitorsSessions(filter, pathList)
 
@@ -393,14 +380,7 @@ func (pages *Pages) avgTimeOnPage(filter *Filter, paths []string) ([]model.AvgTi
 		search: filter.Search,
 	}
 	fields := q.getFields()
-	hasPath := false
-
-	for _, field := range fields {
-		if field == FieldPath.Name {
-			hasPath = true
-			break
-		}
-	}
+	hasPath := slices.Contains(fields, FieldPath.Name)
 
 	if !hasPath {
 		fields = append(fields, FieldPath.Name)

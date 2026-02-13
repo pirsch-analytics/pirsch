@@ -2,11 +2,12 @@ package ua
 
 import (
 	"fmt"
-	"github.com/pirsch-analytics/pirsch/v6/pkg"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/pirsch-analytics/pirsch/v6/pkg"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseSimple(t *testing.T) {

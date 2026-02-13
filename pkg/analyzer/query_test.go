@@ -1,10 +1,11 @@
 package analyzer
 
 import (
+	"testing"
+
 	"github.com/pirsch-analytics/pirsch/v6/pkg"
 	"github.com/pirsch-analytics/pirsch/v6/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestQuery(t *testing.T) {
