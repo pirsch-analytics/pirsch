@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.28.0
+
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.27.1
 
 * applied go fix

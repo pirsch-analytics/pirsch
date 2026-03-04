@@ -6,6 +6,10 @@ package referrer
 var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
+	"baidu.io":      {},
+	"yahoo.io":      {},
+	"yandex.io":     {},
+	"bing.io":       {},
 
 	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2025-12-20)
 	"0-0.fr":                               {},
@@ -352,6 +356,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"bpro1.top":                            {},
 	"bradleylive.xyz":                      {},
 	"brakehawk.com":                        {},
+	"brandnewtube.com":                     {},
 	"brateg.xyz":                           {},
 	"brauni.com.ua":                        {},
 	"bravica.biz":                          {},
@@ -755,6 +760,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"fashiong.ru":                          {},
 	"fast-wordpress-start.com":             {},
 	"fastgg.net":                           {},
+	"fatrizscae.online":                    {},
 	"favoritki-msk.ru":                     {},
 	"fazika.ru":                            {},
 	"fbdownloader.com":                     {},
