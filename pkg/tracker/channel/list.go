@@ -157,6 +157,11 @@ var (
 		"brave":                            "SOURCE_CATEGORY_SEARCH",
 		"gemini.google.com":                "SOURCE_CATEGORY_AI",
 		"gemini.google":                    "SOURCE_CATEGORY_AI",
+		"copilot.microsoft.com":            "SOURCE_CATEGORY_AI",
+		"m365copilot.com":                  "SOURCE_CATEGORY_AI",
+		"m365.cloud.microsoft":             "SOURCE_CATEGORY_AI",
+		"copilot.cloud.microsoft":          "SOURCE_CATEGORY_AI",
+		"edgeservices.bing.com":            "SOURCE_CATEGORY_AI",
 
 		// https://support.google.com/analytics/answer/9756891 (last update: 2025-04-20)
 		"360.cn":                          "SOURCE_CATEGORY_SEARCH",
