@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Connect connects to the database.
-func Connect() *Client {
-	dbConfig := &ClientConfig{
+// Connect connects to the test database.
+func Connect() *ClickHouse {
+	cfg := &ClickHouseConfig{
 		Hostnames:          []string{"127.0.0.1"},
 		Port:               9000,
 		Database:           "pirschtest",
@@ -21,11 +21,11 @@ func Connect() *Client {
 		dev:                true,
 	}
 
-	if err := Migrate(dbConfig); err != nil {
+	if err := Migrate(cfg); err != nil {
 		panic(err)
 	}
 
-	c, err := NewClient(dbConfig)
+	c, err := NewClickHouse(cfg)
 
 	if err != nil {
 		panic(err)
@@ -34,22 +34,25 @@ func Connect() *Client {
 	return c
 }
 
-// Disconnect disconnects from the database.
-func Disconnect(client *Client) {
+// Disconnect disconnects from the test database.
+func Disconnect(client *ClickHouse) {
 	if err := client.DB.Close(); err != nil {
 		panic(err)
 	}
 }
 
-// CleanupDB clears all database tables.
-func CleanupDB(t *testing.T, client *Client) {
+// CleanupDB clears all test database tables.
+func CleanupDB(t *testing.T, client *ClickHouse) {
 	if !client.dev {
-		panic("client not in dev mode")
+		panic("the client is not in dev mode")
 	}
 
 	tables := []string{
-		"page_view",
+		"session_v7",
+		"page_view_v7",
+		"event_v7",
 		"session",
+		"page_view",
 		"event",
 		"request",
 		"imported_browser",
@@ -91,18 +94,19 @@ func CleanupDB(t *testing.T, client *Client) {
 	}
 }
 
-// DropDB drops all database tables.
-func DropDB(t *testing.T, client *Client) {
+// DropDB drops all test database tables.
+func DropDB(t *testing.T, client *ClickHouse) {
 	if !client.dev {
-		panic("client not in dev mode")
+		panic("the client is not in dev mode")
 	}
 
 	tables := []string{
-		"page_view",
+		"session_v7",
+		"page_view_v7",
+		"event_v7",
 		"session",
+		"page_view",
 		"event",
-		"event_new",
-		"event_backup",
 		"request",
 		"schema_migrations",
 		"imported_browser",

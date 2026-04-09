@@ -25,8 +25,8 @@ type migration struct {
 
 // Migrate runs the database migration for a given connection string.
 // This will use the embedded schema migration scripts.
-func Migrate(config *ClientConfig) error {
-	client, err := NewClient(config)
+func Migrate(config *ClickHouseConfig) error {
+	client, err := NewClickHouse(config)
 
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func Migrate(config *ClientConfig) error {
 	return client.Close()
 }
 
-func createMigrationsTable(client *Client, cluster string) error {
+func createMigrationsTable(client *ClickHouse, cluster string) error {
 	table := ""
 	err := client.QueryRow("SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
 
@@ -74,7 +74,7 @@ func createMigrationsTable(client *Client, cluster string) error {
 	return nil
 }
 
-func getMigrationVersion(client *Client) (int, error) {
+func getMigrationVersion(client *ClickHouse) (int, error) {
 	migration := struct {
 		Version int
 		Dirty   bool
@@ -92,12 +92,12 @@ func getMigrationVersion(client *Client) (int, error) {
 	return migration.Version, nil
 }
 
-func setMigrationVersion(client *Client, version int, dirty bool) error {
+func setMigrationVersion(client *ClickHouse, version int, dirty bool) error {
 	_, err := client.DB.Exec("INSERT INTO schema_migrations (version, dirty, sequence) VALUES (?, ?, ?)", version, dirty, time.Now().UnixNano())
 	return err
 }
 
-func runMigrations(client *Client, version int, cluster string) error {
+func runMigrations(client *ClickHouse, version int, cluster string) error {
 	files, err := migrationFiles.ReadDir("schema")
 
 	if err != nil {

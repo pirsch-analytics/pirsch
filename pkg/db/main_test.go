@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var dbClient *Client
+var dbClient *ClickHouse
 
 func TestMain(m *testing.M) {
 	dbClient = Connect()

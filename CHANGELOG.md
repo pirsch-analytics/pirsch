@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.0
+
+*WIP*
+
 ## 6.28.1
 
 * added Copilot domains to AI channel
