@@ -295,13 +295,12 @@ func (ch *ClickHouse) SaveEvents(ctx context.Context, events []model.Event) erro
 	}
 
 	for _, event := range events {
-		metaData, _ := json.Marshal(event.MetaData)
 		if err := stmt.Append(event.ClientID,
 			event.VisitorID,
 			event.Time.UnixMilli(),
 			event.SessionID,
 			event.Name,
-			metaData,
+			ch.json(event.MetaData),
 			event.Hostname,
 			event.Path,
 			event.Title,
@@ -389,6 +388,11 @@ func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request
 	}
 
 	return nil
+}
+
+func (ch *ClickHouse) json(s any) []byte {
+	o, _ := json.Marshal(s)
+	return o
 }
 
 func (ch *ClickHouse) boolean(b bool) int8 {
