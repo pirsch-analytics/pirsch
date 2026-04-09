@@ -3,6 +3,7 @@ package db
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"database/sql"
 	"embed"
 	"errors"
@@ -19,7 +20,7 @@ import (
 var migrationFiles embed.FS
 
 type migration struct {
-	version    int
+	version    int64
 	statements []string
 }
 
@@ -51,7 +52,7 @@ func Migrate(config *ClickHouseConfig) error {
 
 func createMigrationsTable(client *ClickHouse, cluster string) error {
 	table := ""
-	err := client.QueryRow("SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
+	err := client.QueryRow(context.Background(), "SHOW TABLES LIKE 'schema_migrations'").Scan(&table)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
@@ -66,7 +67,7 @@ func createMigrationsTable(client *ClickHouse, cluster string) error {
 			query = "CREATE TABLE schema_migrations (version Int64, dirty UInt8, sequence UInt64) Engine=MergeTree ORDER BY (version, dirty, sequence)"
 		}
 
-		if _, err := client.DB.Exec(query); err != nil {
+		if err := client.Exec(context.Background(), query); err != nil {
 			return err
 		}
 	}
@@ -74,12 +75,12 @@ func createMigrationsTable(client *ClickHouse, cluster string) error {
 	return nil
 }
 
-func getMigrationVersion(client *ClickHouse) (int, error) {
+func getMigrationVersion(client *ClickHouse) (int64, error) {
 	migration := struct {
-		Version int
+		Version int64
 		Dirty   bool
 	}{}
-	err := client.QueryRow("SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1").Scan(&migration.Version, &migration.Dirty)
+	err := client.QueryRow(context.Background(), "SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1").Scan(&migration.Version, &migration.Dirty)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
@@ -92,12 +93,11 @@ func getMigrationVersion(client *ClickHouse) (int, error) {
 	return migration.Version, nil
 }
 
-func setMigrationVersion(client *ClickHouse, version int, dirty bool) error {
-	_, err := client.DB.Exec("INSERT INTO schema_migrations (version, dirty, sequence) VALUES (?, ?, ?)", version, dirty, time.Now().UnixNano())
-	return err
+func setMigrationVersion(client *ClickHouse, version int64, dirty bool) error {
+	return client.Exec(context.Background(), "INSERT INTO schema_migrations (version, dirty, sequence) VALUES (?, ?, ?)", version, dirty, time.Now().UnixNano())
 }
 
-func runMigrations(client *ClickHouse, version int, cluster string) error {
+func runMigrations(client *ClickHouse, version int64, cluster string) error {
 	files, err := migrationFiles.ReadDir("schema")
 
 	if err != nil {
@@ -116,7 +116,7 @@ func runMigrations(client *ClickHouse, version int, cluster string) error {
 		}
 
 		for _, s := range m.statements {
-			if _, err := client.DB.Exec(s); err != nil {
+			if err := client.Exec(context.Background(), s); err != nil {
 				return err
 			}
 		}
@@ -129,7 +129,7 @@ func runMigrations(client *ClickHouse, version int, cluster string) error {
 	return nil
 }
 
-func loadMigrations(files []fs.DirEntry, version int, cluster string) ([]migration, error) {
+func loadMigrations(files []fs.DirEntry, version int64, cluster string) ([]migration, error) {
 	migrations := make([]migration, 0)
 
 	for _, f := range files {
@@ -158,7 +158,7 @@ func loadMigrations(files []fs.DirEntry, version int, cluster string) ([]migrati
 	return migrations, nil
 }
 
-func parseVersion(name string) (int, error) {
+func parseVersion(name string) (int64, error) {
 	left, _, found := strings.Cut(name, "_")
 
 	if !found {
@@ -166,7 +166,7 @@ func parseVersion(name string) (int, error) {
 	}
 
 	version, err := strconv.ParseInt(left, 10, 64)
-	return int(version), err
+	return version, err
 }
 
 func parseStatements(name, cluster string) ([]string, error) {

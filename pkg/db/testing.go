@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -36,7 +37,7 @@ func Connect() *ClickHouse {
 
 // Disconnect disconnects from the test database.
 func Disconnect(client *ClickHouse) {
-	if err := client.DB.Close(); err != nil {
+	if err := client.Close(); err != nil {
 		panic(err)
 	}
 }
@@ -76,7 +77,7 @@ func CleanupDB(t *testing.T, client *ClickHouse) {
 
 	for _, table := range tables {
 		go func() {
-			_, err := client.Exec(fmt.Sprintf(`ALTER TABLE "%s" DELETE WHERE 1=1`, table))
+			err := client.Exec(context.Background(), fmt.Sprintf(`ALTER TABLE "%s" DELETE WHERE 1=1`, table))
 			wg.Done()
 			assert.NoError(t, err)
 		}()
@@ -85,10 +86,10 @@ func CleanupDB(t *testing.T, client *ClickHouse) {
 	wg.Wait()
 
 	for _, table := range tables {
-		count := 1
+		count := uint64(1)
 
 		for count > 0 {
-			row := client.QueryRow(fmt.Sprintf(`SELECT count(*) FROM "%s"`, table))
+			row := client.QueryRow(context.Background(), fmt.Sprintf(`SELECT count(*) FROM "%s"`, table))
 			assert.NoError(t, row.Scan(&count))
 		}
 	}
@@ -127,7 +128,7 @@ func DropDB(t *testing.T, client *ClickHouse) {
 	}
 
 	for _, table := range tables {
-		_, err := client.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, table))
+		err := client.Exec(context.Background(), fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, table))
 		assert.NoError(t, err)
 	}
 }

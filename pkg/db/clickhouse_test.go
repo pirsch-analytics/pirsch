@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -20,12 +21,12 @@ func TestNewClient(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	assert.NoError(t, client.DB.Ping())
+	assert.NoError(t, client.Ping(context.Background()))
 }
 
 func TestClient_SaveSessions(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveSessions([]model.Session{
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), []model.Session{
 		{
 			Data: model.Data{
 				ClientID:       1,
@@ -122,15 +123,15 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		Sign:    1,
 		Version: 1,
 	})
-	assert.NoError(t, dbClient.SaveSessions(sessions))
-	count := 0
-	assert.NoError(t, dbClient.QueryRow(`SELECT page_views FROM "session_v7" FINAL`).Scan(&count))
-	assert.Equal(t, 51, count)
+	assert.NoError(t, dbClient.SaveSessions(context.Background(), sessions))
+	count := uint16(0)
+	assert.NoError(t, dbClient.QueryRow(context.Background(), `SELECT page_views FROM "session_v7" FINAL`).Scan(&count))
+	assert.Equal(t, uint16(51), count)
 }
 
 func TestClient_SavePageViews(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SavePageViews([]model.PageView{
+	assert.NoError(t, dbClient.SavePageViews(context.Background(), []model.PageView{
 		{
 			Data: model.Data{
 				ClientID:       1,
@@ -175,7 +176,7 @@ func TestClient_SavePageViews(t *testing.T) {
 
 func TestClient_SaveEvents(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveEvents([]model.Event{
+	assert.NoError(t, dbClient.SaveEvents(context.Background(), []model.Event{
 		{
 			Data: model.Data{
 				ClientID:       1,
@@ -222,7 +223,7 @@ func TestClient_SaveEvents(t *testing.T) {
 
 func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, dbClient)
-	assert.NoError(t, dbClient.SaveRequests([]model.Request{
+	assert.NoError(t, dbClient.SaveRequests(context.Background(), []model.Request{
 		{
 			ClientID:    1,
 			VisitorID:   1,
@@ -251,7 +252,7 @@ func TestClient_SaveRequests(t *testing.T) {
 
 func TestClient_GetNoError(t *testing.T) {
 	CleanupDB(t, dbClient)
-	var sessions int
-	assert.NoError(t, dbClient.QueryRow(`SELECT count(*) FROM "session_v7" LIMIT 1`).Scan(&sessions))
-	assert.Equal(t, 0, sessions)
+	var sessions uint64
+	assert.NoError(t, dbClient.QueryRow(context.Background(), `SELECT count(*) FROM "session_v7" LIMIT 1`).Scan(&sessions))
+	assert.Equal(t, uint64(0), sessions)
 }

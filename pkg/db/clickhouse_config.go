@@ -43,15 +43,10 @@ type ClickHouseConfig struct {
 	// If set to <= 0, the default value of 5 will be used.
 	MaxIdleConnections int
 
-	// MaxConnectionIdleTimeSeconds sets the maximum amount of time a connection can be idle.
-	// If set to <= 0, the default value of 300 will be used.
-	MaxConnectionIdleTimeSeconds int
-
 	// Logger is the log.Logger used for logging.
-	// The default log will be used printing to os.Stdout with "pirsch" in its prefix in case it is not set.
 	Logger *slog.Logger
 
-	// Debug will enable verbose logging.
+	// Debug enables the logger for the ClickHouse connection.
 	Debug bool
 
 	dev bool
@@ -68,10 +63,6 @@ func (config *ClickHouseConfig) validate() {
 
 	if config.MaxIdleConnections <= 0 {
 		config.MaxIdleConnections = defaultMaxIdleConnections
-	}
-
-	if config.MaxConnectionIdleTimeSeconds <= 0 {
-		config.MaxConnectionIdleTimeSeconds = defaultMaxConnectionIdleTime
 	}
 
 	if config.Logger == nil {

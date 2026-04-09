@@ -2,7 +2,12 @@
 
 ## 7.0.0
 
-*WIP*
+* added native ClickHouse client support
+* added JSON metadata support to events
+* use map instead of two arrays for tags on page views
+* improved batch inserts
+* removed duration_seconds field
+* updated dependencies
 
 ## 6.28.1
 

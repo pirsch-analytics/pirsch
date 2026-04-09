@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"sort"
 	"sync"
 
@@ -28,7 +29,7 @@ func NewMock() *Mock {
 }
 
 // SavePageViews implements the Storage interface.
-func (client *Mock) SavePageViews(pageViews []model.PageView) error {
+func (client *Mock) SavePageViews(_ context.Context, pageViews []model.PageView) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.pageViews = append(client.pageViews, pageViews...)
@@ -36,7 +37,7 @@ func (client *Mock) SavePageViews(pageViews []model.PageView) error {
 }
 
 // SaveSessions implements the Storage interface.
-func (client *Mock) SaveSessions(sessions []model.Session) error {
+func (client *Mock) SaveSessions(_ context.Context, sessions []model.Session) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.sessions = append(client.sessions, sessions...)
@@ -44,7 +45,7 @@ func (client *Mock) SaveSessions(sessions []model.Session) error {
 }
 
 // SaveEvents implements the Storage interface.
-func (client *Mock) SaveEvents(events []model.Event) error {
+func (client *Mock) SaveEvents(_ context.Context, events []model.Event) error {
 	client.m.Lock()
 	defer client.m.Unlock()
 	client.events = append(client.events, events...)
@@ -52,10 +53,10 @@ func (client *Mock) SaveEvents(events []model.Event) error {
 }
 
 // SaveRequests implements the Storage interface.
-func (client *Mock) SaveRequests(bots []model.Request) error {
+func (client *Mock) SaveRequests(_ context.Context, requests []model.Request) error {
 	client.m.Lock()
 	defer client.m.Unlock()
-	client.requests = append(client.requests, bots...)
+	client.requests = append(client.requests, requests...)
 	return nil
 }
 

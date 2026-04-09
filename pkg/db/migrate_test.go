@@ -22,13 +22,13 @@ func TestMigrate(t *testing.T) {
 func TestParseVersion(t *testing.T) {
 	version, err := parseVersion("0001_baseline.up.sql")
 	assert.NoError(t, err)
-	assert.Equal(t, 1, version)
+	assert.Equal(t, int64(1), version)
 	version, err = parseVersion("0015_is_bounce.up.sql")
 	assert.NoError(t, err)
-	assert.Equal(t, 15, version)
+	assert.Equal(t, int64(15), version)
 	version, err = parseVersion("baseline.up.sql")
 	assert.Equal(t, "migration filename needs to start with the version number", err.Error())
-	assert.Equal(t, 0, version)
+	assert.Equal(t, int64(0), version)
 }
 
 func TestParseStatements(t *testing.T) {
