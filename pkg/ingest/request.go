@@ -21,6 +21,7 @@ type Request struct {
 	SessionID uint32
 
 	// Request is the http.Request for the visitor.
+	// This field is mandatory.
 	Request *http.Request
 
 	// Time overrides the time the page view should be recorded for at UTC.

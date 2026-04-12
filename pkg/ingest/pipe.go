@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,6 +60,11 @@ func (p *Pipe) Process(request *Request) error {
 	case <-p.ctx.Done():
 		return p.ctx.Err()
 	default:
+	}
+
+	// check if the request should be ignored for any reason
+	if p.ignore(request) {
+		return nil
 	}
 
 	// process the request otherwise
@@ -269,4 +275,26 @@ func (p *Pipe) flushWithRetry(save func() error, operation string) error {
 	}
 
 	return fmt.Errorf("%s failed after %d attempts: %w", operation, maxRetries, err)
+}
+
+func (p *Pipe) ignore(request *Request) bool {
+	// ignore requests with missing http.Request attributes
+	if request.Request == nil {
+		return true
+	}
+
+	// ignore browsers pre-fetching data
+	xMoz := strings.ToLower(request.Request.Header.Get("X-Moz"))
+	xPurpose := strings.ToLower(request.Request.Header.Get("X-Purpose"))
+	purpose := strings.ToLower(request.Request.Header.Get("Purpose"))
+
+	if xMoz == "prefetch" ||
+		xPurpose == "prefetch" ||
+		xPurpose == "preview" ||
+		purpose == "prefetch" ||
+		purpose == "preview" {
+		return true
+	}
+
+	return false
 }
