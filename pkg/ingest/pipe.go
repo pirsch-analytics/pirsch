@@ -13,7 +13,7 @@ import (
 )
 
 // Pipe ingests requests into the system.
-// Requests are processed through steps before they are stored.
+// Requests are processed through configurable steps before they are stored.
 type Pipe struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
