@@ -2,7 +2,7 @@
 ## explicit; go 1.24.1
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
-# github.com/ClickHouse/clickhouse-go/v2 v2.44.0
+# github.com/ClickHouse/clickhouse-go/v2 v2.45.0
 ## explicit; go 1.24.1
 github.com/ClickHouse/clickhouse-go/v2
 github.com/ClickHouse/clickhouse-go/v2/contributors
@@ -68,6 +68,7 @@ github.com/klauspost/compress/zstd/internal/xxhash
 ## explicit; go 1.21
 # github.com/oschwald/maxminddb-golang v1.13.1
 ## explicit; go 1.21
+github.com/oschwald/maxminddb-golang
 # github.com/paulmach/orb v0.13.0
 ## explicit; go 1.18
 github.com/paulmach/orb
@@ -118,6 +119,8 @@ go.yaml.in/yaml/v3
 # golang.org/x/sys v0.43.0
 ## explicit; go 1.25.0
 golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
