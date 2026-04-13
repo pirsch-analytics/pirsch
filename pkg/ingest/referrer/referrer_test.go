@@ -1,0 +1,370 @@
+package referrer
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestReferrer(t *testing.T) {
+	input := []string{
+		"http://boring.old/domain",
+		"http://boring.old/domain/",
+		"https://with.subdomain.com/",
+		"https://with.multiple.subdomains.com/and/a/path?plus=query&params=42#anchor",
+		"https://example.com/",
+		"https://example.com",
+		"ReferrerName",
+		"  ",
+		"Pirsch.io",
+		"49.12.18.161",
+		"49.12.18.161/",
+		"http://49.12.18.161/",
+		"168.119.249.160:8080",
+		"168.119.249.160:8080/signup",
+		"https://168.119.249.160:8080",
+		"https://168.119.249.160:8080/signup",
+		"https://Example.com",
+		"https://example.com/",
+		"https://www.example.com",
+		"https://www.example.com/",
+		"sub.example.com/with/path/",
+		"http://sub.example.com/with/path/",
+		"http://www.example.com/",
+		"https://www.google.com",
+		"https://www.google.bf",
+		"https://google.com/",
+		"https://google.bf",
+		"https://www.google.pl/products",
+		"https://t.co/asdf",
+		"https://t.co",
+		"HTTPS://T.CO",
+		"http%3A%2F%2Finstagram.com%2F",
+		"https://www.instagram.com",
+		"https://www.instagram.com/",
+		"https://www.ecosia.org",
+		"https://www.ecosia.org/",
+		"https://example.com\nSome additional text",
+		"https://example.com\r\nWith carriage return",
+	}
+	expected := []struct {
+		referrer string
+		name     string
+	}{
+		{"http://boring.old/domain", "boring.old"},
+		{"http://boring.old/domain/", "boring.old"}, // trailing slashes only matter for non-root domain URLs
+		{"https://with.subdomain.com", "with.subdomain.com"},
+		{"https://with.multiple.subdomains.com/and/a/path", "with.multiple.subdomains.com"},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
+		{"", "ReferrerName"},
+		{"", ""},
+		{"https://pirsch.io", "pirsch.io"},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"", ""},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
+		{"https://www.example.com", "example.com"},
+		{"https://www.example.com", "example.com"},
+		{"", "sub.example.com/with/path/"},
+		{"http://sub.example.com/with/path/", "sub.example.com"},
+		{"http://www.example.com", "example.com"},
+		{"https://www.google.com", "Google"},
+		{"https://www.google.bf", "Google"},
+		{"https://google.com", "Google"},
+		{"https://google.bf", "Google"},
+		{"https://www.google.pl/products", "Google Product Search"},
+		{"https://t.co/asdf", "Twitter"},
+		{"https://t.co", "Twitter"},
+		{"https://t.co", "Twitter"},
+		{"http://instagram.com", "Instagram"},
+		{"https://www.instagram.com", "Instagram"},
+		{"https://www.instagram.com", "Instagram"},
+		{"https://www.ecosia.org", "Ecosia"},
+		{"https://www.ecosia.org", "Ecosia"},
+		{"https://example.com", "example.com"},
+		{"https://example.com", "example.com"},
+	}
+	ref := NewReferrer(QueryParams, Groups)
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r.Header.Add("Referer", in)
+		req := &ingest.Request{
+			Request: r,
+		}
+		cancel, err := ref.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.Equal(t, expected[i].referrer, req.Referrer)
+		assert.Equal(t, expected[i].name, req.ReferrerName)
+	}
+}
+
+func TestReferrerFromParam(t *testing.T) {
+	input := []struct {
+		param    string
+		referrer string
+	}{
+		{"ref", "https://www.google.com/"},
+		{"ref", "https%3A%2F%2Fwww.google.com%2F"},
+		{"utm_source", "https://www.google.com/"},
+		{"utm_source", "https%3A%2F%2Fwww.google.com%2F"},
+		{"ref", "google.com"},
+		{"utm_source", "google.com"},
+		{"ref", "My+Referrer"},
+		{"ref", "referrer"},
+	}
+	expected := []struct {
+		referrer string
+		name     string
+	}{
+		{"https://www.google.com", "Google"},
+		{"https://www.google.com", "Google"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
+		{"https://google.com", "Google"},
+		{"https://overwrite-this.com", "overwrite-this.com"},
+		{"", "My Referrer"},
+		{"", "referrer"},
+	}
+	ref := NewReferrer(QueryParams, Groups)
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
+		r.Header.Set("Referer", "https://overwrite-this.com")
+		req := &ingest.Request{
+			Request: r,
+		}
+		cancel, err := ref.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.Equal(t, expected[i].referrer, req.Referrer)
+		assert.Equal(t, expected[i].name, req.ReferrerName)
+	}
+}
+
+func TestReferrerSameDomain(t *testing.T) {
+	ref := NewReferrer(QueryParams, Groups)
+	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
+	r.Header.Add("Referer", "https://example.com/foo/bar")
+	req := &ingest.Request{
+		Request:  r,
+		Hostname: "example.com",
+	}
+	cancel, err := ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Empty(t, req.Referrer)
+	assert.Empty(t, req.ReferrerName)
+	assert.Empty(t, req.ReferrerIcon)
+	r = httptest.NewRequest(http.MethodGet, "https://example.com:8080/bar/foo", nil)
+	req.Request = r
+	cancel, err = ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Empty(t, req.Referrer)
+	assert.Empty(t, req.ReferrerName)
+	assert.Empty(t, req.ReferrerIcon)
+	r = httptest.NewRequest(http.MethodGet, "https://example.com", nil)
+	r.Header.Add("Referer", "https://sub.example.com/foo/bar")
+	req.Request = r
+	cancel, err = ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, "https://sub.example.com/foo/bar", req.Referrer)
+	assert.Equal(t, "sub.example.com", req.ReferrerName)
+	assert.Empty(t, req.ReferrerIcon)
+}
+
+func TestReferrerFromHeaderOrQuery(t *testing.T) {
+	input := [][]string{
+		{"", "", ""},
+		{"ref", "", ""},
+		{"ref", "domain", ""},
+		{"ref", "domain+space", ""},
+		{"ref", "domain+space", "https://overwrite-this.com"},
+		{"source", "domain+space", "https://overwrite-this.com"},
+		{"utm_source", "domain+space", "https://overwrite-this.com"},
+		{"referer", "", ""},
+		{"referer", "domain", ""},
+		{"referer", "domain+space", ""},
+		{"referrer", "", ""},
+		{"referrer", "domain", ""},
+		{"referrer", "domain+space", ""},
+		{"source", "", ""},
+		{"source", "domain", ""},
+		{"source", "domain+space", ""},
+		{"utm_source", "", ""},
+		{"utm_source", "domain", ""},
+		{"utm_source", "domain+space", ""},
+	}
+	expected := []string{
+		"",
+		"",
+		"domain",
+		"domain space",
+		"domain space",
+		"https://overwrite-this.com",
+		"https://overwrite-this.com",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
+		"",
+		"domain",
+		"domain space",
+	}
+	ref := NewReferrer(QueryParams, Groups)
+
+	for i, in := range input {
+		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
+
+		if in[2] != "" {
+			r.Header.Set("Referer", in[2])
+		}
+
+		assert.Equal(t, expected[i], ref.fromHeaderOrQuery(r))
+	}
+}
+
+func TestReferrerStripSubdomain(t *testing.T) {
+	input := []string{
+		"",
+		".",
+		"..",
+		"...",
+		" ",
+		"\t",
+		"boring.old",
+		"with.subdomain.com",
+		"with.multiple.subdomains.com",
+	}
+	expected := []string{
+		"",
+		".",
+		"..",
+		".",
+		" ",
+		"\t",
+		"boring.old",
+		"subdomain.com",
+		"subdomains.com",
+	}
+	ref := NewReferrer(QueryParams, Groups)
+
+	for i, in := range input {
+		assert.Equal(t, expected[i], ref.stripSubdomain(in))
+	}
+}
+
+func TestReferrerAndroidApp(t *testing.T) {
+	ref := NewReferrer(QueryParams, Groups)
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
+	req := &ingest.Request{
+		Request: r,
+	}
+	cancel, err := ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, "Slack", req.ReferrerName)
+	assert.NotEmpty(t, req.ReferrerIcon)
+	r = httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Add("Referer", androidAppPrefix+"com.pinterest/")
+	req = &ingest.Request{
+		Request: r,
+	}
+	cancel, err = ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, "Pinterest", req.ReferrerName)
+	assert.NotEmpty(t, req.ReferrerIcon)
+	r.Header.Set("Referer", androidAppPrefix+"does-not-exist")
+	req = &ingest.Request{
+		Request: r,
+	}
+	cancel, err = ref.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, androidAppPrefix+"does-not-exist", req.Referrer)
+	assert.Empty(t, req.ReferrerName)
+	assert.Empty(t, req.ReferrerIcon)
+}
+
+func TestReferrerAcknowledge(t *testing.T) {
+	referrer := []string{
+		"https://www.adsensecustomsearchads.com/",
+	}
+	ignored := make([]string, 0)
+	ref := NewReferrer(QueryParams, Groups)
+
+	for _, r := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.Header.Set("Referer", r)
+
+		if ref.ignore(&ingest.Request{
+			Request: req,
+		}) {
+			ignored = append(ignored, r)
+		}
+	}
+
+	assert.Empty(t, ignored)
+}
+
+func TestReferrerIgnore(t *testing.T) {
+	referrer := []string{
+		`(select(0)from(select(sleep(15)))v)/*'+(select(0)from(select(sleep(15)))v)+'"+(select(0)from(select(sleep(15)))v)+"*/`,
+		`-1 OR 2+1-1+1=1 AND 136=136 --`,
+		`-1 OR 2+136-136-1=0+0+0+1 --`,
+		`-1 OR 3*2=6 AND 707=707`,
+		`-1 OR 3*2=6 AND 946=946 --`,
+		`-1 OR 3*2>(0+5+946-946) --`,
+		`-1 OR 3+87-87-1=0+0+0+1`,
+		`-1 OR 3+946-946-1=0+0+0+1 --`,
+		`-1" OR 2+1-1-1=1 AND 846=846 --`,
+		`-1" OR 2+874-874-1=0+0+0+1 --`,
+		`-1" OR 3*2<(0+5+846-846) --`,
+		`-1" OR 3*2=6 AND 778=778 --`,
+		`-1" OR 3*2>(0+5+846-846) --`,
+		`-1" OR 3+211-211-1=0+0+0+1 --`,
+		`-1' OR 2+1-1-1=1 AND 94=94 --`,
+		`-1' OR 3*2>(0+5+912-912) or 'S37EBSa9'='`,
+		`-1' OR 3*2>(0+5+94-94) --`,
+		`-1' OR 3+142-142-1=0+0+0+1 --`,
+		`-1' OR 3+842-842-1=0+0+0+1 or 'XSkGSBJC'='`,
+		`-1)) OR 105=(SELECT 105 FROM PG_SLEEP(15))--`,
+		`0"XOR(if(now()=sysdate(),sleep(15),0))XOR"Z`,
+		`0sjy32e7') OR 259=(SELECT 259 FROM PG_SLEEP(15))--`,
+	}
+	acknowledged := make([]string, 0)
+	ref := NewReferrer(QueryParams, Groups)
+
+	for _, r := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.Header.Set("Referer", r)
+
+		if !ref.ignore(&ingest.Request{
+			Request: req,
+		}) {
+			acknowledged = append(acknowledged, r)
+		}
+	}
+
+	assert.Empty(t, acknowledged)
+}
