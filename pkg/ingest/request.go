@@ -159,6 +159,9 @@ type Request struct {
 	// This should be set by a PipeFunc.
 	UTMTerm string
 
+	// ClickID is the gclid (Google) or msclkid (Microsoft) click ID.
+	ClickID string
+
 	// Channel is the channel for the request.
 	// This should be set by a PipeFunc.
 	Channel string
