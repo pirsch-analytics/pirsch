@@ -14,7 +14,7 @@ func NewLanguage() *Language {
 	return &Language{}
 }
 
-// Step implements ingest.PipeFunc to process a step.
+// Step implements ingest.PipeStep to process a step.
 // It sets the screen class for the request.
 func (l *Language) Step(request *ingest.Request) (bool, error) {
 	lang := request.Request.Header.Get("Accept-Language")

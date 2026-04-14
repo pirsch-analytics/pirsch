@@ -31,7 +31,7 @@ func NewScreen(classes []Class) *Screen {
 	}
 }
 
-// Step implements ingest.PipeFunc to process a step.
+// Step implements ingest.PipeStep to process a step.
 // It sets the screen class for the request.
 func (s *Screen) Step(request *ingest.Request) (bool, error) {
 	if request.ScreenWidth == 0 {

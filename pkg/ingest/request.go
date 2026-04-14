@@ -80,98 +80,98 @@ type Request struct {
 	DisableBotFilter bool
 
 	// Language is the language for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Language string
 
 	// CountryCode is the country ISO code for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	CountryCode string
 
 	// Region is the region for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Region string
 
 	// City is the city for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	City string
 
 	// ReferrerName is the referrer name (group) for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	ReferrerName string
 
 	// ReferrerIcon is the referrer icon URL for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	ReferrerIcon string
 
 	// OS is the OS for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	OS string
 
 	// OSVersion is the OS version for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	OSVersion string
 
 	// Browser is the browser for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Browser string
 
 	// BrowserVersion is the browser version for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	BrowserVersion string
 
 	// Desktop indicates a desktop device for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Desktop bool
 
 	// Mobile indicates a mobile device for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Mobile bool
 
 	// ScreenClass is the screen class for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	ScreenClass string
 
 	// IP is the IP for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	IP string
 
 	// UserAgent is the User Agent for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UserAgent string
 
 	// UTMSource is the UTM source for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UTMSource string
 
 	// UTMMedium is the UTM medium for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UTMMedium string
 
 	// UTMCampaign is the UTM campaign for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UTMCampaign string
 
 	// UTMContent is the UTM content for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UTMContent string
 
 	// UTMTerm is the UTM term for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	UTMTerm string
 
 	// ClickID is the gclid (Google) or msclkid (Microsoft) click ID.
 	ClickID string
 
 	// Channel is the channel for the request.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	Channel string
 
 	// IsBot marks the request as a bot.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	IsBot bool
 
 	// BotReason is the reason why a request has been blocked for a bot.
-	// This should be set by a PipeFunc.
+	// This should be set by a PipeStep.
 	BotReason string
 
 	cancelled     bool

@@ -46,7 +46,7 @@ func NewReferrer(params []QueryParam, groups map[string]string) *Referrer {
 	}
 }
 
-// Step implements ingest.PipeFunc to process a step.
+// Step implements ingest.PipeStep to process a step.
 // It sets the referrer for the request.
 func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	referrer := ""

@@ -66,8 +66,8 @@ func NewChannel(list map[string]string) *Channel {
 	}
 }
 
-// Step implements ingest.PipeFunc to process a step.
-func (channel *Channel) Step(request *ingest.Request) (bool, error) {
+// Step implements ingest.PipeStep to process a step.
+func (c *Channel) Step(request *ingest.Request) (bool, error) {
 	referrer := request.Referrer
 	u, err := url.Parse(referrer)
 
@@ -86,7 +86,7 @@ func (channel *Channel) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	isShoppingChannel := slices.Contains(channel.shopping, referrer)
+	isShoppingChannel := slices.Contains(c.shopping, referrer)
 	isPaidMedium := paidMediumRegex.MatchString(utmMedium)
 
 	if (isShoppingChannel || paidShoppingCampaignRegex.MatchString(utmCampaign)) && isPaidMedium {
@@ -94,7 +94,7 @@ func (channel *Channel) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	isSearchChannel := slices.Contains(channel.search, referrer) || slices.Contains(channel.search, referrerName)
+	isSearchChannel := slices.Contains(c.search, referrer) || slices.Contains(c.search, referrerName)
 
 	if isSearchChannel && isPaidMedium ||
 		referrerName == "google" && request.ClickID == "(gclid)" ||
@@ -103,14 +103,14 @@ func (channel *Channel) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	isSocialChannel := slices.Contains(channel.social, referrer)
+	isSocialChannel := slices.Contains(c.social, referrer)
 
 	if isSocialChannel && isPaidMedium {
 		request.Channel = "Paid Social"
 		return false, nil
 	}
 
-	isVideoChannel := slices.Contains(channel.video, referrer)
+	isVideoChannel := slices.Contains(c.video, referrer)
 
 	if isVideoChannel && isPaidMedium {
 		request.Channel = "Paid Video"
@@ -197,9 +197,9 @@ func (channel *Channel) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	if slices.Contains(channel.ai, referrer) ||
-		slices.Contains(channel.ai, utmSource) ||
-		slices.Contains(channel.ai, util.StripWWW(utmSource)) {
+	if slices.Contains(c.ai, referrer) ||
+		slices.Contains(c.ai, utmSource) ||
+		slices.Contains(c.ai, util.StripWWW(utmSource)) {
 		request.Channel = "AI"
 		return false, nil
 	}

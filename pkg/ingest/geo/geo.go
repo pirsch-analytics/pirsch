@@ -24,8 +24,8 @@ const (
 	geoLite2Filename      = "GeoLite2-City.mmdb"
 )
 
-// GeoDB maps IPs to their geological location based on MaxMinds GeoLite2 or GeoIP2 database.
-type GeoDB struct {
+// Geo maps IPs to their geological location based on MaxMinds GeoLite2 or GeoIP2 database.
+type Geo struct {
 	licenseKey   string
 	downloadPath string
 	downloadURL  string
@@ -33,15 +33,15 @@ type GeoDB struct {
 	m            sync.RWMutex
 }
 
-// NewGeoDB creates a new GeoDB for the given licence key.
+// NewGeo creates a new Geo for the given licence key.
 // The download URL is optional and will be set to the default if empty.
 // "LICENCE_KEY" will be replaced with the configured licence key.
-func NewGeoDB(licenseKey, downloadPath, downloadURL string) (*GeoDB, error) {
+func NewGeo(licenseKey, downloadPath, downloadURL string) (*Geo, error) {
 	if downloadURL == "" {
 		downloadURL = geoLite2Permalink
 	}
 
-	geoDB := &GeoDB{
+	geoDB := &Geo{
 		licenseKey:   licenseKey,
 		downloadPath: downloadPath,
 		downloadURL:  downloadURL,
@@ -56,10 +56,10 @@ func NewGeoDB(licenseKey, downloadPath, downloadURL string) (*GeoDB, error) {
 	return geoDB, nil
 }
 
-// Step implements ingest.PipeFunc to process a step.
+// Step implements ingest.PipeStep to process a step.
 // It looks up the country code, subdivision (region), and city for given IP.
 // If the IP is invalid, it won't do anything.
-func (db *GeoDB) Step(request *ingest.Request) (bool, error) {
+func (geo *Geo) Step(request *ingest.Request) (bool, error) {
 	parsedIP := net.ParseIP(request.IP)
 
 	if parsedIP == nil {
@@ -83,10 +83,10 @@ func (db *GeoDB) Step(request *ingest.Request) (bool, error) {
 		} `maxminddb:"city"`
 	}{}
 
-	db.m.RLock()
-	defer db.m.RUnlock()
+	geo.m.RLock()
+	defer geo.m.RUnlock()
 
-	if err := db.db.Lookup(parsedIP, &record); err != nil {
+	if err := geo.db.Lookup(parsedIP, &record); err != nil {
 		return false, nil
 	}
 
@@ -107,48 +107,48 @@ func (db *GeoDB) Step(request *ingest.Request) (bool, error) {
 }
 
 // Update downloads and unpacks the MaxMind GeoLite2 database.
-func (db *GeoDB) Update() error {
-	if err := db.download(); err != nil {
+func (geo *Geo) Update() error {
+	if err := geo.download(); err != nil {
 		return err
 	}
 
-	if err := db.unpackAndUpdate(); err != nil {
+	if err := geo.unpackAndUpdate(); err != nil {
 		return err
 	}
 
-	if err := os.Remove(filepath.Join(db.downloadPath, geoLite2TarGzFilename)); err != nil {
+	if err := os.Remove(filepath.Join(geo.downloadPath, geoLite2TarGzFilename)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// UpdateFromFile updates GeoDB from a given file instead of downloading the database.
-func (db *GeoDB) UpdateFromFile(path string) error {
+// UpdateFromFile updates Geo from a given file instead of downloading the database.
+func (geo *Geo) UpdateFromFile(path string) error {
 	data, err := os.ReadFile(path)
 
 	if err != nil {
 		return err
 	}
 
-	db.m.Lock()
-	defer db.m.Unlock()
+	geo.m.Lock()
+	defer geo.m.Unlock()
 	geoDB, err := maxminddb.FromBytes(data)
 
 	if err != nil {
 		return err
 	}
 
-	db.db = geoDB
+	geo.db = geoDB
 	return nil
 }
 
-func (db *GeoDB) download() error {
-	if err := os.MkdirAll(db.downloadPath, 0755); err != nil {
+func (geo *Geo) download() error {
+	if err := os.MkdirAll(geo.downloadPath, 0755); err != nil {
 		return err
 	}
 
-	resp, err := http.Get(strings.Replace(db.downloadURL, geoLite2LicenseKey, db.licenseKey, 1))
+	resp, err := http.Get(strings.Replace(geo.downloadURL, geoLite2LicenseKey, geo.licenseKey, 1))
 
 	if err != nil {
 		return err
@@ -160,15 +160,15 @@ func (db *GeoDB) download() error {
 		return err
 	}
 
-	if err := os.WriteFile(filepath.Join(db.downloadPath, geoLite2TarGzFilename), tarGz, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(geo.downloadPath, geoLite2TarGzFilename), tarGz, 0755); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (db *GeoDB) unpackAndUpdate() error {
-	file, err := os.Open(filepath.Join(db.downloadPath, geoLite2TarGzFilename))
+func (geo *Geo) unpackAndUpdate() error {
+	file, err := os.Open(filepath.Join(geo.downloadPath, geoLite2TarGzFilename))
 
 	if err != nil {
 		return err
@@ -207,14 +207,14 @@ func (db *GeoDB) unpackAndUpdate() error {
 		}
 	}
 
-	db.m.Lock()
-	defer db.m.Unlock()
+	geo.m.Lock()
+	defer geo.m.Unlock()
 	geoDB, err := maxminddb.FromBytes(out.Bytes())
 
 	if err != nil {
 		return err
 	}
 
-	db.db = geoDB
+	geo.db = geoDB
 	return nil
 }

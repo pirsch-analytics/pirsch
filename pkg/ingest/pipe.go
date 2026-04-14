@@ -19,7 +19,7 @@ type Pipe struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
-	steps    []PipeFunc
+	steps    []PipeStep
 	requests chan *Request
 	storage  db.Storage
 	logger   *slog.Logger
@@ -32,7 +32,7 @@ func NewPipe(options PipeOptions) *Pipe {
 	p := &Pipe{
 		ctx:      ctx,
 		cancel:   cancel,
-		steps:    make([]PipeFunc, 0),
+		steps:    make([]PipeStep, 0),
 		requests: make(chan *Request, options.RequestChannelBufferSize),
 		storage:  options.Storage,
 		logger:   options.Logger,
@@ -46,7 +46,7 @@ func NewPipe(options PipeOptions) *Pipe {
 }
 
 // Use adds a processing step to the Pipe.
-func (p *Pipe) Use(f PipeFunc) *Pipe {
+func (p *Pipe) Use(f PipeStep) *Pipe {
 	p.steps = append(p.steps, f)
 	return p
 }
@@ -71,7 +71,7 @@ func (p *Pipe) Process(request *Request) error {
 	request.validate()
 
 	for _, step := range p.steps {
-		cancel, err := step(request)
+		cancel, err := step.Step(request)
 
 		if err != nil {
 			return err

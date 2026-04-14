@@ -20,10 +20,7 @@ func TestPipeSimple(t *testing.T) {
 	storage := db.NewMock()
 	pipe := NewPipe(PipeOptions{
 		Storage: storage,
-	}).Use(func(request *Request) (bool, error) {
-		request.session = new(model.Session)
-		return false, nil
-	})
+	}).Use(&sessionStep{})
 
 	// process a sample request
 	req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
@@ -46,10 +43,7 @@ func TestPipeTimeout(t *testing.T) {
 		pipe := NewPipe(PipeOptions{
 			Storage:       storage,
 			WorkerTimeout: time.Second * 5,
-		}).Use(func(request *Request) (bool, error) {
-			request.session = new(model.Session)
-			return false, nil
-		})
+		}).Use(&sessionStep{})
 		defer pipe.Stop()
 
 		// create two sample requests
@@ -83,10 +77,7 @@ func TestPipeBufferLimit(t *testing.T) {
 		Storage:          storage,
 		Worker:           1,
 		WorkerBufferSize: 10,
-	}).Use(func(request *Request) (bool, error) {
-		request.session = new(model.Session)
-		return false, nil
-	})
+	}).Use(&sessionStep{})
 
 	// ingest requests
 	for range 11 {
@@ -115,10 +106,7 @@ func TestPipeRetrySave(t *testing.T) {
 			Storage:       storage,
 			Worker:        1,
 			WorkerTimeout: time.Second * 5,
-		}).Use(func(request *Request) (bool, error) {
-			request.session = new(model.Session)
-			return false, nil
-		})
+		}).Use(&sessionStep{})
 		defer pipe.Stop()
 
 		// create a sample request
@@ -163,10 +151,7 @@ func TestPipeRetryError(t *testing.T) {
 			Storage:       storage,
 			Worker:        1,
 			WorkerTimeout: time.Second * 5,
-		}).Use(func(request *Request) (bool, error) {
-			request.session = new(model.Session)
-			return false, nil
-		})
+		}).Use(&sessionStep{})
 
 		// create a sample request
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
@@ -197,10 +182,7 @@ func TestPipeConcurrency(t *testing.T) {
 			Worker:           5,
 			WorkerBufferSize: 10,
 			WorkerTimeout:    time.Second * 5,
-		}).Use(func(request *Request) (bool, error) {
-			request.session = new(model.Session)
-			return false, nil
-		})
+		}).Use(&sessionStep{})
 
 		// create sample requests concurrently
 		var wg sync.WaitGroup
@@ -301,6 +283,13 @@ func TestPipePrefetch(t *testing.T) {
 	// no requests must have been stored
 	pipe.Stop()
 	assert.Empty(t, storage.GetPageViews())
+}
+
+type sessionStep struct{}
+
+func (s *sessionStep) Step(request *Request) (bool, error) {
+	request.session = new(model.Session)
+	return false, nil
 }
 
 type storageWithError struct {
