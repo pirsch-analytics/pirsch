@@ -33,6 +33,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 # github.com/emvi/iso-639-1 v1.1.1
 ## explicit; go 1.17
+github.com/emvi/iso-639-1
 # github.com/emvi/null v1.3.1
 ## explicit
 # github.com/go-faster/city v1.0.1
