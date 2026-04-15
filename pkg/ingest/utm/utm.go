@@ -7,6 +7,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 )
 
+// UTM maps query parameters to UTM parameters.
 type UTM struct{}
 
 // NewUTM returns a new UTM.

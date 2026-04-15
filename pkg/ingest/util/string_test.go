@@ -22,3 +22,23 @@ func TestStripWWW(t *testing.T) {
 		assert.Equal(t, item.out, StripWWW(item.in))
 	}
 }
+
+func TestContainsNonASCIICharacters(t *testing.T) {
+	input := []string{
+		"��!�<~2��T��Ė�B;",
+		"��!�Hh��L~v�;",
+		"��C�j�P��E8��x�O|��",
+	}
+
+	for _, in := range input {
+		assert.True(t, ContainsNonASCIICharacters(in))
+	}
+
+	input = []string{
+		"this is fine",
+	}
+
+	for _, in := range input {
+		assert.False(t, ContainsNonASCIICharacters(in))
+	}
+}
