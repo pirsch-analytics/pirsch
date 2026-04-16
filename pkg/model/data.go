@@ -11,10 +11,7 @@ type Data struct {
 	VisitorID      uint64    `db:"visitor_id" json:"visitor_id"`
 	SessionID      uint32    `db:"session_id" json:"session_id"`
 	Time           time.Time `json:"time"`
-	Start          time.Time `json:"start"`
 	Hostname       string    `json:"hostname"`
-	PageViews      uint16    `db:"page_views" json:"page_views"`
-	IsBounce       bool      `db:"is_bounce" json:"is_bounce"`
 	Language       string    `json:"language"`
 	CountryCode    string    `db:"country_code" json:"country_code"`
 	Region         string    `json:"region"`

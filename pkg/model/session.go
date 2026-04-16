@@ -2,19 +2,23 @@ package model
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // Session stores updates to a visitor session.
 type Session struct {
 	Data
 
-	Sign       int8   `json:"sign"`
-	Version    uint16 `json:"version"`
-	EntryPath  string `db:"entry_path" json:"entry_path"`
-	ExitPath   string `db:"exit_path" json:"exit_path"`
-	EntryTitle string `db:"entry_title" json:"entry_title"`
-	ExitTitle  string `db:"exit_title" json:"exit_title"`
-	Extended   uint16 `json:"extended"`
+	Sign       int8      `json:"sign"`
+	Version    uint16    `json:"version"`
+	Start      time.Time `json:"start"`
+	PageViews  uint16    `db:"page_views" json:"page_views"`
+	IsBounce   bool      `db:"is_bounce" json:"is_bounce"`
+	EntryPath  string    `db:"entry_path" json:"entry_path"`
+	ExitPath   string    `db:"exit_path" json:"exit_path"`
+	EntryTitle string    `db:"entry_title" json:"entry_title"`
+	ExitTitle  string    `db:"exit_title" json:"exit_title"`
+	Extended   uint16    `json:"extended"`
 }
 
 // String implements the Stringer interface.

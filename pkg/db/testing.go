@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"testing"
 
@@ -17,7 +18,7 @@ func Connect() *ClickHouse {
 		Database:           "pirschtest",
 		Password:           "default",
 		SSLSkipVerify:      true,
-		Debug:              false,
+		Debug:              true,
 		MaxOpenConnections: 1,
 		dev:                true,
 	}
@@ -93,6 +94,8 @@ func CleanupDB(t *testing.T, client *ClickHouse) {
 			assert.NoError(t, row.Scan(&count))
 		}
 	}
+
+	slog.Debug("Finished cleaning up test data")
 }
 
 // DropDB drops all test database tables.
@@ -131,4 +134,6 @@ func DropDB(t *testing.T, client *ClickHouse) {
 		err := client.Exec(context.Background(), fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, table))
 		assert.NoError(t, err)
 	}
+
+	slog.Debug("Finished dropping test data")
 }

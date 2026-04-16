@@ -7,7 +7,7 @@ import (
 )
 
 func TestMigrate(t *testing.T) {
-	DropDB(t, dbClient)
+	DropDB(t, client)
 	assert.NotNil(t, Migrate(nil))
 	assert.NoError(t, Migrate(&ClickHouseConfig{
 		Hostnames:     []string{"127.0.0.1"},

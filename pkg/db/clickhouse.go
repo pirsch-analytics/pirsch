@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -388,6 +389,101 @@ func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request
 	}
 
 	return nil
+}
+
+// Session implements the Storage interface.
+func (ch *ClickHouse) Session(ctx context.Context, clientID, fingerprint uint64, maxAge time.Time) (*model.Session, error) {
+	query := `SELECT sign,
+		version,
+		client_id,
+		visitor_id,
+		session_id,
+		time,
+		start,
+		hostname,
+		entry_path,
+		exit_path,
+		page_views,
+		is_bounce,
+		entry_title,
+		exit_title,
+		language,
+		country_code,
+		region,
+		city,
+		referrer,
+		referrer_name,
+		referrer_icon,
+		os,
+		os_version,
+		browser,
+		browser_version,
+		desktop,
+		mobile,
+		screen_class,
+		utm_source,
+		utm_medium,
+		utm_campaign,
+		utm_content,
+		utm_term,
+		channel,
+		extended
+		FROM "session_v7"
+		WHERE client_id = ?
+		AND visitor_id = ?
+		AND time > ?
+		ORDER BY time DESC
+		LIMIT 1`
+	session := new(model.Session)
+	err := ch.QueryRow(ctx, query, clientID, fingerprint, maxAge).Scan(&session.Sign,
+		&session.Version,
+		&session.ClientID,
+		&session.VisitorID,
+		&session.SessionID,
+		&session.Time,
+		&session.Start,
+		&session.Hostname,
+		&session.EntryPath,
+		&session.ExitPath,
+		&session.PageViews,
+		&session.IsBounce,
+		&session.EntryTitle,
+		&session.ExitTitle,
+		&session.Language,
+		&session.CountryCode,
+		&session.Region,
+		&session.City,
+		&session.Referrer,
+		&session.ReferrerName,
+		&session.ReferrerIcon,
+		&session.OS,
+		&session.OSVersion,
+		&session.Browser,
+		&session.BrowserVersion,
+		&session.Desktop,
+		&session.Mobile,
+		&session.ScreenClass,
+		&session.UTMSource,
+		&session.UTMMedium,
+		&session.UTMCampaign,
+		&session.UTMContent,
+		&session.UTMTerm,
+		&session.Channel,
+		&session.Extended)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		if !errors.Is(err, context.Canceled) {
+			ch.logger.Error("error reading session", "err", err)
+		}
+
+		return nil, err
+	}
+
+	return session, nil
 }
 
 func (ch *ClickHouse) json(s any) []byte {

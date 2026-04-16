@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-var dbClient *ClickHouse
+var client *ClickHouse
 
 func TestMain(m *testing.M) {
-	dbClient = Connect()
-	defer Disconnect(dbClient)
+	client = Connect()
+	defer Disconnect(client)
 	os.Exit(m.Run())
 }

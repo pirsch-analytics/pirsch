@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 )
@@ -19,4 +20,7 @@ type Storage interface {
 
 	// SaveRequests saves given requests.
 	SaveRequests(context.Context, []model.Request) error
+
+	// Session returns the last hit for a given client, fingerprint, and maximum age.
+	Session(context.Context, uint64, uint64, time.Time) (*model.Session, error)
 }

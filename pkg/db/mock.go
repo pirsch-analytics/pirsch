@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 )
@@ -58,6 +59,11 @@ func (client *Mock) SaveRequests(_ context.Context, requests []model.Request) er
 	defer client.m.Unlock()
 	client.requests = append(client.requests, requests...)
 	return nil
+}
+
+// Session implements the Storage interface.
+func (client *Mock) Session(context.Context, uint64, uint64, time.Time) (*model.Session, error) {
+	return client.ReturnSession, nil
 }
 
 // GetPageViews returns a sorted copy of the page views slice.
