@@ -12,3 +12,14 @@ func StripWWW(hostname string) string {
 
 	return hostname
 }
+
+// Shorten shortens given string to the maximum length (runes, not bytes).
+func Shorten(s string, n int) string {
+	runes := []rune(s)
+
+	if len(runes) <= n {
+		return s
+	}
+
+	return string(runes[:n])
+}

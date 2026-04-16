@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/util"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 )
 
@@ -204,22 +205,12 @@ func (request *Request) validate() {
 		}
 	}
 
-	request.Title = request.shorten(request.Title, 512)
-	request.Path = request.shorten(request.Path, 2000)
+	request.Title = util.Shorten(request.Title, 512)
+	request.Path = util.Shorten(request.Path, 2000)
 
 	if request.Path == "" {
 		request.Path = "/"
 	}
 
 	request.EventName = strings.TrimSpace(request.EventName)
-}
-
-func (request *Request) shorten(s string, n int) string {
-	runes := []rune(s)
-
-	if len(runes) <= n {
-		return s
-	}
-
-	return string(runes[:n])
 }

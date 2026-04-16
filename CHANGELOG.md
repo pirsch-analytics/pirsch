@@ -4,6 +4,7 @@
 
 * added native ClickHouse client support
 * added JSON metadata support to events
+* added new ingestion system
 * use map instead of two arrays for tags on page views
 * improved batch inserts
 * removed duration_seconds field

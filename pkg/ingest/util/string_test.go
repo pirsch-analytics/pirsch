@@ -22,3 +22,8 @@ func TestStripWWW(t *testing.T) {
 		assert.Equal(t, item.out, StripWWW(item.in))
 	}
 }
+
+func TestShorten(t *testing.T) {
+	assert.Equal(t, "abcd", Shorten("abcdefghi", 4))
+	assert.Equal(t, "abcdefghi", Shorten("abcdefghi", 100))
+}
