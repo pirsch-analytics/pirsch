@@ -7,6 +7,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 )
 
+// Language extracts and sets the language.
 type Language struct{}
 
 // NewLanguage returns a new Language.
