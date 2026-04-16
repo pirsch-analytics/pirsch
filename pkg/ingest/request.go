@@ -32,6 +32,8 @@ type Request struct {
 	// Start is the time a visitor has first been seen for the session.
 	Start time.Time
 
+	DurationSeconds uint64
+
 	// URL is the full request URL.
 	// If not set, it will be extracted from the Request.
 	URL string

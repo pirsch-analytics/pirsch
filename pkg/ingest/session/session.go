@@ -1,10 +1,15 @@
 package session
 
 import (
+	"math"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/dchest/siphash"
+	"github.com/pirsch-analytics/pirsch/v7/_pkg/tracker/channel"
+	"github.com/pirsch-analytics/pirsch/v7/_pkg/tracker/referrer"
+	"github.com/pirsch-analytics/pirsch/v7/_pkg/util"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 )
@@ -18,15 +23,17 @@ type Session struct {
 	fpKey0, fpKey1 uint64
 	fpSalt         string
 	cache          Cache
+	maxPageViews   uint16
 }
 
-// NewSession returns a new Session for the given sipHash parameters and cache.
-func NewSession(fpKey0, fpKey1 uint64, fpSalt string, cache Cache) *Session {
+// NewSession returns a new Session for the given sipHash parameters, cache, and options.
+func NewSession(fpKey0, fpKey1 uint64, fpSalt string, cache Cache, maxPageViews uint16) *Session {
 	return &Session{
-		fpKey0: fpKey0,
-		fpKey1: fpKey1,
-		fpSalt: fpSalt,
-		cache:  cache,
+		fpKey0:       fpKey0,
+		fpKey1:       fpKey1,
+		fpSalt:       fpSalt,
+		cache:        cache,
+		maxPageViews: maxPageViews,
 	}
 }
 
@@ -70,118 +77,25 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	var timeOnPage uint32
 	var cancelSession *model.Session
 
-	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
-		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
-		tracker.config.SessionCache.Put(clientID, fingerprint, session)
+	if session == nil || s.referrerOrCampaignChanged(request, session) {
+		session = s.new(request)
+		s.cache.Put(request.ClientID, request.VisitorID, session)
 	} else {
-		if options.MaxPageViews > 0 && session.PageViews >= options.MaxPageViews ||
-			options.MaxPageViews == 0 && tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
-			return nil, nil, 0
+		if s.maxPageViews > 0 && session.PageViews >= s.maxPageViews ||
+			s.maxPageViews == 0 && s.maxPageViews > 0 && session.PageViews >= s.maxPageViews {
+			return true, nil
 		}
 
 		sessionCopy := *session
 		cancelSession = &sessionCopy
 		cancelSession.Sign = -1
-		timeOnPage = tracker.updateSession(t, r, session, now, options.Hostname, options.Path, options.Title, eventNonInteractive)
-		tracker.config.SessionCache.Put(clientID, fingerprint, session)
+		timeOnPage = s.update(request, session)
+		s.cache.Put(request.ClientID, request.VisitorID, session)
 	}
 
 	// FIXME
 	//return session, cancelSession, timeOnPage
 	return false, nil
-}
-
-/*
-func (tracker *Tracker) PageView(r *http.Request, clientID uint64, options Options) bool {
-	if tracker.stopped.Load() {
-		return false
-	}
-
-	now := time.Now().UTC()
-	userAgent, ipAddress, ignoreReason := tracker.ignore(r, options)
-	options.validate(r)
-
-	if !options.Time.IsZero() {
-		now = options.Time
-	}
-
-	if ignoreReason == "" {
-		session, cancelSession, timeOnPage := tracker.getSession(pageView, clientID, r, now, userAgent, ipAddress, false, options)
-		var saveRequest *model.Request
-
-		if session != nil {
-			if cancelSession == nil {
-				saveRequest = tracker.requestFromSession(session, clientID, ipAddress, userAgent.UserAgent, "")
-			}
-
-			tagKeys, tagValues := options.getTags()
-			pv := tracker.pageViewFromSession(session, timeOnPage, tagKeys, tagValues)
-			tracker.data <- data{
-				session:       session,
-				cancelSession: cancelSession,
-				pageView:      pv,
-				request:       saveRequest,
-			}
-			return true
-		}
-	} else {
-		tracker.captureRequest(now, clientID, r, ipAddress, options.Hostname, options.Path, "", userAgent, ignoreReason)
-	}
-
-	return false
-}
-*/
-
-/*func (s *Session) get(t eventType, clientID uint64, r *http.Request, now time.Time, ua ua.UserAgent, ip string, eventNonInteractive bool, options Options) (*model.Session, *model.Session, uint32) {
-	fingerprint := s.fingerprint(s.fpSalt, ua.UserAgent, ip, now)
-	m := tracker.config.SessionCache.NewMutex(clientID, fingerprint)
-	m.Lock()
-	maxAge := now.Add(-sessionMaxAge)
-	session := tracker.config.SessionCache.Get(clientID, fingerprint, maxAge)
-
-	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
-	if session == nil && maxAge.Day() != now.Day() {
-		m.Unlock()
-		fingerprintYesterday := tracker.fingerprint(tracker.config.Salt, ua.UserAgent, ip, maxAge)
-		m = tracker.config.SessionCache.NewMutex(clientID, fingerprintYesterday)
-		m.Lock()
-		session = tracker.config.SessionCache.Get(clientID, fingerprintYesterday, maxAge)
-
-		if session != nil {
-			if session.Start.Before(now.Add(-time.Hour * 24)) {
-				session = nil
-			} else {
-				fingerprint = fingerprintYesterday
-			}
-		}
-	}
-
-	defer m.Unlock()
-
-	if t == sessionUpdate && session == nil {
-		return nil, nil, 0
-	}
-
-	var timeOnPage uint32
-	var cancelSession *model.Session
-
-	if session == nil || tracker.referrerOrCampaignChanged(r, session, options.Referrer, options.Hostname) {
-		session = tracker.newSession(clientID, r, fingerprint, now, ua, ip, options)
-		tracker.config.SessionCache.Put(clientID, fingerprint, session)
-	} else {
-		if options.MaxPageViews > 0 && session.PageViews >= options.MaxPageViews ||
-			options.MaxPageViews == 0 && tracker.config.MaxPageViews > 0 && session.PageViews >= tracker.config.MaxPageViews {
-			return nil, nil, 0
-		}
-
-		sessionCopy := *session
-		cancelSession = &sessionCopy
-		cancelSession.Sign = -1
-		timeOnPage = tracker.updateSession(t, r, session, now, options.Hostname, options.Path, options.Title, eventNonInteractive)
-		tracker.config.SessionCache.Put(clientID, fingerprint, session)
-	}
-
-	return session, cancelSession, timeOnPage
 }
 
 func (s *Session) new(clientID uint64, r *http.Request, fingerprint uint64, now time.Time, ua ua.UserAgent, ip string, options Options) *model.Session {
@@ -215,40 +129,42 @@ func (s *Session) new(clientID uint64, r *http.Request, fingerprint uint64, now 
 	}
 
 	return &model.Session{
-		Sign:           1,
-		Version:        1,
-		ClientID:       clientID,
-		VisitorID:      fingerprint,
-		SessionID:      util.RandUint32(),
-		Time:           now,
-		Start:          now,
-		Hostname:       hostname,
-		EntryPath:      options.Path,
-		ExitPath:       options.Path,
-		PageViews:      1,
-		IsBounce:       true,
-		EntryTitle:     options.Title,
-		ExitTitle:      options.Title,
-		Language:       lang,
-		CountryCode:    countryCode,
-		Region:         region,
-		City:           city,
-		Referrer:       ref,
-		ReferrerName:   referrerName,
-		ReferrerIcon:   referrerIcon,
-		OS:             ua.OS,
-		OSVersion:      ua.OSVersion,
-		Browser:        ua.Browser,
-		BrowserVersion: ua.BrowserVersion,
-		Desktop:        ua.IsDesktop(),
-		Mobile:         ua.IsMobile(),
-		ScreenClass:    screen,
-		UTMSource:      utmSource,
-		UTMMedium:      utmMedium,
-		UTMCampaign:    utmCampaign,
-		UTMContent:     utmContent,
-		UTMTerm:        utmTerm,
-		Channel:        sourceChannel,
+		Data: model.Data{
+			ClientID:       clientID,
+			VisitorID:      fingerprint,
+			SessionID:      util.RandUint32(),
+			Time:           now,
+			Hostname:       hostname,
+			Language:       lang,
+			CountryCode:    countryCode,
+			Region:         region,
+			City:           city,
+			Referrer:       ref,
+			ReferrerName:   referrerName,
+			ReferrerIcon:   referrerIcon,
+			OS:             ua.OS,
+			OSVersion:      ua.OSVersion,
+			Browser:        ua.Browser,
+			BrowserVersion: ua.BrowserVersion,
+			Desktop:        ua.IsDesktop(),
+			Mobile:         ua.IsMobile(),
+			ScreenClass:    screen,
+			UTMSource:      utmSource,
+			UTMMedium:      utmMedium,
+			UTMCampaign:    utmCampaign,
+			UTMContent:     utmContent,
+			UTMTerm:        utmTerm,
+			Channel:        sourceChannel,
+		},
+		Sign:       1,
+		Version:    1,
+		Start:      now,
+		EntryPath:  options.Path,
+		ExitPath:   options.Path,
+		PageViews:  1,
+		IsBounce:   true,
+		EntryTitle: options.Title,
+		ExitTitle:  options.Title,
 	}
 }
 
@@ -279,7 +195,21 @@ func (s *Session) update(t eventType, r *http.Request, session *model.Session, n
 	session.ExitPath = path
 	session.ExitTitle = title
 	return uint32(top)
-}*/
+}
+
+func (s *Session) referrerOrCampaignChanged(request *ingest.Request, session *model.Session) bool {
+	// TODO
+	/*if ref != "" && ref != session.Referrer || refName != "" && refName != session.ReferrerName {
+		return true
+	}
+
+	return (utmSource != "" && utmSource != session.UTMSource) ||
+		(utmMedium != "" && utmMedium != session.UTMMedium) ||
+		(utmCampaign != "" && utmCampaign != session.UTMCampaign) ||
+		(utmContent != "" && utmContent != session.UTMContent) ||
+		(utmTerm != "" && utmTerm != session.UTMTerm)*/
+	return false
+}
 
 func (s *Session) fingerprint(ua, ip string, now time.Time) uint64 {
 	var sb strings.Builder

@@ -6,6 +6,7 @@ CREATE TABLE session_v7 (
     `session_id` UInt32,
     `time` DateTime64(3, 'UTC'),
     `start` DateTime64(3, 'UTC'),
+    `duration_seconds` UInt32,
     `hostname` String,
     `entry_title` String,
     `exit_title` String,
