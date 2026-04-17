@@ -22,6 +22,7 @@ type Pipe struct {
 	steps    []PipeStep
 	requests chan *Request
 	storage  db.Storage
+	logIP    bool
 	logger   *slog.Logger
 }
 
@@ -35,6 +36,7 @@ func NewPipe(options PipeOptions) *Pipe {
 		steps:    make([]PipeStep, 0),
 		requests: make(chan *Request, options.RequestChannelBufferSize),
 		storage:  options.Storage,
+		logIP:    options.LogIP,
 		logger:   options.Logger,
 	}
 
@@ -110,6 +112,10 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 
 			select {
 			case request := <-p.requests:
+				if !p.logIP {
+					request.IP = ""
+				}
+
 				requests = append(requests, model.Request{
 					ClientID:    request.ClientID,
 					VisitorID:   request.VisitorID,

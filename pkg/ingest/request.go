@@ -2,7 +2,6 @@ package ingest
 
 import (
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -31,10 +30,6 @@ type Request struct {
 
 	// Start is the time a visitor has first been seen for the session.
 	Start time.Time
-
-	// URL is the full request URL.
-	// If not set, it will be extracted from the Request.
-	URL string
 
 	// Hostname overrides the hostname and is used to check the Referrer.
 	// If the referrer is the same as the hostname, it will be ignored.
@@ -191,36 +186,30 @@ type Request struct {
 }
 
 func (request *Request) validate() {
+	if request.Request == nil {
+		return
+	}
+
 	if request.Time.IsZero() {
 		request.Time = time.Now().UTC()
 	}
 
-	if request.URL == "" {
-		request.URL = request.Request.URL.String()
-	}
-
-	u, err := url.ParseRequestURI(request.URL)
-
-	if err == nil {
-		if request.Hostname == "" {
-			request.Hostname = u.Hostname()
-		}
-
-		// change the path and re-assemble the URL if override is set
-		if request.Path != "" {
-			u.Path = request.Path
-			request.URL = u.String()
-		} else {
-			request.Path = u.Path
-		}
+	if request.Hostname == "" {
+		request.Hostname = request.Request.URL.Hostname()
 	}
 
 	request.Title = util.Shorten(request.Title, 512)
 	request.Path = util.Shorten(request.Path, 2000)
+	request.EventName = strings.TrimSpace(request.EventName)
+
+	// change the path and re-assemble the URL if override is set
+	if request.Path != "" {
+		request.Request.URL.Path = request.Path
+	} else {
+		request.Path = request.Request.URL.Path
+	}
 
 	if request.Path == "" {
 		request.Path = "/"
 	}
-
-	request.EventName = strings.TrimSpace(request.EventName)
 }

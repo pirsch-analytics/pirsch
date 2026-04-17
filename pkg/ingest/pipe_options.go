@@ -25,25 +25,12 @@ type PipeOptions struct {
 	// WorkerTimeout sets the maximum waiting time before the worker buffers are flushed.
 	WorkerTimeout time.Duration
 
+	// LogIP will log the request IP in the Storage if set to true.
+	LogIP bool
+
 	// Logger is the logger for the Pipe.
 	// If not set, the default slog.Logger will be used.
 	Logger *slog.Logger
-
-	/* TODO
-	defaultMaxPageViews     = uint16(200)
-
-	Salt                string
-	FingerprintKey0     uint64
-	FingerprintKey1     uint64
-	SessionCache        session.Cache
-
-	HeaderParser        []ip.HeaderParser
-	AllowedProxySubnets []net.IPNet
-	MaxPageViews        uint16
-	GeoDB               *geodb.GeoDB
-	IPFilter            []ip.Filter
-	LogIP               bool
-	*/
 }
 
 func (options *PipeOptions) validate() {

@@ -2,11 +2,11 @@ package session
 
 import (
 	"math"
+	"math/rand/v2"
 	"strings"
 	"time"
 
 	"github.com/dchest/siphash"
-	"github.com/pirsch-analytics/pirsch/v7/_pkg/util"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 )
@@ -96,11 +96,12 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 }
 
 func (s *Session) new(request *ingest.Request) *model.Session {
+	request.SessionID = rand.Uint32()
 	return &model.Session{
 		Data: model.Data{
 			ClientID:       request.ClientID,
 			VisitorID:      request.VisitorID,
-			SessionID:      util.RandUint32(),
+			SessionID:      request.SessionID,
 			Time:           request.Time,
 			Hostname:       request.Hostname,
 			Language:       request.Language,
@@ -155,13 +156,37 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 		session.PageViews++
 	}
 
+	// update the session
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.Version++
 	session.Hostname = request.Hostname
 	session.ExitPath = request.Path
 	session.ExitTitle = request.Title
+
+	// update the page view/event using the session data, so that it stays consistent across requests
+	request.SessionID = session.SessionID
 	request.DurationSeconds = uint64(top)
+	request.Language = session.Language
+	request.CountryCode = session.CountryCode
+	request.Region = session.Region
+	request.City = session.City
+	request.Referrer = session.Referrer
+	request.ReferrerName = session.ReferrerName
+	request.ReferrerIcon = session.ReferrerIcon
+	request.OS = session.OS
+	request.OSVersion = session.OSVersion
+	request.Browser = session.Browser
+	request.BrowserVersion = session.BrowserVersion
+	request.Desktop = session.Desktop
+	request.Mobile = session.Mobile
+	request.ScreenClass = session.ScreenClass
+	request.UTMSource = session.UTMSource
+	request.UTMMedium = session.UTMMedium
+	request.UTMCampaign = session.UTMCampaign
+	request.UTMContent = session.UTMContent
+	request.UTMTerm = session.UTMTerm
+	request.Channel = session.Channel
 }
 
 func (s *Session) referrerOrCampaignChanged(request *ingest.Request, session *model.Session) bool {
