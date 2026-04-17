@@ -8,9 +8,10 @@ import (
 type PageView struct {
 	Data
 
-	Path  string            `json:"path"`
-	Title string            `json:"title"`
-	Tags  map[string]string `db:"tags" json:"tags"`
+	DurationSeconds uint32            `db:"duration_seconds" json:"duration_seconds"`
+	Path            string            `json:"path"`
+	Title           string            `json:"title"`
+	Tags            map[string]string `db:"tags" json:"tags"`
 }
 
 // String implements the Stringer interface.

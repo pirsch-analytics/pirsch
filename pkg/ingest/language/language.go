@@ -5,6 +5,7 @@ import (
 
 	"github.com/emvi/iso-639-1"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/util"
 )
 
 // Language extracts and sets the language.
@@ -27,7 +28,7 @@ func (l *Language) Step(request *ingest.Request) (bool, error) {
 		code := strings.ToLower(strings.TrimSpace(left))
 
 		if iso6391.ValidCode(code) {
-			request.Language = code
+			request.Language = util.Shorten(code, 10)
 		}
 	}
 

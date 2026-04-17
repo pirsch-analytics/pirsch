@@ -128,12 +128,12 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 				})
 
 				if !request.cancelled {
-					if request.cancelSession != nil {
-						sessions = append(sessions, *request.cancelSession)
+					if request.CancelSession != nil {
+						sessions = append(sessions, *request.CancelSession)
 					}
 
-					if request.session != nil {
-						sessions = append(sessions, *request.session)
+					if request.Session != nil {
+						sessions = append(sessions, *request.Session)
 					}
 
 					if request.EventName != "" {

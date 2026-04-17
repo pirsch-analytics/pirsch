@@ -63,9 +63,9 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 
 	if strings.HasPrefix(strings.ToLower(referrer), androidAppPrefix) {
 		name, icon := androidAppCache.get(referrer)
-		request.Referrer = referrer
-		request.ReferrerName = name
-		request.ReferrerIcon = icon
+		request.Referrer = util.Shorten(referrer, 200)
+		request.ReferrerName = util.Shorten(name, 200)
+		request.ReferrerIcon = util.Shorten(icon, 2000)
 		return r.ignore(request), nil
 	}
 
@@ -90,7 +90,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 		}
 
 		// accept non-url referrers (from utm_source, for example)
-		request.ReferrerName = strings.TrimSpace(referrer)
+		request.ReferrerName = util.Shorten(strings.TrimSpace(referrer), 200)
 		return r.ignore(request), nil
 	}
 
@@ -123,8 +123,8 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	u.Host = strings.ToLower(u.Host)
 	u.RawQuery = ""
 	u.Fragment = ""
-	request.Referrer = u.String()
-	request.ReferrerName = name
+	request.Referrer = util.Shorten(u.String(), 200)
+	request.ReferrerName = util.Shorten(name, 200)
 	return r.ignore(request), nil
 }
 

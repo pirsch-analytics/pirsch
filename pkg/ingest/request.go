@@ -32,8 +32,6 @@ type Request struct {
 	// Start is the time a visitor has first been seen for the session.
 	Start time.Time
 
-	DurationSeconds uint64
-
 	// URL is the full request URL.
 	// If not set, it will be extracted from the Request.
 	URL string
@@ -177,9 +175,19 @@ type Request struct {
 	// This should be set by a PipeStep.
 	BotReason string
 
-	cancelled     bool
-	session       *model.Session
-	cancelSession *model.Session
+	// DurationSeconds is the session duration or time on page, usually set in a step.
+	DurationSeconds uint64
+
+	// UpdateSession only updates the session if this is set to true and does not persist a page view/event.
+	UpdateSession bool
+
+	// Session is the latest session state, usually set in a step.
+	Session *model.Session
+
+	// CancelSession is the previous session state, usually set in a step.
+	CancelSession *model.Session
+
+	cancelled bool
 }
 
 func (request *Request) validate() {

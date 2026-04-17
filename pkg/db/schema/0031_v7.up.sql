@@ -47,6 +47,7 @@ CREATE TABLE page_view_v7 (
     `visitor_id` UInt64,
     `session_id` UInt32 DEFAULT 0,
     `time` DateTime64(3, 'UTC'),
+    `duration_seconds` UInt32,
     `hostname` String,
     `path` String,
     `title` String,

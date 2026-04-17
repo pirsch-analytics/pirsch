@@ -7,6 +7,7 @@ import (
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/util"
 )
 
 const (
@@ -29,10 +30,10 @@ func NewUserAgent() *UserAgent {
 // It sets the User-Agent parameters for the request.
 func (ua *UserAgent) Step(request *ingest.Request) (bool, error) {
 	i := ua.parse(request.Request)
-	request.Browser = i.browser
-	request.BrowserVersion = i.browserVersion
-	request.OS = i.os
-	request.OSVersion = i.osVersion
+	request.Browser = util.Shorten(i.browser, 20)
+	request.BrowserVersion = util.Shorten(i.browserVersion, 20)
+	request.OS = util.Shorten(i.os, 20)
+	request.OSVersion = util.Shorten(i.osVersion, 20)
 	request.Desktop = i.isDesktop()
 	request.Mobile = i.isMobile()
 	return false, nil

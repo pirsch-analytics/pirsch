@@ -288,7 +288,7 @@ func TestPipePrefetch(t *testing.T) {
 type sessionStep struct{}
 
 func (s *sessionStep) Step(request *Request) (bool, error) {
-	request.session = new(model.Session)
+	request.Session = new(model.Session)
 	return false, nil
 }
 
