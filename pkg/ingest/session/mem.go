@@ -79,8 +79,15 @@ func (cache *MemCache) NewMutex(uint64, uint64) sync.Locker {
 	return new(sync.Mutex)
 }
 
-// Sessions returns all sessions.
-// This is insecure and should only be used for testing.
+// Sessions returns a copy of all sessions.
 func (cache *MemCache) Sessions() map[string]model.Session {
-	return cache.sessions
+	cache.m.RLock()
+	defer cache.m.RUnlock()
+	sessions := make(map[string]model.Session, len(cache.sessions))
+
+	for k, v := range cache.sessions {
+		sessions[k] = v
+	}
+
+	return sessions
 }
