@@ -1,6 +1,7 @@
 package session
 
 import (
+	"math/rand/v2"
 	"net/http"
 	"slices"
 	"testing"
@@ -394,12 +395,113 @@ func TestSessionReferrerHostname(t *testing.T) {
 	})
 }
 
-// TODO session max age
-// TODO session overlap yesterday
-// TODO fingerprint
-// TODO max page views
-// TODO time on page
-// TODO concurrency (session_id)
+func TestSessionMaxAge(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// wait and make a second request
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		time.Sleep(sessionMaxAge + time.Minute)
+		req, _ = newSampleRequest()
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have created a new session
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, visitorID, req.Session.VisitorID)
+		assert.NotEqual(t, sessionID, req.Session.SessionID)
+	})
+}
+
+func TestSessionYesterday(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request at 23:45 UTC
+		sleepUntil(23, 45)
+		t.Log(time.Now().UTC())
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// wait and make a second request at 00:05 UTC
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		time.Sleep(time.Minute * 20)
+		req, _ = newSampleRequest()
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have found the previous session
+		assert.NotNil(t, req.Session)
+		assert.NotNil(t, req.CancelSession)
+		assert.Equal(t, visitorID, req.Session.VisitorID)
+		assert.Equal(t, sessionID, req.Session.SessionID)
+	})
+}
+
+func TestSessionMaxPageViews(t *testing.T) {
+	// create an in-memory cache and session step with a maximum of 10 page views
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 10)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make exactly 10 requests
+		for range 10 {
+			req, _ := newSampleRequest()
+			cancel, err := s.Step(req)
+			assert.False(t, cancel)
+			assert.NoError(t, err)
+			time.Sleep(time.Second * time.Duration(rand.IntN(10)+1))
+		}
+
+		// there must be one session with 10 page views
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		assert.Equal(t, uint16(10), sessions[0].PageViews)
+
+		// make one more request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.True(t, cancel)
+		assert.NoError(t, err)
+
+		// the last request must have been ignored
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		assert.Equal(t, uint16(10), sessions[0].PageViews)
+	})
+}
+
+func TestSessionFingerprint(t *testing.T) {
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+	now := time.Now().UTC()
+	fp1 := s.fingerprint("ua", "81.2.69.142", now)
+	fp2 := s.fingerprint("ua", "81.2.69.142", now)
+	fp3 := s.fingerprint("ua", "2001:9e8:d5d2:b00:ce0a:96e4:ae42:c935", now)
+	fp4 := s.fingerprint("ua2", "81.2.69.142", now)
+	fp5 := s.fingerprint("ua", "81.2.69.142", now.Add(time.Hour*25))
+	assert.Equal(t, fp1, fp2)
+	assert.NotEqual(t, fp1, fp3)
+	assert.NotEqual(t, fp1, fp4)
+	assert.NotEqual(t, fp1, fp5)
+}
 
 func newSampleRequest() (*ingest.Request, time.Time) {
 	r, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
@@ -450,4 +552,15 @@ func getSessions(sessions map[string]model.Session) []model.Session {
 		return 0
 	})
 	return list
+}
+
+func sleepUntil(hour, minute int) {
+	now := time.Now().UTC()
+	next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, time.UTC)
+
+	if !next.After(now) {
+		next = next.Add(24 * time.Hour)
+	}
+
+	time.Sleep(time.Until(next))
 }
