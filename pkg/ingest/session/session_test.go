@@ -164,8 +164,236 @@ func TestSession(t *testing.T) {
 	})
 }
 
-// TODO keep bounced
-// TODO reset session (referrer/utm)
+func TestSessionBounced(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// check that the session is marked as bounced
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		firstSession := sessions[0]
+		assert.True(t, firstSession.IsBounce)
+
+		// wait and make a second request to the same page
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.NotNil(t, req.CancelSession)
+
+		// check that there is one session with all the relevant fields within the cache
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		secondSession := sessions[0]
+		assert.True(t, secondSession.IsBounce)
+	})
+}
+
+func TestSessionReferrerReset(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// the request must have the referrer attached
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, "https://google.com", req.Session.Referrer)
+		assert.Equal(t, "Google", req.Session.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", req.Session.ReferrerIcon)
+
+		// check that there is one session with the referrer attached
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		firstSession := sessions[0]
+		assert.Equal(t, "https://google.com", firstSession.Referrer)
+		assert.Equal(t, "Google", firstSession.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", firstSession.ReferrerIcon)
+
+		// wait and make a second request with a different referrer
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		req.Referrer = "https://bing.com"
+		req.ReferrerName = "Bing"
+		req.ReferrerIcon = "https://bing.com/favicon.ico"
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have the new session and referrer attached
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, visitorID, req.Session.VisitorID)
+		assert.NotEqual(t, sessionID, req.Session.SessionID)
+		assert.Equal(t, "https://bing.com", req.Session.Referrer)
+		assert.Equal(t, "Bing", req.Session.ReferrerName)
+		assert.Equal(t, "https://bing.com/favicon.ico", req.Session.ReferrerIcon)
+
+		// check that there is one session with the referrer attached
+		// (the first session is overwritten for the same visitor ID)
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		secondSession := sessions[0]
+		assert.Equal(t, "https://bing.com", secondSession.Referrer)
+		assert.Equal(t, "Bing", secondSession.ReferrerName)
+		assert.Equal(t, "https://bing.com/favicon.ico", secondSession.ReferrerIcon)
+	})
+}
+
+func TestSessionUTMReset(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// the request must have the UTM attached
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, "utm_source", req.Session.UTMSource)
+		assert.Equal(t, "utm_campaign", req.Session.UTMCampaign)
+		assert.Equal(t, "utm_medium", req.Session.UTMMedium)
+		assert.Equal(t, "utm_content", req.Session.UTMContent)
+		assert.Equal(t, "utm_term", req.Session.UTMTerm)
+
+		// check that there is one session with the UTM attached
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		firstSession := sessions[0]
+		assert.Equal(t, "utm_source", firstSession.UTMSource)
+		assert.Equal(t, "utm_campaign", firstSession.UTMCampaign)
+		assert.Equal(t, "utm_medium", firstSession.UTMMedium)
+		assert.Equal(t, "utm_content", firstSession.UTMContent)
+		assert.Equal(t, "utm_term", firstSession.UTMTerm)
+
+		// wait and make a second request with a different UTM
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		req.UTMSource = "new_source"
+		req.UTMCampaign = "new_campaign"
+		req.UTMMedium = "new_medium"
+		req.UTMContent = "new_content"
+		req.UTMTerm = "new_term"
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have the new session and UTM attached
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, visitorID, req.Session.VisitorID)
+		assert.NotEqual(t, sessionID, req.Session.SessionID)
+		assert.Equal(t, "new_source", req.Session.UTMSource)
+		assert.Equal(t, "new_campaign", req.Session.UTMCampaign)
+		assert.Equal(t, "new_medium", req.Session.UTMMedium)
+		assert.Equal(t, "new_content", req.Session.UTMContent)
+		assert.Equal(t, "new_term", req.Session.UTMTerm)
+
+		// check that there is one session with the UTM attached
+		// (the first session is overwritten for the same visitor ID)
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		secondSession := sessions[0]
+		assert.Equal(t, "new_source", secondSession.UTMSource)
+		assert.Equal(t, "new_campaign", secondSession.UTMCampaign)
+		assert.Equal(t, "new_medium", secondSession.UTMMedium)
+		assert.Equal(t, "new_content", secondSession.UTMContent)
+		assert.Equal(t, "new_term", secondSession.UTMTerm)
+	})
+}
+
+func TestSessionReferrerHostname(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// the request must have the referrer attached
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.Equal(t, "https://google.com", req.Session.Referrer)
+		assert.Equal(t, "Google", req.Session.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", req.Session.ReferrerIcon)
+
+		// check that there is one session with the referrer attached
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		firstSession := sessions[0]
+		assert.Equal(t, "https://google.com", firstSession.Referrer)
+		assert.Equal(t, "Google", firstSession.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", firstSession.ReferrerIcon)
+
+		// wait and make a second request with the hostname as referrer (empty, as it will be set by the referrer step)
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		req.Referrer = ""
+		req.ReferrerName = ""
+		req.ReferrerIcon = ""
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have the same session and referrer attached
+		assert.NotNil(t, req.Session)
+		assert.NotNil(t, req.CancelSession)
+		assert.Equal(t, visitorID, req.Session.VisitorID)
+		assert.Equal(t, sessionID, req.Session.SessionID)
+		assert.Equal(t, "https://google.com", req.Session.Referrer)
+		assert.Equal(t, "Google", req.Session.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", req.Session.ReferrerIcon)
+
+		// check that there is one session with the original referrer attached
+		// (the first session is overwritten for the same visitor ID)
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		secondSession := sessions[0]
+		assert.Equal(t, "https://google.com", secondSession.Referrer)
+		assert.Equal(t, "Google", secondSession.ReferrerName)
+		assert.Equal(t, "https://google.com/favicon.ico", secondSession.ReferrerIcon)
+	})
+}
+
 // TODO session max age
 // TODO session overlap yesterday
 // TODO fingerprint
