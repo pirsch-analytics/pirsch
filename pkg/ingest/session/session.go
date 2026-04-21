@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	sessionMaxAge = time.Minute * 30
+	sessionTimeout = time.Minute * 30
+	sessionMaxAge  = time.Hour * 24
 )
 
 // Session manages visitor sessions.
@@ -43,7 +44,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	// get a lock and data for the session
 	m := s.cache.NewMutex(request.ClientID, request.VisitorID)
 	m.Lock()
-	maxAge := request.Time.Add(-sessionMaxAge)
+	maxAge := request.Time.Add(-sessionTimeout)
 	session := s.cache.Get(request.ClientID, request.VisitorID, maxAge)
 
 	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
@@ -56,7 +57,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 		session = s.cache.Get(request.ClientID, fingerprintYesterday, maxAge)
 
 		if session != nil {
-			if session.Start.Before(request.Time.Add(-time.Hour * 24)) {
+			if session.Start.Before(request.Time.Add(-sessionMaxAge)) {
 				session = nil
 			} else {
 				request.VisitorID = fingerprintYesterday
@@ -66,8 +67,13 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 
 	defer m.Unlock()
 
-	// cancel early if we only update the session, which we did at this point
-	if request.UpdateSession && session == nil {
+	// cancel early if we only update the session
+	if request.UpdateSession {
+		if session != nil {
+			s.update(request, session)
+			s.cache.Put(request.ClientID, request.VisitorID, session)
+		}
+
 		return true, nil
 	}
 

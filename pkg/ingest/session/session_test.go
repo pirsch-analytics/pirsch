@@ -202,6 +202,62 @@ func TestSessionBounced(t *testing.T) {
 	})
 }
 
+func TestSessionEventNonInteractive(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		req.EventName = "Event"
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// check that the session is marked as bounced
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		firstSession := sessions[0]
+		assert.True(t, firstSession.IsBounce)
+
+		// wait and make a second request to the same page
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		req.EventName = "Event"
+		req.EventNonInteractive = true
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.NotNil(t, req.CancelSession)
+
+		// check that there is one bounced session
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		secondSession := sessions[0]
+		assert.True(t, secondSession.IsBounce)
+
+		// wait and make a third request to the same page
+		time.Sleep(time.Second * 23)
+		req, _ = newSampleRequest()
+		req.EventName = "Event"
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+		assert.NotNil(t, req.Session)
+		assert.NotNil(t, req.CancelSession)
+
+		// check that there is one non-bounced session
+		sessions = getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		thirdSession := sessions[0]
+		assert.False(t, thirdSession.IsBounce)
+	})
+}
+
 func TestSessionReferrerReset(t *testing.T) {
 	// create an in-memory cache and session step
 	cache := NewMemCache(client, 100)
@@ -395,7 +451,7 @@ func TestSessionReferrerHostname(t *testing.T) {
 	})
 }
 
-func TestSessionMaxAge(t *testing.T) {
+func TestSessionTimeout(t *testing.T) {
 	// create an in-memory cache and session step
 	cache := NewMemCache(client, 100)
 	s := NewSession(1, 2, "salt", cache, 100)
@@ -410,7 +466,7 @@ func TestSessionMaxAge(t *testing.T) {
 		// wait and make a second request
 		visitorID := req.Session.VisitorID
 		sessionID := req.Session.SessionID
-		time.Sleep(sessionMaxAge + time.Minute)
+		time.Sleep(sessionTimeout + time.Minute)
 		req, _ = newSampleRequest()
 		cancel, err = s.Step(req)
 		assert.False(t, cancel)
@@ -424,6 +480,76 @@ func TestSessionMaxAge(t *testing.T) {
 	})
 }
 
+func TestSessionMaxAge(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request at 23:45 UTC
+		sleepUntil(23, 45)
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// manipulate start time
+		for k := range cache.sessions {
+			v := cache.sessions[k]
+			v.Start = v.Start.Add(-sessionMaxAge - time.Minute)
+			cache.sessions[k] = v
+		}
+
+		// wait and make a second request at 00:05 UTC
+		visitorID := req.Session.VisitorID
+		sessionID := req.Session.SessionID
+		time.Sleep(time.Minute * 20)
+		req, _ = newSampleRequest()
+		cancel, err = s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must have found the previous session
+		assert.NotNil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+		assert.NotEqual(t, visitorID, req.Session.VisitorID)
+		assert.NotEqual(t, sessionID, req.Session.SessionID)
+	})
+}
+
+func TestSessionUpdateSession(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	synctest.Test(t, func(t *testing.T) {
+		// make the first request
+		req, _ := newSampleRequest()
+		cancel, err := s.Step(req)
+		assert.False(t, cancel)
+		assert.NoError(t, err)
+
+		// wait and make a second request without updating the session
+		now := time.Now()
+		time.Sleep(time.Minute * 5)
+		req, _ = newSampleRequest()
+		req.UpdateSession = true
+		cancel, err = s.Step(req)
+		assert.True(t, cancel)
+		assert.NoError(t, err)
+
+		// the request must not have sessions attached
+		assert.Nil(t, req.Session)
+		assert.Nil(t, req.CancelSession)
+
+		// the session in cache must have been updated however
+		sessions := getSessions(cache.Sessions())
+		assert.Len(t, sessions, 1)
+		assert.True(t, sessions[0].Time.After(now))
+		assert.Equal(t, uint16(1), sessions[0].Extended)
+	})
+}
+
 func TestSessionYesterday(t *testing.T) {
 	// create an in-memory cache and session step
 	cache := NewMemCache(client, 100)
@@ -432,7 +558,6 @@ func TestSessionYesterday(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// make the first request at 23:45 UTC
 		sleepUntil(23, 45)
-		t.Log(time.Now().UTC())
 		req, _ := newSampleRequest()
 		cancel, err := s.Step(req)
 		assert.False(t, cancel)
