@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGet(t *testing.T) {
+func TestIP(t *testing.T) {
 	i := NewIP(DefaultHeaderParser, nil)
 	r := httptest.NewRequest("GET", "/", nil)
 	r.RemoteAddr = "123.456.789.012:29302"
@@ -67,7 +67,7 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, "123.456.789.012", req.IP)
 }
 
-func TestGetWithProxy(t *testing.T) {
+func TestIPWithProxy(t *testing.T) {
 	allowedProxySubnetList := []string{"10.0.0.0/8"}
 	allowedProxySubnets := make([]net.IPNet, 0)
 
