@@ -58,6 +58,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	}
 
 	if referrer == "" {
+		r.unset(request)
 		return false, nil
 	}
 
@@ -86,10 +87,12 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 
 	if u == nil || err != nil {
 		if r.isIP(referrer) {
+			r.unset(request)
 			return false, nil
 		}
 
 		// accept non-url referrers (from utm_source, for example)
+		r.unset(request)
 		request.ReferrerName = util.Shorten(strings.TrimSpace(referrer), 200)
 		return r.ignore(request), nil
 	}
@@ -98,6 +101,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	hostname := util.StripWWW(strings.ToLower(u.Hostname()))
 
 	if hostname == request.Hostname {
+		r.unset(request)
 		return false, nil
 	}
 
@@ -125,7 +129,14 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	u.Fragment = ""
 	request.Referrer = util.Shorten(u.String(), 200)
 	request.ReferrerName = util.Shorten(name, 200)
+	request.ReferrerIcon = ""
 	return r.ignore(request), nil
+}
+
+func (r *Referrer) unset(request *ingest.Request) {
+	request.Referrer = ""
+	request.ReferrerName = ""
+	request.ReferrerIcon = ""
 }
 
 func (r *Referrer) ignore(request *ingest.Request) bool {
