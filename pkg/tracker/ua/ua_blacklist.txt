@@ -757,7 +757,6 @@ askroi
 meshrom
 inspection
 sapphire
-musical_ly
 
 # https://github.com/atmire/COUNTER-Robots/blob/master/COUNTER_Robots_list.json (modified, 2022-03-28)
 buck

@@ -789,7 +789,6 @@ var UserAgentBlacklist = []string{
 	"muckrack",
 	"mucommander",
 	"muscatferre",
-	"musical_ly",
 	"my browser",
 	"my user agent",
 	"mybrowser",
