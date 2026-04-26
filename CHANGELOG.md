@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.28.2
+
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.28.1
 
 * added Copilot domains to AI channel

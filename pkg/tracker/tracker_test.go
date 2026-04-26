@@ -1585,6 +1585,30 @@ func TestTrackerIgnoreReferrer(t *testing.T) {
 	assert.Equal(t, "referrer", ignore)
 }
 
+func TestTrackerIgnoreReferrerHostname(t *testing.T) {
+	referrer := []string{
+		"http://www.baidu.io",
+		"https://www.google.io",
+		"https://www.yandex.io",
+		"https://www.yahoo.io",
+		"https://www.bing.io",
+	}
+	acknowledged := make([]string, 0)
+	tracker := NewTracker(Config{})
+
+	for _, ref := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.Header.Set("Referer", ref)
+		_, _, ignore := tracker.ignore(req, Options{})
+
+		if ignore == "" {
+			acknowledged = append(acknowledged, ref)
+		}
+	}
+
+	assert.Empty(t, acknowledged)
+}
+
 func TestTrackerIgnoreBrowserCH(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
