@@ -10,6 +10,23 @@
 * removed duration_seconds field
 * updated dependencies
 
+## 6.28.3
+
+* improved bot filter based on:
+  * Firefox version number regex
+  * Firefox rv mismatch
+  * Sec-Fetch-Site: none with referrer set
+  * Upgrade-Insecure-Requests for CORS requests
+  * Sec-Fetch-Dest: empty in combination with Upgrade-Insecure-Requests
+  * modern header with HTTP/1.1
+* updated dependencies
+
+## 6.28.2
+
+* updated referrer blacklist
+* updated User-Agent blacklist
+* updated dependencies
+
 ## 6.28.1
 
 * added Copilot domains to AI channel

@@ -1299,7 +1299,7 @@ func TestTracker_Flush(t *testing.T) {
 	for range 10 {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
 		req.RemoteAddr = "187.65.23.54"
-		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:79.0) Gecko/20220101 Firefox/100.0")
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:100.0) Gecko/20220101 Firefox/100.0")
 		req.Header.Set("Accept-Language", "en")
 		go tracker.Event(req, 0, EventOptions{Name: "event"}, Options{})
 	}
@@ -1522,6 +1522,9 @@ func TestTrackerIgnoreUserAgent(t *testing.T) {
 		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko; compatible; BingAI/1.0; +https://www.bing.com/bot)  ", "ua-keyword"},
 		{"Mozilla/5.0 (compatible; JasperBot/1.0; +https://www.jasper.ai/bot)", "ua-keyword"},
 		{"Mozilla/5.0 (compatible; MistralBot/1.0; +https://mistral.ai/bot)  ", "ua-keyword"},
+
+		// rv does not match
+		{"Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/149.0", "ua-rv-mismatch"},
 	}
 
 	tracker := NewTracker(Config{})
@@ -1585,6 +1588,55 @@ func TestTrackerIgnoreReferrer(t *testing.T) {
 	assert.Equal(t, "referrer", ignore)
 }
 
+func TestTrackerIgnoreReferrerHostname(t *testing.T) {
+	referrer := []string{
+		"http://www.baidu.io",
+		"https://www.google.io",
+		"https://www.yandex.io",
+		"https://www.yahoo.io",
+		"https://www.bing.io",
+	}
+	acknowledged := make([]string, 0)
+	tracker := NewTracker(Config{})
+
+	for _, ref := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		req.Header.Set("Referer", ref)
+		_, _, ignore := tracker.ignore(req, Options{})
+
+		if ignore == "" {
+			acknowledged = append(acknowledged, ref)
+		}
+	}
+
+	assert.Empty(t, acknowledged)
+}
+
+func TestTrackerIgnoreReferrerParameter(t *testing.T) {
+	referrer := []string{
+		"http://www.baidu.io",
+		"https://www.google.io",
+		"https://www.yandex.io",
+		"https://www.yahoo.io",
+		"https://www.bing.io",
+	}
+	acknowledged := make([]string, 0)
+	tracker := NewTracker(Config{})
+
+	for _, ref := range referrer {
+		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+		_, _, ignore := tracker.ignore(req, Options{
+			Referrer: ref,
+		})
+
+		if ignore == "" {
+			acknowledged = append(acknowledged, ref)
+		}
+	}
+
+	assert.Empty(t, acknowledged)
+}
+
 func TestTrackerIgnoreBrowserCH(t *testing.T) {
 	tracker := NewTracker(Config{})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -1623,6 +1675,57 @@ func TestTrackerIgnoreIP(t *testing.T) {
 	req.RemoteAddr = "90.154.29.38"
 	_, _, ignore = tracker.ignore(req, Options{})
 	assert.Equal(t, "ip", ignore)
+}
+
+func TestIgnoreHeader(t *testing.T) {
+	header := []map[string]string{
+		{"Sec-Fetch-Site": "empty", "Referer": ""},
+		{"Sec-Fetch-Site": "empty", "Referer": "https://google.com"},
+		{"Sec-Fetch-Site": "none", "Referer": "https://google.com"},
+		{"Upgrade-Insecure-Requests": "1", "Sec-Fetch-Mode": "foo"},
+		{"Upgrade-Insecure-Requests": "0", "Sec-Fetch-Mode": "cors"},
+		{"Upgrade-Insecure-Requests": "1", "Sec-Fetch-Mode": "cors"},
+		{"Sec-Fetch-Dest": "none", "Upgrade-Insecure-Requests": "1"},
+		{"Sec-Fetch-Dest": "empty", "Upgrade-Insecure-Requests": "0"},
+		{"Sec-Fetch-Dest": "empty", "Upgrade-Insecure-Requests": "1"},
+		{"proto": "HTTP/1.1"},
+		{"proto": "HTTP/1.1", "Sec-Fetch-Site": "something"},
+		{"proto": "HTTP/1.1", "Sec-Fetch-Mode": "something"},
+		{"proto": "HTTP/1.1", "Sec-Fetch-Dest": "something"},
+	}
+	results := []string{
+		"",
+		"",
+		"sfs-referrer",
+		"",
+		"",
+		"ui-cors",
+		"",
+		"",
+		"sfd-ui",
+		"",
+		"http11-sf",
+		"http11-sf",
+		"http11-sf",
+	}
+	tracker := NewTracker(Config{})
+
+	for i, h := range header {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", userAgent)
+		req.Proto = "HTTP/2.0"
+
+		for k, v := range h {
+			if k == "proto" {
+				req.Proto = v
+			} else {
+				req.Header.Set(k, v)
+			}
+		}
+
+		_, _, reason := tracker.ignore(req, Options{})
+		assert.Equalf(t, results[i], reason, fmt.Sprint(h))
+	}
 }
 
 func TestTrackerPageViewsLimit(t *testing.T) {

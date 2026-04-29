@@ -2,6 +2,7 @@ package ua
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -17,6 +18,10 @@ const (
 	uaSystemDelimiter         = ";"
 	uaProductVersionDelimiter = '/'
 	uaVersionDelimiter        = '.'
+)
+
+var (
+	firefoxRV = regexp.MustCompile(`rv:(\d+\.?\d?)`)
 )
 
 // Parse parses the User-Agent header for the given request and returns the extracted information.
@@ -38,6 +43,7 @@ func Parse(r *http.Request) UserAgent {
 		userAgent.Browser, userAgent.BrowserVersion = products[0], products[1]
 	} else {
 		userAgent.Browser, userAgent.BrowserVersion = getBrowser(products, system, userAgent.OS)
+		userAgent.BrowserRevision = getRevision(userAgent.Browser, userAgent.UserAgent)
 	}
 
 	userAgent.Mobile = getMobile(r)
@@ -298,6 +304,20 @@ func getProductVersion(version string, n int) string {
 	}
 
 	return string(out)
+}
+
+func getRevision(browser, ua string) string {
+	if browser != pkg.BrowserFirefox {
+		return ""
+	}
+
+	matches := firefoxRV.FindStringSubmatch(ua)
+
+	if len(matches) == 2 {
+		return matches[1]
+	}
+
+	return ""
 }
 
 func getOSVersion(version string, n int) string {

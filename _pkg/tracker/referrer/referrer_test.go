@@ -304,6 +304,11 @@ func TestIgnore(t *testing.T) {
 		`-1)) OR 105=(SELECT 105 FROM PG_SLEEP(15))--`,
 		`0"XOR(if(now()=sysdate(),sleep(15),0))XOR"Z`,
 		`0sjy32e7') OR 259=(SELECT 259 FROM PG_SLEEP(15))--`,
+		"http://www.baidu.io",
+		"https://www.google.io",
+		"https://www.yandex.io",
+		"https://www.yahoo.io",
+		"https://www.bing.io",
 	}
 	acknowledged := make([]string, 0)
 
