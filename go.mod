@@ -10,7 +10,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.16.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.42
+	github.com/mattn/go-sqlite3 v1.14.44
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.53.0
