@@ -128,6 +128,15 @@ func TestGetOSVersion(t *testing.T) {
 	}
 }
 
+func TestGetRevision(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0")
+	ua := Parse(req)
+	assert.Equal(t, pkg.BrowserFirefox, ua.Browser)
+	assert.Equal(t, "149.0", ua.BrowserVersion)
+	assert.Equal(t, "149.0", ua.BrowserRevision)
+}
+
 func TestParseClientHints(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/116.0")

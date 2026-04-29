@@ -22,6 +22,9 @@ type UserAgent struct {
 	// BrowserVersion is the browser (non-technical) version number.
 	BrowserVersion string
 
+	// BrowserRevision is the browser revision number.
+	BrowserRevision string
+
 	// OS is the operating system.
 	OS string
 

@@ -400,6 +400,41 @@ func (tracker *Tracker) ignore(r *http.Request, options Options) (ua.UserAgent, 
 		}, ipAddress, "prefetch"
 	}
 
+	// ignore Sec-Fetch-Site: none with referrer set
+	secFetchSite := strings.ToLower(strings.TrimSpace(r.Header.Get("Sec-Fetch-Site")))
+
+	if secFetchSite == "none" && r.Referer() != "" {
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, "sfs-referrer"
+	}
+
+	// ignore Upgrade-Insecure-Requests for CORS requests
+	upgradeInsecureRequests := strings.TrimSpace(r.Header.Get("Upgrade-Insecure-Requests"))
+	secFetchMode := strings.ToLower(strings.TrimSpace(r.Header.Get("Sec-Fetch-Mode")))
+
+	if upgradeInsecureRequests == "1" && secFetchMode == "cors" {
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, "ui-cors"
+	}
+
+	// ignore Sec-Fetch-Dest: empty in combination with Upgrade-Insecure-Requests
+	secFetchDest := r.Header.Get("Sec-Fetch-Dest")
+
+	if secFetchDest == "empty" && upgradeInsecureRequests == "1" {
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, "sfd-ui"
+	}
+
+	// ignore modern header with HTTP/1.1
+	if r.Proto == "HTTP/1.1" && (secFetchSite != "" || secFetchMode != "" || secFetchDest != "") {
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, "http11-sf"
+	}
+
 	// empty User-Agents are usually bots
 	rawUserAgent := r.UserAgent()
 	userAgent := strings.TrimSpace(strings.ToLower(rawUserAgent))
@@ -443,12 +478,19 @@ func (tracker *Tracker) ignore(r *http.Request, options Options) (ua.UserAgent, 
 		}, ipAddress, "referrer"
 	}
 
+	// filter User-Agent
 	userAgentResult := ua.Parse(r)
 
 	if tracker.ignoreBrowserVersion(userAgentResult.Browser, userAgentResult.BrowserVersion) {
 		return ua.UserAgent{
 			UserAgent: r.UserAgent(),
 		}, ipAddress, "browser"
+	}
+
+	if userAgentResult.Browser == pkg.BrowserFirefox && userAgentResult.BrowserRevision != userAgentResult.BrowserVersion {
+		return ua.UserAgent{
+			UserAgent: r.UserAgent(),
+		}, ipAddress, "ua-rv-mismatch"
 	}
 
 	// filter for bot keywords

@@ -1395,5 +1395,6 @@ var UserAgentRegexBlacklist = []*regexp.Regexp{
 	regexp.MustCompile("assert\\(base64_decode\\("),
 	regexp.MustCompile("case *when.*then.*else.*end"),
 	regexp.MustCompile("expr [0-9]* - [0-9]*"),
+	regexp.MustCompile("firefox/(\\d+\\.\\d+\\.\\d+)"),
 	regexp.MustCompile("iif *(.*,.*,.*)"),
 }
