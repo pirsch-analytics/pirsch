@@ -94,7 +94,7 @@ func TestReferrer(t *testing.T) {
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
 	}
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -137,7 +137,7 @@ func TestReferrerFromParam(t *testing.T) {
 		{"", "My Referrer"},
 		{"", "referrer"},
 	}
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
@@ -154,7 +154,7 @@ func TestReferrerFromParam(t *testing.T) {
 }
 
 func TestReferrerSameDomain(t *testing.T) {
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
 	r.Header.Add("Referer", "https://example.com/foo/bar")
 	req := &ingest.Request{
@@ -229,7 +229,7 @@ func TestReferrerFromHeaderOrQuery(t *testing.T) {
 		"domain",
 		"domain space",
 	}
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
@@ -265,7 +265,7 @@ func TestReferrerStripSubdomain(t *testing.T) {
 		"subdomain.com",
 		"subdomains.com",
 	}
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for i, in := range input {
 		assert.Equal(t, expected[i], ref.stripSubdomain(in))
@@ -273,7 +273,7 @@ func TestReferrerStripSubdomain(t *testing.T) {
 }
 
 func TestReferrerAndroidApp(t *testing.T) {
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
 	req := &ingest.Request{
@@ -311,7 +311,7 @@ func TestReferrerAcknowledge(t *testing.T) {
 		"https://www.adsensecustomsearchads.com/",
 	}
 	ignored := make([]string, 0)
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for _, r := range referrer {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
@@ -353,7 +353,7 @@ func TestReferrerIgnore(t *testing.T) {
 		`0sjy32e7') OR 259=(SELECT 259 FROM PG_SLEEP(15))--`,
 	}
 	acknowledged := make([]string, 0)
-	ref := NewReferrer(QueryParams, Groups)
+	ref := NewReferrer(QueryParams, groups)
 
 	for _, r := range referrer {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)

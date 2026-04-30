@@ -23,12 +23,14 @@ func NewBotFilter(filter []Filter) *BotFilter {
 
 // Step implements the ingest.PipeStep interface.
 func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
-	if !request.DisableBotFilter {
-		for _, filter := range f.filter {
-			if filter.Ignore(request.IP) {
-				request.BotReason = "ip"
-				return true, nil
-			}
+	if request.DisableBotFilter {
+		return false, nil
+	}
+
+	for _, filter := range f.filter {
+		if filter.Ignore(request.IP) {
+			request.BotReason = "ip"
+			return true, nil
 		}
 	}
 

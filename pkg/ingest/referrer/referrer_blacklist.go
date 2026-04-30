@@ -1,7 +1,6 @@
 package referrer
 
-// SubstringBlacklist contains blacklisted substrings.
-var SubstringBlacklist = []string{
+var referrerBlacklist = []string{
 	" and ",
 	" or ",
 	" xor ",

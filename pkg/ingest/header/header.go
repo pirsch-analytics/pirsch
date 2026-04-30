@@ -16,6 +16,10 @@ func NewHeader() *Header {
 
 // Step implements ingest.PipeStep to process a step.
 func (h *Header) Step(request *ingest.Request) (bool, error) {
+	if request.DisableBotFilter {
+		return false, nil
+	}
+
 	// ignore User-Agent missing
 	if request.Request.UserAgent() == "" {
 		request.BotReason = "ua-missing"

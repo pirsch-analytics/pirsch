@@ -584,6 +584,7 @@ var UserAgentBlacklist = []string{
 	"inreachapplication",
 	"insider-gaming",
 	"insomnia",
+	"inspection",
 	"installatron",
 	"instapaper",
 	"integration",
@@ -1030,6 +1031,7 @@ var UserAgentBlacklist = []string{
 	"safbar",
 	"safeassign",
 	"sandbox",
+	"sapphire",
 	"saws",
 	"scalingo",
 	"scamadviserexternalhit",
@@ -1389,9 +1391,11 @@ var UserAgentBlacklist = []string{
 // UserAgentRegexBlacklist is a list of User-Agents to ignore.
 var UserAgentRegexBlacklist = []*regexp.Regexp{
 	regexp.MustCompile(" *and *['\"(0-9a-za-z]* *(=|like) *['\"(0-9a-za-z]*"),
+	regexp.MustCompile("(centos|debian|kubuntu|knoppix|ubuntu|fedora|ss|zz);.*chrome"),
 	regexp.MustCompile("-[0-9]* *or *[0-9]*="),
 	regexp.MustCompile("assert\\(base64_decode\\("),
 	regexp.MustCompile("case *when.*then.*else.*end"),
 	regexp.MustCompile("expr [0-9]* - [0-9]*"),
+	regexp.MustCompile("firefox/(\\d+\\.\\d+\\.\\d+)"),
 	regexp.MustCompile("iif *(.*,.*,.*)"),
 }

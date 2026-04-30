@@ -140,6 +140,10 @@ func (r *Referrer) unset(request *ingest.Request) {
 }
 
 func (r *Referrer) ignore(request *ingest.Request) bool {
+	if request.DisableBotFilter {
+		return false
+	}
+
 	referrer := r.fromHeaderOrQuery(request.Request)
 
 	if referrer == "" {
@@ -158,7 +162,7 @@ func (r *Referrer) ignore(request *ingest.Request) bool {
 	// filter for bot keywords
 	referrer = strings.ToLower(referrer)
 
-	for _, botReferrer := range SubstringBlacklist {
+	for _, botReferrer := range referrerBlacklist {
 		if strings.Contains(referrer, botReferrer) {
 			return true
 		}
