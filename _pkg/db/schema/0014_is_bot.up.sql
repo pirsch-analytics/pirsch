@@ -1,0 +1,1 @@
+ALTER TABLE `session` ADD COLUMN is_bot UInt8 DEFAULT 0;

@@ -1,6 +1,6 @@
-module github.com/pirsch-analytics/pirsch/v6
+module github.com/pirsch-analytics/pirsch/v7
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.45.0

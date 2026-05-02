@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	snowplowList = "pkg/tracker/referrer/mapping-snowplow.json"
-	mappingList  = "pkg/tracker/referrer/mapping.json"
+	snowplowList = "pkg/ingest/referrer/mapping-snowplow.json"
+	mappingList  = "pkg/ingest/referrer/mapping.json"
 )
 
 type domain struct {
@@ -116,7 +116,7 @@ var (
 	out.WriteString(`}
 )`)
 
-	if err := os.WriteFile("pkg/tracker/referrer/groups.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/ingest/referrer/groups.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 }

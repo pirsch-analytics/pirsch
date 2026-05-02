@@ -54,46 +54,4 @@ const (
 
 	// PlatformUnknown filters for everything where the platform is unspecified.
 	PlatformUnknown = "unknown"
-
-	// Unknown filters for an unknown (empty) value.
-	// This is a synonym for "null".
-	Unknown = "null"
-
-	// DirectionASC sorts results in ascending order.
-	DirectionASC = Direction("ASC")
-
-	// DirectionDESC sorts results in descending order.
-	DirectionDESC = Direction("DESC")
-
-	// CustomMetricTypeInteger transforms the metadata value of an event to an integer (64 bit).
-	CustomMetricTypeInteger = CustomMetricType("toInt64OrZero")
-
-	// CustomMetricTypeFloat transforms the metadata value of an event to a floating point value (64 bit).
-	CustomMetricTypeFloat = CustomMetricType("toFloat64OrZero")
 )
-
-const (
-	// PeriodDay groups the results by day.
-	PeriodDay = Period(iota)
-
-	// PeriodWeek groups the results by week.
-	PeriodWeek
-
-	// PeriodMonth groups the results by month.
-	PeriodMonth
-
-	// PeriodYear groups the result by year.
-	PeriodYear
-)
-
-// Period is used to group results.
-type Period int
-
-// Direction is used to sort results.
-type Direction string
-
-// CustomMetricType is used to set the type of a custom metric event meta value.
-type CustomMetricType string
-
-// NullClient is a placeholder for no client (0).
-var NullClient = int64(0)

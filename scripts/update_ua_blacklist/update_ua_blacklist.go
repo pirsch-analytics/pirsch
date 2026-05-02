@@ -13,7 +13,7 @@ import (
 // run this script from the root directory to update the blacklist.go
 func main() {
 	log.Println("Updating User-Agent blacklist")
-	list, err := os.Open("pkg/tracker/ua/ua_blacklist.txt")
+	list, err := os.Open("pkg/ingest/ua/blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +25,7 @@ func main() {
 		}
 	}()
 
-	regexList, err := os.Open("pkg/tracker/ua/ua_blacklist_regex.txt")
+	regexList, err := os.Open("pkg/ingest/ua/blacklist_regex.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +76,7 @@ var UserAgentRegexBlacklist = []*regexp.Regexp{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("pkg/tracker/ua/ua_blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/ingest/ua/blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

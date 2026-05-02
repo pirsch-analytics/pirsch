@@ -1,0 +1,285 @@
+package ua
+
+import (
+	"fmt"
+	"net/http"
+	"testing"
+
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestUserAgent(t *testing.T) {
+	s := NewUserAgent()
+	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
+	r := &ingest.Request{
+		Request: req,
+	}
+	cancel, err := s.Step(r)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, pkg.BrowserChrome, r.Browser)
+	assert.Equal(t, "146.0", r.BrowserVersion)
+	assert.Equal(t, pkg.OSWindows, r.OS)
+	assert.Equal(t, "10", r.OSVersion)
+	assert.True(t, r.Desktop)
+	assert.False(t, r.Mobile)
+}
+
+func TestParseSimple(t *testing.T) {
+	// just a simple test to check Parse returns something for a clean User-Agent
+	uaString := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) Gecko/20100101 Firefox/79.0"
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", uaString)
+	req.Header.Set("Sec-CH-UA-Mobile", "?1")
+	s := NewUserAgent()
+	ua := s.parse(req)
+	assert.Equal(t, pkg.OSMac, ua.os)
+	assert.Equal(t, "10.15", ua.osVersion)
+	assert.Equal(t, pkg.BrowserFirefox, ua.browser)
+	assert.Equal(t, "79.0", ua.browserVersion)
+	assert.True(t, *ua.mobile)
+}
+
+func TestGetBrowser(t *testing.T) {
+	s := NewUserAgent()
+
+	for _, ua := range userAgentsAll {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", ua.ua)
+		system, products, _, _ := s.parseSystemAndProduct(req)
+		browser, version := s.getBrowser(products, system, ua.os)
+		assert.Equal(t, ua.browser, browser)
+		assert.Equal(t, ua.browserVersion, version)
+	}
+}
+
+func TestGetBrowserChromeSafari(t *testing.T) {
+	s := NewUserAgent()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
+	system, products, _, _ := s.parseSystemAndProduct(req)
+	browser, version := s.getBrowser(products, system, pkg.OSMac)
+	assert.Equal(t, pkg.BrowserChrome, browser)
+	assert.Equal(t, "87.0", version)
+	req.Header.Set("User-Agent", "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15")
+	system, products, _, _ = s.parseSystemAndProduct(req)
+	browser, version = s.getBrowser(products, system, pkg.OSMac)
+	assert.Equal(t, pkg.BrowserSafari, browser)
+	assert.Equal(t, "14.0", version)
+}
+
+func TestGetOS(t *testing.T) {
+	s := NewUserAgent()
+
+	for _, ua := range userAgentsAll {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", ua.ua)
+		system, _, _, _ := s.parseSystemAndProduct(req)
+		os, version := s.getOS(system)
+		assert.Equal(t, ua.os, os)
+		assert.Equal(t, ua.osVersion, version)
+	}
+}
+
+func TestGetProductVersion(t *testing.T) {
+	input := []struct {
+		product string
+		n       int
+	}{
+		{"", 0},
+		{"", 1},
+		{"", 42},
+		{"   ", 0},
+		{"Edg", 0},
+		{"Edg/", 0},
+		{"Edg/   ", 0},
+		{"Safari/537.36", 0},
+		{"Edg/79.0.309.43", 1},
+		{"Chrome/79.0.3945.74", 2},
+		{"Chrome/79.0.3945.74", 10},
+	}
+	expected := []string{
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"537",
+		"79.0",
+		"79.0.3945",
+		"79.0.3945.74",
+	}
+	s := NewUserAgent()
+
+	for i, in := range input {
+		assert.Equal(t, expected[i], s.getProductVersion(in.product, in.n))
+	}
+}
+
+func TestGetOSVersion(t *testing.T) {
+	input := []struct {
+		version string
+		n       int
+	}{
+		{"", 0},
+		{"", 1},
+		{"", 42},
+		{"   ", 0},
+		{"10.0", 0},
+		{"10.0", 1},
+		{"10.15.6", 2},
+		{"10.15.6", 42},
+	}
+	expected := []string{
+		"",
+		"",
+		"",
+		"",
+		"10",
+		"10.0",
+		"10.15.6",
+		"10.15.6",
+	}
+	s := NewUserAgent()
+
+	for i, in := range input {
+		assert.Equal(t, expected[i], s.getOSVersion(in.version, in.n))
+	}
+}
+
+func TestParseClientHints(t *testing.T) {
+	s := NewUserAgent()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/116.0")
+	req.Header.Set("Sec-CH-UA", `"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115"`)
+	req.Header.Set("Sec-CH-UA-Platform", fmt.Sprintf(`"%s"`, pkg.OSChrome))
+	req.Header.Set("Sec-CH-UA-Platform-Version", `"6.4.10"`)
+	ua := s.parse(req)
+	assert.Equal(t, pkg.BrowserChrome, ua.browser)
+	assert.Equal(t, "115", ua.browserVersion)
+	assert.Equal(t, pkg.OSChrome, ua.os)
+	assert.Equal(t, "6.4", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Not/A)Brand";v="99", "Chromium";v="115", "Microsoft Edge";v="115"`)
+	req.Header.Set("Sec-CH-UA-Platform", `"Unknown"`)
+	ua = s.parse(req)
+	assert.Equal(t, pkg.BrowserEdge, ua.browser)
+	assert.Equal(t, "115", ua.browserVersion)
+	assert.Equal(t, pkg.OSLinux, ua.os)
+	assert.Empty(t, ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Opera";v="101", "Not/A)Brand";v="99", "Chromium";v="115"`)
+	req.Header.Set("Sec-CH-UA-Platform", `"Does not exist"`)
+	ua = s.parse(req)
+	assert.Equal(t, pkg.BrowserOpera, ua.browser)
+	assert.Equal(t, "101", ua.browserVersion)
+	assert.Empty(t, ua.os)
+	assert.Empty(t, ua.osVersion)
+	req.Header.Set("Sec-CH-UA", "gibberish")
+	req.Header.Set("Sec-CH-UA-Platform", `"Windows"`)
+	req.Header.Set("Sec-CH-UA-Platform-Version", `"13.0.0"`)
+	ua = s.parse(req)
+	assert.Equal(t, pkg.BrowserFirefox, ua.browser)
+	assert.Equal(t, "116.0", ua.browserVersion)
+	assert.Equal(t, pkg.OSWindows, ua.os)
+	assert.Equal(t, "11", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Generic";v="87", "Not/A)Brand";v="99", "Chromium";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Generic", ua.browser)
+	assert.Equal(t, "87", ua.browserVersion)
+	assert.Equal(t, pkg.OSWindows, ua.os)
+	assert.Equal(t, "11", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Generic";v="87", "Not";v="99", "Chromium";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Generic", ua.browser)
+	assert.Equal(t, "87", ua.browserVersion)
+	assert.Equal(t, pkg.OSWindows, ua.os)
+	assert.Equal(t, "11", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Generic";v="87", "Not)A";v="99", "Chromium";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Generic", ua.browser)
+	assert.Equal(t, "87", ua.browserVersion)
+	assert.Equal(t, pkg.OSWindows, ua.os)
+	assert.Equal(t, "11", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Generic";v="87", "Not A";v="99", "Chromium";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Generic", ua.browser)
+	assert.Equal(t, "87", ua.browserVersion)
+	assert.Equal(t, pkg.OSWindows, ua.os)
+	assert.Equal(t, "11", ua.osVersion)
+	req.Header.Set("Sec-CH-UA", `"Arc";v="1.11", "Not A";v="99", "Chromium";v="115"`)
+	req.Header.Set("Sec-CH-UA-Platform", fmt.Sprintf(`"%s"`, pkg.OSMac))
+	req.Header.Set("Sec-CH-UA-Platform-Version", `"13.5.1"`)
+	ua = s.parse(req)
+	assert.Equal(t, pkg.BrowserArc, ua.browser)
+	assert.Equal(t, "1.11", ua.browserVersion)
+	assert.Equal(t, pkg.OSMac, ua.os)
+	assert.Equal(t, "13.5", ua.osVersion)
+	req, _ = http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
+	req.Header.Set("Sec-CH-UA", `"Not/A)Brand";v="99", "Google Chrome";v="115", "Chromium";v="115", "HeadlessChrome";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Headless", ua.browser)
+	assert.Empty(t, ua.browserVersion)
+	req, _ = http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36")
+	req.Header.Set("Sec-CH-UA", `"Not/A)Brand";v="99", "Android WebView";v="115"`)
+	ua = s.parse(req)
+	assert.Equal(t, "Android WebView", ua.browser)
+}
+
+func TestParse(t *testing.T) {
+	input := []string{
+		// empty
+		"",
+		"  ",
+		"'  '",
+		` "   "`,
+
+		// clean and simple
+		"(system)",
+		"version",
+		"(system) version",
+
+		// whitespace
+		"   (system)   ",
+		"   version    ",
+		"   (   system   )   version   ",
+		"   (  ;  system    ;  )   version   ",
+
+		// multiple system entries and versions
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+
+		// garbage
+		`\'user-agent=\"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36\"\'`,
+	}
+	expected := [][][]string{
+		{{}, {}},
+		{{}, {}},
+		{{}, {}},
+		{{}, {}},
+		{{"system"}, {}},
+		{{}, {"version"}},
+		{{"system"}, {"version"}},
+		{{"system"}, {}},
+		{{}, {"version"}},
+		{{"system"}, {"version"}},
+		{{"system"}, {"version"}},
+		{{"Macintosh", "Intel Mac OS X 10_10_5"}, {"Chrome/63.0.3239.132", "Safari/537.36"}},
+		{{"Windows NT 10.0", "WOW64"}, {"Chrome/51.0.2704.103"}},
+	}
+	s := NewUserAgent()
+
+	for i, in := range input {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("User-Agent", in)
+		system, products, systemFromCH, productFromCH := s.parseSystemAndProduct(req)
+		assert.ElementsMatch(t, expected[i][0], system)
+		assert.ElementsMatch(t, expected[i][1], products)
+		assert.False(t, systemFromCH)
+		assert.False(t, productFromCH)
+	}
+}
