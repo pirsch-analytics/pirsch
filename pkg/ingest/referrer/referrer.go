@@ -139,6 +139,7 @@ func (r *Referrer) unset(request *ingest.Request) {
 	request.ReferrerIcon = ""
 }
 
+// TODO move to separate step
 func (r *Referrer) ignore(request *ingest.Request) bool {
 	if request.DisableBotFilter {
 		return false
