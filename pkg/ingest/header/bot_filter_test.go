@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHeader(t *testing.T) {
+func TestBotFilter(t *testing.T) {
 	input := []map[string]string{
 		{"User-Agent": ""},
 		{"Accept-Language": ""},
@@ -56,7 +56,7 @@ func TestHeader(t *testing.T) {
 		"http11-sf",
 		"http11-sf",
 	}
-	filter := NewHeader()
+	filter := NewBotFilter()
 
 	for i, h := range input {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)

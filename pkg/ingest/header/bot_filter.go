@@ -6,16 +6,16 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 )
 
-// Header filters bot traffic based on HTTP headers.
-type Header struct{}
+// BotFilter filters bot traffic based on HTTP headers.
+type BotFilter struct{}
 
-// NewHeader returns a new Header.
-func NewHeader() *Header {
-	return new(Header)
+// NewBotFilter returns a new BotFilter.
+func NewBotFilter() *BotFilter {
+	return new(BotFilter)
 }
 
 // Step implements ingest.PipeStep to process a step.
-func (h *Header) Step(request *ingest.Request) (bool, error) {
+func (b *BotFilter) Step(request *ingest.Request) (bool, error) {
 	if request.DisableBotFilter {
 		return false, nil
 	}
