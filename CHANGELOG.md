@@ -7,6 +7,7 @@
 * added new ingestion system
 * use map instead of two arrays for tags on page views
 * improved batch inserts
+* improved bot filter
 * removed duration_seconds field
 * updated dependencies
 

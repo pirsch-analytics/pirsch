@@ -2,6 +2,7 @@ package ua
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -18,6 +19,10 @@ const (
 	uaVersionDelimiter        = '.'
 )
 
+var (
+	firefoxRV = regexp.MustCompile(`rv:(\d+\.?\d?)`)
+)
+
 // UserAgent parses the User-Agent header to extract useful information.
 type UserAgent struct{}
 
@@ -32,6 +37,7 @@ func (ua *UserAgent) Step(request *ingest.Request) (bool, error) {
 	i := ua.parse(request.Request)
 	request.Browser = util.Shorten(i.browser, 20)
 	request.BrowserVersion = util.Shorten(i.browserVersion, 20)
+	request.BrowserRevision = i.browserRevision
 	request.OS = util.Shorten(i.os, 20)
 	request.OSVersion = util.Shorten(i.osVersion, 20)
 	request.Desktop = i.isDesktop()
@@ -40,7 +46,8 @@ func (ua *UserAgent) Step(request *ingest.Request) (bool, error) {
 }
 
 func (ua *UserAgent) parse(r *http.Request) info {
-	system, products, systemFromCH, productFromCH := ua.parseSystemAndProduct(r)
+	userAgentString := strings.Trim(r.UserAgent(), ` '"`)
+	system, products, systemFromCH, productFromCH := ua.parseSystemAndProduct(r, userAgentString)
 	userAgent := info{}
 
 	if systemFromCH {
@@ -53,6 +60,7 @@ func (ua *UserAgent) parse(r *http.Request) info {
 		userAgent.browser, userAgent.browserVersion = products[0], products[1]
 	} else {
 		userAgent.browser, userAgent.browserVersion = ua.getBrowser(products, system, userAgent.os)
+		userAgent.browserRevision = ua.getRevision(userAgent.browser, userAgentString)
 	}
 
 	userAgent.mobile = ua.getMobile(r)
@@ -176,7 +184,7 @@ func (ua *UserAgent) getMobile(r *http.Request) *bool {
 
 	if mobile != "" && (mobile == "?0" || mobile == "?1") {
 		b := mobile == "?1"
-		return &b
+		return new(b)
 	}
 
 	return nil
@@ -315,6 +323,20 @@ func (ua *UserAgent) getProductVersion(version string, n int) string {
 	return string(out)
 }
 
+func (ua *UserAgent) getRevision(browser, userAgent string) string {
+	if browser != pkg.BrowserFirefox {
+		return ""
+	}
+
+	matches := firefoxRV.FindStringSubmatch(userAgent)
+
+	if len(matches) == 2 {
+		return matches[1]
+	}
+
+	return ""
+}
+
 func (ua *UserAgent) getOSVersion(version string, n int) string {
 	out := make([]rune, 0, len(version))
 	dots := 0
@@ -336,9 +358,7 @@ func (ua *UserAgent) getOSVersion(version string, n int) string {
 	return string(out)
 }
 
-func (ua *UserAgent) parseSystemAndProduct(r *http.Request) ([]string, []string, bool, bool) {
-	userAgent := strings.Trim(r.UserAgent(), ` '"`)
-
+func (ua *UserAgent) parseSystemAndProduct(r *http.Request, userAgent string) ([]string, []string, bool, bool) {
 	if userAgent == "" {
 		return nil, nil, false, false
 	}

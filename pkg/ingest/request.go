@@ -115,6 +115,10 @@ type Request struct {
 	// This should be set by a PipeStep.
 	BrowserVersion string
 
+	// BrowserRevision is the browser revision for the request.
+	// This should be set by a PipeStep.
+	BrowserRevision string
+
 	// Desktop indicates a desktop device for the request.
 	// This should be set by a PipeStep.
 	Desktop bool

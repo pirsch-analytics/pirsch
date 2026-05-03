@@ -2,9 +2,14 @@ package referrer
 
 import (
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+)
+
+var (
+	isUUID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 )
 
 // BotFilter filters bot requests based on the referrer.
@@ -32,6 +37,10 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 
 	if referrer == "" {
 		return false, nil
+	}
+
+	if isUUID.MatchString(referrer) {
+		return true, nil
 	}
 
 	u, err := url.ParseRequestURI(referrer)

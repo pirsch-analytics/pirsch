@@ -271,7 +271,7 @@ var (
 			osVersion:      "10.15",
 		},
 		{
-			ua:             "Mozilla/5.0 (Android 10; Mobile; rv:68.0) Gecko/68.0 Firefox/79.0",
+			ua:             "Mozilla/5.0 (Android 10; Mobile; rv:79.0) Gecko/68.0 Firefox/79.0",
 			browser:        pkg.BrowserFirefox,
 			browserVersion: "79.0",
 			os:             pkg.OSAndroid,

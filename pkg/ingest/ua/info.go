@@ -5,11 +5,12 @@ import (
 )
 
 type info struct {
-	browser        string
-	browserVersion string
-	os             string
-	osVersion      string
-	mobile         *bool
+	browser         string
+	browserVersion  string
+	browserRevision string
+	os              string
+	osVersion       string
+	mobile          *bool
 }
 
 func (ua *info) isDesktop() bool {

@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"maps"
 	"sync"
 	"time"
 
@@ -85,9 +86,7 @@ func (cache *MemCache) Sessions() map[string]model.Session {
 	defer cache.m.RUnlock()
 	sessions := make(map[string]model.Session, len(cache.sessions))
 
-	for k, v := range cache.sessions {
-		sessions[k] = v
-	}
+	maps.Copy(sessions, cache.sessions)
 
 	return sessions
 }

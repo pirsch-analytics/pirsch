@@ -32,6 +32,14 @@ func TestBotFilter(t *testing.T) {
 		`-1)) OR 105=(SELECT 105 FROM PG_SLEEP(15))--`,
 		`0"XOR(if(now()=sysdate(),sleep(15),0))XOR"Z`,
 		`0sjy32e7') OR 259=(SELECT 259 FROM PG_SLEEP(15))--`,
+		"550e8400-e29b-11d4-a716-446655440000",
+		"000003e8-e29b-21d4-8600-446655440000",
+		"6ba7b810-9dad-31d1-80b4-00c04fd430c8",
+		"f47ac10b-58cc-4372-a567-0e02b2c3d479",
+		"886313e1-3b8a-5372-9b90-0c9aee199e5d",
+		"1ef21d2f-1207-6660-8914-ac5c6e9a2b0c",
+		"018e5e04-a530-7000-8d5c-b14c9b7a6e1a",
+		"320c3d4d-cc00-875b-8ec9-32d5f69181c0",
 	}
 	acknowledged := make([]string, 0)
 	filter := NewBotFilter()

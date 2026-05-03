@@ -49,23 +49,25 @@ func TestGetBrowser(t *testing.T) {
 	for _, ua := range userAgentsAll {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", ua.ua)
-		system, products, _, _ := s.parseSystemAndProduct(req)
-		browser, version := s.getBrowser(products, system, ua.os)
-		assert.Equal(t, ua.browser, browser)
-		assert.Equal(t, ua.browserVersion, version)
+		r := &ingest.Request{
+			Request: req,
+		}
+		cancel, err := s.Step(r)
+		assert.NoError(t, err)
+		assert.False(t, cancel)
+		assert.Equalf(t, ua.browser, r.Browser, ua.ua)
+		assert.Equalf(t, ua.browserVersion, r.BrowserVersion, ua.ua)
 	}
 }
 
 func TestGetBrowserChromeSafari(t *testing.T) {
 	s := NewUserAgent()
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("User-Agent", "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-	system, products, _, _ := s.parseSystemAndProduct(req)
+	system, products, _, _ := s.parseSystemAndProduct(req, "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
 	browser, version := s.getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserChrome, browser)
 	assert.Equal(t, "87.0", version)
-	req.Header.Set("User-Agent", "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15")
-	system, products, _, _ = s.parseSystemAndProduct(req)
+	system, products, _, _ = s.parseSystemAndProduct(req, "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15")
 	browser, version = s.getBrowser(products, system, pkg.OSMac)
 	assert.Equal(t, pkg.BrowserSafari, browser)
 	assert.Equal(t, "14.0", version)
@@ -76,8 +78,7 @@ func TestGetOS(t *testing.T) {
 
 	for _, ua := range userAgentsAll {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("User-Agent", ua.ua)
-		system, _, _, _ := s.parseSystemAndProduct(req)
+		system, _, _, _ := s.parseSystemAndProduct(req, ua.ua)
 		os, version := s.getOS(system)
 		assert.Equal(t, ua.os, os)
 		assert.Equal(t, ua.osVersion, version)
@@ -275,11 +276,25 @@ func TestParse(t *testing.T) {
 
 	for i, in := range input {
 		req, _ := http.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set("User-Agent", in)
-		system, products, systemFromCH, productFromCH := s.parseSystemAndProduct(req)
+		system, products, systemFromCH, productFromCH := s.parseSystemAndProduct(req, in)
 		assert.ElementsMatch(t, expected[i][0], system)
 		assert.ElementsMatch(t, expected[i][1], products)
 		assert.False(t, systemFromCH)
 		assert.False(t, productFromCH)
 	}
+}
+
+func TestGetRevision(t *testing.T) {
+	s := NewUserAgent()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0")
+	r := &ingest.Request{
+		Request: req,
+	}
+	cancel, err := s.Step(r)
+	assert.NoError(t, err)
+	assert.False(t, cancel)
+	assert.Equal(t, pkg.BrowserFirefox, r.Browser)
+	assert.Equal(t, "149.0", r.BrowserVersion)
+	assert.Equal(t, "149.0", r.BrowserRevision)
 }
