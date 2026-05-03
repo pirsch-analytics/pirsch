@@ -1,10 +1,14 @@
 package referrer
 
 import (
+	"net/url"
+	"strings"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 )
 
-// BotFilter filters bot requests based on the Referrer.
+// BotFilter filters bot requests based on the referrer.
+// This step must be run before the Referrer step.
 type BotFilter struct{}
 
 // NewBotFilter creates a new BotFilter.
@@ -18,7 +22,64 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	// TODO
+	referrer := ""
+
+	if request.Referrer != "" {
+		referrer = request.Referrer
+	} else {
+		referrer = fromHeaderOrQuery(request.Request)
+	}
+
+	if referrer == "" {
+		return false, nil
+	}
+
+	u, err := url.ParseRequestURI(referrer)
+
+	if err == nil {
+		referrer = u.Hostname()
+	}
+
+	referrer = f.stripSubdomain(referrer)
+	_, found := HostnameBlacklist[referrer]
+
+	if found {
+		return true, nil
+	}
+
+	// filter for bot keywords
+	referrer = strings.ToLower(referrer)
+
+	for _, botReferrer := range referrerBlacklist {
+		if strings.Contains(referrer, botReferrer) {
+			return true, nil
+		}
+	}
 
 	return false, nil
+}
+
+func (f *BotFilter) stripSubdomain(hostname string) string {
+	if hostname == "" {
+		return ""
+	}
+
+	runes := []rune(hostname)
+	index := len(runes) - 1
+	dots := 0
+
+	for i := index; i > 0; i-- {
+		if runes[i] == '.' {
+			dots++
+
+			if dots == 2 {
+				index++
+				break
+			}
+		}
+
+		index--
+	}
+
+	return hostname[index:]
 }

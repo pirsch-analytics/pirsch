@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"net/netip"
 	"net/url"
 	"regexp"
@@ -15,33 +14,17 @@ import (
 )
 
 var (
-	// QueryParams is a list of query parameters to set the referrer.
-	QueryParams = []QueryParam{
-		{"ref", false},
-		{"referer", false},
-		{"referrer", false},
-		{"source", true},
-		{"utm_source", true},
-	}
-
 	isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
 )
 
-type QueryParam struct {
-	Param        string
-	PreferHeader bool
-}
-
 // Referrer maps referrers to groups and filters bot requests based on the referrer.
 type Referrer struct {
-	params []QueryParam
 	groups map[string]string
 }
 
-// NewReferrer returns a new Referrer for the given query parameters and group list.
-func NewReferrer(params []QueryParam, groups map[string]string) *Referrer {
+// NewReferrer returns a new Referrer for the given group list.
+func NewReferrer(groups map[string]string) *Referrer {
 	return &Referrer{
-		params: params,
 		groups: groups,
 	}
 }
@@ -54,7 +37,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	if request.Referrer != "" {
 		referrer = request.Referrer
 	} else {
-		referrer = r.fromHeaderOrQuery(request.Request)
+		referrer = fromHeaderOrQuery(request.Request)
 	}
 
 	if referrer == "" {
@@ -67,7 +50,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 		request.Referrer = util.Shorten(referrer, 200)
 		request.ReferrerName = util.Shorten(name, 200)
 		request.ReferrerIcon = util.Shorten(icon, 2000)
-		return r.ignore(request), nil
+		return false, nil
 	}
 
 	var u *url.URL
@@ -94,7 +77,7 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 		// accept non-url referrers (from utm_source, for example)
 		r.unset(request)
 		request.ReferrerName = util.Shorten(strings.TrimSpace(referrer), 200)
-		return r.ignore(request), nil
+		return false, nil
 	}
 
 	// the subdomain for requestHostname is already stripped at this point (any, not just www)
@@ -130,64 +113,13 @@ func (r *Referrer) Step(request *ingest.Request) (bool, error) {
 	request.Referrer = util.Shorten(u.String(), 200)
 	request.ReferrerName = util.Shorten(name, 200)
 	request.ReferrerIcon = ""
-	return r.ignore(request), nil
+	return false, nil
 }
 
 func (r *Referrer) unset(request *ingest.Request) {
 	request.Referrer = ""
 	request.ReferrerName = ""
 	request.ReferrerIcon = ""
-}
-
-// TODO move to separate step
-func (r *Referrer) ignore(request *ingest.Request) bool {
-	if request.DisableBotFilter {
-		return false
-	}
-
-	referrer := r.fromHeaderOrQuery(request.Request)
-
-	if referrer == "" {
-		return false
-	}
-
-	u, err := url.ParseRequestURI(referrer)
-
-	if err == nil {
-		referrer = u.Hostname()
-	}
-
-	referrer = r.stripSubdomain(referrer)
-	_, found := HostnameBlacklist[referrer]
-
-	// filter for bot keywords
-	referrer = strings.ToLower(referrer)
-
-	for _, botReferrer := range referrerBlacklist {
-		if strings.Contains(referrer, botReferrer) {
-			return true
-		}
-	}
-
-	return found
-}
-
-func (r *Referrer) fromHeaderOrQuery(request *http.Request) string {
-	fromHeader := strings.TrimSpace(request.Header.Get("Referer"))
-
-	if index := strings.IndexAny(fromHeader, "\n\r"); index > 0 {
-		fromHeader = strings.TrimSpace(fromHeader[:index])
-	}
-
-	for _, param := range r.params {
-		referrer := request.URL.Query().Get(param.Param)
-
-		if referrer != "" && (!param.PreferHeader || param.PreferHeader && fromHeader == "") {
-			return referrer
-		}
-	}
-
-	return fromHeader
 }
 
 func (r *Referrer) isIP(referrer string) bool {
@@ -204,29 +136,4 @@ func (r *Referrer) isIP(referrer string) bool {
 
 	_, err := netip.ParseAddr(referrer)
 	return err == nil
-}
-
-func (r *Referrer) stripSubdomain(hostname string) string {
-	if hostname == "" {
-		return ""
-	}
-
-	runes := []rune(hostname)
-	index := len(runes) - 1
-	dots := 0
-
-	for i := index; i > 0; i-- {
-		if runes[i] == '.' {
-			dots++
-
-			if dots == 2 {
-				index++
-				break
-			}
-		}
-
-		index--
-	}
-
-	return hostname[index:]
 }

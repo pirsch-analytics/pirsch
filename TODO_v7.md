@@ -1,6 +1,6 @@
 # TODO
 
-[ ] Optimise request log (store all relevant fields)
+[ ] Optimize request log (store all relevant fields)
 [ ] Ignore bots
     [ ] User-Agent + browser version
     [ ] Firefox/version == rv:version

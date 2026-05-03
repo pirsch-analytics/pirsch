@@ -94,7 +94,7 @@ func TestReferrer(t *testing.T) {
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
 	}
-	ref := NewReferrer(QueryParams, groups)
+	ref := NewReferrer(groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -137,7 +137,7 @@ func TestReferrerFromParam(t *testing.T) {
 		{"", "My Referrer"},
 		{"", "referrer"},
 	}
-	ref := NewReferrer(QueryParams, groups)
+	ref := NewReferrer(groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
@@ -154,7 +154,7 @@ func TestReferrerFromParam(t *testing.T) {
 }
 
 func TestReferrerSameDomain(t *testing.T) {
-	ref := NewReferrer(QueryParams, groups)
+	ref := NewReferrer(groups)
 	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
 	r.Header.Add("Referer", "https://example.com/foo/bar")
 	req := &ingest.Request{
@@ -186,94 +186,8 @@ func TestReferrerSameDomain(t *testing.T) {
 	assert.Empty(t, req.ReferrerIcon)
 }
 
-func TestReferrerFromHeaderOrQuery(t *testing.T) {
-	input := [][]string{
-		{"", "", ""},
-		{"ref", "", ""},
-		{"ref", "domain", ""},
-		{"ref", "domain+space", ""},
-		{"ref", "domain+space", "https://overwrite-this.com"},
-		{"source", "domain+space", "https://overwrite-this.com"},
-		{"utm_source", "domain+space", "https://overwrite-this.com"},
-		{"referer", "", ""},
-		{"referer", "domain", ""},
-		{"referer", "domain+space", ""},
-		{"referrer", "", ""},
-		{"referrer", "domain", ""},
-		{"referrer", "domain+space", ""},
-		{"source", "", ""},
-		{"source", "domain", ""},
-		{"source", "domain+space", ""},
-		{"utm_source", "", ""},
-		{"utm_source", "domain", ""},
-		{"utm_source", "domain+space", ""},
-	}
-	expected := []string{
-		"",
-		"",
-		"domain",
-		"domain space",
-		"domain space",
-		"https://overwrite-this.com",
-		"https://overwrite-this.com",
-		"",
-		"domain",
-		"domain space",
-		"",
-		"domain",
-		"domain space",
-		"",
-		"domain",
-		"domain space",
-		"",
-		"domain",
-		"domain space",
-	}
-	ref := NewReferrer(QueryParams, groups)
-
-	for i, in := range input {
-		r := httptest.NewRequest(http.MethodGet, "/?"+in[0]+"="+in[1], nil)
-
-		if in[2] != "" {
-			r.Header.Set("Referer", in[2])
-		}
-
-		assert.Equal(t, expected[i], ref.fromHeaderOrQuery(r))
-	}
-}
-
-func TestReferrerStripSubdomain(t *testing.T) {
-	input := []string{
-		"",
-		".",
-		"..",
-		"...",
-		" ",
-		"\t",
-		"boring.old",
-		"with.subdomain.com",
-		"with.multiple.subdomains.com",
-	}
-	expected := []string{
-		"",
-		".",
-		"..",
-		".",
-		" ",
-		"\t",
-		"boring.old",
-		"subdomain.com",
-		"subdomains.com",
-	}
-	ref := NewReferrer(QueryParams, groups)
-
-	for i, in := range input {
-		assert.Equal(t, expected[i], ref.stripSubdomain(in))
-	}
-}
-
 func TestReferrerAndroidApp(t *testing.T) {
-	ref := NewReferrer(QueryParams, groups)
+	ref := NewReferrer(groups)
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
 	req := &ingest.Request{
@@ -304,67 +218,4 @@ func TestReferrerAndroidApp(t *testing.T) {
 	assert.Equal(t, androidAppPrefix+"does-not-exist", req.Referrer)
 	assert.Empty(t, req.ReferrerName)
 	assert.Empty(t, req.ReferrerIcon)
-}
-
-func TestReferrerAcknowledge(t *testing.T) {
-	referrer := []string{
-		"https://www.adsensecustomsearchads.com/",
-	}
-	ignored := make([]string, 0)
-	ref := NewReferrer(QueryParams, groups)
-
-	for _, r := range referrer {
-		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
-		req.Header.Set("Referer", r)
-
-		if ref.ignore(&ingest.Request{
-			Request: req,
-		}) {
-			ignored = append(ignored, r)
-		}
-	}
-
-	assert.Empty(t, ignored)
-}
-
-func TestReferrerIgnore(t *testing.T) {
-	referrer := []string{
-		`(select(0)from(select(sleep(15)))v)/*'+(select(0)from(select(sleep(15)))v)+'"+(select(0)from(select(sleep(15)))v)+"*/`,
-		`-1 OR 2+1-1+1=1 AND 136=136 --`,
-		`-1 OR 2+136-136-1=0+0+0+1 --`,
-		`-1 OR 3*2=6 AND 707=707`,
-		`-1 OR 3*2=6 AND 946=946 --`,
-		`-1 OR 3*2>(0+5+946-946) --`,
-		`-1 OR 3+87-87-1=0+0+0+1`,
-		`-1 OR 3+946-946-1=0+0+0+1 --`,
-		`-1" OR 2+1-1-1=1 AND 846=846 --`,
-		`-1" OR 2+874-874-1=0+0+0+1 --`,
-		`-1" OR 3*2<(0+5+846-846) --`,
-		`-1" OR 3*2=6 AND 778=778 --`,
-		`-1" OR 3*2>(0+5+846-846) --`,
-		`-1" OR 3+211-211-1=0+0+0+1 --`,
-		`-1' OR 2+1-1-1=1 AND 94=94 --`,
-		`-1' OR 3*2>(0+5+912-912) or 'S37EBSa9'='`,
-		`-1' OR 3*2>(0+5+94-94) --`,
-		`-1' OR 3+142-142-1=0+0+0+1 --`,
-		`-1' OR 3+842-842-1=0+0+0+1 or 'XSkGSBJC'='`,
-		`-1)) OR 105=(SELECT 105 FROM PG_SLEEP(15))--`,
-		`0"XOR(if(now()=sysdate(),sleep(15),0))XOR"Z`,
-		`0sjy32e7') OR 259=(SELECT 259 FROM PG_SLEEP(15))--`,
-	}
-	acknowledged := make([]string, 0)
-	ref := NewReferrer(QueryParams, groups)
-
-	for _, r := range referrer {
-		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
-		req.Header.Set("Referer", r)
-
-		if !ref.ignore(&ingest.Request{
-			Request: req,
-		}) {
-			acknowledged = append(acknowledged, r)
-		}
-	}
-
-	assert.Empty(t, acknowledged)
 }
