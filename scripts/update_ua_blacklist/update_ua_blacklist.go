@@ -57,8 +57,7 @@ func main() {
 
 import "regexp"
 
-// UserAgentBlacklist is a list of User-Agents to ignore.
-var UserAgentBlacklist = []string{
+var userAgentBlacklist = []string{
 `)
 
 	for _, entry := range ua {
@@ -66,8 +65,7 @@ var UserAgentBlacklist = []string{
 	}
 
 	out.WriteString("}\n\n")
-	out.WriteString(`// UserAgentRegexBlacklist is a list of User-Agents to ignore.
-var UserAgentRegexBlacklist = []*regexp.Regexp{
+	out.WriteString(`var userAgentRegexBlacklist = []*regexp.Regexp{
 `)
 
 	for _, entry := range uaRegex {

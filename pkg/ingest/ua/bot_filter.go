@@ -87,7 +87,7 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 	// filter for bot keywords
 	browser := strings.ToLower(request.Browser)
 
-	for _, botBrowser := range BrowserBlacklist {
+	for _, botBrowser := range browserBlacklist {
 		if strings.Contains(browser, botBrowser) {
 			request.BotReason = "ch-browser"
 			return true, nil
@@ -95,7 +95,7 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 	}
 
 	// filter for bot keywords
-	for _, botUserAgent := range UserAgentBlacklist {
+	for _, botUserAgent := range userAgentBlacklist {
 		if strings.Contains(userAgent, botUserAgent) {
 			request.BotReason = "ua-keyword"
 			return true, nil
@@ -103,7 +103,7 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 	}
 
 	// filter for bot regex
-	for _, botUserAgent := range UserAgentRegexBlacklist {
+	for _, botUserAgent := range userAgentRegexBlacklist {
 		if botUserAgent.MatchString(userAgent) {
 			request.BotReason = "ua-regex"
 			return true, nil

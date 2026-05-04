@@ -36,8 +36,7 @@ func main() {
 	var out strings.Builder
 	out.WriteString(`package ua
 
-// BrowserBlacklist is a list of User-Agents to ignore.
-var BrowserBlacklist = []string{
+var browserBlacklist = []string{
 `)
 
 	for _, entry := range browser {

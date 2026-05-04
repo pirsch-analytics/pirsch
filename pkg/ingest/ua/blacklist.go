@@ -2,8 +2,7 @@ package ua
 
 import "regexp"
 
-// UserAgentBlacklist is a list of User-Agents to ignore.
-var UserAgentBlacklist = []string{
+var userAgentBlacklist = []string{
 	"!(()&&!|*|*|",
 	"${",
 	"(null)",
@@ -1388,8 +1387,7 @@ var UserAgentBlacklist = []string{
 	"脝脝陆芒潞贸碌脛",
 }
 
-// UserAgentRegexBlacklist is a list of User-Agents to ignore.
-var UserAgentRegexBlacklist = []*regexp.Regexp{
+var userAgentRegexBlacklist = []*regexp.Regexp{
 	regexp.MustCompile(" *and *['\"(0-9a-za-z]* *(=|like) *['\"(0-9a-za-z]*"),
 	regexp.MustCompile("(centos|debian|kubuntu|knoppix|ubuntu|fedora|ss|zz);.*chrome"),
 	regexp.MustCompile("-[0-9]* *or *[0-9]*="),

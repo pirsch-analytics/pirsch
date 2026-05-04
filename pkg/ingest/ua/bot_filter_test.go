@@ -105,7 +105,7 @@ func TestBotFilterBotUserAgent(t *testing.T) {
 	u := NewUserAgent()
 	f := NewBotFilter()
 
-	for _, botUserAgent := range UserAgentBlacklist {
+	for _, botUserAgent := range userAgentBlacklist {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("User-Agent", botUserAgent)
 		r := &ingest.Request{
