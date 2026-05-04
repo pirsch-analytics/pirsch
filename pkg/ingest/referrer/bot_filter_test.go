@@ -47,10 +47,12 @@ func TestBotFilter(t *testing.T) {
 	for _, r := range referrer {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
 		req.Header.Set("Referer", r)
-		cancel, err := filter.Step(&ingest.Request{
+		ir := &ingest.Request{
 			Request: req,
-		})
+		}
+		cancel, err := filter.Step(ir)
 		assert.NoError(t, err)
+		assert.NotEmpty(t, ir.BotReason)
 
 		if !cancel {
 			acknowledged = append(acknowledged, r)
@@ -100,10 +102,12 @@ func TestBotFilterAcknowledge(t *testing.T) {
 	for _, r := range referrer {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
 		req.Header.Set("Referer", r)
-		cancel, err := filter.Step(&ingest.Request{
+		ir := &ingest.Request{
 			Request: req,
-		})
+		}
+		cancel, err := filter.Step(ir)
 		assert.NoError(t, err)
+		assert.Empty(t, ir.BotReason)
 
 		if cancel {
 			ignored = append(ignored, r)

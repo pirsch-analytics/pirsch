@@ -2,14 +2,10 @@ package referrer
 
 import (
 	"net/url"
-	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
-)
-
-var (
-	isUUID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 )
 
 // BotFilter filters bot requests based on the referrer.
@@ -39,7 +35,8 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 		return false, nil
 	}
 
-	if isUUID.MatchString(referrer) {
+	if _, err := uuid.Parse(referrer); err == nil {
+		request.BotReason = "ref-uuid"
 		return true, nil
 	}
 
@@ -53,6 +50,7 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 	_, found := HostnameBlacklist[referrer]
 
 	if found {
+		request.BotReason = "ref-blacklist"
 		return true, nil
 	}
 
@@ -61,6 +59,7 @@ func (f *BotFilter) Step(request *ingest.Request) (bool, error) {
 
 	for _, botReferrer := range referrerBlacklist {
 		if strings.Contains(referrer, botReferrer) {
+			request.BotReason = "ref-keyword"
 			return true, nil
 		}
 	}

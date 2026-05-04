@@ -2,6 +2,7 @@ package util
 
 import (
 	"strings"
+	"unicode"
 )
 
 // StripWWW strips the www prefix if it is the first and only subdomain.
@@ -22,4 +23,15 @@ func Shorten(s string, n int) string {
 	}
 
 	return string(runes[:n])
+}
+
+// ContainsNonASCIICharacters returns whether the string only consists out of ASCII characters or not.
+func ContainsNonASCIICharacters(ua string) bool {
+	for _, c := range ua {
+		if c > unicode.MaxASCII {
+			return true
+		}
+	}
+
+	return false
 }
