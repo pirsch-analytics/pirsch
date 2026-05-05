@@ -48,8 +48,8 @@ func NewPipe(options PipeOptions) *Pipe {
 }
 
 // Use adds a processing step to the Pipe.
-func (p *Pipe) Use(f PipeStep) *Pipe {
-	p.steps = append(p.steps, f)
+func (p *Pipe) Use(f ...PipeStep) *Pipe {
+	p.steps = append(p.steps, f...)
 	return p
 }
 
@@ -152,10 +152,11 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 						})
 					} else {
 						pageViews = append(pageViews, model.PageView{
-							Data:  p.dataFromRequest(request),
-							Path:  request.Path,
-							Title: request.Title,
-							Tags:  request.Tags,
+							Data:            p.dataFromRequest(request),
+							DurationSeconds: request.DurationSeconds,
+							Path:            request.Path,
+							Title:           request.Title,
+							Tags:            request.Tags,
 						})
 					}
 				}

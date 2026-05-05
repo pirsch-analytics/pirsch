@@ -94,7 +94,7 @@ func TestReferrer(t *testing.T) {
 		{"https://example.com", "example.com"},
 		{"https://example.com", "example.com"},
 	}
-	ref := NewReferrer(groups)
+	ref := NewReferrer(Groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -137,7 +137,7 @@ func TestReferrerFromParam(t *testing.T) {
 		{"", "My Referrer"},
 		{"", "referrer"},
 	}
-	ref := NewReferrer(groups)
+	ref := NewReferrer(Groups)
 
 	for i, in := range input {
 		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?%s=%s", in.param, in.referrer), nil)
@@ -154,7 +154,7 @@ func TestReferrerFromParam(t *testing.T) {
 }
 
 func TestReferrerSameDomain(t *testing.T) {
-	ref := NewReferrer(groups)
+	ref := NewReferrer(Groups)
 	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
 	r.Header.Add("Referer", "https://example.com/foo/bar")
 	req := &ingest.Request{
@@ -187,7 +187,7 @@ func TestReferrerSameDomain(t *testing.T) {
 }
 
 func TestReferrerAndroidApp(t *testing.T) {
-	ref := NewReferrer(groups)
+	ref := NewReferrer(Groups)
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Add("Referer", androidAppPrefix+"com.Slack")
 	req := &ingest.Request{

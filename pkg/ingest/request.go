@@ -175,7 +175,7 @@ type Request struct {
 	BotReason string
 
 	// DurationSeconds is the session duration or time on page, usually set in a step.
-	DurationSeconds uint64
+	DurationSeconds uint32
 
 	// UpdateSession only updates the session if this is set to true and does not persist a page view/event.
 	UpdateSession bool

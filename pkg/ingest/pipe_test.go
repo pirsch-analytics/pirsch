@@ -31,9 +31,9 @@ func TestPipeSimple(t *testing.T) {
 
 	// stop the pipeline to flush the results
 	pipe.Stop()
-	assert.Len(t, storage.GetSessions(), 1)
-	assert.Len(t, storage.GetPageViews(), 1)
-	assert.False(t, storage.GetPageViews()[0].Time.IsZero())
+	assert.Len(t, storage.Sessions(), 1)
+	assert.Len(t, storage.PageViews(), 1)
+	assert.False(t, storage.PageViews()[0].Time.IsZero())
 }
 
 func TestPipeTimeout(t *testing.T) {
@@ -59,14 +59,14 @@ func TestPipeTimeout(t *testing.T) {
 		// nothing should have been stored immediately
 		time.Sleep(time.Second * 3)
 		synctest.Wait()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 
 		// wait for the clock and check the result without stopping the pipeline
 		time.Sleep(time.Second * 3)
 		synctest.Wait()
-		assert.Len(t, storage.GetSessions(), 2)
-		assert.Len(t, storage.GetPageViews(), 2)
+		assert.Len(t, storage.Sessions(), 2)
+		assert.Len(t, storage.PageViews(), 2)
 	})
 }
 
@@ -89,13 +89,13 @@ func TestPipeBufferLimit(t *testing.T) {
 	}
 
 	// the buffer must have been flushed when it reached 10 requests
-	assert.Len(t, storage.GetSessions(), 10)
-	assert.Len(t, storage.GetPageViews(), 10)
+	assert.Len(t, storage.Sessions(), 10)
+	assert.Len(t, storage.PageViews(), 10)
 
 	// flush the remaining request
 	pipe.Stop()
-	assert.Len(t, storage.GetSessions(), 11)
-	assert.Len(t, storage.GetPageViews(), 11)
+	assert.Len(t, storage.Sessions(), 11)
+	assert.Len(t, storage.PageViews(), 11)
 }
 
 func TestPipeRetrySave(t *testing.T) {
@@ -119,27 +119,27 @@ func TestPipeRetrySave(t *testing.T) {
 		// nothing must have been stored due to the storage error
 		time.Sleep(time.Second * 6)
 		synctest.Wait()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 
 		// nothing must have been stored due to the storage error
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 
 		// nothing must have been stored due to the storage error
 		time.Sleep(time.Second * 50)
 		synctest.Wait()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 
 		// the data must have been stored after a successful retry
 		storage.setErrorOnSave(nil)
 		time.Sleep(time.Second * 66) // backup time + jitter
 		synctest.Wait()
-		assert.Len(t, storage.GetSessions(), 1)
-		assert.Len(t, storage.GetPageViews(), 1)
+		assert.Len(t, storage.Sessions(), 1)
+		assert.Len(t, storage.PageViews(), 1)
 	})
 }
 
@@ -163,13 +163,13 @@ func TestPipeRetryError(t *testing.T) {
 		// nothing must have been stored after exhausting the maximum number of retries
 		time.Sleep(time.Second * 130)
 		synctest.Wait()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 
 		// the requests must have been dropped even after flushing
 		pipe.Stop()
-		assert.Empty(t, storage.GetSessions())
-		assert.Empty(t, storage.GetPageViews())
+		assert.Empty(t, storage.Sessions())
+		assert.Empty(t, storage.PageViews())
 	})
 }
 
@@ -202,15 +202,15 @@ func TestPipeConcurrency(t *testing.T) {
 
 		// a few requests must have been processed after a while
 		time.Sleep(time.Duration(rand.N(10)+5) * time.Second)
-		assert.NotZero(t, len(storage.GetSessions()))
-		assert.NotZero(t, len(storage.GetPageViews()))
-		t.Log(len(storage.GetSessions()), len(storage.GetPageViews()))
+		assert.NotZero(t, len(storage.Sessions()))
+		assert.NotZero(t, len(storage.PageViews()))
+		t.Log(len(storage.Sessions()), len(storage.PageViews()))
 
 		// wait until all requests have been sent and stop the pipeline
 		wg.Wait()
 		pipe.Stop()
-		assert.Len(t, storage.GetSessions(), 10000)
-		assert.Len(t, storage.GetPageViews(), 10000)
+		assert.Len(t, storage.Sessions(), 10000)
+		assert.Len(t, storage.PageViews(), 10000)
 	})
 }
 
@@ -238,7 +238,7 @@ func TestPipeOverrideTimeout(t *testing.T) {
 
 	// one should have set now and one to the time that was passed for it
 	pipe.Stop()
-	pageViews := storage.GetPageViews()
+	pageViews := storage.PageViews()
 	assert.Len(t, pageViews, 2)
 	assert.Equal(t, pastTime, pageViews[0].Time)
 	assert.True(t, pageViews[1].Time.After(now))
@@ -251,7 +251,7 @@ func TestPipeNoRequest(t *testing.T) {
 	})
 	assert.NoError(t, pipe.Process(&Request{}))
 	pipe.Stop()
-	assert.Empty(t, storage.GetPageViews())
+	assert.Empty(t, storage.PageViews())
 }
 
 func TestPipePrefetch(t *testing.T) {
@@ -282,7 +282,7 @@ func TestPipePrefetch(t *testing.T) {
 
 	// no requests must have been stored
 	pipe.Stop()
-	assert.Empty(t, storage.GetPageViews())
+	assert.Empty(t, storage.PageViews())
 }
 
 type sessionStep struct{}

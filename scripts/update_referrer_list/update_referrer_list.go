@@ -105,7 +105,8 @@ func writeList(groups map[string]string, keys []string) {
 	out.WriteString(`package referrer
 
 var (
-	groups = map[string]string{
+	// Groups is the standard list to group referrers by name.
+	Groups = map[string]string{
 `)
 
 	for _, key := range keys {

@@ -66,8 +66,8 @@ func (client *Mock) Session(context.Context, uint64, uint64, time.Time) (*model.
 	return client.ReturnSession, nil
 }
 
-// GetPageViews returns a sorted copy of the page views slice.
-func (client *Mock) GetPageViews() []model.PageView {
+// PageViews returns a sorted copy of the page views slice.
+func (client *Mock) PageViews() []model.PageView {
 	client.m.Lock()
 	defer client.m.Unlock()
 	data := make([]model.PageView, len(client.pageViews))
@@ -82,8 +82,8 @@ func (client *Mock) GetPageViews() []model.PageView {
 	return data
 }
 
-// GetSessions returns a sorted copy of the session slice.
-func (client *Mock) GetSessions() []model.Session {
+// Sessions returns a sorted copy of the session slice.
+func (client *Mock) Sessions() []model.Session {
 	client.m.Lock()
 	defer client.m.Unlock()
 	data := make([]model.Session, len(client.sessions))
@@ -98,8 +98,8 @@ func (client *Mock) GetSessions() []model.Session {
 	return data
 }
 
-// GetEvents returns a sorted copy of the events slice.
-func (client *Mock) GetEvents() []model.Event {
+// Events returns a sorted copy of the events slice.
+func (client *Mock) Events() []model.Event {
 	client.m.Lock()
 	defer client.m.Unlock()
 	data := make([]model.Event, len(client.events))
@@ -114,8 +114,8 @@ func (client *Mock) GetEvents() []model.Event {
 	return data
 }
 
-// GetRequests returns a sorted copy of the request slice.
-func (client *Mock) GetRequests() []model.Request {
+// Requests returns a sorted copy of the request slice.
+func (client *Mock) Requests() []model.Request {
 	client.m.Lock()
 	defer client.m.Unlock()
 	data := make([]model.Request, len(client.requests))

@@ -9,7 +9,6 @@ import (
 )
 
 // BotFilter filters bot requests based on the referrer.
-// This step must be run before the Referrer step.
 type BotFilter struct{}
 
 // NewBotFilter creates a new BotFilter.

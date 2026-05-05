@@ -16,7 +16,8 @@ const (
 	sessionMaxAge  = time.Hour * 24
 )
 
-// Session manages visitor sessions.
+// Session manages visitor sessions and sets all relevant fields.
+// Therefore, this should be the last step in the pipeline.
 type Session struct {
 	fpKey0, fpKey1 uint64
 	fpSalt         string
@@ -154,7 +155,12 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 			session.Extended++
 		}
 	} else if request.EventName != "" {
-		session.Time = session.Time.Add(time.Millisecond)
+		if request.Time.After(session.Time) {
+			session.Time = request.Time
+		} else {
+			session.Time = session.Time.Add(time.Millisecond)
+		}
+
 		session.IsBounce = request.EventNonInteractive && session.IsBounce
 	} else {
 		session.Time = request.Time
@@ -172,7 +178,7 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 
 	// update the page view/event using the session data, so that it stays consistent across requests
 	request.SessionID = session.SessionID
-	request.DurationSeconds = uint64(top)
+	request.DurationSeconds = uint32(top)
 	request.Language = session.Language
 	request.CountryCode = session.CountryCode
 	request.Region = session.Region

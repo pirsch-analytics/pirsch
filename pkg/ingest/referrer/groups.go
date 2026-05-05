@@ -1,7 +1,8 @@
 package referrer
 
 var (
-	groups = map[string]string{
+	// Groups is the standard list to group referrers by name.
+	Groups = map[string]string{
 		"1.cz":                                     "1.cz",
 		"1881.no":                                  "Opplysningen 1881",
 		"247realmedia.com":                         "AppNexus",
