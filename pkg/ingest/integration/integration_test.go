@@ -501,12 +501,163 @@ func TestIntegrationExtendSession(t *testing.T) {
 	})
 }
 
-func TestIntegrationResetSession(t *testing.T) {
-	// TODO
+func TestIntegrationResetSessionReferrer(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, c := newPipe(t)
+		defer p.Stop()
+
+		// create a new session
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request:  newRequest(requestOptions{}),
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// we must now have a single session
+		sessions := s.Sessions()
+		cachedSessions := c.Sessions()
+		assert.Len(t, sessions, 1)
+		assert.Len(t, cachedSessions, 1)
+		sessionID := first(cachedSessions).SessionID
+		visitorID := first(cachedSessions).VisitorID
+		assert.Equal(t, sessions[0].VisitorID, visitorID)
+		assert.Equal(t, sessions[0].SessionID, sessionID)
+
+		// reset the session by changing the referrer
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request:  newRequest(requestOptions{}),
+			Referrer: "https://referrer.com",
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// we must now have two sessions
+		sessions = s.Sessions()
+		cachedSessions = c.Sessions()
+		assert.Len(t, sessions, 2)
+		assert.Len(t, cachedSessions, 1)
+		assert.Equal(t, sessions[0].VisitorID, first(cachedSessions).VisitorID)
+		assert.Equal(t, sessions[1].VisitorID, first(cachedSessions).VisitorID)
+		assert.NotEqual(t, sessions[0].SessionID, sessions[1].SessionID)
+		assert.Equal(t, first(cachedSessions).VisitorID, visitorID)
+		assert.NotEqual(t, first(cachedSessions).SessionID, sessionID)
+		assert.NotEqual(t, sessions[0].SessionID, first(cachedSessions).SessionID)
+		assert.Equal(t, sessions[1].SessionID, first(cachedSessions).SessionID)
+		assert.Equal(t, "https://referrer.com", first(cachedSessions).Referrer)
+		assert.Equal(t, "https://google.com", sessions[0].Referrer)
+		assert.Equal(t, "https://referrer.com", sessions[1].Referrer)
+	})
+}
+
+func TestIntegrationResetSessionUTM(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, c := newPipe(t)
+		defer p.Stop()
+
+		// create a new session
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request:  newRequest(requestOptions{}),
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// we must now have a single session
+		sessions := s.Sessions()
+		cachedSessions := c.Sessions()
+		assert.Len(t, sessions, 1)
+		assert.Len(t, cachedSessions, 1)
+		sessionID := first(cachedSessions).SessionID
+		visitorID := first(cachedSessions).VisitorID
+		assert.Equal(t, sessions[0].VisitorID, visitorID)
+		assert.Equal(t, sessions[0].SessionID, sessionID)
+
+		// reset the session by changing the UTM source
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request: newRequest(requestOptions{
+				URL: "https://example.com/?utm_source=New+Source",
+			}),
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// we must now have two sessions
+		sessions = s.Sessions()
+		cachedSessions = c.Sessions()
+		assert.Len(t, sessions, 2)
+		assert.Len(t, cachedSessions, 1)
+		assert.Equal(t, sessions[0].VisitorID, first(cachedSessions).VisitorID)
+		assert.Equal(t, sessions[1].VisitorID, first(cachedSessions).VisitorID)
+		assert.NotEqual(t, sessions[0].SessionID, sessions[1].SessionID)
+		assert.Equal(t, first(cachedSessions).VisitorID, visitorID)
+		assert.NotEqual(t, first(cachedSessions).SessionID, sessionID)
+		assert.NotEqual(t, sessions[0].SessionID, first(cachedSessions).SessionID)
+		assert.Equal(t, sessions[1].SessionID, first(cachedSessions).SessionID)
+		assert.Equal(t, "New Source", first(cachedSessions).UTMSource)
+		assert.Equal(t, "Source", sessions[0].UTMSource)
+		assert.Equal(t, "New Source", sessions[1].UTMSource)
+	})
 }
 
 func TestIntegrationEventNonInteractive(t *testing.T) {
-	// TODO
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, _ := newPipe(t)
+		defer p.Stop()
+
+		// create a new session
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request:  newRequest(requestOptions{}),
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// we must now have a single bounced session
+		sessions := s.Sessions()
+		assert.Len(t, sessions, 1)
+		assert.True(t, sessions[0].IsBounce)
+
+		// trigger a non-interactive event
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID:            1,
+			Request:             newRequest(requestOptions{}),
+			EventName:           "Event",
+			EventNonInteractive: true,
+		}))
+		time.Sleep(time.Second * 10)
+		synctest.Wait()
+
+		// there still must be only one bounced session
+		sessions = s.Sessions()
+		assert.Len(t, sessions, 3)
+		assert.True(t, sessions[0].IsBounce)
+		assert.True(t, sessions[1].IsBounce)
+		assert.True(t, sessions[2].IsBounce)
+
+		// trigger an interactive event
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID:  1,
+			Request:   newRequest(requestOptions{}),
+			EventName: "Event",
+		}))
+		time.Sleep(time.Second * 10)
+		synctest.Wait()
+
+		// the session must have been updated
+		sessions = s.Sessions()
+		assert.Len(t, sessions, 5)
+		assert.True(t, sessions[0].IsBounce)
+		assert.True(t, sessions[1].IsBounce)
+		assert.True(t, sessions[2].IsBounce)
+		assert.True(t, sessions[3].IsBounce)
+		assert.False(t, sessions[4].IsBounce)
+	})
 }
 
 func first(m map[string]model.Session) model.Session {

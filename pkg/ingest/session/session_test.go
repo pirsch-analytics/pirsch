@@ -73,6 +73,7 @@ func TestSession(t *testing.T) {
 
 		// wait and make a second request
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, now := newSampleRequest()
 		req.Path = "/about"
 		req.Title = "About"
@@ -136,6 +137,7 @@ func TestSession(t *testing.T) {
 
 		// wait and make a third request
 		time.Sleep(time.Second * 8)
+		synctest.Wait()
 		previousSessionTime := now
 		req, now = newSampleRequest()
 		req.Path = "/third"
@@ -187,6 +189,7 @@ func TestSessionBounced(t *testing.T) {
 
 		// wait and make a second request to the same page
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		cancel, err = s.Step(req)
 		assert.False(t, cancel)
@@ -225,6 +228,7 @@ func TestSessionEventNonInteractive(t *testing.T) {
 
 		// wait and make a second request to the same page
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.EventName = "Event"
 		req.EventNonInteractive = true
@@ -242,6 +246,7 @@ func TestSessionEventNonInteractive(t *testing.T) {
 
 		// wait and make a third request to the same page
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.EventName = "Event"
 		cancel, err = s.Step(req)
@@ -291,6 +296,7 @@ func TestSessionReferrerReset(t *testing.T) {
 
 		// wait and make a second request with a different referrer
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.Referrer = "https://bing.com"
 		req.ReferrerName = "Bing"
@@ -356,6 +362,7 @@ func TestSessionUTMReset(t *testing.T) {
 
 		// wait and make a second request with a different UTM
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.UTMSource = "new_source"
 		req.UTMCampaign = "new_campaign"
@@ -423,6 +430,7 @@ func TestSessionReferrerHostname(t *testing.T) {
 
 		// wait and make a second request with the hostname as referrer (empty, as it will be set by the referrer step)
 		time.Sleep(time.Second * 23)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.Referrer = ""
 		req.ReferrerName = ""
@@ -467,6 +475,7 @@ func TestSessionTimeout(t *testing.T) {
 		visitorID := req.Session.VisitorID
 		sessionID := req.Session.SessionID
 		time.Sleep(sessionTimeout + time.Minute)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		cancel, err = s.Step(req)
 		assert.False(t, cancel)
@@ -504,6 +513,7 @@ func TestSessionMaxAge(t *testing.T) {
 		visitorID := req.Session.VisitorID
 		sessionID := req.Session.SessionID
 		time.Sleep(time.Minute * 20)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		cancel, err = s.Step(req)
 		assert.False(t, cancel)
@@ -532,6 +542,7 @@ func TestSessionUpdateSession(t *testing.T) {
 		// wait and make a second request without updating the session
 		now := time.Now()
 		time.Sleep(time.Minute * 5)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		req.UpdateSession = true
 		cancel, err = s.Step(req)
@@ -567,6 +578,7 @@ func TestSessionYesterday(t *testing.T) {
 		visitorID := req.Session.VisitorID
 		sessionID := req.Session.SessionID
 		time.Sleep(time.Minute * 20)
+		synctest.Wait()
 		req, _ = newSampleRequest()
 		cancel, err = s.Step(req)
 		assert.False(t, cancel)
@@ -593,6 +605,7 @@ func TestSessionMaxPageViews(t *testing.T) {
 			assert.False(t, cancel)
 			assert.NoError(t, err)
 			time.Sleep(time.Second * time.Duration(rand.IntN(10)+1))
+			synctest.Wait()
 		}
 
 		// there must be one session with 10 page views
@@ -723,4 +736,5 @@ func sleepUntil(hour, minute int) {
 	}
 
 	time.Sleep(time.Until(next))
+	synctest.Wait()
 }
