@@ -89,11 +89,11 @@ func (client *Mock) Sessions() []model.Session {
 	data := make([]model.Session, len(client.sessions))
 	copy(data, client.sessions)
 	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Before(data[j].Time) {
-			return true
+		if data[i].Time.Equal(data[j].Time) {
+			return data[i].Sign > data[j].Sign
 		}
 
-		return false
+		return data[i].Time.Before(data[j].Time)
 	})
 	return data
 }

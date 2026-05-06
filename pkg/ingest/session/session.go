@@ -145,9 +145,20 @@ func (s *Session) new(request *ingest.Request) *model.Session {
 }
 
 func (s *Session) update(request *ingest.Request, session *model.Session) {
+	// For batch inserts, the time can be before the time the request arrived, so we need to retroactively update the session.
+	// If this happens, it will mess up the time on page and session duration calculation however (both reset to 0).
+	if request.Time.Before(session.Time) {
+		session.Time = request.Time
+		session.Start = request.Time
+		session.EntryPath = request.Path
+		session.EntryTitle = request.Title
+	}
+
+	// Calculate the time on page and session duration.
 	top := max(request.Time.Unix()-session.Time.Unix(), 0)
 	duration := max(request.Time.Unix()-session.Start.Unix(), 0)
 
+	// Update the relevant session fields depending on the context.
 	if request.UpdateSession {
 		session.Time = request.Time
 
@@ -168,7 +179,7 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 		session.PageViews++
 	}
 
-	// update the session
+	// Increment relevant session fields.
 	session.DurationSeconds = uint32(duration)
 	session.Sign = 1
 	session.Version++
@@ -176,7 +187,7 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 	session.ExitPath = request.Path
 	session.ExitTitle = request.Title
 
-	// update the page view/event using the session data, so that it stays consistent across requests
+	// Update the page view/event using the session data, so that it stays consistent across requests.
 	request.SessionID = session.SessionID
 	request.DurationSeconds = uint32(top)
 	request.Language = session.Language

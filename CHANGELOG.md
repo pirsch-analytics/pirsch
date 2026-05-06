@@ -9,6 +9,7 @@
 * improved batch inserts
 * improved bot filter
 * removed duration_seconds field
+* fixed memory session cache not overwriting sessions
 * updated dependencies
 
 ## 6.28.3

@@ -61,11 +61,7 @@ func (cache *MemCache) Put(clientID, fingerprint uint64, session *model.Session)
 		cache.sessions = make(map[string]model.Session)
 	}
 
-	existing, found := cache.sessions[key]
-
-	if !found || existing.Time.Equal(session.Time) || existing.Time.Before(session.Time) {
-		cache.sessions[key] = *session
-	}
+	cache.sessions[key] = *session
 }
 
 // Clear implements the Cache interface.

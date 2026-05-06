@@ -91,24 +91,3 @@ func TestMemCache(t *testing.T) {
 	cache.Clear()
 	assert.Len(t, cache.sessions, 0)
 }
-
-func TestMemCache_Put(t *testing.T) {
-	client := db.NewMock()
-	cache := NewMemCache(client, 10)
-	now := time.Now()
-	cache.Put(1, 1, &model.Session{
-		Data: model.Data{
-			Time: now,
-		},
-		EntryPath: "/",
-	})
-	now = now.Add(-time.Second)
-	cache.Put(1, 1, &model.Session{
-		Data: model.Data{
-			Time: now,
-		},
-		EntryPath: "/dont-update",
-	})
-	session := cache.Get(1, 1, now.Add(-time.Second*10))
-	assert.Equal(t, "/", session.EntryPath)
-}

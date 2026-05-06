@@ -1,6 +1,10 @@
 package integration
 
-import "net/http"
+import (
+	"fmt"
+	"math/rand"
+	"net/http"
+)
 
 type requestOptions struct {
 	URL            string
@@ -49,4 +53,13 @@ func newRequest(options requestOptions) *http.Request {
 	}
 
 	return req
+}
+
+func randomIP() string {
+	return fmt.Sprintf("%d.%d.%d.%d",
+		rand.Intn(256),
+		rand.Intn(256),
+		rand.Intn(256),
+		rand.Intn(256),
+	)
 }

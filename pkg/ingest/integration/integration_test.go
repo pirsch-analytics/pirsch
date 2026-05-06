@@ -1,6 +1,10 @@
 package integration
 
 import (
+	"fmt"
+	"math/rand/v2"
+	"slices"
+	"sync/atomic"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -341,11 +345,96 @@ func TestIntegrationRequests(t *testing.T) {
 }
 
 func TestIntegrationConcurrency(t *testing.T) {
-	// TODO
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, _ := newPipe(t)
+
+		// generate a random amount of traffic, not including events
+		visitors := rand.IntN(800) + 200
+		var sessions, pageViews atomic.Int32
+
+		for v := range visitors {
+			go func() {
+				ip := new(randomIP())
+				ua := new(fmt.Sprintf("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 v/%d", v))
+				pv := rand.Int32N(9) + 1
+				pageViews.Add(pv)
+
+				if pv == 1 {
+					sessions.Add(1)
+				} else {
+					sessions.Add(pv*2 - 1)
+				}
+
+				for i := range pv {
+					assert.NoError(t, p.Process(&ingest.Request{
+						ClientID: 1,
+						Request: newRequest(requestOptions{
+							URL:       fmt.Sprintf("https://example.com/pv/%d", i),
+							IP:        ip,
+							UserAgent: ua,
+						}),
+					}))
+					time.Sleep(time.Second * time.Duration(rand.IntN(59)+1))
+				}
+			}()
+		}
+
+		// stop the pipeline after all Go routines are processed
+		// (we could stop prior to that, but it would result in errors as their contexts are canceled)
+		time.Sleep(time.Minute * 10)
+		p.Stop()
+
+		// check the number of sessions and page views
+		assert.Len(t, s.Sessions(), int(sessions.Load()))
+		assert.Len(t, s.PageViews(), int(pageViews.Load()))
+	})
 }
 
 func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
-	// TODO
+	// set up a simple pipeline
+	p, s, _ := newPipe(t)
+
+	// create a few requests out of order
+	inserted := make([]time.Time, 0, 5)
+
+	for i := range 5 {
+		insertionTime := time.Now().UTC().Add(-time.Minute * time.Duration(rand.IntN(28)+1))
+		inserted = append(inserted, insertionTime)
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request: newRequest(requestOptions{
+				URL: fmt.Sprintf("https://example.com/pv/%d", i),
+			}),
+			Time: insertionTime,
+		}))
+	}
+
+	// stop the pipeline
+	p.Stop()
+
+	// check the number of sessions and page views
+	sessions := s.Sessions()
+	pageViews := s.PageViews()
+	assert.Len(t, sessions, 9)
+	assert.Len(t, pageViews, 5)
+
+	// compare insertion times
+	slices.SortFunc(inserted, func(a, b time.Time) int {
+		if a.Before(b) {
+			return -1
+		} else if a.After(b) {
+			return 1
+		}
+
+		return 0
+	})
+	for i := range inserted {
+		// TODO
+		/*assert.Equal(t, inserted[i], sessions[i*2].Time)
+		assert.Equal(t, inserted[i], sessions[i*2+1].Time)*/
+		assert.Equal(t, inserted[i], pageViews[i].Time)
+	}
 }
 
 func TestIntegrationExtendSession(t *testing.T) {

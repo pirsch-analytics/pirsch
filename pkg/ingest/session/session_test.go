@@ -27,7 +27,7 @@ func TestSession(t *testing.T) {
 		assert.NoError(t, err)
 
 		// time on page
-		assert.Equal(t, uint64(0), req.DurationSeconds)
+		assert.Equal(t, uint32(0), req.DurationSeconds)
 
 		// the request must have the new session attached
 		assert.NotNil(t, req.Session)
@@ -89,7 +89,7 @@ func TestSession(t *testing.T) {
 		assert.NoError(t, err)
 
 		// time on page
-		assert.Equal(t, uint64(23), req.DurationSeconds)
+		assert.Equal(t, uint32(23), req.DurationSeconds)
 
 		// the request must have the new session and cancelled session attached
 		assert.NotNil(t, req.Session)
@@ -145,7 +145,7 @@ func TestSession(t *testing.T) {
 		assert.NoError(t, err)
 
 		// time on page
-		assert.Equal(t, uint64(8), req.DurationSeconds)
+		assert.Equal(t, uint32(8), req.DurationSeconds)
 
 		// the request must have the new session and cancelled session attached
 		assert.NotNil(t, req.Session)
@@ -611,6 +611,40 @@ func TestSessionMaxPageViews(t *testing.T) {
 		assert.Len(t, sessions, 1)
 		assert.Equal(t, uint16(10), sessions[0].PageViews)
 	})
+}
+
+func TestSessionOverwriteTime(t *testing.T) {
+	// create an in-memory cache and session step
+	cache := NewMemCache(client, 100)
+	s := NewSession(1, 2, "salt", cache, 100)
+
+	// create a new session five minutes ago
+	fiveMinAgo := time.Now().UTC().Add(-time.Minute * 5)
+	req, _ := newSampleRequest()
+	req.Time = fiveMinAgo
+	cancel, err := s.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+
+	// there must be one session
+	sessions := getSessions(cache.Sessions())
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, fiveMinAgo, sessions[0].Time)
+	assert.Equal(t, fiveMinAgo, sessions[0].Start)
+
+	// update the session, but ten minutes ago
+	tenMinAgo := time.Now().UTC().Add(-time.Minute * 10)
+	req, _ = newSampleRequest()
+	req.Time = tenMinAgo
+	cancel, err = s.Step(req)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+
+	// the session must have been updated
+	sessions = getSessions(cache.Sessions())
+	assert.Len(t, sessions, 1)
+	assert.Equal(t, tenMinAgo, sessions[0].Time)
+	assert.Equal(t, tenMinAgo, sessions[0].Start)
 }
 
 func TestSessionFingerprint(t *testing.T) {
