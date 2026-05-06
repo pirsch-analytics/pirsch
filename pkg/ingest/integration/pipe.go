@@ -18,7 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newPipe(t *testing.T) (*ingest.Pipe, *db.Mock, *session.MemCache) {
+type pipelineOptions struct {
+	worker int
+}
+
+func newPipeline(t *testing.T, options pipelineOptions) (*ingest.Pipe, *db.Mock, *session.MemCache) {
 	s := db.NewMock()
 	c := session.NewMemCache(s, 1000)
 	ipFilter := ip.NewList()
@@ -27,6 +31,7 @@ func newPipe(t *testing.T) (*ingest.Pipe, *db.Mock, *session.MemCache) {
 	assert.NoError(t, geoDB.UpdateFromFile("../../../test/GeoIP2-City-Test.mmdb"))
 	return ingest.NewPipe(ingest.PipeOptions{
 		Storage: s,
+		Worker:  options.worker,
 	}).Use(header.NewBotFilter(),
 		ip.NewIP(ip.DefaultHeaderParser, nil),
 		ip.NewBotFilter([]ip.Filter{ipFilter}),

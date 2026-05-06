@@ -82,19 +82,12 @@ func (client *Mock) PageViews() []model.PageView {
 	return data
 }
 
-// Sessions returns a sorted copy of the session slice.
+// Sessions returns an unsorted copy of the session slice.
 func (client *Mock) Sessions() []model.Session {
 	client.m.Lock()
 	defer client.m.Unlock()
 	data := make([]model.Session, len(client.sessions))
 	copy(data, client.sessions)
-	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Equal(data[j].Time) {
-			return data[i].Sign > data[j].Sign
-		}
-
-		return data[i].Time.Before(data[j].Time)
-	})
 	return data
 }
 

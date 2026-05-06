@@ -626,8 +626,7 @@ func TestSessionMaxPageViews(t *testing.T) {
 	})
 }
 
-// TODO
-/*func TestSessionOverwriteTime(t *testing.T) {
+func TestSessionOverwriteTime(t *testing.T) {
 	// create an in-memory cache and session step
 	cache := NewMemCache(client, 100)
 	s := NewSession(1, 2, "salt", cache, 100)
@@ -659,7 +658,7 @@ func TestSessionMaxPageViews(t *testing.T) {
 	assert.Len(t, sessions, 1)
 	assert.Equal(t, tenMinAgo, sessions[0].Time)
 	assert.Equal(t, tenMinAgo, sessions[0].Start)
-}*/
+}
 
 func TestSessionFingerprint(t *testing.T) {
 	cache := NewMemCache(client, 100)

@@ -18,7 +18,7 @@ import (
 func TestIntegrationRequests(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline with bot filters
-		p, s, _ := newPipe(t)
+		p, s, _ := newPipeline(t, pipelineOptions{})
 
 		// entry request
 		assert.NoError(t, p.Process(&ingest.Request{
@@ -352,7 +352,7 @@ func TestIntegrationRequests(t *testing.T) {
 func TestIntegrationConcurrency(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline
-		p, s, _ := newPipe(t)
+		p, s, _ := newPipeline(t, pipelineOptions{})
 
 		// generate a random amount of traffic, not including events
 		visitors := rand.IntN(800) + 200
@@ -401,8 +401,10 @@ func TestIntegrationConcurrency(t *testing.T) {
 
 func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		// set up a simple pipeline
-		p, s, _ := newPipe(t)
+		// set up a simple pipeline with one worker to keep the storage sorted
+		p, s, _ := newPipeline(t, pipelineOptions{
+			worker: 1,
+		})
 
 		// create a few requests out of order
 		inserted := make([]time.Time, 0)
@@ -421,6 +423,7 @@ func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 
 		// stop the pipeline
 		p.Stop()
+		time.Sleep(time.Minute)
 		synctest.Wait()
 
 		// check the number of sessions and page views
@@ -430,7 +433,9 @@ func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 		assert.Len(t, pageViews, 3)
 
 		// compare insertion times
-		slices.SortFunc(inserted, func(a, b time.Time) int {
+		insertedSorted := make([]time.Time, len(inserted))
+		copy(insertedSorted, inserted)
+		slices.SortFunc(insertedSorted, func(a, b time.Time) int {
 			if a.Before(b) {
 				return -1
 			} else if a.After(b) {
@@ -440,19 +445,26 @@ func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 			return 0
 		})
 
-		for i := range inserted {
-			// TODO
-			/*assert.Equal(t, inserted[i], sessions[i*2].Time)
-			assert.Equal(t, inserted[i], sessions[i*2+1].Time)*/
-			assert.Equal(t, inserted[i], pageViews[i].Time)
-		}
+		assert.Equal(t, insertedSorted[0], pageViews[0].Time)
+		assert.Equal(t, insertedSorted[1], pageViews[1].Time)
+		assert.Equal(t, insertedSorted[2], pageViews[2].Time)
+		assert.Equal(t, int8(1), sessions[0].Sign)
+		assert.Equal(t, int8(-1), sessions[1].Sign)
+		assert.Equal(t, int8(1), sessions[2].Sign)
+		assert.Equal(t, int8(-1), sessions[3].Sign)
+		assert.Equal(t, int8(1), sessions[4].Sign)
+		assert.Equal(t, inserted[0], sessions[0].Time)
+		assert.Equal(t, inserted[0], sessions[1].Time)
+		assert.Equal(t, inserted[1], sessions[2].Time)
+		assert.Equal(t, inserted[1], sessions[3].Time)
+		assert.Equal(t, inserted[2], sessions[4].Time)
 	})
 }
 
 func TestIntegrationExtendSession(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline
-		p, s, c := newPipe(t)
+		p, s, c := newPipeline(t, pipelineOptions{})
 		defer p.Stop()
 
 		// create a new session
@@ -504,7 +516,7 @@ func TestIntegrationExtendSession(t *testing.T) {
 func TestIntegrationResetSessionReferrer(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline
-		p, s, c := newPipe(t)
+		p, s, c := newPipeline(t, pipelineOptions{})
 		defer p.Stop()
 
 		// create a new session
@@ -555,7 +567,7 @@ func TestIntegrationResetSessionReferrer(t *testing.T) {
 func TestIntegrationResetSessionUTM(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline
-		p, s, c := newPipe(t)
+		p, s, c := newPipeline(t, pipelineOptions{})
 		defer p.Stop()
 
 		// create a new session
@@ -607,7 +619,7 @@ func TestIntegrationResetSessionUTM(t *testing.T) {
 func TestIntegrationEventNonInteractive(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// set up a simple pipeline
-		p, s, _ := newPipe(t)
+		p, s, _ := newPipeline(t, pipelineOptions{})
 		defer p.Stop()
 
 		// create a new session
