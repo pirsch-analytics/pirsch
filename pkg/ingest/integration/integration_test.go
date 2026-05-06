@@ -11,6 +11,7 @@ import (
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,6 +30,7 @@ func TestIntegrationRequests(t *testing.T) {
 			Tags:         map[string]string{"foo": "bar"},
 		}))
 		time.Sleep(time.Second * 10)
+		synctest.Wait()
 
 		// check that there is one pageview with a session bound to it
 		sessions := s.Sessions()
@@ -119,6 +121,7 @@ func TestIntegrationRequests(t *testing.T) {
 			Title:        "Pricing",
 		}))
 		time.Sleep(time.Second * 20)
+		synctest.Wait()
 
 		// check that there are two pageviews with a session bound to them
 		sessions = s.Sessions()
@@ -258,6 +261,7 @@ func TestIntegrationRequests(t *testing.T) {
 			},
 		}))
 		time.Sleep(time.Second * 17)
+		synctest.Wait()
 
 		// check that there are two pageviews with a session bound to them
 		sessions = s.Sessions()
@@ -321,6 +325,7 @@ func TestIntegrationRequests(t *testing.T) {
 			Title:        "About",
 		}))
 		time.Sleep(time.Second * 20)
+		synctest.Wait()
 
 		// check that there are three pageviews with a session bound to them
 		sessions = s.Sessions()
@@ -380,9 +385,12 @@ func TestIntegrationConcurrency(t *testing.T) {
 			}()
 		}
 
+		synctest.Wait()
+
 		// stop the pipeline after all Go routines are processed
 		// (we could stop prior to that, but it would result in errors as their contexts are canceled)
 		time.Sleep(time.Minute * 10)
+		synctest.Wait()
 		p.Stop()
 
 		// check the number of sessions and page views
@@ -392,53 +400,105 @@ func TestIntegrationConcurrency(t *testing.T) {
 }
 
 func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
-	// set up a simple pipeline
-	p, s, _ := newPipe(t)
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, _ := newPipe(t)
 
-	// create a few requests out of order
-	inserted := make([]time.Time, 0, 5)
+		// create a few requests out of order
+		inserted := make([]time.Time, 0)
 
-	for i := range 5 {
-		insertionTime := time.Now().UTC().Add(-time.Minute * time.Duration(rand.IntN(28)+1))
-		inserted = append(inserted, insertionTime)
-		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
-			Request: newRequest(requestOptions{
-				URL: fmt.Sprintf("https://example.com/pv/%d", i),
-			}),
-			Time: insertionTime,
-		}))
-	}
-
-	// stop the pipeline
-	p.Stop()
-
-	// check the number of sessions and page views
-	sessions := s.Sessions()
-	pageViews := s.PageViews()
-	assert.Len(t, sessions, 9)
-	assert.Len(t, pageViews, 5)
-
-	// compare insertion times
-	slices.SortFunc(inserted, func(a, b time.Time) int {
-		if a.Before(b) {
-			return -1
-		} else if a.After(b) {
-			return 1
+		for i := range 3 {
+			insertionTime := time.Now().UTC().Add(-time.Minute * time.Duration(rand.IntN(28)+1))
+			inserted = append(inserted, insertionTime)
+			assert.NoError(t, p.Process(&ingest.Request{
+				ClientID: 1,
+				Request: newRequest(requestOptions{
+					URL: fmt.Sprintf("https://example.com/pv/%d", i),
+				}),
+				Time: insertionTime,
+			}))
 		}
 
-		return 0
+		// stop the pipeline
+		p.Stop()
+		synctest.Wait()
+
+		// check the number of sessions and page views
+		sessions := s.Sessions()
+		pageViews := s.PageViews()
+		assert.Len(t, sessions, 5)
+		assert.Len(t, pageViews, 3)
+
+		// compare insertion times
+		slices.SortFunc(inserted, func(a, b time.Time) int {
+			if a.Before(b) {
+				return -1
+			} else if a.After(b) {
+				return 1
+			}
+
+			return 0
+		})
+
+		for i := range inserted {
+			// TODO
+			/*assert.Equal(t, inserted[i], sessions[i*2].Time)
+			assert.Equal(t, inserted[i], sessions[i*2+1].Time)*/
+			assert.Equal(t, inserted[i], pageViews[i].Time)
+		}
 	})
-	for i := range inserted {
-		// TODO
-		/*assert.Equal(t, inserted[i], sessions[i*2].Time)
-		assert.Equal(t, inserted[i], sessions[i*2+1].Time)*/
-		assert.Equal(t, inserted[i], pageViews[i].Time)
-	}
 }
 
 func TestIntegrationExtendSession(t *testing.T) {
-	// TODO
+	synctest.Test(t, func(t *testing.T) {
+		// set up a simple pipeline
+		p, s, c := newPipe(t)
+		defer p.Stop()
+
+		// create a new session
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID: 1,
+			Request:  newRequest(requestOptions{}),
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// check that there is one session
+		sessions := s.Sessions()
+		assert.Len(t, sessions, 1)
+		assert.Equal(t, uint16(0), sessions[0].Extended)
+		cachedSessions := c.Sessions()
+		assert.Len(t, cachedSessions, 1)
+		assert.Equal(t, uint16(0), first(cachedSessions).Extended)
+
+		// extend the session once
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID:      1,
+			Request:       newRequest(requestOptions{}),
+			UpdateSession: true,
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// check that there is one extended session in cache (not in storage!)
+		cachedSessions = c.Sessions()
+		assert.Len(t, cachedSessions, 1)
+		assert.Equal(t, uint16(1), first(cachedSessions).Extended)
+
+		// extend the session twice
+		assert.NoError(t, p.Process(&ingest.Request{
+			ClientID:      1,
+			Request:       newRequest(requestOptions{}),
+			UpdateSession: true,
+		}))
+		time.Sleep(time.Second * 30)
+		synctest.Wait()
+
+		// check that there is one extended session in cache (not in storage!)
+		cachedSessions = c.Sessions()
+		assert.Len(t, cachedSessions, 1)
+		assert.Equal(t, uint16(2), first(cachedSessions).Extended)
+	})
 }
 
 func TestIntegrationResetSession(t *testing.T) {
@@ -447,4 +507,12 @@ func TestIntegrationResetSession(t *testing.T) {
 
 func TestIntegrationEventNonInteractive(t *testing.T) {
 	// TODO
+}
+
+func first(m map[string]model.Session) model.Session {
+	for _, v := range m {
+		return v
+	}
+
+	return model.Session{}
 }

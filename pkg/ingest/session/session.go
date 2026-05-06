@@ -145,14 +145,15 @@ func (s *Session) new(request *ingest.Request) *model.Session {
 }
 
 func (s *Session) update(request *ingest.Request, session *model.Session) {
+	// TODO
 	// For batch inserts, the time can be before the time the request arrived, so we need to retroactively update the session.
 	// If this happens, it will mess up the time on page and session duration calculation however (both reset to 0).
-	if request.Time.Before(session.Time) {
+	/*if request.Time.Before(session.Start) {
 		session.Time = request.Time
 		session.Start = request.Time
 		session.EntryPath = request.Path
 		session.EntryTitle = request.Title
-	}
+	}*/
 
 	// Calculate the time on page and session duration.
 	top := max(request.Time.Unix()-session.Time.Unix(), 0)

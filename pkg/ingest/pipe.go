@@ -80,7 +80,7 @@ func (p *Pipe) Process(request *Request) error {
 		}
 
 		if cancel {
-			// mark the request as cancelled, but keep storing it (for bot analysis)
+			// mark the request as canceled, but keep storing it (for bot analysis)
 			request.cancelled = true
 			break
 		}

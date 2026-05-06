@@ -81,8 +81,6 @@ func (cache *MemCache) Sessions() map[string]model.Session {
 	cache.m.RLock()
 	defer cache.m.RUnlock()
 	sessions := make(map[string]model.Session, len(cache.sessions))
-
 	maps.Copy(sessions, cache.sessions)
-
 	return sessions
 }
