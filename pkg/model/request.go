@@ -7,20 +7,24 @@ import (
 
 // Request is the data structure used to log visitor requests.
 type Request struct {
-	ClientID    uint64    `db:"client_id" json:"client_id"`
-	VisitorID   uint64    `db:"visitor_id" json:"visitor_id"`
-	Time        time.Time `json:"time"`
-	IP          string    `json:"ip"`
-	UserAgent   string    `db:"user_agent" json:"user_agent"`
-	Hostname    string    `json:"hostname"`
-	Path        string    `json:"path"`
-	Event       string    `db:"event_name" json:"event_name"`
-	Referrer    string    `json:"referrer"`
-	UTMSource   string    `db:"utm_source" json:"utm_source"`
-	UTMMedium   string    `db:"utm_medium" json:"utm_medium"`
-	UTMCampaign string    `db:"utm_campaign" json:"utm_campaign"`
-	Bot         bool      `json:"bot"`
-	BotReason   string    `db:"bot_reason" json:"bot_reason"`
+	ClientID    uint64            `db:"client_id" json:"client_id"`
+	VisitorID   uint64            `db:"visitor_id" json:"visitor_id"`
+	Time        time.Time         `json:"time"`
+	Hostname    string            `json:"hostname"`
+	Path        string            `json:"path"`
+	Query       string            `json:"query"`
+	IP          string            `json:"ip"`
+	UserAgent   string            `db:"user_agent" json:"user_agent"`
+	Headers     map[string]string `json:"headers"`
+	EventName   string            `db:"event_name" json:"event_name"`
+	Referrer    string            `json:"referrer"`
+	UTMSource   string            `db:"utm_source" json:"utm_source"`
+	UTMMedium   string            `db:"utm_medium" json:"utm_medium"`
+	UTMCampaign string            `db:"utm_campaign" json:"utm_campaign"`
+	UTMContent  string            `db:"utm_content" json:"utm_content"`
+	UTMTerm     string            `db:"utm_term" json:"utm_term"`
+	Bot         bool              `json:"bot"`
+	BotReason   string            `db:"bot_reason" json:"bot_reason"`
 }
 
 // String implements the Stringer interface.

@@ -1,12 +1,115 @@
 package ingest
 
 import (
+	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/util"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
+)
+
+var (
+	logHeader = []string{
+		"accept",
+		"accept-language",
+		"accept-encoding",
+		"cache-control",
+		"connection",
+		"dnt",
+		"sec-fetch-dest",
+		"sec-fetch-mode",
+		"sec-fetch-site",
+		"sec-fetch-user",
+		"sec-ch-ua",
+		"sec-ch-ua-mobile",
+		"sec-ch-ua-platform",
+		"upgrade-insecure-requests",
+		"x-requested-with",
+		"content-type",
+	}
+
+	ignoreQuery = []string{
+		"token",
+		"access_token",
+		"auth_token",
+		"api_key",
+		"apikey",
+		"key",
+		"secret",
+		"client_secret",
+		"password",
+		"passwd",
+		"pwd",
+		"session_id",
+		"sid",
+		"jwt",
+		"bearer",
+		"refresh_token",
+		"id_token",
+		"code",
+		"state",
+		"nonce",
+		"verifier",
+		"code_verifier",
+		"assertion",
+		"samlresponse",
+		"ticket",
+		"reset_token",
+		"reset_password",
+		"reset_password_token",
+		"confirmation_token",
+		"confirm_token",
+		"verification_token",
+		"verify_token",
+		"activation_token",
+		"invite_token",
+		"invitation_token",
+		"magic_link",
+		"magic_token",
+		"otp",
+		"totp",
+		"card_number",
+		"cc_number",
+		"cvv",
+		"cvc",
+		"expiry",
+		"exp_date",
+		"iban",
+		"bic",
+		"router_number",
+		"account_number",
+		"payment_token",
+		"email",
+		"mail",
+		"phone",
+		"telephone",
+		"tel",
+		"mobile",
+		"ssn",
+		"dob",
+		"birthdate",
+		"birthday",
+		"address",
+		"zip",
+		"postal_code",
+		"first_name",
+		"last_name",
+		"full_name",
+		"national_id",
+		"passport",
+		"ip_address",
+		"debug",
+		"trace",
+		"admin",
+		"sudo",
+		"internal_token",
+		"webhook_secret",
+		"signing_key",
+		"private_key",
+	}
 )
 
 // Request is the data for a visitor request (page view or event).
@@ -38,6 +141,10 @@ type Request struct {
 	// Path overrides the path.
 	// If not set, it will be extracted from the Request.
 	Path string
+
+	// Query overrides the query parameters.
+	// If not set, it will be extracted from the Request.
+	Query string
 
 	// PageViews is the number of page views for the session.
 	PageViews uint16
@@ -135,9 +242,13 @@ type Request struct {
 	// This should be set by a PipeStep.
 	IP string
 
-	// UserAgent is the User Agent for the request.
+	// UserAgent is the User-Agent for the request.
 	// This should be set by a PipeStep.
 	UserAgent string
+
+	// Headers is the list of headers for the request.
+	// This will be extracted from the Request. Sensitive fields (like the cookie header) are ignored.
+	Headers map[string]string
 
 	// UTMSource is the UTM source for the request.
 	// This should be set by a PipeStep.
@@ -215,5 +326,33 @@ func (request *Request) validate() {
 
 	if request.Path == "" {
 		request.Path = "/"
+	}
+
+	// extract the URL query if empty
+	if request.Query == "" {
+		kv := make([]string, 0)
+
+		for k, v := range request.Request.URL.Query() {
+			if len(v) > 0 {
+				value := v[0]
+
+				if slices.Contains(ignoreQuery, strings.ToLower(k)) {
+					value = "(redacted)"
+				}
+
+				kv = append(kv, fmt.Sprintf("%s=%s", k, value))
+			}
+		}
+
+		request.Query = strings.Join(kv, "&")
+	}
+
+	// extract headers
+	request.Headers = make(map[string]string)
+
+	for k, v := range request.Request.Header {
+		if len(v) > 0 && slices.Contains(logHeader, strings.ToLower(k)) {
+			request.Headers[k] = v[0]
+		}
 	}
 }

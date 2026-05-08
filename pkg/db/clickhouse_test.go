@@ -236,18 +236,25 @@ func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, client)
 	assert.NoError(t, client.SaveRequests(context.Background(), []model.Request{
 		{
-			ClientID:    1,
-			VisitorID:   1,
-			Time:        time.Now(),
-			IP:          "123.456.789.9",
-			UserAgent:   "ua1",
-			Hostname:    "example.com",
-			Path:        "/foo",
-			Event:       "event",
+			ClientID:  1,
+			VisitorID: 1,
+			Time:      time.Now(),
+			Hostname:  "example.com",
+			Path:      "/foo",
+			Query:     "?foo=bar",
+			IP:        "123.456.789.9",
+			UserAgent: "ua1",
+			Headers: map[string]string{
+				"Accept-Language": "en",
+				"Accept-Encoding": "gzip",
+			},
+			EventName:   "event",
 			Referrer:    "ref",
 			UTMSource:   "source",
 			UTMMedium:   "medium",
 			UTMCampaign: "campaign",
+			UTMContent:  "content",
+			UTMTerm:     "term",
 			Bot:         true,
 			BotReason:   "ip",
 		},
@@ -260,7 +267,7 @@ func TestClient_SaveRequests(t *testing.T) {
 		},
 	}))
 	var requests uint64
-	assert.NoError(t, client.QueryRow(context.Background(), `SELECT count(*) FROM "request" LIMIT 1`).Scan(&requests))
+	assert.NoError(t, client.QueryRow(context.Background(), `SELECT count(*) FROM "request_v7" LIMIT 1`).Scan(&requests))
 	assert.Equal(t, uint64(2), requests)
 }
 

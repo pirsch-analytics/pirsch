@@ -23,8 +23,11 @@ func TestPipeSimple(t *testing.T) {
 	}).Use(&sessionStep{})
 
 	// process a sample request
-	req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://example.com/?query=param", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
+	req.Header.Add("Accept-Encoding", "gzip, deflate, br")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
 	assert.NoError(t, pipe.Process(&Request{
 		Request: req,
 	}))
@@ -34,6 +37,12 @@ func TestPipeSimple(t *testing.T) {
 	assert.Len(t, storage.Sessions(), 1)
 	assert.Len(t, storage.PageViews(), 1)
 	assert.False(t, storage.PageViews()[0].Time.IsZero())
+	requests := storage.Requests()
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "query=param", requests[0].Query)
+	assert.Equal(t, "gzip, deflate, br", requests[0].Headers["Accept-Encoding"])
+	assert.Equal(t, "*/*", requests[0].Headers["Accept"])
+	assert.Equal(t, "en-US,en;q=0.5", requests[0].Headers["Accept-Language"])
 }
 
 func TestPipeTimeout(t *testing.T) {

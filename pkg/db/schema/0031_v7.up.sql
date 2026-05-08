@@ -115,3 +115,30 @@ PARTITION BY toYYYYMM(time)
 ORDER BY (client_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
+
+CREATE TABLE request_v7
+(
+    `client_id` UInt64,
+    `visitor_id` UInt64,
+    `time` DateTime64(3, 'UTC'),
+    `hostname` String,
+    `path` String,
+    `query` String,
+    `ip` String,
+    `user_agent` String,
+    `headers` Map(LowCardinality(String), String),
+    `event_name` String,
+    `referrer` String,
+    `utm_source` String,
+    `utm_medium` String,
+    `utm_campaign` String,
+    `utm_content` String,
+    `utm_term` String,
+    `bot` Bool DEFAULT 1,
+    `bot_reason` String
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(time)
+ORDER BY time
+TTL toDateTime(time) + toIntervalMonth(1)
+SETTINGS index_granularity = 8192;

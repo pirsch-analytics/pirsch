@@ -9,15 +9,21 @@ import (
 )
 
 func TestRequest(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodGet, "http://example.com/some/path", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com/some/path?query=param&token=secret", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
 	r := Request{
 		Request:   req,
 		EventName: " test ",
 	}
 	r.validate()
 	assert.InDelta(t, time.Now().UTC().UnixMilli(), r.Time.UnixMilli(), 100)
-	assert.Equal(t, "/some/path", r.Path)
 	assert.Equal(t, "example.com", r.Hostname)
+	assert.Equal(t, "/some/path", r.Path)
+	assert.Contains(t, r.Query, "query=param")
+	assert.Contains(t, r.Query, "token=(redacted)")
+	assert.Equal(t, "application/json", r.Headers["Content-Type"])
+	assert.Empty(t, r.Headers["Authorization"])
 	assert.Equal(t, "test", r.EventName)
 }
 

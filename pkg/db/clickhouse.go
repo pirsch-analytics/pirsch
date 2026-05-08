@@ -344,18 +344,22 @@ func (ch *ClickHouse) SaveEvents(ctx context.Context, events []model.Event) erro
 
 // SaveRequests implements the Storage interface.
 func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request) error {
-	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "request" (client_id,
+	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "request_v7" (client_id,
 		visitor_id,
 		time,
-		ip,
-		user_agent,
 		hostname,
 		path,
+		query,
+		ip,
+		user_agent,
+		headers,
 		event_name,
 		referrer,
 		utm_source,
 		utm_medium,
 		utm_campaign,
+		utm_content,
+		utm_term,
 		bot,
 		bot_reason)`)
 
@@ -367,15 +371,19 @@ func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request
 		if err := stmt.Append(req.ClientID,
 			req.VisitorID,
 			req.Time.UnixMilli(),
-			req.IP,
-			req.UserAgent,
 			req.Hostname,
 			req.Path,
-			req.Event,
+			req.Query,
+			req.IP,
+			req.UserAgent,
+			req.Headers,
+			req.EventName,
 			req.Referrer,
 			req.UTMSource,
 			req.UTMMedium,
 			req.UTMCampaign,
+			req.UTMContent,
+			req.UTMTerm,
 			req.Bot,
 			req.BotReason); err != nil {
 			return err

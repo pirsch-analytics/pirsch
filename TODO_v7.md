@@ -1,6 +1,6 @@
 # TODO
 
-[ ] Optimize request log (store all relevant fields)
+[x Optimize request log (store all relevant fields)
 [x] Ignore bots
     [x] User-Agent + browser version
     [x] Firefox/version == rv:version
@@ -10,4 +10,3 @@
     [x] Upgrade-Insecure-Requests: 1 + Sec-Fetch-Mode: cors = bot
 [x] Pipeline integration tests
 [ ] New reporting system
-[ ] Allow setting required headers via API (override in request)

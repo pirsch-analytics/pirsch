@@ -8,6 +8,7 @@
 * use map instead of two arrays for tags on page views
 * improved batch inserts
 * improved bot filter
+* improved request logging
 * removed duration_seconds field
 * fixed memory session cache not overwriting sessions
 * updated dependencies
