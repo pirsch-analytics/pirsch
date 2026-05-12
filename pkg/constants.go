@@ -45,13 +45,4 @@ const (
 
 	// OSChrome represents the Chrome operating system.
 	OSChrome = "Chrome OS"
-
-	// PlatformDesktop filters for everything on desktops.
-	PlatformDesktop = "desktop"
-
-	// PlatformMobile filters for everything on mobile devices.
-	PlatformMobile = "mobile"
-
-	// PlatformUnknown filters for everything where the platform is unspecified.
-	PlatformUnknown = "unknown"
 )
