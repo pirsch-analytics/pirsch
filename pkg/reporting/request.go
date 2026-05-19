@@ -22,7 +22,7 @@ type Request struct {
 	Dimensions []Dimension
 
 	// Filter filters the results for a Report.
-	Filter []Filter
+	Filter Filter
 
 	// OrderBy sorts the result fields of a Report.
 	OrderBy []OrderBy

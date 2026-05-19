@@ -1,6 +1,24 @@
 package reporting
 
-// Filter filters the results for a Report.
+const (
+	OperatorIs Operator = iota
+	OperatorIsNot
+	OperatorContains
+	OperatorContainsNot
+	OperatorMatches
+	OperatorMatchesNot
+	OperatorAnd
+	OperatorOr
+	OperatorNot
+)
+
+// Filter filters for a Dimension connected by a logical Operator.
 type Filter struct {
-	// TODO
+	Operator  Operator
+	Dimension Dimension
+	Values    []string
+	Filter    []Filter
 }
+
+// Operator is an operator for a Filter.
+type Operator int

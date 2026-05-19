@@ -5,6 +5,7 @@
 * added native ClickHouse client support
 * added JSON metadata support to events
 * added new ingestion system
+* added new reporting system
 * use map instead of two arrays for tags on page views
 * improved batch inserts
 * improved bot filter
