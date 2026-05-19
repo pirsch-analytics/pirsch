@@ -23,6 +23,6 @@ type Cache interface {
 	NewMutex(uint64, uint64) sync.Locker
 }
 
-func getSessionKey(clientID, fingerprint uint64) string {
-	return fmt.Sprintf("%d_%d", clientID, fingerprint)
+func getSessionKey(siteID, fingerprint uint64) string {
+	return fmt.Sprintf("%d_%d", siteID, fingerprint)
 }

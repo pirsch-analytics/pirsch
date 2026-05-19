@@ -9,8 +9,8 @@ type Request struct {
 	// Ctx can be used to set a timeout or to cancel queries.
 	Ctx context.Context
 
-	// ClientID is the client ID for the request.
-	ClientID int64
+	// SiteID is the site ID for the request.
+	SiteID int64
 
 	// Period is the period and timezone for the Report.
 	Period Period

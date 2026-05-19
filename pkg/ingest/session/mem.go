@@ -37,8 +37,8 @@ func NewMemCache(client db.Storage, maxSessions int) *MemCache {
 }
 
 // Get implements the Cache interface.
-func (cache *MemCache) Get(clientID, fingerprint uint64, maxAge time.Time) *model.Session {
-	key := getSessionKey(clientID, fingerprint)
+func (cache *MemCache) Get(siteID, fingerprint uint64, maxAge time.Time) *model.Session {
+	key := getSessionKey(siteID, fingerprint)
 	cache.m.RLock()
 	session, found := cache.sessions[key]
 	cache.m.RUnlock()
@@ -47,13 +47,13 @@ func (cache *MemCache) Get(clientID, fingerprint uint64, maxAge time.Time) *mode
 		return &session
 	}
 
-	s, _ := cache.client.Session(context.Background(), clientID, fingerprint, maxAge)
+	s, _ := cache.client.Session(context.Background(), siteID, fingerprint, maxAge)
 	return s
 }
 
 // Put implements the Cache interface.
-func (cache *MemCache) Put(clientID, fingerprint uint64, session *model.Session) {
-	key := getSessionKey(clientID, fingerprint)
+func (cache *MemCache) Put(siteID, fingerprint uint64, session *model.Session) {
+	key := getSessionKey(siteID, fingerprint)
 	cache.m.Lock()
 	defer cache.m.Unlock()
 

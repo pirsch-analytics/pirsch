@@ -7,7 +7,7 @@ import (
 
 // Data is a shared type for Session, PageView, and Event.
 type Data struct {
-	ClientID       uint64    `db:"client_id" json:"client_id"`
+	SiteID         uint64    `db:"site_id" json:"site_id"`
 	VisitorID      uint64    `db:"visitor_id" json:"visitor_id"`
 	SessionID      uint32    `db:"session_id" json:"session_id"`
 	Time           time.Time `json:"time"`

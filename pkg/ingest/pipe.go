@@ -117,7 +117,7 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 				}
 
 				requests = append(requests, model.Request{
-					ClientID:    request.ClientID,
+					SiteID:      request.SiteID,
 					VisitorID:   request.VisitorID,
 					Time:        request.Time,
 					Hostname:    request.Hostname,
@@ -195,7 +195,7 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 
 func (p *Pipe) dataFromRequest(request *Request) model.Data {
 	return model.Data{
-		ClientID:       request.ClientID,
+		SiteID:         request.SiteID,
 		VisitorID:      request.VisitorID,
 		SessionID:      request.SessionID,
 		Time:           request.Time,

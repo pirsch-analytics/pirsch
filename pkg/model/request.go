@@ -7,7 +7,7 @@ import (
 
 // Request is the data structure used to log visitor requests.
 type Request struct {
-	ClientID    uint64            `db:"client_id" json:"client_id"`
+	SiteID      uint64            `db:"site_id" json:"site_id"`
 	VisitorID   uint64            `db:"visitor_id" json:"visitor_id"`
 	Time        time.Time         `json:"time"`
 	Hostname    string            `json:"hostname"`

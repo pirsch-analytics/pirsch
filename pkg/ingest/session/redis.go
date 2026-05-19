@@ -56,8 +56,8 @@ func NewRedisCache(maxAge time.Duration, log *slog.Logger, redisOptions *redis.O
 }
 
 // Get implements the Cache interface.
-func (cache *RedisCache) Get(clientID, fingerprint uint64, _ time.Time) *model.Session {
-	r, err := cache.rds.Get(context.Background(), getSessionKey(clientID, fingerprint)).Result()
+func (cache *RedisCache) Get(siteID, fingerprint uint64, _ time.Time) *model.Session {
+	r, err := cache.rds.Get(context.Background(), getSessionKey(siteID, fingerprint)).Result()
 
 	if err != nil {
 		if !errors.Is(err, redis.Nil) {
@@ -78,11 +78,11 @@ func (cache *RedisCache) Get(clientID, fingerprint uint64, _ time.Time) *model.S
 }
 
 // Put implements the Cache interface.
-func (cache *RedisCache) Put(clientID, fingerprint uint64, session *model.Session) {
+func (cache *RedisCache) Put(siteID, fingerprint uint64, session *model.Session) {
 	v, err := json.Marshal(session)
 
 	if err == nil {
-		cache.rds.SetEX(context.Background(), getSessionKey(clientID, fingerprint), v, cache.maxAge)
+		cache.rds.SetEX(context.Background(), getSessionKey(siteID, fingerprint), v, cache.maxAge)
 	} else {
 		cache.logger.Error("error storing session in cache", "err", err)
 	}
@@ -94,6 +94,6 @@ func (cache *RedisCache) Clear() {
 }
 
 // NewMutex implements the Cache interface.
-func (cache *RedisCache) NewMutex(clientID, fingerprint uint64) sync.Locker {
-	return &RedisMutex{cache.rs.NewMutex(getSessionKey(clientID, fingerprint) + "_lock")}
+func (cache *RedisCache) NewMutex(siteID, fingerprint uint64) sync.Locker {
+	return &RedisMutex{cache.rs.NewMutex(getSessionKey(siteID, fingerprint) + "_lock")}
 }

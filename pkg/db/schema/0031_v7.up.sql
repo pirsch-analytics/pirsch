@@ -1,7 +1,7 @@
 CREATE TABLE session_v7 (
     `sign` Int8,
     `version` UInt16,
-    `client_id` UInt64,
+    `site_id` UInt64,
     `visitor_id` UInt64,
     `session_id` UInt32,
     `time` DateTime64(3, 'UTC'),
@@ -38,12 +38,12 @@ CREATE TABLE session_v7 (
 )
 ENGINE = CollapsingMergeTree(sign)
 PARTITION BY toYYYYMM(time)
-ORDER BY (client_id, visitor_id, session_id, time)
+ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
 CREATE TABLE page_view_v7 (
-    `client_id` UInt64,
+    `site_id` UInt64,
     `visitor_id` UInt64,
     `session_id` UInt32 DEFAULT 0,
     `time` DateTime64(3, 'UTC'),
@@ -75,12 +75,12 @@ CREATE TABLE page_view_v7 (
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMM(time)
-ORDER BY (client_id, visitor_id, session_id, time)
+ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
 CREATE TABLE event_v7 (
-    `client_id` UInt64,
+    `site_id` UInt64,
     `visitor_id` UInt64,
     `session_id` UInt32 DEFAULT 0,
     `time` DateTime64(3, 'UTC'),
@@ -112,13 +112,13 @@ CREATE TABLE event_v7 (
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMM(time)
-ORDER BY (client_id, visitor_id, session_id, time)
+ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
 CREATE TABLE request_v7
 (
-    `client_id` UInt64,
+    `site_id` UInt64,
     `visitor_id` UInt64,
     `time` DateTime64(3, 'UTC'),
     `hostname` String,

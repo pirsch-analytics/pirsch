@@ -43,19 +43,19 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	request.VisitorID = s.fingerprint(request.UserAgent, request.IP, request.Time)
 
 	// get a lock and data for the session
-	m := s.cache.NewMutex(request.ClientID, request.VisitorID)
+	m := s.cache.NewMutex(request.SiteID, request.VisitorID)
 	m.Lock()
 	maxAge := request.Time.Add(-sessionTimeout)
-	session := s.cache.Get(request.ClientID, request.VisitorID, maxAge)
+	session := s.cache.Get(request.SiteID, request.VisitorID, maxAge)
 
 	// if the maximum session age reaches yesterday, we also need to check for the previous day (different fingerprint)
 	if session == nil && maxAge.Day() != request.Time.Day() {
 		// unlock and try again
 		m.Unlock()
 		fingerprintYesterday := s.fingerprint(request.UserAgent, request.IP, maxAge)
-		m = s.cache.NewMutex(request.ClientID, fingerprintYesterday)
+		m = s.cache.NewMutex(request.SiteID, fingerprintYesterday)
 		m.Lock()
-		session = s.cache.Get(request.ClientID, fingerprintYesterday, maxAge)
+		session = s.cache.Get(request.SiteID, fingerprintYesterday, maxAge)
 
 		if session != nil {
 			if session.Start.Before(request.Time.Add(-sessionMaxAge)) {
@@ -72,7 +72,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	if request.UpdateSession {
 		if session != nil {
 			s.update(request, session)
-			s.cache.Put(request.ClientID, request.VisitorID, session)
+			s.cache.Put(request.SiteID, request.VisitorID, session)
 		}
 
 		return true, nil
@@ -82,7 +82,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 
 	if session == nil || s.referrerOrCampaignChanged(request, session) {
 		session = s.new(request)
-		s.cache.Put(request.ClientID, request.VisitorID, session)
+		s.cache.Put(request.SiteID, request.VisitorID, session)
 	} else {
 		// cancel if the maximum number of page views has been reached
 		if s.maxPageViews > 0 && session.PageViews >= s.maxPageViews ||
@@ -93,7 +93,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 		cancelSession = new(*session)
 		cancelSession.Sign = -1
 		s.update(request, session)
-		s.cache.Put(request.ClientID, request.VisitorID, session)
+		s.cache.Put(request.SiteID, request.VisitorID, session)
 	}
 
 	// set/update the session
@@ -106,7 +106,7 @@ func (s *Session) new(request *ingest.Request) *model.Session {
 	request.SessionID = rand.Uint32()
 	return &model.Session{
 		Data: model.Data{
-			ClientID:       request.ClientID,
+			SiteID:         request.SiteID,
 			VisitorID:      request.VisitorID,
 			SessionID:      request.SessionID,
 			Time:           request.Time,

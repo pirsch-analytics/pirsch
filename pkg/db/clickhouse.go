@@ -91,7 +91,7 @@ func NewClickHouse(config *ClickHouseConfig) (*ClickHouse, error) {
 func (ch *ClickHouse) SaveSessions(ctx context.Context, sessions []model.Session) error {
 	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "session_v7" (sign,
 		version,
-		client_id,
+		site_id,
 		visitor_id,
 		session_id,
 		time,
@@ -133,7 +133,7 @@ func (ch *ClickHouse) SaveSessions(ctx context.Context, sessions []model.Session
 	for _, session := range sessions {
 		if err := stmt.Append(session.Sign,
 			session.Version,
-			session.ClientID,
+			session.SiteID,
 			session.VisitorID,
 			session.SessionID,
 			session.Time.UnixMilli(),
@@ -184,7 +184,7 @@ func (ch *ClickHouse) SaveSessions(ctx context.Context, sessions []model.Session
 
 // SavePageViews implements the Storage interface.
 func (ch *ClickHouse) SavePageViews(ctx context.Context, pageViews []model.PageView) error {
-	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "page_view_v7" (client_id,
+	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "page_view_v7" (site_id,
 		visitor_id,
 		session_id,
 		time,
@@ -218,7 +218,7 @@ func (ch *ClickHouse) SavePageViews(ctx context.Context, pageViews []model.PageV
 	}
 
 	for _, pageView := range pageViews {
-		if err := stmt.Append(pageView.ClientID,
+		if err := stmt.Append(pageView.SiteID,
 			pageView.VisitorID,
 			pageView.SessionID,
 			pageView.Time.UnixMilli(),
@@ -263,7 +263,7 @@ func (ch *ClickHouse) SavePageViews(ctx context.Context, pageViews []model.PageV
 
 // SaveEvents implements the Storage interface.
 func (ch *ClickHouse) SaveEvents(ctx context.Context, events []model.Event) error {
-	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "event_v7" (client_id,
+	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "event_v7" (site_id,
 		visitor_id,
 		time,
 		session_id,
@@ -298,7 +298,7 @@ func (ch *ClickHouse) SaveEvents(ctx context.Context, events []model.Event) erro
 	}
 
 	for _, event := range events {
-		if err := stmt.Append(event.ClientID,
+		if err := stmt.Append(event.SiteID,
 			event.VisitorID,
 			event.Time.UnixMilli(),
 			event.SessionID,
@@ -344,7 +344,7 @@ func (ch *ClickHouse) SaveEvents(ctx context.Context, events []model.Event) erro
 
 // SaveRequests implements the Storage interface.
 func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request) error {
-	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "request_v7" (client_id,
+	stmt, err := ch.PrepareBatch(ctx, `INSERT INTO "request_v7" (site_id,
 		visitor_id,
 		time,
 		hostname,
@@ -368,7 +368,7 @@ func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request
 	}
 
 	for _, req := range requests {
-		if err := stmt.Append(req.ClientID,
+		if err := stmt.Append(req.SiteID,
 			req.VisitorID,
 			req.Time.UnixMilli(),
 			req.Hostname,
@@ -402,10 +402,10 @@ func (ch *ClickHouse) SaveRequests(ctx context.Context, requests []model.Request
 }
 
 // Session implements the Storage interface.
-func (ch *ClickHouse) Session(ctx context.Context, clientID, fingerprint uint64, maxAge time.Time) (*model.Session, error) {
+func (ch *ClickHouse) Session(ctx context.Context, siteID, fingerprint uint64, maxAge time.Time) (*model.Session, error) {
 	query := `SELECT sign,
 		version,
-		client_id,
+		site_id,
 		visitor_id,
 		session_id,
 		time,
@@ -440,15 +440,15 @@ func (ch *ClickHouse) Session(ctx context.Context, clientID, fingerprint uint64,
 		channel,
 		extended
 		FROM "session_v7"
-		WHERE client_id = ?
+		WHERE site_id = ?
 		AND visitor_id = ?
 		AND time > ?
 		ORDER BY time DESC
 		LIMIT 1`
 	session := new(model.Session)
-	err := ch.QueryRow(ctx, query, clientID, fingerprint, maxAge).Scan(&session.Sign,
+	err := ch.QueryRow(ctx, query, siteID, fingerprint, maxAge).Scan(&session.Sign,
 		&session.Version,
-		&session.ClientID,
+		&session.SiteID,
 		&session.VisitorID,
 		&session.SessionID,
 		&session.Time,

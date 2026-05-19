@@ -22,7 +22,7 @@ func TestIntegrationRequests(t *testing.T) {
 
 		// entry request
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID:     1,
+			SiteID:       1,
 			Request:      newRequest(requestOptions{}),
 			ScreenWidth:  1920,
 			ScreenHeight: 1080,
@@ -43,7 +43,7 @@ func TestIntegrationRequests(t *testing.T) {
 		// check the session
 		assert.Equal(t, int8(1), sessions[0].Sign)
 		assert.Equal(t, uint16(1), sessions[0].Version)
-		assert.Equal(t, uint64(1), sessions[0].ClientID)
+		assert.Equal(t, uint64(1), sessions[0].SiteID)
 		assert.NotZero(t, sessions[0].VisitorID)
 		assert.NotZero(t, sessions[0].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), sessions[0].Start)
@@ -79,7 +79,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Equal(t, "Organic Search", sessions[0].Channel)
 
 		// check the page view
-		assert.Equal(t, uint64(1), pageViews[0].ClientID)
+		assert.Equal(t, uint64(1), pageViews[0].SiteID)
 		assert.NotZero(t, pageViews[0].VisitorID)
 		assert.NotZero(t, pageViews[0].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), pageViews[0].Time)
@@ -111,7 +111,7 @@ func TestIntegrationRequests(t *testing.T) {
 
 		// second request
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
+			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/pricing",
 				Referrer: new(""),
@@ -134,7 +134,7 @@ func TestIntegrationRequests(t *testing.T) {
 		// check the session cancellation
 		assert.Equal(t, int8(-1), sessions[1].Sign)
 		assert.Equal(t, uint16(1), sessions[1].Version)
-		assert.Equal(t, uint64(1), sessions[1].ClientID)
+		assert.Equal(t, uint64(1), sessions[1].SiteID)
 		assert.Equal(t, sessions[0].VisitorID, sessions[1].VisitorID)
 		assert.Equal(t, sessions[0].SessionID, sessions[1].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), sessions[1].Start)
@@ -172,7 +172,7 @@ func TestIntegrationRequests(t *testing.T) {
 		// check the session update
 		assert.Equal(t, int8(1), sessions[2].Sign)
 		assert.Equal(t, uint16(2), sessions[2].Version)
-		assert.Equal(t, uint64(1), sessions[2].ClientID)
+		assert.Equal(t, uint64(1), sessions[2].SiteID)
 		assert.Equal(t, sessions[0].VisitorID, sessions[1].VisitorID)
 		assert.Equal(t, sessions[0].SessionID, sessions[1].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), sessions[2].Start)
@@ -208,7 +208,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Equal(t, "Organic Search", sessions[2].Channel)
 
 		// check the page view
-		assert.Equal(t, uint64(1), pageViews[1].ClientID)
+		assert.Equal(t, uint64(1), pageViews[1].SiteID)
 		assert.Equal(t, sessions[2].VisitorID, pageViews[1].VisitorID)
 		assert.Equal(t, sessions[2].SessionID, pageViews[1].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 10, 0, time.UTC), pageViews[1].Time)
@@ -240,7 +240,7 @@ func TestIntegrationRequests(t *testing.T) {
 
 		// trigger an event on the second page
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
+			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/pricing",
 				Referrer: new(""),
@@ -276,7 +276,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Equal(t, uint32(30), sessions[4].DurationSeconds)
 
 		// check the page view
-		assert.Equal(t, uint64(1), events[0].ClientID)
+		assert.Equal(t, uint64(1), events[0].SiteID)
 		assert.Equal(t, sessions[2].VisitorID, events[0].VisitorID)
 		assert.Equal(t, sessions[2].SessionID, events[0].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 30, 0, time.UTC), events[0].Time)
@@ -315,7 +315,7 @@ func TestIntegrationRequests(t *testing.T) {
 
 		// third request
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
+			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/about",
 				Referrer: new(""),
@@ -336,7 +336,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Len(t, events, 1)
 
 		// check the time on page and some other important fields
-		assert.Equal(t, uint64(1), pageViews[2].ClientID)
+		assert.Equal(t, uint64(1), pageViews[2].SiteID)
 		assert.Equal(t, sessions[2].VisitorID, pageViews[2].VisitorID)
 		assert.Equal(t, sessions[2].SessionID, pageViews[2].SessionID)
 		assert.Equal(t, time.Date(2000, 1, 1, 0, 0, 47, 0, time.UTC), pageViews[2].Time)
@@ -373,7 +373,7 @@ func TestIntegrationConcurrency(t *testing.T) {
 
 				for i := range pv {
 					assert.NoError(t, p.Process(&ingest.Request{
-						ClientID: 1,
+						SiteID: 1,
 						Request: newRequest(requestOptions{
 							URL:       fmt.Sprintf("https://example.com/pv/%d", i),
 							IP:        ip,
@@ -413,7 +413,7 @@ func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 			insertionTime := time.Now().UTC().Add(-time.Minute * time.Duration(rand.IntN(28)+1))
 			inserted = append(inserted, insertionTime)
 			assert.NoError(t, p.Process(&ingest.Request{
-				ClientID: 1,
+				SiteID: 1,
 				Request: newRequest(requestOptions{
 					URL: fmt.Sprintf("https://example.com/pv/%d", i),
 				}),
@@ -469,8 +469,8 @@ func TestIntegrationExtendSession(t *testing.T) {
 
 		// create a new session
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
-			Request:  newRequest(requestOptions{}),
+			SiteID:  1,
+			Request: newRequest(requestOptions{}),
 		}))
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
@@ -485,7 +485,7 @@ func TestIntegrationExtendSession(t *testing.T) {
 
 		// extend the session once
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID:      1,
+			SiteID:        1,
 			Request:       newRequest(requestOptions{}),
 			UpdateSession: true,
 		}))
@@ -499,7 +499,7 @@ func TestIntegrationExtendSession(t *testing.T) {
 
 		// extend the session twice
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID:      1,
+			SiteID:        1,
 			Request:       newRequest(requestOptions{}),
 			UpdateSession: true,
 		}))
@@ -521,8 +521,8 @@ func TestIntegrationResetSessionReferrer(t *testing.T) {
 
 		// create a new session
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
-			Request:  newRequest(requestOptions{}),
+			SiteID:  1,
+			Request: newRequest(requestOptions{}),
 		}))
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
@@ -539,7 +539,7 @@ func TestIntegrationResetSessionReferrer(t *testing.T) {
 
 		// reset the session by changing the referrer
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
+			SiteID:   1,
 			Request:  newRequest(requestOptions{}),
 			Referrer: "https://referrer.com",
 		}))
@@ -572,8 +572,8 @@ func TestIntegrationResetSessionUTM(t *testing.T) {
 
 		// create a new session
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
-			Request:  newRequest(requestOptions{}),
+			SiteID:  1,
+			Request: newRequest(requestOptions{}),
 		}))
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
@@ -590,7 +590,7 @@ func TestIntegrationResetSessionUTM(t *testing.T) {
 
 		// reset the session by changing the UTM source
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
+			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL: "https://example.com/?utm_source=New+Source",
 			}),
@@ -624,8 +624,8 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 
 		// create a new session
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID: 1,
-			Request:  newRequest(requestOptions{}),
+			SiteID:  1,
+			Request: newRequest(requestOptions{}),
 		}))
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
@@ -637,7 +637,7 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 
 		// trigger a non-interactive event
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID:            1,
+			SiteID:              1,
 			Request:             newRequest(requestOptions{}),
 			EventName:           "Event",
 			EventNonInteractive: true,
@@ -654,7 +654,7 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 
 		// trigger an interactive event
 		assert.NoError(t, p.Process(&ingest.Request{
-			ClientID:  1,
+			SiteID:    1,
 			Request:   newRequest(requestOptions{}),
 			EventName: "Event",
 		}))

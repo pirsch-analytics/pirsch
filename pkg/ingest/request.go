@@ -114,8 +114,8 @@ var (
 
 // Request is the data for a visitor request (page view or event).
 type Request struct {
-	// ClientID is the ID for the tenant.
-	ClientID uint64
+	// SiteID is the site ID.
+	SiteID uint64
 
 	// VisitorID is the visitor ID for the request.
 	VisitorID uint64

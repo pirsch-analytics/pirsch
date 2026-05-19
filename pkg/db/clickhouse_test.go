@@ -30,7 +30,7 @@ func TestClient_SaveSessions(t *testing.T) {
 	assert.NoError(t, client.SaveSessions(context.Background(), []model.Session{
 		{
 			Data: model.Data{
-				ClientID:       1,
+				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
 				SessionID:      util.RandUint32(),
@@ -92,7 +92,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		now := time.Now().Add(time.Millisecond * time.Duration(i))
 		sessions = append(sessions, model.Session{
 			Data: model.Data{
-				ClientID:  2,
+				SiteID:    2,
 				VisitorID: 3,
 				Time:      now,
 				SessionID: 4,
@@ -104,7 +104,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 		})
 		sessions = append(sessions, model.Session{
 			Data: model.Data{
-				ClientID:  2,
+				SiteID:    2,
 				VisitorID: 3,
 				Time:      now,
 				SessionID: 4,
@@ -118,7 +118,7 @@ func TestClient_SaveSessionsBatch(t *testing.T) {
 
 	sessions = append(sessions, model.Session{
 		Data: model.Data{
-			ClientID:  2,
+			SiteID:    2,
 			VisitorID: 3,
 			Time:      time.Now().Add(time.Millisecond * 10),
 			SessionID: 4,
@@ -139,7 +139,7 @@ func TestClient_SavePageViews(t *testing.T) {
 	assert.NoError(t, client.SavePageViews(context.Background(), []model.PageView{
 		{
 			Data: model.Data{
-				ClientID:       1,
+				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
 				SessionID:      util.RandUint32(),
@@ -187,7 +187,7 @@ func TestClient_SaveEvents(t *testing.T) {
 	assert.NoError(t, client.SaveEvents(context.Background(), []model.Event{
 		{
 			Data: model.Data{
-				ClientID:       1,
+				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
 				SessionID:      util.RandUint32(),
@@ -236,7 +236,7 @@ func TestClient_SaveRequests(t *testing.T) {
 	CleanupDB(t, client)
 	assert.NoError(t, client.SaveRequests(context.Background(), []model.Request{
 		{
-			ClientID:  1,
+			SiteID:    1,
 			VisitorID: 1,
 			Time:      time.Now(),
 			Hostname:  "example.com",
@@ -259,7 +259,7 @@ func TestClient_SaveRequests(t *testing.T) {
 			BotReason:   "ip",
 		},
 		{
-			ClientID:  2,
+			SiteID:    2,
 			VisitorID: 2,
 			Time:      time.Now(),
 			UserAgent: "ua2",
@@ -277,7 +277,7 @@ func TestClient_Session(t *testing.T) {
 	assert.NoError(t, client.SaveSessions(context.Background(), []model.Session{
 		{
 			Data: model.Data{
-				ClientID:  1,
+				SiteID:    1,
 				VisitorID: 1,
 				Time:      now.Add(-time.Second * 20),
 				SessionID: rand.Uint32(),
@@ -291,7 +291,7 @@ func TestClient_Session(t *testing.T) {
 		},
 		{
 			Data: model.Data{
-				ClientID:  1,
+				SiteID:    1,
 				VisitorID: 1,
 				Time:      now,
 				SessionID: 123456,
@@ -305,7 +305,7 @@ func TestClient_Session(t *testing.T) {
 		},
 		{
 			Data: model.Data{
-				ClientID:  1,
+				SiteID:    1,
 				VisitorID: 1,
 				Time:      now.Add(-time.Second * 10),
 				SessionID: rand.Uint32(),

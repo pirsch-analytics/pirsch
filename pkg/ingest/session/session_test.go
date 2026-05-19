@@ -42,7 +42,7 @@ func TestSession(t *testing.T) {
 		assert.Equal(t, start, firstSession.Start)
 		assert.Equal(t, uint16(1), firstSession.PageViews)
 		assert.True(t, firstSession.IsBounce)
-		assert.Equal(t, uint64(1), firstSession.ClientID)
+		assert.Equal(t, uint64(1), firstSession.SiteID)
 		assert.NotZero(t, firstSession.VisitorID)
 		assert.NotZero(t, firstSession.SessionID)
 		assert.Equal(t, "example.com", firstSession.Hostname)
@@ -106,7 +106,7 @@ func TestSession(t *testing.T) {
 		assert.Equal(t, start, secondSession.Start)
 		assert.Equal(t, uint16(2), secondSession.PageViews)
 		assert.False(t, secondSession.IsBounce)
-		assert.Equal(t, uint64(1), secondSession.ClientID)
+		assert.Equal(t, uint64(1), secondSession.SiteID)
 		assert.NotZero(t, secondSession.VisitorID)
 		assert.NotZero(t, secondSession.SessionID)
 		assert.Equal(t, "example.com", secondSession.Hostname)
@@ -680,7 +680,7 @@ func newSampleRequest() (*ingest.Request, time.Time) {
 	now := time.Now().UTC()
 	return &ingest.Request{
 		Request:        r,
-		ClientID:       1,
+		SiteID:         1,
 		Time:           now,
 		Hostname:       "example.com",
 		Path:           "/",
