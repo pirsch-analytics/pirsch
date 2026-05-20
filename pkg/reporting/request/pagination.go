@@ -1,4 +1,4 @@
-package reporting
+package request
 
 // Pagination limits the number of results for a Report.
 type Pagination struct {

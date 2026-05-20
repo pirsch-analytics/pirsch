@@ -1,8 +1,12 @@
-package reporting
+package dimensions
 
-// Dimension is a Request dimension results are grouped by.
+// Dimension is a field results are grouped by.
 type Dimension interface {
-	// TODO
+	// Table returns the database table for the Dimension.
+	Table() string
+
+	// Column returns the database column name for the Dimension.
+	Column() string
 }
 
 // TODO

@@ -46,3 +46,14 @@ const (
 	// OSChrome represents the Chrome operating system.
 	OSChrome = "Chrome OS"
 )
+
+const (
+	// TableSessions is the sessions table name.
+	TableSessions = "session_v7"
+
+	// TablePageViews is the page views table name.
+	TablePageViews = "page_view_v7"
+
+	// TableEvents is the events table name.
+	TableEvents = "event_v7"
+)

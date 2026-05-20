@@ -1,4 +1,6 @@
-package reporting
+package request
+
+import "github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 
 const (
 	OperatorIs Operator = iota
@@ -12,13 +14,13 @@ const (
 	OperatorNot
 )
 
+// Operator is an operator for a Filter.
+type Operator int
+
 // Filter filters for a Dimension connected by a logical Operator.
 type Filter struct {
 	Operator  Operator
-	Dimension Dimension
+	Dimension dimensions.Dimension
 	Values    []string
 	Filter    []Filter
 }
-
-// Operator is an operator for a Filter.
-type Operator int
