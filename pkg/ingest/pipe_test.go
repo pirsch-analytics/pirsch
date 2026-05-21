@@ -175,10 +175,13 @@ func TestPipeRetryError(t *testing.T) {
 		assert.Empty(t, storage.Sessions())
 		assert.Empty(t, storage.PageViews())
 
-		// the requests must have been dropped even after flushing
+		// the requests must have been dropped, even after flushing
 		pipe.Stop()
 		assert.Empty(t, storage.Sessions())
 		assert.Empty(t, storage.PageViews())
+
+		// wait again to clean up background routines for asynchronous retries
+		time.Sleep(time.Second * 130)
 	})
 }
 

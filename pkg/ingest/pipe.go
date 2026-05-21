@@ -224,65 +224,84 @@ func (p *Pipe) dataFromRequest(request *Request) model.Data {
 }
 
 func (p *Pipe) flush(sessions []model.Session, pageViews []model.PageView, events []model.Event, requests []model.Request) {
+	// copy ingestion data
+	sessionsCopy := make([]model.Session, len(sessions))
+	pageViewsCopy := make([]model.PageView, len(pageViews))
+	eventsCopy := make([]model.Event, len(events))
+	requestsCopy := make([]model.Request, len(requests))
+	copy(sessionsCopy, sessions)
+	copy(pageViewsCopy, pageViews)
+	copy(eventsCopy, events)
+	copy(requestsCopy, requests)
+
+	// retries run asynchronously, so that we won't block the main ingestion pipeline
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		if err := p.flushWithRetry(func() error {
-			return p.storage.SaveSessions(p.ctx, sessions)
-		}, "save sessions"); err != nil {
-			p.logger.Error("Failed saving sessions", "err", err)
-		}
+		p.flushWithRetry(func() error {
+			return p.storage.SaveSessions(p.ctx, sessionsCopy)
+		}, "save sessions")
 	})
 	wg.Go(func() {
-		if err := p.flushWithRetry(func() error {
-			return p.storage.SavePageViews(p.ctx, pageViews)
-		}, "save page views"); err != nil {
-			p.logger.Error("Failed saving page views", "err", err)
-		}
+		p.flushWithRetry(func() error {
+			return p.storage.SavePageViews(p.ctx, pageViewsCopy)
+		}, "save page views")
 	})
 	wg.Go(func() {
-		if err := p.flushWithRetry(func() error {
-			return p.storage.SaveEvents(p.ctx, events)
-		}, "save events"); err != nil {
-			p.logger.Error("Failed saving events", "err", err)
-		}
+		p.flushWithRetry(func() error {
+			return p.storage.SaveEvents(p.ctx, eventsCopy)
+		}, "save events")
 	})
 	wg.Go(func() {
-		if err := p.flushWithRetry(func() error {
-			return p.storage.SaveRequests(p.ctx, requests)
-		}, "save requests"); err != nil {
-			p.logger.Error("Failed saving requests", "err", err)
-		}
+		p.flushWithRetry(func() error {
+			return p.storage.SaveRequests(p.ctx, requestsCopy)
+		}, "save requests")
 	})
 	wg.Wait()
 }
 
-func (p *Pipe) flushWithRetry(save func() error, operation string) error {
-	const maxRetries = 5
-	var err error
-
-	for attempt := range maxRetries {
-		if err = save(); err == nil {
-			return nil
-		}
-
-		remaining := maxRetries - attempt - 1
-
-		if remaining == 0 {
-			break
-		}
-
-		backoff := time.Duration(attempt+1) * 20 * time.Second
-		jitter := time.Duration(rand.N(5)) * time.Second
-		wait := backoff + jitter
-		p.logger.Error("Storage error, retrying", "err", err,
-			"operation", operation,
-			"retries_remaining", remaining,
-			"wait", wait)
-
-		time.Sleep(wait)
+func (p *Pipe) flushWithRetry(save func() error, operation string) {
+	if err := save(); err == nil {
+		return
 	}
 
-	return fmt.Errorf("%s failed after %d attempts: %w", operation, maxRetries, err)
+	// run retries asynchronously
+	go func() {
+		const maxRetries = 5
+		var err error
+
+		for attempt := range maxRetries {
+			select {
+			case <-p.ctx.Done():
+				p.logger.Error("Failed saving data",
+					"err", "context canceled",
+					"operation", operation)
+				return
+			default:
+				if err = save(); err == nil {
+					return
+				}
+
+				remaining := maxRetries - attempt - 1
+
+				if remaining == 0 {
+					break
+				}
+
+				backoff := time.Duration(attempt+1) * 20 * time.Second
+				jitter := time.Duration(rand.N(5)) * time.Second
+				wait := backoff + jitter
+				p.logger.Error("Storage error, retrying", "err", err,
+					"operation", operation,
+					"retries_remaining", remaining,
+					"wait", wait)
+				time.Sleep(wait)
+			}
+		}
+
+		p.logger.Error("Failed saving data",
+			"err", fmt.Sprintf("%s failed after %d attempts: %s", operation, maxRetries, err),
+			"operation", operation)
+	}()
 }
 
 func (p *Pipe) ignore(request *Request) bool {
