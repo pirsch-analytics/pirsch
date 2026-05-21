@@ -108,8 +108,6 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 		defer timer.Stop()
 
 		for {
-			timer.Reset(timeout)
-
 			select {
 			case request := <-p.requests:
 				if !p.logIP {
@@ -174,6 +172,7 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 					pageViews = pageViews[:0]
 					events = events[:0]
 					requests = requests[:0]
+					timer.Reset(timeout)
 				}
 			case <-timer.C:
 				p.flush(sessions, pageViews, events, requests)
@@ -181,6 +180,7 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 				pageViews = pageViews[:0]
 				events = events[:0]
 				requests = requests[:0]
+				timer.Reset(timeout)
 			case <-p.ctx.Done():
 				p.flush(sessions, pageViews, events, requests)
 				sessions = sessions[:0]
