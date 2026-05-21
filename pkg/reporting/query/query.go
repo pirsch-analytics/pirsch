@@ -1,6 +1,7 @@
 package query
 
 import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/report"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
@@ -29,8 +30,40 @@ func (q *Query) Run(request request.Request) report.Report {
 	}
 
 	// TODO build query and generate report
+	/*
+		All metrics and dimensions → sessions    = query sessions only
+		Any dimension  → page_views              = query page_views (+ subquery sessions if needed)
+		Any dimension  → events                  = query events (+ subquery sessions if needed)
+		Mix of page_views + sessions metrics     = subquery or join needed
+	*/
 
 	return report.Report{
 		Request: request,
 	}
+}
+
+func (q *Query) resolveTable(req request.Request) string {
+	tables := map[string]bool{}
+
+	for _, m := range req.Metrics {
+		tables[m.Table()] = true
+	}
+
+	for _, d := range req.Dimensions {
+		tables[d.Table()] = true
+	}
+
+	// TODO
+	// check filter tables
+	//collectFilterTables(req.Filter, tables)
+
+	if tables[pkg.TableEvents] {
+		return pkg.TableEvents
+	}
+
+	if tables[pkg.TablePageViews] {
+		return pkg.TablePageViews
+	}
+
+	return pkg.TableSessions
 }

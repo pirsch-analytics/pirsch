@@ -14,3 +14,8 @@ func (m Visitors) Table() string {
 func (m Visitors) Column() string {
 	return "visitors"
 }
+
+// Expression implements the Metric interface.
+func (m Visitors) Expression() string {
+	return "uniq(visitor_id)"
+}

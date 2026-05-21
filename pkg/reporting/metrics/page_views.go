@@ -14,3 +14,8 @@ func (m PageViews) Table() string {
 func (m PageViews) Column() string {
 	return "page_views"
 }
+
+// Expression implements the Metric interface.
+func (m PageViews) Expression() string {
+	return "sum(page_views)"
+}

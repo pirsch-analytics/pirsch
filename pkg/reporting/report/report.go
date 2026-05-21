@@ -1,7 +1,6 @@
 package report
 
 import (
-	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
@@ -19,15 +18,13 @@ type Report struct {
 
 // Result is a result row.
 type Result struct {
-	// Dimensions is the ordered list of dimensions as in the Request.
-	Dimensions []dimensions.Dimension
+	// DimensionValues is the ordered list of values of dimensions as in the Request.
+	DimensionValues []string
 
-	// Metrics is the ordered list of result values as in the Request.
-	Metrics []ResultMetric
+	// MetricValues is the ordered list of result values as in the Request.
+	// These can be strings, int, or float.
+	MetricValues []any
 }
-
-// ResultMetric is the result value in a Report.
-type ResultMetric interface{}
 
 // Meta contains metadata information for the Report.
 type Meta struct {

@@ -66,7 +66,7 @@ func TestQueryFromEvents(t *testing.T) {
 	// TODO
 }
 
-func TestQueryFromSessionsWhere(t *testing.T) {
+func TestQueryFromSessionsFiltered(t *testing.T) {
 	q := NewQuery(client)
 	q.Run(request.Request{
 		SiteID: 1,
@@ -81,15 +81,17 @@ func TestQueryFromSessionsWhere(t *testing.T) {
 		Dimensions: []dimensions.Dimension{
 			dimensions.Day{},
 		},
-		Filter: request.Filter{
-			Dimension: dimensions.Path{},
-			Values:    []string{"/"},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []string{"/"},
+			},
 		},
 	})
 	// TODO
 }
 
-func TestQueryFromPageViewsWhere(t *testing.T) {
+func TestQueryFromPageViewsFiltered(t *testing.T) {
 	q := NewQuery(client)
 	q.Run(request.Request{
 		SiteID: 1,
@@ -104,9 +106,11 @@ func TestQueryFromPageViewsWhere(t *testing.T) {
 		Dimensions: []dimensions.Dimension{
 			dimensions.Path{},
 		},
-		Filter: request.Filter{
-			Dimension: dimensions.Path{},
-			Values:    []string{"/"},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []string{"/"},
+			},
 		},
 	})
 	// TODO

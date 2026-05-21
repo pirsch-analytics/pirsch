@@ -15,7 +15,7 @@ type Request struct {
 	Ctx context.Context
 
 	// SiteID is the site ID for the request.
-	SiteID int64
+	SiteID uint64
 
 	// Period is the period and timezone for the Report.
 	Period Period
@@ -27,7 +27,9 @@ type Request struct {
 	Dimensions []dimensions.Dimension
 
 	// Filter filters the results for a Report.
-	Filter Filter
+	// Top-level filters are connected using the AND operator by default.
+	// To use other operators, they need to be set in the Filter recursively.
+	Filter []Filter
 
 	// OrderBy sorts the result fields of a Report.
 	OrderBy []OrderBy
