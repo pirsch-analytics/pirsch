@@ -57,10 +57,10 @@ func TestQueryFromEvents(t *testing.T) {
 			Timezone: time.UTC,
 		},
 		Metrics: []metrics.Metric{
-			// TODO
+			metrics.Visitors{},
 		},
 		Dimensions: []dimensions.Dimension{
-			// TODO
+			dimensions.Event{},
 		},
 	})
 	// TODO
@@ -110,6 +110,35 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			{
 				Dimension: dimensions.Path{},
 				Values:    []string{"/"},
+			},
+		},
+	})
+	// TODO
+}
+
+func TestQueryFromAllFiltered(t *testing.T) {
+	q := NewQuery(client)
+	q.Run(request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Entries{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EntryPath{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []string{"/"},
+			},
+			{
+				Dimension: dimensions.Event{},
+				Values:    []string{"CTA Clicked"},
 			},
 		},
 	})

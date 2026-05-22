@@ -10,6 +10,33 @@ import (
 // Query queries results for a report.Report.
 type Query struct {
 	db *db.ClickHouse
+
+	// TODO
+	/*
+		filter             *Filter
+		fields             []Field
+		fieldsImported     []Field
+		from               table
+		fromImported       string
+		parent             *queryBuilder
+		join               *queryBuilder
+		joinSecond         *queryBuilder
+		joinThird          *queryBuilder
+		leftJoin           *queryBuilder
+		joinStep           int
+		search             []Search
+		groupBy            []Field
+		orderBy            []Field
+		limit              int
+		offset             int
+		includeEventFilter bool
+		sample             uint
+		final              bool
+
+		where []where
+		q     strings.Builder
+		args  []any
+	*/
 }
 
 // NewQuery returns a new Query for given database connection.

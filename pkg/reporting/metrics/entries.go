@@ -1,0 +1,21 @@
+package metrics
+
+import "github.com/pirsch-analytics/pirsch/v7/pkg"
+
+// Entries is a Metric.
+type Entries struct{}
+
+// Table implements the Metric interface.
+func (m Entries) Table() string {
+	return pkg.TableSessions
+}
+
+// Column implements the Metric interface.
+func (m Entries) Column() string {
+	return "entries"
+}
+
+// Expression implements the Metric interface.
+func (m Entries) Expression() string {
+	return "sum(sign)"
+}
