@@ -3,37 +3,28 @@ package query
 import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/report"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
+var tablePriority = map[string]int{
+	pkg.TableSessions:  1,
+	pkg.TablePageViews: 2,
+	pkg.TableEvents:    2,
+}
+
 // Query queries results for a report.Report.
 type Query struct {
-	db *db.ClickHouse
+	db             *db.ClickHouse
+	primaryTable   string
+	joinTable      string
+	primaryFilter  []request.Filter
+	subqueryFilter []request.Filter
 
 	// TODO
 	/*
-		filter             *Filter
-		fields             []Field
-		fieldsImported     []Field
-		from               table
-		fromImported       string
-		parent             *queryBuilder
-		join               *queryBuilder
-		joinSecond         *queryBuilder
-		joinThird          *queryBuilder
-		leftJoin           *queryBuilder
-		joinStep           int
-		search             []Search
-		groupBy            []Field
-		orderBy            []Field
-		limit              int
-		offset             int
-		includeEventFilter bool
-		sample             uint
-		final              bool
-
-		where []where
 		q     strings.Builder
 		args  []any
 	*/
@@ -42,7 +33,9 @@ type Query struct {
 // NewQuery returns a new Query for given database connection.
 func NewQuery(db *db.ClickHouse) *Query {
 	return &Query{
-		db: db,
+		db:             db,
+		primaryFilter:  make([]request.Filter, 0),
+		subqueryFilter: make([]request.Filter, 0),
 	}
 }
 
@@ -57,40 +50,102 @@ func (q *Query) Run(request request.Request) report.Report {
 	}
 
 	// TODO build query and generate report
-	/*
-		All metrics and dimensions → sessions    = query sessions only
-		Any dimension  → page_views              = query page_views (+ subquery sessions if needed)
-		Any dimension  → events                  = query events (+ subquery sessions if needed)
-		Mix of page_views + sessions metrics     = subquery or join needed
-	*/
+	q.resolvePrimaryTable(request)
+
+	/*for _, m := range request.Metrics {
+		if m.Table() != q.primaryTable {
+			q.joinTable = m.Table()
+			break
+		}
+	}*/
+
+	for _, filter := range request.Filter {
+		q.classifyFilters(filter)
+	}
+
+	switch {
+	case q.joinTable != "":
+		//q.runWithJoin(req, route)
+	case len(q.subqueryFilter) > 0:
+		//q.runWithSubquery(req, route)
+	default:
+		//q.runSimple(req, route)
+	}
 
 	return report.Report{
 		Request: request,
 	}
 }
 
-func (q *Query) resolveTable(req request.Request) string {
-	tables := map[string]bool{}
-
-	for _, m := range req.Metrics {
-		tables[m.Table()] = true
+func (q *Query) resolvePrimaryTable(req request.Request) {
+	// dimensions drive the primary table
+	if len(req.Dimensions) > 0 {
+		q.primaryTable = q.highestPriorityTable(q.dimensionTables(req.Dimensions))
+		return
 	}
 
-	for _, d := range req.Dimensions {
-		tables[d.Table()] = true
+	// no dimensions, use metrics instead
+	if len(req.Metrics) > 0 {
+		q.primaryTable = q.highestPriorityTable(q.metricTables(req.Metrics))
+		return
 	}
 
-	// TODO
-	// check filter tables
-	//collectFilterTables(req.Filter, tables)
+	// fall back to sessions for simple queries
+	q.primaryTable = pkg.TableSessions
+}
 
-	if tables[pkg.TableEvents] {
-		return pkg.TableEvents
+func (q *Query) dimensionTables(dimensions []dimensions.Dimension) []string {
+	tables := make([]string, 0, len(dimensions))
+
+	for _, d := range dimensions {
+		tables = append(tables, d.Table())
 	}
 
-	if tables[pkg.TablePageViews] {
-		return pkg.TablePageViews
+	return tables
+}
+
+func (q *Query) metricTables(metrics []metrics.Metric) []string {
+	tables := make([]string, 0, len(metrics))
+
+	for _, m := range metrics {
+		tables = append(tables, m.Table())
 	}
 
-	return pkg.TableSessions
+	return tables
+}
+
+func (q *Query) highestPriorityTable(tables []string) string {
+	table := pkg.TableSessions
+	priority := 0
+
+	for _, t := range tables {
+		if p := tablePriority[t]; p > priority {
+			table = t
+			priority = p
+		}
+	}
+
+	return table
+}
+
+func (q *Query) classifyFilters(filter request.Filter) {
+	// logical operators recurse into their children
+	if len(filter.Filter) > 0 {
+		for _, child := range filter.Filter {
+			q.classifyFilters(child)
+		}
+
+		return
+	}
+
+	// leaf filter, classify by table
+	if filter.Dimension == nil {
+		return
+	}
+
+	if filter.Dimension.Table() == q.primaryTable {
+		q.primaryFilter = append(q.primaryFilter, filter)
+	} else {
+		q.subqueryFilter = append(q.subqueryFilter, filter)
+	}
 }

@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestQueryFromSessions(t *testing.T) {
@@ -20,11 +22,16 @@ func TestQueryFromSessions(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
+			metrics.BounceRate{},
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Day{},
 		},
 	})
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
 	// TODO
 }
 
@@ -44,6 +51,10 @@ func TestQueryFromPageViews(t *testing.T) {
 			dimensions.Path{},
 		},
 	})
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
 	// TODO
 }
 
@@ -63,6 +74,10 @@ func TestQueryFromEvents(t *testing.T) {
 			dimensions.Event{},
 		},
 	})
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
 	// TODO
 }
 
@@ -88,6 +103,10 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
 	// TODO
 }
 
@@ -113,6 +132,10 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
 	// TODO
 }
 
@@ -142,5 +165,13 @@ func TestQueryFromAllFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.subqueryFilter, 1)
+	// TODO
+}
+
+func TestQueryTimeOnPage(t *testing.T) {
 	// TODO
 }
