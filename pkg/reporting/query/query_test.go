@@ -30,7 +30,6 @@ func TestQueryFromSessions(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
 	// TODO
@@ -54,7 +53,6 @@ func TestQueryFromPageViews(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
 	// TODO
@@ -78,7 +76,6 @@ func TestQueryFromEvents(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableEvents, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
 	// TODO
@@ -101,6 +98,10 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 		},
 		Filter: []request.Filter{
 			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []any{"/"},
+			},
+			{
 				Operator: request.OperatorOr,
 				Filter: []request.Filter{
 					{
@@ -119,9 +120,20 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)
-	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, pkg.TableSessions, q.primaryFilter[0].table)
+	assert.Equal(t, dimensions.EntryPath{}, q.primaryFilter[0].filter.Dimension)
+	assert.Equal(t, []any{"/"}, q.primaryFilter[0].filter.Values)
+	assert.Len(t, q.subqueryFilter, 1)
+	assert.Equal(t, pkg.TablePageViews, q.subqueryFilter[0].table)
+	assert.Equal(t, request.OperatorOr, q.subqueryFilter[0].filter.Operator)
+	assert.Len(t, q.subqueryFilter[0].filter.Filter, 2)
+	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[0].Operator)
+	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[1].Operator)
+	assert.Equal(t, dimensions.Path{}, q.subqueryFilter[0].filter.Filter[0].Dimension)
+	assert.Equal(t, dimensions.Referrer{}, q.subqueryFilter[0].filter.Filter[1].Dimension)
+	assert.Equal(t, []any{"/pricing", "/about"}, q.subqueryFilter[0].filter.Filter[0].Values)
+	assert.Equal(t, []any{"https://duckduckgo.com"}, q.subqueryFilter[0].filter.Filter[1].Values)
 	// TODO
 }
 
@@ -149,7 +161,6 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)
 	assert.Empty(t, q.subqueryFilter)
 	// TODO
@@ -183,7 +194,6 @@ func TestQueryFromAllFiltered(t *testing.T) {
 	})
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
-	assert.Empty(t, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)
 	assert.Len(t, q.subqueryFilter, 1)
 	// TODO

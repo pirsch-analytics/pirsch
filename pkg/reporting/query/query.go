@@ -28,8 +28,6 @@ type classifiedFilter struct {
 type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
-	joinTable      string
-	subqueryTable  string
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
 	query          strings.Builder
@@ -92,26 +90,6 @@ func (q *Query) resolvePrimaryTable(req request.Request) {
 
 	// fall back to sessions for simple queries
 	q.primaryTable = pkg.TableSessions
-}
-
-func (q *Query) dimensionTables(dimensions []dimensions.Dimension) [][]string {
-	tables := make([][]string, 0, len(dimensions))
-
-	for _, d := range dimensions {
-		tables = append(tables, d.Table())
-	}
-
-	return tables
-}
-
-func (q *Query) metricTables(metrics []metrics.Metric) [][]string {
-	tables := make([][]string, 0, len(metrics))
-
-	for _, m := range metrics {
-		tables = append(tables, m.Table())
-	}
-
-	return tables
 }
 
 func (q *Query) resolveBestTable(tableSets [][]string) string {
@@ -185,6 +163,26 @@ func (q *Query) highestPriorityTable(tables []string) string {
 	return table
 }
 
+func (q *Query) dimensionTables(dimensions []dimensions.Dimension) [][]string {
+	tables := make([][]string, 0, len(dimensions))
+
+	for _, d := range dimensions {
+		tables = append(tables, d.Table())
+	}
+
+	return tables
+}
+
+func (q *Query) metricTables(metrics []metrics.Metric) [][]string {
+	tables := make([][]string, 0, len(metrics))
+
+	for _, m := range metrics {
+		tables = append(tables, m.Table())
+	}
+
+	return tables
+}
+
 func (q *Query) classifyFilter(filter request.Filter) error {
 	table, err := q.filterTable(filter)
 
@@ -208,13 +206,19 @@ func (q *Query) classifyFilter(filter request.Filter) error {
 }
 
 func (q *Query) filterTable(filter request.Filter) (string, error) {
-	// leaf node
+	// leaf node, dimension must be set
 	if len(filter.Filter) == 0 {
 		if filter.Dimension == nil {
 			return "", nil
 		}
 
-		return filter.Dimension.Table()[0], nil
+		tables := filter.Dimension.Table()
+
+		if slices.Contains(tables, q.primaryTable) {
+			return q.primaryTable, nil
+		}
+
+		return tables[0], nil
 	}
 
 	// logical group, collect tables from all children
@@ -238,6 +242,13 @@ func (q *Query) filterTable(filter request.Filter) (string, error) {
 
 	// multiple tables in one logical group is only safe for AND at the top level
 	if len(childTables) > 1 {
+		// check if children are compatible with a single shared table
+		sharedTable := q.findSharedTable(filter.Filter)
+
+		if sharedTable != "" {
+			return sharedTable, nil
+		}
+
 		if filter.Operator == request.OperatorOr || filter.Operator == request.OperatorNot {
 			tables := make([]string, 0, len(childTables))
 
@@ -257,6 +268,55 @@ func (q *Query) filterTable(filter request.Filter) (string, error) {
 	}
 
 	return "", nil
+}
+
+func (q *Query) findSharedTable(filter []request.Filter) string {
+	// collect all table sets from leaf dimensions in the group
+	tableSets := q.collectLeafTableSets(filter)
+
+	if len(tableSets) == 0 {
+		return ""
+	}
+
+	// try primary table first
+	if q.allCompatible(tableSets, q.primaryTable) {
+		return q.primaryTable
+	}
+
+	// try other tables in priority order
+	for _, candidate := range []string{pkg.TablePageViews, pkg.TableEvents, pkg.TableSessions} {
+		if candidate != q.primaryTable && q.allCompatible(tableSets, candidate) {
+			return candidate
+		}
+	}
+
+	return ""
+}
+
+func (q *Query) collectLeafTableSets(filter []request.Filter) [][]string {
+	result := make([][]string, 0)
+
+	for _, f := range filter {
+		if len(f.Filter) == 0 {
+			if f.Dimension != nil {
+				result = append(result, f.Dimension.Table())
+			}
+		} else {
+			result = append(result, q.collectLeafTableSets(f.Filter)...)
+		}
+	}
+
+	return result
+}
+
+func (q *Query) allCompatible(tableSets [][]string, candidate string) bool {
+	for _, tables := range tableSets {
+		if !slices.Contains(tables, candidate) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (q *Query) buildQuery(req request.Request) {
@@ -297,7 +357,7 @@ func (q *Query) buildQueryWhere(req request.Request) {
 
 	if len(q.subqueryFilter) > 0 {
 		q.query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-		q.buildQuereFrom(q.subqueryTable)
+		//q.buildQuereFrom(q.subqueryTable)
 		q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
 		//q.query.WriteString(q.buildQueryFilter(q.subqueryFilter, request.OperatorAnd, nil, nil))
 		q.query.WriteString(") ")
