@@ -14,3 +14,8 @@ func (d Day) Table() string {
 func (d Day) Column() string {
 	return "day"
 }
+
+// Expression implements the Dimension interface.
+func (d Day) Expression() string {
+	return `toDate("time")`
+}

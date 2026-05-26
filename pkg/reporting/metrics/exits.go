@@ -16,6 +16,6 @@ func (m Exits) Column() string {
 }
 
 // Expression implements the Metric interface.
-func (m Exits) Expression() string {
+func (m Exits) Expression(_ string) string {
 	return "sum(sign)"
 }

@@ -16,6 +16,6 @@ func (m Visitors) Column() string {
 }
 
 // Expression implements the Metric interface.
-func (m Visitors) Expression() string {
+func (m Visitors) Expression(_ string) string {
 	return "uniq(visitor_id)"
 }

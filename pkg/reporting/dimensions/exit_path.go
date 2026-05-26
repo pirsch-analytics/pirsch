@@ -14,3 +14,8 @@ func (d ExitPath) Table() string {
 func (d ExitPath) Column() string {
 	return "exit_path"
 }
+
+// Expression implements the Dimension interface.
+func (d ExitPath) Expression() string {
+	return ""
+}

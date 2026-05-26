@@ -8,6 +8,6 @@ type Metric interface {
 	// Column returns the database column name for the Metric.
 	Column() string
 
-	// Expression returns the SQL expression for aggregation.
-	Expression() string
+	// Expression returns the SQL expression for aggregation for the given table.
+	Expression(string) string
 }

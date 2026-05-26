@@ -16,6 +16,10 @@ func (m PageViews) Column() string {
 }
 
 // Expression implements the Metric interface.
-func (m PageViews) Expression() string {
-	return "sum(page_views)"
+func (m PageViews) Expression(table string) string {
+	if table == pkg.TableSessions {
+		return "sum(page_views)"
+	}
+
+	return "count(*)"
 }

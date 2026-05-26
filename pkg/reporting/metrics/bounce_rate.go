@@ -16,6 +16,6 @@ func (m BounceRate) Column() string {
 }
 
 // Expression implements the Metric interface.
-func (m BounceRate) Expression() string {
+func (m BounceRate) Expression(_ string) string {
 	return "sum(is_bounce*sign) / IF(uniq(visitor_id, session_id) = 0, 1, uniq(visitor_id, session_id))"
 }

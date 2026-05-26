@@ -14,3 +14,8 @@ func (d Event) Table() string {
 func (d Event) Column() string {
 	return "name"
 }
+
+// Expression implements the Dimension interface.
+func (d Event) Expression() string {
+	return ""
+}

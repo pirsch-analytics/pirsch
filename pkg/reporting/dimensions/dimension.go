@@ -7,6 +7,10 @@ type Dimension interface {
 
 	// Column returns the database column name for the Dimension.
 	Column() string
+
+	// Expression returns the SQL expression for aggregation.
+	// If empty, the Column name will be used instead.
+	Expression() string
 }
 
 // TODO

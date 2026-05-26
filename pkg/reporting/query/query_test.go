@@ -98,8 +98,19 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 		},
 		Filter: []request.Filter{
 			{
-				Dimension: dimensions.Path{},
-				Values:    []string{"/"},
+				Operator: request.OperatorOr,
+				Filter: []request.Filter{
+					{
+						Operator:  request.OperatorIs,
+						Dimension: dimensions.Path{},
+						Values:    []any{"/pricing", "/about"},
+					},
+					{
+						Operator:  request.OperatorIs,
+						Dimension: dimensions.Referrer{},
+						Values:    []any{"https://duckduckgo.com"},
+					},
+				},
 			},
 		},
 	})
@@ -128,7 +139,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 		Filter: []request.Filter{
 			{
 				Dimension: dimensions.Path{},
-				Values:    []string{"/"},
+				Values:    []any{"/"},
 			},
 		},
 	})
@@ -157,11 +168,11 @@ func TestQueryFromAllFiltered(t *testing.T) {
 		Filter: []request.Filter{
 			{
 				Dimension: dimensions.EntryPath{},
-				Values:    []string{"/"},
+				Values:    []any{"/"},
 			},
 			{
 				Dimension: dimensions.Event{},
-				Values:    []string{"CTA Clicked"},
+				Values:    []any{"CTA Clicked"},
 			},
 		},
 	})
