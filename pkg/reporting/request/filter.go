@@ -5,6 +5,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 const (
 	OperatorAnd Operator = iota
 	OperatorOr
+	OperatorNot
+
 	OperatorIs
 	OperatorIsNot
 	OperatorContains

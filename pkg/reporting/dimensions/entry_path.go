@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type EntryPath struct{}
 
 // Table implements the Dimension interface.
-func (d EntryPath) Table() string {
-	return pkg.TableSessions
+func (d EntryPath) Table() []string {
+	return []string{pkg.TableSessions}
 }
 
 // Column implements the Dimension interface.

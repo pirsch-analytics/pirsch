@@ -2,8 +2,8 @@ package dimensions
 
 // Dimension is a field results are grouped by.
 type Dimension interface {
-	// Table returns the database table for the Dimension.
-	Table() string
+	// Table returns the valid database tables for the Dimension.
+	Table() []string
 
 	// Column returns the database column name for the Dimension.
 	Column() string

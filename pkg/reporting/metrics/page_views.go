@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type PageViews struct{}
 
 // Table implements the Metric interface.
-func (m PageViews) Table() string {
-	return pkg.TableSessions
+func (m PageViews) Table() []string {
+	return []string{pkg.TableSessions, pkg.TablePageViews}
 }
 
 // Column implements the Metric interface.

@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type Day struct{}
 
 // Table implements the Dimension interface.
-func (d Day) Table() string {
-	return pkg.TableSessions
+func (d Day) Table() []string {
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // Column implements the Dimension interface.

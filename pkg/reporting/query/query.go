@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
@@ -18,14 +19,19 @@ var tablePriority = map[string]int{
 	pkg.TableEvents:    2,
 }
 
+type classifiedFilter struct {
+	table  string
+	filter request.Filter
+}
+
 // Query queries results for a report.Report.
 type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
 	joinTable      string
 	subqueryTable  string
-	primaryFilter  []request.Filter
-	subqueryFilter []request.Filter
+	primaryFilter  []classifiedFilter
+	subqueryFilter []classifiedFilter
 	query          strings.Builder
 	args           []any
 }
@@ -34,8 +40,8 @@ type Query struct {
 func NewQuery(db *db.ClickHouse) *Query {
 	return &Query{
 		db:             db,
-		primaryFilter:  make([]request.Filter, 0),
-		subqueryFilter: make([]request.Filter, 0),
+		primaryFilter:  make([]classifiedFilter, 0),
+		subqueryFilter: make([]classifiedFilter, 0),
 		args:           make([]any, 0),
 	}
 }
@@ -52,19 +58,18 @@ func (q *Query) Run(req request.Request) report.Report {
 
 	q.resolvePrimaryTable(req)
 
-	// TODO
-	/*for _, m := range request.Metrics {
-		if m.Table() != q.primaryTable {
-			q.joinTable = m.Table()
-			break
-		}
-	}*/
-
 	for _, filter := range req.Filter {
-		q.classifyFilters(filter)
+		if err := q.classifyFilter(filter); err != nil {
+			return report.Report{
+				Meta: report.Meta{
+					Errors: []error{err},
+				},
+			}
+		}
 	}
 
 	q.buildQuery(req)
+
 	// TODO run query
 
 	return report.Report{
@@ -75,13 +80,13 @@ func (q *Query) Run(req request.Request) report.Report {
 func (q *Query) resolvePrimaryTable(req request.Request) {
 	// dimensions drive the primary table
 	if len(req.Dimensions) > 0 {
-		q.primaryTable = q.highestPriorityTable(q.dimensionTables(req.Dimensions))
+		q.primaryTable = q.resolveBestTable(q.dimensionTables(req.Dimensions))
 		return
 	}
 
 	// no dimensions, use metrics instead
 	if len(req.Metrics) > 0 {
-		q.primaryTable = q.highestPriorityTable(q.metricTables(req.Metrics))
+		q.primaryTable = q.resolveBestTable(q.metricTables(req.Metrics))
 		return
 	}
 
@@ -89,8 +94,8 @@ func (q *Query) resolvePrimaryTable(req request.Request) {
 	q.primaryTable = pkg.TableSessions
 }
 
-func (q *Query) dimensionTables(dimensions []dimensions.Dimension) []string {
-	tables := make([]string, 0, len(dimensions))
+func (q *Query) dimensionTables(dimensions []dimensions.Dimension) [][]string {
+	tables := make([][]string, 0, len(dimensions))
 
 	for _, d := range dimensions {
 		tables = append(tables, d.Table())
@@ -99,14 +104,71 @@ func (q *Query) dimensionTables(dimensions []dimensions.Dimension) []string {
 	return tables
 }
 
-func (q *Query) metricTables(metrics []metrics.Metric) []string {
-	tables := make([]string, 0, len(metrics))
+func (q *Query) metricTables(metrics []metrics.Metric) [][]string {
+	tables := make([][]string, 0, len(metrics))
 
 	for _, m := range metrics {
 		tables = append(tables, m.Table())
 	}
 
 	return tables
+}
+
+func (q *Query) resolveBestTable(tableSets [][]string) string {
+	candidates := []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
+	valid := make([]string, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		satisfiesAll := true
+
+		for _, tables := range tableSets {
+			if !slices.Contains(tables, candidate) {
+				satisfiesAll = false
+				break
+			}
+		}
+
+		if satisfiesAll {
+			valid = append(valid, candidate)
+		}
+	}
+
+	if len(valid) == 0 {
+		// no single table works, use highest priority preferred table
+		preferred := make([]string, 0, len(tableSets))
+
+		for _, tables := range tableSets {
+			if len(tables) > 0 {
+				preferred = append(preferred, tables[0])
+			}
+		}
+
+		return q.highestPriorityTable(preferred)
+	}
+
+	if len(valid) == 1 {
+		return valid[0]
+	}
+
+	// multiple tables satisfy all dimensions, prefer the one most dimensions
+	// list as their first choice (preferred table)
+	score := make(map[string]int, len(valid))
+
+	for _, tables := range tableSets {
+		if len(tables) > 0 && slices.Contains(valid, tables[0]) {
+			score[tables[0]]++
+		}
+	}
+
+	best := valid[0]
+
+	for _, t := range valid[1:] {
+		if score[t] > score[best] {
+			best = t
+		}
+	}
+
+	return best
 }
 
 func (q *Query) highestPriorityTable(tables []string) string {
@@ -123,26 +185,78 @@ func (q *Query) highestPriorityTable(tables []string) string {
 	return table
 }
 
-func (q *Query) classifyFilters(filter request.Filter) {
-	// logical operators recurse into their children
-	if len(filter.Filter) > 0 {
-		for _, child := range filter.Filter {
-			q.classifyFilters(child)
+func (q *Query) classifyFilter(filter request.Filter) error {
+	table, err := q.filterTable(filter)
+
+	if err != nil {
+		return err
+	}
+
+	if table == q.primaryTable || table == "" {
+		q.primaryFilter = append(q.primaryFilter, classifiedFilter{
+			table:  q.primaryTable,
+			filter: filter,
+		})
+	} else {
+		q.subqueryFilter = append(q.subqueryFilter, classifiedFilter{
+			table:  table,
+			filter: filter,
+		})
+	}
+
+	return nil
+}
+
+func (q *Query) filterTable(filter request.Filter) (string, error) {
+	// leaf node
+	if len(filter.Filter) == 0 {
+		if filter.Dimension == nil {
+			return "", nil
 		}
 
-		return
+		return filter.Dimension.Table()[0], nil
 	}
 
-	// leaf filter, classify by table
-	if filter.Dimension == nil {
-		return
+	// logical group, collect tables from all children
+	childTables := make(map[string]bool)
+
+	for _, child := range filter.Filter {
+		table, err := q.filterTable(child)
+
+		if err != nil {
+			return "", err
+		}
+
+		if table != "" {
+			childTables[table] = true
+		}
 	}
 
-	if filter.Dimension.Table() == q.primaryTable {
-		q.primaryFilter = append(q.primaryFilter, filter)
-	} else {
-		q.subqueryFilter = append(q.subqueryFilter, filter)
+	if len(childTables) == 0 {
+		return "", nil
 	}
+
+	// multiple tables in one logical group is only safe for AND at the top level
+	if len(childTables) > 1 {
+		if filter.Operator == request.OperatorOr || filter.Operator == request.OperatorNot {
+			tables := make([]string, 0, len(childTables))
+
+			for t := range childTables {
+				tables = append(tables, t)
+			}
+
+			return "", fmt.Errorf("cannot mix dimensions from different tables (%s) within an OR/NOT filter group", strings.Join(tables, ", "))
+		}
+
+		return "", nil
+	}
+
+	// all leaves on the same table
+	for t := range childTables {
+		return t, nil
+	}
+
+	return "", nil
 }
 
 func (q *Query) buildQuery(req request.Request) {
@@ -176,23 +290,23 @@ func (q *Query) buildQuereFrom(table string) {
 	q.query.WriteString(fmt.Sprintf("FROM %s ", table))
 }
 
+// TODO
 func (q *Query) buildQueryWhere(req request.Request) {
 	q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-	q.query.WriteString(q.buildQueryFilter(q.primaryFilter, request.OperatorAnd, nil, nil))
+	//q.query.WriteString(q.buildQueryFilter(q.primaryFilter, request.OperatorAnd, nil, nil))
 
 	if len(q.subqueryFilter) > 0 {
 		q.query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
 		q.buildQuereFrom(q.subqueryTable)
 		q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-		q.query.WriteString(q.buildQueryFilter(q.subqueryFilter, request.OperatorAnd, nil, nil))
+		//q.query.WriteString(q.buildQueryFilter(q.subqueryFilter, request.OperatorAnd, nil, nil))
 		q.query.WriteString(") ")
 	}
 }
 
 func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) {
 	// TODO time zone, compare dates, time, ...
-	q.query.WriteString(`WHERE site_id = ?
-		AND toDate("time") BETWEEN toDate(?) AND toDate(?) `)
+	q.query.WriteString(`WHERE site_id = ? AND toDate("time") BETWEEN toDate(?) AND toDate(?) `)
 	q.args = append(q.args, siteID, period.From, period.To)
 }
 

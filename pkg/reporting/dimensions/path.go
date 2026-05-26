@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type Path struct{}
 
 // Table implements the Dimension interface.
-func (d Path) Table() string {
-	return pkg.TablePageViews
+func (d Path) Table() []string {
+	return []string{pkg.TablePageViews, pkg.TableEvents}
 }
 
 // Column implements the Dimension interface.

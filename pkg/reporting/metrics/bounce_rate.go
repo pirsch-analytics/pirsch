@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type BounceRate struct{}
 
 // Table implements the Metric interface.
-func (m BounceRate) Table() string {
-	return pkg.TableSessions
+func (m BounceRate) Table() []string {
+	return []string{pkg.TableSessions}
 }
 
 // Column implements the Metric interface.

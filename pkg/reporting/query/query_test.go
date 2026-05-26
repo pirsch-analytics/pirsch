@@ -13,7 +13,7 @@ import (
 
 func TestQueryFromSessions(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -28,6 +28,7 @@ func TestQueryFromSessions(t *testing.T) {
 			dimensions.Day{},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
 	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
@@ -37,7 +38,7 @@ func TestQueryFromSessions(t *testing.T) {
 
 func TestQueryFromPageViews(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -51,6 +52,7 @@ func TestQueryFromPageViews(t *testing.T) {
 			dimensions.Path{},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
 	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
@@ -60,7 +62,7 @@ func TestQueryFromPageViews(t *testing.T) {
 
 func TestQueryFromEvents(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -74,6 +76,7 @@ func TestQueryFromEvents(t *testing.T) {
 			dimensions.Event{},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableEvents, q.primaryTable)
 	assert.Empty(t, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
@@ -83,7 +86,7 @@ func TestQueryFromEvents(t *testing.T) {
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -114,16 +117,17 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
 	assert.Empty(t, q.joinTable)
-	assert.Empty(t, q.primaryFilter)
-	assert.Len(t, q.subqueryFilter, 1)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
 	// TODO
 }
 
 func TestQueryFromPageViewsFiltered(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -143,6 +147,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
 	assert.Empty(t, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)
@@ -152,7 +157,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 
 func TestQueryFromAllFiltered(t *testing.T) {
 	q := NewQuery(client)
-	q.Run(request.Request{
+	r := q.Run(request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -176,6 +181,7 @@ func TestQueryFromAllFiltered(t *testing.T) {
 			},
 		},
 	})
+	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
 	assert.Empty(t, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)

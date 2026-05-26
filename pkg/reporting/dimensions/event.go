@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type Event struct{}
 
 // Table implements the Dimension interface.
-func (d Event) Table() string {
-	return pkg.TableEvents
+func (d Event) Table() []string {
+	return []string{pkg.TableEvents}
 }
 
 // Column implements the Dimension interface.

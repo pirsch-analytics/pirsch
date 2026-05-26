@@ -6,8 +6,8 @@ import "github.com/pirsch-analytics/pirsch/v7/pkg"
 type Referrer struct{}
 
 // Table implements the Dimension interface.
-func (d Referrer) Table() string {
-	return pkg.TableSessions
+func (d Referrer) Table() []string {
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // Column implements the Dimension interface.
