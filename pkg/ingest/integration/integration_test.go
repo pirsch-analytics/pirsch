@@ -249,7 +249,7 @@ func TestIntegrationRequests(t *testing.T) {
 			ScreenHeight: 1080,
 			Title:        "Pricing",
 			EventName:    "Form Submission",
-			EventMetaData: map[string]interface{}{
+			EventMetaData: map[string]any{
 				"options_selected": []string{"module_a", "module_f"},
 				"total_amount": struct {
 					Currency    string

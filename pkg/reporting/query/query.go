@@ -350,16 +350,32 @@ func (q *Query) buildQuereFrom(table string) {
 	q.query.WriteString(fmt.Sprintf("FROM %s ", table))
 }
 
-// TODO
 func (q *Query) buildQueryWhere(req request.Request) {
 	q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-	//q.query.WriteString(q.buildQueryFilter(q.primaryFilter, request.OperatorAnd, nil, nil))
+
+	if len(q.primaryFilter) > 0 {
+		q.query.WriteString("AND (")
+
+		for _, filter := range q.primaryFilter {
+			where, args := q.buildQueryFilter(filter.filter)
+			q.query.WriteString(where)
+			q.args = append(q.args, args...)
+		}
+
+		q.query.WriteString(") ")
+	}
 
 	if len(q.subqueryFilter) > 0 {
 		q.query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-		//q.buildQuereFrom(q.subqueryTable)
+		q.buildQuereFrom(q.subqueryFilter[0].table)
 		q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-		//q.query.WriteString(q.buildQueryFilter(q.subqueryFilter, request.OperatorAnd, nil, nil))
+
+		for _, filter := range q.subqueryFilter {
+			where, args := q.buildQueryFilter(filter.filter)
+			q.query.WriteString(where)
+			q.args = append(q.args, args...)
+		}
+
 		q.query.WriteString(") ")
 	}
 }
@@ -370,66 +386,68 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 	q.args = append(q.args, siteID, period.From, period.To)
 }
 
-// TODO args
-func (q *Query) buildQueryFilter(filter []request.Filter, operator request.Operator, dimension dimensions.Dimension, values []any) string {
-	// filter on a field
-	if len(filter) == 0 {
-		if len(values) == 0 {
-			return ""
+func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
+	// filter field
+	if len(filter.Filter) == 0 {
+		if len(filter.Values) == 0 {
+			return "", nil
 		}
 
-		switch operator {
+		switch filter.Operator {
 		case request.OperatorIsNot:
-			if len(values) > 1 {
-				return fmt.Sprintf("%s NOT IN (?)", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("%s NOT IN (?)", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("%s != ?", dimension.Column())
+			return fmt.Sprintf("%s != ?", filter.Dimension.Column()), filter.Values
 		case request.OperatorContains:
-			if len(values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("%s ILIKE ?", dimension.Column())
+			return fmt.Sprintf("%s ILIKE ?", filter.Dimension.Column()), filter.Values
 		case request.OperatorContainsNot:
-			if len(values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("%s NOT ILIKE ?", dimension.Column())
+			return fmt.Sprintf("%s NOT ILIKE ?", filter.Dimension.Column()), filter.Values
 		case request.OperatorMatches:
-			if len(values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?)", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("multiMatchAny(%s, ?)", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("match(%s, ?)", dimension.Column())
+			return fmt.Sprintf("match(%s, ?)", filter.Dimension.Column()), filter.Values
 		case request.OperatorMatchesNot:
-			if len(values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("match(%s, ?) = 0", dimension.Column())
+			return fmt.Sprintf("match(%s, ?) = 0", filter.Dimension.Column()), filter.Values
 		default:
-			if len(values) > 1 {
-				return fmt.Sprintf("%s IN (?)", dimension.Column())
+			if len(filter.Values) > 1 {
+				return fmt.Sprintf("%s IN (?)", filter.Dimension.Column()), filter.Values
 			}
 
-			return fmt.Sprintf("%s = ?", dimension.Column())
+			return fmt.Sprintf("%s = ?", filter.Dimension.Column()), filter.Values
 		}
 	}
 
 	// filter group
-	groups := make([]string, 0, len(filter))
+	groups := make([]string, 0, len(filter.Filter))
+	args := make([]any, 0)
 
-	for _, f := range filter {
-		groups = append(groups, q.buildQueryFilter(f.Filter, f.Operator, f.Dimension, f.Values))
+	for _, f := range filter.Filter {
+		group, groupArgs := q.buildQueryFilter(f)
+		groups = append(groups, group)
+		args = append(args, groupArgs)
 	}
 
-	if operator == request.OperatorOr {
-		return fmt.Sprintf("AND (%s) ", strings.Join(groups, " OR "))
+	if filter.Operator == request.OperatorOr {
+		return fmt.Sprintf("AND (%s) ", strings.Join(groups, " OR ")), args
 	}
 
-	return fmt.Sprintf("AND (%s) ", strings.Join(groups, " AND "))
+	return fmt.Sprintf("AND (%s) ", strings.Join(groups, " AND ")), args
 }
 
 func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) {
