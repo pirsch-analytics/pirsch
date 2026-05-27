@@ -1,10 +1,12 @@
 package query
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
@@ -30,8 +32,6 @@ type Query struct {
 	primaryTable   string
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
-	query          strings.Builder
-	args           []any
 }
 
 // NewQuery returns a new Query for given database connection.
@@ -40,7 +40,6 @@ func NewQuery(db *db.ClickHouse) *Query {
 		db:             db,
 		primaryFilter:  make([]classifiedFilter, 0),
 		subqueryFilter: make([]classifiedFilter, 0),
-		args:           make([]any, 0),
 	}
 }
 
@@ -66,12 +65,36 @@ func (q *Query) Run(req request.Request) report.Report {
 		}
 	}
 
-	q.buildQuery(req)
+	query, args := q.buildQuery(req)
+	rows, err := q.db.Query(req.Ctx, query, args...)
 
-	// TODO run query
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error executing query"),
+					err,
+				},
+			},
+		}
+	}
+
+	results, err := q.scanRows(rows, req)
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error scanning rows"),
+					err,
+				},
+			},
+		}
+	}
 
 	return report.Report{
 		Request: req,
+		Results: results,
 	}
 }
 
@@ -319,14 +342,19 @@ func (q *Query) allCompatible(tableSets [][]string, candidate string) bool {
 	return true
 }
 
-func (q *Query) buildQuery(req request.Request) {
-	q.buildQuerySelect(req.Metrics, req.Dimensions)
-	q.buildQuereFrom(q.primaryTable)
-	q.buildQueryWhere(req)
-	q.buildQueryGroupBy(req.Dimensions)
+func (q *Query) buildQuery(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	query.WriteString(q.buildQuerySelect(req.Metrics, req.Dimensions))
+	query.WriteString(q.buildQuereFrom(q.primaryTable))
+	whereQuery, whereArgs := q.buildQueryWhere(req)
+	query.WriteString(whereQuery)
+	args = append(args, whereArgs...)
+	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
+	return query.String(), args
 }
 
-func (q *Query) buildQuerySelect(metrics []metrics.Metric, dimensions []dimensions.Dimension) {
+func (q *Query) buildQuerySelect(metrics []metrics.Metric, dimensions []dimensions.Dimension) string {
 	fields := make([]string, 0, len(metrics)+len(dimensions))
 
 	for _, metric := range metrics {
@@ -341,49 +369,53 @@ func (q *Query) buildQuerySelect(metrics []metrics.Metric, dimensions []dimensio
 		}
 	}
 
-	q.query.WriteString("SELECT ")
-	q.query.WriteString(strings.Join(fields, ","))
-	q.query.WriteString(" ")
+	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ","))
 }
 
-func (q *Query) buildQuereFrom(table string) {
-	q.query.WriteString(fmt.Sprintf("FROM %s ", table))
+func (q *Query) buildQuereFrom(table string) string {
+	return fmt.Sprintf("FROM %s ", table)
 }
 
-func (q *Query) buildQueryWhere(req request.Request) {
-	q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+	query.WriteString(whereQuery)
+	args = append(args, whereArgs...)
 
 	if len(q.primaryFilter) > 0 {
-		q.query.WriteString("AND (")
+		query.WriteString("AND ")
 
 		for _, filter := range q.primaryFilter {
-			where, args := q.buildQueryFilter(filter.filter)
-			q.query.WriteString(where)
-			q.args = append(q.args, args...)
+			where, a := q.buildQueryFilter(filter.filter)
+			query.WriteString(where)
+			args = append(args, a...)
 		}
-
-		q.query.WriteString(") ")
 	}
 
 	if len(q.subqueryFilter) > 0 {
-		q.query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-		q.buildQuereFrom(q.subqueryFilter[0].table)
-		q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+		query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
+		query.WriteString(q.buildQuereFrom(q.subqueryFilter[0].table))
+		whereQuery, whereArgs = q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+		query.WriteString(whereQuery)
+		args = append(args, whereArgs...)
+		query.WriteString("AND ")
 
 		for _, filter := range q.subqueryFilter {
-			where, args := q.buildQueryFilter(filter.filter)
-			q.query.WriteString(where)
-			q.args = append(q.args, args...)
+			where, a := q.buildQueryFilter(filter.filter)
+			query.WriteString(where)
+			args = append(args, a...)
 		}
 
-		q.query.WriteString(") ")
+		query.WriteString(") ")
 	}
+
+	return query.String(), args
 }
 
-func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) {
+func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
 	// TODO time zone, compare dates, time, ...
-	q.query.WriteString(`WHERE site_id = ? AND toDate("time") BETWEEN toDate(?) AND toDate(?) `)
-	q.args = append(q.args, siteID, period.From, period.To)
+	return `WHERE site_id = ? AND toDate("time") BETWEEN toDate(?) AND toDate(?) `, []any{siteID, period.From, period.To}
 }
 
 func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
@@ -450,7 +482,7 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 	return fmt.Sprintf("AND (%s) ", strings.Join(groups, " AND ")), args
 }
 
-func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) {
+func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
 	if len(dimensions) > 0 {
 		fields := make([]string, 0, len(dimensions))
 
@@ -458,7 +490,51 @@ func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) {
 			fields = append(fields, dimension.Column())
 		}
 
-		q.query.WriteString("GROUP BY ")
-		q.query.WriteString(strings.Join(fields, ","))
+		return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
 	}
+
+	return ""
+}
+
+func (q *Query) scanRows(rows driver.Rows, req request.Request) ([]report.Result, error) {
+	metricCount := len(req.Metrics)
+	dimensionCount := len(req.Dimensions)
+	columnCount := metricCount + dimensionCount
+	columns := make([]any, columnCount)
+	columnPtrs := make([]any, columnCount)
+
+	for i := range metricCount {
+		columns[i] = new(any)
+		columnPtrs[i] = columns[i]
+	}
+
+	for i := range dimensionCount {
+		columns[metricCount+i] = new(string)
+		columnPtrs[metricCount+i] = columns[metricCount+i]
+	}
+
+	results := make([]report.Result, 0)
+
+	for rows.Next() {
+		if err := rows.Scan(columnPtrs...); err != nil {
+			return nil, err
+		}
+
+		result := report.Result{
+			MetricValues:    make([]any, metricCount),
+			DimensionValues: make([]string, dimensionCount),
+		}
+
+		for i := range metricCount {
+			result.MetricValues[i] = *columns[i].(*any)
+		}
+
+		for i := range dimensionCount {
+			result.DimensionValues[i] = *columns[metricCount+i].(*string)
+		}
+
+		results = append(results, result)
+	}
+
+	return results, rows.Err()
 }
