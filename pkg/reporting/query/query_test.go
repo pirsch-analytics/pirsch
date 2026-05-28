@@ -12,9 +12,8 @@ import (
 )
 
 func TestQueryFromSessions(t *testing.T) {
-	q := NewQuery(client)
-	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
@@ -45,9 +44,8 @@ func TestQueryFromSessions(t *testing.T) {
 }
 
 func TestQueryFromPageViews(t *testing.T) {
-	q := NewQuery(client)
-	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
@@ -77,9 +75,8 @@ func TestQueryFromPageViews(t *testing.T) {
 }
 
 func TestQueryFromEvents(t *testing.T) {
-	q := NewQuery(client)
-	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
@@ -109,9 +106,8 @@ func TestQueryFromEvents(t *testing.T) {
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
-	q := NewQuery(client)
-	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
@@ -175,17 +171,18 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	assert.Equal(t, from, args[5])
 	assert.Equal(t, to, args[6])
 	assert.Equal(t, []any{"/pricing", "/about"}, args[7])
-	assert.Equal(t, []any{"https://duckduckgo.com"}, args[8])
+	assert.Equal(t, "https://duckduckgo.com", args[8])
 	// TODO
 }
 
 func TestQueryFromPageViewsFiltered(t *testing.T) {
-	q := NewQuery(client)
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
-			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
-			To:       time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC),
+			From:     from,
+			To:       to,
 			Timezone: time.UTC,
 		},
 		Metrics: []metrics.Metric{
@@ -212,10 +209,9 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 	// TODO
 }
 
-func TestQueryFromAllFiltered(t *testing.T) {
-	q := NewQuery(client)
-	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+func TestQueryFromEventsFiltered(t *testing.T) {
+	createTestData(t)
+	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
@@ -260,5 +256,16 @@ func TestQueryFromAllFiltered(t *testing.T) {
 }
 
 func TestQueryTimeOnPage(t *testing.T) {
+	// TODO
+}
+
+func newQuery() (*Query, time.Time, time.Time) {
+	q := NewQuery(client)
+	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
+	return q, from, to
+}
+
+func createTestData(t *testing.T) {
 	// TODO
 }
