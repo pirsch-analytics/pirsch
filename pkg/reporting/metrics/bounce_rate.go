@@ -20,3 +20,8 @@ func (m BounceRate) Expression(_ string) string {
 	// TODO filters missing
 	return "sum(is_bounce*sign) / IF(uniq(visitor_id, session_id) = 0, 1, uniq(visitor_id, session_id))"
 }
+
+// ScanType implements the Metric interface.
+func (m BounceRate) ScanType() any {
+	return new(float64)
+}

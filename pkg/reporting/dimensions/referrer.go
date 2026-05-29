@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Referrer is a Dimension.
 type Referrer struct{}
@@ -18,4 +20,9 @@ func (d Referrer) Column() string {
 // Expression implements the Dimension interface.
 func (d Referrer) Expression() string {
 	return ""
+}
+
+// ScanType implements the Metric interface.
+func (d Referrer) ScanType() any {
+	return new(string)
 }

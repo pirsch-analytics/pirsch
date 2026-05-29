@@ -1,6 +1,10 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"time"
+
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Day is a Dimension.
 type Day struct{}
@@ -18,4 +22,9 @@ func (d Day) Column() string {
 // Expression implements the Dimension interface.
 func (d Day) Expression() string {
 	return `toDate("time")`
+}
+
+// ScanType implements the Metric interface.
+func (d Day) ScanType() any {
+	return new(time.Time)
 }

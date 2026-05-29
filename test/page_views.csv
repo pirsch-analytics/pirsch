@@ -1,0 +1,2 @@
+"site_id","visitor_id","session_id","time","duration_seconds","hostname","path","title","language","country_code","region","city","referrer","referrer_name","referrer_icon","os","os_version","browser","browser_version","desktop","mobile","screen_class","utm_source","utm_medium","utm_campaign","utm_content","utm_term","tags","channel"
+1,1,1,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,10,Chrome,142,1,0,Full HD,DuckDuckGo,Search,Paid,Main,privacy+analytics,"{""ab-test"": ""2,5""}",Organic Search

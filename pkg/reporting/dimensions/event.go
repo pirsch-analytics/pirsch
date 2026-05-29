@@ -19,3 +19,8 @@ func (d Event) Column() string {
 func (d Event) Expression() string {
 	return ""
 }
+
+// ScanType implements the Metric interface.
+func (d Event) ScanType() any {
+	return new(string)
+}

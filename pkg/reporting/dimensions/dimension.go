@@ -11,6 +11,9 @@ type Dimension interface {
 	// Expression returns the SQL expression for aggregation.
 	// If empty, the Column name will be used instead.
 	Expression() string
+
+	// ScanType returns a pointer to the type the value for this Dimension scans into.
+	ScanType() any
 }
 
 // TODO

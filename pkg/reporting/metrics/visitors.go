@@ -19,3 +19,8 @@ func (m Visitors) Column() string {
 func (m Visitors) Expression(_ string) string {
 	return "uniq(visitor_id)"
 }
+
+// ScanType implements the Metric interface.
+func (m Visitors) ScanType() any {
+	return new(uint64)
+}

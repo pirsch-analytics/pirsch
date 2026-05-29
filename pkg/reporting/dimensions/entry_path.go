@@ -19,3 +19,8 @@ func (d EntryPath) Column() string {
 func (d EntryPath) Expression() string {
 	return ""
 }
+
+// ScanType implements the Metric interface.
+func (d EntryPath) ScanType() any {
+	return new(string)
+}

@@ -1,10 +1,15 @@
 package query
 
 import (
+	"context"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/gocarina/gocsv"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
@@ -21,12 +26,12 @@ func TestQueryFromSessions(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
 			metrics.BounceRate{},
-		},
-		Dimensions: []dimensions.Dimension{
-			dimensions.Day{},
 		},
 	}
 	r := q.Run(req)
@@ -40,7 +45,10 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	// TODO
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[1])
 }
 
 func TestQueryFromPageViews(t *testing.T) {
@@ -53,11 +61,11 @@ func TestQueryFromPageViews(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
-		Metrics: []metrics.Metric{
-			metrics.PageViews{},
-		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.PageViews{},
 		},
 	}
 	r := q.Run(req)
@@ -84,11 +92,11 @@ func TestQueryFromEvents(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
-		Metrics: []metrics.Metric{
-			metrics.Visitors{},
-		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Event{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
 		},
 	}
 	r := q.Run(req)
@@ -115,11 +123,11 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
-		Metrics: []metrics.Metric{
-			metrics.Visitors{},
-		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
 		},
 		Filter: []request.Filter{
 			{
@@ -185,11 +193,11 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
-		Metrics: []metrics.Metric{
-			metrics.PageViews{},
-		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.PageViews{},
 		},
 		Filter: []request.Filter{
 			{
@@ -219,11 +227,11 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 			To:       to,
 			Timezone: time.UTC,
 		},
-		Metrics: []metrics.Metric{
-			metrics.Entries{},
-		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.EntryPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Entries{},
 		},
 		Filter: []request.Filter{
 			{
@@ -267,5 +275,26 @@ func newQuery() (*Query, time.Time, time.Time) {
 }
 
 func createTestData(t *testing.T) {
-	// TODO
+	db.CleanupDB(t, client)
+
+	// load and store sessions
+	sessionsFile, err := os.ReadFile("../../../test/sessions.csv")
+	assert.NoError(t, err)
+	var sessions []model.Session
+	assert.NoError(t, gocsv.UnmarshalBytes(sessionsFile, &sessions))
+	assert.NoError(t, client.SaveSessions(context.Background(), sessions))
+
+	// load and store page views
+	pageViewsFile, err := os.ReadFile("../../../test/page_views.csv")
+	assert.NoError(t, err)
+	var pageViews []model.PageView
+	assert.NoError(t, gocsv.UnmarshalBytes(pageViewsFile, &pageViews))
+	assert.NoError(t, client.SavePageViews(context.Background(), pageViews))
+
+	// load and store events
+	eventsFile, err := os.ReadFile("../../../test/events.csv")
+	assert.NoError(t, err)
+	var events []model.Event
+	assert.NoError(t, gocsv.UnmarshalBytes(eventsFile, &events))
+	assert.NoError(t, client.SaveEvents(context.Background(), events))
 }

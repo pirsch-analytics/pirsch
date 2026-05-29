@@ -19,3 +19,8 @@ func (m Entries) Column() string {
 func (m Entries) Expression(_ string) string {
 	return "sum(sign)"
 }
+
+// ScanType implements the Metric interface.
+func (m Entries) ScanType() any {
+	return new(uint64)
+}

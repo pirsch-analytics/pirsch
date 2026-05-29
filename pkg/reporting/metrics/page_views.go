@@ -23,3 +23,8 @@ func (m PageViews) Expression(table string) string {
 
 	return "count(*)"
 }
+
+// ScanType implements the Metric interface.
+func (m PageViews) ScanType() any {
+	return new(uint64)
+}

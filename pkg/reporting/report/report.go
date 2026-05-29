@@ -19,7 +19,7 @@ type Report struct {
 // Result is a result row.
 type Result struct {
 	// DimensionValues is the ordered list of values of dimensions as in the Request.
-	DimensionValues []string
+	DimensionValues []any
 
 	// MetricValues is the ordered list of result values as in the Request.
 	// These can be strings, int, or float.

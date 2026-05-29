@@ -10,4 +10,7 @@ type Metric interface {
 
 	// Expression returns the SQL expression for aggregation for the given table.
 	Expression(string) string
+
+	// ScanType returns a pointer to the type the value for this Metric scans into.
+	ScanType() any
 }

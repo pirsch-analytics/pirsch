@@ -3,6 +3,7 @@ package query
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -505,12 +506,12 @@ func (q *Query) scanRows(rows driver.Rows, req request.Request) ([]report.Result
 	columnPtrs := make([]any, columnCount)
 
 	for i := range metricCount {
-		columns[i] = new(any)
+		columns[i] = req.Metrics[i].ScanType()
 		columnPtrs[i] = columns[i]
 	}
 
 	for i := range dimensionCount {
-		columns[metricCount+i] = new(string)
+		columns[metricCount+i] = req.Dimensions[i].ScanType()
 		columnPtrs[metricCount+i] = columns[metricCount+i]
 	}
 
@@ -523,15 +524,15 @@ func (q *Query) scanRows(rows driver.Rows, req request.Request) ([]report.Result
 
 		result := report.Result{
 			MetricValues:    make([]any, metricCount),
-			DimensionValues: make([]string, dimensionCount),
+			DimensionValues: make([]any, dimensionCount),
 		}
 
 		for i := range metricCount {
-			result.MetricValues[i] = *columns[i].(*any)
+			result.MetricValues[i] = reflect.ValueOf(columnPtrs[i]).Elem().Interface()
 		}
 
 		for i := range dimensionCount {
-			result.DimensionValues[i] = *columns[metricCount+i].(*string)
+			result.DimensionValues[i] = reflect.ValueOf(columnPtrs[metricCount+i]).Elem().Interface()
 		}
 
 		results = append(results, result)
