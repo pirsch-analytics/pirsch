@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ import (
 )
 
 func TestQueryFromSessions(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -47,12 +48,12 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.Equal(t, to, args[2])
 	assert.Len(t, r.Results, 1)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
-	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
-	assert.Equal(t, float64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
 }
 
 func TestQueryFromPageViews(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -83,7 +84,7 @@ func TestQueryFromPageViews(t *testing.T) {
 }
 
 func TestQueryFromEvents(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -114,7 +115,7 @@ func TestQueryFromEvents(t *testing.T) {
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -184,7 +185,7 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 }
 
 func TestQueryFromPageViewsFiltered(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -218,7 +219,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 }
 
 func TestQueryFromEventsFiltered(t *testing.T) {
-	createTestData(t)
+	loadTestData(t)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -274,7 +275,17 @@ func newQuery() (*Query, time.Time, time.Time) {
 	return q, from, to
 }
 
-func createTestData(t *testing.T) {
+type pageViewData struct {
+	model.PageView
+	Tags string `csv:"tags"`
+}
+
+type eventData struct {
+	model.Event
+	MetaData string `csv:"meta_data"`
+}
+
+func loadTestData(t *testing.T) {
 	db.CleanupDB(t, client)
 
 	// load and store sessions
@@ -287,14 +298,46 @@ func createTestData(t *testing.T) {
 	// load and store page views
 	pageViewsFile, err := os.ReadFile("../../../test/page_views.csv")
 	assert.NoError(t, err)
-	var pageViews []model.PageView
-	assert.NoError(t, gocsv.UnmarshalBytes(pageViewsFile, &pageViews))
+	var pageViewData []pageViewData
+	assert.NoError(t, gocsv.UnmarshalBytes(pageViewsFile, &pageViewData))
+	pageViews := make([]model.PageView, len(pageViewData))
+
+	for i, pv := range pageViewData {
+		pageViews[i] = pv.PageView
+
+		if pv.Tags != "" {
+			var tags map[string]string
+
+			if err := json.Unmarshal([]byte(pv.Tags), &tags); err != nil {
+				t.Fatal(err)
+			}
+
+			pageViews[i].Tags = tags
+		}
+	}
+
 	assert.NoError(t, client.SavePageViews(context.Background(), pageViews))
 
 	// load and store events
 	eventsFile, err := os.ReadFile("../../../test/events.csv")
 	assert.NoError(t, err)
-	var events []model.Event
-	assert.NoError(t, gocsv.UnmarshalBytes(eventsFile, &events))
+	var eventData []eventData
+	assert.NoError(t, gocsv.UnmarshalBytes(eventsFile, &eventData))
+	events := make([]model.Event, len(eventData))
+
+	for i, e := range eventData {
+		events[i] = e.Event
+
+		if e.MetaData != "" {
+			var metaData map[string]any
+
+			if err := json.Unmarshal([]byte(e.MetaData), &metaData); err != nil {
+				t.Fatal(err)
+			}
+
+			events[i].MetaData = metaData
+		}
+	}
+
 	assert.NoError(t, client.SaveEvents(context.Background(), events))
 }

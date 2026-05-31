@@ -1,2 +1,4 @@
 "site_id","visitor_id","session_id","time","duration_seconds","hostname","path","title","language","country_code","region","city","referrer","referrer_name","referrer_icon","os","os_version","browser","browser_version","desktop","mobile","screen_class","utm_source","utm_medium","utm_campaign","utm_content","utm_term","tags","channel"
 1,1,1,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,10,Chrome,142,1,0,Full HD,DuckDuckGo,Search,Paid,Main,privacy+analytics,"{""ab-test"": ""2,5""}",Organic Search
+1,2,2,2026-01-01T08:00:00Z,0,example.com,/,Home,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search
+1,2,2,2026-01-01T08:05:00Z,300,example.com,/pricing,Pricing,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search

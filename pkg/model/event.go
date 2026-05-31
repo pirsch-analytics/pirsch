@@ -9,7 +9,7 @@ type Event struct {
 	Data
 
 	Name     string         `json:"name" csv:"name"`
-	MetaData map[string]any `db:"meta_data" json:"meta_data" csv:"-"` // TODO csv
+	MetaData map[string]any `db:"meta_data" json:"meta_data" csv:"-"`
 	Path     string         `json:"path" csv:"path"`
 	Title    string         `json:"title" csv:"title"`
 }
