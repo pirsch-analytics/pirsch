@@ -353,6 +353,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	args = append(args, whereArgs...)
 	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
 	query.WriteString(q.buildOrderBy(req.OrderBy))
+	query.WriteString(q.buildPagination(req.Pagination))
 	return query.String(), args
 }
 
@@ -518,6 +519,18 @@ func (q *Query) buildOrderBy(order []request.OrderBy) string {
 		}
 
 		return fmt.Sprintf("ORDER BY %s ", strings.Join(fields, ","))
+	}
+
+	return ""
+}
+
+func (q *Query) buildPagination(pagination *request.Pagination) string {
+	if pagination != nil && pagination.Limit > 0 {
+		if pagination.Offset > 0 {
+			return fmt.Sprintf("LIMIT %d, %d", pagination.Offset, pagination.Limit)
+		}
+
+		return fmt.Sprintf("LIMIT %d", pagination.Limit)
 	}
 
 	return ""

@@ -19,7 +19,13 @@ import (
 )
 
 func TestQueryFromSessions(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -63,7 +69,13 @@ func TestQueryFromSessions(t *testing.T) {
 }
 
 func TestQueryFromPageViews(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -115,7 +127,13 @@ func TestQueryFromPageViews(t *testing.T) {
 }
 
 func TestQueryFromEvents(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -156,7 +174,13 @@ func TestQueryFromEvents(t *testing.T) {
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -240,7 +264,13 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 }
 
 func TestQueryFromPageViewsFiltered(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -284,7 +314,13 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 }
 
 func TestQueryFromEventsFiltered(t *testing.T) {
-	loadTestData(t, nil)
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -341,6 +377,107 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 
 func TestQueryTimeOnPage(t *testing.T) {
 	// TODO
+}
+
+func TestQueryLimit(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.BounceRate{},
+		},
+		Pagination: &request.Pagination{
+			Limit: 1,
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
+}
+
+func TestQueryOffsetLimit(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.BounceRate{},
+		},
+		Pagination: &request.Pagination{
+			Offset: 1,
+			Limit:  1,
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, from.Add(time.Hour*24), r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[1], 0.001)
 }
 
 func newQuery() (*Query, time.Time, time.Time) {
