@@ -3,3 +3,8 @@
 1,1,1,2,2,2026-01-01T08:00:00Z,2026-01-01T08:00:00Z,0,example.com,Home,Home,1,/,/,1,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,Organic Search,0
 -1,1,1,2,2,2026-01-01T08:00:00Z,2026-01-01T08:00:00Z,0,example.com,Home,Home,1,/,/,1,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,Organic Search,0
 1,1,1,2,2,2026-01-01T08:05:00Z,2026-01-01T08:00:00Z,300,example.com,Home,Pricing,0,/,/pricing,2,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,Organic Search,0
+1,1,1,3,3,2026-01-02T09:25:00Z,2026-01-02T09:25:00Z,0,example.com,Landing,Landing,1,/landing,/landing,1,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",0
+-1,1,1,3,3,2026-01-02T09:25:00Z,2026-01-02T09:25:00Z,0,example.com,Landing,Landing,1,/landing,/landing,1,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",0
+1,1,1,3,3,2026-01-02T09:25:30Z,2026-01-02T09:25:00Z,30,example.com,Landing,Landing,0,/landing,/landing,1,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",0
+-1,1,1,3,3,2026-01-02T09:25:30Z,2026-01-02T09:25:00Z,30,example.com,Landing,Landing,0,/landing,/landing,1,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",0
+1,1,1,3,3,2026-01-02T09:27:00Z,2026-01-02T09:25:00Z,120,example.com,Landing,Pricing,0,/landing,/pricing,2,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",0

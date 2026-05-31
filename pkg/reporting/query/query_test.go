@@ -46,10 +46,13 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results, 2)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
+	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[1])
 }
 
 func TestQueryFromPageViews(t *testing.T) {
