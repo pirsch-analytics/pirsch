@@ -352,6 +352,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
 	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
+	query.WriteString(q.buildOrderBy(req.OrderBy))
 	return query.String(), args
 }
 
@@ -493,6 +494,30 @@ func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
 		}
 
 		return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
+	}
+
+	return ""
+}
+
+func (q *Query) buildOrderBy(order []request.OrderBy) string {
+	if len(order) > 0 {
+		fields := make([]string, 0, len(order))
+
+		for _, o := range order {
+			direction := o.Direction
+
+			if direction == "" {
+				direction = request.DirectionDESC
+			}
+
+			if o.Dimension != nil {
+				fields = append(fields, fmt.Sprintf("%s %s", o.Dimension.Column(), direction))
+			} else {
+				fields = append(fields, fmt.Sprintf("%s %s", o.Metric.Column(), direction))
+			}
+		}
+
+		return fmt.Sprintf("ORDER BY %s ", strings.Join(fields, ","))
 	}
 
 	return ""

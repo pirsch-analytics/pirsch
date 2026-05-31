@@ -1,6 +1,9 @@
-"site_id","visitor_id","session_id","time","duration_seconds","hostname","path","title","language","country_code","region","city","referrer","referrer_name","referrer_icon","os","os_version","browser","browser_version","desktop","mobile","screen_class","utm_source","utm_medium","utm_campaign","utm_content","utm_term","tags","channel"
-1,1,1,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,10,Chrome,142,1,0,Full HD,DuckDuckGo,Search,Paid,Main,privacy+analytics,"{""ab-test"": ""2,5""}",Organic Search
-1,2,2,2026-01-01T08:00:00Z,0,example.com,/,Home,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search
-1,2,2,2026-01-01T08:05:00Z,300,example.com,/pricing,Pricing,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search
-1,3,3,2026-01-02T09:25:00Z,0,example.com,/landing,Landing,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
-1,3,3,2026-01-02T09:27:00Z,120,example.com,/pricing,Pricing,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
+scenario,site_id,visitor_id,session_id,time,duration_seconds,hostname,path,title,language,country_code,region,city,referrer,referrer_name,referrer_icon,os,os_version,browser,browser_version,desktop,mobile,screen_class,utm_source,utm_medium,utm_campaign,utm_content,utm_term,tags,channel
+simple bounced + event (non-interactive),1,1,1,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,10,Chrome,142,1,0,Full HD,DuckDuckGo,Search,Paid,Main,privacy+analytics,"{""ab-test"": ""2,5""}",Organic Search
+simple,1,2,2,2026-01-01T08:00:00Z,0,example.com,/,Home,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search
+simple,1,2,2,2026-01-01T08:05:00Z,300,example.com,/pricing,Pricing,de,de,Bavaria,Munich,https://google.com,Google,,Mac,10.14,Firefox,123,1,0,UHD 4K,Google,Search,Paid,Main,privacy+friendly+analytics,"",Organic Search
+three page views + event,1,3,3,2026-01-02T09:25:00Z,0,example.com,/landing,Landing,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
+three page views + event,1,3,3,2026-01-02T09:27:00Z,120,example.com,/pricing,Pricing,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
+three page views + event,1,3,3,2026-01-02T09:28:00Z,60,example.com,/,Home,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
+referrer reset,1,4,4,2026-01-02T10:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""
+referrer reset,1,4,5,2026-01-02T10:10:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,0,1,Full HD,"","","","","","",""

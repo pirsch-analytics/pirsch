@@ -22,5 +22,5 @@ func (m Entries) Expression(_ string) string {
 
 // ScanType implements the Metric interface.
 func (m Entries) ScanType() any {
-	return new(uint64)
+	return new(int64)
 }

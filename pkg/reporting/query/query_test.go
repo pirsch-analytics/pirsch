@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 )
 
 func TestQueryFromSessions(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -35,28 +36,34 @@ func TestQueryFromSessions(t *testing.T) {
 			metrics.BounceRate{},
 		},
 	}
+
+	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
+
+	// result
 	assert.Len(t, r.Results, 2)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
-	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
-	assert.Equal(t, float64(0), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
+	assert.InDelta(t, 0.6666, r.Results[1].MetricValues[1], 0.001)
 }
 
 func TestQueryFromPageViews(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -71,23 +78,44 @@ func TestQueryFromPageViews(t *testing.T) {
 		Metrics: []metrics.Metric{
 			metrics.PageViews{},
 		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.PageViews{}},
+		},
 	}
+
+	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	// TODO
+
+	// result
+	assert.Len(t, r.Results, 3)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Len(t, r.Results[2].DimensionValues, 1)
+	assert.Len(t, r.Results[2].MetricValues, 1)
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+	assert.Equal(t, "/landing", r.Results[2].DimensionValues[0])
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
 }
 
 func TestQueryFromEvents(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -103,22 +131,32 @@ func TestQueryFromEvents(t *testing.T) {
 			metrics.Visitors{},
 		},
 	}
+
+	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableEvents, q.primaryTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	// TODO
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -144,7 +182,7 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 					{
 						Operator:  request.OperatorIs,
 						Dimension: dimensions.Path{},
-						Values:    []any{"/pricing", "/about"},
+						Values:    []any{"/pricing", "/landing"},
 					},
 					{
 						Operator:  request.OperatorIs,
@@ -155,6 +193,8 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 			},
 		},
 	}
+
+	// tables and filter
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
@@ -170,8 +210,10 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[1].Operator)
 	assert.Equal(t, dimensions.Path{}, q.subqueryFilter[0].filter.Filter[0].Dimension)
 	assert.Equal(t, dimensions.Referrer{}, q.subqueryFilter[0].filter.Filter[1].Dimension)
-	assert.Equal(t, []any{"/pricing", "/about"}, q.subqueryFilter[0].filter.Filter[0].Values)
+	assert.Equal(t, []any{"/pricing", "/landing"}, q.subqueryFilter[0].filter.Filter[0].Values)
 	assert.Equal(t, []any{"https://duckduckgo.com"}, q.subqueryFilter[0].filter.Filter[1].Values)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 9)
@@ -182,13 +224,23 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	assert.Equal(t, uint64(1), args[4])
 	assert.Equal(t, from, args[5])
 	assert.Equal(t, to, args[6])
-	assert.Equal(t, []any{"/pricing", "/about"}, args[7])
+	assert.Equal(t, []any{"/pricing", "/landing"}, args[7])
 	assert.Equal(t, "https://duckduckgo.com", args[8])
-	// TODO
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 }
 
 func TestQueryFromPageViewsFiltered(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -210,19 +262,29 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			},
 		},
 	}
+
+	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
 	assert.Len(t, q.primaryFilter, 1)
 	assert.Empty(t, q.subqueryFilter)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
-	// TODO
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[0])
 }
 
 func TestQueryFromEventsFiltered(t *testing.T) {
-	loadTestData(t)
+	loadTestData(t, nil)
 	q, from, to := newQuery()
 	req := request.Request{
 		SiteID: 1,
@@ -244,15 +306,19 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 			},
 			{
 				Dimension: dimensions.Event{},
-				Values:    []any{"CTA Clicked"},
+				Values:    []any{"Contact Button"},
 			},
 		},
 	}
+
+	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
 	assert.Len(t, q.primaryFilter, 1)
 	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 8)
@@ -263,8 +329,14 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	assert.Equal(t, uint64(1), args[4])
 	assert.Equal(t, from, args[5])
 	assert.Equal(t, to, args[6])
-	assert.Equal(t, "CTA Clicked", args[7])
-	// TODO
+	assert.Equal(t, "Contact Button", args[7])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, int64(1), r.Results[0].MetricValues[0])
 }
 
 func TestQueryTimeOnPage(t *testing.T) {
@@ -278,24 +350,39 @@ func newQuery() (*Query, time.Time, time.Time) {
 	return q, from, to
 }
 
+type sessionData struct {
+	model.Session
+	Scenario string `csv:"scenario"`
+}
+
 type pageViewData struct {
 	model.PageView
-	Tags string `csv:"tags"`
+	Scenario string `csv:"scenario"`
+	Tags     string `csv:"tags"`
 }
 
 type eventData struct {
 	model.Event
+	Scenario string `csv:"scenario"`
 	MetaData string `csv:"meta_data"`
 }
 
-func loadTestData(t *testing.T) {
+func loadTestData(t *testing.T, scenarios []string) {
 	db.CleanupDB(t, client)
 
 	// load and store sessions
 	sessionsFile, err := os.ReadFile("../../../test/sessions.csv")
 	assert.NoError(t, err)
-	var sessions []model.Session
-	assert.NoError(t, gocsv.UnmarshalBytes(sessionsFile, &sessions))
+	var sessionData []sessionData
+	assert.NoError(t, gocsv.UnmarshalBytes(sessionsFile, &sessionData))
+	sessions := make([]model.Session, len(sessionData))
+
+	for i, s := range sessionData {
+		if len(scenarios) == 0 || slices.Contains(scenarios, s.Scenario) {
+			sessions[i] = s.Session
+		}
+	}
+
 	assert.NoError(t, client.SaveSessions(context.Background(), sessions))
 
 	// load and store page views
@@ -306,16 +393,18 @@ func loadTestData(t *testing.T) {
 	pageViews := make([]model.PageView, len(pageViewData))
 
 	for i, pv := range pageViewData {
-		pageViews[i] = pv.PageView
+		if len(scenarios) == 0 || slices.Contains(scenarios, pv.Scenario) {
+			pageViews[i] = pv.PageView
 
-		if pv.Tags != "" {
-			var tags map[string]string
+			if pv.Tags != "" {
+				var tags map[string]string
 
-			if err := json.Unmarshal([]byte(pv.Tags), &tags); err != nil {
-				t.Fatal(err)
+				if err := json.Unmarshal([]byte(pv.Tags), &tags); err != nil {
+					t.Fatal(err)
+				}
+
+				pageViews[i].Tags = tags
 			}
-
-			pageViews[i].Tags = tags
 		}
 	}
 
@@ -329,16 +418,18 @@ func loadTestData(t *testing.T) {
 	events := make([]model.Event, len(eventData))
 
 	for i, e := range eventData {
-		events[i] = e.Event
+		if len(scenarios) == 0 || slices.Contains(scenarios, e.Scenario) {
+			events[i] = e.Event
 
-		if e.MetaData != "" {
-			var metaData map[string]any
+			if e.MetaData != "" {
+				var metaData map[string]any
 
-			if err := json.Unmarshal([]byte(e.MetaData), &metaData); err != nil {
-				t.Fatal(err)
+				if err := json.Unmarshal([]byte(e.MetaData), &metaData); err != nil {
+					t.Fatal(err)
+				}
+
+				events[i].MetaData = metaData
 			}
-
-			events[i].MetaData = metaData
 		}
 	}
 

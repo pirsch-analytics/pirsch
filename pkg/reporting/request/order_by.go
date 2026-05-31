@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	DirectionASC Direction = iota
-	DirectionDESC
+	DirectionASC  Direction = "ASC"
+	DirectionDESC Direction = "DESC"
 )
 
 // OrderBy is used to sort a Request.
@@ -23,4 +23,4 @@ type OrderBy struct {
 }
 
 // Direction is a direction to sort results.
-type Direction int
+type Direction string
