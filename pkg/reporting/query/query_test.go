@@ -379,6 +379,50 @@ func TestQueryTimeOnPage(t *testing.T) {
 	// TODO
 }
 
+func TestQueryTime(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, _, _ := newQuery()
+	from := time.Date(2026, time.January, 2, 9, 0, 0, 0, time.UTC)
+	to := time.Date(2026, time.January, 2, 9, 30, 0, 0, time.UTC)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+}
+
 func TestQueryLimit(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",

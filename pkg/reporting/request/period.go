@@ -25,6 +25,9 @@ type Period struct {
 	// WeekdayMode sets the start day of the week (WeekdayMonday or WeekdaySunday).
 	// WeekdayMonday by default.
 	WeekdayMode WeekdayMode
+
+	// IncludeTime determines whether the From and To times should be included.
+	IncludeTime bool
 }
 
 func (p *Period) validate() {

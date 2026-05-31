@@ -418,8 +418,32 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
-	// TODO time zone, compare dates, time, ...
-	return `WHERE site_id = ? AND toDate("time") BETWEEN toDate(?) AND toDate(?) `, []any{siteID, period.From, period.To}
+	tz := "UTC"
+
+	if period.Timezone != nil {
+		tz = period.Timezone.String()
+	}
+
+	dateFunc := "toDate"
+
+	if period.IncludeTime {
+		dateFunc = "toDateTime"
+	}
+
+	var query strings.Builder
+	args := make([]any, 0)
+	query.WriteString(`WHERE site_id = ? `)
+	args = append(args, siteID)
+
+	if period.From.Equal(period.To) {
+		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') = %s(?, '%s') `, dateFunc, tz, dateFunc, tz))
+		args = append(args, period.From)
+	} else {
+		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, tz, dateFunc, tz, dateFunc, tz))
+		args = append(args, period.From, period.To)
+	}
+
+	return query.String(), args
 }
 
 func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
