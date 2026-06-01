@@ -346,7 +346,9 @@ func (q *Query) allCompatible(tableSets [][]string, candidate string) bool {
 func (q *Query) buildQuery(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
-	query.WriteString(q.buildQuerySelect(req.Metrics, req.Dimensions))
+	selectQuery, selectArgs := q.buildQuerySelect(req)
+	query.WriteString(selectQuery)
+	args = append(args, selectArgs...)
 	query.WriteString(q.buildQuereFrom(q.primaryTable))
 	whereQuery, whereArgs := q.buildQueryWhere(req)
 	query.WriteString(whereQuery)
@@ -357,14 +359,23 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-func (q *Query) buildQuerySelect(metrics []metrics.Metric, dimensions []dimensions.Dimension) string {
-	fields := make([]string, 0, len(metrics)+len(dimensions))
+func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
+	fields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+	args := make([]any, 0)
 
-	for _, metric := range metrics {
-		fields = append(fields, fmt.Sprintf("%s %s", metric.Expression(q.primaryTable), metric.Column()))
+	for _, metric := range req.Metrics {
+		expression, requiresSubquery := metric.Expression(q.primaryTable)
+
+		if requiresSubquery {
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			expression = fmt.Sprintf(expression, subquery)
+			args = append(args, a...)
+		}
+
+		fields = append(fields, fmt.Sprintf("%s %s", expression, metric.Column()))
 	}
 
-	for _, dimension := range dimensions {
+	for _, dimension := range req.Dimensions {
 		if dimension.Expression() != "" {
 			fields = append(fields, fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column()))
 		} else {
@@ -372,7 +383,7 @@ func (q *Query) buildQuerySelect(metrics []metrics.Metric, dimensions []dimensio
 		}
 	}
 
-	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ","))
+	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
 }
 
 func (q *Query) buildQuereFrom(table string) string {

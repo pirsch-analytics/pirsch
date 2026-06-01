@@ -39,7 +39,11 @@ func TestQueryFromSessions(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.Sessions{},
+			metrics.Bounces{},
 			metrics.BounceRate{},
+			metrics.AvgSessionDuration{},
 		},
 	}
 
@@ -62,10 +66,18 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.Len(t, r.Results, 2)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
-	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.Equal(t, int64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[4])
+	assert.InDelta(t, 150, r.Results[0].MetricValues[5], 0.001)
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
-	assert.InDelta(t, 0.6666, r.Results[1].MetricValues[1], 0.001)
+	assert.Equal(t, uint64(5), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(3), r.Results[1].MetricValues[2])
+	assert.Equal(t, int64(2), r.Results[1].MetricValues[3])
+	assert.InDelta(t, 0.6666, r.Results[1].MetricValues[4], 0.001)
+	assert.InDelta(t, 60, r.Results[1].MetricValues[5], 0.001)
 }
 
 func TestQueryFromPageViews(t *testing.T) {
@@ -88,7 +100,14 @@ func TestQueryFromPageViews(t *testing.T) {
 			dimensions.Path{},
 		},
 		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.RelativeVisitors{},
 			metrics.PageViews{},
+			metrics.RelativeViews{},
+			metrics.Sessions{},
+			//metrics.Bounces{}, // TODO
+			//metrics.BounceRate{}, // TODO
+			//metrics.AvgTimeOnPage{}, // TODO
 		},
 		OrderBy: []request.OrderBy{
 			{Metric: metrics.PageViews{}},
@@ -105,25 +124,43 @@ func TestQueryFromPageViews(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 3)
+	assert.Len(t, args, 9)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, uint64(1), args[6])
+	assert.Equal(t, from, args[7])
+	assert.Equal(t, to, args[8])
 
 	// result
 	assert.Len(t, r.Results, 3)
 	assert.Len(t, r.Results[0].DimensionValues, 1)
-	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 5)
 	assert.Len(t, r.Results[1].DimensionValues, 1)
-	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 5)
 	assert.Len(t, r.Results[2].DimensionValues, 1)
-	assert.Len(t, r.Results[2].MetricValues, 1)
+	assert.Len(t, r.Results[2].MetricValues, 5)
 	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
 	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
 	assert.Equal(t, "/landing", r.Results[2].DimensionValues[0])
-	assert.Equal(t, uint64(5), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
+	assert.InDelta(t, 1, r.Results[0].MetricValues[1], 0.001)
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
+	assert.InDelta(t, 0.625, r.Results[0].MetricValues[3], 0.001)
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[4])
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
+	assert.InDelta(t, 0.5, r.Results[1].MetricValues[1], 0.001)
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[2])
+	assert.InDelta(t, 0.25, r.Results[1].MetricValues[3], 0.001)
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[4])
 	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
+	assert.InDelta(t, 0.25, r.Results[2].MetricValues[1], 0.001)
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[2])
+	assert.InDelta(t, 0.125, r.Results[2].MetricValues[3], 0.001)
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[4])
 }
 
 func TestQueryFromEvents(t *testing.T) {
@@ -147,6 +184,8 @@ func TestQueryFromEvents(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
+			metrics.Events{},
+			metrics.CR{},
 		},
 	}
 
@@ -160,17 +199,22 @@ func TestQueryFromEvents(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 3)
+	assert.Len(t, args, 6)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
 
 	// result
 	assert.Len(t, r.Results, 1)
 	assert.Len(t, r.Results[0].DimensionValues, 1)
-	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.5, r.Results[0].MetricValues[2], 0.001)
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {

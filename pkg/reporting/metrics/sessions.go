@@ -2,25 +2,25 @@ package metrics
 
 import "github.com/pirsch-analytics/pirsch/v7/pkg"
 
-// Visitors is a Metric.
-type Visitors struct{}
+// Sessions is a Metric.
+type Sessions struct{}
 
 // Table implements the Metric interface.
-func (m Visitors) Table() []string {
+func (m Sessions) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // Column implements the Metric interface.
-func (m Visitors) Column() string {
-	return "visitors"
+func (m Sessions) Column() string {
+	return "sessions"
 }
 
 // Expression implements the Metric interface.
-func (m Visitors) Expression(_ string) (string, bool) {
-	return "uniq(visitor_id)", false
+func (m Sessions) Expression(_ string) (string, bool) {
+	return "uniq(session_id)", false
 }
 
 // ScanType implements the Metric interface.
-func (m Visitors) ScanType() any {
+func (m Sessions) ScanType() any {
 	return new(uint64)
 }

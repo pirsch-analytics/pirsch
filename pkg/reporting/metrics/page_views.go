@@ -16,12 +16,12 @@ func (m PageViews) Column() string {
 }
 
 // Expression implements the Metric interface.
-func (m PageViews) Expression(table string) string {
+func (m PageViews) Expression(table string) (string, bool) {
 	if table == pkg.TableSessions {
-		return "sum(page_views)"
+		return "sum(page_views)", false
 	}
 
-	return "count(*)"
+	return "count(*)", false
 }
 
 // ScanType implements the Metric interface.

@@ -2,25 +2,25 @@ package metrics
 
 import "github.com/pirsch-analytics/pirsch/v7/pkg"
 
-// Entries is a Metric.
-type Entries struct{}
+// Bounces is a Metric.
+type Bounces struct{}
 
 // Table implements the Metric interface.
-func (m Entries) Table() []string {
+func (m Bounces) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
 // Column implements the Metric interface.
-func (m Entries) Column() string {
-	return "entries"
+func (m Bounces) Column() string {
+	return "bounces"
 }
 
 // Expression implements the Metric interface.
-func (m Entries) Expression(_ string) (string, bool) {
-	return "sum(sign)", false
+func (m Bounces) Expression(_ string) (string, bool) {
+	return "sum(is_bounce * sign)", false
 }
 
 // ScanType implements the Metric interface.
-func (m Entries) ScanType() any {
+func (m Bounces) ScanType() any {
 	return new(int64)
 }
