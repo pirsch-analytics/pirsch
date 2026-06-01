@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
@@ -31,6 +32,7 @@ type classifiedFilter struct {
 type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
+	joinTable      string
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
 }
@@ -55,6 +57,7 @@ func (q *Query) Run(req request.Request) report.Report {
 	}
 
 	q.resolvePrimaryTable(req)
+	q.resolveJoinTable(req)
 
 	for _, filter := range req.Filter {
 		if err := q.classifyFilter(filter); err != nil {
@@ -66,6 +69,84 @@ func (q *Query) Run(req request.Request) report.Report {
 		}
 	}
 
+	if q.joinTable != "" {
+		return q.runWithJoin(req)
+	}
+
+	return q.run(req)
+}
+
+func (q *Query) runWithJoin(req request.Request) report.Report {
+	requestMetrics := req.Metrics
+	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
+	req.Metrics = primaryMetrics
+	primaryQuery, primaryArgs := q.buildQuery(req)
+	req.Metrics = secondaryMetrics
+	req.OrderBy = nil
+	req.Pagination = nil
+	q.primaryTable = q.joinTable
+	secondaryQuery, secondaryArgs := q.buildQuery(req)
+	var wg sync.WaitGroup
+	var m sync.Mutex
+	var results, secondaryResults []report.Result
+	var err error
+	wg.Go(func() {
+		primaryRows, e := q.db.Query(req.Ctx, primaryQuery, primaryArgs...)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+			return
+		}
+
+		results, e = q.scanRows(primaryRows, req.Dimensions, primaryMetrics)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+		}
+	})
+	wg.Go(func() {
+		secondaryRows, e := q.db.Query(req.Ctx, secondaryQuery, secondaryArgs...)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+			return
+		}
+
+		secondaryResults, e = q.scanRows(secondaryRows, req.Dimensions, secondaryMetrics)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+		}
+	})
+	wg.Wait()
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error executing queries"),
+					err,
+				},
+			},
+		}
+	}
+
+	q.mergeResults(results, secondaryResults, requestMetrics, primaryMetrics)
+	return report.Report{
+		Request: req,
+		Results: results,
+	}
+}
+
+func (q *Query) run(req request.Request) report.Report {
 	query, args := q.buildQuery(req)
 	rows, err := q.db.Query(req.Ctx, query, args...)
 
@@ -80,7 +161,7 @@ func (q *Query) Run(req request.Request) report.Report {
 		}
 	}
 
-	results, err := q.scanRows(rows, req)
+	results, err := q.scanRows(rows, req.Dimensions, req.Metrics)
 
 	if err != nil {
 		return report.Report{
@@ -205,6 +286,102 @@ func (q *Query) metricTables(metrics []metrics.Metric) [][]string {
 	}
 
 	return tables
+}
+
+func (q *Query) resolveJoinTable(req request.Request) {
+	for _, m := range req.Metrics {
+		joinTable := m.JoinTable()
+
+		if joinTable != "" && joinTable != q.primaryTable {
+			q.joinTable = joinTable
+			return
+		}
+	}
+}
+
+func (q *Query) splitMetrics(requestMetrics []metrics.Metric) ([]metrics.Metric, []metrics.Metric) {
+	primary := make([]metrics.Metric, 0, len(requestMetrics))
+	secondary := make([]metrics.Metric, 0)
+
+	for _, m := range requestMetrics {
+		if m.JoinTable() == q.joinTable {
+			secondary = append(secondary, m)
+		} else {
+			primary = append(primary, m)
+		}
+	}
+
+	return primary, secondary
+}
+
+func (q *Query) mergeResults(primary []report.Result, secondary []report.Result, requestMetrics, primaryMetrics []metrics.Metric) {
+	totalCount := len(requestMetrics)
+	primaryPos := make(map[string]int, len(primaryMetrics))
+
+	for i, m := range primaryMetrics {
+		primaryPos[m.Column()] = i
+	}
+
+	secondaryIndices := 0
+	secondaryPos := make(map[string]int, totalCount-len(primaryMetrics))
+
+	for _, m := range requestMetrics {
+		if m.JoinTable() != "" {
+			secondaryPos[m.Column()] = secondaryIndices
+			secondaryIndices++
+		}
+	}
+
+	for i := range primary {
+		expanded := make([]any, totalCount)
+
+		for fullIdx, m := range requestMetrics {
+			if m.JoinTable() == "" {
+				if pos, ok := primaryPos[m.Column()]; ok && pos < len(primary[i].MetricValues) {
+					expanded[fullIdx] = primary[i].MetricValues[pos]
+				}
+			} else {
+				expanded[fullIdx] = m.Zero()
+			}
+		}
+
+		primary[i].MetricValues = expanded
+	}
+
+	index := make(map[string]int, len(primary))
+
+	for i, r := range primary {
+		index[q.dimensionKey(r.DimensionValues)] = i
+	}
+
+	for _, sec := range secondary {
+		primaryIndex, ok := index[q.dimensionKey(sec.DimensionValues)]
+
+		if !ok {
+			// secondary row has no matching primary row (can happen with pagination), skip
+			continue
+		}
+
+		for fullIndex, m := range requestMetrics {
+			if m.JoinTable() == "" {
+				continue
+			}
+
+			if pos, ok := secondaryPos[m.Column()]; ok && pos < len(sec.MetricValues) {
+				primary[primaryIndex].MetricValues[fullIndex] = sec.MetricValues[pos]
+			}
+		}
+	}
+}
+
+func (q *Query) dimensionKey(values []any) string {
+	parts := make([]string, len(values))
+
+	for i, v := range values {
+		parts[i] = fmt.Sprint(v)
+	}
+
+	return strings.Join(parts, "|")
 }
 
 func (q *Query) classifyFilter(filter request.Filter) error {
@@ -377,9 +554,9 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 
 	for _, dimension := range req.Dimensions {
 		if dimension.Expression() != "" {
-			fields = append(fields, fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column()))
+			fields = append(fields, fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable)))
 		} else {
-			fields = append(fields, dimension.Column())
+			fields = append(fields, dimension.Column(q.primaryTable))
 		}
 	}
 
@@ -467,40 +644,40 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("%s NOT IN (?)", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("%s NOT IN (?)", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("%s != ?", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("%s != ?", filter.Dimension.Column("")), filter.Values
 		case request.OperatorContains:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("%s ILIKE ?", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("%s ILIKE ?", filter.Dimension.Column("")), filter.Values
 		case request.OperatorContainsNot:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("%s NOT ILIKE ?", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("%s NOT ILIKE ?", filter.Dimension.Column("")), filter.Values
 		case request.OperatorMatches:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?)", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("multiMatchAny(%s, ?)", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("match(%s, ?)", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("match(%s, ?)", filter.Dimension.Column("")), filter.Values
 		case request.OperatorMatchesNot:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("match(%s, ?) = 0", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("match(%s, ?) = 0", filter.Dimension.Column("")), filter.Values
 		default:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("%s IN (?)", filter.Dimension.Column()), []any{filter.Values}
+				return fmt.Sprintf("%s IN (?)", filter.Dimension.Column("")), []any{filter.Values}
 			}
 
-			return fmt.Sprintf("%s = ?", filter.Dimension.Column()), filter.Values
+			return fmt.Sprintf("%s = ?", filter.Dimension.Column("")), filter.Values
 		}
 	}
 
@@ -526,7 +703,7 @@ func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
 		fields := make([]string, 0, len(dimensions))
 
 		for _, dimension := range dimensions {
-			fields = append(fields, dimension.Column())
+			fields = append(fields, dimension.Column(q.primaryTable))
 		}
 
 		return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
@@ -547,7 +724,7 @@ func (q *Query) buildOrderBy(order []request.OrderBy) string {
 			}
 
 			if o.Dimension != nil {
-				fields = append(fields, fmt.Sprintf("%s %s", o.Dimension.Column(), direction))
+				fields = append(fields, fmt.Sprintf("%s %s", o.Dimension.Column(q.primaryTable), direction))
 			} else {
 				fields = append(fields, fmt.Sprintf("%s %s", o.Metric.Column(), direction))
 			}
@@ -571,20 +748,20 @@ func (q *Query) buildPagination(pagination *request.Pagination) string {
 	return ""
 }
 
-func (q *Query) scanRows(rows driver.Rows, req request.Request) ([]report.Result, error) {
-	metricCount := len(req.Metrics)
-	dimensionCount := len(req.Dimensions)
+func (q *Query) scanRows(rows driver.Rows, dimensions []dimensions.Dimension, metrics []metrics.Metric) ([]report.Result, error) {
+	metricCount := len(metrics)
+	dimensionCount := len(dimensions)
 	columnCount := metricCount + dimensionCount
 	columns := make([]any, columnCount)
 	columnPtrs := make([]any, columnCount)
 
 	for i := range metricCount {
-		columns[i] = req.Metrics[i].ScanType()
+		columns[i] = metrics[i].ScanType()
 		columnPtrs[i] = columns[i]
 	}
 
 	for i := range dimensionCount {
-		columns[metricCount+i] = req.Dimensions[i].ScanType()
+		columns[metricCount+i] = dimensions[i].ScanType()
 		columnPtrs[metricCount+i] = columns[metricCount+i]
 	}
 

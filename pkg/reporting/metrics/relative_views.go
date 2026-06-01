@@ -7,7 +7,12 @@ type RelativeViews struct{}
 
 // Table implements the Metric interface.
 func (m RelativeViews) Table() []string {
-	return []string{pkg.TableSessions}
+	return []string{pkg.TableSessions, pkg.TablePageViews}
+}
+
+// JoinTable implements the Metric interface.
+func (m RelativeViews) JoinTable() string {
+	return ""
 }
 
 // Column implements the Metric interface.
@@ -23,4 +28,9 @@ func (m RelativeViews) Expression(_ string) (string, bool) {
 // ScanType implements the Metric interface.
 func (m RelativeViews) ScanType() any {
 	return new(float64)
+}
+
+// Zero implements the Metric interface.
+func (m RelativeViews) Zero() any {
+	return float64(0)
 }

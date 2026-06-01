@@ -15,7 +15,7 @@ func (d Hour) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Hour) Column() string {
+func (d Hour) Column(_ string) string {
 	return "hour"
 }
 

@@ -13,7 +13,7 @@ func (d Hostname) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Hostname) Column() string {
+func (d Hostname) Column(_ string) string {
 	return "hostname"
 }
 

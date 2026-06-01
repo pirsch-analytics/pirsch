@@ -11,7 +11,11 @@ func (d Path) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Path) Column() string {
+func (d Path) Column(table string) string {
+	if table == pkg.TableSessions {
+		return "entry_path"
+	}
+
 	return "path"
 }
 

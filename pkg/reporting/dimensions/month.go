@@ -15,7 +15,7 @@ func (d Month) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Month) Column() string {
+func (d Month) Column(_ string) string {
 	return "month"
 }
 

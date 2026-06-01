@@ -13,7 +13,7 @@ func (d ScreenClass) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d ScreenClass) Column() string {
+func (d ScreenClass) Column(_ string) string {
 	return "screen_class"
 }
 

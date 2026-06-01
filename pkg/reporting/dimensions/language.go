@@ -13,7 +13,7 @@ func (d Language) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Language) Column() string {
+func (d Language) Column(_ string) string {
 	return "language"
 }
 

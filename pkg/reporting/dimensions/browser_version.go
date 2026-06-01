@@ -13,7 +13,7 @@ func (d BrowserVersion) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d BrowserVersion) Column() string {
+func (d BrowserVersion) Column(_ string) string {
 	return "browser_version"
 }
 

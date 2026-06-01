@@ -10,6 +10,11 @@ func (m EntryRate) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// JoinTable implements the Metric interface.
+func (m EntryRate) JoinTable() string {
+	return pkg.TableSessions
+}
+
 // Column implements the Metric interface.
 func (m EntryRate) Column() string {
 	return "entry_rate"
@@ -23,4 +28,9 @@ func (m EntryRate) Expression(_ string) (string, bool) {
 // ScanType implements the Metric interface.
 func (m EntryRate) ScanType() any {
 	return new(float64)
+}
+
+// Zero implements the Metric interface.
+func (m EntryRate) Zero() any {
+	return float64(0)
 }

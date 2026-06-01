@@ -13,7 +13,7 @@ func (d OSVersion) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d OSVersion) Column() string {
+func (d OSVersion) Column(_ string) string {
 	return "os_version"
 }
 

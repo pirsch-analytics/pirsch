@@ -11,7 +11,7 @@ func (d Event) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Event) Column() string {
+func (d Event) Column(_ string) string {
 	return "name"
 }
 

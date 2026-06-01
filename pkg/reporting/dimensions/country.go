@@ -13,7 +13,7 @@ func (d Country) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Country) Column() string {
+func (d Country) Column(_ string) string {
 	return "country_code"
 }
 

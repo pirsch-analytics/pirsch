@@ -5,8 +5,9 @@ type Dimension interface {
 	// Table returns the valid database tables for the Dimension.
 	Table() []string
 
-	// Column returns the database column name for the Dimension.
-	Column() string
+	// Column returns the database column name for the given table for the Dimension.
+	// This also handles "joins" by potentially returning an entirely different column (like entry_path instead of path for bounces).
+	Column(string) string
 
 	// Expression returns the SQL expression for aggregation.
 	// If empty, the Column name will be used instead.

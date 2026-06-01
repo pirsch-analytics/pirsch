@@ -13,7 +13,7 @@ func (d Region) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Region) Column() string {
+func (d Region) Column(_ string) string {
 	return "region"
 }
 

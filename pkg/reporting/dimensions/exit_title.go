@@ -13,7 +13,7 @@ func (d ExitTitle) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d ExitTitle) Column() string {
+func (d ExitTitle) Column(_ string) string {
 	return "exit_title"
 }
 

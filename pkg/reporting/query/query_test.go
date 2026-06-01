@@ -105,8 +105,8 @@ func TestQueryFromPageViews(t *testing.T) {
 			metrics.PageViews{},
 			metrics.RelativeViews{},
 			metrics.Sessions{},
-			//metrics.Bounces{},
-			//metrics.BounceRate{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
 			//metrics.AvgTimeOnPage{}, // TODO
 		},
 		OrderBy: []request.OrderBy{
@@ -117,7 +117,8 @@ func TestQueryFromPageViews(t *testing.T) {
 	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
-	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable) // overwritten for subquery
+	assert.Equal(t, pkg.TableSessions, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Empty(t, q.subqueryFilter)
 
@@ -138,29 +139,43 @@ func TestQueryFromPageViews(t *testing.T) {
 	// result
 	assert.Len(t, r.Results, 3)
 	assert.Len(t, r.Results[0].DimensionValues, 1)
-	assert.Len(t, r.Results[0].MetricValues, 5)
+	assert.Len(t, r.Results[0].MetricValues, 7)
 	assert.Len(t, r.Results[1].DimensionValues, 1)
-	assert.Len(t, r.Results[1].MetricValues, 5)
+	assert.Len(t, r.Results[1].MetricValues, 7)
 	assert.Len(t, r.Results[2].DimensionValues, 1)
-	assert.Len(t, r.Results[2].MetricValues, 5)
+	assert.Len(t, r.Results[2].MetricValues, 7)
+
+	// result dimensions
 	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
 	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
 	assert.Equal(t, "/landing", r.Results[2].DimensionValues[0])
+
+	// result metrics row 0
 	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
 	assert.InDelta(t, 1, r.Results[0].MetricValues[1], 0.001)
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
 	assert.InDelta(t, 0.625, r.Results[0].MetricValues[3], 0.001)
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[4])
+	assert.Equal(t, int64(3), r.Results[0].MetricValues[5])
+	assert.InDelta(t, 0.75, r.Results[0].MetricValues[6], 0.001)
+
+	// result metrics row 1
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
 	assert.InDelta(t, 0.5, r.Results[1].MetricValues[1], 0.001)
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[2])
 	assert.InDelta(t, 0.25, r.Results[1].MetricValues[3], 0.001)
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[4])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[5])
+	assert.InDelta(t, 0, r.Results[1].MetricValues[6], 0.001)
+
+	// result metrics row 2
 	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
 	assert.InDelta(t, 0.25, r.Results[2].MetricValues[1], 0.001)
 	assert.Equal(t, uint64(1), r.Results[2].MetricValues[2])
 	assert.InDelta(t, 0.125, r.Results[2].MetricValues[3], 0.001)
 	assert.Equal(t, uint64(1), r.Results[2].MetricValues[4])
+	assert.Equal(t, int64(0), r.Results[2].MetricValues[5])
+	assert.InDelta(t, 0, r.Results[2].MetricValues[6], 0.001)
 }
 
 func TestQueryFromEvents(t *testing.T) {

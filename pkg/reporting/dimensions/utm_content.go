@@ -13,7 +13,7 @@ func (d UTMContent) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d UTMContent) Column() string {
+func (d UTMContent) Column(_ string) string {
 	return "utm_content"
 }
 

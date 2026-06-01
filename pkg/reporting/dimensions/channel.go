@@ -13,7 +13,7 @@ func (d Channel) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Channel) Column() string {
+func (d Channel) Column(_ string) string {
 	return "channel"
 }
 

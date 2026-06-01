@@ -13,7 +13,7 @@ func (d UTMMedium) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d UTMMedium) Column() string {
+func (d UTMMedium) Column(_ string) string {
 	return "utm_medium"
 }
 

@@ -5,6 +5,9 @@ type Metric interface {
 	// Table returns the valid database tables for the Dimension.
 	Table() []string
 
+	// JoinTable returns the secondary tables to query if the Metric cannot be calculated from the primary table.
+	JoinTable() string
+
 	// Column returns the database column name for the Metric.
 	Column() string
 
@@ -14,4 +17,7 @@ type Metric interface {
 
 	// ScanType returns a pointer to the type the value for this Metric scans into.
 	ScanType() any
+
+	// Zero returns the zero value for this metric.
+	Zero() any
 }

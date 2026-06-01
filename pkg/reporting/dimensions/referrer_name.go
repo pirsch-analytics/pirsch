@@ -13,7 +13,7 @@ func (d ReferrerName) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d ReferrerName) Column() string {
+func (d ReferrerName) Column(_ string) string {
 	return "referrer_name"
 }
 

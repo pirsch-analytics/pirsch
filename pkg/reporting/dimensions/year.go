@@ -15,7 +15,7 @@ func (d Year) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Year) Column() string {
+func (d Year) Column(_ string) string {
 	return "year"
 }
 

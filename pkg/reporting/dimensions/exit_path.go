@@ -11,7 +11,7 @@ func (d ExitPath) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d ExitPath) Column() string {
+func (d ExitPath) Column(_ string) string {
 	return "exit_path"
 }
 

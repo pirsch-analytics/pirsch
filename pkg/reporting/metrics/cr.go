@@ -12,6 +12,11 @@ func (m CR) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// JoinTable implements the Metric interface.
+func (m CR) JoinTable() string {
+	return pkg.TableSessions
+}
+
 // Column implements the Metric interface.
 func (m CR) Column() string {
 	return "cr"
@@ -25,4 +30,9 @@ func (m CR) Expression(_ string) (string, bool) {
 // ScanType implements the Metric interface.
 func (m CR) ScanType() any {
 	return new(float64)
+}
+
+// Zero implements the Metric interface.
+func (m CR) Zero() any {
+	return float64(0)
 }

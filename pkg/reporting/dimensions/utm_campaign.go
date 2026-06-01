@@ -13,7 +13,7 @@ func (d UTMCampaign) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d UTMCampaign) Column() string {
+func (d UTMCampaign) Column(_ string) string {
 	return "utm_campaign"
 }
 

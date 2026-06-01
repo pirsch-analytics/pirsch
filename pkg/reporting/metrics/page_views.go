@@ -10,6 +10,11 @@ func (m PageViews) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews}
 }
 
+// JoinTable implements the Metric interface.
+func (m PageViews) JoinTable() string {
+	return ""
+}
+
 // Column implements the Metric interface.
 func (m PageViews) Column() string {
 	return "page_views"
@@ -27,4 +32,9 @@ func (m PageViews) Expression(table string) (string, bool) {
 // ScanType implements the Metric interface.
 func (m PageViews) ScanType() any {
 	return new(uint64)
+}
+
+// Zero implements the Metric interface.
+func (m PageViews) Zero() any {
+	return uint64(0)
 }

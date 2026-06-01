@@ -13,7 +13,7 @@ func (d EntryTitle) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d EntryTitle) Column() string {
+func (d EntryTitle) Column(_ string) string {
 	return "entry_title"
 }
 

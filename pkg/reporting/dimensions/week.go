@@ -15,7 +15,7 @@ func (d Week) Table() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Week) Column() string {
+func (d Week) Column(_ string) string {
 	return "week"
 }
 
