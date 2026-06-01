@@ -105,8 +105,8 @@ func TestQueryFromPageViews(t *testing.T) {
 			metrics.PageViews{},
 			metrics.RelativeViews{},
 			metrics.Sessions{},
-			//metrics.Bounces{}, // TODO
-			//metrics.BounceRate{}, // TODO
+			//metrics.Bounces{},
+			//metrics.BounceRate{},
 			//metrics.AvgTimeOnPage{}, // TODO
 		},
 		OrderBy: []request.OrderBy{
@@ -496,6 +496,7 @@ func TestQueryLimit(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
+			metrics.Bounces{},
 			metrics.BounceRate{},
 		},
 		Pagination: &request.Pagination{
@@ -522,7 +523,8 @@ func TestQueryLimit(t *testing.T) {
 	assert.Len(t, r.Results, 1)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
-	assert.Equal(t, 0.5, r.Results[0].MetricValues[1])
+	assert.Equal(t, int64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
 }
 
 func TestQueryOffsetLimit(t *testing.T) {
@@ -546,6 +548,7 @@ func TestQueryOffsetLimit(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
+			metrics.Bounces{},
 			metrics.BounceRate{},
 		},
 		Pagination: &request.Pagination{
@@ -573,7 +576,8 @@ func TestQueryOffsetLimit(t *testing.T) {
 	assert.Len(t, r.Results, 1)
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
-	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[1], 0.001)
+	assert.Equal(t, int64(2), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[2], 0.001)
 }
 
 func newQuery() (*Query, time.Time, time.Time) {
