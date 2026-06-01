@@ -17,7 +17,7 @@ func (m Events) Column() string {
 
 // Expression implements the Metric interface.
 func (m Events) Expression(_ string) (string, bool) {
-	return "sum(1)", false
+	return "count(*)", false
 }
 
 // ScanType implements the Metric interface.
