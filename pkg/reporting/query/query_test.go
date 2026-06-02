@@ -62,15 +62,19 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 
-	// result
+	// result dimensions
 	assert.Len(t, r.Results, 2)
 	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+
+	// result metrics row 0
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
 	assert.Equal(t, int64(1), r.Results[0].MetricValues[3])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[4])
 	assert.InDelta(t, 150, r.Results[0].MetricValues[5], 0.001)
+
+	// result metrics row 1
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(5), r.Results[1].MetricValues[1])

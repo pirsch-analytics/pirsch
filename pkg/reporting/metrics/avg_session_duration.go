@@ -7,12 +7,12 @@ type AvgSessionDuration struct{}
 
 // Table implements the Metric interface.
 func (m AvgSessionDuration) Table() []string {
-	return []string{pkg.TablePageViews}
+	return []string{pkg.TableSessions}
 }
 
 // JoinTable implements the Metric interface.
 func (m AvgSessionDuration) JoinTable() string {
-	return pkg.TablePageViews
+	return pkg.TableSessions
 }
 
 // Column implements the Metric interface.

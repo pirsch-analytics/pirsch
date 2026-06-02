@@ -9,12 +9,12 @@ type CR struct{}
 
 // Table implements the Metric interface.
 func (m CR) Table() []string {
-	return []string{pkg.TableSessions}
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // JoinTable implements the Metric interface.
 func (m CR) JoinTable() string {
-	return pkg.TableSessions
+	return ""
 }
 
 // Column implements the Metric interface.
