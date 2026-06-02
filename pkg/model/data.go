@@ -23,8 +23,7 @@ type Data struct {
 	OSVersion      string    `db:"os_version" json:"os_version" csv:"os_version"`
 	Browser        string    `json:"browser" csv:"browser"`
 	BrowserVersion string    `db:"browser_version" json:"browser_version" csv:"browser_version"`
-	Desktop        bool      `json:"desktop" csv:"desktop"`
-	Mobile         bool      `json:"mobile" csv:"mobile"`
+	Platform       int8      `json:"platform" csv:"platform"`
 	ScreenClass    string    `db:"screen_class" json:"screen_class" csv:"screen_class"`
 	UTMSource      string    `db:"utm_source" json:"utm_source" csv:"utm_source"`
 	UTMMedium      string    `db:"utm_medium" json:"utm_medium" csv:"utm_medium"`

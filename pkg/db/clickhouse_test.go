@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/_pkg/util"
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,8 +47,7 @@ func TestClient_SaveSessions(t *testing.T) {
 				CountryCode:    "en",
 				Region:         "England",
 				City:           "London",
-				Desktop:        true,
-				Mobile:         false,
+				Platform:       pkg.PlatformDesktop,
 				ScreenClass:    "XL",
 				UTMCampaign:    "Campaign",
 				UTMMedium:      "Medium",
@@ -155,8 +155,7 @@ func TestClient_SavePageViews(t *testing.T) {
 				CountryCode:    "en",
 				Region:         "England",
 				City:           "London",
-				Desktop:        true,
-				Mobile:         false,
+				Platform:       pkg.PlatformDesktop,
 				ScreenClass:    "XL",
 				UTMCampaign:    "Campaign",
 				UTMMedium:      "Medium",
@@ -203,8 +202,7 @@ func TestClient_SaveEvents(t *testing.T) {
 				CountryCode:    "en",
 				Region:         "England",
 				City:           "London",
-				Desktop:        true,
-				Mobile:         false,
+				Platform:       pkg.PlatformMobile,
 				ScreenClass:    "XL",
 				UTMCampaign:    "Campaign",
 				UTMMedium:      "Medium",

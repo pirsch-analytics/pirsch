@@ -57,3 +57,11 @@ const (
 	// TableEvents is the events table name.
 	TableEvents = "event_v7"
 )
+
+const (
+	// PlatformDesktop is the platform for a desktop device.
+	PlatformDesktop = int8(iota)
+
+	// PlatformMobile is the platform for a mobile device.
+	PlatformMobile
+)

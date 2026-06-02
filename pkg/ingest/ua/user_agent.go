@@ -40,8 +40,15 @@ func (ua *UserAgent) Step(request *ingest.Request) (bool, error) {
 	request.BrowserRevision = i.browserRevision
 	request.OS = util.Shorten(i.os, 20)
 	request.OSVersion = util.Shorten(i.osVersion, 20)
-	request.Desktop = i.isDesktop()
-	request.Mobile = i.isMobile()
+
+	if i.isDesktop() {
+		request.Platform = pkg.PlatformDesktop
+	}
+
+	if i.isMobile() {
+		request.Platform = pkg.PlatformMobile
+	}
+
 	return false, nil
 }
 

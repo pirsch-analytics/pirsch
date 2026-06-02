@@ -24,8 +24,7 @@ func TestUserAgent(t *testing.T) {
 	assert.Equal(t, "146.0", r.BrowserVersion)
 	assert.Equal(t, pkg.OSWindows, r.OS)
 	assert.Equal(t, "10", r.OSVersion)
-	assert.True(t, r.Desktop)
-	assert.False(t, r.Mobile)
+	assert.Equal(t, pkg.PlatformDesktop, r.Platform)
 }
 
 func TestParseSimple(t *testing.T) {

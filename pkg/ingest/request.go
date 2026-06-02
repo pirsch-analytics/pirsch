@@ -226,13 +226,9 @@ type Request struct {
 	// This should be set by a PipeStep.
 	BrowserRevision string
 
-	// Desktop indicates a desktop device for the request.
+	// Platform is the platform for thist request.
 	// This should be set by a PipeStep.
-	Desktop bool
-
-	// Mobile indicates a mobile device for the request.
-	// This should be set by a PipeStep.
-	Mobile bool
+	Platform int8
 
 	// ScreenClass is the screen class for the request.
 	// This should be set by a PipeStep.

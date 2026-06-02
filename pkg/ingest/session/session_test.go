@@ -62,7 +62,7 @@ func TestSession(t *testing.T) {
 		assert.Equal(t, "10", firstSession.OSVersion)
 		assert.Equal(t, pkg.BrowserChrome, firstSession.Browser)
 		assert.Equal(t, "146", firstSession.BrowserVersion)
-		assert.True(t, firstSession.Desktop)
+		assert.Equal(t, pkg.PlatformDesktop, firstSession.Platform)
 		assert.Equal(t, "utm_source", firstSession.UTMSource)
 		assert.Equal(t, "utm_medium", firstSession.UTMMedium)
 		assert.Equal(t, "utm_campaign", firstSession.UTMCampaign)
@@ -126,7 +126,7 @@ func TestSession(t *testing.T) {
 		assert.Equal(t, "10", secondSession.OSVersion)
 		assert.Equal(t, pkg.BrowserChrome, secondSession.Browser)
 		assert.Equal(t, "146", secondSession.BrowserVersion)
-		assert.True(t, secondSession.Desktop)
+		assert.Equal(t, pkg.PlatformDesktop, secondSession.Platform)
 		assert.Equal(t, "utm_source", secondSession.UTMSource)
 		assert.Equal(t, "utm_medium", secondSession.UTMMedium)
 		assert.Equal(t, "utm_campaign", secondSession.UTMCampaign)
@@ -696,7 +696,7 @@ func newSampleRequest() (*ingest.Request, time.Time) {
 		OSVersion:      "10",
 		Browser:        pkg.BrowserChrome,
 		BrowserVersion: "146",
-		Desktop:        true,
+		Platform:       pkg.PlatformDesktop,
 		ScreenClass:    "XL",
 		UTMSource:      "utm_source",
 		UTMMedium:      "utm_medium",

@@ -122,8 +122,7 @@ func (s *Session) new(request *ingest.Request) *model.Session {
 			OSVersion:      request.OSVersion,
 			Browser:        request.Browser,
 			BrowserVersion: request.BrowserVersion,
-			Desktop:        request.Desktop,
-			Mobile:         request.Mobile,
+			Platform:       request.Platform,
 			ScreenClass:    request.ScreenClass,
 			UTMSource:      request.UTMSource,
 			UTMMedium:      request.UTMMedium,
@@ -201,8 +200,7 @@ func (s *Session) update(request *ingest.Request, session *model.Session) {
 	request.OSVersion = session.OSVersion
 	request.Browser = session.Browser
 	request.BrowserVersion = session.BrowserVersion
-	request.Desktop = session.Desktop
-	request.Mobile = session.Mobile
+	request.Platform = session.Platform
 	request.ScreenClass = session.ScreenClass
 	request.UTMSource = session.UTMSource
 	request.UTMMedium = session.UTMMedium

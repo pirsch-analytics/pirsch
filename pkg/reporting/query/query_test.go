@@ -18,6 +18,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+/*
+	TODO
+	- Growth
+	- Custom Metrics
+	- Comparison Mode
+	- Conversion Goals
+	- Event Breakdown
+	- Event List
+	- Event Meta Filter
+	- Tags Filter
+	- Tag Keys
+	- Tag Breakdown
+	- Session List
+	- Session Breakdown
+	- Filter Options
+	- Funnel
+*/
+
 func TestQueryFromSessions(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
@@ -278,6 +296,10 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 					},
 				},
 			},
+			{
+				Dimension: dimensions.Platform{},
+				Values:    []any{0, 1},
+			},
 		},
 	}
 
@@ -285,7 +307,7 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable)
-	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.primaryFilter, 2)
 	assert.Equal(t, pkg.TableSessions, q.primaryFilter[0].table)
 	assert.Equal(t, dimensions.EntryPath{}, q.primaryFilter[0].filter.Dimension)
 	assert.Equal(t, []any{"/"}, q.primaryFilter[0].filter.Values)
@@ -303,16 +325,17 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 9)
+	assert.Len(t, args, 10)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, "/", args[3])
-	assert.Equal(t, uint64(1), args[4])
-	assert.Equal(t, from, args[5])
-	assert.Equal(t, to, args[6])
-	assert.Equal(t, []any{"/pricing", "/landing"}, args[7])
-	assert.Equal(t, "https://duckduckgo.com", args[8])
+	assert.Equal(t, []any{0, 1}, args[4])
+	assert.Equal(t, uint64(1), args[5])
+	assert.Equal(t, from, args[6])
+	assert.Equal(t, to, args[7])
+	assert.Equal(t, []any{"/pricing", "/landing"}, args[8])
+	assert.Equal(t, "https://duckduckgo.com", args[9])
 
 	// result
 	assert.Len(t, r.Results, 2)
@@ -444,10 +467,6 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	assert.Equal(t, int64(1), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
 	assert.InDelta(t, 0.2, r.Results[0].MetricValues[2], 0.001)
-}
-
-func TestQueryTimeOnPage(t *testing.T) {
-	// TODO
 }
 
 func TestQueryTime(t *testing.T) {
