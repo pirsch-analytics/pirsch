@@ -25,7 +25,6 @@ import (
 	- Comparison Mode
 	- Conversion Goals
 	- Event Breakdown
-	- Event List
 	- Event Meta Filter
 	- Tags Filter
 	- Tag Keys
@@ -248,9 +247,9 @@ func TestQueryFromEvents(t *testing.T) {
 	assert.Len(t, r.Results[0].DimensionValues, 1)
 	assert.Len(t, r.Results[0].MetricValues, 3)
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
-	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
-	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
-	assert.InDelta(t, 0.5, r.Results[0].MetricValues[2], 0.001)
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.75, r.Results[0].MetricValues[2], 0.001)
 }
 
 func TestQueryFromSessionsFiltered(t *testing.T) {
@@ -463,9 +462,9 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	assert.Len(t, r.Results[0].DimensionValues, 1)
 	assert.Len(t, r.Results[0].MetricValues, 3)
 	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
-	assert.Equal(t, int64(1), r.Results[0].MetricValues[0])
-	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
-	assert.InDelta(t, 0.2, r.Results[0].MetricValues[2], 0.001)
+	assert.Equal(t, int64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.4, r.Results[0].MetricValues[2], 0.001)
 }
 
 func TestQueryDimensionOnly(t *testing.T) {
@@ -675,6 +674,76 @@ func TestQueryOffsetLimit(t *testing.T) {
 	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[2], 0.001)
 }
 
+func TestQueryEventListAndBreakdown(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMeta{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Events{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric: metrics.Events{},
+			},
+			{
+				Dimension: dimensions.Event{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 2)
+	assert.Len(t, r.Results[1].DimensionValues, 2)
+	assert.Len(t, r.Results[1].MetricValues, 2)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, `{"label":"Get in touch","position":"text"}`, r.Results[0].DimensionValues[1])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
+	assert.Equal(t, `{"ab-test":[2,5],"position":"hero"}`, r.Results[1].DimensionValues[1])
+
+	// TODO breakdown
+}
+
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
 	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -707,11 +776,11 @@ func loadTestData(t *testing.T, scenarios []string) {
 	assert.NoError(t, err)
 	var sessionData []sessionData
 	assert.NoError(t, gocsv.UnmarshalBytes(sessionsFile, &sessionData))
-	sessions := make([]model.Session, len(sessionData))
+	sessions := make([]model.Session, 0, len(sessionData))
 
-	for i, s := range sessionData {
+	for _, s := range sessionData {
 		if len(scenarios) == 0 || slices.Contains(scenarios, s.Scenario) {
-			sessions[i] = s.Session
+			sessions = append(sessions, s.Session)
 		}
 	}
 
@@ -722,11 +791,11 @@ func loadTestData(t *testing.T, scenarios []string) {
 	assert.NoError(t, err)
 	var pageViewData []pageViewData
 	assert.NoError(t, gocsv.UnmarshalBytes(pageViewsFile, &pageViewData))
-	pageViews := make([]model.PageView, len(pageViewData))
+	pageViews := make([]model.PageView, 0, len(pageViewData))
 
-	for i, pv := range pageViewData {
+	for _, pv := range pageViewData {
 		if len(scenarios) == 0 || slices.Contains(scenarios, pv.Scenario) {
-			pageViews[i] = pv.PageView
+			pageViews = append(pageViews, pv.PageView)
 
 			if pv.Tags != "" {
 				var tags map[string]string
@@ -735,7 +804,7 @@ func loadTestData(t *testing.T, scenarios []string) {
 					t.Fatal(err)
 				}
 
-				pageViews[i].Tags = tags
+				pageViews[len(pageViews)-1].Tags = tags
 			}
 		}
 	}
@@ -747,11 +816,11 @@ func loadTestData(t *testing.T, scenarios []string) {
 	assert.NoError(t, err)
 	var eventData []eventData
 	assert.NoError(t, gocsv.UnmarshalBytes(eventsFile, &eventData))
-	events := make([]model.Event, len(eventData))
+	events := make([]model.Event, 0, len(eventData))
 
-	for i, e := range eventData {
+	for _, e := range eventData {
 		if len(scenarios) == 0 || slices.Contains(scenarios, e.Scenario) {
-			events[i] = e.Event
+			events = append(events, e.Event)
 
 			if e.MetaData != "" {
 				var metaData map[string]any
@@ -760,7 +829,7 @@ func loadTestData(t *testing.T, scenarios []string) {
 					t.Fatal(err)
 				}
 
-				events[i].MetaData = metaData
+				events[len(events)-1].MetaData = metaData
 			}
 		}
 	}
