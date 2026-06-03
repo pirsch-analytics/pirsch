@@ -635,12 +635,64 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 }
 
 func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
-	// filter field
+	// filter for a column
 	if len(filter.Filter) == 0 {
 		if len(filter.Values) == 0 {
 			return "", nil
 		}
 
+		return q.buildQueryFilterColumn(filter)
+	}
+
+	// filter for a group
+	groups := make([]string, 0, len(filter.Filter))
+	args := make([]any, 0)
+
+	for _, f := range filter.Filter {
+		group, groupArgs := q.buildQueryFilter(f)
+		groups = append(groups, group)
+		args = append(args, groupArgs...)
+	}
+
+	if filter.Operator == request.OperatorOr {
+		return strings.Join(groups, " OR "), args
+	}
+
+	return strings.Join(groups, " AND "), args
+}
+
+func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
+	switch filter.Dimension.(type) {
+	case dimensions.EventMetaKey:
+		switch filter.Operator {
+		case request.OperatorIsNot:
+			// TODO convert path
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for _, v := range filter.Values {
+					group = append(group, fmt.Sprintf(`isNull(%s.%s)`, filter.Dimension.Column(""), v))
+				}
+
+				return strings.Join(group, " OR "), nil
+			}
+
+			return fmt.Sprintf(`isNull(%s.%s)`, filter.Dimension.Column(""), filter.Values[0]), nil
+		default:
+			// TODO convert path
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for _, v := range filter.Values {
+					group = append(group, fmt.Sprintf(`isNotNull(%s.%s)`, filter.Dimension.Column(""), v))
+				}
+
+				return strings.Join(group, " OR "), nil
+			}
+
+			return fmt.Sprintf(`isNotNull(%s.%s)`, filter.Dimension.Column(""), filter.Values[0]), nil
+		}
+	default:
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
@@ -684,22 +736,6 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 			return fmt.Sprintf("%s = ?", filter.Dimension.Column("")), filter.Values
 		}
 	}
-
-	// filter group
-	groups := make([]string, 0, len(filter.Filter))
-	args := make([]any, 0)
-
-	for _, f := range filter.Filter {
-		group, groupArgs := q.buildQueryFilter(f)
-		groups = append(groups, group)
-		args = append(args, groupArgs...)
-	}
-
-	if filter.Operator == request.OperatorOr {
-		return strings.Join(groups, " OR "), args
-	}
-
-	return strings.Join(groups, " AND "), args
 }
 
 func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
