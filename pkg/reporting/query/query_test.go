@@ -32,7 +32,6 @@ import (
 	- Tag Breakdown
 	- Session List
 	- Session Breakdown
-	- Filter Options
 	- Funnel
 */
 
@@ -467,6 +466,64 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	assert.Equal(t, int64(1), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
 	assert.InDelta(t, 0.2, r.Results[0].MetricValues[2], 0.001)
+}
+
+func TestQueryDimensionOnly(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Referrer{},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorContains,
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"go"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Referrer{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.subqueryFilter, 0)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "%go%", args[3])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 0)
+	assert.Equal(t, "https://duckduckgo.com", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "https://google.com", r.Results[1].DimensionValues[0])
 }
 
 func TestQueryTime(t *testing.T) {

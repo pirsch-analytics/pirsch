@@ -649,17 +649,21 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 
 			return fmt.Sprintf("%s != ?", filter.Dimension.Column("")), filter.Values
 		case request.OperatorContains:
+			values := q.buildQueryFilterILikeValues(filter.Values)
+
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", filter.Dimension.Column("")), []any{filter.Values}
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", filter.Dimension.Column("")), []any{values}
 			}
 
-			return fmt.Sprintf("%s ILIKE ?", filter.Dimension.Column("")), filter.Values
+			return fmt.Sprintf("%s ILIKE ?", filter.Dimension.Column("")), values
 		case request.OperatorContainsNot:
+			values := q.buildQueryFilterILikeValues(filter.Values)
+
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", filter.Dimension.Column("")), []any{filter.Values}
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", filter.Dimension.Column("")), []any{values}
 			}
 
-			return fmt.Sprintf("%s NOT ILIKE ?", filter.Dimension.Column("")), filter.Values
+			return fmt.Sprintf("%s NOT ILIKE ?", filter.Dimension.Column("")), values
 		case request.OperatorMatches:
 			if len(filter.Values) > 1 {
 				return fmt.Sprintf("multiMatchAny(%s, ?)", filter.Dimension.Column("")), []any{filter.Values}
@@ -696,6 +700,16 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 	}
 
 	return strings.Join(groups, " AND "), args
+}
+
+func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
+	values := make([]any, 0, len(filterValues))
+
+	for _, v := range filterValues {
+		values = append(values, fmt.Sprintf("%%%s%%", v))
+	}
+
+	return values
 }
 
 func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
