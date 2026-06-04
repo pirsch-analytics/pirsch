@@ -836,6 +836,12 @@ func TestQueryEventMetaDataFilter(t *testing.T) {
 				EventMetaPath: "position",
 				Values:        []any{"hero"},
 			},
+			{
+				Operator:      request.OperatorIsNot,
+				Dimension:     dimensions.EventMeta{},
+				EventMetaPath: "ab-test.0",
+				Values:        []any{1},
+			},
 		},
 	}
 
@@ -843,18 +849,20 @@ func TestQueryEventMetaDataFilter(t *testing.T) {
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableEvents, q.primaryTable)
-	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.primaryFilter, 2)
 	assert.Equal(t, []any{"hero"}, q.primaryFilter[0].filter.Values)
+	assert.Equal(t, []any{1}, q.primaryFilter[1].filter.Values)
 	assert.Empty(t, q.subqueryFilter)
 
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 4)
+	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, "hero", args[3])
+	assert.Equal(t, 1, args[4])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 1)
