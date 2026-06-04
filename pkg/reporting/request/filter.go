@@ -20,8 +20,9 @@ type Operator int
 
 // Filter filters for a Dimension connected by a logical Operator.
 type Filter struct {
-	Operator  Operator
-	Dimension dimensions.Dimension
-	Values    []any
-	Filter    []Filter
+	Operator      Operator
+	Dimension     dimensions.Dimension
+	EventMetaPath string
+	Values        []any
+	Filter        []Filter
 }
