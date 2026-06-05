@@ -673,25 +673,29 @@ func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, q.buildQuereWhereColumn(filter)))
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, q.buildQuereWhereColumn(filter)), filter.Values
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression), filter.Values
 		default:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?)`, q.buildQuereWhereColumn(filter)))
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?)`, expression))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return fmt.Sprintf(`mapContainsKey(%s, ?)`, q.buildQuereWhereColumn(filter)), filter.Values
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`mapContainsKey(%s, ?)`, expression), filter.Values
 		}
 	case dimensions.EventMetaKey:
 		switch filter.Operator {
@@ -700,78 +704,108 @@ func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 				group := make([]string, 0, len(filter.Values))
 
 				for _, v := range filter.Values {
-					group = append(group, fmt.Sprintf(`isNull(%s%s)`, q.buildQuereWhereColumn(filter), q.buildQueryFilterJSONPath(v.(string))))
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
 				}
 
 				return strings.Join(group, " OR "), nil
 			}
 
-			return fmt.Sprintf(`isNull(%s%s)`, q.buildQuereWhereColumn(filter), q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
 		default:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for _, v := range filter.Values {
-					group = append(group, fmt.Sprintf(`isNotNull(%s%s)`, q.buildQuereWhereColumn(filter), q.buildQueryFilterJSONPath(v.(string))))
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
 				}
 
 				return strings.Join(group, " OR "), nil
 			}
 
-			return fmt.Sprintf(`isNotNull(%s%s)`, q.buildQuereWhereColumn(filter), q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
 		}
 	default:
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("%s NOT IN (?)", q.buildQuereWhereColumn(filter)), []any{filter.Values}
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("%s NOT IN (?)", expression), args
 			}
 
-			return fmt.Sprintf("%s != ?", q.buildQuereWhereColumn(filter)), filter.Values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("%s != ?", expression), args
 		case request.OperatorContains:
 			values := q.buildQueryFilterILikeValues(filter.Values)
 
-			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", q.buildQuereWhereColumn(filter)), []any{values}
+			if len(values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, values)
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", expression), args
 			}
 
-			return fmt.Sprintf("%s ILIKE ?", q.buildQuereWhereColumn(filter)), values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, values...)
+			return fmt.Sprintf("%s ILIKE ?", expression), args
 		case request.OperatorContainsNot:
 			values := q.buildQueryFilterILikeValues(filter.Values)
 
-			if len(filter.Values) > 1 {
-				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", q.buildQuereWhereColumn(filter)), []any{values}
+			if len(values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, values)
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", expression), args
 			}
 
-			return fmt.Sprintf("%s NOT ILIKE ?", q.buildQuereWhereColumn(filter)), values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, values...)
+			return fmt.Sprintf("%s NOT ILIKE ?", expression), args
 		case request.OperatorMatches:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?)", q.buildQuereWhereColumn(filter)), []any{filter.Values}
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("multiMatchAny(%s, ?)", expression), args
 			}
 
-			return fmt.Sprintf("match(%s, ?)", q.buildQuereWhereColumn(filter)), filter.Values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("match(%s, ?)", expression), args
 		case request.OperatorMatchesNot:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", q.buildQuereWhereColumn(filter)), []any{filter.Values}
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", expression), args
 			}
 
-			return fmt.Sprintf("match(%s, ?) = 0", q.buildQuereWhereColumn(filter)), filter.Values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("match(%s, ?) = 0", expression), args
 		default:
 			if len(filter.Values) > 1 {
-				return fmt.Sprintf("%s IN (?)", q.buildQuereWhereColumn(filter)), []any{filter.Values}
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("%s IN (?)", expression), args
 			}
 
-			return fmt.Sprintf("%s = ?", q.buildQuereWhereColumn(filter)), filter.Values
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("%s = ?", expression), args
 		}
 	}
 }
 
-func (q *Query) buildQuereWhereColumn(filter request.Filter) string {
+func (q *Query) buildQuereWhereColumn(filter request.Filter) (string, []any) {
 	switch d := filter.Dimension.(type) {
+	case dimensions.TagValue:
+		return "tags[?]", []any{d.Key}
 	case dimensions.EventMeta:
-		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path))
+		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path)), nil
 	default:
-		return d.Column("")
+		return d.Column(""), nil
 	}
 }
 

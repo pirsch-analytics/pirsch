@@ -1035,30 +1035,31 @@ func TestQueryTagFilter(t *testing.T) {
 		},
 	}
 
-	// query
-	query, args := q.buildQuery(req)
-	assert.NotEmpty(t, query)
-	assert.Len(t, args, 5)
-	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
-	assert.Equal(t, "Marvin Blum", args[3])
-	assert.Equal(t, "author", args[4])
-
 	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
-	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
-	assert.Len(t, q.primaryFilter, 1)
-	assert.Empty(t, q.subqueryFilter)
-	assert.Equal(t, "Marvin Blum", q.primaryFilter[0].filter.Values[0])
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
+	assert.Equal(t, "Marvin Blum", q.subqueryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 8)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, "author", args[6])
+	assert.Equal(t, "Marvin Blum", args[7])
 
 	// result dimensions and metrics
-	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results, 1)
 	assert.Len(t, r.Results[0].DimensionValues, 1)
 	assert.Len(t, r.Results[0].MetricValues, 2)
-	assert.Len(t, r.Results[1].DimensionValues, 1)
-	assert.Len(t, r.Results[1].MetricValues, 2)
 
 	// result row
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
