@@ -22,6 +22,11 @@ func (d UTMTerm) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d UTMTerm) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d UTMTerm) ScanType() any {
 	return new(string)

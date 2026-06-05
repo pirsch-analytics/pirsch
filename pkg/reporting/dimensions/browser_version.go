@@ -22,6 +22,11 @@ func (d BrowserVersion) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d BrowserVersion) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d BrowserVersion) ScanType() any {
 	return new(string)

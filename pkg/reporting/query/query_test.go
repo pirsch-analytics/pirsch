@@ -961,7 +961,9 @@ func TestQueryTagBreakdown(t *testing.T) {
 		},
 		OrderBy: []request.OrderBy{
 			{
-				Dimension: dimensions.TagValue{},
+				Dimension: dimensions.TagValue{
+					Key: "author", // TODO validate in request that this matches the dimension (or set it)
+				},
 				Direction: request.DirectionASC,
 			},
 		},
@@ -978,11 +980,12 @@ func TestQueryTagBreakdown(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 4)
-	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
-	assert.Equal(t, "author", args[3])
+	assert.Len(t, args, 5)
+	assert.Equal(t, "author", args[0])
+	assert.Equal(t, uint64(1), args[1])
+	assert.Equal(t, from, args[2])
+	assert.Equal(t, to, args[3])
+	assert.Equal(t, "author", args[4])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 2)
@@ -1003,7 +1006,64 @@ func TestQueryTagBreakdown(t *testing.T) {
 }
 
 func TestQueryTagFilter(t *testing.T) {
-	// TODO
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Channel{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.TagValue{
+					Key: "author",
+				},
+				Values: []any{"Marvin Blum"},
+			},
+		},
+	}
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 5)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "Marvin Blum", args[3])
+	assert.Equal(t, "author", args[4])
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, "Marvin Blum", q.primaryFilter[0].filter.Values[0])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 2)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 2)
+
+	// result row
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[0])
 }
 
 func TestBuildQueryFilterJSONPath(t *testing.T) {

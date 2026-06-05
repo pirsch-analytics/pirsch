@@ -22,6 +22,11 @@ func (d Platform) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d Platform) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Platform) ScanType() any {
 	return new(int8)

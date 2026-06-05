@@ -22,6 +22,11 @@ func (d Referrer) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d Referrer) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Referrer) ScanType() any {
 	return new(string)

@@ -559,6 +559,8 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 		} else {
 			fields = append(fields, dimension.Column(q.primaryTable))
 		}
+
+		args = append(args, dimension.Args()...)
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args

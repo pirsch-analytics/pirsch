@@ -1,8 +1,6 @@
 package dimensions
 
 import (
-	"fmt"
-
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 )
 
@@ -18,16 +16,25 @@ func (d TagValue) Table() []string {
 
 // Column implements the Dimension interface.
 func (d TagValue) Column(_ string) string {
-	return "tag_value"
+	if d.Key != "" {
+		return "tag_value"
+	}
+
+	return "tags"
 }
 
 // Expression implements the Dimension interface.
 func (d TagValue) Expression() string {
-	if d.Key == "" {
-		return "arrayJoin(mapValues(tags))"
+	if d.Key != "" {
+		return "tags[?]"
 	}
 
-	return fmt.Sprintf(`tags['%s']`, d.Key) // TODO unsafe!
+	return "arrayJoin(mapValues(tags))"
+}
+
+// Args implements the Dimension interface.
+func (d TagValue) Args() []any {
+	return []any{d.Key}
 }
 
 // ScanType implements the Metric interface.

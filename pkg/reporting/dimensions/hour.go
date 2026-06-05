@@ -24,6 +24,11 @@ func (d Hour) Expression() string {
 	return `toHour("time")`
 }
 
+// Args implements the Dimension interface.
+func (d Hour) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Hour) ScanType() any {
 	return new(time.Time)

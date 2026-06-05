@@ -13,6 +13,9 @@ type Dimension interface {
 	// If empty, the Column name will be used instead.
 	Expression() string
 
+	// Args returns optional arguments for the Expression.
+	Args() []any
+
 	// ScanType returns a pointer to the type the value for this Dimension scans into.
 	ScanType() any
 }
@@ -23,9 +26,4 @@ type Dimension interface {
 	CustomMetricType pkg.CustomMetricType
 	VisitorID uint64
 	SessionID uint32
-	Platform string
-	Tags map[string]string
-	Tag []string
-	EventMetaKey []string
-	EventMeta map[string]string
 */

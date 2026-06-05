@@ -24,6 +24,11 @@ func (d Path) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d Path) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Path) ScanType() any {
 	return new(string)

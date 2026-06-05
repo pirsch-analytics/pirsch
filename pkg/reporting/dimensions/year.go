@@ -24,6 +24,11 @@ func (d Year) Expression() string {
 	return `toYear("time")`
 }
 
+// Args implements the Dimension interface.
+func (d Year) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Year) ScanType() any {
 	return new(time.Time)

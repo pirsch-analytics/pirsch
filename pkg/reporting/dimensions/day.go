@@ -24,6 +24,11 @@ func (d Day) Expression() string {
 	return `toDate("time")`
 }
 
+// Args implements the Dimension interface.
+func (d Day) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Day) ScanType() any {
 	return new(time.Time)

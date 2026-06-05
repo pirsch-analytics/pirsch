@@ -22,6 +22,11 @@ func (d UTMCampaign) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d UTMCampaign) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d UTMCampaign) ScanType() any {
 	return new(string)

@@ -24,6 +24,11 @@ func (d Week) Expression() string {
 	return `toWeek("time")`
 }
 
+// Args implements the Dimension interface.
+func (d Week) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Week) ScanType() any {
 	return new(time.Time)

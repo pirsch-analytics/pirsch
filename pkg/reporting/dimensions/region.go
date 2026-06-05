@@ -22,6 +22,11 @@ func (d Region) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d Region) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Region) ScanType() any {
 	return new(string)

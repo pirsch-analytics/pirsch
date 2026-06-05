@@ -22,6 +22,11 @@ func (d Channel) Expression() string {
 	return ""
 }
 
+// Args implements the Dimension interface.
+func (d Channel) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d Channel) ScanType() any {
 	return new(string)

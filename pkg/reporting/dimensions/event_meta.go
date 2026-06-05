@@ -22,6 +22,11 @@ func (d EventMeta) Expression() string {
 	return "toString(meta_data)"
 }
 
+// Args implements the Dimension interface.
+func (d EventMeta) Args() []any {
+	return nil
+}
+
 // ScanType implements the Metric interface.
 func (d EventMeta) ScanType() any {
 	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
