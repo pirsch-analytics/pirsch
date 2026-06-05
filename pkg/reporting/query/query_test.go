@@ -20,13 +20,21 @@ import (
 
 /*
 	TODO
-	- Growth
-	- Custom Metrics
-	- Comparison Mode
-	- Conversion Goals
-	- Session List
-	- Session Breakdown
-	- Funnel
+
+	Statistics:
+		- Growth
+		- Custom Metrics
+		- Comparison Mode
+		- Conversion Goals
+		- Session List
+		- Session Breakdown
+		- Funnel
+
+	Dimensions:
+		- CustomMetricKey string
+		- CustomMetricType pkg.CustomMetricType
+		- VisitorID uint64
+		- SessionID uint32
 */
 
 func TestQueryFromSessions(t *testing.T) {

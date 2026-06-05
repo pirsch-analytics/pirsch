@@ -28,4 +28,6 @@ type Options struct {
 
 	// Sample sets the (optional) sampling size.
 	Sample uint
+
+	Case insensitive
 */

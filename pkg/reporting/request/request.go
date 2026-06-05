@@ -76,7 +76,7 @@ func (r *Request) Validate() []error {
 		errs = append(errs, r.validateFilterValues(f)...)
 	}
 
-	// TODO check other relevant fields
+	// TODO check other relevant fields and filter combinations
 
 	if len(errs) > 0 {
 		return errs

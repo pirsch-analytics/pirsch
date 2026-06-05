@@ -19,11 +19,3 @@ type Dimension interface {
 	// ScanType returns a pointer to the type the value for this Dimension scans into.
 	ScanType() any
 }
-
-// TODO
-/*
-	CustomMetricKey string
-	CustomMetricType pkg.CustomMetricType
-	VisitorID uint64
-	SessionID uint32
-*/
