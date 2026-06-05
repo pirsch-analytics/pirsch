@@ -22,7 +22,7 @@ type Operator int
 type Filter struct {
 	Operator      Operator
 	Dimension     dimensions.Dimension
-	EventMetaPath string
+	EventMetaPath string // TODO move to dimension
 	Values        []any
 	Filter        []Filter
 }

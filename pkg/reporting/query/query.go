@@ -664,6 +664,33 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 
 func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 	switch filter.Dimension.(type) {
+	case dimensions.TagKey:
+		switch filter.Operator {
+		case request.OperatorIsNot:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for range filter.Values {
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, q.buildQuereWhereColumn(filter)))
+				}
+
+				return strings.Join(group, " OR "), filter.Values
+			}
+
+			return fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, q.buildQuereWhereColumn(filter)), filter.Values
+		default:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for range filter.Values {
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?)`, q.buildQuereWhereColumn(filter)))
+				}
+
+				return strings.Join(group, " OR "), filter.Values
+			}
+
+			return fmt.Sprintf(`mapContainsKey(%s, ?)`, q.buildQuereWhereColumn(filter)), filter.Values
+		}
 	case dimensions.EventMetaKey:
 		switch filter.Operator {
 		case request.OperatorIsNot:
