@@ -3,7 +3,9 @@ package dimensions
 import "github.com/pirsch-analytics/pirsch/v7/pkg"
 
 // EventMeta is a Dimension.
-type EventMeta struct{}
+type EventMeta struct {
+	Path string
+}
 
 // Table implements the Dimension interface.
 func (d EventMeta) Table() []string {

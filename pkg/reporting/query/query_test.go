@@ -737,7 +737,7 @@ func TestQueryEventList(t *testing.T) {
 	assert.Equal(t, `{"ab-test":[2,5],"position":"hero"}`, r.Results[1].DimensionValues[1])
 }
 
-func TestQueryEventBreakdown(t *testing.T) {
+func TestQueryEventMetaDataFilterKey(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 		"three page views + event",
@@ -807,7 +807,7 @@ func TestQueryEventBreakdown(t *testing.T) {
 	assert.Equal(t, `{"ab-test":[2,5],"position":"hero"}`, r.Results[0].DimensionValues[1])
 }
 
-func TestQueryEventMetaDataFilter(t *testing.T) {
+func TestQueryEventMetaDataFilterValue(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 		"three page views + event",
@@ -829,15 +829,17 @@ func TestQueryEventMetaDataFilter(t *testing.T) {
 		},
 		Filter: []request.Filter{
 			{
-				Dimension:     dimensions.EventMeta{},
-				EventMetaPath: "position",
-				Values:        []any{"hero"},
+				Dimension: dimensions.EventMeta{
+					Path: "position",
+				},
+				Values: []any{"hero"},
 			},
 			{
-				Operator:      request.OperatorIsNot,
-				Dimension:     dimensions.EventMeta{},
-				EventMetaPath: "ab-test.0",
-				Values:        []any{1},
+				Operator: request.OperatorIsNot,
+				Dimension: dimensions.EventMeta{
+					Path: "ab-test.0",
+				},
+				Values: []any{1},
 			},
 		},
 	}

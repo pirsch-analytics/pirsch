@@ -767,7 +767,7 @@ func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 func (q *Query) buildQuereWhereColumn(filter request.Filter) string {
 	switch d := filter.Dimension.(type) {
 	case dimensions.EventMeta:
-		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(filter.EventMetaPath))
+		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path))
 	default:
 		return d.Column("")
 	}
