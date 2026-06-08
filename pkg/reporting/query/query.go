@@ -554,16 +554,28 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 	}
 
 	for _, dimension := range req.Dimensions {
-		if dimension.Expression() != "" {
-			fields = append(fields, fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable)))
-		} else {
-			fields = append(fields, dimension.Column(q.primaryTable))
-		}
-
+		fields = append(fields, q.buildQuerySelectColumn(dimension))
 		args = append(args, dimension.Args()...)
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
+}
+
+func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension) string {
+	switch d := dimension.(type) {
+	case dimensions.EventMeta:
+		if d.Path != "" {
+			return d.Select(q.buildQueryFilterJSONPath(d.Path))
+		}
+
+		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+	default:
+		if dimension.Expression() != "" {
+			return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+		}
+
+		return dimension.Column(q.primaryTable)
+	}
 }
 
 func (q *Query) buildQuereFrom(table string) string {
@@ -839,10 +851,16 @@ func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
 		fields := make([]string, 0, len(dimensions))
 
 		for _, dimension := range dimensions {
-			fields = append(fields, dimension.Column(q.primaryTable))
+			column := dimension.Column(q.primaryTable)
+
+			if column != "" {
+				fields = append(fields, column)
+			}
 		}
 
-		return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
+		if len(fields) > 0 {
+			return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
+		}
 	}
 
 	return ""

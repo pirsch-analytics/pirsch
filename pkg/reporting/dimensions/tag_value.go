@@ -6,6 +6,7 @@ import (
 
 // TagValue is a Dimension.
 type TagValue struct {
+	// Key is the map key to extract the value.
 	Key string
 }
 

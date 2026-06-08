@@ -21,20 +21,13 @@ import (
 /*
 	TODO
 
-	Statistics:
-		- Growth
-		- Custom Metrics
-		- Comparison Mode
-		- Conversion Goals
-		- Session List
-		- Session Breakdown
-		- Funnel
-
-	Dimensions:
-		- CustomMetricKey string
-		- CustomMetricType pkg.CustomMetricType
-		- VisitorID uint64
-		- SessionID uint32
+	- Growth
+	- Comparison Mode
+	- Session List
+		- VisitorID
+		- SessionID
+	- Session Breakdown
+	- Funnel
 */
 
 func TestQueryFromSessions(t *testing.T) {
@@ -726,23 +719,29 @@ func TestQueryEventList(t *testing.T) {
 	assert.Equal(t, to, args[2])
 
 	// result dimensions and metrics
-	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results, 3)
 	assert.Len(t, r.Results[0].DimensionValues, 2)
 	assert.Len(t, r.Results[0].MetricValues, 2)
 	assert.Len(t, r.Results[1].DimensionValues, 2)
 	assert.Len(t, r.Results[1].MetricValues, 2)
 
 	// result row 0
-	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
-	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
-	assert.Equal(t, `{"label":"Get in touch","position":"text"}`, r.Results[0].DimensionValues[1])
+	assert.Equal(t, `{"label":"Get in touch","position":"text","price":67.9}`, r.Results[0].DimensionValues[1])
 
 	// result row 1
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
-	assert.Equal(t, `{"ab-test":[2,5],"position":"hero"}`, r.Results[1].DimensionValues[1])
+	assert.Equal(t, `{"ab-test":[2,5],"position":"hero","price":99.54}`, r.Results[1].DimensionValues[1])
+
+	// result row 2
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[1])
+	assert.Equal(t, "Contact Button", r.Results[2].DimensionValues[0])
+	assert.Equal(t, `{"label":"Get in touch","position":"text","price":24.99}`, r.Results[2].DimensionValues[1])
 }
 
 func TestQueryEventMetaDataFilterKey(t *testing.T) {
@@ -812,7 +811,7 @@ func TestQueryEventMetaDataFilterKey(t *testing.T) {
 	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[1], 0.001)
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[2])
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
-	assert.Equal(t, `{"ab-test":[2,5],"position":"hero"}`, r.Results[0].DimensionValues[1])
+	assert.Equal(t, `{"ab-test":[2,5],"position":"hero","price":99.54}`, r.Results[0].DimensionValues[1])
 }
 
 func TestQueryEventMetaDataFilterValue(t *testing.T) {
@@ -879,6 +878,109 @@ func TestQueryEventMetaDataFilterValue(t *testing.T) {
 	// result row
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+}
+
+func TestQueryEventMetaDataFunction(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path:     "price",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionSum,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result row
+	assert.Equal(t, 192.43, r.Results[0].DimensionValues[0])
+}
+
+func TestQueryEventMetaDataCastType(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path: "price",
+				Type: dimensions.EventMetaTypeFloat,
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.EventMeta{
+					Type: dimensions.EventMetaTypeFloat,
+				},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 3)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result rows
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[0])
+	assert.Equal(t, 67.9, r.Results[1].DimensionValues[0])
+	assert.Equal(t, 24.99, r.Results[2].DimensionValues[0])
 }
 
 func TestQueryTagKeysList(t *testing.T) {
