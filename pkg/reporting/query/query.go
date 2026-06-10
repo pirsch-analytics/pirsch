@@ -538,7 +538,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(q.buildQuereFrom(q.primaryTable))
 
 	if withRequired {
-		query.WriteString(q.buildQueryWithJoin(req))
+		query.WriteString(q.buildQueryWithJoin())
 	}
 
 	whereQuery, whereArgs := q.buildQueryWhere(req)
@@ -564,33 +564,77 @@ func (q *Query) buildQueryWithRequired(list []metrics.Metric) bool {
 }
 
 func (q *Query) buildQueryWith(req request.Request) (string, []any) {
+	// store original tables and filter filters
+	primaryFilter := q.primaryFilter
+	primaryTable := q.primaryTable
+	q.primaryTable = pkg.TablePageViews
+	q.primaryFilter = q.filtersForTable(primaryFilter, pkg.TablePageViews)
+
+	// build query
 	var query strings.Builder
 	args := make([]any, 0)
-	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-	query.WriteString(fmt.Sprintf(`WITH top AS (
+	whereQuery, whereArgs := q.buildQueryWhere(req)
+	args = append(args, whereArgs...)
+	query.WriteString(`WITH top AS (
 			SELECT path,
 				leadInFrame(duration_seconds) OVER (
 					PARTITION BY visitor_id, session_id
 					ORDER BY time ASC
 					ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
 				) time_on_page
-			FROM page_view_v7
-			%s
-		),
+			FROM page_view_v7 `)
+	query.WriteString(whereQuery)
+	query.WriteString(`),
 		avgtop AS (
-			SELECT path, avgIf(time_on_page, time_on_page > 0) avg_time_on_page
+			SELECT path, avgOrDefaultIf(time_on_page, time_on_page > 0) avg_time_on_page
 			FROM top
 			GROUP BY path
-		) `, whereQuery))
-	args = append(args, whereArgs...)
+		) `)
 
-	// TODO apply filters
 	// TODO include dimensions to group by
 
+	// reset to original tables
+	q.primaryTable = primaryTable
+	q.primaryFilter = primaryFilter
 	return query.String(), args
 }
 
-func (q *Query) buildQueryWithJoin(req request.Request) string {
+func (q *Query) filtersForTable(filters []classifiedFilter, table string) []classifiedFilter {
+	result := make([]classifiedFilter, 0, len(filters))
+
+	for _, f := range filters {
+		if q.filterCompatibleWithTable(f.filter, table) {
+			result = append(result, classifiedFilter{
+				table:  table,
+				filter: f.filter,
+			})
+		}
+	}
+
+	return result
+}
+
+func (q *Query) filterCompatibleWithTable(filter request.Filter, table string) bool {
+	// leaf node
+	if len(filter.Filter) == 0 {
+		if filter.Dimension == nil {
+			return true
+		}
+
+		return slices.Contains(filter.Dimension.Table(), table)
+	}
+
+	// logical group, all children must be compatible
+	for _, child := range filter.Filter {
+		if !q.filterCompatibleWithTable(child, table) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (q *Query) buildQueryWithJoin() string {
 	// use entry_path to join the time on page, exit_path isn't allowed (because it's always 0)
 	if q.primaryTable == pkg.TableSessions {
 		return "LEFT JOIN avgtop ON entry_path = avgtop.path "

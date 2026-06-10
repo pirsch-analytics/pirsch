@@ -446,21 +446,25 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 14)
+	assert.Len(t, args, 18)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, uint64(1), args[3])
 	assert.Equal(t, from, args[4])
 	assert.Equal(t, to, args[5])
-	assert.Equal(t, uint64(1), args[6])
-	assert.Equal(t, from, args[7])
-	assert.Equal(t, to, args[8])
-	assert.Equal(t, "/", args[9])
+	assert.Equal(t, "Contact Button", args[6])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, from, args[8])
+	assert.Equal(t, to, args[9])
 	assert.Equal(t, uint64(1), args[10])
 	assert.Equal(t, from, args[11])
 	assert.Equal(t, to, args[12])
-	assert.Equal(t, "Contact Button", args[13])
+	assert.Equal(t, "/", args[13])
+	assert.Equal(t, uint64(1), args[14])
+	assert.Equal(t, from, args[15])
+	assert.Equal(t, to, args[16])
+	assert.Equal(t, "Contact Button", args[17])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -470,7 +474,7 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
 	assert.InDelta(t, 0.4, r.Results[0].MetricValues[2], 0.001)
-	assert.InDelta(t, 300, r.Results[0].MetricValues[3], 0.001)
+	assert.InDelta(t, 0, r.Results[0].MetricValues[3], 0.001)
 }
 
 func TestQueryDimensionOnly(t *testing.T) {
@@ -1185,6 +1189,75 @@ func TestQueryTagFilter(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
 	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[0])
+}
+
+func TestQueryTimeOnPage(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.AvgTimeOnPage{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []any{"/"},
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, from, args[8])
+	assert.Equal(t, to, args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, from, args[11])
+	assert.Equal(t, to, args[12])
+	assert.Equal(t, "/", args[13])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, "/pricing", r.Results[0].DimensionValues[0])
+	assert.InDelta(t, 0, r.Results[0].MetricValues[0], 0.001)
+
+	// result row 1
+	assert.Equal(t, "/", r.Results[1].DimensionValues[0])
+	assert.InDelta(t, 300, r.Results[1].MetricValues[0], 0.001)
 }
 
 func TestBuildQueryFilterJSONPath(t *testing.T) {
