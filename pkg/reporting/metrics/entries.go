@@ -22,15 +22,15 @@ func (m Entries) Column() string {
 
 // Expression implements the Metric interface.
 func (m Entries) Expression(_ string) (string, bool) {
-	return "sum(sign)", false
+	return "uniq(visitor_id, session_id)", false
 }
 
 // ScanType implements the Metric interface.
 func (m Entries) ScanType() any {
-	return new(int64)
+	return new(uint64)
 }
 
 // Zero implements the Metric interface.
 func (m Entries) Zero() any {
-	return int64(0)
+	return uint64(0)
 }

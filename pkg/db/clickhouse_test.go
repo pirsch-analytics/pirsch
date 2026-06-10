@@ -164,9 +164,10 @@ func TestClient_SavePageViews(t *testing.T) {
 				UTMTerm:        "Term",
 				Channel:        "Channel",
 			},
-			Path:  "/path",
-			Title: "title",
-			Tags:  map[string]string{"key0": "value0", "key1": "value1"},
+			DurationSeconds: 99,
+			Path:            "/path",
+			Title:           "title",
+			Tags:            map[string]string{"key0": "value0", "key1": "value1"},
 		},
 		{
 			Data: model.Data{

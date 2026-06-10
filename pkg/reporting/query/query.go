@@ -524,10 +524,23 @@ func (q *Query) allCompatible(tableSets [][]string, candidate string) bool {
 func (q *Query) buildQuery(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
+	withRequired := q.buildQueryWithRequired(req.Metrics)
+
+	if withRequired {
+		withQuery, withArgs := q.buildQueryWith(req)
+		query.WriteString(withQuery)
+		args = append(args, withArgs...)
+	}
+
 	selectQuery, selectArgs := q.buildQuerySelect(req)
 	query.WriteString(selectQuery)
 	args = append(args, selectArgs...)
 	query.WriteString(q.buildQuereFrom(q.primaryTable))
+
+	if withRequired {
+		query.WriteString(q.buildQueryWithJoin(req))
+	}
+
 	whereQuery, whereArgs := q.buildQueryWhere(req)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
@@ -535,6 +548,55 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(q.buildOrderBy(req.OrderBy))
 	query.WriteString(q.buildPagination(req.Pagination))
 	return query.String(), args
+}
+
+func (q *Query) buildQueryWithRequired(list []metrics.Metric) bool {
+	found := false
+
+	for _, m := range list {
+		if _, ok := m.(metrics.AvgTimeOnPage); ok {
+			found = true
+			break
+		}
+	}
+
+	return found
+}
+
+func (q *Query) buildQueryWith(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+	query.WriteString(fmt.Sprintf(`WITH top AS (
+			SELECT path,
+				leadInFrame(duration_seconds) OVER (
+					PARTITION BY visitor_id, session_id
+					ORDER BY time ASC
+					ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
+				) time_on_page
+			FROM page_view_v7
+			%s
+		),
+		avgtop AS (
+			SELECT path, avgIf(time_on_page, time_on_page > 0) avg_time_on_page
+			FROM top
+			GROUP BY path
+		) `, whereQuery))
+	args = append(args, whereArgs...)
+
+	// TODO apply filters
+	// TODO include dimensions to group by
+
+	return query.String(), args
+}
+
+func (q *Query) buildQueryWithJoin(req request.Request) string {
+	// use entry_path to join the time on page, exit_path isn't allowed (because it's always 0)
+	if q.primaryTable == pkg.TableSessions {
+		return "LEFT JOIN avgtop ON entry_path = avgtop.path "
+	}
+
+	return "LEFT JOIN avgtop ON path = avgtop.path "
 }
 
 func (q *Query) buildQuerySelect(req request.Request) (string, []any) {

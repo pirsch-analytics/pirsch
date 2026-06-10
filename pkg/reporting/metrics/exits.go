@@ -22,7 +22,7 @@ func (m Exits) Column() string {
 
 // Expression implements the Metric interface.
 func (m Exits) Expression(_ string) (string, bool) {
-	return "sum(sign)", false
+	return "uniq(visitor_id, session_id)", false
 }
 
 // ScanType implements the Metric interface.

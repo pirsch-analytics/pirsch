@@ -7,12 +7,13 @@ type AvgTimeOnPage struct{}
 
 // Table implements the Metric interface.
 func (m AvgTimeOnPage) Table() []string {
-	return []string{pkg.TablePageViews}
+	// all tables, as this is joined via a special WITH subquery
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // JoinTable implements the Metric interface.
 func (m AvgTimeOnPage) JoinTable() string {
-	return pkg.TablePageViews
+	return ""
 }
 
 // Column implements the Metric interface.
@@ -22,8 +23,7 @@ func (m AvgTimeOnPage) Column() string {
 
 // Expression implements the Metric interface.
 func (m AvgTimeOnPage) Expression(_ string) (string, bool) {
-	// TODO
-	return "", false
+	return "any(avg_time_on_page)", false
 }
 
 // ScanType implements the Metric interface.
