@@ -1260,6 +1260,90 @@ func TestQueryTimeOnPage(t *testing.T) {
 	assert.InDelta(t, 300, r.Results[1].MetricValues[0], 0.001)
 }
 
+func TestQueryTimeOnPagePerDay(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.AvgTimeOnPage{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+			{
+				Dimension: dimensions.Path{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+
+	// result
+	assert.Len(t, r.Results, 5)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[1])
+	assert.InDelta(t, 300, r.Results[0].MetricValues[0], 0.001)
+
+	// result row 1
+	assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[1])
+	assert.InDelta(t, 0, r.Results[1].MetricValues[0], 0.001)
+
+	// result row 2
+	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[2].DimensionValues[0])
+	assert.Equal(t, "/", r.Results[2].DimensionValues[1])
+	assert.InDelta(t, 0, r.Results[2].MetricValues[0], 0.001)
+
+	// result row 3
+	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[3].DimensionValues[0])
+	assert.Equal(t, "/landing", r.Results[3].DimensionValues[1])
+	assert.InDelta(t, 120, r.Results[3].MetricValues[0], 0.001)
+
+	// result row 4
+	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
+	assert.Equal(t, "/pricing", r.Results[4].DimensionValues[1])
+	assert.InDelta(t, 60, r.Results[4].MetricValues[0], 0.001)
+}
+
 func TestBuildQueryFilterJSONPath(t *testing.T) {
 	input := []string{
 		"field",

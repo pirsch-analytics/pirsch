@@ -538,7 +538,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(q.buildQuereFrom(q.primaryTable))
 
 	if withRequired {
-		query.WriteString(q.buildQueryWithJoin())
+		query.WriteString(q.buildQueryWithJoin(req))
 	}
 
 	whereQuery, whereArgs := q.buildQueryWhere(req)
@@ -568,42 +568,68 @@ func (q *Query) buildQueryWith(req request.Request) (string, []any) {
 	primaryFilter := q.primaryFilter
 	primaryTable := q.primaryTable
 	q.primaryTable = pkg.TablePageViews
-	q.primaryFilter = q.filtersForTable(primaryFilter, pkg.TablePageViews)
+	q.primaryFilter = q.buildQueryFiltersForTable(primaryFilter, pkg.TablePageViews)
 
-	// build query
+	// build where query
 	var query strings.Builder
 	args := make([]any, 0)
 	whereQuery, whereArgs := q.buildQueryWhere(req)
 	args = append(args, whereArgs...)
-	query.WriteString(`WITH top AS (
-			SELECT path,
-				leadInFrame(duration_seconds) OVER (
+
+	// filter dimensions to group by
+	groupBy := q.buildQueryWithFilterDimensions(req)
+	fields := make([]string, 0, len(groupBy))
+
+	for _, d := range groupBy {
+		fields = append(fields, q.buildQuerySelectColumn(d))
+	}
+
+	selectFields := strings.Join(fields, ", ")
+
+	// build query
+	query.WriteString("WITH top AS (SELECT path, ")
+
+	if len(fields) > 0 {
+		query.WriteString(selectFields)
+		query.WriteString(", ")
+	}
+
+	query.WriteString(`leadInFrame(duration_seconds) OVER (
 					PARTITION BY visitor_id, session_id
 					ORDER BY time ASC
 					ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
 				) time_on_page
 			FROM page_view_v7 `)
 	query.WriteString(whereQuery)
-	query.WriteString(`),
-		avgtop AS (
-			SELECT path, avgOrDefaultIf(time_on_page, time_on_page > 0) avg_time_on_page
-			FROM top
-			GROUP BY path
-		) `)
+	query.WriteString("), avgtop AS (SELECT path, ")
 
-	// TODO include dimensions to group by
+	if len(fields) > 0 {
+		names := make([]string, 0, len(groupBy))
 
-	// reset to original tables
+		for _, field := range groupBy {
+			names = append(names, field.Column(""))
+		}
+
+		query.WriteString(strings.Join(names, ", "))
+		query.WriteString(", ")
+	}
+
+	query.WriteString("avgOrDefaultIf(time_on_page, time_on_page > 0) avg_time_on_page FROM top ")
+	groupBy = append(groupBy, dimensions.Path{})
+	query.WriteString(q.buildQueryGroupBy(groupBy))
+	query.WriteString(") ")
+
+	// restore original tables
 	q.primaryTable = primaryTable
 	q.primaryFilter = primaryFilter
 	return query.String(), args
 }
 
-func (q *Query) filtersForTable(filters []classifiedFilter, table string) []classifiedFilter {
+func (q *Query) buildQueryFiltersForTable(filters []classifiedFilter, table string) []classifiedFilter {
 	result := make([]classifiedFilter, 0, len(filters))
 
 	for _, f := range filters {
-		if q.filterCompatibleWithTable(f.filter, table) {
+		if q.buildQueryFilterCompatibleWithTable(f.filter, table) {
 			result = append(result, classifiedFilter{
 				table:  table,
 				filter: f.filter,
@@ -614,7 +640,7 @@ func (q *Query) filtersForTable(filters []classifiedFilter, table string) []clas
 	return result
 }
 
-func (q *Query) filterCompatibleWithTable(filter request.Filter, table string) bool {
+func (q *Query) buildQueryFilterCompatibleWithTable(filter request.Filter, table string) bool {
 	// leaf node
 	if len(filter.Filter) == 0 {
 		if filter.Dimension == nil {
@@ -626,7 +652,7 @@ func (q *Query) filterCompatibleWithTable(filter request.Filter, table string) b
 
 	// logical group, all children must be compatible
 	for _, child := range filter.Filter {
-		if !q.filterCompatibleWithTable(child, table) {
+		if !q.buildQueryFilterCompatibleWithTable(child, table) {
 			return false
 		}
 	}
@@ -634,13 +660,47 @@ func (q *Query) filterCompatibleWithTable(filter request.Filter, table string) b
 	return true
 }
 
-func (q *Query) buildQueryWithJoin() string {
+func (q *Query) buildQueryWithJoin(req request.Request) string {
+	var query strings.Builder
+
 	// use entry_path to join the time on page, exit_path isn't allowed (because it's always 0)
 	if q.primaryTable == pkg.TableSessions {
-		return "LEFT JOIN avgtop ON entry_path = avgtop.path "
+		query.WriteString("LEFT JOIN avgtop ON entry_path = avgtop.path ")
+	} else {
+		query.WriteString("LEFT JOIN avgtop ON path = avgtop.path ")
 	}
 
-	return "LEFT JOIN avgtop ON path = avgtop.path "
+	// join dimensions
+	join := q.buildQueryWithFilterDimensions(req)
+
+	if len(join) > 0 {
+		query.WriteString("AND ")
+		joinColumns := make([]string, 0, len(join))
+
+		for _, field := range join {
+			column := field.Column("")
+			joinColumns = append(joinColumns, fmt.Sprintf(`"%s" = avgtop."%s"`, column, column))
+		}
+
+		query.WriteString(strings.Join(joinColumns, " AND "))
+		query.WriteString(" ")
+	}
+
+	return query.String()
+}
+
+func (q *Query) buildQueryWithFilterDimensions(req request.Request) []dimensions.Dimension {
+	groupBy := make([]dimensions.Dimension, 0, len(req.Dimensions))
+
+	for _, d := range req.Dimensions {
+		if _, ok := d.(dimensions.Path); ok || !slices.Contains(d.Table(), pkg.TablePageViews) {
+			continue
+		}
+
+		groupBy = append(groupBy, d)
+	}
+
+	return groupBy
 }
 
 func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
