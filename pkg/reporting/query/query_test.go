@@ -23,9 +23,6 @@ import (
 
 	- Growth
 	- Comparison Mode
-	- Session List
-		- VisitorID
-		- SessionID
 	- Session Breakdown
 	- Funnel
 */
@@ -1342,6 +1339,137 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
 	assert.Equal(t, "/pricing", r.Results[4].DimensionValues[1])
 	assert.InDelta(t, 60, r.Results[4].MetricValues[0], 0.001)
+}
+
+func TestQueryListSessions(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.VisitorID{},
+			dimensions.SessionID{},
+			dimensions.Start{},
+			dimensions.Duration{},
+			dimensions.PageViews{},
+			dimensions.Bounced{},
+			dimensions.EntryPath{},
+			dimensions.ExitPath{},
+			dimensions.EntryTitle{},
+			dimensions.ExitTitle{},
+			dimensions.Time{},
+			dimensions.Hostname{},
+			dimensions.Language{},
+			dimensions.Country{},
+			dimensions.Region{},
+			dimensions.City{},
+			dimensions.Referrer{},
+			dimensions.ReferrerName{},
+			dimensions.ReferrerIcon{},
+			dimensions.OS{},
+			dimensions.OSVersion{},
+			dimensions.Browser{},
+			dimensions.BrowserVersion{},
+			dimensions.Platform{},
+			dimensions.ScreenClass{},
+			dimensions.UTMSource{},
+			dimensions.UTMContent{},
+			dimensions.UTMMedium{},
+			dimensions.UTMCampaign{},
+			dimensions.UTMTerm{},
+			dimensions.Channel{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.VisitorID{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+
+	// result
+	assert.Len(t, r.Results, 5)
+	assert.Len(t, r.Results[0].DimensionValues, 31)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result row 0 (only fully compare this, as this test would get really long otherwise)
+	assert.Equal(t, uint64(1), r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint32(1), r.Results[0].DimensionValues[1])
+	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[2])
+	assert.Equal(t, uint32(0), r.Results[0].DimensionValues[3])
+	assert.Equal(t, uint16(1), r.Results[0].DimensionValues[4])
+	assert.Equal(t, true, r.Results[0].DimensionValues[5])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[6])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[7])
+	assert.Equal(t, "Home", r.Results[0].DimensionValues[8])
+	assert.Equal(t, "Home", r.Results[0].DimensionValues[9])
+	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[10])
+	assert.Equal(t, "example.com", r.Results[0].DimensionValues[11])
+	assert.Equal(t, "en", r.Results[0].DimensionValues[12])
+	assert.Equal(t, "us", r.Results[0].DimensionValues[13])
+	assert.Equal(t, "Virginia", r.Results[0].DimensionValues[14])
+	assert.Equal(t, "Ashburn", r.Results[0].DimensionValues[15])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[0].DimensionValues[16])
+	assert.Equal(t, "DuckDuckGo", r.Results[0].DimensionValues[17])
+	assert.Empty(t, r.Results[0].DimensionValues[18])
+	assert.Equal(t, pkg.OSWindows, r.Results[0].DimensionValues[19])
+	assert.Equal(t, "10", r.Results[0].DimensionValues[20])
+	assert.Equal(t, pkg.BrowserChrome, r.Results[0].DimensionValues[21])
+	assert.Equal(t, "142", r.Results[0].DimensionValues[22])
+	assert.Equal(t, pkg.PlatformDesktop, r.Results[0].DimensionValues[23])
+	assert.Equal(t, "Full HD", r.Results[0].DimensionValues[24])
+	assert.Equal(t, "DuckDuckGo", r.Results[0].DimensionValues[25])
+	assert.Equal(t, "Main", r.Results[0].DimensionValues[26])
+	assert.Equal(t, "Search", r.Results[0].DimensionValues[27])
+	assert.Equal(t, "Paid", r.Results[0].DimensionValues[28])
+	assert.Equal(t, "privacy+analytics", r.Results[0].DimensionValues[29])
+	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[30])
+
+	// result row 1
+	assert.Equal(t, uint64(2), r.Results[1].DimensionValues[0])
+	assert.Equal(t, uint32(2), r.Results[1].DimensionValues[1])
+
+	// result row 2
+	assert.Equal(t, uint64(3), r.Results[2].DimensionValues[0])
+	assert.Equal(t, uint32(3), r.Results[2].DimensionValues[1])
+
+	// result row 3
+	assert.Equal(t, uint64(4), r.Results[3].DimensionValues[0])
+	assert.Equal(t, uint32(4), r.Results[3].DimensionValues[1])
+
+	// result row 4
+	assert.Equal(t, uint64(4), r.Results[4].DimensionValues[0])
+	assert.Equal(t, uint32(5), r.Results[4].DimensionValues[1])
+}
+
+func TestQueryListSessionBreakdown(t *testing.T) {
+	// TODO
 }
 
 func TestBuildQueryFilterJSONPath(t *testing.T) {
