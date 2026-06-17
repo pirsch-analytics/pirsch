@@ -18,13 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-/*
-	TODO
-
-	- Comparison Mode
-	- Funnel
-*/
-
 func TestQueryFromSessions(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
@@ -1688,6 +1681,68 @@ func TestQueryListSessionBreakdownEvents(t *testing.T) {
 	assert.Empty(t, r.Results[0].DimensionValues[22])
 	assert.Empty(t, r.Results[0].DimensionValues[23])
 	assert.Empty(t, r.Results[0].DimensionValues[24])
+}
+
+func TestQueryComparison(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, _, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+			Compare: &request.ComparePeriod{
+				From: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+				To:   time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
+			metrics.AvgSessionDuration{},
+		},
+	}
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// result dimensions
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+
+	// result row
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
+	assert.Equal(t, int64(2), r.Results[0].MetricValues[3])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[4], 0.001)
+	assert.InDelta(t, 60, r.Results[0].MetricValues[5], 0.001)
+
+	// compare result row
+	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].CompareMetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[2])
+	assert.Equal(t, int64(1), r.Results[0].CompareMetricValues[3])
+	assert.InDelta(t, 0.5, r.Results[0].CompareMetricValues[4], 0.001)
+	assert.InDelta(t, 150, r.Results[0].CompareMetricValues[5], 0.001)
+}
+
+func TestQueryFunnel(t *testing.T) {
+	// TODO
 }
 
 func TestBuildQueryFilterJSONPath(t *testing.T) {

@@ -70,11 +70,19 @@ func (q *Query) Run(req request.Request) report.Report {
 		}
 	}
 
+	var r report.Report
+
 	if q.joinTable != "" {
-		return q.runWithJoin(req)
+		r = q.runWithJoin(req)
+	} else {
+		r = q.run(req)
 	}
 
-	return q.run(req)
+	if req.Period.Compare != nil {
+		q.runWithComparison(req, &r)
+	}
+
+	return r
 }
 
 func (q *Query) runWithJoin(req request.Request) report.Report {
@@ -179,6 +187,79 @@ func (q *Query) run(req request.Request) report.Report {
 		Request: req,
 		Results: results,
 	}
+}
+
+func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
+	// determine if the results must be merged in order or by dimensions
+	mergeInOrder := false
+
+	for _, d := range req.Dimensions {
+		switch d.(type) {
+		case dimensions.Time,
+			dimensions.Start,
+			dimensions.Day,
+			dimensions.Week,
+			dimensions.Month,
+			dimensions.Year,
+			dimensions.Hour:
+			mergeInOrder = true
+			break
+		}
+	}
+
+	// get results ignoring pagination and possibly order by
+	req.Period.From = req.Period.Compare.From
+	req.Period.To = req.Period.Compare.To
+	req.Pagination = nil
+
+	if !mergeInOrder {
+		req.OrderBy = nil
+	}
+
+	var r report.Report
+
+	if q.joinTable != "" {
+		r = q.runWithJoin(req)
+	} else {
+		r = q.run(req)
+	}
+
+	// merge results
+	if mergeInOrder {
+		for i := range rep.Results {
+			if i < len(r.Results) {
+				rep.Results[i].CompareMetricValues = r.Results[i].MetricValues
+			} else {
+				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+			}
+		}
+	} else {
+		index := make(map[string]int, len(r.Results))
+
+		for i, r := range r.Results {
+			index[q.dimensionKey(r.DimensionValues)] = i
+		}
+
+		for i := range rep.Results {
+			key := q.dimensionKey(rep.Results[i].DimensionValues)
+
+			if j, ok := index[key]; ok {
+				rep.Results[i].CompareMetricValues = r.Results[j].MetricValues
+			} else {
+				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+			}
+		}
+	}
+}
+
+func (q *Query) zeroValues(metrics []metrics.Metric) []any {
+	zeroValues := make([]any, len(metrics))
+
+	for i, m := range metrics {
+		zeroValues[i] = m.Zero()
+	}
+
+	return zeroValues
 }
 
 func (q *Query) resolvePrimaryTable(req request.Request) {

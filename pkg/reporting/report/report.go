@@ -24,6 +24,10 @@ type Result struct {
 	// MetricValues is the ordered list of result values as in the Request.
 	// These can be strings, int, or float.
 	MetricValues []any
+
+	// CompareMetricValues is the ordered list of result values for the compared period as in the Request.
+	// These can be strings, int, or float.
+	CompareMetricValues []any
 }
 
 // Meta contains metadata information for the Report.

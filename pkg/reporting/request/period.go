@@ -28,6 +28,18 @@ type Period struct {
 
 	// IncludeTime determines whether the From and To times should be included.
 	IncludeTime bool
+
+	// Compare is optional. When set, the query runs for both periods and results are merged.
+	Compare *ComparePeriod
+}
+
+// ComparePeriod is the start and end date for a previous period for the Request.
+type ComparePeriod struct {
+	// From is the start date and time for the ComparePeriod.
+	From time.Time
+
+	// To is the end date and time for the ComparePeriod.
+	To time.Time
 }
 
 func (p *Period) validate() {
