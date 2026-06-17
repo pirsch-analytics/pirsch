@@ -21,7 +21,6 @@ import (
 /*
 	TODO
 
-	- Growth
 	- Comparison Mode
 	- Funnel
 */
@@ -1504,7 +1503,7 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 			dimensions.UTMCampaign{},
 			dimensions.UTMTerm{},
 			dimensions.Channel{},
-			//dimensions.Duration{}, // TODO
+			dimensions.Duration{},
 		},
 		Filter: []request.Filter{
 			{
@@ -1543,7 +1542,7 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 
 	// result
 	assert.Len(t, r.Results, 3)
-	assert.Len(t, r.Results[0].DimensionValues, 24)
+	assert.Len(t, r.Results[0].DimensionValues, 25)
 	assert.Empty(t, r.Results[0].MetricValues)
 
 	// result row 0
@@ -1571,14 +1570,17 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 	assert.Empty(t, r.Results[0].DimensionValues[21])
 	assert.Empty(t, r.Results[0].DimensionValues[22])
 	assert.Empty(t, r.Results[0].DimensionValues[23])
+	assert.Equal(t, uint32(0), r.Results[0].DimensionValues[24])
 
 	// result row 1
 	assert.Equal(t, time.Date(2026, 1, 2, 9, 27, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
 	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[1])
+	assert.Equal(t, uint32(120), r.Results[1].DimensionValues[24])
 
 	// result row 2
 	assert.Equal(t, time.Date(2026, 1, 2, 9, 28, 0, 0, time.UTC), r.Results[2].DimensionValues[0])
 	assert.Equal(t, "/", r.Results[2].DimensionValues[1])
+	assert.Equal(t, uint32(60), r.Results[2].DimensionValues[24])
 }
 
 func TestQueryListSessionBreakdownEvents(t *testing.T) {
