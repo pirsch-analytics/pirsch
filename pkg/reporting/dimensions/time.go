@@ -11,7 +11,7 @@ type Time struct{}
 
 // Table implements the Dimension interface.
 func (d Time) Table() []string {
-	return []string{pkg.TableSessions}
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // Column implements the Dimension interface.

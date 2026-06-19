@@ -34,6 +34,7 @@ type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
 	joinTable      string
+	joinStep       int
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
 }
@@ -97,7 +98,6 @@ func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
 		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
 			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
 		} else {
-			// TODO join visitor_id and session_id
 			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
 			query.WriteString(stepQuery)
 			args = append(args, stepArgs...)
@@ -203,6 +203,7 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 	}
 	query := NewQuery(q.db)
 	query.prepare(&r)
+	query.joinStep = stepIndex // join the previous step (starting at 1)
 	return query.buildQuery(r)
 }
 
@@ -764,6 +765,10 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 		query.WriteString(q.buildQueryWithJoin(req))
 	}
 
+	if q.joinStep > 0 {
+		query.WriteString(q.buildQueryWithJoinStep())
+	}
+
 	whereQuery, whereArgs := q.buildQueryWhere(req)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
@@ -912,6 +917,10 @@ func (q *Query) buildQueryWithJoin(req request.Request) string {
 	return query.String()
 }
 
+func (q *Query) buildQueryWithJoinStep() string {
+	return fmt.Sprintf("JOIN step%d s ON visitor_id = s.visitor_id AND session_id = s.session_id ", q.joinStep)
+}
+
 func (q *Query) buildQueryWithFilterDimensions(req request.Request) []dimensions.Dimension {
 	groupBy := make([]dimensions.Dimension, 0, len(req.Dimensions))
 
@@ -943,8 +952,10 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 	}
 
 	for _, dimension := range req.Dimensions {
-		fields = append(fields, q.buildQuerySelectColumn(dimension))
-		args = append(args, dimension.Args()...)
+		if dimension.Column("") != "" {
+			fields = append(fields, q.buildQuerySelectColumn(dimension))
+			args = append(args, dimension.Args()...)
+		}
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args

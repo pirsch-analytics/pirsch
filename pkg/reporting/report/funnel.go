@@ -19,22 +19,22 @@ type FunnelReport struct {
 // FunnelStep is the statistics for a funnel step.
 type FunnelStep struct {
 	// Step is the number of the step starting at 1.
-	Step int
+	Step uint8
 
 	// Visitors is the unique number of visitors.
-	Visitors int
+	Visitors uint64
 
 	// RelativeVisitors is the relative number of visitors.
 	RelativeVisitors float64
 
 	// PreviousVisitors is the unique number of visitors from the previous step.
-	PreviousVisitors int
+	PreviousVisitors uint64
 
 	// RelativePreviousVisitors is the relative number of visitors from the previous step.
 	RelativePreviousVisitors float64
 
 	// Dropped is the unique number of visitors dropped from the previous step.
-	Dropped int
+	Dropped uint64
 
 	// DropOff is the relative number of visitors dropped from the previous step.
 	DropOff float64
