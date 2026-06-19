@@ -49,24 +49,11 @@ func NewQuery(db *db.ClickHouse) *Query {
 
 // Run runs given request.Request and returns the report.Report.
 func (q *Query) Run(req request.Request) report.Report {
-	if errs := req.Validate(); errs != nil {
+	if errs := q.prepare(&req); errs != nil {
 		return report.Report{
 			Meta: report.Meta{
 				Errors: errs,
 			},
-		}
-	}
-
-	q.resolvePrimaryTable(req)
-	q.resolveJoinTable(req)
-
-	for _, filter := range req.Filter {
-		if err := q.classifyFilter(filter); err != nil {
-			return report.Report{
-				Meta: report.Meta{
-					Errors: []error{err},
-				},
-			}
 		}
 	}
 
@@ -83,6 +70,161 @@ func (q *Query) Run(req request.Request) report.Report {
 	}
 
 	return r
+}
+
+// Funnel runs given request.FunnelRequest and returns the report.FunnelReport.
+func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
+	if errs := req.Validate(); errs != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: errs,
+			},
+		}
+	}
+
+	// generate one subquery for each step
+	var query strings.Builder
+	args := make([]any, 0)
+
+	for i, step := range req.Filter {
+		if i == 0 {
+			query.WriteString(fmt.Sprintf("WITH step%d AS (", i+1))
+		} else {
+			query.WriteString(fmt.Sprintf(", step%d AS (", i+1))
+		}
+
+		// skip steps that have the same filters as the previous step
+		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
+			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
+		} else {
+			// TODO join visitor_id and session_id
+			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
+			query.WriteString(stepQuery)
+			args = append(args, stepArgs...)
+		}
+
+		query.WriteString(") ")
+	}
+
+	// union all steps to get visitor counts
+	query.WriteString("SELECT * FROM (")
+
+	for i := range req.Filter {
+		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) visitors FROM step%d ", i+1, i+1))
+
+		if i != len(req.Filter)-1 {
+			query.WriteString("UNION ALL ")
+		}
+	}
+
+	query.WriteString(") ORDER BY step")
+
+	// query and scan results
+	rows, err := q.db.Query(req.Ctx, query.String(), args...)
+
+	if err != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
+	defer func() {
+		_ = rows.Close()
+	}()
+	r := report.FunnelReport{
+		Request: req,
+		Steps:   make([]report.FunnelStep, 0, len(req.Filter)),
+	}
+
+	for rows.Next() {
+		var step report.FunnelStep
+
+		if err := rows.Scan(&step.Step, &step.Visitors); err != nil {
+			return report.FunnelReport{
+				Meta: report.Meta{
+					Errors: []error{err},
+				},
+			}
+		}
+
+		r.Steps = append(r.Steps, step)
+	}
+
+	if err := rows.Err(); err != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
+	// compute derived metrics
+	for i := range r.Steps {
+		if i > 0 {
+			if r.Steps[0].Visitors > 0 {
+				r.Steps[i].RelativeVisitors = float64(r.Steps[i].Visitors) / float64(r.Steps[0].Visitors)
+			}
+
+			r.Steps[i].PreviousVisitors = r.Steps[i-1].Visitors
+			r.Steps[i].RelativePreviousVisitors = r.Steps[i-1].RelativeVisitors
+			r.Steps[i].Dropped = r.Steps[i].PreviousVisitors - r.Steps[i].Visitors
+
+			if r.Steps[i].PreviousVisitors > 0 {
+				r.Steps[i].DropOff = 1 - float64(r.Steps[i].Visitors)/float64(r.Steps[i].PreviousVisitors)
+			}
+		} else if r.Steps[i].Visitors > 0 {
+			r.Steps[i].RelativeVisitors = 1
+		}
+	}
+
+	return r
+}
+
+func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any) {
+	stepDimensions := []dimensions.Dimension{
+		dimensions.SiteID{},
+		dimensions.VisitorID{},
+		dimensions.SessionID{},
+		dimensions.Time{},
+	}
+
+	if stepIndex > 0 {
+		stepDimensions = append(stepDimensions, dimensions.Step{Number: stepIndex + 1})
+	}
+
+	r := request.Request{
+		Ctx:        req.Ctx,
+		SiteID:     req.SiteID,
+		Period:     req.Period,
+		Dimensions: stepDimensions,
+		Filter:     stepFilter,
+	}
+	query := NewQuery(q.db)
+	query.prepare(&r)
+	return query.buildQuery(r)
+}
+
+func (q *Query) funnelStepsEqual(a, b []request.Filter) bool {
+	return len(a) == len(b) && fmt.Sprint(a) == fmt.Sprint(b)
+}
+
+func (q *Query) prepare(req *request.Request) []error {
+	if errs := req.Validate(); errs != nil {
+		return errs
+	}
+
+	q.resolvePrimaryTable(*req)
+	q.resolveJoinTable(*req)
+
+	for _, filter := range req.Filter {
+		if err := q.classifyFilter(filter); err != nil {
+			return []error{err}
+		}
+	}
+
+	return nil
 }
 
 func (q *Query) runWithJoin(req request.Request) report.Report {

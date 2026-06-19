@@ -1742,6 +1742,40 @@ func TestQueryComparison(t *testing.T) {
 }
 
 func TestQueryFunnel(t *testing.T) {
+	loadTestData(t, []string{
+		"three page views + event",
+	})
+	q, _, _ := newQuery()
+	r := q.Funnel(request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: [][]request.Filter{
+			{
+				{
+					Dimension: dimensions.EntryPath{},
+					Values:    []any{"/landing"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Event{},
+					Values:    []any{"Contact Button"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/landing"},
+				},
+			},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+
 	// TODO
 }
 

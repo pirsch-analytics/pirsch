@@ -4,9 +4,9 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
-// Report returns metrics for a Request.
+// Report returns metrics for a request.Request.
 type Report struct {
-	// Request is the Request for this report.
+	// Request is the request.Request for this report.
 	Request request.Request
 
 	// Results is an ordered list of query results.

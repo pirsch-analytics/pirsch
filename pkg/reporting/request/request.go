@@ -16,7 +16,7 @@ var (
 	metaKeyValidKeySegment = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
 
-// Request generates a Report.
+// Request generates a report.Report.
 type Request struct {
 	// Ctx can be used to set a timeout or to cancel queries.
 	Ctx context.Context
@@ -24,24 +24,24 @@ type Request struct {
 	// SiteID is the site ID for the request.
 	SiteID uint64
 
-	// Period is the period and timezone for the Report.
+	// Period is the period and timezone for the report.Report.
 	Period Period
 
-	// Metrics is a list of result fields for the Report.
+	// Metrics is a list of result fields for the report.Report.
 	Metrics []metrics.Metric
 
 	// Dimensions is a list of attributes for the Request.
 	Dimensions []dimensions.Dimension
 
-	// Filter filters the results for a Report.
+	// Filter filters the results for a report.Report.
 	// Top-level filters are connected using the AND operator by default.
 	// To use other operators, they need to be set in the Filter recursively.
 	Filter []Filter
 
-	// OrderBy sorts the result fields of a Report.
+	// OrderBy sorts the result fields of a report.Report.
 	OrderBy []OrderBy
 
-	// Pagination limits the number of results for a Report.
+	// Pagination limits the number of results for a report.Report.
 	Pagination *Pagination
 
 	// Options are optional fields for the Request.
