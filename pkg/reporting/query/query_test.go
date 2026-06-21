@@ -45,6 +45,9 @@ func TestQueryFromSessions(t *testing.T) {
 			metrics.BounceRate{},
 			metrics.AvgSessionDuration{},
 		},
+		Options: &request.Options{
+			Sample: 10000000,
+		},
 	}
 
 	// tables
@@ -117,6 +120,7 @@ func TestQueryFromPageViews(t *testing.T) {
 			{Metric: metrics.PageViews{}},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -213,6 +217,7 @@ func TestQueryFromEvents(t *testing.T) {
 			metrics.CR{},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -290,6 +295,7 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables and filter
 	r := q.Run(req)
@@ -366,6 +372,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -423,6 +430,7 @@ func TestQueryFromEventsFiltered(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -498,6 +506,7 @@ func TestQueryDimensionOnly(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -546,6 +555,7 @@ func TestQueryTime(t *testing.T) {
 			metrics.Visitors{},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -595,6 +605,7 @@ func TestQueryLimit(t *testing.T) {
 			Limit: 1,
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -648,6 +659,7 @@ func TestQueryOffsetLimit(t *testing.T) {
 			Limit:  1,
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -704,6 +716,7 @@ func TestQueryEventList(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -781,6 +794,7 @@ func TestQueryEventMetaDataFilterKey(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -852,6 +866,7 @@ func TestQueryEventMetaDataFilterValue(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -904,6 +919,7 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -958,6 +974,7 @@ func TestQueryEventMetaDataCastType(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1011,6 +1028,7 @@ func TestQueryTagKeysList(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1080,6 +1098,7 @@ func TestQueryTagBreakdown(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1146,6 +1165,7 @@ func TestQueryTagFilter(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1208,6 +1228,7 @@ func TestQueryTimeOnPage(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1282,6 +1303,7 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1388,6 +1410,7 @@ func TestQueryListSessions(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1515,6 +1538,7 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1632,6 +1656,7 @@ func TestQueryListSessionBreakdownEvents(t *testing.T) {
 			},
 		},
 	}
+	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
@@ -1656,7 +1681,7 @@ func TestQueryListSessionBreakdownEvents(t *testing.T) {
 	assert.Empty(t, r.Results[0].MetricValues)
 
 	// result row 0
-	assert.Equal(t, time.Date(2026, 1, 2, 9, 25, 30, 0, time.UTC), r.Results[0].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, 1, 2, 9, 25, 30, 1000000, time.UTC), r.Results[0].DimensionValues[0])
 	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[1])
 	assert.Equal(t, `{"label":"Get in touch","position":"text","price":67.9}`, r.Results[0].DimensionValues[2])
 	assert.Equal(t, "/landing", r.Results[0].DimensionValues[3])
@@ -1768,15 +1793,56 @@ func TestQueryFunnel(t *testing.T) {
 			},
 			{
 				{
+					Dimension: dimensions.Event{},
+					Values:    []any{"Contact Button"}, // same as before -> skip
+				},
+			},
+			{
+				{
 					Dimension: dimensions.Path{},
-					Values:    []any{"/landing"},
+					Values:    []any{"/about"},
 				},
 			},
 		},
 	})
 	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 4)
 
-	// TODO
+	// step 1
+	assert.Equal(t, uint8(1), r.Steps[0].Step)
+	assert.Equal(t, uint64(1), r.Steps[0].Visitors)
+	assert.Equal(t, float64(1), r.Steps[0].RelativeVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].PreviousVisitors)
+	assert.Equal(t, float64(0), r.Steps[0].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].Dropped)
+	assert.Equal(t, float64(0), r.Steps[0].DropOff)
+
+	// step 2
+	assert.Equal(t, uint8(2), r.Steps[1].Step)
+	assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+	assert.Equal(t, float64(1), r.Steps[1].RelativeVisitors)
+	assert.Equal(t, uint64(1), r.Steps[1].PreviousVisitors)
+	assert.Equal(t, float64(1), r.Steps[1].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[1].Dropped)
+	assert.Equal(t, float64(0), r.Steps[1].DropOff)
+
+	// step 3
+	assert.Equal(t, uint8(3), r.Steps[2].Step)
+	assert.Equal(t, uint64(1), r.Steps[2].Visitors)
+	assert.Equal(t, float64(1), r.Steps[2].RelativeVisitors)
+	assert.Equal(t, uint64(1), r.Steps[2].PreviousVisitors)
+	assert.Equal(t, float64(1), r.Steps[2].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[2].Dropped)
+	assert.Equal(t, float64(0), r.Steps[2].DropOff)
+
+	// step 4
+	assert.Equal(t, uint8(4), r.Steps[3].Step)
+	assert.Equal(t, uint64(0), r.Steps[3].Visitors)
+	assert.Equal(t, float64(0), r.Steps[3].RelativeVisitors)
+	assert.Equal(t, uint64(1), r.Steps[3].PreviousVisitors)
+	assert.Equal(t, float64(1), r.Steps[3].RelativePreviousVisitors)
+	assert.Equal(t, uint64(1), r.Steps[3].Dropped)
+	assert.Equal(t, float64(1), r.Steps[3].DropOff)
 }
 
 func TestBuildQueryFilterJSONPath(t *testing.T) {

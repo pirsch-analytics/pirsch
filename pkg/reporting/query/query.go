@@ -184,10 +184,8 @@ func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
 
 func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any) {
 	stepDimensions := []dimensions.Dimension{
-		dimensions.SiteID{},
 		dimensions.VisitorID{},
 		dimensions.SessionID{},
-		dimensions.Time{},
 	}
 
 	if stepIndex > 0 {
@@ -200,6 +198,7 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		Period:     req.Period,
 		Dimensions: stepDimensions,
 		Filter:     stepFilter,
+		Options:    req.Options,
 	}
 	query := NewQuery(q.db)
 	query.prepare(&r)
@@ -759,7 +758,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	selectQuery, selectArgs := q.buildQuerySelect(req)
 	query.WriteString(selectQuery)
 	args = append(args, selectArgs...)
-	query.WriteString(q.buildQuereFrom(q.primaryTable))
+	query.WriteString(q.buildQuereFrom(q.primaryTable, req.Options.Sample))
 
 	if withRequired {
 		query.WriteString(q.buildQueryWithJoin(req))
@@ -952,10 +951,8 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 	}
 
 	for _, dimension := range req.Dimensions {
-		if dimension.Column("") != "" {
-			fields = append(fields, q.buildQuerySelectColumn(dimension))
-			args = append(args, dimension.Args()...)
-		}
+		fields = append(fields, q.buildQuerySelectColumn(dimension))
+		args = append(args, dimension.Args()...)
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
@@ -978,7 +975,11 @@ func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension) string {
 	}
 }
 
-func (q *Query) buildQuereFrom(table string) string {
+func (q *Query) buildQuereFrom(table string, sample uint) string {
+	if sample > 0 {
+		return fmt.Sprintf("FROM %s SAMPLE %d ", table, sample)
+	}
+
 	return fmt.Sprintf("FROM %s ", table)
 }
 
@@ -1001,7 +1002,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 
 	if len(q.subqueryFilter) > 0 {
 		query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-		query.WriteString(q.buildQuereFrom(q.subqueryFilter[0].table))
+		query.WriteString(q.buildQuereFrom(q.subqueryFilter[0].table, req.Options.Sample))
 		whereQuery, whereArgs = q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
 		query.WriteString(whereQuery)
 		args = append(args, whereArgs...)
@@ -1247,7 +1248,7 @@ func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
 }
 
 func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
-	if len(dimensions) > 0 {
+	if q.joinStep == 0 && len(dimensions) > 0 {
 		fields := make([]string, 0, len(dimensions))
 
 		for _, dimension := range dimensions {

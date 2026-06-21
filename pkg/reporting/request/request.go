@@ -54,6 +54,10 @@ func (r *Request) Validate() []error {
 		r.Ctx = context.Background()
 	}
 
+	if r.Options == nil {
+		r.Options = new(Options)
+	}
+
 	errs := make([]error, 0)
 
 	if r.SiteID == 0 {
