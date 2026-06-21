@@ -772,8 +772,9 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
 	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
+	query.WriteString(q.buildQueryHaving())
 	query.WriteString(q.buildOrderBy(req.OrderBy))
-	query.WriteString(q.buildPagination(req.Pagination))
+	query.WriteString(q.buildQueryPagination(req.Pagination))
 	return query.String(), args
 }
 
@@ -1291,13 +1292,21 @@ func (q *Query) buildOrderBy(order []request.OrderBy) string {
 	return ""
 }
 
-func (q *Query) buildPagination(pagination *request.Pagination) string {
+func (q *Query) buildQueryPagination(pagination *request.Pagination) string {
 	if pagination != nil && pagination.Limit > 0 {
 		if pagination.Offset > 0 {
 			return fmt.Sprintf("LIMIT %d, %d", pagination.Offset, pagination.Limit)
 		}
 
 		return fmt.Sprintf("LIMIT %d", pagination.Limit)
+	}
+
+	return ""
+}
+
+func (q *Query) buildQueryHaving() string {
+	if q.primaryTable == pkg.TableSessions && q.joinStep == 0 {
+		return "HAVING sum(sign) > 0 "
 	}
 
 	return ""
