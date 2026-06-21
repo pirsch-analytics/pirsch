@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestQueryFromSessions(t *testing.T) {
+func TestQuerySessions(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -87,7 +87,7 @@ func TestQueryFromSessions(t *testing.T) {
 	assert.InDelta(t, 60, r.Results[1].MetricValues[5], 0.001)
 }
 
-func TestQueryFromPageViews(t *testing.T) {
+func TestQueryPageViews(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -192,7 +192,7 @@ func TestQueryFromPageViews(t *testing.T) {
 	assert.InDelta(t, float64(120), r.Results[2].MetricValues[7], 0.001)
 }
 
-func TestQueryFromEvents(t *testing.T) {
+func TestQueryEvents(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -247,7 +247,62 @@ func TestQueryFromEvents(t *testing.T) {
 	assert.InDelta(t, 0.75, r.Results[0].MetricValues[2], 0.001)
 }
 
-func TestQueryFromSessionsFiltered(t *testing.T) {
+func TestQueryEventPath(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Events{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []any{"/"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "/", args[3])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 2)
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
+}
+
+func TestQuerySessionsFiltered(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -343,7 +398,7 @@ func TestQueryFromSessionsFiltered(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 }
 
-func TestQueryFromPageViewsFiltered(t *testing.T) {
+func TestQueryPageViewsFiltered(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -394,7 +449,7 @@ func TestQueryFromPageViewsFiltered(t *testing.T) {
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[0])
 }
 
-func TestQueryFromEventsFiltered(t *testing.T) {
+func TestQueryEventsFiltered(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
