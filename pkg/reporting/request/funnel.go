@@ -3,6 +3,8 @@ package request
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 )
 
 // FunnelRequest generates a funnel.
@@ -35,17 +37,43 @@ func (r *FunnelRequest) Validate() []error {
 		r.Options = new(Options)
 	}
 
-	if len(r.Filter) < 2 {
-		return []error{errors.New("funnels must have at least two filter steps")}
+	if r.Period.Timezone == nil {
+		r.Period.Timezone = time.UTC
 	}
 
-	for _, filter := range r.Filter {
-		if len(filter) == 0 {
-			return []error{errors.New("funnel step filters must not be empty")}
+	if r.Period.WeekdayMode == 0 {
+		r.Period.WeekdayMode = WeekdayMonday
+	}
+
+	if r.Period.From.After(r.Period.To) {
+		r.Period.From, r.Period.To = r.Period.To, r.Period.From
+	}
+
+	errs := make([]error, 0)
+
+	if err := validateSiteID(r.SiteID); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(r.Filter) < 2 {
+		errs = append(errs, errors.New("funnels must have at least two filter steps"))
+	} else {
+		for i, filter := range r.Filter {
+			if len(filter) == 0 {
+				errs = append(errs, fmt.Errorf("funnel step %d filters must not be empty", i+1))
+			} else {
+				for _, f := range filter {
+					errs = append(errs, validateFilterValues(f)...)
+				}
+			}
 		}
 	}
 
-	// TODO
+	// TODO check other relevant fields and filter combinations
+
+	if len(errs) > 0 {
+		return errs
+	}
 
 	return nil
 }
