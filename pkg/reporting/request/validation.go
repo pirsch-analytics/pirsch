@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 )
 
 func validateSiteID(siteID uint64) error {
@@ -60,4 +61,78 @@ func validateMetadataKey(path string) error {
 	}
 
 	return nil
+}
+
+func validateOrderBy(order []OrderBy, requestDimensions []dimensions.Dimension, requestMetrics []metrics.Metric) []error {
+	errs := make([]error, 0)
+
+	for _, o := range order {
+		if o.Dimension != nil {
+			if err := validateOrderByDimension(o.Dimension, requestDimensions); err != nil {
+				errs = append(errs, err)
+			}
+		} else if o.Metric != nil {
+			if err := validateOrderByMetric(o.Metric, requestMetrics); err != nil {
+				errs = append(errs, err)
+			}
+		} else {
+			errs = append(errs, errors.New("order by must have either a dimension or a metric set"))
+		}
+	}
+
+	return errs
+}
+
+func validateOrderByDimension(order dimensions.Dimension, requestDimensions []dimensions.Dimension) error {
+	switch o := order.(type) {
+	case dimensions.TagValue:
+		if o.Key == "" {
+			return nil
+		}
+
+		// key must match a TagValue dimension
+		for _, d := range requestDimensions {
+			if tv, ok := d.(dimensions.TagValue); ok && tv.Key == o.Key {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("order by tag value key %q not found in dimensions", o.Key)
+	case dimensions.EventMeta:
+		if o.Path == "" {
+			return nil
+		}
+
+		// path must match an EventMeta dimension
+		for _, d := range requestDimensions {
+			if meta, ok := d.(dimensions.EventMeta); ok && meta.Path == o.Path {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("order by event meta path %q not found in dimensions", o.Path)
+	default:
+		// for non-parameterized dimensions, check by column name
+		column := order.Column("")
+
+		for _, d := range requestDimensions {
+			if d.Column("") == column {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("order by dimension %q not found in dimensions", column)
+	}
+}
+
+func validateOrderByMetric(order metrics.Metric, requestMetrics []metrics.Metric) error {
+	column := order.Column()
+
+	for _, m := range requestMetrics {
+		if m.Column() == column {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("order by metric %q not found in metrics", column)
 }

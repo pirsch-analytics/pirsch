@@ -834,7 +834,6 @@ func TestQueryEventMetaDataFilterKey(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Visitors{},
-			//metrics.PageViews{}, // TODO does this still make sense?
 			metrics.CR{},
 			metrics.Events{},
 		},
@@ -1147,7 +1146,7 @@ func TestQueryTagBreakdown(t *testing.T) {
 		OrderBy: []request.OrderBy{
 			{
 				Dimension: dimensions.TagValue{
-					Key: "author", // TODO validate in request that this matches the dimension (or set it)
+					Key: "author",
 				},
 				Direction: request.DirectionASC,
 			},

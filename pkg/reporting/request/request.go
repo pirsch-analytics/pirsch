@@ -81,6 +81,7 @@ func (r *Request) Validate() []error {
 		errs = append(errs, validateFilterValues(f)...)
 	}
 
+	errs = append(errs, validateOrderBy(r.OrderBy, r.Dimensions, r.Metrics)...)
 	// TODO check other relevant fields and filter combinations
 
 	if len(errs) > 0 {
