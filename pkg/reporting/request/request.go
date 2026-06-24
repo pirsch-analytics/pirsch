@@ -67,6 +67,10 @@ func (r *Request) Validate() []error {
 		r.Period.From, r.Period.To = r.Period.To, r.Period.From
 	}
 
+	if r.Period.Compare != nil && r.Period.Compare.From.After(r.Period.Compare.To) {
+		r.Period.Compare.From, r.Period.Compare.To = r.Period.Compare.To, r.Period.Compare.From
+	}
+
 	errs := make([]error, 0)
 
 	if err := validateSiteID(r.SiteID); err != nil {
