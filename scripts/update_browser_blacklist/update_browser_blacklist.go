@@ -13,7 +13,7 @@ import (
 // run this script from the root directory to update the blacklist.go
 func main() {
 	log.Println("Updating browser blacklist")
-	list, err := os.Open("pkg/tracker/ua/browser_blacklist.txt")
+	list, err := os.Open("pkg/ingest/ua/browser_blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -36,8 +36,7 @@ func main() {
 	var out strings.Builder
 	out.WriteString(`package ua
 
-// BrowserBlacklist is a list of User-Agents to ignore.
-var BrowserBlacklist = []string{
+var browserBlacklist = []string{
 `)
 
 	for _, entry := range browser {
@@ -46,7 +45,7 @@ var BrowserBlacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("pkg/tracker/ua/browser_blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/ingest/ua/browser_blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

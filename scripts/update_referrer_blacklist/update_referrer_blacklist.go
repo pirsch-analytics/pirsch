@@ -13,7 +13,7 @@ import (
 // run this script from the root directory to update the referrer_blacklist.go
 func main() {
 	log.Println("Updating referrer blacklist")
-	list, err := os.Open("pkg/tracker/referrer/referrer_blacklist.txt")
+	list, err := os.Open("pkg/ingest/referrer/referrer_blacklist.txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -59,7 +59,7 @@ var referrerBlacklist = []string{
 
 	out.WriteString("}\n")
 
-	if err := os.WriteFile("pkg/tracker/referrer/referrer_blacklist.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/ingest/referrer/referrer_blacklist.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 

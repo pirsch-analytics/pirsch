@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	snowplowList = "pkg/tracker/referrer/mapping-snowplow.json"
-	mappingList  = "pkg/tracker/referrer/mapping.json"
+	snowplowList = "pkg/ingest/referrer/mapping-snowplow.json"
+	mappingList  = "pkg/ingest/referrer/mapping.json"
 )
 
 type domain struct {
@@ -105,7 +105,8 @@ func writeList(groups map[string]string, keys []string) {
 	out.WriteString(`package referrer
 
 var (
-	groups = map[string]string{
+	// Groups is the standard list to group referrers by name.
+	Groups = map[string]string{
 `)
 
 	for _, key := range keys {
@@ -116,7 +117,7 @@ var (
 	out.WriteString(`}
 )`)
 
-	if err := os.WriteFile("pkg/tracker/referrer/groups.go", []byte(out.String()), 0644); err != nil {
+	if err := os.WriteFile("pkg/ingest/referrer/groups.go", []byte(out.String()), 0644); err != nil {
 		log.Fatal(err)
 	}
 }

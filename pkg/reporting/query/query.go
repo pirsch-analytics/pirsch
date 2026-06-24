@@ -1,0 +1,1356 @@
+package query
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/report"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
+)
+
+var tablePriority = map[string]int{
+	pkg.TableSessions:  1,
+	pkg.TablePageViews: 2,
+	pkg.TableEvents:    2,
+}
+
+type classifiedFilter struct {
+	table  string
+	filter request.Filter
+}
+
+// Query queries results for a report.Report.
+type Query struct {
+	db             *db.ClickHouse
+	primaryTable   string
+	joinTable      string
+	joinStep       int
+	primaryFilter  []classifiedFilter
+	subqueryFilter []classifiedFilter
+}
+
+// NewQuery returns a new Query for given database connection.
+func NewQuery(db *db.ClickHouse) *Query {
+	return &Query{
+		db:             db,
+		primaryFilter:  make([]classifiedFilter, 0),
+		subqueryFilter: make([]classifiedFilter, 0),
+	}
+}
+
+// Run runs given request.Request and returns the report.Report.
+func (q *Query) Run(req request.Request) report.Report {
+	if errs := q.prepare(&req); errs != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: errs,
+			},
+		}
+	}
+
+	var r report.Report
+
+	if q.joinTable != "" {
+		r = q.runWithJoin(req)
+	} else {
+		r = q.run(req)
+	}
+
+	if req.Period.Compare != nil {
+		q.runWithComparison(req, &r)
+	}
+
+	return r
+}
+
+// Funnel runs given request.FunnelRequest and returns the report.FunnelReport.
+func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
+	if errs := req.Validate(); errs != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: errs,
+			},
+		}
+	}
+
+	// generate one subquery for each step
+	var query strings.Builder
+	args := make([]any, 0)
+
+	for i, step := range req.Filter {
+		if i == 0 {
+			query.WriteString(fmt.Sprintf("WITH step%d AS (", i+1))
+		} else {
+			query.WriteString(fmt.Sprintf(", step%d AS (", i+1))
+		}
+
+		// skip steps that have the same filters as the previous step
+		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
+			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
+		} else {
+			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
+			query.WriteString(stepQuery)
+			args = append(args, stepArgs...)
+		}
+
+		query.WriteString(") ")
+	}
+
+	// union all steps to get visitor counts
+	query.WriteString("SELECT * FROM (")
+
+	for i := range req.Filter {
+		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) visitors FROM step%d ", i+1, i+1))
+
+		if i != len(req.Filter)-1 {
+			query.WriteString("UNION ALL ")
+		}
+	}
+
+	query.WriteString(") ORDER BY step")
+
+	// query and scan results
+	rows, err := q.db.Query(req.Ctx, query.String(), args...)
+
+	if err != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
+	defer func() {
+		_ = rows.Close()
+	}()
+	r := report.FunnelReport{
+		Request: req,
+		Steps:   make([]report.FunnelStep, 0, len(req.Filter)),
+	}
+
+	for rows.Next() {
+		var step report.FunnelStep
+
+		if err := rows.Scan(&step.Step, &step.Visitors); err != nil {
+			return report.FunnelReport{
+				Meta: report.Meta{
+					Errors: []error{err},
+				},
+			}
+		}
+
+		r.Steps = append(r.Steps, step)
+	}
+
+	if err := rows.Err(); err != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
+	// compute derived metrics
+	for i := range r.Steps {
+		if i > 0 {
+			if r.Steps[0].Visitors > 0 {
+				r.Steps[i].RelativeVisitors = float64(r.Steps[i].Visitors) / float64(r.Steps[0].Visitors)
+			}
+
+			r.Steps[i].PreviousVisitors = r.Steps[i-1].Visitors
+			r.Steps[i].RelativePreviousVisitors = r.Steps[i-1].RelativeVisitors
+			r.Steps[i].Dropped = r.Steps[i].PreviousVisitors - r.Steps[i].Visitors
+
+			if r.Steps[i].PreviousVisitors > 0 {
+				r.Steps[i].DropOff = 1 - float64(r.Steps[i].Visitors)/float64(r.Steps[i].PreviousVisitors)
+			}
+		} else if r.Steps[i].Visitors > 0 {
+			r.Steps[i].RelativeVisitors = 1
+		}
+	}
+
+	return r
+}
+
+func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any) {
+	stepDimensions := []dimensions.Dimension{
+		dimensions.VisitorID{},
+		dimensions.SessionID{},
+	}
+
+	if stepIndex > 0 {
+		stepDimensions = append(stepDimensions, dimensions.Step{Number: stepIndex + 1})
+	}
+
+	r := request.Request{
+		Ctx:        req.Ctx,
+		SiteID:     req.SiteID,
+		Period:     req.Period,
+		Dimensions: stepDimensions,
+		Filter:     stepFilter,
+		Options:    req.Options,
+	}
+	query := NewQuery(q.db)
+	query.prepare(&r)
+	query.joinStep = stepIndex // join the previous step (starting at 1)
+	return query.buildQuery(r)
+}
+
+func (q *Query) funnelStepsEqual(a, b []request.Filter) bool {
+	return len(a) == len(b) && fmt.Sprint(a) == fmt.Sprint(b)
+}
+
+func (q *Query) prepare(req *request.Request) []error {
+	if errs := req.Validate(); errs != nil {
+		return errs
+	}
+
+	q.resolvePrimaryTable(*req)
+	q.resolveJoinTable(*req)
+
+	for _, filter := range req.Filter {
+		if err := q.classifyFilter(filter); err != nil {
+			return []error{err}
+		}
+	}
+
+	return nil
+}
+
+func (q *Query) runWithJoin(req request.Request) report.Report {
+	requestMetrics := req.Metrics
+	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
+	req.Metrics = primaryMetrics
+	primaryQuery, primaryArgs := q.buildQuery(req)
+	req.Metrics = secondaryMetrics
+	req.OrderBy = nil
+	req.Pagination = nil
+	q.primaryTable = q.joinTable
+	secondaryQuery, secondaryArgs := q.buildQuery(req)
+	var wg sync.WaitGroup
+	var m sync.Mutex
+	var results, secondaryResults []report.Result
+	var err error
+	wg.Go(func() {
+		primaryRows, e := q.db.Query(req.Ctx, primaryQuery, primaryArgs...)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+			return
+		}
+
+		results, e = q.scanRows(primaryRows, req.Dimensions, primaryMetrics)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+		}
+	})
+	wg.Go(func() {
+		secondaryRows, e := q.db.Query(req.Ctx, secondaryQuery, secondaryArgs...)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+			return
+		}
+
+		secondaryResults, e = q.scanRows(secondaryRows, req.Dimensions, secondaryMetrics)
+
+		if e != nil {
+			m.Lock()
+			defer m.Unlock()
+			err = e
+		}
+	})
+	wg.Wait()
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error executing queries"),
+					err,
+				},
+			},
+		}
+	}
+
+	q.mergeResults(results, secondaryResults, requestMetrics, primaryMetrics)
+	return report.Report{
+		Request: req,
+		Results: results,
+	}
+}
+
+func (q *Query) run(req request.Request) report.Report {
+	query, args := q.buildQuery(req)
+	rows, err := q.db.Query(req.Ctx, query, args...)
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error executing query"),
+					err,
+				},
+			},
+		}
+	}
+
+	results, err := q.scanRows(rows, req.Dimensions, req.Metrics)
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{
+					errors.New("error scanning rows"),
+					err,
+				},
+			},
+		}
+	}
+
+	return report.Report{
+		Request: req,
+		Results: results,
+	}
+}
+
+func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
+	// determine if the results must be merged in order or by dimensions
+	mergeInOrder := false
+
+	for _, d := range req.Dimensions {
+		switch d.(type) {
+		case dimensions.Time,
+			dimensions.Start,
+			dimensions.Day,
+			dimensions.Week,
+			dimensions.Month,
+			dimensions.Year,
+			dimensions.Hour:
+			mergeInOrder = true
+			break
+		}
+	}
+
+	// get results ignoring pagination and possibly order by
+	req.Period.From = req.Period.Compare.From
+	req.Period.To = req.Period.Compare.To
+	req.Pagination = nil
+
+	if !mergeInOrder {
+		req.OrderBy = nil
+	}
+
+	var r report.Report
+
+	if q.joinTable != "" {
+		r = q.runWithJoin(req)
+	} else {
+		r = q.run(req)
+	}
+
+	// merge results
+	if mergeInOrder {
+		for i := range rep.Results {
+			if i < len(r.Results) {
+				rep.Results[i].CompareMetricValues = r.Results[i].MetricValues
+			} else {
+				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+			}
+		}
+	} else {
+		index := make(map[string]int, len(r.Results))
+
+		for i, r := range r.Results {
+			index[q.dimensionKey(r.DimensionValues)] = i
+		}
+
+		for i := range rep.Results {
+			key := q.dimensionKey(rep.Results[i].DimensionValues)
+
+			if j, ok := index[key]; ok {
+				rep.Results[i].CompareMetricValues = r.Results[j].MetricValues
+			} else {
+				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+			}
+		}
+	}
+}
+
+func (q *Query) zeroValues(metrics []metrics.Metric) []any {
+	zeroValues := make([]any, len(metrics))
+
+	for i, m := range metrics {
+		zeroValues[i] = m.Zero()
+	}
+
+	return zeroValues
+}
+
+func (q *Query) resolvePrimaryTable(req request.Request) {
+	// dimensions drive the primary table
+	if len(req.Dimensions) > 0 {
+		q.primaryTable = q.resolveBestTable(q.dimensionTables(req.Dimensions))
+		return
+	}
+
+	// no dimensions, use metrics instead
+	if len(req.Metrics) > 0 {
+		q.primaryTable = q.resolveBestTable(q.metricTables(req.Metrics))
+		return
+	}
+
+	// fall back to sessions for simple queries
+	q.primaryTable = pkg.TableSessions
+}
+
+func (q *Query) resolveBestTable(tableSets [][]string) string {
+	candidates := []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
+	valid := make([]string, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		satisfiesAll := true
+
+		for _, tables := range tableSets {
+			if !slices.Contains(tables, candidate) {
+				satisfiesAll = false
+				break
+			}
+		}
+
+		if satisfiesAll {
+			valid = append(valid, candidate)
+		}
+	}
+
+	if len(valid) == 0 {
+		// no single table works, use highest priority preferred table
+		preferred := make([]string, 0, len(tableSets))
+
+		for _, tables := range tableSets {
+			if len(tables) > 0 {
+				preferred = append(preferred, tables[0])
+			}
+		}
+
+		return q.highestPriorityTable(preferred)
+	}
+
+	if len(valid) == 1 {
+		return valid[0]
+	}
+
+	// multiple tables satisfy all dimensions, prefer the one most dimensions
+	// list as their first choice (preferred table)
+	score := make(map[string]int, len(valid))
+
+	for _, tables := range tableSets {
+		if len(tables) > 0 && slices.Contains(valid, tables[0]) {
+			score[tables[0]]++
+		}
+	}
+
+	best := valid[0]
+
+	for _, t := range valid[1:] {
+		if score[t] > score[best] {
+			best = t
+		}
+	}
+
+	return best
+}
+
+func (q *Query) highestPriorityTable(tables []string) string {
+	table := pkg.TableSessions
+	priority := 0
+
+	for _, t := range tables {
+		if p := tablePriority[t]; p > priority {
+			table = t
+			priority = p
+		}
+	}
+
+	return table
+}
+
+func (q *Query) dimensionTables(dimensions []dimensions.Dimension) [][]string {
+	tables := make([][]string, 0, len(dimensions))
+
+	for _, d := range dimensions {
+		tables = append(tables, d.Table())
+	}
+
+	return tables
+}
+
+func (q *Query) metricTables(metrics []metrics.Metric) [][]string {
+	tables := make([][]string, 0, len(metrics))
+
+	for _, m := range metrics {
+		tables = append(tables, m.Table())
+	}
+
+	return tables
+}
+
+func (q *Query) resolveJoinTable(req request.Request) {
+	for _, m := range req.Metrics {
+		joinTable := m.JoinTable()
+
+		if joinTable != "" && joinTable != q.primaryTable {
+			q.joinTable = joinTable
+			return
+		}
+	}
+}
+
+func (q *Query) splitMetrics(requestMetrics []metrics.Metric) ([]metrics.Metric, []metrics.Metric) {
+	primary := make([]metrics.Metric, 0, len(requestMetrics))
+	secondary := make([]metrics.Metric, 0)
+
+	for _, m := range requestMetrics {
+		if m.JoinTable() == q.joinTable {
+			secondary = append(secondary, m)
+		} else {
+			primary = append(primary, m)
+		}
+	}
+
+	return primary, secondary
+}
+
+func (q *Query) mergeResults(primary []report.Result, secondary []report.Result, requestMetrics, primaryMetrics []metrics.Metric) {
+	totalCount := len(requestMetrics)
+	primaryPos := make(map[string]int, len(primaryMetrics))
+
+	for i, m := range primaryMetrics {
+		primaryPos[m.Column()] = i
+	}
+
+	secondaryIndices := 0
+	secondaryPos := make(map[string]int, totalCount-len(primaryMetrics))
+
+	for _, m := range requestMetrics {
+		if m.JoinTable() != "" {
+			secondaryPos[m.Column()] = secondaryIndices
+			secondaryIndices++
+		}
+	}
+
+	for i := range primary {
+		expanded := make([]any, totalCount)
+
+		for fullIdx, m := range requestMetrics {
+			if m.JoinTable() == "" {
+				if pos, ok := primaryPos[m.Column()]; ok && pos < len(primary[i].MetricValues) {
+					expanded[fullIdx] = primary[i].MetricValues[pos]
+				}
+			} else {
+				expanded[fullIdx] = m.Zero()
+			}
+		}
+
+		primary[i].MetricValues = expanded
+	}
+
+	index := make(map[string]int, len(primary))
+
+	for i, r := range primary {
+		index[q.dimensionKey(r.DimensionValues)] = i
+	}
+
+	for _, sec := range secondary {
+		primaryIndex, ok := index[q.dimensionKey(sec.DimensionValues)]
+
+		if !ok {
+			// secondary row has no matching primary row (can happen with pagination), skip
+			continue
+		}
+
+		for fullIndex, m := range requestMetrics {
+			if m.JoinTable() == "" {
+				continue
+			}
+
+			if pos, ok := secondaryPos[m.Column()]; ok && pos < len(sec.MetricValues) {
+				primary[primaryIndex].MetricValues[fullIndex] = sec.MetricValues[pos]
+			}
+		}
+	}
+}
+
+func (q *Query) dimensionKey(values []any) string {
+	parts := make([]string, len(values))
+
+	for i, v := range values {
+		parts[i] = fmt.Sprint(v)
+	}
+
+	return strings.Join(parts, "|")
+}
+
+func (q *Query) classifyFilter(filter request.Filter) error {
+	table, err := q.filterTable(filter)
+
+	if err != nil {
+		return err
+	}
+
+	if table == q.primaryTable || table == "" {
+		q.primaryFilter = append(q.primaryFilter, classifiedFilter{
+			table:  q.primaryTable,
+			filter: filter,
+		})
+	} else {
+		q.subqueryFilter = append(q.subqueryFilter, classifiedFilter{
+			table:  table,
+			filter: filter,
+		})
+	}
+
+	return nil
+}
+
+func (q *Query) filterTable(filter request.Filter) (string, error) {
+	// leaf node, dimension must be set
+	if len(filter.Filter) == 0 {
+		if filter.Dimension == nil {
+			return "", nil
+		}
+
+		tables := filter.Dimension.Table()
+
+		if slices.Contains(tables, q.primaryTable) {
+			return q.primaryTable, nil
+		}
+
+		return tables[0], nil
+	}
+
+	// logical group, collect tables from all children
+	childTables := make(map[string]bool)
+
+	for _, child := range filter.Filter {
+		table, err := q.filterTable(child)
+
+		if err != nil {
+			return "", err
+		}
+
+		if table != "" {
+			childTables[table] = true
+		}
+	}
+
+	if len(childTables) == 0 {
+		return "", nil
+	}
+
+	// multiple tables in one logical group is only safe for AND at the top level
+	if len(childTables) > 1 {
+		// check if children are compatible with a single shared table
+		sharedTable := q.findSharedTable(filter.Filter)
+
+		if sharedTable != "" {
+			return sharedTable, nil
+		}
+
+		if filter.Operator == request.OperatorOr || filter.Operator == request.OperatorNot {
+			tables := make([]string, 0, len(childTables))
+
+			for t := range childTables {
+				tables = append(tables, t)
+			}
+
+			return "", fmt.Errorf("cannot mix dimensions from different tables (%s) within an OR/NOT filter group", strings.Join(tables, ", "))
+		}
+
+		return "", nil
+	}
+
+	// all leaves on the same table
+	for t := range childTables {
+		return t, nil
+	}
+
+	return "", nil
+}
+
+func (q *Query) findSharedTable(filter []request.Filter) string {
+	// collect all table sets from leaf dimensions in the group
+	tableSets := q.collectLeafTableSets(filter)
+
+	if len(tableSets) == 0 {
+		return ""
+	}
+
+	// try primary table first
+	if q.allCompatible(tableSets, q.primaryTable) {
+		return q.primaryTable
+	}
+
+	// try other tables in priority order
+	for _, candidate := range []string{pkg.TablePageViews, pkg.TableEvents, pkg.TableSessions} {
+		if candidate != q.primaryTable && q.allCompatible(tableSets, candidate) {
+			return candidate
+		}
+	}
+
+	return ""
+}
+
+func (q *Query) collectLeafTableSets(filter []request.Filter) [][]string {
+	result := make([][]string, 0)
+
+	for _, f := range filter {
+		if len(f.Filter) == 0 {
+			if f.Dimension != nil {
+				result = append(result, f.Dimension.Table())
+			}
+		} else {
+			result = append(result, q.collectLeafTableSets(f.Filter)...)
+		}
+	}
+
+	return result
+}
+
+func (q *Query) allCompatible(tableSets [][]string, candidate string) bool {
+	for _, tables := range tableSets {
+		if !slices.Contains(tables, candidate) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (q *Query) buildQuery(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	withRequired := q.buildQueryWithRequired(req.Metrics)
+
+	if withRequired {
+		withQuery, withArgs := q.buildQueryWith(req)
+		query.WriteString(withQuery)
+		args = append(args, withArgs...)
+	}
+
+	selectQuery, selectArgs := q.buildQuerySelect(req)
+	query.WriteString(selectQuery)
+	args = append(args, selectArgs...)
+	query.WriteString(q.buildQuereFrom(q.primaryTable, req.Options.Sample))
+
+	if withRequired {
+		query.WriteString(q.buildQueryWithJoin(req))
+	}
+
+	if q.joinStep > 0 {
+		query.WriteString(q.buildQueryWithJoinStep())
+	}
+
+	whereQuery, whereArgs := q.buildQueryWhere(req)
+	query.WriteString(whereQuery)
+	args = append(args, whereArgs...)
+	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
+	query.WriteString(q.buildQueryHaving())
+	query.WriteString(q.buildOrderBy(req.OrderBy))
+	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}
+
+func (q *Query) buildQueryWithRequired(list []metrics.Metric) bool {
+	found := false
+
+	for _, m := range list {
+		if _, ok := m.(metrics.AvgTimeOnPage); ok {
+			found = true
+			break
+		}
+	}
+
+	return found
+}
+
+func (q *Query) buildQueryWith(req request.Request) (string, []any) {
+	// store original tables and filter filters
+	primaryFilter := q.primaryFilter
+	primaryTable := q.primaryTable
+	q.primaryTable = pkg.TablePageViews
+	q.primaryFilter = q.buildQueryFiltersForTable(primaryFilter, pkg.TablePageViews)
+
+	// build where query
+	var query strings.Builder
+	args := make([]any, 0)
+	whereQuery, whereArgs := q.buildQueryWhere(req)
+	args = append(args, whereArgs...)
+
+	// filter dimensions to group by
+	groupBy := q.buildQueryWithFilterDimensions(req)
+	fields := make([]string, 0, len(groupBy))
+
+	for _, d := range groupBy {
+		fields = append(fields, q.buildQuerySelectColumn(d))
+	}
+
+	selectFields := strings.Join(fields, ", ")
+
+	// build query
+	query.WriteString("WITH top AS (SELECT path, ")
+
+	if len(fields) > 0 {
+		query.WriteString(selectFields)
+		query.WriteString(", ")
+	}
+
+	query.WriteString(`leadInFrame(duration_seconds) OVER (
+					PARTITION BY visitor_id, session_id
+					ORDER BY time ASC
+					ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
+				) time_on_page
+			FROM page_view_v7 `)
+	query.WriteString(whereQuery)
+	query.WriteString("), avgtop AS (SELECT path, ")
+
+	if len(fields) > 0 {
+		names := make([]string, 0, len(groupBy))
+
+		for _, field := range groupBy {
+			names = append(names, field.Column(""))
+		}
+
+		query.WriteString(strings.Join(names, ", "))
+		query.WriteString(", ")
+	}
+
+	query.WriteString("avgOrDefaultIf(time_on_page, time_on_page > 0) avg_time_on_page FROM top ")
+	groupBy = append(groupBy, dimensions.Path{})
+	query.WriteString(q.buildQueryGroupBy(groupBy))
+	query.WriteString(") ")
+
+	// restore original tables
+	q.primaryTable = primaryTable
+	q.primaryFilter = primaryFilter
+	return query.String(), args
+}
+
+func (q *Query) buildQueryFiltersForTable(filters []classifiedFilter, table string) []classifiedFilter {
+	result := make([]classifiedFilter, 0, len(filters))
+
+	for _, f := range filters {
+		if q.buildQueryFilterCompatibleWithTable(f.filter, table) {
+			result = append(result, classifiedFilter{
+				table:  table,
+				filter: f.filter,
+			})
+		}
+	}
+
+	return result
+}
+
+func (q *Query) buildQueryFilterCompatibleWithTable(filter request.Filter, table string) bool {
+	// leaf node
+	if len(filter.Filter) == 0 {
+		if filter.Dimension == nil {
+			return true
+		}
+
+		return slices.Contains(filter.Dimension.Table(), table)
+	}
+
+	// logical group, all children must be compatible
+	for _, child := range filter.Filter {
+		if !q.buildQueryFilterCompatibleWithTable(child, table) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (q *Query) buildQueryWithJoin(req request.Request) string {
+	var query strings.Builder
+
+	// use entry_path to join the time on page, exit_path isn't allowed (because it's always 0)
+	if q.primaryTable == pkg.TableSessions {
+		query.WriteString("LEFT JOIN avgtop ON entry_path = avgtop.path ")
+	} else {
+		query.WriteString("LEFT JOIN avgtop ON path = avgtop.path ")
+	}
+
+	// join dimensions
+	join := q.buildQueryWithFilterDimensions(req)
+
+	if len(join) > 0 {
+		query.WriteString("AND ")
+		joinColumns := make([]string, 0, len(join))
+
+		for _, field := range join {
+			column := field.Column("")
+			joinColumns = append(joinColumns, fmt.Sprintf(`"%s" = avgtop."%s"`, column, column))
+		}
+
+		query.WriteString(strings.Join(joinColumns, " AND "))
+		query.WriteString(" ")
+	}
+
+	return query.String()
+}
+
+func (q *Query) buildQueryWithJoinStep() string {
+	return fmt.Sprintf("JOIN step%d s ON visitor_id = s.visitor_id AND session_id = s.session_id ", q.joinStep)
+}
+
+func (q *Query) buildQueryWithFilterDimensions(req request.Request) []dimensions.Dimension {
+	groupBy := make([]dimensions.Dimension, 0, len(req.Dimensions))
+
+	for _, d := range req.Dimensions {
+		if _, ok := d.(dimensions.Path); ok || !slices.Contains(d.Table(), pkg.TablePageViews) {
+			continue
+		}
+
+		groupBy = append(groupBy, d)
+	}
+
+	return groupBy
+}
+
+func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
+	fields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+	args := make([]any, 0)
+
+	for _, metric := range req.Metrics {
+		expression, requiresSubquery := metric.Expression(q.primaryTable)
+
+		if requiresSubquery {
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			expression = fmt.Sprintf(expression, subquery)
+			args = append(args, a...)
+		}
+
+		fields = append(fields, fmt.Sprintf("%s %s", expression, metric.Column()))
+	}
+
+	for _, dimension := range req.Dimensions {
+		fields = append(fields, q.buildQuerySelectColumn(dimension))
+		args = append(args, dimension.Args()...)
+	}
+
+	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
+}
+
+func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension) string {
+	switch d := dimension.(type) {
+	case dimensions.EventMeta:
+		if d.Path != "" {
+			return d.Select(q.buildQueryFilterJSONPath(d.Path))
+		}
+
+		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+	default:
+		if dimension.Expression() != "" {
+			return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+		}
+
+		return dimension.Column(q.primaryTable)
+	}
+}
+
+func (q *Query) buildQuereFrom(table string, sample uint) string {
+	if sample > 0 {
+		return fmt.Sprintf("FROM %s SAMPLE %d ", table, sample)
+	}
+
+	return fmt.Sprintf("FROM %s ", table)
+}
+
+func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+	query.WriteString(whereQuery)
+	args = append(args, whereArgs...)
+
+	if len(q.primaryFilter) > 0 {
+		for _, filter := range q.primaryFilter {
+			query.WriteString("AND (")
+			where, a := q.buildQueryFilter(filter.filter)
+			query.WriteString(where)
+			args = append(args, a...)
+			query.WriteString(") ")
+		}
+	}
+
+	if len(q.subqueryFilter) > 0 {
+		query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
+		query.WriteString(q.buildQuereFrom(q.subqueryFilter[0].table, req.Options.Sample))
+		whereQuery, whereArgs = q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+		query.WriteString(whereQuery)
+		args = append(args, whereArgs...)
+
+		for _, filter := range q.subqueryFilter {
+			query.WriteString("AND (")
+			where, a := q.buildQueryFilter(filter.filter)
+			query.WriteString(where)
+			args = append(args, a...)
+			query.WriteString(") ")
+		}
+
+		query.WriteString(") ")
+	}
+
+	return query.String(), args
+}
+
+func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
+	tz := "UTC"
+
+	if period.Timezone != nil {
+		tz = period.Timezone.String()
+	}
+
+	dateFunc := "toDate"
+
+	if period.IncludeTime {
+		dateFunc = "toDateTime"
+	}
+
+	var query strings.Builder
+	args := make([]any, 0)
+	query.WriteString(`WHERE site_id = ? `)
+	args = append(args, siteID)
+
+	if period.From.Equal(period.To) {
+		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') = %s(?, '%s') `, dateFunc, tz, dateFunc, tz))
+		args = append(args, period.From)
+	} else {
+		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, tz, dateFunc, tz, dateFunc, tz))
+		args = append(args, period.From, period.To)
+	}
+
+	return query.String(), args
+}
+
+func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
+	// filter for a column
+	if len(filter.Filter) == 0 {
+		if len(filter.Values) == 0 {
+			return "", nil
+		}
+
+		return q.buildQueryFilterColumn(filter)
+	}
+
+	// filter for a group
+	groups := make([]string, 0, len(filter.Filter))
+	args := make([]any, 0)
+
+	for _, f := range filter.Filter {
+		group, groupArgs := q.buildQueryFilter(f)
+		groups = append(groups, group)
+		args = append(args, groupArgs...)
+	}
+
+	if filter.Operator == request.OperatorOr {
+		return strings.Join(groups, " OR "), args
+	}
+
+	return strings.Join(groups, " AND "), args
+}
+
+func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
+	switch filter.Dimension.(type) {
+	case dimensions.TagKey:
+		switch filter.Operator {
+		case request.OperatorIsNot:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for range filter.Values {
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression))
+				}
+
+				return strings.Join(group, " OR "), filter.Values
+			}
+
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression), filter.Values
+		default:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for range filter.Values {
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?)`, expression))
+				}
+
+				return strings.Join(group, " OR "), filter.Values
+			}
+
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`mapContainsKey(%s, ?)`, expression), filter.Values
+		}
+	case dimensions.EventMetaKey:
+		switch filter.Operator {
+		case request.OperatorIsNot:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for _, v := range filter.Values {
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
+				}
+
+				return strings.Join(group, " OR "), nil
+			}
+
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
+		default:
+			if len(filter.Values) > 1 {
+				group := make([]string, 0, len(filter.Values))
+
+				for _, v := range filter.Values {
+					expression, _ := q.buildQuereWhereColumn(filter)
+					group = append(group, fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
+				}
+
+				return strings.Join(group, " OR "), nil
+			}
+
+			expression, _ := q.buildQuereWhereColumn(filter)
+			return fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
+		}
+	default:
+		switch filter.Operator {
+		case request.OperatorIsNot:
+			if len(filter.Values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("%s NOT IN (?)", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("%s != ?", expression), args
+		case request.OperatorContains:
+			values := q.buildQueryFilterILikeValues(filter.Values)
+
+			if len(values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, values)
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, values...)
+			return fmt.Sprintf("%s ILIKE ?", expression), args
+		case request.OperatorContainsNot:
+			values := q.buildQueryFilterILikeValues(filter.Values)
+
+			if len(values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, values)
+				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, values...)
+			return fmt.Sprintf("%s NOT ILIKE ?", expression), args
+		case request.OperatorMatches:
+			if len(filter.Values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("multiMatchAny(%s, ?)", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("match(%s, ?)", expression), args
+		case request.OperatorMatchesNot:
+			if len(filter.Values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("match(%s, ?) = 0", expression), args
+		default:
+			if len(filter.Values) > 1 {
+				expression, args := q.buildQuereWhereColumn(filter)
+				args = append(args, filter.Values)
+				return fmt.Sprintf("%s IN (?)", expression), args
+			}
+
+			expression, args := q.buildQuereWhereColumn(filter)
+			args = append(args, filter.Values...)
+			return fmt.Sprintf("%s = ?", expression), args
+		}
+	}
+}
+
+func (q *Query) buildQuereWhereColumn(filter request.Filter) (string, []any) {
+	switch d := filter.Dimension.(type) {
+	case dimensions.TagValue:
+		return "tags[?]", []any{d.Key}
+	case dimensions.EventMeta:
+		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path)), nil
+	default:
+		return d.Column(""), nil
+	}
+}
+
+func (q *Query) buildQueryFilterJSONPath(value string) string {
+	parts := strings.Split(value, ".")
+	path := ""
+
+	for _, p := range parts {
+		if index, err := strconv.Atoi(p); err == nil {
+			path += fmt.Sprintf("[%d]", index+1)
+		} else {
+			path += fmt.Sprintf(`."%s"`, p)
+		}
+	}
+
+	return path
+}
+
+func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
+	values := make([]any, 0, len(filterValues))
+
+	for _, v := range filterValues {
+		values = append(values, fmt.Sprintf("%%%s%%", v))
+	}
+
+	return values
+}
+
+func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
+	if q.joinStep == 0 && len(dimensions) > 0 {
+		fields := make([]string, 0, len(dimensions))
+
+		for _, dimension := range dimensions {
+			column := dimension.Column(q.primaryTable)
+
+			if column != "" {
+				fields = append(fields, column)
+			}
+		}
+
+		if len(fields) > 0 {
+			return fmt.Sprintf("GROUP BY %s ", strings.Join(fields, ","))
+		}
+	}
+
+	return ""
+}
+
+func (q *Query) buildOrderBy(order []request.OrderBy) string {
+	if len(order) > 0 {
+		fields := make([]string, 0, len(order))
+
+		for _, o := range order {
+			direction := o.Direction
+
+			if direction == "" {
+				direction = request.DirectionDESC
+			}
+
+			if o.Dimension != nil {
+				fields = append(fields, fmt.Sprintf("%s %s", o.Dimension.Column(q.primaryTable), direction))
+			} else {
+				fields = append(fields, fmt.Sprintf("%s %s", o.Metric.Column(), direction))
+			}
+		}
+
+		return fmt.Sprintf("ORDER BY %s ", strings.Join(fields, ","))
+	}
+
+	return ""
+}
+
+func (q *Query) buildQueryPagination(pagination *request.Pagination) string {
+	if pagination != nil && pagination.Limit > 0 {
+		if pagination.Offset > 0 {
+			return fmt.Sprintf("LIMIT %d, %d", pagination.Offset, pagination.Limit)
+		}
+
+		return fmt.Sprintf("LIMIT %d", pagination.Limit)
+	}
+
+	return ""
+}
+
+func (q *Query) buildQueryHaving() string {
+	if q.primaryTable == pkg.TableSessions && q.joinStep == 0 {
+		return "HAVING sum(sign) > 0 "
+	}
+
+	return ""
+}
+
+func (q *Query) scanRows(rows driver.Rows, dimensions []dimensions.Dimension, metrics []metrics.Metric) ([]report.Result, error) {
+	metricCount := len(metrics)
+	dimensionCount := len(dimensions)
+	columnCount := metricCount + dimensionCount
+	columns := make([]any, columnCount)
+	columnPtrs := make([]any, columnCount)
+
+	for i := range metricCount {
+		columns[i] = metrics[i].ScanType()
+		columnPtrs[i] = columns[i]
+	}
+
+	for i := range dimensionCount {
+		columns[metricCount+i] = dimensions[i].ScanType()
+		columnPtrs[metricCount+i] = columns[metricCount+i]
+	}
+
+	results := make([]report.Result, 0)
+
+	for rows.Next() {
+		if err := rows.Scan(columnPtrs...); err != nil {
+			return nil, err
+		}
+
+		result := report.Result{
+			MetricValues:    make([]any, metricCount),
+			DimensionValues: make([]any, dimensionCount),
+		}
+
+		for i := range metricCount {
+			result.MetricValues[i] = reflect.ValueOf(columnPtrs[i]).Elem().Interface()
+		}
+
+		for i := range dimensionCount {
+			result.DimensionValues[i] = reflect.ValueOf(columnPtrs[metricCount+i]).Elem().Interface()
+		}
+
+		results = append(results, result)
+	}
+
+	return results, rows.Err()
+}

@@ -45,55 +45,23 @@ const (
 
 	// OSChrome represents the Chrome operating system.
 	OSChrome = "Chrome OS"
-
-	// PlatformDesktop filters for everything on desktops.
-	PlatformDesktop = "desktop"
-
-	// PlatformMobile filters for everything on mobile devices.
-	PlatformMobile = "mobile"
-
-	// PlatformUnknown filters for everything where the platform is unspecified.
-	PlatformUnknown = "unknown"
-
-	// Unknown filters for an unknown (empty) value.
-	// This is a synonym for "null".
-	Unknown = "null"
-
-	// DirectionASC sorts results in ascending order.
-	DirectionASC = Direction("ASC")
-
-	// DirectionDESC sorts results in descending order.
-	DirectionDESC = Direction("DESC")
-
-	// CustomMetricTypeInteger transforms the metadata value of an event to an integer (64 bit).
-	CustomMetricTypeInteger = CustomMetricType("toInt64OrZero")
-
-	// CustomMetricTypeFloat transforms the metadata value of an event to a floating point value (64 bit).
-	CustomMetricTypeFloat = CustomMetricType("toFloat64OrZero")
 )
 
 const (
-	// PeriodDay groups the results by day.
-	PeriodDay = Period(iota)
+	// TableSessions is the sessions table name.
+	TableSessions = "session_v7"
 
-	// PeriodWeek groups the results by week.
-	PeriodWeek
+	// TablePageViews is the page views table name.
+	TablePageViews = "page_view_v7"
 
-	// PeriodMonth groups the results by month.
-	PeriodMonth
-
-	// PeriodYear groups the result by year.
-	PeriodYear
+	// TableEvents is the events table name.
+	TableEvents = "event_v7"
 )
 
-// Period is used to group results.
-type Period int
+const (
+	// PlatformDesktop is the platform for a desktop device.
+	PlatformDesktop = int8(iota)
 
-// Direction is used to sort results.
-type Direction string
-
-// CustomMetricType is used to set the type of a custom metric event meta value.
-type CustomMetricType string
-
-// NullClient is a placeholder for no client (0).
-var NullClient = int64(0)
+	// PlatformMobile is the platform for a mobile device.
+	PlatformMobile
+)

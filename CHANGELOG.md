@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.0.0
+
+* added native ClickHouse client support
+* added JSON metadata support to events
+* added new ingestion system
+* added new reporting system
+* use map instead of two arrays for tags on page views
+* improved batch inserts
+* improved bot filter
+* improved request logging
+* removed duration_seconds field
+* fixed memory session cache not overwriting sessions
+* updated dependencies
+
 ## 6.28.3
 
 * improved bot filter based on:
