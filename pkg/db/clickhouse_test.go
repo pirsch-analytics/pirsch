@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pirsch-analytics/pirsch/v7/_pkg/util"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestClient_SaveSessions(t *testing.T) {
 				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
-				SessionID:      util.RandUint32(),
+				SessionID:      rand.Uint32(),
 				Hostname:       "example.com",
 				Language:       "en",
 				Referrer:       "ref",
@@ -142,7 +141,7 @@ func TestClient_SavePageViews(t *testing.T) {
 				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
-				SessionID:      util.RandUint32(),
+				SessionID:      rand.Uint32(),
 				Hostname:       "example.com",
 				Language:       "en",
 				Referrer:       "ref",
@@ -190,7 +189,7 @@ func TestClient_SaveEvents(t *testing.T) {
 				SiteID:         1,
 				VisitorID:      1,
 				Time:           time.Now(),
-				SessionID:      util.RandUint32(),
+				SessionID:      rand.Uint32(),
 				Hostname:       "example.com",
 				Language:       "en",
 				Referrer:       "ref",
