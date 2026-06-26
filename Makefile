@@ -11,6 +11,7 @@ deps:
 
 fix:
 	go fix ./...
+	go fmt ./...
 
 referrer:
 	go run scripts/update_referrer_list/update_referrer_list.go
