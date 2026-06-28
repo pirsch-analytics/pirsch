@@ -71,6 +71,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	// cancel early if we only update the session
 	if request.UpdateSession {
 		if session != nil {
+			request.Session = session // return the latest session state to the caller
 			s.update(request, session)
 			s.cache.Put(request.SiteID, request.VisitorID, session)
 		}
