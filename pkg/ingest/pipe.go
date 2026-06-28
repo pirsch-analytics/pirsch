@@ -89,7 +89,7 @@ func (p *Pipe) Process(request *Request) (bool, error) {
 
 	// schedule request to be stored in batch
 	p.requests <- request
-	return true, nil
+	return !request.cancelled, nil
 }
 
 // Stop flushes all data currently within the pipe and stops processing new data.
