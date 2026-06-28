@@ -86,8 +86,13 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 		s.cache.Put(request.SiteID, request.VisitorID, session)
 	} else {
 		// cancel if the maximum number of page views has been reached
-		if s.maxPageViews > 0 && session.PageViews >= s.maxPageViews ||
-			s.maxPageViews == 0 && s.maxPageViews > 0 && session.PageViews >= s.maxPageViews {
+		maxPageViews := s.maxPageViews
+
+		if request.MaxPageViews > 0 {
+			maxPageViews = request.MaxPageViews
+		}
+
+		if maxPageViews > 0 && session.PageViews >= maxPageViews {
 			return true, nil
 		}
 

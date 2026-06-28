@@ -186,6 +186,10 @@ type Request struct {
 	// This can be used with the Pipe.Process method to check whether a request will be accepted.
 	DisableStorage bool
 
+	// MaxPageViews sets the maximum number of page views per session for this request
+	// If the limit is reached, the request will be canceled.
+	MaxPageViews uint16
+
 	// Language is the language for the request.
 	// This should be set by a PipeStep.
 	Language string
