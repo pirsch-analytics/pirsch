@@ -56,17 +56,18 @@ func (p *Pipe) Use(f ...PipeStep) *Pipe {
 // Process processes the given request.
 // It can be run in its own Goroutine, so that the client won't have to wait for the request to be processed.
 // http.StatusAccepted can be returned in that case for example.
-func (p *Pipe) Process(request *Request) error {
+// It will return true if the request has been accepted, or false if it doesn't (due to some filter step for example).
+func (p *Pipe) Process(request *Request) (bool, error) {
 	// return if the pipe has been halted
 	select {
 	case <-p.ctx.Done():
-		return p.ctx.Err()
+		return false, p.ctx.Err()
 	default:
 	}
 
 	// check if the request should be ignored for any reason
 	if p.ignore(request) {
-		return nil
+		return false, nil
 	}
 
 	// process the request otherwise
@@ -76,7 +77,7 @@ func (p *Pipe) Process(request *Request) error {
 		cancel, err := step.Step(request)
 
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		if cancel {
@@ -88,7 +89,7 @@ func (p *Pipe) Process(request *Request) error {
 
 	// schedule request to be stored in batch
 	p.requests <- request
-	return nil
+	return true, nil
 }
 
 // Stop flushes all data currently within the pipe and stops processing new data.
