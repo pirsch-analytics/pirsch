@@ -56,7 +56,9 @@ func (p *Pipe) Use(f ...PipeStep) *Pipe {
 // Process processes the given request.
 // It can be run in its own Goroutine, so that the client won't have to wait for the request to be processed.
 // http.StatusAccepted can be returned in that case for example.
-// It will return true if the request has been accepted, or false if it doesn't (due to some filter step for example).
+// It returns true if the request has been accepted, or false if it didn't (due to some filter step for example).
+// An exception is when only the cached session is supposed to be updated.
+// In that case, the request will update the session despite the return value being false.
 func (p *Pipe) Process(request *Request) (bool, error) {
 	// return if the pipe has been halted
 	select {
@@ -87,8 +89,11 @@ func (p *Pipe) Process(request *Request) (bool, error) {
 		}
 	}
 
-	// schedule request to be stored in batch
-	p.requests <- request
+	// schedule request to be stored in batch if not disabled
+	if !request.DisableStorage {
+		p.requests <- request
+	}
+
 	return !request.cancelled, nil
 }
 

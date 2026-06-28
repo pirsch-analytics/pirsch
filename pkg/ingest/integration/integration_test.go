@@ -498,7 +498,7 @@ func TestIntegrationExtendSession(t *testing.T) {
 			UpdateSession: true,
 		})
 		assert.NoError(t, err)
-		assert.True(t, accepted)
+		assert.False(t, accepted) // canceled early
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -514,7 +514,7 @@ func TestIntegrationExtendSession(t *testing.T) {
 			UpdateSession: true,
 		})
 		assert.NoError(t, err)
-		assert.True(t, accepted)
+		assert.False(t, accepted) // canceled early
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
