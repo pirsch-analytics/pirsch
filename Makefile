@@ -8,6 +8,7 @@ test:
 deps:
 	go get -u -t ./...
 	go mod vendor
+	go mod tidy
 
 fix:
 	go fix ./...
