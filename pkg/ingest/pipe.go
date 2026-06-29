@@ -240,25 +240,26 @@ func (p *Pipe) flush(sessions []model.Session, pageViews []model.PageView, event
 	copy(requestsCopy, requests)
 
 	// retries run asynchronously, so that we won't block the main ingestion pipeline
+	// each save uses its own context, since we do not care about cancellation here
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveSessions(p.ctx, sessionsCopy)
+			return p.storage.SaveSessions(context.Background(), sessionsCopy)
 		}, "save sessions")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SavePageViews(p.ctx, pageViewsCopy)
+			return p.storage.SavePageViews(context.Background(), pageViewsCopy)
 		}, "save page views")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveEvents(p.ctx, eventsCopy)
+			return p.storage.SaveEvents(context.Background(), eventsCopy)
 		}, "save events")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveRequests(p.ctx, requestsCopy)
+			return p.storage.SaveRequests(context.Background(), requestsCopy)
 		}, "save requests")
 	})
 	wg.Wait()
