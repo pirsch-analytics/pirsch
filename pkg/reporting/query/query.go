@@ -41,6 +41,10 @@ type Query struct {
 
 // NewQuery returns a new Query for given database connection.
 func NewQuery(db *db.ClickHouse) *Query {
+	if db == nil {
+		panic("database connection is nil")
+	}
+
 	return &Query{
 		db:             db,
 		primaryFilter:  make([]classifiedFilter, 0),
