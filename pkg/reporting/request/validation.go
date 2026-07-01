@@ -48,9 +48,9 @@ func validateMetadataKey(path string) error {
 		return errors.New("metadata key path must not be empty")
 	}
 
-	parts := strings.Split(path, ".")
+	parts := strings.SplitSeq(path, ".")
 
-	for _, part := range parts {
+	for part := range parts {
 		if part == "" {
 			return fmt.Errorf("metadata key path '%s' must not contain empty segments", path)
 		}

@@ -41,6 +41,10 @@ type Query struct {
 
 // NewQuery returns a new Query for given database connection.
 func NewQuery(db *db.ClickHouse) *Query {
+	if db == nil {
+		panic("database connection is nil")
+	}
+
 	return &Query{
 		db:             db,
 		primaryFilter:  make([]classifiedFilter, 0),
@@ -1225,17 +1229,17 @@ func (q *Query) buildQuereWhereColumn(filter request.Filter) (string, []any) {
 
 func (q *Query) buildQueryFilterJSONPath(value string) string {
 	parts := strings.Split(value, ".")
-	path := ""
+	var path strings.Builder
 
 	for _, p := range parts {
 		if index, err := strconv.Atoi(p); err == nil {
-			path += fmt.Sprintf("[%d]", index+1)
+			path.WriteString(fmt.Sprintf("[%d]", index+1))
 		} else {
-			path += fmt.Sprintf(`."%s"`, p)
+			path.WriteString(fmt.Sprintf(`."%s"`, p))
 		}
 	}
 
-	return path
+	return path.String()
 }
 
 func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {

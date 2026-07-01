@@ -1,5 +1,4 @@
 .idea/
-
-_pkg/tracker/geodb/tmp/
-_pkg/tracker/geodb/*.mmdb
-_pkg/tracker/ip/tmp/
+pkg/ingest/geo/tmp/
+pkg/ingest/geo/*.mmdb
+pkg/ingest/ip/tmp/
