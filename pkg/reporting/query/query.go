@@ -971,6 +971,12 @@ func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension) string {
 		}
 
 		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+	case dimensions.EventMetaValue:
+		if d.Path != "" {
+			return d.Select(q.buildQueryFilterJSONPath(d.Path))
+		}
+
+		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
 	default:
 		if dimension.Expression() != "" {
 			return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))

@@ -1056,6 +1056,82 @@ func TestQueryEventMetaDataCastType(t *testing.T) {
 	assert.Equal(t, 24.99, r.Results[2].DimensionValues[0])
 }
 
+func TestQueryEventMetaDataValue(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaValue{
+				Path: "position",
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaKey{},
+				Values:    []any{"position"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Equal(t, []any{"Contact Button"}, q.primaryFilter[0].filter.Values)
+	assert.Equal(t, []any{"position"}, q.primaryFilter[1].filter.Values)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "Contact Button", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "text", r.Results[0].DimensionValues[1])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
+	assert.Equal(t, "hero", r.Results[1].DimensionValues[1])
+}
+
 func TestQueryTagKeysList(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
