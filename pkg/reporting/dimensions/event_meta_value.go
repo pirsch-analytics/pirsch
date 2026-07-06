@@ -13,6 +13,10 @@ type EventMetaValue struct {
 
 	// Type is the value type for casting.
 	Type EventMetaType
+
+	// ColumnName is the column name for the event metadata value to prevent collisions.
+	// If not set, it will be set to meta_data_value by default.
+	ColumnName string
 }
 
 // Table implements the Dimension interface.
@@ -22,6 +26,10 @@ func (d EventMetaValue) Table() []string {
 
 // Column implements the Dimension interface.
 func (d EventMetaValue) Column(_ string) string {
+	if d.ColumnName != "" {
+		return d.ColumnName
+	}
+
 	return "meta_data_value"
 }
 
@@ -54,10 +62,10 @@ func (d EventMetaValue) ScanType() any {
 func (d EventMetaValue) Select(path string) string {
 	switch d.Type {
 	case EventMetaTypeFloat:
-		return fmt.Sprintf("toFloat64OrZero(toString(meta_data%s)) meta_data_value", path)
+		return fmt.Sprintf("toFloat64OrZero(toString(meta_data%s)) %s", path, d.Column(""))
 	case EventMetaTypeInt:
-		return fmt.Sprintf("toInt64OrZero(toString(meta_data%s)) meta_data_value", path)
+		return fmt.Sprintf("toInt64OrZero(toString(meta_data%s)) %s", path, d.Column(""))
 	default:
-		return fmt.Sprintf("toString(meta_data%s) meta_data_value", path)
+		return fmt.Sprintf("toString(meta_data%s) %s", path, d.Column(""))
 	}
 }
