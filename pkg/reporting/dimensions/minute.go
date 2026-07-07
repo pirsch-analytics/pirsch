@@ -1,8 +1,6 @@
 package dimensions
 
 import (
-	"time"
-
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 )
 
@@ -31,5 +29,5 @@ func (d Minute) Args() []any {
 
 // ScanType implements the Metric interface.
 func (d Minute) ScanType() any {
-	return new(time.Time)
+	return new(uint8)
 }
