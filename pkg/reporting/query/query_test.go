@@ -1545,7 +1545,7 @@ func TestQueryListSessions(t *testing.T) {
 		},
 		OrderBy: []request.OrderBy{
 			{
-				Dimension: dimensions.VisitorID{},
+				Metric:    metrics.Time{Max: true},
 				Direction: request.DirectionASC,
 			},
 		},
