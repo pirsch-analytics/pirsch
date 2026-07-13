@@ -2,7 +2,7 @@ package metrics
 
 // Metric is an (aggregated) result field, like the number of visitors.
 type Metric interface {
-	// Table returns the valid database tables for the Dimension.
+	// Table returns the valid database tables for the metic.
 	Table() []string
 
 	// JoinTable returns the secondary tables to query if the Metric cannot be calculated from the primary table.
