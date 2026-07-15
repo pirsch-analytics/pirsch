@@ -13,18 +13,16 @@ type info struct {
 	mobile          *bool
 }
 
-func (ua *info) isDesktop() bool {
+func (ua *info) platform() int8 {
 	if ua.mobile != nil {
-		return !*ua.mobile
+		if *ua.mobile {
+			return pkg.PlatformMobile
+		}
 	}
 
-	return ua.os == pkg.OSWindows || ua.os == pkg.OSMac || ua.os == pkg.OSLinux
-}
-
-func (ua *info) isMobile() bool {
-	if ua.mobile != nil {
-		return *ua.mobile
+	if ua.os == pkg.OSWindows || ua.os == pkg.OSMac || ua.os == pkg.OSLinux {
+		return pkg.PlatformDesktop
 	}
 
-	return ua.os == pkg.OSAndroid || ua.os == pkg.OSiOS || ua.os == pkg.OSWindowsMobile
+	return pkg.PlatformUnknown
 }

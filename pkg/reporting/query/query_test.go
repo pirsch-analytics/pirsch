@@ -346,7 +346,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 			},
 			{
 				Dimension: dimensions.Platform{},
-				Values:    []any{0, 1},
+				Values:    []any{pkg.PlatformDesktop, pkg.PlatformMobile},
 			},
 		},
 	}
@@ -379,7 +379,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, "/", args[3])
-	assert.Equal(t, []any{0, 1}, args[4])
+	assert.Equal(t, []any{pkg.PlatformDesktop, pkg.PlatformMobile}, args[4])
 	assert.Equal(t, uint64(1), args[5])
 	assert.Equal(t, from, args[6])
 	assert.Equal(t, to, args[7])
