@@ -1228,6 +1228,8 @@ func (q *Query) buildQuereWhereColumn(table string, filter request.Filter) (stri
 		return "tags[?]", []any{d.Key}
 	case dimensions.EventMeta:
 		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path)), nil
+	case dimensions.EventMetaValue:
+		return fmt.Sprintf("meta_data%s", q.buildQueryFilterJSONPath(d.Path)), nil
 	default:
 		return d.Column(table), nil
 	}

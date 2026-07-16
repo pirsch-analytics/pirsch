@@ -1147,6 +1147,76 @@ func TestQueryEventMetaDataValue(t *testing.T) {
 	assert.Equal(t, "hero", r.Results[1].DimensionValues[1])
 }
 
+func TestQueryEventMetaDataValueFilter(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaValue{
+					Path: "position",
+				},
+				Values: []any{"hero"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Equal(t, []any{"Contact Button"}, q.primaryFilter[0].filter.Values)
+	assert.Equal(t, []any{"hero"}, q.primaryFilter[1].filter.Values)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 5)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "hero", args[4])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+}
+
 func TestQueryTagKeysList(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
