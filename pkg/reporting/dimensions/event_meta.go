@@ -33,6 +33,10 @@ type EventMeta struct {
 	// Type is the value type for casting.
 	Type EventMetaType
 
+	// ColumnName is the column name for the event metadata value to prevent collisions.
+	// If not set, it will be set to meta_data_value by default.
+	ColumnName string
+
 	// Function is the function used for calculations.
 	Function EventMetaFunction
 }
@@ -48,6 +52,8 @@ func (d EventMeta) Column(_ string) string {
 		return "meta_data"
 	} else if d.Function == EventMetaFunctionNone {
 		return "meta_data_value"
+	} else if d.ColumnName != "" {
+		return d.ColumnName
 	}
 
 	return ""
@@ -97,12 +103,12 @@ func (d EventMeta) Select(path string) string {
 
 	switch d.Function {
 	case EventMetaFunctionAvg:
-		return fmt.Sprintf("avg(%s) meta_data_value", expression)
+		return fmt.Sprintf("avg(%s) %s", expression, d.Column(""))
 	case EventMetaFunctionMedian:
-		return fmt.Sprintf("median(%s) meta_data_value", expression)
+		return fmt.Sprintf("median(%s) %s", expression, d.Column(""))
 	case EventMetaFunctionSum:
-		return fmt.Sprintf("sum(%s) meta_data_value", expression)
+		return fmt.Sprintf("sum(%s) %s", expression, d.Column(""))
 	default:
-		return fmt.Sprintf("%s meta_data_value", expression)
+		return fmt.Sprintf("%s %s", expression, d.Column(""))
 	}
 }
