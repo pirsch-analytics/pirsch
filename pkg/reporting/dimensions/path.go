@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Path is a Dimension.
 type Path struct{}
@@ -12,6 +14,7 @@ func (d Path) Table() []string {
 
 // Column implements the Dimension interface.
 func (d Path) Column(table string) string {
+	// filter/join on entry path for metrics like the bounce rate
 	if table == pkg.TableSessions {
 		return "entry_path"
 	}

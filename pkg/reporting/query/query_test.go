@@ -119,6 +119,12 @@ func TestQueryPageViews(t *testing.T) {
 		OrderBy: []request.OrderBy{
 			{Metric: metrics.PageViews{}},
 		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []any{"/", "/pricing", "/landing"},
+			},
+		},
 	}
 	assert.Empty(t, req.Validate())
 
@@ -127,25 +133,26 @@ func TestQueryPageViews(t *testing.T) {
 	assert.Empty(t, r.Meta.Errors)
 	assert.Equal(t, pkg.TableSessions, q.primaryTable) // overwritten for subquery
 	assert.Equal(t, pkg.TableSessions, q.joinTable)
-	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.primaryFilter, 1)
 	assert.Empty(t, q.subqueryFilter)
 
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 12)
+	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
-	assert.Equal(t, uint64(1), args[6])
-	assert.Equal(t, from, args[7])
-	assert.Equal(t, to, args[8])
-	assert.Equal(t, uint64(1), args[9])
-	assert.Equal(t, from, args[10])
-	assert.Equal(t, to, args[11])
+	assert.Equal(t, []any{"/", "/pricing", "/landing"}, args[3])
+	assert.Equal(t, uint64(1), args[4])
+	assert.Equal(t, from, args[5])
+	assert.Equal(t, to, args[6])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, from, args[8])
+	assert.Equal(t, to, args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, from, args[11])
+	assert.Equal(t, to, args[12])
 
 	// result
 	assert.Len(t, r.Results, 3)

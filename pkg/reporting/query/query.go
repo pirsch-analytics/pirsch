@@ -1004,7 +1004,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	if len(q.primaryFilter) > 0 {
 		for _, filter := range q.primaryFilter {
 			query.WriteString("AND (")
-			where, a := q.buildQueryFilter(filter.filter)
+			where, a := q.buildQueryFilter(q.primaryTable, filter.filter)
 			query.WriteString(where)
 			args = append(args, a...)
 			query.WriteString(") ")
@@ -1020,7 +1020,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 
 		for _, filter := range q.subqueryFilter {
 			query.WriteString("AND (")
-			where, a := q.buildQueryFilter(filter.filter)
+			where, a := q.buildQueryFilter(filter.table, filter.filter)
 			query.WriteString(where)
 			args = append(args, a...)
 			query.WriteString(") ")
@@ -1061,14 +1061,14 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 	return query.String(), args
 }
 
-func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
+func (q *Query) buildQueryFilter(table string, filter request.Filter) (string, []any) {
 	// filter for a column
 	if len(filter.Filter) == 0 {
 		if len(filter.Values) == 0 {
 			return "", nil
 		}
 
-		return q.buildQueryFilterColumn(filter)
+		return q.buildQueryFilterColumn(table, filter)
 	}
 
 	// filter for a group
@@ -1076,7 +1076,7 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 	args := make([]any, 0)
 
 	for _, f := range filter.Filter {
-		group, groupArgs := q.buildQueryFilter(f)
+		group, groupArgs := q.buildQueryFilter(table, f)
 		groups = append(groups, group)
 		args = append(args, groupArgs...)
 	}
@@ -1088,7 +1088,7 @@ func (q *Query) buildQueryFilter(filter request.Filter) (string, []any) {
 	return strings.Join(groups, " AND "), args
 }
 
-func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
+func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (string, []any) {
 	switch filter.Dimension.(type) {
 	case dimensions.TagKey:
 		switch filter.Operator {
@@ -1097,28 +1097,28 @@ func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					expression, _ := q.buildQuereWhereColumn(filter)
+					expression, _ := q.buildQuereWhereColumn(table, filter)
 					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			expression, _ := q.buildQuereWhereColumn(filter)
+			expression, _ := q.buildQuereWhereColumn(table, filter)
 			return fmt.Sprintf(`mapContainsKey(%s, ?) = 0`, expression), filter.Values
 		default:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					expression, _ := q.buildQuereWhereColumn(filter)
+					expression, _ := q.buildQuereWhereColumn(table, filter)
 					group = append(group, fmt.Sprintf(`mapContainsKey(%s, ?)`, expression))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			expression, _ := q.buildQuereWhereColumn(filter)
+			expression, _ := q.buildQuereWhereColumn(table, filter)
 			return fmt.Sprintf(`mapContainsKey(%s, ?)`, expression), filter.Values
 		}
 	case dimensions.EventMetaKey:
@@ -1128,108 +1128,108 @@ func (q *Query) buildQueryFilterColumn(filter request.Filter) (string, []any) {
 				group := make([]string, 0, len(filter.Values))
 
 				for _, v := range filter.Values {
-					expression, _ := q.buildQuereWhereColumn(filter)
+					expression, _ := q.buildQuereWhereColumn(table, filter)
 					group = append(group, fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
 				}
 
 				return strings.Join(group, " OR "), nil
 			}
 
-			expression, _ := q.buildQuereWhereColumn(filter)
+			expression, _ := q.buildQuereWhereColumn(table, filter)
 			return fmt.Sprintf(`isNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
 		default:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for _, v := range filter.Values {
-					expression, _ := q.buildQuereWhereColumn(filter)
+					expression, _ := q.buildQuereWhereColumn(table, filter)
 					group = append(group, fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(v.(string))))
 				}
 
 				return strings.Join(group, " OR "), nil
 			}
 
-			expression, _ := q.buildQuereWhereColumn(filter)
+			expression, _ := q.buildQuereWhereColumn(table, filter)
 			return fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
 		}
 	default:
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, filter.Values)
 				return fmt.Sprintf("%s NOT IN (?)", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, filter.Values...)
 			return fmt.Sprintf("%s != ?", expression), args
 		case request.OperatorContains:
 			values := q.buildQueryFilterILikeValues(filter.Values)
 
 			if len(values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, values)
 				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?)", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, values...)
 			return fmt.Sprintf("%s ILIKE ?", expression), args
 		case request.OperatorContainsNot:
 			values := q.buildQueryFilterILikeValues(filter.Values)
 
 			if len(values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, values)
 				return fmt.Sprintf("arrayExists(v -> ilike(%s, v), ?) = 0", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, values...)
 			return fmt.Sprintf("%s NOT ILIKE ?", expression), args
 		case request.OperatorMatches:
 			if len(filter.Values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, filter.Values)
 				return fmt.Sprintf("multiMatchAny(%s, ?)", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, filter.Values...)
 			return fmt.Sprintf("match(%s, ?)", expression), args
 		case request.OperatorMatchesNot:
 			if len(filter.Values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, filter.Values)
 				return fmt.Sprintf("multiMatchAny(%s, ?) = 0", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, filter.Values...)
 			return fmt.Sprintf("match(%s, ?) = 0", expression), args
 		default:
 			if len(filter.Values) > 1 {
-				expression, args := q.buildQuereWhereColumn(filter)
+				expression, args := q.buildQuereWhereColumn(table, filter)
 				args = append(args, filter.Values)
 				return fmt.Sprintf("%s IN (?)", expression), args
 			}
 
-			expression, args := q.buildQuereWhereColumn(filter)
+			expression, args := q.buildQuereWhereColumn(table, filter)
 			args = append(args, filter.Values...)
 			return fmt.Sprintf("%s = ?", expression), args
 		}
 	}
 }
 
-func (q *Query) buildQuereWhereColumn(filter request.Filter) (string, []any) {
+func (q *Query) buildQuereWhereColumn(table string, filter request.Filter) (string, []any) {
 	switch d := filter.Dimension.(type) {
 	case dimensions.TagValue:
 		return "tags[?]", []any{d.Key}
 	case dimensions.EventMeta:
 		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path)), nil
 	default:
-		return d.Column(""), nil
+		return d.Column(table), nil
 	}
 }
 
