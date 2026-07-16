@@ -25,7 +25,7 @@ type EventMetaType uint8
 // EventMetaFunction is the function used to calculate an event meta value.
 type EventMetaFunction uint8
 
-// EventMeta is a Dimension.
+// EventMeta is a Dimension that can act as a metric if the Function is defined.
 type EventMeta struct {
 	// Path is the JSON path to extract the value.
 	Path string

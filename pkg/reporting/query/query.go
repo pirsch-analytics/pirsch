@@ -1258,12 +1258,20 @@ func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
 	return values
 }
 
-func (q *Query) buildQueryGroupBy(dimensions []dimensions.Dimension) string {
-	if q.joinStep == 0 && len(dimensions) > 0 {
-		fields := make([]string, 0, len(dimensions))
+func (q *Query) buildQueryGroupBy(d []dimensions.Dimension) string {
+	if q.joinStep == 0 && len(d) > 0 {
+		fields := make([]string, 0, len(d))
 
-		for _, dimension := range dimensions {
-			column := dimension.Column(q.primaryTable)
+		for _, dimension := range d {
+			column := ""
+
+			if eventMeta, ok := dimension.(dimensions.EventMeta); ok {
+				if eventMeta.Function == dimensions.EventMetaFunctionNone {
+					column = eventMeta.Column("")
+				}
+			} else {
+				column = dimension.Column(q.primaryTable)
+			}
 
 			if column != "" {
 				fields = append(fields, column)

@@ -981,9 +981,10 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.EventMeta{
-				Path:     "price",
-				Type:     dimensions.EventMetaTypeFloat,
-				Function: dimensions.EventMetaFunctionSum,
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "event_meta_price",
+				Function:   dimensions.EventMetaFunctionSum,
 			},
 		},
 	}
