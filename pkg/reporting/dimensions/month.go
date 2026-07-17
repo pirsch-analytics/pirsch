@@ -21,7 +21,7 @@ func (d Month) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Month) Expression() string {
-	return `toMonth("time")`
+	return `toStartOfMonth("time")`
 }
 
 // Args implements the Dimension interface.

@@ -1530,16 +1530,18 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 6)
+	assert.Len(t, args, 8)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, uint64(1), args[3])
 	assert.Equal(t, from, args[4])
 	assert.Equal(t, to, args[5])
+	assert.Equal(t, from, args[6])
+	assert.Equal(t, to, args[7])
 
 	// result
-	assert.Len(t, r.Results, 5)
+	assert.Len(t, r.Results, 34)
 	assert.Len(t, r.Results[0].DimensionValues, 2)
 	assert.Len(t, r.Results[0].MetricValues, 1)
 
@@ -1567,6 +1569,272 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
 	assert.Equal(t, "/pricing", r.Results[4].DimensionValues[1])
 	assert.InDelta(t, 60, r.Results[4].MetricValues[0], 0.001)
+}
+
+func TestQueryWithFillMinute(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour),
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Minute{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Minute{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 60)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillHour(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour * 24),
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Hour{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 24)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillDay(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 31)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillWeek(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Week{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Week{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 6)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillMonth(t *testing.T) {
+	loadTestData(t, nil)
+	q, _, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC),
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Month{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Month{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, time.December, r.Results[0].DimensionValues[0].(time.Time).Month())
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Equal(t, time.January, r.Results[1].DimensionValues[0].(time.Time).Month())
+}
+
+func TestQueryWithFillYear(t *testing.T) {
+	loadTestData(t, nil)
+	q, _, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC),
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Year{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Year{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, 2025, r.Results[0].DimensionValues[0].(time.Time).Year())
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Equal(t, 2026, r.Results[1].DimensionValues[0].(time.Time).Year())
 }
 
 func TestQueryListSessions(t *testing.T) {

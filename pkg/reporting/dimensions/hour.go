@@ -1,6 +1,8 @@
 package dimensions
 
 import (
+	"time"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 )
 
@@ -19,7 +21,7 @@ func (d Hour) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Hour) Expression() string {
-	return `toHour("time")`
+	return `toStartOfHour("time")`
 }
 
 // Args implements the Dimension interface.
@@ -29,5 +31,5 @@ func (d Hour) Args() []any {
 
 // ScanType implements the Metric interface.
 func (d Hour) ScanType() any {
-	return new(uint8)
+	return new(time.Time)
 }

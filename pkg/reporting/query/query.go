@@ -777,7 +777,9 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	args = append(args, whereArgs...)
 	query.WriteString(q.buildQueryGroupBy(req.Dimensions))
 	query.WriteString(q.buildQueryHaving())
-	query.WriteString(q.buildOrderBy(req.OrderBy))
+	orderByQuery, orderByArgs := q.buildOrderBy(req)
+	query.WriteString(orderByQuery)
+	args = append(args, orderByArgs...)
 	query.WriteString(q.buildQueryPagination(req.Pagination))
 	return query.String(), args
 }
@@ -1288,28 +1290,69 @@ func (q *Query) buildQueryGroupBy(d []dimensions.Dimension) string {
 	return ""
 }
 
-func (q *Query) buildOrderBy(order []request.OrderBy) string {
-	if len(order) > 0 {
-		fields := make([]string, 0, len(order))
-
-		for _, o := range order {
-			direction := o.Direction
-
-			if direction == "" {
-				direction = request.DirectionDESC
-			}
-
-			if o.Dimension != nil {
-				fields = append(fields, fmt.Sprintf("%s %s", o.Dimension.Column(q.primaryTable), direction))
-			} else {
-				fields = append(fields, fmt.Sprintf("%s %s", o.Metric.Column(), direction))
-			}
-		}
-
-		return fmt.Sprintf("ORDER BY %s ", strings.Join(fields, ","))
+func (q *Query) buildOrderBy(req request.Request) (string, []any) {
+	if len(req.OrderBy) == 0 {
+		return "", nil
 	}
 
-	return ""
+	fields := make([]string, 0, len(req.OrderBy))
+	args := make([]any, 0)
+
+	for _, o := range req.OrderBy {
+		direction := o.Direction
+
+		if direction == "" {
+			direction = request.DirectionDESC
+		}
+
+		field := ""
+
+		if o.Dimension != nil {
+			field = fmt.Sprintf("%s %s", o.Dimension.Column(q.primaryTable), direction)
+			withFill, a := q.buildQueryWithFill(req, o.Dimension)
+
+			if withFill != "" {
+				field += " " + withFill
+				args = append(args, a...)
+			}
+		} else {
+			field = fmt.Sprintf("%s %s", o.Metric.Column(), direction)
+		}
+
+		fields = append(fields, field)
+	}
+
+	return fmt.Sprintf("ORDER BY %s ", strings.Join(fields, ",")), args
+}
+
+func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dimension) (string, []any) {
+	tz := "UTC"
+
+	if req.Period.Timezone != nil {
+		tz = req.Period.Timezone.String()
+	}
+
+	args := []any{
+		req.Period.From,
+		req.Period.To,
+	}
+
+	switch dimension.(type) {
+	case dimensions.Minute:
+		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
+	case dimensions.Hour:
+		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
+	case dimensions.Day:
+		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
+	case dimensions.Week:
+		return fmt.Sprintf("WITH FILL FROM toStartOfWeek(toDate(?, '%s'), %d) TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 WEEK", tz, req.Period.WeekdayMode, tz), args
+	case dimensions.Month:
+		return fmt.Sprintf("WITH FILL FROM toStartOfMonth(toDate(?, '%s')) TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 MONTH", tz, tz), args
+	case dimensions.Year:
+		return fmt.Sprintf("WITH FILL FROM toStartOfYear(toDate(?, '%s')) TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 YEAR", tz, tz), args
+	}
+
+	return "", nil
 }
 
 func (q *Query) buildQueryPagination(pagination *request.Pagination) string {

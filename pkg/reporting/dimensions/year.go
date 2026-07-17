@@ -21,7 +21,7 @@ func (d Year) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Year) Expression() string {
-	return `toYear("time")`
+	return `toStartOfYear("time")`
 }
 
 // Args implements the Dimension interface.

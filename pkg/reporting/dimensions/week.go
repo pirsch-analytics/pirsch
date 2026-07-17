@@ -21,7 +21,7 @@ func (d Week) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Week) Expression() string {
-	return `toWeek("time")`
+	return `toStartOfWeek("time")`
 }
 
 // Args implements the Dimension interface.
