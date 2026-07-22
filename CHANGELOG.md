@@ -1,5 +1,9 @@
 # Changelog
 
+## 6.28.4
+
+* added hourly statistics to TimeSpentStats
+
 ## 6.28.3
 
 * improved bot filter based on:

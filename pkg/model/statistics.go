@@ -209,6 +209,7 @@ type PlatformStats struct {
 // TimeSpentStats is the result type for average time spent statistics (sessions, time on page).
 type TimeSpentStats struct {
 	Day                     null.Time `json:"day"`
+	Hour                    null.Time `json:"hour"`
 	Week                    null.Time `json:"week"`
 	Month                   null.Time `json:"month"`
 	Year                    null.Time `json:"year"`
