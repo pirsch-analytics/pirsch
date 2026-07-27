@@ -2350,6 +2350,155 @@ func TestBuildQueryFilterJSONPath(t *testing.T) {
 	}
 }
 
+func TestQueryCRFilterEvent(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 2)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, uint64(1), args[6])
+	assert.Equal(t, from, args[7])
+	assert.Equal(t, to, args[8])
+	assert.Equal(t, "^\\/.*$", args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, from, args[11])
+	assert.Equal(t, to, args[12])
+	assert.Equal(t, "Contact Button", args[13])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result metrics
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.75, r.Results[0].MetricValues[2])
+}
+
+func TestQueryCRFilterReferrer(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"https://google.com"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 11)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, "https://google.com", args[6])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, from, args[8])
+	assert.Equal(t, to, args[9])
+	assert.Equal(t, "^\\/.*$", args[10])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result metrics
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
+}
+
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
 	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)

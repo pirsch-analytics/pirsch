@@ -1014,21 +1014,35 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	}
 
 	if len(q.subqueryFilter) > 0 {
-		query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-		query.WriteString(q.buildQuereFrom(q.subqueryFilter[0].table, req.Options.Sample))
-		whereQuery, whereArgs = q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
-		query.WriteString(whereQuery)
-		args = append(args, whereArgs...)
+		byTable := make(map[string][]classifiedFilter)
+		tableOrder := make([]string, 0)
 
 		for _, filter := range q.subqueryFilter {
-			query.WriteString("AND (")
-			where, a := q.buildQueryFilter(filter.table, filter.filter)
-			query.WriteString(where)
-			args = append(args, a...)
-			query.WriteString(") ")
+			if _, exists := byTable[filter.table]; !exists {
+				tableOrder = append(tableOrder, filter.table)
+			}
+
+			byTable[filter.table] = append(byTable[filter.table], filter)
 		}
 
-		query.WriteString(") ")
+		for _, table := range tableOrder {
+			filters := byTable[table]
+			query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
+			query.WriteString(q.buildQuereFrom(table, req.Options.Sample))
+			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			query.WriteString(subWhereQuery)
+			args = append(args, subWhereArgs...)
+
+			for _, filter := range filters {
+				query.WriteString("AND (")
+				where, a := q.buildQueryFilter(table, filter.filter)
+				query.WriteString(where)
+				args = append(args, a...)
+				query.WriteString(") ")
+			}
+
+			query.WriteString(") ")
+		}
 	}
 
 	return query.String(), args
