@@ -71,10 +71,6 @@ func (d EventMeta) Args() []any {
 
 // ScanType implements the Metric interface.
 func (d EventMeta) ScanType() any {
-	if d.Function != EventMetaFunctionNone {
-		return new(float64)
-	}
-
 	if d.Type == EventMetaTypeNone {
 		// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
 		return new(string)
@@ -95,23 +91,26 @@ func (d EventMeta) Select(path string) string {
 	}
 
 	expression := ""
+	castType := ""
 
 	switch d.Type {
 	case EventMetaTypeFloat:
 		expression = fmt.Sprintf("toFloat64OrZero(toString(meta_data%s))", path)
+		castType = "toFloat64"
 	case EventMetaTypeInt:
-		expression = fmt.Sprintf("toInt64OrZero(toString(meta_data%s))", path)
+		expression = fmt.Sprintf("toInt64(toFloat64OrZero(toString(meta_data%s)))", path)
+		castType = "toInt64"
 	default:
 		expression = d.Expression()
 	}
 
 	switch d.Function {
 	case EventMetaFunctionAvg:
-		return fmt.Sprintf("toFloat64(avg(%s)) %s", expression, d.Column(""))
+		return fmt.Sprintf("%s(avg(%s))) %s", castType, expression, d.Column(""))
 	case EventMetaFunctionMedian:
-		return fmt.Sprintf("toFloat64(median(%s)) %s", expression, d.Column(""))
+		return fmt.Sprintf("%s(median(%s)) %s", castType, expression, d.Column(""))
 	case EventMetaFunctionSum:
-		return fmt.Sprintf("toFloat64(sum(%s)) %s", expression, d.Column(""))
+		return fmt.Sprintf("%s(sum(%s)) %s", castType, expression, d.Column(""))
 	default:
 		return fmt.Sprintf("%s %s", expression, d.Column(""))
 	}
