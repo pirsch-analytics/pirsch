@@ -106,7 +106,7 @@ func (d EventMeta) Select(path string) string {
 
 	switch d.Function {
 	case EventMetaFunctionAvg:
-		return fmt.Sprintf("%s(avg(%s))) %s", castType, expression, d.Column(""))
+		return fmt.Sprintf("%s(avg(%s)) %s", castType, expression, d.Column(""))
 	case EventMetaFunctionMedian:
 		return fmt.Sprintf("%s(median(%s)) %s", castType, expression, d.Column(""))
 	case EventMetaFunctionSum:

@@ -1014,6 +1014,94 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 	assert.Equal(t, 192.43, r.Results[0].DimensionValues[0])
 }
 
+func TestQueryEventMetaDataFunctionFiltered(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeInt,
+				ColumnName: "event_meta_price_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "event_meta_price_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"https://duckduckgo.com"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 3)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 9)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, "Contact Button", args[6])
+	assert.Equal(t, "^\\/.*$", args[7])
+	assert.Equal(t, "https://duckduckgo.com", args[8])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row
+	assert.Equal(t, int64(99), r.Results[0].DimensionValues[0])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[2], 0.001)
+}
+
 func TestQueryEventMetaDataCastTypeFloat(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
