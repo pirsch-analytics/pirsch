@@ -1716,6 +1716,89 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.InDelta(t, 60, r.Results[4].MetricValues[0], 0.001)
 }
 
+func TestQueryTimeOnPageBounceRate(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.AvgTimeOnPage{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []any{"/"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.BounceRate{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Equal(t, pkg.TableSessions, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, from, args[4])
+	assert.Equal(t, to, args[5])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, from, args[8])
+	assert.Equal(t, to, args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, from, args[11])
+	assert.Equal(t, to, args[12])
+	assert.Equal(t, "/", args[13])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row 0
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, float64(300), r.Results[0].MetricValues[0])
+	assert.Equal(t, int64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.75, r.Results[0].MetricValues[2])
+
+	// result row 1
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[2])
+}
+
 func TestQueryWithFillMinute(t *testing.T) {
 	loadTestData(t, nil)
 	q, from, _ := newQuery()

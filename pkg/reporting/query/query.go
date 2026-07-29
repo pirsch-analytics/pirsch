@@ -234,13 +234,28 @@ func (q *Query) prepare(req *request.Request) []error {
 func (q *Query) runWithJoin(req request.Request) report.Report {
 	requestMetrics := req.Metrics
 	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
-	req.Metrics = primaryMetrics
-	primaryQuery, primaryArgs := q.buildQuery(req)
-	req.Metrics = secondaryMetrics
-	req.OrderBy = nil
-	req.Pagination = nil
+	sortingByJoinMetric := q.orderByContainsJoinMetric(req.OrderBy)
+
+	// build query for primary metrics
+	primaryReq := req
+	primaryReq.Metrics = primaryMetrics
+	primaryReq.OrderBy = q.filterOrderByForPrimary(req.OrderBy, primaryMetrics)
+
+	if sortingByJoinMetric {
+		primaryReq.Pagination = nil
+	}
+
+	primaryQuery, primaryArgs := q.buildQuery(primaryReq)
+
+	// build query for secondary metrics
+	secondaryReq := req
+	secondaryReq.Metrics = secondaryMetrics
+	secondaryReq.OrderBy = nil
+	secondaryReq.Pagination = nil
 	q.primaryTable = q.joinTable
-	secondaryQuery, secondaryArgs := q.buildQuery(req)
+	secondaryQuery, secondaryArgs := q.buildQuery(secondaryReq)
+
+	// run both in parallel
 	var wg sync.WaitGroup
 	var m sync.Mutex
 	var results, secondaryResults []report.Result
@@ -295,6 +310,12 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 	}
 
 	q.mergeResults(results, secondaryResults, requestMetrics, primaryMetrics)
+
+	if sortingByJoinMetric {
+		q.sortResults(results, requestMetrics, req.OrderBy)
+		results = q.paginateResults(results, req.Pagination)
+	}
+
 	return report.Report{
 		Request: req,
 		Results: results,
@@ -563,13 +584,13 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 	for i := range primary {
 		expanded := make([]any, totalCount)
 
-		for fullIdx, m := range requestMetrics {
+		for fullIndex, m := range requestMetrics {
 			if m.JoinTable() == "" {
 				if pos, ok := primaryPos[m.Column()]; ok && pos < len(primary[i].MetricValues) {
-					expanded[fullIdx] = primary[i].MetricValues[pos]
+					expanded[fullIndex] = primary[i].MetricValues[pos]
 				}
 			} else {
-				expanded[fullIdx] = m.Zero()
+				expanded[fullIndex] = m.Zero()
 			}
 		}
 
@@ -600,6 +621,149 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 			}
 		}
 	}
+}
+
+func (q *Query) orderByContainsJoinMetric(order []request.OrderBy) bool {
+	for _, o := range order {
+		if o.Metric != nil && o.Metric.JoinTable() != "" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (q *Query) filterOrderByForPrimary(order []request.OrderBy, primaryMetrics []metrics.Metric) []request.OrderBy {
+	primaryColumns := make(map[string]bool, len(primaryMetrics))
+
+	for _, m := range primaryMetrics {
+		primaryColumns[m.Column()] = true
+	}
+
+	result := make([]request.OrderBy, 0, len(order))
+
+	for _, o := range order {
+		if o.Metric != nil {
+			if primaryColumns[o.Metric.Column()] {
+				result = append(result, o)
+			}
+		} else {
+			result = append(result, o)
+		}
+	}
+
+	return result
+}
+
+func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Metric, order []request.OrderBy) {
+	if len(order) == 0 {
+		return
+	}
+
+	// index lookup map
+	metricIndex := make(map[string]int, len(requestMetrics))
+
+	for i, m := range requestMetrics {
+		metricIndex[m.Column()] = i
+	}
+
+	slices.SortStableFunc(results, func(a, b report.Result) int {
+		for _, o := range order {
+			var cmp int
+
+			if o.Metric != nil {
+				index, ok := metricIndex[o.Metric.Column()]
+
+				if !ok {
+					continue
+				}
+
+				cmp = compareAny(a.MetricValues[index], b.MetricValues[index])
+			} else if o.Dimension != nil {
+				col := o.Dimension.Column(q.primaryTable)
+				// find dimension index by column name
+				dimensionIndex := -1
+
+				for i, d := range requestMetrics {
+					if d.Column() == col {
+						dimensionIndex = i
+						break
+					}
+				}
+
+				if dimensionIndex < 0 {
+					continue
+				}
+
+				cmp = compareAny(a.DimensionValues[dimensionIndex], b.DimensionValues[dimensionIndex])
+			}
+
+			if o.Direction == request.DirectionASC {
+				if cmp != 0 {
+					return cmp
+				}
+			} else {
+				if cmp != 0 {
+					return -cmp
+				}
+			}
+		}
+
+		return 0
+	})
+}
+
+func compareAny(a, b any) int {
+	switch av := a.(type) {
+	case uint64:
+		bv := b.(uint64)
+
+		if av < bv {
+			return -1
+		} else if av > bv {
+			return 1
+		}
+
+		return 0
+	case float64:
+		bv := b.(float64)
+
+		if av < bv {
+			return -1
+		} else if av > bv {
+			return 1
+		}
+
+		return 0
+	case string:
+		return strings.Compare(av, b.(string))
+	}
+
+	return 0
+}
+
+func (q *Query) paginateResults(results []report.Result, pagination *request.Pagination) []report.Result {
+	if pagination == nil || pagination.Limit <= 0 {
+		return results
+	}
+
+	offset := pagination.Offset
+
+	if offset < 0 {
+		offset = 0
+	}
+
+	if offset >= len(results) {
+		return []report.Result{}
+	}
+
+	end := offset + pagination.Limit
+
+	if end > len(results) {
+		end = len(results)
+	}
+
+	return results[offset:end]
 }
 
 func (q *Query) dimensionKey(values []any) string {
