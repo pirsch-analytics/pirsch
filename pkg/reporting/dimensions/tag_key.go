@@ -12,7 +12,7 @@ func (d TagKey) Table() []string {
 
 // Column implements the Dimension interface.
 func (d TagKey) Column(_ string) string {
-	return "tags"
+	return "tag_keys"
 }
 
 // Expression implements the Dimension interface.
