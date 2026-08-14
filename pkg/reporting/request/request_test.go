@@ -12,7 +12,7 @@ func TestRequestValidateEventMetaKey(t *testing.T) {
 		SiteID: 1,
 		Filter: []Filter{
 			{
-				Operator:  OperatorOr,
+				Operator:  OperatorGroupOr,
 				Dimension: dimensions.EventMetaKey{},
 				Values:    []any{"this.is.fine"},
 				Filter: []Filter{

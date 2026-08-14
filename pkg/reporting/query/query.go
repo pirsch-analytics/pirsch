@@ -855,7 +855,7 @@ func (q *Query) filterTable(filter request.Filter) (string, error) {
 			return sharedTable, nil
 		}
 
-		if filter.Operator == request.OperatorOr || filter.Operator == request.OperatorNot {
+		if filter.Operator == request.OperatorGroupOr || filter.Operator == request.OperatorGroupNot {
 			tables := make([]string, 0, len(childTables))
 
 			for t := range childTables {
@@ -1274,7 +1274,7 @@ func (q *Query) buildQueryFilter(table string, filter request.Filter) (string, [
 		args = append(args, groupArgs...)
 	}
 
-	if filter.Operator == request.OperatorOr {
+	if filter.Operator == request.OperatorGroupOr {
 		return strings.Join(groups, " OR "), args
 	}
 

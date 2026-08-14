@@ -3,9 +3,9 @@ package request
 import "github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 
 const (
-	OperatorAnd Operator = iota
-	OperatorOr
-	OperatorNot
+	OperatorGroupAnd Operator = iota
+	OperatorGroupOr
+	OperatorGroupNot
 
 	OperatorIs
 	OperatorIsNot

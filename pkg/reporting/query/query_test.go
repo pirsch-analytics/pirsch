@@ -337,7 +337,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 				Values:    []any{"/"},
 			},
 			{
-				Operator: request.OperatorOr,
+				Operator: request.OperatorGroupOr,
 				Filter: []request.Filter{
 					{
 						Operator:  request.OperatorIs,
@@ -369,7 +369,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 	assert.Equal(t, []any{"/"}, q.primaryFilter[0].filter.Values)
 	assert.Len(t, q.subqueryFilter, 1)
 	assert.Equal(t, pkg.TablePageViews, q.subqueryFilter[0].table)
-	assert.Equal(t, request.OperatorOr, q.subqueryFilter[0].filter.Operator)
+	assert.Equal(t, request.OperatorGroupOr, q.subqueryFilter[0].filter.Operator)
 	assert.Len(t, q.subqueryFilter[0].filter.Filter, 2)
 	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[0].Operator)
 	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[1].Operator)
@@ -2012,6 +2012,61 @@ func TestQueryTimeOnPageBounceRate(t *testing.T) {
 	assert.Equal(t, float64(0), r.Results[1].MetricValues[0])
 	assert.Equal(t, int64(0), r.Results[1].MetricValues[1])
 	assert.Equal(t, float64(0), r.Results[1].MetricValues[2])
+}
+
+func TestQueryPlatformFilter(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorIsNot,
+				Dimension: dimensions.Platform{},
+				Values:    []any{pkg.PlatformDesktop},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, pkg.PlatformDesktop, q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, pkg.PlatformDesktop, args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 }
 
 func TestQueryWithFillMinute(t *testing.T) {
