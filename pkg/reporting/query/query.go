@@ -248,12 +248,25 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 	primaryQuery, primaryArgs := q.buildQuery(primaryReq)
 
 	// build query for secondary metrics
+	savedPrimaryTable := q.primaryTable
+	savedPrimaryFilter := q.primaryFilter
+	savedSubqueryFilter := q.subqueryFilter
+	q.primaryTable = q.joinTable
+	q.primaryFilter = make([]classifiedFilter, 0)
+	q.subqueryFilter = make([]classifiedFilter, 0)
+
+	for _, filter := range req.Filter {
+		_ = q.classifyFilter(filter)
+	}
+
 	secondaryReq := req
 	secondaryReq.Metrics = secondaryMetrics
 	secondaryReq.OrderBy = nil
 	secondaryReq.Pagination = nil
-	q.primaryTable = q.joinTable
 	secondaryQuery, secondaryArgs := q.buildQuery(secondaryReq)
+	q.primaryTable = savedPrimaryTable
+	q.primaryFilter = savedPrimaryFilter
+	q.subqueryFilter = savedSubqueryFilter
 
 	// run both in parallel
 	var wg sync.WaitGroup
@@ -678,7 +691,7 @@ func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Me
 					continue
 				}
 
-				cmp = compareAny(a.MetricValues[index], b.MetricValues[index])
+				cmp = q.compareAny(a.MetricValues[index], b.MetricValues[index])
 			} else if o.Dimension != nil {
 				col := o.Dimension.Column(q.primaryTable)
 				// find dimension index by column name
@@ -695,7 +708,7 @@ func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Me
 					continue
 				}
 
-				cmp = compareAny(a.DimensionValues[dimensionIndex], b.DimensionValues[dimensionIndex])
+				cmp = q.compareAny(a.DimensionValues[dimensionIndex], b.DimensionValues[dimensionIndex])
 			}
 
 			if o.Direction == request.DirectionASC {
@@ -713,7 +726,7 @@ func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Me
 	})
 }
 
-func compareAny(a, b any) int {
+func (q *Query) compareAny(a, b any) int {
 	switch av := a.(type) {
 	case uint64:
 		bv := b.(uint64)

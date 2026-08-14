@@ -131,7 +131,7 @@ func TestQueryPageViews(t *testing.T) {
 	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
-	assert.Equal(t, pkg.TableSessions, q.primaryTable) // overwritten for subquery
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable) // overwritten for subquery
 	assert.Equal(t, pkg.TableSessions, q.joinTable)
 	assert.Len(t, q.primaryFilter, 1)
 	assert.Empty(t, q.subqueryFilter)
@@ -1559,6 +1559,85 @@ func TestQueryTagFilter(t *testing.T) {
 	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[0])
 }
 
+func TestQueryTagKeyFilterPath(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.TagKey{},
+				Values:    []any{"author"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, "author", q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "author", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 3)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, int64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[2])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+
+	// result row 2
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[2].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[2].MetricValues[2])
+	assert.Equal(t, "/landing", r.Results[2].DimensionValues[0])
+}
+
 func TestQueryTagKeyFilterContains(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
@@ -1894,7 +1973,7 @@ func TestQueryTimeOnPageBounceRate(t *testing.T) {
 	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
-	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
 	assert.Equal(t, pkg.TableSessions, q.joinTable)
 	assert.Empty(t, q.primaryFilter)
 	assert.Len(t, q.subqueryFilter, 1)
