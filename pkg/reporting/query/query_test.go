@@ -199,6 +199,43 @@ func TestQueryPageViews(t *testing.T) {
 	assert.InDelta(t, float64(120), r.Results[2].MetricValues[7], 0.001)
 }
 
+func TestQueryPageViewsWithoutPeriod(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, _, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 1)
+	assert.Equal(t, uint64(1), args[0])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
+}
+
 func TestQueryEvents(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",

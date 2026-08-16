@@ -1226,6 +1226,10 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
+	if period.From.IsZero() && period.To.IsZero() {
+		return "WHERE site_id = ? ", []any{siteID}
+	}
+
 	tz := "UTC"
 
 	if period.Timezone != nil {
@@ -1240,7 +1244,7 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	var query strings.Builder
 	args := make([]any, 0)
-	query.WriteString(`WHERE site_id = ? `)
+	query.WriteString("WHERE site_id = ? ")
 	args = append(args, siteID)
 
 	if period.From.Equal(period.To) {
