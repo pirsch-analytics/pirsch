@@ -760,21 +760,13 @@ func (q *Query) paginateResults(results []report.Result, pagination *request.Pag
 		return results
 	}
 
-	offset := pagination.Offset
-
-	if offset < 0 {
-		offset = 0
-	}
+	offset := max(pagination.Offset, 0)
 
 	if offset >= len(results) {
 		return []report.Result{}
 	}
 
-	end := offset + pagination.Limit
-
-	if end > len(results) {
-		end = len(results)
-	}
+	end := min(offset+pagination.Limit, len(results))
 
 	return results[offset:end]
 }
