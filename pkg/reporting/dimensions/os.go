@@ -18,7 +18,7 @@ func (d OS) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d OS) Expression() string {
+func (d OS) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

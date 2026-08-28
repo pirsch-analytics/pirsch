@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/gocarina/gocsv"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
@@ -2274,12 +2275,17 @@ func TestQueryWithFillWeek(t *testing.T) {
 	assert.NotEmpty(t, args)
 
 	// results
-	assert.Len(t, r.Results, 6)
-
-	for _, result := range r.Results {
-		assert.Len(t, result.DimensionValues, 1)
-		assert.Len(t, result.MetricValues, 1)
-	}
+	assert.Len(t, r.Results, 5)
+	assert.Equal(t, time.Date(2025, time.December, 29, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 5, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 12, 0, 0, 0, 0, time.UTC), r.Results[2].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 19, 0, 0, 0, 0, time.UTC), r.Results[3].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 26, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[2].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[3].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[4].MetricValues[0])
 }
 
 func TestQueryWithFillMonth(t *testing.T) {
@@ -3032,6 +3038,75 @@ func TestQueryCRFilterReferrer(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
+}
+
+func TestQueryTimezone(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	to := from.Add(time.Hour * 24)
+	tz, err := timezone.Load("CET")
+	assert.NoError(t, err)
+	assert.NotNil(t, tz)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    tz,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Hour{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 5)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, from, args[3])
+	assert.Equal(t, to, args[4])
+
+	// result dimensions
+	assert.Len(t, r.Results, 24)
+
+	for i, result := range r.Results {
+		assert.Equal(t, time.Date(2026, time.January, 1, i, 0, 0, 0, time.UTC), result.DimensionValues[0].(time.Time).In(time.UTC))
+	}
+
+	// result metrics
+	for i, result := range r.Results {
+		if i == 8 {
+			assert.Equal(t, uint64(2), result.MetricValues[0])
+		} else {
+			assert.Equal(t, uint64(0), result.MetricValues[0])
+		}
+	}
 }
 
 func newQuery() (*Query, time.Time, time.Time) {

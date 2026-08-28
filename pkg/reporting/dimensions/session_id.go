@@ -18,7 +18,7 @@ func (d SessionID) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d SessionID) Expression() string {
+func (d SessionID) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

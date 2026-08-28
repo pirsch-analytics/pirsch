@@ -18,7 +18,7 @@ func (d Channel) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Channel) Expression() string {
+func (d Channel) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

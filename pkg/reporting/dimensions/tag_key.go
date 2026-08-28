@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // TagKey is a Dimension.
 type TagKey struct{}
@@ -16,7 +18,7 @@ func (d TagKey) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d TagKey) Expression() string {
+func (d TagKey) Expression(_ *DimensionExpressionOptions) string {
 	return "arrayJoin(mapKeys(tags))"
 }
 

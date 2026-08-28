@@ -23,7 +23,7 @@ func (d Path) Column(table string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Path) Expression() string {
+func (d Path) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

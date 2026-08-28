@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // ExitPath is a Dimension.
 type ExitPath struct{}
@@ -16,7 +18,7 @@ func (d ExitPath) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d ExitPath) Expression() string {
+func (d ExitPath) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

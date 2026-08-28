@@ -18,7 +18,7 @@ func (d ReferrerName) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d ReferrerName) Expression() string {
+func (d ReferrerName) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

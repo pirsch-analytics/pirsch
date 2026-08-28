@@ -60,7 +60,7 @@ func (d EventMeta) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EventMeta) Expression() string {
+func (d EventMeta) Expression(_ *DimensionExpressionOptions) string {
 	return "toString(meta_data)"
 }
 
@@ -87,7 +87,7 @@ func (d EventMeta) ScanType() any {
 // Select returns the SQL select expression applying any configured function or type cast.
 func (d EventMeta) Select(path string) string {
 	if d.Type == EventMetaTypeNone && d.Function == EventMetaFunctionNone {
-		return d.Expression()
+		return d.Expression(nil)
 	}
 
 	expression := ""
@@ -101,7 +101,7 @@ func (d EventMeta) Select(path string) string {
 		expression = fmt.Sprintf("toInt64(toFloat64OrZero(toString(meta_data%s)))", path)
 		castType = "toInt64"
 	default:
-		expression = d.Expression()
+		expression = d.Expression(nil)
 	}
 
 	switch d.Function {

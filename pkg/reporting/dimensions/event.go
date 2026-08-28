@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Event is a Dimension.
 type Event struct{}
@@ -16,7 +18,7 @@ func (d Event) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Event) Expression() string {
+func (d Event) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

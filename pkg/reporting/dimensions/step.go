@@ -20,7 +20,7 @@ func (d Step) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Step) Expression() string {
+func (d Step) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

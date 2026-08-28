@@ -18,7 +18,7 @@ func (d UTMTerm) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d UTMTerm) Expression() string {
+func (d UTMTerm) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

@@ -1,6 +1,8 @@
 package dimensions
 
 import (
+	"fmt"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 )
 
@@ -18,8 +20,12 @@ func (d Weekday) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Weekday) Expression() string {
-	return `toDayOfWeek("time")`
+func (d Weekday) Expression(options *DimensionExpressionOptions) string {
+	if options == nil || options.Timezone == nil {
+		return `toDayOfWeek("time")`
+	}
+
+	return fmt.Sprintf(`toDayOfWeek("time", '%s')`, options.Timezone.String())
 }
 
 // Args implements the Dimension interface.

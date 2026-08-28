@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
@@ -984,7 +985,7 @@ func (q *Query) buildQueryWith(req request.Request) (string, []any) {
 	fields := make([]string, 0, len(groupBy))
 
 	for _, d := range groupBy {
-		fields = append(fields, q.buildQuerySelectColumn(d))
+		fields = append(fields, q.buildQuerySelectColumn(d, req.Period.Timezone, req.Period.WeekdayMode))
 	}
 
 	selectFields := strings.Join(fields, ", ")
@@ -1127,30 +1128,35 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 	}
 
 	for _, dimension := range req.Dimensions {
-		fields = append(fields, q.buildQuerySelectColumn(dimension))
+		fields = append(fields, q.buildQuerySelectColumn(dimension, req.Period.Timezone, req.Period.WeekdayMode))
 		args = append(args, dimension.Args()...)
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
 }
 
-func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension) string {
+func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension, location *time.Location, weekdayMode request.WeekdayMode) string {
+	options := dimensions.DimensionExpressionOptions{
+		Timezone:    location,
+		WeekdayMode: int(weekdayMode),
+	}
+
 	switch d := dimension.(type) {
 	case dimensions.EventMeta:
 		if d.Path != "" {
 			return d.Select(q.buildQueryFilterJSONPath(d.Path))
 		}
 
-		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+		return fmt.Sprintf("%s %s", dimension.Expression(&options), dimension.Column(q.primaryTable))
 	case dimensions.EventMetaValue:
 		if d.Path != "" {
 			return d.Select(q.buildQueryFilterJSONPath(d.Path))
 		}
 
-		return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+		return fmt.Sprintf("%s %s", dimension.Expression(&options), dimension.Column(q.primaryTable))
 	default:
-		if dimension.Expression() != "" {
-			return fmt.Sprintf("%s %s", dimension.Expression(), dimension.Column(q.primaryTable))
+		if dimension.Expression(&options) != "" {
+			return fmt.Sprintf("%s %s", dimension.Expression(&options), dimension.Column(q.primaryTable))
 		}
 
 		return dimension.Column(q.primaryTable)
@@ -1560,7 +1566,7 @@ func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dim
 	case dimensions.Minute:
 		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 	case dimensions.Hour:
-		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
+		return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 	case dimensions.Day:
 		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
 	case dimensions.Week:

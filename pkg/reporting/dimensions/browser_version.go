@@ -18,7 +18,7 @@ func (d BrowserVersion) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d BrowserVersion) Expression() string {
+func (d BrowserVersion) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

@@ -18,7 +18,7 @@ func (d VisitorID) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d VisitorID) Expression() string {
+func (d VisitorID) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

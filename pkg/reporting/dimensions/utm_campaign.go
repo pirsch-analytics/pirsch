@@ -18,7 +18,7 @@ func (d UTMCampaign) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d UTMCampaign) Expression() string {
+func (d UTMCampaign) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

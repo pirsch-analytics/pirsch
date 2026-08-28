@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Tags is a Dimension.
 type Tags struct{}
@@ -16,7 +18,7 @@ func (d Tags) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Tags) Expression() string {
+func (d Tags) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

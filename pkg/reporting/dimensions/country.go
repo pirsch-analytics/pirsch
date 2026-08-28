@@ -18,7 +18,7 @@ func (d Country) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Country) Expression() string {
+func (d Country) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

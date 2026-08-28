@@ -18,7 +18,7 @@ func (d PageViews) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d PageViews) Expression() string {
+func (d PageViews) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

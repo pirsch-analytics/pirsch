@@ -25,7 +25,7 @@ func (d TagValue) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d TagValue) Expression() string {
+func (d TagValue) Expression(_ *DimensionExpressionOptions) string {
 	if d.Key != "" {
 		return "tags[?]"
 	}

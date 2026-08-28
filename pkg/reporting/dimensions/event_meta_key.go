@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // EventMetaKey is a Dimension.
 // It's only really useful as a filter. The dimension will simply return the metadata column.
@@ -17,7 +19,7 @@ func (d EventMetaKey) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EventMetaKey) Expression() string {
+func (d EventMetaKey) Expression(_ *DimensionExpressionOptions) string {
 	return "toString(meta_data)"
 }
 

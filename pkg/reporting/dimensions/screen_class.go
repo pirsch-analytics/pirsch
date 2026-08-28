@@ -18,7 +18,7 @@ func (d ScreenClass) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d ScreenClass) Expression() string {
+func (d ScreenClass) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

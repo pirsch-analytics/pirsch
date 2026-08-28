@@ -34,7 +34,7 @@ func (d EventMetaValue) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EventMetaValue) Expression() string {
+func (d EventMetaValue) Expression(_ *DimensionExpressionOptions) string {
 	return "toString(meta_data)"
 }
 

@@ -18,7 +18,7 @@ func (d Hostname) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Hostname) Expression() string {
+func (d Hostname) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

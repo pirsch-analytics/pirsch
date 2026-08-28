@@ -18,7 +18,7 @@ func (d Bounced) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Bounced) Expression() string {
+func (d Bounced) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
