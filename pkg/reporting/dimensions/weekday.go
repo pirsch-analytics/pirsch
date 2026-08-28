@@ -25,7 +25,11 @@ func (d Weekday) Expression(options *DimensionExpressionOptions) string {
 		return `toDayOfWeek("time")`
 	}
 
-	return fmt.Sprintf(`toDayOfWeek("time", '%s')`, options.Timezone.String())
+	if options.Timezone == nil {
+		return fmt.Sprintf(`toDayOfWeek("time", %d)`, options.WeekdayMode)
+	}
+
+	return fmt.Sprintf(`toDayOfWeek("time", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
 }
 
 // Args implements the Dimension interface.
