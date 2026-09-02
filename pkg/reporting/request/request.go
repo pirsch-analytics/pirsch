@@ -82,7 +82,24 @@ func (r *Request) Validate() []error {
 	}
 
 	errs = append(errs, validateOrderBy(r.OrderBy, r.Dimensions, r.Metrics)...)
+
 	// TODO check other relevant fields and filter combinations
+	/*
+		for _, m := range ms {
+		    switch m.(type) {
+		    case metrics.BounceRate, metrics.Bounces, metrics.SessionDuration, metrics.ViewsPerVisit:
+		        for _, d := range dims {
+		            // EventMeta is events-only — incompatible with session metrics
+		            if _, ok := d.(dimensions.EventMeta); ok {
+		                errs = append(errs, fmt.Errorf(
+		                    "metric %q cannot be used with EventMeta dimensions",
+		                    m.Column(),
+		                ))
+		            }
+		        }
+		    }
+		}
+	*/
 
 	if len(errs) > 0 {
 		return errs

@@ -1400,6 +1400,151 @@ func TestQueryEventMetaDataValueFilter(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
 }
 
+func TestQueryEventMetaDataTimeSeries(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaValue{
+					Path: "position",
+				},
+				Values: []any{"hero"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Day{}, Direction: request.DirectionASC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 7)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "hero", args[4])
+	assert.Equal(t, from, args[5])
+	assert.Equal(t, to, args[6])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 31)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result row 0
+	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[1])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[2])
+
+	for i := 1; i < len(r.Results); i++ {
+		assert.Equal(t, from.Add(time.Hour*24*time.Duration(i)), r.Results[i].DimensionValues[0])
+		assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
+		assert.Equal(t, float64(0), r.Results[i].DimensionValues[2])
+	}
+}
+
+func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       from,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Hour{}, Direction: request.DirectionASC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, from, args[2])
+	assert.Equal(t, from, args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 24)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result rows
+	for i := range r.Results {
+		if i == 8 {
+			assert.Equal(t, from.Add(time.Hour*time.Duration(i)), r.Results[i].DimensionValues[0])
+			assert.Equal(t, 99.54, r.Results[i].DimensionValues[1])
+		} else {
+			assert.Equal(t, from.Add(time.Hour*time.Duration(i)), r.Results[i].DimensionValues[0])
+			assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
+		}
+	}
+}
+
 func TestQueryTagKeysList(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",

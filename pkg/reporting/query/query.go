@@ -1564,9 +1564,17 @@ func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dim
 
 	switch dimension.(type) {
 	case dimensions.Minute:
-		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
+		if req.Period.From.Equal(req.Period.To) {
+			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') + INTERVAL 1 HOUR STEP INTERVAL 1 MINUTE", tz, tz), args
+		} else {
+			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
+		}
 	case dimensions.Hour:
-		return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
+		if req.Period.From.Equal(req.Period.To) {
+			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 HOUR", tz, tz), args
+		} else {
+			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
+		}
 	case dimensions.Day:
 		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
 	case dimensions.Week:
