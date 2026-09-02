@@ -63,8 +63,8 @@ func TestQuerySessions(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions
 	assert.Len(t, r.Results, 2)
@@ -142,18 +142,18 @@ func TestQueryPageViews(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, []any{"/", "/pricing", "/landing"}, args[3])
 	assert.Equal(t, uint64(1), args[4])
-	assert.Equal(t, from, args[5])
-	assert.Equal(t, to, args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-31 00:00:00", args[6])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 
 	// result
 	assert.Len(t, r.Results, 3)
@@ -276,11 +276,11 @@ func TestQueryEvents(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 6)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -333,8 +333,8 @@ func TestQueryEventPath(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "/", args[3])
 
 	// result
@@ -421,13 +421,13 @@ func TestQuerySessionsFiltered(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 10)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "/", args[3])
 	assert.Equal(t, []any{pkg.PlatformDesktop, pkg.PlatformMobile}, args[4])
 	assert.Equal(t, uint64(1), args[5])
-	assert.Equal(t, from, args[6])
-	assert.Equal(t, to, args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[6])
+	assert.Equal(t, "2026-01-31 00:00:00", args[7])
 	assert.Equal(t, []any{"/pricing", "/landing"}, args[8])
 	assert.Equal(t, "https://duckduckgo.com", args[9])
 
@@ -546,25 +546,25 @@ func TestQueryEventsFiltered(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 21)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "Contact Button", args[6])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 	assert.Equal(t, uint64(1), args[13])
-	assert.Equal(t, from, args[14])
-	assert.Equal(t, to, args[15])
+	assert.Equal(t, "2026-01-01 00:00:00", args[14])
+	assert.Equal(t, "2026-01-31 00:00:00", args[15])
 	assert.Equal(t, "/", args[16])
 	assert.Equal(t, uint64(1), args[17])
-	assert.Equal(t, from, args[18])
-	assert.Equal(t, to, args[19])
+	assert.Equal(t, "2026-01-01 00:00:00", args[18])
+	assert.Equal(t, "2026-01-31 00:00:00", args[19])
 	assert.Equal(t, "Contact Button", args[20])
 
 	// result
@@ -627,8 +627,8 @@ func TestQueryDimensionOnly(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "%go%", args[3])
 
 	// result
@@ -676,8 +676,8 @@ func TestQueryTime(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-02 09:00:00", args[1])
+	assert.Equal(t, "2026-01-02 09:30:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -726,8 +726,8 @@ func TestQueryLimit(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -780,8 +780,8 @@ func TestQueryOffsetLimit(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -837,8 +837,8 @@ func TestQueryEventList(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 3)
@@ -916,11 +916,11 @@ func TestQueryEventMetaDataFilterKey(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 7)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "Contact Button", args[6])
 
 	// result dimensions and metrics
@@ -988,8 +988,8 @@ func TestQueryEventMetaDataFilterValue(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "hero", args[3])
 	assert.Equal(t, 1, args[4])
 
@@ -1040,8 +1040,8 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 1)
@@ -1118,11 +1118,11 @@ func TestQueryEventMetaDataFunctionFiltered(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 9)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "Contact Button", args[6])
 	assert.Equal(t, "^\\/.*$", args[7])
 	assert.Equal(t, "https://duckduckgo.com", args[8])
@@ -1183,8 +1183,8 @@ func TestQueryEventMetaDataCastTypeFloat(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 3)
@@ -1240,8 +1240,8 @@ func TestQueryEventMetaDataCastTypeInt(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 3)
@@ -1310,8 +1310,8 @@ func TestQueryEventMetaDataValue(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "Contact Button", args[3])
 
 	// result dimensions and metrics
@@ -1385,8 +1385,8 @@ func TestQueryEventMetaDataValueFilter(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "Contact Button", args[3])
 	assert.Equal(t, "hero", args[4])
 
@@ -1459,12 +1459,12 @@ func TestQueryEventMetaDataTimeSeries(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 7)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "Contact Button", args[3])
 	assert.Equal(t, "hero", args[4])
-	assert.Equal(t, from, args[5])
-	assert.Equal(t, to, args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-31 00:00:00", args[6])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 31)
@@ -1490,12 +1490,14 @@ func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
 		"referrer reset",
 	})
 	q, from, _ := newQuery()
+	tz, err := time.LoadLocation("Europe/Berlin")
+	assert.NoError(t, err)
 	req := request.Request{
 		SiteID: 1,
 		Period: request.Period{
 			From:     from,
 			To:       from,
-			Timezone: time.UTC,
+			Timezone: tz,
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Hour{},
@@ -1524,9 +1526,9 @@ func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, from, args[2])
-	assert.Equal(t, from, args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-01 00:00:00", args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[3])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 24)
@@ -1535,11 +1537,11 @@ func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
 
 	// result rows
 	for i := range r.Results {
-		if i == 8 {
-			assert.Equal(t, from.Add(time.Hour*time.Duration(i)), r.Results[i].DimensionValues[0])
+		assert.Equal(t, i, r.Results[i].DimensionValues[0].(time.Time).Hour())
+
+		if i == 9 {
 			assert.Equal(t, 99.54, r.Results[i].DimensionValues[1])
 		} else {
-			assert.Equal(t, from.Add(time.Hour*time.Duration(i)), r.Results[i].DimensionValues[0])
 			assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
 		}
 	}
@@ -1585,8 +1587,8 @@ func TestQueryTagKeysList(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 2)
@@ -1657,8 +1659,8 @@ func TestQueryTagBreakdown(t *testing.T) {
 	assert.Len(t, args, 5)
 	assert.Equal(t, "author", args[0])
 	assert.Equal(t, uint64(1), args[1])
-	assert.Equal(t, from, args[2])
-	assert.Equal(t, to, args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[2])
+	assert.Equal(t, "2026-01-31 00:00:00", args[3])
 	assert.Equal(t, "author", args[4])
 
 	// result dimensions and metrics
@@ -1723,11 +1725,11 @@ func TestQueryTagFilter(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 8)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "author", args[6])
 	assert.Equal(t, "Marvin Blum", args[7])
 
@@ -1793,8 +1795,8 @@ func TestQueryTagKeyFilterPath(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "author", args[3])
 
 	// result dimensions and metrics
@@ -1871,8 +1873,8 @@ func TestQueryTagKeyFilterContains(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "auth", args[3])
 
 	// result dimensions and metrics
@@ -1939,8 +1941,8 @@ func TestQueryTagKeyFilterMatch(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "auth.*", args[3])
 
 	// result dimensions and metrics
@@ -2000,17 +2002,17 @@ func TestQueryTimeOnPage(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 	assert.Equal(t, "/", args[13])
 
 	// result
@@ -2075,13 +2077,13 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 8)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
-	assert.Equal(t, from, args[6])
-	assert.Equal(t, to, args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[6])
+	assert.Equal(t, "2026-01-31 00:00:00", args[7])
 
 	// result
 	assert.Len(t, r.Results, 34)
@@ -2166,17 +2168,17 @@ func TestQueryTimeOnPageBounceRate(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 	assert.Equal(t, "/", args[13])
 
 	// result
@@ -2239,8 +2241,8 @@ func TestQueryPlatformFilter(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, pkg.PlatformDesktop, args[3])
 
 	// result dimensions and metrics
@@ -2596,8 +2598,8 @@ func TestQueryListSessions(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 5)
@@ -2725,8 +2727,8 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(3), args[3])
 	assert.Equal(t, uint32(3), args[4])
 
@@ -2843,8 +2845,8 @@ func TestQueryListSessionBreakdownEvents(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(3), args[3])
 	assert.Equal(t, uint32(3), args[4])
 
@@ -3087,18 +3089,18 @@ func TestQueryCRFilterEvent(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, uint64(1), args[6])
-	assert.Equal(t, from, args[7])
-	assert.Equal(t, to, args[8])
+	assert.Equal(t, "2026-01-01 00:00:00", args[7])
+	assert.Equal(t, "2026-01-31 00:00:00", args[8])
 	assert.Equal(t, "^\\/.*$", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 	assert.Equal(t, "Contact Button", args[13])
 
 	// result
@@ -3163,15 +3165,15 @@ func TestQueryCRFilterReferrer(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 11)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "https://google.com", args[6])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, "^\\/.*$", args[10])
 
 	// result
@@ -3232,21 +3234,21 @@ func TestQueryTimezone(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
-	assert.Equal(t, from, args[3])
-	assert.Equal(t, to, args[4])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-02 00:00:00", args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[3])
+	assert.Equal(t, "2026-01-02 00:00:00", args[4])
 
 	// result dimensions
 	assert.Len(t, r.Results, 24)
 
 	for i, result := range r.Results {
-		assert.Equal(t, time.Date(2026, time.January, 1, i, 0, 0, 0, time.UTC), result.DimensionValues[0].(time.Time).In(time.UTC))
+		assert.Equal(t, time.Date(2026, time.January, 1, i, 0, 0, 0, tz), result.DimensionValues[0].(time.Time))
 	}
 
 	// result metrics
 	for i, result := range r.Results {
-		if i == 8 {
+		if i == 9 {
 			assert.Equal(t, uint64(2), result.MetricValues[0])
 		} else {
 			assert.Equal(t, uint64(0), result.MetricValues[0])

@@ -1234,6 +1234,8 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		tz = period.Timezone.String()
 	}
 
+	from := period.From.Format(time.DateTime)
+	to := period.To.Format(time.DateTime)
 	dateFunc := "toDate"
 
 	if period.IncludeTime {
@@ -1247,10 +1249,10 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	if period.From.Equal(period.To) {
 		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') = %s(?, '%s') `, dateFunc, tz, dateFunc, tz))
-		args = append(args, period.From)
+		args = append(args, from)
 	} else {
 		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, tz, dateFunc, tz, dateFunc, tz))
-		args = append(args, period.From, period.To)
+		args = append(args, from, to)
 	}
 
 	return query.String(), args
@@ -1557,10 +1559,10 @@ func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dim
 		tz = req.Period.Timezone.String()
 	}
 
-	args := []any{
-		req.Period.From,
-		req.Period.To,
-	}
+	// format as plain wall clock strings so that ClickHouse ignores the timezone
+	from := req.Period.From.Format(time.DateTime)
+	to := req.Period.To.Format(time.DateTime)
+	args := []any{from, to}
 
 	switch dimension.(type) {
 	case dimensions.Minute:
