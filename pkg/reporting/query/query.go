@@ -1500,6 +1500,10 @@ func (q *Query) buildQueryGroupBy(d []dimensions.Dimension) string {
 				if eventMeta.Function == dimensions.EventMetaFunctionNone {
 					column = eventMeta.Column("")
 				}
+			} else if eventMetaKey, ok := dimension.(dimensions.EventMetaKey); ok {
+				if !eventMetaKey.Any {
+					column = dimension.Column(q.primaryTable)
+				}
 			} else {
 				column = dimension.Column(q.primaryTable)
 			}

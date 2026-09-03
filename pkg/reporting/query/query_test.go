@@ -866,6 +866,158 @@ func TestQueryEventList(t *testing.T) {
 	assert.Equal(t, `{"label":"Get in touch","position":"text","price":24.99}`, r.Results[2].DimensionValues[1])
 }
 
+func TestQueryEventListMetaDataKeys(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaKey{},
+			dimensions.EventMeta{
+				Path:     "price",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Events{},
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+			{Metric: metrics.Events{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Len(t, r.Results[0].MetricValues, 4)
+	assert.Len(t, r.Results[1].DimensionValues, 3)
+	assert.Len(t, r.Results[1].MetricValues, 4)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[3], 0.0001)
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, []string{"label", "position", "price"}, r.Results[0].DimensionValues[1])
+	assert.InDelta(t, 46.445, r.Results[0].DimensionValues[2].(float64), 0.01)
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.InDelta(t, 0.3333, r.Results[1].MetricValues[3], 0.0001)
+	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
+	assert.Equal(t, []string{"ab-test", "position", "price"}, r.Results[1].DimensionValues[1])
+	assert.InDelta(t, 99.54, r.Results[1].DimensionValues[2].(float64), 0.01)
+}
+
+func TestQueryEventListMetaDataKeysAny(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaKey{
+				Any: true,
+			},
+			dimensions.EventMeta{
+				Path:     "price",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Events{},
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+			{Metric: metrics.Events{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Len(t, r.Results[0].MetricValues, 4)
+
+	// result row
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Contains(t, r.Results[0].DimensionValues[1], "position") // maybe also label, but this is unknown
+	assert.Contains(t, r.Results[0].DimensionValues[1], "price")
+	assert.InDelta(t, 64.143, r.Results[0].DimensionValues[2].(float64), 0.01)
+}
+
 func TestQueryEventMetaDataFilterKey(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",

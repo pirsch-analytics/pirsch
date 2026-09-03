@@ -5,8 +5,11 @@ import (
 )
 
 // EventMetaKey is a Dimension.
-// It's only really useful as a filter. The dimension will simply return the metadata column.
-type EventMetaKey struct{}
+// It returns all paths for an event metadata field.
+// Unlike other dimensions, it is not used to group the result set if Any is set to true.
+type EventMetaKey struct {
+	Any bool
+}
 
 // Table implements the Dimension interface.
 func (d EventMetaKey) Table() []string {
@@ -20,7 +23,11 @@ func (d EventMetaKey) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d EventMetaKey) Expression(_ *DimensionExpressionOptions) string {
-	return "toString(meta_data)"
+	if d.Any {
+		return "any(JSONAllPaths(meta_data))"
+	}
+
+	return "JSONAllPaths(meta_data)"
 }
 
 // Args implements the Dimension interface.
@@ -30,6 +37,5 @@ func (d EventMetaKey) Args() []any {
 
 // ScanType implements the Metric interface.
 func (d EventMetaKey) ScanType() any {
-	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
-	return new(string)
+	return new([]string)
 }
