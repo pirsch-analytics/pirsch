@@ -1504,6 +1504,18 @@ func (q *Query) buildQueryGroupBy(d []dimensions.Dimension) string {
 				if !eventMetaKey.Any {
 					column = dimension.Column(q.primaryTable)
 				}
+			} else if country, ok := dimension.(dimensions.Country); ok {
+				if !country.Any {
+					column = dimension.Column(q.primaryTable)
+				}
+			} else if region, ok := dimension.(dimensions.Region); ok {
+				if !region.Any {
+					column = dimension.Column(q.primaryTable)
+				}
+			} else if referrer, ok := dimension.(dimensions.Referrer); ok {
+				if !referrer.Any {
+					column = dimension.Column(q.primaryTable)
+				}
 			} else {
 				column = dimension.Column(q.primaryTable)
 			}

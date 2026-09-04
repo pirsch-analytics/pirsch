@@ -5,7 +5,10 @@ import (
 )
 
 // Country is a Dimension.
-type Country struct{}
+type Country struct {
+	// Any specifies whether the result set should not be grouped by the country.
+	Any bool
+}
 
 // Table implements the Dimension interface.
 func (d Country) Table() []string {
@@ -19,6 +22,10 @@ func (d Country) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Country) Expression(_ *DimensionExpressionOptions) string {
+	if d.Any {
+		return "any(country_code)"
+	}
+
 	return ""
 }
 

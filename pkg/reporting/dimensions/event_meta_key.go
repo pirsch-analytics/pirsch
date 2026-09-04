@@ -6,8 +6,8 @@ import (
 
 // EventMetaKey is a Dimension.
 // It returns all paths for an event metadata field.
-// Unlike other dimensions, it is not used to group the result set if Any is set to true.
 type EventMetaKey struct {
+	// Any specifies whether the result set should not be grouped by the metadata keys.
 	Any bool
 }
 

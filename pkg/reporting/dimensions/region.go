@@ -5,7 +5,10 @@ import (
 )
 
 // Region is a Dimension.
-type Region struct{}
+type Region struct {
+	// Any specifies whether the result set should not be grouped by the region.
+	Any bool
+}
 
 // Table implements the Dimension interface.
 func (d Region) Table() []string {
@@ -19,6 +22,10 @@ func (d Region) Column(_ string) string {
 
 // Expression implements the Dimension interface.
 func (d Region) Expression(_ *DimensionExpressionOptions) string {
+	if d.Any {
+		return "any(region)"
+	}
+
 	return ""
 }
 
