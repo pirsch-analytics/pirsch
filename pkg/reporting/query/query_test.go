@@ -237,6 +237,146 @@ func TestQueryPageViewsWithoutPeriod(t *testing.T) {
 	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
 }
 
+func TestQueryEntries(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EntryPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Entries{},
+			metrics.EntryRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Entries{}},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 3)
+
+	// result dimensions
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/landing", r.Results[1].DimensionValues[0])
+
+	// result metrics row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.8, r.Results[0].MetricValues[2], 0.001)
+
+	// result metrics row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.InDelta(t, 0.2, r.Results[1].MetricValues[2], 0.001)
+}
+
+func TestQueryExits(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.ExitPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Exits{},
+			metrics.ExitRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Exits{}},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 3)
+
+	// result dimensions
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+
+	// result metrics row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.8, r.Results[0].MetricValues[2], 0.001)
+
+	// result metrics row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.InDelta(t, 0.2, r.Results[1].MetricValues[2], 0.001)
+}
+
 func TestQueryEvents(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
