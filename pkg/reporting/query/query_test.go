@@ -76,7 +76,7 @@ func TestQuerySessions(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
 	assert.Equal(t, int64(1), r.Results[0].MetricValues[3])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[4])
-	assert.InDelta(t, 150, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 300, r.Results[0].MetricValues[5], 0.001)
 
 	// result metrics row 1
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
@@ -85,7 +85,7 @@ func TestQuerySessions(t *testing.T) {
 	assert.Equal(t, uint64(3), r.Results[1].MetricValues[2])
 	assert.Equal(t, int64(2), r.Results[1].MetricValues[3])
 	assert.InDelta(t, 0.6666, r.Results[1].MetricValues[4], 0.001)
-	assert.InDelta(t, 60, r.Results[1].MetricValues[5], 0.001)
+	assert.InDelta(t, 180, r.Results[1].MetricValues[5], 0.001)
 }
 
 func TestQueryPageViews(t *testing.T) {
@@ -3082,7 +3082,7 @@ func TestQueryComparison(t *testing.T) {
 	assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
 	assert.Equal(t, int64(2), r.Results[0].MetricValues[3])
 	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[4], 0.001)
-	assert.InDelta(t, 60, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 180, r.Results[0].MetricValues[5], 0.001)
 
 	// compare result row
 	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[0])
@@ -3090,7 +3090,7 @@ func TestQueryComparison(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[2])
 	assert.Equal(t, int64(1), r.Results[0].CompareMetricValues[3])
 	assert.InDelta(t, 0.5, r.Results[0].CompareMetricValues[4], 0.001)
-	assert.InDelta(t, 150, r.Results[0].CompareMetricValues[5], 0.001)
+	assert.InDelta(t, 300, r.Results[0].CompareMetricValues[5], 0.001)
 }
 
 func TestQueryFunnel(t *testing.T) {

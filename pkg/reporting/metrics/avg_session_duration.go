@@ -22,7 +22,7 @@ func (m AvgSessionDuration) Column() string {
 
 // Expression implements the Metric interface.
 func (m AvgSessionDuration) Expression(_ string) (string, bool) {
-	return "avg(duration_seconds)", false
+	return "avgOrDefaultIf(duration_seconds, duration_seconds > 0)", false
 }
 
 // ScanType implements the Metric interface.
