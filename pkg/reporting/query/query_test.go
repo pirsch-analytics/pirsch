@@ -1775,7 +1775,7 @@ func TestQueryEventMetaDataTimeSeries(t *testing.T) {
 	}
 }
 
-func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
+func TestQueryEventMetaDataTimeSeriesWithFillMinute(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 		"three page views + event",
@@ -1836,6 +1836,89 @@ func TestQueryEventMetaDataTimeSeriesWithFill(t *testing.T) {
 		} else {
 			assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
 		}
+	}
+}
+
+func TestQueryEventMetaDataTimeSeriesWithFillHour(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	tz, err := time.LoadLocation("Europe/Berlin")
+	assert.NoError(t, err)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour),
+			Timezone:    tz,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Minute{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMeta{
+					Path: "position",
+				},
+				Values: []any{"text"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Minute{}, Direction: request.DirectionASC},
+		},
+		Options: &request.Options{
+			Sample: 10_000_000,
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 7)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-01 01:00:00", args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "text", args[4])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-01 01:00:00", args[6])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 60)
+
+	// result rows
+	for i := range r.Results {
+		assert.Len(t, r.Results[i].DimensionValues, 3)
+		assert.Empty(t, r.Results[i].MetricValues)
+		assert.Equal(t, i, r.Results[i].DimensionValues[0].(time.Time).Minute())
 	}
 }
 
