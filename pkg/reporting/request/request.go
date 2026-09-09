@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"encoding/json/v2"
 	"regexp"
 	"time"
 
@@ -106,4 +107,10 @@ func (r *Request) Validate() []error {
 	}
 
 	return nil
+}
+
+// String implements the fmt.Stringer interface.
+func (r *Request) String() string {
+	b, _ := json.Marshal(r)
+	return string(b)
 }
