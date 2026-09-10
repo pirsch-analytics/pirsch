@@ -432,7 +432,7 @@ func TestQueryEvents(t *testing.T) {
 	assert.InDelta(t, 0.75, r.Results[0].MetricValues[2], 0.001)
 }
 
-func TestQueryEventPath(t *testing.T) {
+func TestQueryEventPages(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 	})
@@ -1920,6 +1920,85 @@ func TestQueryEventMetaDataTimeSeriesWithFillHour(t *testing.T) {
 		assert.Empty(t, r.Results[i].MetricValues)
 		assert.Equal(t, i, r.Results[i].DimensionValues[0].(time.Time).Minute())
 	}
+}
+
+func TestQueryEventPath(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.Events{},
+			metrics.RelativeVisitors{},
+			metrics.RelativeViews{},
+			metrics.BounceRate{},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 9)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, uint64(1), args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[7])
+	assert.Equal(t, "2026-01-31 00:00:00", args[8])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 8)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.Equal(t, int64(3), r.Results[0].MetricValues[3])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[4])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[6], 0.001)
+	assert.Equal(t, float64(0), r.Results[0].MetricValues[7])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[3])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[4])
+	assert.InDelta(t, 0.3333, r.Results[1].MetricValues[5], 0.001)
+	assert.InDelta(t, 0.1666, r.Results[1].MetricValues[6], 0.001)
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[7])
+	assert.Equal(t, "/landing", r.Results[1].DimensionValues[0])
 }
 
 func TestQueryTagKeysList(t *testing.T) {
