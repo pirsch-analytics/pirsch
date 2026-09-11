@@ -28,9 +28,9 @@ func TestPipeSimple(t *testing.T) {
 	req.Header.Add("Accept-Encoding", "gzip, deflate, br")
 	req.Header.Add("Accept", "*/*")
 	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
-	assert.NoError(t, pipe.Process(&Request{
-		Request: req,
-	}))
+	accepted, err := pipe.Process(&Request{Request: req})
+	assert.NoError(t, err)
+	assert.True(t, accepted)
 
 	// stop the pipeline to flush the results
 	pipe.Stop()
@@ -58,12 +58,12 @@ func TestPipeTimeout(t *testing.T) {
 		// create two sample requests
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
+		accepted, err := pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
+		accepted, err = pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 
 		// nothing should have been stored immediately
 		time.Sleep(time.Second * 3)
@@ -92,9 +92,9 @@ func TestPipeBufferLimit(t *testing.T) {
 	for range 11 {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
+		accepted, err := pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 	}
 
 	// the buffer must have been flushed when it reached 10 requests
@@ -121,9 +121,9 @@ func TestPipeRetrySave(t *testing.T) {
 		// create a sample request
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
+		accepted, err := pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 
 		// nothing must have been stored due to the storage error
 		time.Sleep(time.Second * 6)
@@ -165,9 +165,9 @@ func TestPipeRetryError(t *testing.T) {
 		// create a sample request
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
+		accepted, err := pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 
 		// nothing must have been stored after exhausting the maximum number of retries
 		time.Sleep(time.Second * 130)
@@ -204,9 +204,9 @@ func TestPipeConcurrency(t *testing.T) {
 				for range 100 {
 					req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 					req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-					assert.NoError(t, pipe.Process(&Request{
-						Request: req,
-					}))
+					accepted, err := pipe.Process(&Request{Request: req})
+					assert.NoError(t, err)
+					assert.True(t, accepted)
 					time.Sleep(time.Duration(rand.N(1000)) * time.Millisecond)
 				}
 			})
@@ -240,13 +240,12 @@ func TestPipeOverrideTimeout(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
 	pastTime := time.Now().UTC().Add(-time.Hour)
-	assert.NoError(t, pipe.Process(&Request{
-		Request: req,
-		Time:    pastTime,
-	}))
-	assert.NoError(t, pipe.Process(&Request{
-		Request: req,
-	}))
+	accepted, err := pipe.Process(&Request{Request: req, Time: pastTime})
+	assert.NoError(t, err)
+	assert.True(t, accepted)
+	accepted, err = pipe.Process(&Request{Request: req})
+	assert.NoError(t, err)
+	assert.True(t, accepted)
 
 	// one should have set now and one to the time that was passed for it
 	pipe.Stop()
@@ -261,7 +260,9 @@ func TestPipeNoRequest(t *testing.T) {
 	pipe := NewPipe(PipeOptions{
 		Storage: storage,
 	})
-	assert.NoError(t, pipe.Process(&Request{}))
+	accepted, err := pipe.Process(&Request{})
+	assert.NoError(t, err)
+	assert.False(t, accepted)
 	pipe.Stop()
 	assert.Empty(t, storage.PageViews())
 }
@@ -287,9 +288,9 @@ func TestPipePrefetch(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
 		req.Header.Set(h.key, h.value)
-		assert.NoError(t, pipe.Process(&Request{
-			Request: req,
-		}))
+		accepted, err := pipe.Process(&Request{Request: req})
+		assert.NoError(t, err)
+		assert.False(t, accepted)
 	}
 
 	// no requests must have been stored

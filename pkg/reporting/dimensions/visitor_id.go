@@ -18,7 +18,7 @@ func (d VisitorID) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d VisitorID) Expression() string {
+func (d VisitorID) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d VisitorID) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d VisitorID) ScanType() any {
 	return new(uint64)
+}
+
+// String implements the Dimension interface.
+func (d VisitorID) String() string {
+	return "visitor_id"
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/gocarina/gocsv"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
@@ -62,8 +63,8 @@ func TestQuerySessions(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions
 	assert.Len(t, r.Results, 2)
@@ -75,7 +76,7 @@ func TestQuerySessions(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
 	assert.Equal(t, int64(1), r.Results[0].MetricValues[3])
 	assert.Equal(t, 0.5, r.Results[0].MetricValues[4])
-	assert.InDelta(t, 150, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 300, r.Results[0].MetricValues[5], 0.001)
 
 	// result metrics row 1
 	assert.Equal(t, from.Add(time.Hour*24), r.Results[1].DimensionValues[0])
@@ -84,7 +85,7 @@ func TestQuerySessions(t *testing.T) {
 	assert.Equal(t, uint64(3), r.Results[1].MetricValues[2])
 	assert.Equal(t, int64(2), r.Results[1].MetricValues[3])
 	assert.InDelta(t, 0.6666, r.Results[1].MetricValues[4], 0.001)
-	assert.InDelta(t, 60, r.Results[1].MetricValues[5], 0.001)
+	assert.InDelta(t, 180, r.Results[1].MetricValues[5], 0.001)
 }
 
 func TestQueryPageViews(t *testing.T) {
@@ -119,33 +120,40 @@ func TestQueryPageViews(t *testing.T) {
 		OrderBy: []request.OrderBy{
 			{Metric: metrics.PageViews{}},
 		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []any{"/", "/pricing", "/landing"},
+			},
+		},
 	}
 	assert.Empty(t, req.Validate())
 
 	// tables
 	r := q.Run(req)
 	assert.Empty(t, r.Meta.Errors)
-	assert.Equal(t, pkg.TableSessions, q.primaryTable) // overwritten for subquery
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable) // overwritten for subquery
 	assert.Equal(t, pkg.TableSessions, q.joinTable)
-	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.primaryFilter, 1)
 	assert.Empty(t, q.subqueryFilter)
 
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 12)
+	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
-	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
-	assert.Equal(t, uint64(1), args[6])
-	assert.Equal(t, from, args[7])
-	assert.Equal(t, to, args[8])
-	assert.Equal(t, uint64(1), args[9])
-	assert.Equal(t, from, args[10])
-	assert.Equal(t, to, args[11])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, []any{"/", "/pricing", "/landing"}, args[3])
+	assert.Equal(t, uint64(1), args[4])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-31 00:00:00", args[6])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 
 	// result
 	assert.Len(t, r.Results, 3)
@@ -192,6 +200,183 @@ func TestQueryPageViews(t *testing.T) {
 	assert.InDelta(t, float64(120), r.Results[2].MetricValues[7], 0.001)
 }
 
+func TestQueryPageViewsWithoutPeriod(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, _, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 1)
+	assert.Equal(t, uint64(1), args[0])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
+}
+
+func TestQueryEntries(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EntryPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Entries{},
+			metrics.EntryRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Entries{}},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 3)
+
+	// result dimensions
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/landing", r.Results[1].DimensionValues[0])
+
+	// result metrics row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.8, r.Results[0].MetricValues[2], 0.001)
+
+	// result metrics row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.InDelta(t, 0.2, r.Results[1].MetricValues[2], 0.001)
+}
+
+func TestQueryExits(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.ExitPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Exits{},
+			metrics.ExitRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Exits{}},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 3)
+
+	// result dimensions
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+
+	// result metrics row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.8, r.Results[0].MetricValues[2], 0.001)
+
+	// result metrics row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.InDelta(t, 0.2, r.Results[1].MetricValues[2], 0.001)
+}
+
 func TestQueryEvents(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
@@ -231,11 +416,11 @@ func TestQueryEvents(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 6)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -247,7 +432,7 @@ func TestQueryEvents(t *testing.T) {
 	assert.InDelta(t, 0.75, r.Results[0].MetricValues[2], 0.001)
 }
 
-func TestQueryEventPath(t *testing.T) {
+func TestQueryEventPages(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 	})
@@ -288,8 +473,8 @@ func TestQueryEventPath(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "/", args[3])
 
 	// result
@@ -330,7 +515,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 				Values:    []any{"/"},
 			},
 			{
-				Operator: request.OperatorOr,
+				Operator: request.OperatorGroupOr,
 				Filter: []request.Filter{
 					{
 						Operator:  request.OperatorIs,
@@ -346,7 +531,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 			},
 			{
 				Dimension: dimensions.Platform{},
-				Values:    []any{0, 1},
+				Values:    []any{pkg.PlatformDesktop, pkg.PlatformMobile},
 			},
 		},
 	}
@@ -362,7 +547,7 @@ func TestQuerySessionsFiltered(t *testing.T) {
 	assert.Equal(t, []any{"/"}, q.primaryFilter[0].filter.Values)
 	assert.Len(t, q.subqueryFilter, 1)
 	assert.Equal(t, pkg.TablePageViews, q.subqueryFilter[0].table)
-	assert.Equal(t, request.OperatorOr, q.subqueryFilter[0].filter.Operator)
+	assert.Equal(t, request.OperatorGroupOr, q.subqueryFilter[0].filter.Operator)
 	assert.Len(t, q.subqueryFilter[0].filter.Filter, 2)
 	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[0].Operator)
 	assert.Equal(t, request.OperatorIs, q.subqueryFilter[0].filter.Filter[1].Operator)
@@ -376,13 +561,13 @@ func TestQuerySessionsFiltered(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 10)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "/", args[3])
-	assert.Equal(t, []any{0, 1}, args[4])
+	assert.Equal(t, []any{pkg.PlatformDesktop, pkg.PlatformMobile}, args[4])
 	assert.Equal(t, uint64(1), args[5])
-	assert.Equal(t, from, args[6])
-	assert.Equal(t, to, args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[6])
+	assert.Equal(t, "2026-01-31 00:00:00", args[7])
 	assert.Equal(t, []any{"/pricing", "/landing"}, args[8])
 	assert.Equal(t, "https://duckduckgo.com", args[9])
 
@@ -470,8 +655,10 @@ func TestQueryEventsFiltered(t *testing.T) {
 		},
 		Metrics: []metrics.Metric{
 			metrics.Entries{},
+			metrics.Exits{},
 			metrics.Visitors{},
 			metrics.EntryRate{},
+			metrics.ExitRate{},
 			metrics.AvgTimeOnPage{},
 		},
 		Filter: []request.Filter{
@@ -497,35 +684,40 @@ func TestQueryEventsFiltered(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 18)
+	assert.Len(t, args, 21)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "Contact Button", args[6])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
-	assert.Equal(t, "/", args[13])
-	assert.Equal(t, uint64(1), args[14])
-	assert.Equal(t, from, args[15])
-	assert.Equal(t, to, args[16])
-	assert.Equal(t, "Contact Button", args[17])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
+	assert.Equal(t, uint64(1), args[13])
+	assert.Equal(t, "2026-01-01 00:00:00", args[14])
+	assert.Equal(t, "2026-01-31 00:00:00", args[15])
+	assert.Equal(t, "/", args[16])
+	assert.Equal(t, uint64(1), args[17])
+	assert.Equal(t, "2026-01-01 00:00:00", args[18])
+	assert.Equal(t, "2026-01-31 00:00:00", args[19])
+	assert.Equal(t, "Contact Button", args[20])
 
 	// result
 	assert.Len(t, r.Results, 1)
 	assert.Len(t, r.Results[0].DimensionValues, 1)
-	assert.Len(t, r.Results[0].MetricValues, 4)
+	assert.Len(t, r.Results[0].MetricValues, 6)
 	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
-	assert.InDelta(t, 0.4, r.Results[0].MetricValues[2], 0.001)
-	assert.InDelta(t, 0, r.Results[0].MetricValues[3], 0.001)
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.InDelta(t, 0.4, r.Results[0].MetricValues[3], 0.001)
+	assert.InDelta(t, 0.4, r.Results[0].MetricValues[4], 0.001)
+	assert.InDelta(t, 0, r.Results[0].MetricValues[5], 0.001)
 }
 
 func TestQueryDimensionOnly(t *testing.T) {
@@ -575,8 +767,8 @@ func TestQueryDimensionOnly(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "%go%", args[3])
 
 	// result
@@ -624,8 +816,8 @@ func TestQueryTime(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-02 09:00:00", args[1])
+	assert.Equal(t, "2026-01-02 09:30:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -674,8 +866,8 @@ func TestQueryLimit(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -728,8 +920,8 @@ func TestQueryOffsetLimit(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 1)
@@ -785,8 +977,8 @@ func TestQueryEventList(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 3)
@@ -812,6 +1004,158 @@ func TestQueryEventList(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[2].MetricValues[1])
 	assert.Equal(t, "Contact Button", r.Results[2].DimensionValues[0])
 	assert.Equal(t, `{"label":"Get in touch","position":"text","price":24.99}`, r.Results[2].DimensionValues[1])
+}
+
+func TestQueryEventListMetaDataKeys(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaKey{},
+			dimensions.EventMeta{
+				Path:     "price",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Events{},
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+			{Metric: metrics.Events{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Len(t, r.Results[0].MetricValues, 4)
+	assert.Len(t, r.Results[1].DimensionValues, 3)
+	assert.Len(t, r.Results[1].MetricValues, 4)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[3], 0.0001)
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, []string{"label", "position", "price"}, r.Results[0].DimensionValues[1])
+	assert.InDelta(t, 46.445, r.Results[0].DimensionValues[2].(float64), 0.01)
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.InDelta(t, 0.3333, r.Results[1].MetricValues[3], 0.0001)
+	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
+	assert.Equal(t, []string{"ab-test", "position", "price"}, r.Results[1].DimensionValues[1])
+	assert.InDelta(t, 99.54, r.Results[1].DimensionValues[2].(float64), 0.01)
+}
+
+func TestQueryEventListMetaDataKeysAny(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaKey{
+				Any: true,
+			},
+			dimensions.EventMeta{
+				Path:     "price",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Events{},
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+			{Metric: metrics.Events{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 6)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Len(t, r.Results[0].MetricValues, 4)
+
+	// result row
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Contains(t, r.Results[0].DimensionValues[1], "position") // maybe also label, but this is unknown
+	assert.Contains(t, r.Results[0].DimensionValues[1], "price")
+	assert.InDelta(t, 64.143, r.Results[0].DimensionValues[2].(float64), 0.01)
 }
 
 func TestQueryEventMetaDataFilterKey(t *testing.T) {
@@ -864,11 +1208,11 @@ func TestQueryEventMetaDataFilterKey(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 7)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "Contact Button", args[6])
 
 	// result dimensions and metrics
@@ -936,8 +1280,8 @@ func TestQueryEventMetaDataFilterValue(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, "hero", args[3])
 	assert.Equal(t, 1, args[4])
 
@@ -967,9 +1311,10 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.EventMeta{
-				Path:     "price",
-				Type:     dimensions.EventMetaTypeFloat,
-				Function: dimensions.EventMetaFunctionSum,
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "event_meta_price",
+				Function:   dimensions.EventMetaFunctionSum,
 			},
 		},
 	}
@@ -987,8 +1332,8 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 1)
@@ -999,7 +1344,95 @@ func TestQueryEventMetaDataFunction(t *testing.T) {
 	assert.Equal(t, 192.43, r.Results[0].DimensionValues[0])
 }
 
-func TestQueryEventMetaDataCastType(t *testing.T) {
+func TestQueryEventMetaDataFunctionFiltered(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeInt,
+				ColumnName: "event_meta_price_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "event_meta_price_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"https://duckduckgo.com"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 3)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 9)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, "Contact Button", args[6])
+	assert.Equal(t, "^\\/.*$", args[7])
+	assert.Equal(t, "https://duckduckgo.com", args[8])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row
+	assert.Equal(t, int64(99), r.Results[0].DimensionValues[0])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
+	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[2], 0.001)
+}
+
+func TestQueryEventMetaDataCastTypeFloat(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
 		"three page views + event",
@@ -1042,8 +1475,8 @@ func TestQueryEventMetaDataCastType(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 3)
@@ -1054,6 +1487,518 @@ func TestQueryEventMetaDataCastType(t *testing.T) {
 	assert.Equal(t, 99.54, r.Results[0].DimensionValues[0])
 	assert.Equal(t, 67.9, r.Results[1].DimensionValues[0])
 	assert.Equal(t, 24.99, r.Results[2].DimensionValues[0])
+}
+
+func TestQueryEventMetaDataCastTypeInt(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path: "price",
+				Type: dimensions.EventMetaTypeInt,
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.EventMeta{
+					Type: dimensions.EventMetaTypeInt,
+				},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 3)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result rows
+	assert.Equal(t, int64(99), r.Results[0].DimensionValues[0])
+	assert.Equal(t, int64(67), r.Results[1].DimensionValues[0])
+	assert.Equal(t, int64(24), r.Results[2].DimensionValues[0])
+}
+
+func TestQueryEventMetaDataValue(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaValue{
+				Path: "position",
+			},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaKey{},
+				Values:    []any{"position"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Equal(t, []any{"Contact Button"}, q.primaryFilter[0].filter.Values)
+	assert.Equal(t, []any{"position"}, q.primaryFilter[1].filter.Values)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "Contact Button", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "text", r.Results[0].DimensionValues[1])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, "Contact Button", r.Results[1].DimensionValues[0])
+	assert.Equal(t, "hero", r.Results[1].DimensionValues[1])
+}
+
+func TestQueryEventMetaDataValueFilter(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaValue{
+					Path: "position",
+				},
+				Values: []any{"hero"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Equal(t, []any{"Contact Button"}, q.primaryFilter[0].filter.Values)
+	assert.Equal(t, []any{"hero"}, q.primaryFilter[1].filter.Values)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 5)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "hero", args[4])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+}
+
+func TestQueryEventMetaDataTimeSeries(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMetaValue{
+					Path: "position",
+				},
+				Values: []any{"hero"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Day{}, Direction: request.DirectionASC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 7)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "hero", args[4])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-31 00:00:00", args[6])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 31)
+	assert.Len(t, r.Results[0].DimensionValues, 3)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result row 0
+	assert.Equal(t, from, r.Results[0].DimensionValues[0])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[1])
+	assert.Equal(t, 99.54, r.Results[0].DimensionValues[2])
+
+	for i := 1; i < len(r.Results); i++ {
+		assert.Equal(t, from.Add(time.Hour*24*time.Duration(i)), r.Results[i].DimensionValues[0])
+		assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
+		assert.Equal(t, float64(0), r.Results[i].DimensionValues[2])
+	}
+}
+
+func TestQueryEventMetaDataTimeSeriesWithFillMinute(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	tz, err := time.LoadLocation("Europe/Berlin")
+	assert.NoError(t, err)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       from,
+			Timezone: tz,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Hour{}, Direction: request.DirectionASC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-01 00:00:00", args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 24)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Empty(t, r.Results[0].MetricValues)
+
+	// result rows
+	for i := range r.Results {
+		assert.Equal(t, i, r.Results[i].DimensionValues[0].(time.Time).Hour())
+
+		if i == 9 {
+			assert.Equal(t, 99.54, r.Results[i].DimensionValues[1])
+		} else {
+			assert.Equal(t, float64(0), r.Results[i].DimensionValues[1])
+		}
+	}
+}
+
+func TestQueryEventMetaDataTimeSeriesWithFillHour(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	tz, err := time.LoadLocation("Europe/Berlin")
+	assert.NoError(t, err)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour),
+			Timezone:    tz,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Minute{},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_avg",
+				Function:   dimensions.EventMetaFunctionAvg,
+			},
+			dimensions.EventMeta{
+				Path:       "price",
+				Type:       dimensions.EventMetaTypeFloat,
+				ColumnName: "custom_metric_sum",
+				Function:   dimensions.EventMetaFunctionSum,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+			{
+				Dimension: dimensions.EventMeta{
+					Path: "position",
+				},
+				Values: []any{"text"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{Dimension: dimensions.Minute{}, Direction: request.DirectionASC},
+		},
+		Options: &request.Options{
+			Sample: 10_000_000,
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 2)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 7)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-01 01:00:00", args[2])
+	assert.Equal(t, "Contact Button", args[3])
+	assert.Equal(t, "text", args[4])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-01 01:00:00", args[6])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 60)
+
+	// result rows
+	for i := range r.Results {
+		assert.Len(t, r.Results[i].DimensionValues, 3)
+		assert.Empty(t, r.Results[i].MetricValues)
+		assert.Equal(t, i, r.Results[i].DimensionValues[0].(time.Time).Minute())
+	}
+}
+
+func TestQueryEventPath(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventPath{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.Events{},
+			metrics.RelativeVisitors{},
+			metrics.RelativeViews{},
+			metrics.BounceRate{},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 9)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, uint64(1), args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[7])
+	assert.Equal(t, "2026-01-31 00:00:00", args[8])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 8)
+
+	// result row 0
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
+	assert.Equal(t, int64(3), r.Results[0].MetricValues[3])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[4])
+	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[6], 0.001)
+	assert.Equal(t, float64(0), r.Results[0].MetricValues[7])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[3])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[4])
+	assert.InDelta(t, 0.3333, r.Results[1].MetricValues[5], 0.001)
+	assert.InDelta(t, 0.1666, r.Results[1].MetricValues[6], 0.001)
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[7])
+	assert.Equal(t, "/landing", r.Results[1].DimensionValues[0])
 }
 
 func TestQueryTagKeysList(t *testing.T) {
@@ -1096,8 +2041,8 @@ func TestQueryTagKeysList(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 2)
@@ -1168,8 +2113,8 @@ func TestQueryTagBreakdown(t *testing.T) {
 	assert.Len(t, args, 5)
 	assert.Equal(t, "author", args[0])
 	assert.Equal(t, uint64(1), args[1])
-	assert.Equal(t, from, args[2])
-	assert.Equal(t, to, args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[2])
+	assert.Equal(t, "2026-01-31 00:00:00", args[3])
 	assert.Equal(t, "author", args[4])
 
 	// result dimensions and metrics
@@ -1234,11 +2179,11 @@ func TestQueryTagFilter(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 8)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, "author", args[6])
 	assert.Equal(t, "Marvin Blum", args[7])
 
@@ -1251,6 +2196,221 @@ func TestQueryTagFilter(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
 	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[0])
+}
+
+func TestQueryTagKeyFilterPath(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.TagKey{},
+				Values:    []any{"author"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, "author", q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "author", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 3)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, int64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(2), r.Results[1].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[2])
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+
+	// result row 2
+	assert.Equal(t, uint64(1), r.Results[2].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[2].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[2].MetricValues[2])
+	assert.Equal(t, "/landing", r.Results[2].DimensionValues[0])
+}
+
+func TestQueryTagKeyFilterContains(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.TagKey{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorContains,
+				Dimension: dimensions.TagKey{},
+				Values:    []any{"auth"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, "auth", q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "auth", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, "author", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, "ab-test", r.Results[1].DimensionValues[0])
+}
+
+func TestQueryTagKeyFilterMatch(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.TagKey{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.TagKey{},
+				Values:    []any{"auth.*"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, "auth.*", q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, "auth.*", args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row 0
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, "author", r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, "ab-test", r.Results[1].DimensionValues[0])
 }
 
 func TestQueryTimeOnPage(t *testing.T) {
@@ -1296,17 +2456,17 @@ func TestQueryTimeOnPage(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 14)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
 	assert.Equal(t, uint64(1), args[7])
-	assert.Equal(t, from, args[8])
-	assert.Equal(t, to, args[9])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
 	assert.Equal(t, uint64(1), args[10])
-	assert.Equal(t, from, args[11])
-	assert.Equal(t, to, args[12])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
 	assert.Equal(t, "/", args[13])
 
 	// result
@@ -1369,16 +2529,18 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	// query
 	query, args := q.buildQuery(req)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 6)
+	assert.Len(t, args, 8)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(1), args[3])
-	assert.Equal(t, from, args[4])
-	assert.Equal(t, to, args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, "2026-01-01 00:00:00", args[6])
+	assert.Equal(t, "2026-01-31 00:00:00", args[7])
 
 	// result
-	assert.Len(t, r.Results, 5)
+	assert.Len(t, r.Results, 34)
 	assert.Len(t, r.Results[0].DimensionValues, 2)
 	assert.Len(t, r.Results[0].MetricValues, 1)
 
@@ -1408,7 +2570,7 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.InDelta(t, 60, r.Results[4].MetricValues[0], 0.001)
 }
 
-func TestQueryListSessions(t *testing.T) {
+func TestQueryTimeOnPageBounceRate(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
 		"simple bounced + event (non-interactive)",
@@ -1425,41 +2587,453 @@ func TestQueryListSessions(t *testing.T) {
 			Timezone: time.UTC,
 		},
 		Dimensions: []dimensions.Dimension{
-			dimensions.VisitorID{},
-			dimensions.SessionID{},
-			dimensions.Start{},
-			dimensions.Duration{},
-			dimensions.PageViews{},
-			dimensions.Bounced{},
-			dimensions.EntryPath{},
-			dimensions.ExitPath{},
-			dimensions.EntryTitle{},
-			dimensions.ExitTitle{},
-			dimensions.Time{},
-			dimensions.Hostname{},
-			dimensions.Language{},
-			dimensions.Country{},
-			dimensions.Region{},
-			dimensions.City{},
-			dimensions.Referrer{},
-			dimensions.ReferrerName{},
-			dimensions.ReferrerIcon{},
-			dimensions.OS{},
-			dimensions.OSVersion{},
-			dimensions.Browser{},
-			dimensions.BrowserVersion{},
-			dimensions.Platform{},
-			dimensions.ScreenClass{},
-			dimensions.UTMSource{},
-			dimensions.UTMContent{},
-			dimensions.UTMMedium{},
-			dimensions.UTMCampaign{},
-			dimensions.UTMTerm{},
-			dimensions.Channel{},
+			dimensions.Path{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.AvgTimeOnPage{},
+			metrics.Bounces{},
+			metrics.BounceRate{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []any{"/"},
+			},
 		},
 		OrderBy: []request.OrderBy{
 			{
-				Dimension: dimensions.VisitorID{},
+				Metric:    metrics.BounceRate{},
+				Direction: request.DirectionDESC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TablePageViews, q.primaryTable)
+	assert.Equal(t, pkg.TableSessions, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
+	assert.Equal(t, "/", args[13])
+
+	// result
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result row 0
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+	assert.Equal(t, float64(300), r.Results[0].MetricValues[0])
+	assert.Equal(t, int64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.75, r.Results[0].MetricValues[2])
+
+	// result row 1
+	assert.Equal(t, "/pricing", r.Results[1].DimensionValues[0])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[0])
+	assert.Equal(t, int64(0), r.Results[1].MetricValues[1])
+	assert.Equal(t, float64(0), r.Results[1].MetricValues[2])
+}
+
+func TestQueryPlatformFilter(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorIsNot,
+				Dimension: dimensions.Platform{},
+				Values:    []any{pkg.PlatformDesktop},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Equal(t, pkg.PlatformDesktop, q.primaryFilter[0].filter.Values[0])
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 4)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, pkg.PlatformDesktop, args[3])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+
+	// result row
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+}
+
+func TestQueryWithFillMinute(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour),
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Minute{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Minute{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 60)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillHour(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          from.Add(time.Hour * 24),
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Hour{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 24)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillDay(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 31)
+
+	for _, result := range r.Results {
+		assert.Len(t, result.DimensionValues, 1)
+		assert.Len(t, result.MetricValues, 1)
+	}
+}
+
+func TestQueryWithFillWeek(t *testing.T) {
+	loadTestData(t, nil)
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Week{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Week{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 5)
+	assert.Equal(t, time.Date(2025, time.December, 29, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 5, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 12, 0, 0, 0, 0, time.UTC), r.Results[2].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 19, 0, 0, 0, 0, time.UTC), r.Results[3].DimensionValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 26, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
+	assert.Equal(t, uint64(4), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[2].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[3].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[4].MetricValues[0])
+}
+
+func TestQueryWithFillMonth(t *testing.T) {
+	loadTestData(t, nil)
+	q, _, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC),
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Month{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Month{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, time.December, r.Results[0].DimensionValues[0].(time.Time).Month())
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Equal(t, time.January, r.Results[1].DimensionValues[0].(time.Time).Month())
+}
+
+func TestQueryWithFillYear(t *testing.T) {
+	loadTestData(t, nil)
+	q, _, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC),
+			To:          to,
+			Timezone:    time.UTC,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Year{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Year{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.NotEmpty(t, args)
+
+	// results
+	assert.Len(t, r.Results, 2)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Len(t, r.Results[0].MetricValues, 1)
+	assert.Equal(t, 2025, r.Results[0].DimensionValues[0].(time.Time).Year())
+	assert.Len(t, r.Results[1].DimensionValues, 1)
+	assert.Len(t, r.Results[1].MetricValues, 1)
+	assert.Equal(t, 2026, r.Results[1].DimensionValues[0].(time.Time).Year())
+}
+
+func TestQueryListSessions(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Start{Min: true},
+			metrics.Duration{Max: true},
+			metrics.PageViews{Max: true},
+			metrics.Bounced{Min: true},
+			metrics.EntryPath{Any: true},
+			metrics.ExitPath{Any: true},
+			metrics.EntryTitle{Any: true},
+			metrics.ExitTitle{Any: true},
+			metrics.Time{Max: true},
+			metrics.Hostname{Any: true},
+			metrics.Language{Any: true},
+			metrics.Country{Any: true},
+			metrics.Region{Any: true},
+			metrics.City{Any: true},
+			metrics.Referrer{Any: true},
+			metrics.ReferrerName{Any: true},
+			metrics.ReferrerIcon{Any: true},
+			metrics.OS{Any: true},
+			metrics.OSVersion{Any: true},
+			metrics.Browser{Any: true},
+			metrics.BrowserVersion{Any: true},
+			metrics.Platform{Any: true},
+			metrics.ScreenClass{Any: true},
+			metrics.UTMSource{Any: true},
+			metrics.UTMContent{Any: true},
+			metrics.UTMMedium{Any: true},
+			metrics.UTMCampaign{Any: true},
+			metrics.UTMTerm{Any: true},
+			metrics.Channel{Any: true},
+			metrics.Extended{Max: true},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.VisitorID{},
+			dimensions.SessionID{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Time{Max: true},
 				Direction: request.DirectionASC,
 			},
 		},
@@ -1478,46 +3052,47 @@ func TestQueryListSessions(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 
 	// result
 	assert.Len(t, r.Results, 5)
-	assert.Len(t, r.Results[0].DimensionValues, 31)
-	assert.Empty(t, r.Results[0].MetricValues)
+	assert.Len(t, r.Results[0].DimensionValues, 2)
+	assert.Len(t, r.Results[0].MetricValues, 30)
 
 	// result row 0 (only fully compare this, as this test would get really long otherwise)
 	assert.Equal(t, uint64(1), r.Results[0].DimensionValues[0])
 	assert.Equal(t, uint32(1), r.Results[0].DimensionValues[1])
-	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[2])
-	assert.Equal(t, uint32(0), r.Results[0].DimensionValues[3])
-	assert.Equal(t, uint16(1), r.Results[0].DimensionValues[4])
-	assert.Equal(t, true, r.Results[0].DimensionValues[5])
-	assert.Equal(t, "/", r.Results[0].DimensionValues[6])
-	assert.Equal(t, "/", r.Results[0].DimensionValues[7])
-	assert.Equal(t, "Home", r.Results[0].DimensionValues[8])
-	assert.Equal(t, "Home", r.Results[0].DimensionValues[9])
-	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[10])
-	assert.Equal(t, "example.com", r.Results[0].DimensionValues[11])
-	assert.Equal(t, "en", r.Results[0].DimensionValues[12])
-	assert.Equal(t, "us", r.Results[0].DimensionValues[13])
-	assert.Equal(t, "Virginia", r.Results[0].DimensionValues[14])
-	assert.Equal(t, "Ashburn", r.Results[0].DimensionValues[15])
-	assert.Equal(t, "https://duckduckgo.com", r.Results[0].DimensionValues[16])
-	assert.Equal(t, "DuckDuckGo", r.Results[0].DimensionValues[17])
-	assert.Empty(t, r.Results[0].DimensionValues[18])
-	assert.Equal(t, pkg.OSWindows, r.Results[0].DimensionValues[19])
-	assert.Equal(t, "10", r.Results[0].DimensionValues[20])
-	assert.Equal(t, pkg.BrowserChrome, r.Results[0].DimensionValues[21])
-	assert.Equal(t, "142", r.Results[0].DimensionValues[22])
-	assert.Equal(t, pkg.PlatformDesktop, r.Results[0].DimensionValues[23])
-	assert.Equal(t, "Full HD", r.Results[0].DimensionValues[24])
-	assert.Equal(t, "DuckDuckGo", r.Results[0].DimensionValues[25])
-	assert.Equal(t, "Main", r.Results[0].DimensionValues[26])
-	assert.Equal(t, "Search", r.Results[0].DimensionValues[27])
-	assert.Equal(t, "Paid", r.Results[0].DimensionValues[28])
-	assert.Equal(t, "privacy+analytics", r.Results[0].DimensionValues[29])
-	assert.Equal(t, "Organic Search", r.Results[0].DimensionValues[30])
+	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint32(0), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[2])
+	assert.Equal(t, true, r.Results[0].MetricValues[3])
+	assert.Equal(t, "/", r.Results[0].MetricValues[4])
+	assert.Equal(t, "/", r.Results[0].MetricValues[5])
+	assert.Equal(t, "Home", r.Results[0].MetricValues[6])
+	assert.Equal(t, "Home", r.Results[0].MetricValues[7])
+	assert.Equal(t, time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC), r.Results[0].MetricValues[8])
+	assert.Equal(t, "example.com", r.Results[0].MetricValues[9])
+	assert.Equal(t, "en", r.Results[0].MetricValues[10])
+	assert.Equal(t, "us", r.Results[0].MetricValues[11])
+	assert.Equal(t, "Virginia", r.Results[0].MetricValues[12])
+	assert.Equal(t, "Ashburn", r.Results[0].MetricValues[13])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[0].MetricValues[14])
+	assert.Equal(t, "DuckDuckGo", r.Results[0].MetricValues[15])
+	assert.Empty(t, r.Results[0].MetricValues[16])
+	assert.Equal(t, pkg.OSWindows, r.Results[0].MetricValues[17])
+	assert.Equal(t, "10", r.Results[0].MetricValues[18])
+	assert.Equal(t, pkg.BrowserChrome, r.Results[0].MetricValues[19])
+	assert.Equal(t, "142", r.Results[0].MetricValues[20])
+	assert.Equal(t, pkg.PlatformDesktop, r.Results[0].MetricValues[21])
+	assert.Equal(t, "Full HD", r.Results[0].MetricValues[22])
+	assert.Equal(t, "DuckDuckGo", r.Results[0].MetricValues[23])
+	assert.Equal(t, "Main", r.Results[0].MetricValues[24])
+	assert.Equal(t, "Search", r.Results[0].MetricValues[25])
+	assert.Equal(t, "Paid", r.Results[0].MetricValues[26])
+	assert.Equal(t, "privacy+analytics", r.Results[0].MetricValues[27])
+	assert.Equal(t, "Organic Search", r.Results[0].MetricValues[28])
+	assert.Equal(t, uint16(0), r.Results[0].MetricValues[29])
 
 	// result row 1
 	assert.Equal(t, uint64(2), r.Results[1].DimensionValues[0])
@@ -1606,8 +3181,8 @@ func TestQueryListSessionBreakdownPageViews(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(3), args[3])
 	assert.Equal(t, uint32(3), args[4])
 
@@ -1724,8 +3299,8 @@ func TestQueryListSessionBreakdownEvents(t *testing.T) {
 	assert.NotEmpty(t, query)
 	assert.Len(t, args, 5)
 	assert.Equal(t, uint64(1), args[0])
-	assert.Equal(t, from, args[1])
-	assert.Equal(t, to, args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
 	assert.Equal(t, uint64(3), args[3])
 	assert.Equal(t, uint32(3), args[4])
 
@@ -1809,7 +3384,7 @@ func TestQueryComparison(t *testing.T) {
 	assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
 	assert.Equal(t, int64(2), r.Results[0].MetricValues[3])
 	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[4], 0.001)
-	assert.InDelta(t, 60, r.Results[0].MetricValues[5], 0.001)
+	assert.InDelta(t, 180, r.Results[0].MetricValues[5], 0.001)
 
 	// compare result row
 	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[0])
@@ -1817,7 +3392,7 @@ func TestQueryComparison(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].CompareMetricValues[2])
 	assert.Equal(t, int64(1), r.Results[0].CompareMetricValues[3])
 	assert.InDelta(t, 0.5, r.Results[0].CompareMetricValues[4], 0.001)
-	assert.InDelta(t, 150, r.Results[0].CompareMetricValues[5], 0.001)
+	assert.InDelta(t, 300, r.Results[0].CompareMetricValues[5], 0.001)
 }
 
 func TestQueryFunnel(t *testing.T) {
@@ -1914,6 +3489,224 @@ func TestBuildQueryFilterJSONPath(t *testing.T) {
 
 	for i, in := range input {
 		assert.Equal(t, result[i], q.buildQueryFilterJSONPath(in))
+	}
+}
+
+func TestQueryCRFilterEvent(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Event{},
+				Values:    []any{"Contact Button"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 2)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 14)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, uint64(1), args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[7])
+	assert.Equal(t, "2026-01-31 00:00:00", args[8])
+	assert.Equal(t, "^\\/.*$", args[9])
+	assert.Equal(t, uint64(1), args[10])
+	assert.Equal(t, "2026-01-01 00:00:00", args[11])
+	assert.Equal(t, "2026-01-31 00:00:00", args[12])
+	assert.Equal(t, "Contact Button", args[13])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result metrics
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.75, r.Results[0].MetricValues[2])
+}
+
+func TestQueryCRFilterReferrer(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}},
+		},
+		Filter: []request.Filter{
+			{
+				Operator:  request.OperatorMatches,
+				Dimension: dimensions.Path{},
+				Values:    []any{"^\\/.*$"},
+			},
+			{
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"https://google.com"},
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.joinTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 11)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-01 00:00:00", args[4])
+	assert.Equal(t, "2026-01-31 00:00:00", args[5])
+	assert.Equal(t, "https://google.com", args[6])
+	assert.Equal(t, uint64(1), args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[8])
+	assert.Equal(t, "2026-01-31 00:00:00", args[9])
+	assert.Equal(t, "^\\/.*$", args[10])
+
+	// result
+	assert.Len(t, r.Results, 1)
+	assert.Empty(t, r.Results[0].DimensionValues)
+	assert.Len(t, r.Results[0].MetricValues, 3)
+
+	// result metrics
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(3), r.Results[0].MetricValues[1])
+	assert.Equal(t, 0.5, r.Results[0].MetricValues[2])
+}
+
+func TestQueryTimezone(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	to := from.Add(time.Hour * 24)
+	tz, err := timezone.Load("CET")
+	assert.NoError(t, err)
+	assert.NotNil(t, tz)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from,
+			To:          to,
+			Timezone:    tz,
+			IncludeTime: true,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Hour{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Hour{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 5)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-02 00:00:00", args[2])
+	assert.Equal(t, "2026-01-01 00:00:00", args[3])
+	assert.Equal(t, "2026-01-02 00:00:00", args[4])
+
+	// result dimensions
+	assert.Len(t, r.Results, 24)
+
+	for i, result := range r.Results {
+		assert.Equal(t, time.Date(2026, time.January, 1, i, 0, 0, 0, tz), result.DimensionValues[0].(time.Time))
+	}
+
+	// result metrics
+	for i, result := range r.Results {
+		if i == 9 {
+			assert.Equal(t, uint64(2), result.MetricValues[0])
+		} else {
+			assert.Equal(t, uint64(0), result.MetricValues[0])
+		}
 	}
 }
 

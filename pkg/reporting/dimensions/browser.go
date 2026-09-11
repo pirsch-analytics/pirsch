@@ -18,7 +18,7 @@ func (d Browser) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Browser) Expression() string {
+func (d Browser) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d Browser) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Browser) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Browser) String() string {
+	return "browser"
 }

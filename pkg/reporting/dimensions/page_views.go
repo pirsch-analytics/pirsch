@@ -18,7 +18,7 @@ func (d PageViews) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d PageViews) Expression() string {
+func (d PageViews) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d PageViews) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d PageViews) ScanType() any {
 	return new(uint16)
+}
+
+// String implements the Dimension interface.
+func (d PageViews) String() string {
+	return "page_views"
 }

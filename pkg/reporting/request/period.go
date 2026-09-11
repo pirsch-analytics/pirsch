@@ -1,6 +1,9 @@
 package request
 
-import "time"
+import (
+	"encoding/json/v2"
+	"time"
+)
 
 var (
 	WeekdayMonday WeekdayMode = 1
@@ -54,4 +57,16 @@ func (p *Period) validate() {
 	if p.WeekdayMode != WeekdayMonday && p.WeekdayMode != WeekdaySunday {
 		p.WeekdayMode = WeekdayMonday
 	}
+}
+
+// String implements the fmt.Stringer interface.
+func (p *Period) String() string {
+	b, _ := json.Marshal(p)
+	return string(b)
+}
+
+// String implements the fmt.Stringer interface.
+func (c *ComparePeriod) String() string {
+	b, _ := json.Marshal(c)
+	return string(b)
 }

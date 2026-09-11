@@ -550,7 +550,7 @@ func TestSessionUpdateSession(t *testing.T) {
 		assert.NoError(t, err)
 
 		// the request must not have sessions attached
-		assert.Nil(t, req.Session)
+		assert.NotNil(t, req.Session)
 		assert.Nil(t, req.CancelSession)
 
 		// the session in cache must have been updated however

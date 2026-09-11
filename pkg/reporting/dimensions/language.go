@@ -18,7 +18,7 @@ func (d Language) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Language) Expression() string {
+func (d Language) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d Language) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Language) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Language) String() string {
+	return "language"
 }

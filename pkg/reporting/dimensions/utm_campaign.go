@@ -18,7 +18,7 @@ func (d UTMCampaign) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d UTMCampaign) Expression() string {
+func (d UTMCampaign) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d UTMCampaign) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d UTMCampaign) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d UTMCampaign) String() string {
+	return "utm_campaign"
 }

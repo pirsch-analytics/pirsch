@@ -3,7 +3,10 @@ package metrics
 import "github.com/pirsch-analytics/pirsch/v7/pkg"
 
 // PageViews is a Metric.
-type PageViews struct{}
+type PageViews struct {
+	// Max if set to true, returns the maximum value for this metric.
+	Max bool
+}
 
 // Table implements the Metric interface.
 func (m PageViews) Table() []string {
@@ -22,6 +25,10 @@ func (m PageViews) Column() string {
 
 // Expression implements the Metric interface.
 func (m PageViews) Expression(table string) (string, bool) {
+	if m.Max {
+		return "toUInt64(max(page_views))", false
+	}
+
 	if table == pkg.TableSessions {
 		return "sum(page_views)", false
 	}
@@ -37,4 +44,9 @@ func (m PageViews) ScanType() any {
 // Zero implements the Metric interface.
 func (m PageViews) Zero() any {
 	return uint64(0)
+}
+
+// String implements the Metric interface.
+func (m PageViews) String() string {
+	return "page_views"
 }

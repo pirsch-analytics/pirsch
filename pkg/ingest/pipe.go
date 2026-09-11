@@ -56,17 +56,20 @@ func (p *Pipe) Use(f ...PipeStep) *Pipe {
 // Process processes the given request.
 // It can be run in its own Goroutine, so that the client won't have to wait for the request to be processed.
 // http.StatusAccepted can be returned in that case for example.
-func (p *Pipe) Process(request *Request) error {
+// It returns true if the request has been accepted, or false if it didn't (due to some filter step for example).
+// An exception is when only the cached session is supposed to be updated.
+// In that case, the request will update the session despite the return value being false.
+func (p *Pipe) Process(request *Request) (bool, error) {
 	// return if the pipe has been halted
 	select {
 	case <-p.ctx.Done():
-		return p.ctx.Err()
+		return false, p.ctx.Err()
 	default:
 	}
 
 	// check if the request should be ignored for any reason
 	if p.ignore(request) {
-		return nil
+		return false, nil
 	}
 
 	// process the request otherwise
@@ -76,7 +79,7 @@ func (p *Pipe) Process(request *Request) error {
 		cancel, err := step.Step(request)
 
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		if cancel {
@@ -86,9 +89,12 @@ func (p *Pipe) Process(request *Request) error {
 		}
 	}
 
-	// schedule request to be stored in batch
-	p.requests <- request
-	return nil
+	// schedule request to be stored in batch if not disabled
+	if !request.DisableStorage {
+		p.requests <- request
+	}
+
+	return !request.cancelled, nil
 }
 
 // Stop flushes all data currently within the pipe and stops processing new data.
@@ -234,25 +240,26 @@ func (p *Pipe) flush(sessions []model.Session, pageViews []model.PageView, event
 	copy(requestsCopy, requests)
 
 	// retries run asynchronously, so that we won't block the main ingestion pipeline
+	// each save uses its own context, since we do not care about cancellation here
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveSessions(p.ctx, sessionsCopy)
+			return p.storage.SaveSessions(context.Background(), sessionsCopy)
 		}, "save sessions")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SavePageViews(p.ctx, pageViewsCopy)
+			return p.storage.SavePageViews(context.Background(), pageViewsCopy)
 		}, "save page views")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveEvents(p.ctx, eventsCopy)
+			return p.storage.SaveEvents(context.Background(), eventsCopy)
 		}, "save events")
 	})
 	wg.Go(func() {
 		p.flushWithRetry(func() error {
-			return p.storage.SaveRequests(p.ctx, requestsCopy)
+			return p.storage.SaveRequests(context.Background(), requestsCopy)
 		}, "save requests")
 	})
 	wg.Wait()

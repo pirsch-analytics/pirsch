@@ -1,6 +1,8 @@
 package request
 
 import (
+	"encoding/json/v2"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 )
@@ -24,3 +26,9 @@ type OrderBy struct {
 
 // Direction is a direction to sort results.
 type Direction string
+
+// String implements the fmt.Stringer interface.
+func (o *OrderBy) String() string {
+	b, _ := json.Marshal(o)
+	return string(b)
+}

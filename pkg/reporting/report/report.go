@@ -1,6 +1,8 @@
 package report
 
 import (
+	"encoding/json/v2"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
@@ -34,4 +36,22 @@ type Result struct {
 type Meta struct {
 	// Errors is a list of errors.
 	Errors []error
+}
+
+// String implements the fmt.Stringer interface.
+func (r *Report) String() string {
+	b, _ := json.Marshal(r)
+	return string(b)
+}
+
+// String implements the fmt.Stringer interface.
+func (r *Result) String() string {
+	b, _ := json.Marshal(r)
+	return string(b)
+}
+
+// String implements the fmt.Stringer interface.
+func (m *Meta) String() string {
+	b, _ := json.Marshal(m)
+	return string(b)
 }

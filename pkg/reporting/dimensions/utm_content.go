@@ -18,7 +18,7 @@ func (d UTMContent) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d UTMContent) Expression() string {
+func (d UTMContent) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d UTMContent) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d UTMContent) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d UTMContent) String() string {
+	return "utm_content"
 }

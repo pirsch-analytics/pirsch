@@ -34,3 +34,8 @@ func (m EntryRate) ScanType() any {
 func (m EntryRate) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m EntryRate) String() string {
+	return "entry_rate"
+}

@@ -16,10 +16,8 @@ func TestMemCache(t *testing.T) {
 	session := cache.Get(1, 1, time.Now().Add(-time.Second*10))
 	assert.Nil(t, session)
 	client.ReturnSession = &model.Session{
-		Data: model.Data{
-			Time:      time.Now().Add(-time.Second * 15),
-			SessionID: rand.Uint32(),
-		},
+		Time:      time.Now().Add(-time.Second * 15),
+		SessionID: rand.Uint32(),
 		ExitPath:  "/",
 		EntryPath: "/entry",
 		PageViews: 3,
@@ -31,10 +29,8 @@ func TestMemCache(t *testing.T) {
 	assert.Equal(t, uint16(3), session.PageViews)
 	client.ReturnSession = nil
 	cache.Put(1, 1, &model.Session{
-		Data: model.Data{
-			Time:      session.Time,
-			SessionID: session.SessionID,
-		},
+		Time:      session.Time,
+		SessionID: session.SessionID,
 		ExitPath:  session.ExitPath,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
@@ -46,10 +42,8 @@ func TestMemCache(t *testing.T) {
 	assert.Equal(t, uint16(3), session.PageViews)
 	cache.Clear()
 	cache.Put(1, 1, &model.Session{
-		Data: model.Data{
-			Time:      time.Now().Add(-time.Second * 21),
-			SessionID: rand.Uint32(),
-		},
+		Time:      time.Now().Add(-time.Second * 21),
+		SessionID: rand.Uint32(),
 		ExitPath:  session.ExitPath,
 		EntryPath: session.EntryPath,
 		PageViews: session.PageViews,
@@ -59,10 +53,8 @@ func TestMemCache(t *testing.T) {
 
 	for i := range 9 {
 		cache.Put(1, uint64(i+2), &model.Session{
-			Data: model.Data{
-				SessionID: rand.Uint32(),
-				Time:      time.Now(),
-			},
+			SessionID: rand.Uint32(),
+			Time:      time.Now(),
 			ExitPath:  "/foo",
 			EntryPath: "/bar",
 			PageViews: 42,
@@ -74,10 +66,8 @@ func TestMemCache(t *testing.T) {
 	assert.NotNil(t, session)
 	assert.Equal(t, "/", session.ExitPath)
 	cache.Put(1, 10, &model.Session{
-		Data: model.Data{
-			Time:      time.Now(),
-			SessionID: rand.Uint32(),
-		},
+		Time:      time.Now(),
+		SessionID: rand.Uint32(),
 		ExitPath:  "/foo",
 		EntryPath: "/bar",
 		PageViews: 42,
