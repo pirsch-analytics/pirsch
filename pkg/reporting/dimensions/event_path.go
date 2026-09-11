@@ -32,7 +32,12 @@ func (d EventPath) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EventPath) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d EventPath) String() string {
+	return "event_path"
 }

@@ -27,7 +27,12 @@ func (d Language) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Language) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Language) String() string {
+	return "language"
 }

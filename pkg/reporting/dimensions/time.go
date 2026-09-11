@@ -34,7 +34,12 @@ func (d Time) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Time) ScanType() any {
 	return new(time.Time)
+}
+
+// String implements the Dimension interface.
+func (d Time) String() string {
+	return "time"
 }

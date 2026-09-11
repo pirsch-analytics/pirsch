@@ -43,3 +43,8 @@ func (m City) ScanType() any {
 func (m City) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m City) String() string {
+	return "city"
+}

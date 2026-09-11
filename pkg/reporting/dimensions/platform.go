@@ -27,7 +27,12 @@ func (d Platform) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Platform) ScanType() any {
 	return new(int8)
+}
+
+// String implements the Dimension interface.
+func (d Platform) String() string {
+	return "platform"
 }

@@ -35,7 +35,12 @@ func (d EventMetaKey) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EventMetaKey) ScanType() any {
 	return new([]string)
+}
+
+// String implements the Dimension interface.
+func (d EventMetaKey) String() string {
+	return "event_meta_key"
 }

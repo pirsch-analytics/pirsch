@@ -34,7 +34,12 @@ func (d Region) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Region) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Region) String() string {
+	return "region"
 }

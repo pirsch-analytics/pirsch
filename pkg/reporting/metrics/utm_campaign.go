@@ -43,3 +43,8 @@ func (m UTMCampaign) ScanType() any {
 func (m UTMCampaign) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m UTMCampaign) String() string {
+	return "utm_campaign"
+}

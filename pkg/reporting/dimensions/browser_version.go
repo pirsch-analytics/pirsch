@@ -27,7 +27,12 @@ func (d BrowserVersion) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d BrowserVersion) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d BrowserVersion) String() string {
+	return "browser_version"
 }

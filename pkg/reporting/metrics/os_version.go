@@ -43,3 +43,8 @@ func (m OSVersion) ScanType() any {
 func (m OSVersion) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m OSVersion) String() string {
+	return "os_version"
+}

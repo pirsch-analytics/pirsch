@@ -20,4 +20,7 @@ type Metric interface {
 
 	// Zero returns the zero value for this metric.
 	Zero() any
+
+	// String implements the fmt.Stringer interface.
+	String() string
 }

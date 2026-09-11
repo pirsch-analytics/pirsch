@@ -43,3 +43,8 @@ func (m ExitTitle) ScanType() any {
 func (m ExitTitle) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m ExitTitle) String() string {
+	return "exit_title"
+}

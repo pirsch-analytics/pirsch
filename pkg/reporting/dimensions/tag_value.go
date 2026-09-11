@@ -38,8 +38,13 @@ func (d TagValue) Args() []any {
 	return []any{d.Key}
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d TagValue) ScanType() any {
 	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d TagValue) String() string {
+	return "tag_value"
 }

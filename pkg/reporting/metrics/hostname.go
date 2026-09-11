@@ -43,3 +43,8 @@ func (m Hostname) ScanType() any {
 func (m Hostname) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m Hostname) String() string {
+	return "hostname"
+}

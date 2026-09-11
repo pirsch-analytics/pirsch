@@ -43,3 +43,8 @@ func (m Platform) ScanType() any {
 func (m Platform) Zero() any {
 	return int8(0)
 }
+
+// String implements the Metric interface.
+func (m Platform) String() string {
+	return "platform"
+}

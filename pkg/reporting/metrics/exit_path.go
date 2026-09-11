@@ -41,3 +41,8 @@ func (m ExitPath) ScanType() any {
 func (m ExitPath) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m ExitPath) String() string {
+	return "exit_path"
+}

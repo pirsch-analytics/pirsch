@@ -43,3 +43,8 @@ func (m Region) ScanType() any {
 func (m Region) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m Region) String() string {
+	return "region"
+}

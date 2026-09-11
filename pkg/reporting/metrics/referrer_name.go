@@ -43,3 +43,8 @@ func (m ReferrerName) ScanType() any {
 func (m ReferrerName) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m ReferrerName) String() string {
+	return "referrer_name"
+}

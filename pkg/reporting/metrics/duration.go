@@ -43,3 +43,8 @@ func (m Duration) ScanType() any {
 func (m Duration) Zero() any {
 	return uint32(0)
 }
+
+// String implements the Metric interface.
+func (m Duration) String() string {
+	return "duration"
+}

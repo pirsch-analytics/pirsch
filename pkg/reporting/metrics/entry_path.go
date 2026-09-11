@@ -41,3 +41,8 @@ func (m EntryPath) ScanType() any {
 func (m EntryPath) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m EntryPath) String() string {
+	return "entry_path"
+}

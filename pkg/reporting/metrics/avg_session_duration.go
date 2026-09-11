@@ -34,3 +34,8 @@ func (m AvgSessionDuration) ScanType() any {
 func (m AvgSessionDuration) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m AvgSessionDuration) String() string {
+	return "avg_session_duration"
+}

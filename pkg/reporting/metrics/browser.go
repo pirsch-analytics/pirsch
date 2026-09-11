@@ -43,3 +43,8 @@ func (m Browser) ScanType() any {
 func (m Browser) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m Browser) String() string {
+	return "browser"
+}

@@ -27,7 +27,12 @@ func (d ReferrerName) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d ReferrerName) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d ReferrerName) String() string {
+	return "referrer_name"
 }

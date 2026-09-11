@@ -27,7 +27,12 @@ func (d Event) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Event) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Event) String() string {
+	return "event"
 }

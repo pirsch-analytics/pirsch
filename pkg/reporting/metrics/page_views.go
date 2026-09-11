@@ -45,3 +45,8 @@ func (m PageViews) ScanType() any {
 func (m PageViews) Zero() any {
 	return uint64(0)
 }
+
+// String implements the Metric interface.
+func (m PageViews) String() string {
+	return "page_views"
+}

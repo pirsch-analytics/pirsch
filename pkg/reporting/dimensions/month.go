@@ -34,7 +34,12 @@ func (d Month) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Month) ScanType() any {
 	return new(time.Time)
+}
+
+// String implements the Dimension interface.
+func (d Month) String() string {
+	return "month"
 }

@@ -27,7 +27,12 @@ func (d SiteID) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d SiteID) ScanType() any {
 	return new(uint64)
+}
+
+// String implements the Dimension interface.
+func (d SiteID) String() string {
+	return "site_id"
 }

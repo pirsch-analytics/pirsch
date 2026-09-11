@@ -43,3 +43,8 @@ func (m EntryTitle) ScanType() any {
 func (m EntryTitle) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m EntryTitle) String() string {
+	return "entry_title"
+}

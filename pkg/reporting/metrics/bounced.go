@@ -43,3 +43,8 @@ func (m Bounced) ScanType() any {
 func (m Bounced) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m Bounced) String() string {
+	return "bounced"
+}

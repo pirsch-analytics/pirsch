@@ -43,3 +43,8 @@ func (m Extended) ScanType() any {
 func (m Extended) Zero() any {
 	return uint16(0)
 }
+
+// String implements the Metric interface.
+func (m Extended) String() string {
+	return "extended"
+}

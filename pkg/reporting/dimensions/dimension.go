@@ -1,6 +1,7 @@
 package dimensions
 
 import (
+	"encoding/json/v2"
 	"time"
 )
 
@@ -22,6 +23,9 @@ type Dimension interface {
 
 	// ScanType returns a pointer to the type the value for this Dimension scans into.
 	ScanType() any
+
+	// String implements the fmt.Stringer interface.
+	String() string
 }
 
 // DimensionExpressionOptions are the options for the Dimension.Expression.
@@ -31,4 +35,10 @@ type DimensionExpressionOptions struct {
 
 	// WeekdayMode sets the start day of the week.
 	WeekdayMode int
+}
+
+// String implements the fmt.Stringer interface.
+func (o *DimensionExpressionOptions) String() string {
+	b, _ := json.Marshal(o)
+	return string(b)
 }

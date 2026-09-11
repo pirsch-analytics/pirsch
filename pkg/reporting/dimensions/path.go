@@ -32,7 +32,12 @@ func (d Path) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Path) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Path) String() string {
+	return "path"
 }

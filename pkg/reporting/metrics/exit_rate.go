@@ -34,3 +34,8 @@ func (m ExitRate) ScanType() any {
 func (m ExitRate) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m ExitRate) String() string {
+	return "exit_rate"
+}

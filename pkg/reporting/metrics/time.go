@@ -49,3 +49,8 @@ func (m Time) ScanType() any {
 func (m Time) Zero() any {
 	return time.Time{}
 }
+
+// String implements the Metric interface.
+func (m Time) String() string {
+	return "time"
+}

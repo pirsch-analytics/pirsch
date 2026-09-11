@@ -43,3 +43,8 @@ func (m ScreenClass) ScanType() any {
 func (m ScreenClass) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m ScreenClass) String() string {
+	return "screen_class"
+}

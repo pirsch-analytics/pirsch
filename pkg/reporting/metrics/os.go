@@ -43,3 +43,8 @@ func (m OS) ScanType() any {
 func (m OS) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m OS) String() string {
+	return "os"
+}

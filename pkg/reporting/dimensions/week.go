@@ -38,7 +38,12 @@ func (d Week) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Week) ScanType() any {
 	return new(time.Time)
+}
+
+// String implements the Dimension interface.
+func (d Week) String() string {
+	return "week"
 }

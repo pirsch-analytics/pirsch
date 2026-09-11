@@ -27,7 +27,12 @@ func (d ScreenClass) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d ScreenClass) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d ScreenClass) String() string {
+	return "screen_class"
 }

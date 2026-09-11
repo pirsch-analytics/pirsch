@@ -31,3 +31,8 @@ func (d UTMTerm) Args() []any {
 func (d UTMTerm) ScanType() any {
 	return new(string)
 }
+
+// String implements the Dimension interface.
+func (d UTMTerm) String() string {
+	return "utm_term"
+}

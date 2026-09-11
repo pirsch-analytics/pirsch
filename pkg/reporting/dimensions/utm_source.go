@@ -27,7 +27,12 @@ func (d UTMSource) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d UTMSource) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d UTMSource) String() string {
+	return "utm_source"
 }

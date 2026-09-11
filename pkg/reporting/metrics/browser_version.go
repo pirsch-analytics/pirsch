@@ -43,3 +43,8 @@ func (m BrowserVersion) ScanType() any {
 func (m BrowserVersion) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m BrowserVersion) String() string {
+	return "browser_version"
+}

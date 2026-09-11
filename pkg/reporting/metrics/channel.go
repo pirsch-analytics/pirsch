@@ -43,3 +43,8 @@ func (m Channel) ScanType() any {
 func (m Channel) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m Channel) String() string {
+	return "channel"
+}

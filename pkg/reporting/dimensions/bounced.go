@@ -27,7 +27,12 @@ func (d Bounced) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Bounced) ScanType() any {
 	return new(bool)
+}
+
+// String implements the Dimension interface.
+func (d Bounced) String() string {
+	return "bounced"
 }

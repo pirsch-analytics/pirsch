@@ -27,7 +27,12 @@ func (d Title) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Title) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Title) String() string {
+	return "title"
 }

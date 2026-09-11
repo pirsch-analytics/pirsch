@@ -43,3 +43,8 @@ func (m UTMMedium) ScanType() any {
 func (m UTMMedium) Zero() any {
 	return ""
 }
+
+// String implements the Metric interface.
+func (m UTMMedium) String() string {
+	return "utm_medium"
+}

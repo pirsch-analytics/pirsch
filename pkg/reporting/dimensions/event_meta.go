@@ -69,7 +69,7 @@ func (d EventMeta) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EventMeta) ScanType() any {
 	if d.Type == EventMetaTypeNone {
 		// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
@@ -114,4 +114,9 @@ func (d EventMeta) Select(path string) string {
 	default:
 		return fmt.Sprintf("%s %s", expression, d.Column(""))
 	}
+}
+
+// String implements the Dimension interface.
+func (d EventMeta) String() string {
+	return "event_meta"
 }
