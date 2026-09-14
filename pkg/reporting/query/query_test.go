@@ -1546,6 +1546,52 @@ func TestQueryEventMetaDataCastTypeInt(t *testing.T) {
 	assert.Equal(t, int64(24), r.Results[2].DimensionValues[0])
 }
 
+func TestQueryEventMetaDataCastTypeInvalid(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMeta{
+				Path:     "ab-test", // this is an array
+				Type:     dimensions.EventMetaTypeInt,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01 00:00:00", args[1])
+	assert.Equal(t, "2026-01-31 00:00:00", args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 1)
+	assert.Len(t, r.Results[0].DimensionValues, 1)
+	assert.Empty(t, r.Results[0].MetricValues)
+	assert.Equal(t, int64(0), r.Results[0].DimensionValues[0])
+}
+
 func TestQueryEventMetaDataValue(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",

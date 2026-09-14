@@ -91,27 +91,37 @@ func (d EventMeta) Select(path string) string {
 	}
 
 	expression := ""
-	castType := ""
 
-	switch d.Type {
-	case EventMetaTypeFloat:
+	if d.Type == EventMetaTypeFloat || d.Type == EventMetaTypeInt {
 		expression = fmt.Sprintf("toFloat64OrZero(toString(meta_data%s))", path)
-		castType = "toFloat64"
-	case EventMetaTypeInt:
-		expression = fmt.Sprintf("toInt64(toFloat64OrZero(toString(meta_data%s)))", path)
-		castType = "toInt64"
-	default:
+	} else {
 		expression = d.Expression(nil)
 	}
 
 	switch d.Function {
 	case EventMetaFunctionAvg:
-		return fmt.Sprintf("%s(avg(%s)) %s", castType, expression, d.Column(""))
+		if d.Type == EventMetaTypeInt {
+			return fmt.Sprintf("toInt64(round(avg(%s))) %s", expression, d.Column(""))
+		}
+
+		return fmt.Sprintf("toFloat64(avg(%s)) %s", expression, d.Column(""))
 	case EventMetaFunctionMedian:
-		return fmt.Sprintf("%s(median(%s)) %s", castType, expression, d.Column(""))
+		if d.Type == EventMetaTypeInt {
+			return fmt.Sprintf("toInt64(round(median(%s))) %s", expression, d.Column(""))
+		}
+
+		return fmt.Sprintf("toFloat64(median(%s)) %s", expression, d.Column(""))
 	case EventMetaFunctionSum:
-		return fmt.Sprintf("%s(sum(%s)) %s", castType, expression, d.Column(""))
+		if d.Type == EventMetaTypeInt {
+			return fmt.Sprintf("toInt64(sum(%s)) %s", expression, d.Column(""))
+		}
+
+		return fmt.Sprintf("toFloat64(sum(%s)) %s", expression, d.Column(""))
 	default:
+		if d.Type == EventMetaTypeInt {
+			return fmt.Sprintf("toInt64(toFloat64OrZero(toString(meta_data%s))) %s", path, d.Column(""))
+		}
+
 		return fmt.Sprintf("%s %s", expression, d.Column(""))
 	}
 }
