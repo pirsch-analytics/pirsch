@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"time"
@@ -76,4 +77,10 @@ func (r *FunnelRequest) Validate() []error {
 	}
 
 	return nil
+}
+
+// String implements the fmt.Stringer interface.
+func (r *FunnelRequest) String() string {
+	b, _ := json.Marshal(r)
+	return string(b)
 }

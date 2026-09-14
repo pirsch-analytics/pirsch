@@ -18,7 +18,7 @@ func (d OSVersion) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d OSVersion) Expression() string {
+func (d OSVersion) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d OSVersion) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d OSVersion) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d OSVersion) String() string {
+	return "os_version"
 }

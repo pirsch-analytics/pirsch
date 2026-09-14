@@ -1,6 +1,8 @@
 package report
 
 import (
+	"encoding/json/v2"
+
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
@@ -38,4 +40,16 @@ type FunnelStep struct {
 
 	// DropOff is the relative number of visitors dropped from the previous step.
 	DropOff float64
+}
+
+// String implements the fmt.Stringer interface.
+func (f *FunnelReport) String() string {
+	b, _ := json.Marshal(f)
+	return string(b)
+}
+
+// String implements the fmt.Stringer interface.
+func (s *FunnelStep) String() string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }

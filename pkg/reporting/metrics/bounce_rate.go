@@ -34,3 +34,8 @@ func (m BounceRate) ScanType() any {
 func (m BounceRate) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m BounceRate) String() string {
+	return "bounce_rate"
+}

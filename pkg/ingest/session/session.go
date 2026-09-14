@@ -71,6 +71,7 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	// cancel early if we only update the session
 	if request.UpdateSession {
 		if session != nil {
+			request.Session = session // return the latest session state to the caller
 			s.update(request, session)
 			s.cache.Put(request.SiteID, request.VisitorID, session)
 		}
@@ -85,8 +86,13 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 		s.cache.Put(request.SiteID, request.VisitorID, session)
 	} else {
 		// cancel if the maximum number of page views has been reached
-		if s.maxPageViews > 0 && session.PageViews >= s.maxPageViews ||
-			s.maxPageViews == 0 && s.maxPageViews > 0 && session.PageViews >= s.maxPageViews {
+		maxPageViews := s.maxPageViews
+
+		if request.MaxPageViews > 0 {
+			maxPageViews = request.MaxPageViews
+		}
+
+		if maxPageViews > 0 && session.PageViews >= maxPageViews {
 			return true, nil
 		}
 
@@ -105,41 +111,39 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 func (s *Session) new(request *ingest.Request) *model.Session {
 	request.SessionID = rand.Uint32()
 	return &model.Session{
-		Data: model.Data{
-			SiteID:         request.SiteID,
-			VisitorID:      request.VisitorID,
-			SessionID:      request.SessionID,
-			Time:           request.Time,
-			Hostname:       request.Hostname,
-			Language:       request.Language,
-			CountryCode:    request.CountryCode,
-			Region:         request.Region,
-			City:           request.City,
-			Referrer:       request.Referrer,
-			ReferrerName:   request.ReferrerName,
-			ReferrerIcon:   request.ReferrerIcon,
-			OS:             request.OS,
-			OSVersion:      request.OSVersion,
-			Browser:        request.Browser,
-			BrowserVersion: request.BrowserVersion,
-			Platform:       request.Platform,
-			ScreenClass:    request.ScreenClass,
-			UTMSource:      request.UTMSource,
-			UTMMedium:      request.UTMMedium,
-			UTMCampaign:    request.UTMCampaign,
-			UTMContent:     request.UTMContent,
-			UTMTerm:        request.UTMTerm,
-			Channel:        request.Channel,
-		},
-		Sign:       1,
-		Version:    1,
-		Start:      request.Time,
-		EntryPath:  request.Path,
-		ExitPath:   request.Path,
-		PageViews:  1,
-		IsBounce:   true,
-		EntryTitle: request.Title,
-		ExitTitle:  request.Title,
+		SiteID:         request.SiteID,
+		VisitorID:      request.VisitorID,
+		SessionID:      request.SessionID,
+		Time:           request.Time,
+		Hostname:       request.Hostname,
+		Language:       request.Language,
+		CountryCode:    request.CountryCode,
+		Region:         request.Region,
+		City:           request.City,
+		Referrer:       request.Referrer,
+		ReferrerName:   request.ReferrerName,
+		ReferrerIcon:   request.ReferrerIcon,
+		OS:             request.OS,
+		OSVersion:      request.OSVersion,
+		Browser:        request.Browser,
+		BrowserVersion: request.BrowserVersion,
+		Platform:       request.Platform,
+		ScreenClass:    request.ScreenClass,
+		UTMSource:      request.UTMSource,
+		UTMMedium:      request.UTMMedium,
+		UTMCampaign:    request.UTMCampaign,
+		UTMContent:     request.UTMContent,
+		UTMTerm:        request.UTMTerm,
+		Channel:        request.Channel,
+		Sign:           1,
+		Version:        1,
+		Start:          request.Time,
+		EntryPath:      request.Path,
+		ExitPath:       request.Path,
+		PageViews:      1,
+		IsBounce:       true,
+		EntryTitle:     request.Title,
+		ExitTitle:      request.Title,
 	}
 }
 

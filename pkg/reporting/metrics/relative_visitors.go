@@ -34,3 +34,8 @@ func (m RelativeVisitors) ScanType() any {
 func (m RelativeVisitors) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m RelativeVisitors) String() string {
+	return "relative_visitors"
+}

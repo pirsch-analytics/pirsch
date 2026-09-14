@@ -182,6 +182,14 @@ type Request struct {
 	// DisableBotFilter disables all bot filters if set to true.
 	DisableBotFilter bool
 
+	// DisableStorage disables the storage of anything related to this request, such as session data, page views and events.
+	// This can be used with the Pipe.Process method to check whether a request will be accepted.
+	DisableStorage bool
+
+	// MaxPageViews sets the maximum number of page views per session for this request
+	// If the limit is reached, the request will be canceled.
+	MaxPageViews uint16
+
 	// Language is the language for the request.
 	// This should be set by a PipeStep.
 	Language string
@@ -281,16 +289,19 @@ type Request struct {
 	// This should be set by a PipeStep.
 	BotReason string
 
-	// DurationSeconds is the session duration or time on page, usually set in a step.
+	// DurationSeconds is the session duration or time on page.
+	// This should be set by a PipeStep.
 	DurationSeconds uint32
 
 	// UpdateSession only updates the session if this is set to true and does not persist a page view/event.
 	UpdateSession bool
 
-	// Session is the latest session state, usually set in a step.
+	// Session is the latest session state.
+	// This should be set by a PipeStep.
 	Session *model.Session
 
-	// CancelSession is the previous session state, usually set in a step.
+	// CancelSession is the previous session state.
+	// This should be set by a PipeStep.
 	CancelSession *model.Session
 
 	cancelled bool

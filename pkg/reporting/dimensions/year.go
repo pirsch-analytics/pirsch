@@ -1,6 +1,7 @@
 package dimensions
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
@@ -20,8 +21,12 @@ func (d Year) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Year) Expression() string {
-	return `toYear("time")`
+func (d Year) Expression(options *DimensionExpressionOptions) string {
+	if options == nil || options.Timezone == nil {
+		return `toStartOfYear("time")`
+	}
+
+	return fmt.Sprintf(`toStartOfYear("time", '%s')`, options.Timezone.String())
 }
 
 // Args implements the Dimension interface.
@@ -29,7 +34,12 @@ func (d Year) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Year) ScanType() any {
 	return new(time.Time)
+}
+
+// String implements the Dimension interface.
+func (d Year) String() string {
+	return "year"
 }

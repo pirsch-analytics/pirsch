@@ -59,8 +59,11 @@ const (
 )
 
 const (
+	// PlatformUnknown is the platform for an unknown device.
+	PlatformUnknown = int8(iota)
+
 	// PlatformDesktop is the platform for a desktop device.
-	PlatformDesktop = int8(iota)
+	PlatformDesktop
 
 	// PlatformMobile is the platform for a mobile device.
 	PlatformMobile

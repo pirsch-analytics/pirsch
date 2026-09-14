@@ -18,7 +18,7 @@ func (d UTMMedium) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d UTMMedium) Expression() string {
+func (d UTMMedium) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d UTMMedium) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d UTMMedium) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d UTMMedium) String() string {
+	return "utm_medium"
 }

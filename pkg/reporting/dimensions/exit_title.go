@@ -18,7 +18,7 @@ func (d ExitTitle) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d ExitTitle) Expression() string {
+func (d ExitTitle) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d ExitTitle) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d ExitTitle) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d ExitTitle) String() string {
+	return "exit_title"
 }

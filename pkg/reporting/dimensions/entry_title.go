@@ -18,7 +18,7 @@ func (d EntryTitle) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EntryTitle) Expression() string {
+func (d EntryTitle) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d EntryTitle) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EntryTitle) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d EntryTitle) String() string {
+	return "event_title"
 }

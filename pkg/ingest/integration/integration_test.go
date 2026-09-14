@@ -21,14 +21,16 @@ func TestIntegrationRequests(t *testing.T) {
 		p, s, _ := newPipeline(t, pipelineOptions{})
 
 		// entry request
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err := p.Process(&ingest.Request{
 			SiteID:       1,
 			Request:      newRequest(requestOptions{}),
 			ScreenWidth:  1920,
 			ScreenHeight: 1080,
 			Title:        "Title",
 			Tags:         map[string]string{"foo": "bar"},
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 10)
 		synctest.Wait()
 
@@ -108,7 +110,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Equal(t, "bar", pageViews[0].Tags["foo"])
 
 		// second request
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/pricing",
@@ -117,7 +119,9 @@ func TestIntegrationRequests(t *testing.T) {
 			ScreenWidth:  1920,
 			ScreenHeight: 1080,
 			Title:        "Pricing",
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 20)
 		synctest.Wait()
 
@@ -234,7 +238,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Empty(t, pageViews[1].Tags)
 
 		// trigger an event on the second page
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/pricing",
@@ -254,7 +258,9 @@ func TestIntegrationRequests(t *testing.T) {
 					9998,
 				},
 			},
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 17)
 		synctest.Wait()
 
@@ -308,7 +314,7 @@ func TestIntegrationRequests(t *testing.T) {
 		assert.Equal(t, "Organic Search", events[0].Channel)
 
 		// third request
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL:      "https://example.com/about",
@@ -317,7 +323,9 @@ func TestIntegrationRequests(t *testing.T) {
 			ScreenWidth:  1920,
 			ScreenHeight: 1080,
 			Title:        "About",
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 20)
 		synctest.Wait()
 
@@ -366,14 +374,16 @@ func TestIntegrationConcurrency(t *testing.T) {
 				}
 
 				for i := range pv {
-					assert.NoError(t, p.Process(&ingest.Request{
+					accepted, err := p.Process(&ingest.Request{
 						SiteID: 1,
 						Request: newRequest(requestOptions{
 							URL:       fmt.Sprintf("https://example.com/pv/%d", i),
 							IP:        ip,
 							UserAgent: ua,
 						}),
-					}))
+					})
+					assert.NoError(t, err)
+					assert.True(t, accepted)
 					time.Sleep(time.Second * time.Duration(rand.IntN(59)+1))
 				}
 			}()
@@ -406,13 +416,15 @@ func TestIntegrationOverwriteTimeAndOrder(t *testing.T) {
 		for i := range 3 {
 			insertionTime := time.Now().UTC().Add(-time.Minute * time.Duration(rand.IntN(28)+1))
 			inserted = append(inserted, insertionTime)
-			assert.NoError(t, p.Process(&ingest.Request{
+			accepted, err := p.Process(&ingest.Request{
 				SiteID: 1,
 				Request: newRequest(requestOptions{
 					URL: fmt.Sprintf("https://example.com/pv/%d", i),
 				}),
 				Time: insertionTime,
-			}))
+			})
+			assert.NoError(t, err)
+			assert.True(t, accepted)
 		}
 
 		// stop the pipeline
@@ -462,10 +474,12 @@ func TestIntegrationExtendSession(t *testing.T) {
 		defer p.Stop()
 
 		// create a new session
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err := p.Process(&ingest.Request{
 			SiteID:  1,
 			Request: newRequest(requestOptions{}),
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -478,11 +492,13 @@ func TestIntegrationExtendSession(t *testing.T) {
 		assert.Equal(t, uint16(0), first(cachedSessions).Extended)
 
 		// extend the session once
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID:        1,
 			Request:       newRequest(requestOptions{}),
 			UpdateSession: true,
-		}))
+		})
+		assert.NoError(t, err)
+		assert.False(t, accepted) // canceled early
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -492,11 +508,13 @@ func TestIntegrationExtendSession(t *testing.T) {
 		assert.Equal(t, uint16(1), first(cachedSessions).Extended)
 
 		// extend the session twice
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID:        1,
 			Request:       newRequest(requestOptions{}),
 			UpdateSession: true,
-		}))
+		})
+		assert.NoError(t, err)
+		assert.False(t, accepted) // canceled early
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -514,10 +532,12 @@ func TestIntegrationResetSessionReferrer(t *testing.T) {
 		defer p.Stop()
 
 		// create a new session
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err := p.Process(&ingest.Request{
 			SiteID:  1,
 			Request: newRequest(requestOptions{}),
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -532,11 +552,13 @@ func TestIntegrationResetSessionReferrer(t *testing.T) {
 		assert.Equal(t, sessions[0].SessionID, sessionID)
 
 		// reset the session by changing the referrer
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID:   1,
 			Request:  newRequest(requestOptions{}),
 			Referrer: "https://referrer.com",
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -565,10 +587,12 @@ func TestIntegrationResetSessionUTM(t *testing.T) {
 		defer p.Stop()
 
 		// create a new session
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err := p.Process(&ingest.Request{
 			SiteID:  1,
 			Request: newRequest(requestOptions{}),
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -583,12 +607,14 @@ func TestIntegrationResetSessionUTM(t *testing.T) {
 		assert.Equal(t, sessions[0].SessionID, sessionID)
 
 		// reset the session by changing the UTM source
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID: 1,
 			Request: newRequest(requestOptions{
 				URL: "https://example.com/?utm_source=New+Source",
 			}),
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -617,10 +643,12 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 		defer p.Stop()
 
 		// create a new session
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err := p.Process(&ingest.Request{
 			SiteID:  1,
 			Request: newRequest(requestOptions{}),
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 30)
 		synctest.Wait()
 
@@ -630,12 +658,14 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 		assert.True(t, sessions[0].IsBounce)
 
 		// trigger a non-interactive event
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID:              1,
 			Request:             newRequest(requestOptions{}),
 			EventName:           "Event",
 			EventNonInteractive: true,
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 10)
 		synctest.Wait()
 
@@ -647,11 +677,13 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 		assert.True(t, sessions[2].IsBounce)
 
 		// trigger an interactive event
-		assert.NoError(t, p.Process(&ingest.Request{
+		accepted, err = p.Process(&ingest.Request{
 			SiteID:    1,
 			Request:   newRequest(requestOptions{}),
 			EventName: "Event",
-		}))
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
 		time.Sleep(time.Second * 10)
 		synctest.Wait()
 

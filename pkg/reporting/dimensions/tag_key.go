@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // TagKey is a Dimension.
 type TagKey struct{}
@@ -12,11 +14,11 @@ func (d TagKey) Table() []string {
 
 // Column implements the Dimension interface.
 func (d TagKey) Column(_ string) string {
-	return "tags"
+	return "tag_keys"
 }
 
 // Expression implements the Dimension interface.
-func (d TagKey) Expression() string {
+func (d TagKey) Expression(_ *DimensionExpressionOptions) string {
 	return "arrayJoin(mapKeys(tags))"
 }
 
@@ -25,8 +27,13 @@ func (d TagKey) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d TagKey) ScanType() any {
 	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d TagKey) String() string {
+	return "tag_key"
 }

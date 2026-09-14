@@ -34,3 +34,8 @@ func (m Events) ScanType() any {
 func (m Events) Zero() any {
 	return uint64(0)
 }
+
+// String implements the Metric interface.
+func (m Events) String() string {
+	return "events"
+}

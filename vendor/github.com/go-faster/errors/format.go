@@ -39,9 +39,19 @@ type Printer interface {
 }
 
 // Errorf creates new error with format.
+//
+// If format contains the %w directive, Errorf falls back to fmt.Errorf
+// and does not capture a caller frame.
 func Errorf(format string, a ...interface{}) error {
 	if !Trace() || strings.Contains(format, "%w") {
 		return fmt.Errorf(format, a...)
 	}
-	return &errorString{fmt.Sprintf(format, a...), Caller(1)}
+	return &errorString{sprintf(format, a), Caller(1)}
+}
+
+// sprintf is deliberately non-variadic: forwarding (format, a...) straight
+// to fmt.Sprintf from Errorf makes vet's printf analyzer classify Errorf as
+// a plain printf wrapper, rejecting %w in callers' format strings.
+func sprintf(format string, a []interface{}) string {
+	return fmt.Sprintf(format, a...)
 }

@@ -91,6 +91,15 @@ func (c *ColNullable[T]) DecodeColumn(r *Reader, rows int) error {
 	return nil
 }
 
+func (c *ColNullable[T]) Prepare() error {
+	if v, ok := c.Values.(Preparable); ok {
+		if err := v.Prepare(); err != nil {
+			return errors.Wrap(err, "prepare values")
+		}
+	}
+	return nil
+}
+
 func (c ColNullable[T]) Rows() int {
 	return c.Nulls.Rows()
 }

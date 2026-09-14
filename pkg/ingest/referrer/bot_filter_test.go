@@ -10,7 +10,7 @@ import (
 
 func TestBotFilter(t *testing.T) {
 	referrer := []string{
-		`(select(0)from(select(sleep(15)))v)/*'+(select(0)from(select(sleep(15)))v)+'"+(select(0)from(select(sleep(15)))v)+"*/`,
+		`(select(0)from(select(sleep(15)))v)/*'+(select(0)from(select(sleep(15)))v)+'"+(select(0)from(select(sleep(15)))v)+"`,
 		`-1 OR 2+1-1+1=1 AND 136=136 --`,
 		`-1 OR 2+136-136-1=0+0+0+1 --`,
 		`-1 OR 3*2=6 AND 707=707`,
@@ -40,6 +40,10 @@ func TestBotFilter(t *testing.T) {
 		"1ef21d2f-1207-6660-8914-ac5c6e9a2b0c",
 		"018e5e04-a530-7000-8d5c-b14c9b7a6e1a",
 		"320c3d4d-cc00-875b-8ec9-32d5f69181c0",
+		"http://www.baidu.io",
+		"https://www.yandex.io",
+		"https://www.yahoo.io",
+		"https://www.bing.io",
 	}
 	acknowledged := make([]string, 0)
 	filter := NewBotFilter()

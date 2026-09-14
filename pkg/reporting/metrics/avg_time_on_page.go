@@ -35,3 +35,8 @@ func (m AvgTimeOnPage) ScanType() any {
 func (m AvgTimeOnPage) Zero() any {
 	return float64(0)
 }
+
+// String implements the Metric interface.
+func (m AvgTimeOnPage) String() string {
+	return "avg_time_on_page"
+}

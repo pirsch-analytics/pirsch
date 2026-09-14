@@ -1,11 +1,15 @@
 package request
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
+import (
+	"encoding/json/v2"
+
+	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
+)
 
 const (
-	OperatorAnd Operator = iota
-	OperatorOr
-	OperatorNot
+	OperatorGroupAnd Operator = iota
+	OperatorGroupOr
+	OperatorGroupNot
 
 	OperatorIs
 	OperatorIsNot
@@ -24,4 +28,10 @@ type Filter struct {
 	Dimension dimensions.Dimension
 	Values    []any
 	Filter    []Filter
+}
+
+// String implements the fmt.Stringer interface.
+func (f *Filter) String() string {
+	b, _ := json.Marshal(f)
+	return string(b)
 }

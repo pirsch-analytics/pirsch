@@ -18,7 +18,7 @@ func (d City) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d City) Expression() string {
+func (d City) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d City) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d City) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d City) String() string {
+	return "city"
 }

@@ -18,7 +18,7 @@ func (d Duration) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Duration) Expression() string {
+func (d Duration) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d Duration) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Duration) ScanType() any {
 	return new(uint32)
+}
+
+// String implements the Dimension interface.
+func (d Duration) String() string {
+	return "duration_seconds"
 }

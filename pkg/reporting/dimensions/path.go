@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Path is a Dimension.
 type Path struct{}
@@ -12,6 +14,7 @@ func (d Path) Table() []string {
 
 // Column implements the Dimension interface.
 func (d Path) Column(table string) string {
+	// filter/join on entry path for metrics like the bounce rate
 	if table == pkg.TableSessions {
 		return "entry_path"
 	}
@@ -20,7 +23,7 @@ func (d Path) Column(table string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Path) Expression() string {
+func (d Path) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -29,7 +32,12 @@ func (d Path) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Path) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Path) String() string {
+	return "path"
 }

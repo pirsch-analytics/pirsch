@@ -18,7 +18,7 @@ func (d Channel) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Channel) Expression() string {
+func (d Channel) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d Channel) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Channel) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d Channel) String() string {
+	return "channel"
 }

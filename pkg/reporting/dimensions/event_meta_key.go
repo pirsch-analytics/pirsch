@@ -1,10 +1,15 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // EventMetaKey is a Dimension.
-// It's only really useful as a filter. The dimension will simply return the metadata column.
-type EventMetaKey struct{}
+// It returns all paths for an event metadata field.
+type EventMetaKey struct {
+	// Any specifies whether the result set should not be grouped by the metadata keys.
+	Any bool
+}
 
 // Table implements the Dimension interface.
 func (d EventMetaKey) Table() []string {
@@ -17,8 +22,12 @@ func (d EventMetaKey) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EventMetaKey) Expression() string {
-	return "toString(meta_data)"
+func (d EventMetaKey) Expression(_ *DimensionExpressionOptions) string {
+	if d.Any {
+		return "any(JSONAllPaths(meta_data))"
+	}
+
+	return "JSONAllPaths(meta_data)"
 }
 
 // Args implements the Dimension interface.
@@ -26,8 +35,12 @@ func (d EventMetaKey) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EventMetaKey) ScanType() any {
-	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
-	return new(string)
+	return new([]string)
+}
+
+// String implements the Dimension interface.
+func (d EventMetaKey) String() string {
+	return "event_meta_key"
 }

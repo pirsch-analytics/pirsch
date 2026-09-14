@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // EntryPath is a Dimension.
 type EntryPath struct{}
@@ -16,7 +18,7 @@ func (d EntryPath) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d EntryPath) Expression() string {
+func (d EntryPath) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -25,7 +27,12 @@ func (d EntryPath) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d EntryPath) ScanType() any {
 	return new(string)
+}
+
+// String implements the Dimension interface.
+func (d EntryPath) String() string {
+	return "entry_path"
 }

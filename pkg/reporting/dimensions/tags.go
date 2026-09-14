@@ -1,6 +1,8 @@
 package dimensions
 
-import "github.com/pirsch-analytics/pirsch/v7/pkg"
+import (
+	"github.com/pirsch-analytics/pirsch/v7/pkg"
+)
 
 // Tags is a Dimension.
 type Tags struct{}
@@ -16,7 +18,7 @@ func (d Tags) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d Tags) Expression() string {
+func (d Tags) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -25,8 +27,13 @@ func (d Tags) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d Tags) ScanType() any {
 	// string, as the ClickHouse driver does not support reading into "any" and we manually need to parse it into JSON
 	return new(map[string]string)
+}
+
+// String implements the Dimension interface.
+func (d Tags) String() string {
+	return "tags"
 }

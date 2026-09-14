@@ -18,7 +18,7 @@ func (d SessionID) Column(_ string) string {
 }
 
 // Expression implements the Dimension interface.
-func (d SessionID) Expression() string {
+func (d SessionID) Expression(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
@@ -27,7 +27,12 @@ func (d SessionID) Args() []any {
 	return nil
 }
 
-// ScanType implements the Metric interface.
+// ScanType implements the Dimension interface.
 func (d SessionID) ScanType() any {
 	return new(uint32)
+}
+
+// String implements the Dimension interface.
+func (d SessionID) String() string {
+	return "session_id"
 }

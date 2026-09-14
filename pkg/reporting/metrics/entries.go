@@ -34,3 +34,8 @@ func (m Entries) ScanType() any {
 func (m Entries) Zero() any {
 	return uint64(0)
 }
+
+// String implements the Metric interface.
+func (m Entries) String() string {
+	return "entries"
+}

@@ -34,3 +34,8 @@ func (m Sessions) ScanType() any {
 func (m Sessions) Zero() any {
 	return uint64(0)
 }
+
+// String implements the Metric interface.
+func (m Sessions) String() string {
+	return "sessions"
+}
