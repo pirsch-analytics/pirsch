@@ -1119,7 +1119,7 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 		expression, requiresSubquery := metric.Expression(q.primaryTable)
 
 		if requiresSubquery {
-			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
 			expression = fmt.Sprintf(expression, subquery)
 			args = append(args, a...)
 		}
@@ -1174,7 +1174,7 @@ func (q *Query) buildQuereFrom(table string, sample uint) string {
 func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
-	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
 
@@ -1204,7 +1204,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 			filters := byTable[table]
 			query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
 			query.WriteString(q.buildQuereFrom(table, req.Options.Sample))
-			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, table)
 			query.WriteString(subWhereQuery)
 			args = append(args, subWhereArgs...)
 
@@ -1223,7 +1223,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
+func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string) (string, []any) {
 	if period.From.IsZero() && period.To.IsZero() {
 		return "WHERE site_id = ? ", []any{siteID}
 	}
@@ -1232,6 +1232,12 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	if period.Timezone != nil {
 		tz = period.Timezone.String()
+	}
+
+	timeColumn := "time"
+
+	if period.IncludeTime && table == pkg.TableSessions {
+		timeColumn = "start"
 	}
 
 	from := period.From.Format(time.DateTime)
@@ -1248,10 +1254,10 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 	args = append(args, siteID)
 
 	if period.From.Equal(period.To) {
-		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') = %s(?, '%s') `, dateFunc, tz, dateFunc, tz))
+		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') = %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz))
 		args = append(args, from)
 	} else {
-		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, tz, dateFunc, tz, dateFunc, tz))
+		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz, dateFunc, tz))
 		args = append(args, from, to)
 	}
 
