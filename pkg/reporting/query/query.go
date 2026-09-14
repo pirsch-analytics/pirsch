@@ -1281,8 +1281,6 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		timeColumn = "start"
 	}
 
-	from := period.From.Format(time.DateTime)
-	to := period.To.Format(time.DateTime)
 	dateFunc := "toDate"
 
 	if period.IncludeTime {
@@ -1296,10 +1294,10 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	if period.From.Equal(period.To) {
 		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') = %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz))
-		args = append(args, from)
+		args = append(args, period.From)
 	} else {
 		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz, dateFunc, tz))
-		args = append(args, from, to)
+		args = append(args, period.From, period.To)
 	}
 
 	return query.String(), args
@@ -1622,24 +1620,21 @@ func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dim
 		tz = req.Period.Timezone.String()
 	}
 
-	// format as plain wall clock strings so that ClickHouse ignores the timezone
-	from := req.Period.From.Format(time.DateTime)
-	to := req.Period.To.Format(time.DateTime)
-	args := []any{from, to}
+	args := []any{req.Period.From, req.Period.To}
 
 	switch dimension.(type) {
 	case dimensions.Minute:
 		if req.Period.From.Equal(req.Period.To) {
 			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') + INTERVAL 1 HOUR STEP INTERVAL 1 MINUTE", tz, tz), args
-		} else {
-			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 		}
+
+		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 	case dimensions.Hour:
 		if req.Period.From.Equal(req.Period.To) {
 			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 HOUR", tz, tz), args
-		} else {
-			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 		}
+
+		return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 	case dimensions.Day:
 		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
 	case dimensions.Week:
