@@ -19,6 +19,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestQueryDryRun(t *testing.T) {
+	loadTestData(t, []string{
+		"scenario",
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.PageViews{},
+		},
+	}
+	req.Validate()
+
+	// tables
+	query, args, _, _, err := q.DryRun(req)
+	assert.Empty(t, err)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+}
+
 func TestQuerySessions(t *testing.T) {
 	loadTestData(t, []string{
 		"scenario",
