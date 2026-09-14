@@ -3756,6 +3756,81 @@ func TestQueryTimezone(t *testing.T) {
 	}
 }
 
+func TestQueryPattern(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, _ := newQuery()
+	from = from.Add(time.Hour * 24)
+	tz, err := timezone.Load("Europe/Berlin")
+	assert.NoError(t, err)
+	assert.NotNil(t, tz)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:        from.Add(time.Hour * 10),
+			To:          from.Add(time.Hour * 11),
+			Timezone:    tz,
+			IncludeTime: true,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Minute{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Operator:  request.OperatorMatches,
+				Values:    []any{"\\/l.*"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Minute{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Len(t, q.subqueryFilter, 1)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 9)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-02 10:00:00", args[1])
+	assert.Equal(t, "2026-01-02 11:00:00", args[2])
+	assert.Equal(t, uint64(1), args[3])
+	assert.Equal(t, "2026-01-02 10:00:00", args[4])
+	assert.Equal(t, "2026-01-02 11:00:00", args[5])
+	assert.Equal(t, "\\/l.*", args[6])
+	assert.Equal(t, "2026-01-02 10:00:00", args[7])
+	assert.Equal(t, "2026-01-02 11:00:00", args[8])
+
+	// result rows
+	assert.Len(t, r.Results, 60)
+
+	for i, result := range r.Results {
+		if i == 28 {
+			assert.Equal(t, uint64(1), result.MetricValues[0])
+		} else {
+			assert.Equal(t, uint64(0), result.MetricValues[0])
+		}
+	}
+}
+
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
 	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
