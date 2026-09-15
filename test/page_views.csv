@@ -7,3 +7,8 @@ three page views + event,1,3,3,2026-01-02T09:27:00Z,120,example.com,/pricing,Pri
 three page views + event,1,3,3,2026-01-02T09:28:00Z,60,example.com,/,Home,en,us,Virginia,Ashburn,"","",,iOS,16,Chrome,141,2,Full HD,"","","","","","{""author"": ""Marvin Blum""}",""
 referrer reset,1,4,4,2026-01-02T10:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
 referrer reset,1,4,5,2026-01-02T10:10:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+hourly timezone,1,5,5,2026-01-15T00:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+hourly timezone,1,6,6,2026-01-16T01:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+hourly timezone,1,7,7,2026-01-16T12:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+hourly timezone,1,8,8,2026-01-16T23:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+hourly timezone,1,9,9,2026-01-17T00:30:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""

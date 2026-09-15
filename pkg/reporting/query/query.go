@@ -1269,7 +1269,7 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		return "WHERE site_id = ? ", []any{siteID}
 	}
 
-	tz := "UTC"
+	tz := time.UTC.String()
 
 	if period.Timezone != nil {
 		tz = period.Timezone.String()
@@ -1294,10 +1294,20 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	if period.From.Equal(period.To) {
 		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') = %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz))
-		args = append(args, period.From)
+
+		if dateFunc == "toDate" {
+			args = append(args, period.From.Format(time.DateOnly))
+		} else {
+			args = append(args, period.From.Format(time.DateTime))
+		}
 	} else {
 		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz, dateFunc, tz))
-		args = append(args, period.From, period.To)
+
+		if dateFunc == "toDate" {
+			args = append(args, period.From.Format(time.DateOnly), period.To.Format(time.DateOnly))
+		} else {
+			args = append(args, period.From.Format(time.DateTime), period.To.Format(time.DateTime))
+		}
 	}
 
 	return query.String(), args
@@ -1614,17 +1624,17 @@ func (q *Query) buildOrderBy(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dimension) (string, []any) {
-	tz := "UTC"
-	loc := time.UTC
+	tz := time.UTC.String()
 
 	if req.Period.Timezone != nil {
 		tz = req.Period.Timezone.String()
-		loc = req.Period.Timezone
 	}
 
-	from := req.Period.From.In(loc).Format("2006-01-02 15:04:05")
-	to := req.Period.To.In(loc).Format("2006-01-02 15:04:05")
-	args := []any{from, to}
+	// use wall clock, so that it won't be converted by the driver
+	args := []any{
+		req.Period.From.Format(time.DateTime),
+		req.Period.To.Format(time.DateTime),
+	}
 
 	switch dimension.(type) {
 	case dimensions.Minute:
