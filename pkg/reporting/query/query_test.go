@@ -1834,8 +1834,8 @@ func TestQueryEventMetaDataTimeSeries(t *testing.T) {
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, "Contact Button", args[3])
 	assert.Equal(t, "hero", args[4])
-	assert.Equal(t, from, args[5])
-	assert.Equal(t, to, args[6])
+	assert.Equal(t, "2026-01-01 00:00:00", args[5])
+	assert.Equal(t, "2026-01-31 00:00:00", args[6])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 31)
@@ -1899,8 +1899,8 @@ func TestQueryEventMetaDataTimeSeriesWithFillMinute(t *testing.T) {
 	assert.Len(t, args, 4)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
-	assert.Equal(t, from, args[2])
-	assert.Equal(t, from, args[3])
+	assert.Equal(t, "2026-01-01 01:00:00", args[2])
+	assert.Equal(t, "2026-01-01 01:00:00", args[3])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 24)
@@ -1989,8 +1989,8 @@ func TestQueryEventMetaDataTimeSeriesWithFillHour(t *testing.T) {
 	assert.Equal(t, to, args[2])
 	assert.Equal(t, "Contact Button", args[3])
 	assert.Equal(t, "text", args[4])
-	assert.Equal(t, from, args[5])
-	assert.Equal(t, to, args[6])
+	assert.Equal(t, "2026-01-01 01:00:00", args[5])
+	assert.Equal(t, "2026-01-01 02:00:00", args[6])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 60)
@@ -2617,8 +2617,8 @@ func TestQueryTimeOnPagePerDay(t *testing.T) {
 	assert.Equal(t, uint64(1), args[3])
 	assert.Equal(t, from, args[4])
 	assert.Equal(t, to, args[5])
-	assert.Equal(t, from, args[6])
-	assert.Equal(t, to, args[7])
+	assert.Equal(t, "2026-01-01 00:00:00", args[6])
+	assert.Equal(t, "2026-01-31 00:00:00", args[7])
 
 	// result
 	assert.Len(t, r.Results, 34)
@@ -3772,8 +3772,8 @@ func TestQueryTimezone(t *testing.T) {
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
-	assert.Equal(t, from, args[3])
-	assert.Equal(t, to, args[4])
+	assert.Equal(t, "2026-01-01 01:00:00", args[3])
+	assert.Equal(t, "2026-01-02 01:00:00", args[4])
 
 	// result dimensions
 	assert.Len(t, r.Results, 24)
@@ -3853,8 +3853,8 @@ func TestQueryPattern(t *testing.T) {
 	assert.Equal(t, from, args[4])
 	assert.Equal(t, to, args[5])
 	assert.Equal(t, "\\/l.*", args[6])
-	assert.Equal(t, from, args[7])
-	assert.Equal(t, to, args[8])
+	assert.Equal(t, "2026-01-02 10:00:00", args[7])
+	assert.Equal(t, "2026-01-02 11:00:00", args[8])
 
 	// result rows
 	assert.Len(t, r.Results, 60)

@@ -1615,12 +1615,16 @@ func (q *Query) buildOrderBy(req request.Request) (string, []any) {
 
 func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dimension) (string, []any) {
 	tz := "UTC"
+	loc := time.UTC
 
 	if req.Period.Timezone != nil {
 		tz = req.Period.Timezone.String()
+		loc = req.Period.Timezone
 	}
 
-	args := []any{req.Period.From, req.Period.To}
+	from := req.Period.From.In(loc).Format("2006-01-02 15:04:05")
+	to := req.Period.To.In(loc).Format("2006-01-02 15:04:05")
+	args := []any{from, to}
 
 	switch dimension.(type) {
 	case dimensions.Minute:
