@@ -88,44 +88,9 @@ func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
 		}
 	}
 
-	// generate one subquery for each step
-	var query strings.Builder
-	args := make([]any, 0)
-
-	for i, step := range req.Filter {
-		if i == 0 {
-			query.WriteString(fmt.Sprintf("WITH step%d AS (", i+1))
-		} else {
-			query.WriteString(fmt.Sprintf(", step%d AS (", i+1))
-		}
-
-		// skip steps that have the same filters as the previous step
-		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
-			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
-		} else {
-			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
-			query.WriteString(stepQuery)
-			args = append(args, stepArgs...)
-		}
-
-		query.WriteString(") ")
-	}
-
-	// union all steps to get visitor counts
-	query.WriteString("SELECT * FROM (")
-
-	for i := range req.Filter {
-		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) visitors FROM step%d ", i+1, i+1))
-
-		if i != len(req.Filter)-1 {
-			query.WriteString("UNION ALL ")
-		}
-	}
-
-	query.WriteString(") ORDER BY step")
-
 	// query and scan results
-	rows, err := q.db.Query(req.Ctx, query.String(), args...)
+	query, args := q.prepareFunnel(req)
+	rows, err := q.db.Query(req.Ctx, query, args...)
 
 	if err != nil {
 		return report.FunnelReport{
@@ -187,6 +152,33 @@ func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
 	return r
 }
 
+// DryRun dry runs given request.Request and returns the primary and secondary query and arguments.
+// This does not include the comparison mode.
+func (q *Query) DryRun(req request.Request) (string, []any, string, []any, []error) {
+	if errs := q.prepare(&req); errs != nil {
+		return "", nil, "", nil, errs
+	}
+
+	if q.joinTable != "" {
+		_, primaryQuery, primaryArgs, _, secondaryQuery, secondaryArgs, _, _ := q.prepareRunWithJoinQueries(req)
+		return primaryQuery, primaryArgs, secondaryQuery, secondaryArgs, nil
+	}
+
+	query, args := q.buildQuery(req)
+	return query, args, "", nil, nil
+}
+
+// DryRunFunnel dry runs given request.FunnelRequest and returns the query and arguments.
+func (q *Query) DryRunFunnel(req request.FunnelRequest) (string, []any, []error) {
+	if errs := req.Validate(); errs != nil {
+		return "", nil, errs
+	}
+
+	// generate one subquery for each step
+	query, args := q.prepareFunnel(req)
+	return query, args, nil
+}
+
 func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any) {
 	stepDimensions := []dimensions.Dimension{
 		dimensions.VisitorID{},
@@ -233,43 +225,15 @@ func (q *Query) prepare(req *request.Request) []error {
 }
 
 func (q *Query) runWithJoin(req request.Request) report.Report {
-	requestMetrics := req.Metrics
-	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
-	sortingByJoinMetric := q.orderByContainsJoinMetric(req.OrderBy)
-
-	// build query for primary metrics
-	primaryReq := req
-	primaryReq.Metrics = primaryMetrics
-	primaryReq.OrderBy = q.filterOrderByForPrimary(req.OrderBy, primaryMetrics)
-
-	if sortingByJoinMetric {
-		primaryReq.Pagination = nil
-	}
-
-	primaryQuery, primaryArgs := q.buildQuery(primaryReq)
-
-	// build query for secondary metrics
-	savedPrimaryTable := q.primaryTable
-	savedPrimaryFilter := q.primaryFilter
-	savedSubqueryFilter := q.subqueryFilter
-	q.primaryTable = q.joinTable
-	q.primaryFilter = make([]classifiedFilter, 0)
-	q.subqueryFilter = make([]classifiedFilter, 0)
-
-	for _, filter := range req.Filter {
-		_ = q.classifyFilter(filter)
-	}
-
-	secondaryReq := req
-	secondaryReq.Metrics = secondaryMetrics
-	secondaryReq.OrderBy = nil
-	secondaryReq.Pagination = nil
-	secondaryQuery, secondaryArgs := q.buildQuery(secondaryReq)
-	q.primaryTable = savedPrimaryTable
-	q.primaryFilter = savedPrimaryFilter
-	q.subqueryFilter = savedSubqueryFilter
-
 	// run both in parallel
+	requestMetrics,
+		primaryQuery,
+		primaryArgs,
+		primaryMetrics,
+		secondaryQuery,
+		secondaryArgs,
+		secondaryMetrics,
+		sortingByJoinMetric := q.prepareRunWithJoinQueries(req)
 	var wg sync.WaitGroup
 	var m sync.Mutex
 	var results, secondaryResults []report.Result
@@ -431,6 +395,83 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 			}
 		}
 	}
+}
+
+func (q *Query) prepareRunWithJoinQueries(req request.Request) ([]metrics.Metric, string, []any, []metrics.Metric, string, []any, []metrics.Metric, bool) {
+	requestMetrics := req.Metrics
+	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
+	sortingByJoinMetric := q.orderByContainsJoinMetric(req.OrderBy)
+
+	// build query for primary metrics
+	primaryReq := req
+	primaryReq.Metrics = primaryMetrics
+	primaryReq.OrderBy = q.filterOrderByForPrimary(req.OrderBy, primaryMetrics)
+
+	if sortingByJoinMetric {
+		primaryReq.Pagination = nil
+	}
+
+	primaryQuery, primaryArgs := q.buildQuery(primaryReq)
+
+	// build query for secondary metrics
+	savedPrimaryTable := q.primaryTable
+	savedPrimaryFilter := q.primaryFilter
+	savedSubqueryFilter := q.subqueryFilter
+	q.primaryTable = q.joinTable
+	q.primaryFilter = make([]classifiedFilter, 0)
+	q.subqueryFilter = make([]classifiedFilter, 0)
+
+	for _, filter := range req.Filter {
+		_ = q.classifyFilter(filter)
+	}
+
+	secondaryReq := req
+	secondaryReq.Metrics = secondaryMetrics
+	secondaryReq.OrderBy = nil
+	secondaryReq.Pagination = nil
+	secondaryQuery, secondaryArgs := q.buildQuery(secondaryReq)
+	q.primaryTable = savedPrimaryTable
+	q.primaryFilter = savedPrimaryFilter
+	q.subqueryFilter = savedSubqueryFilter
+	return requestMetrics, primaryQuery, primaryArgs, primaryMetrics, secondaryQuery, secondaryArgs, secondaryMetrics, sortingByJoinMetric
+}
+
+func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+
+	for i, step := range req.Filter {
+		if i == 0 {
+			query.WriteString(fmt.Sprintf("WITH step%d AS (", i+1))
+		} else {
+			query.WriteString(fmt.Sprintf(", step%d AS (", i+1))
+		}
+
+		// skip steps that have the same filters as the previous step
+		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
+			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
+		} else {
+			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
+			query.WriteString(stepQuery)
+			args = append(args, stepArgs...)
+		}
+
+		query.WriteString(") ")
+	}
+
+	// union all steps to get visitor counts
+	query.WriteString("SELECT * FROM (")
+
+	for i := range req.Filter {
+		query.WriteString(fmt.Sprintf("SELECT %d step, uniq(visitor_id) visitors FROM step%d ", i+1, i+1))
+
+		if i != len(req.Filter)-1 {
+			query.WriteString("UNION ALL ")
+		}
+	}
+
+	query.WriteString(") ORDER BY step")
+	return query.String(), args
 }
 
 func (q *Query) zeroValues(metrics []metrics.Metric) []any {
@@ -1119,7 +1160,7 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 		expression, requiresSubquery := metric.Expression(q.primaryTable)
 
 		if requiresSubquery {
-			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
 			expression = fmt.Sprintf(expression, subquery)
 			args = append(args, a...)
 		}
@@ -1174,7 +1215,7 @@ func (q *Query) buildQuereFrom(table string, sample uint) string {
 func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
-	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
 
@@ -1204,7 +1245,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 			filters := byTable[table]
 			query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
 			query.WriteString(q.buildQuereFrom(table, req.Options.Sample))
-			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period)
+			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, table)
 			query.WriteString(subWhereQuery)
 			args = append(args, subWhereArgs...)
 
@@ -1223,19 +1264,23 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period) (string, []any) {
+func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string) (string, []any) {
 	if period.From.IsZero() && period.To.IsZero() {
 		return "WHERE site_id = ? ", []any{siteID}
 	}
 
-	tz := "UTC"
+	tz := time.UTC.String()
 
 	if period.Timezone != nil {
 		tz = period.Timezone.String()
 	}
 
-	from := period.From.Format(time.DateTime)
-	to := period.To.Format(time.DateTime)
+	timeColumn := "time"
+
+	if period.IncludeTime && table == pkg.TableSessions {
+		timeColumn = "start"
+	}
+
 	dateFunc := "toDate"
 
 	if period.IncludeTime {
@@ -1248,11 +1293,21 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 	args = append(args, siteID)
 
 	if period.From.Equal(period.To) {
-		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') = %s(?, '%s') `, dateFunc, tz, dateFunc, tz))
-		args = append(args, from)
+		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') = %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz))
+
+		if dateFunc == "toDate" {
+			args = append(args, period.From.Format(time.DateOnly))
+		} else {
+			args = append(args, period.From.Format(time.DateTime))
+		}
 	} else {
-		query.WriteString(fmt.Sprintf(`AND %s("time", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, tz, dateFunc, tz, dateFunc, tz))
-		args = append(args, from, to)
+		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz, dateFunc, tz))
+
+		if dateFunc == "toDate" {
+			args = append(args, period.From.Format(time.DateOnly), period.To.Format(time.DateOnly))
+		} else {
+			args = append(args, period.From.Format(time.DateTime), period.To.Format(time.DateTime))
+		}
 	}
 
 	return query.String(), args
@@ -1569,30 +1624,31 @@ func (q *Query) buildOrderBy(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dimension) (string, []any) {
-	tz := "UTC"
+	tz := time.UTC.String()
 
 	if req.Period.Timezone != nil {
 		tz = req.Period.Timezone.String()
 	}
 
-	// format as plain wall clock strings so that ClickHouse ignores the timezone
-	from := req.Period.From.Format(time.DateTime)
-	to := req.Period.To.Format(time.DateTime)
-	args := []any{from, to}
+	// use wall clock, so that it won't be converted by the driver
+	args := []any{
+		req.Period.From.Format(time.DateTime),
+		req.Period.To.Format(time.DateTime),
+	}
 
 	switch dimension.(type) {
 	case dimensions.Minute:
 		if req.Period.From.Equal(req.Period.To) {
 			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') + INTERVAL 1 HOUR STEP INTERVAL 1 MINUTE", tz, tz), args
-		} else {
-			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 		}
+
+		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 	case dimensions.Hour:
 		if req.Period.From.Equal(req.Period.To) {
 			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 HOUR", tz, tz), args
-		} else {
-			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 		}
+
+		return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 	case dimensions.Day:
 		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
 	case dimensions.Week:
