@@ -6,6 +6,7 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/channel"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/gad"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/geo"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/header"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/ingest/ip"
@@ -44,5 +45,6 @@ func newPipeline(t *testing.T, options pipelineOptions) (*ingest.Pipe, *db.Mock,
 		language.NewLanguage(),
 		screen.NewScreen(screen.Classes),
 		utm.NewUTM(),
+		gad.NewGAD(),
 		session.NewSession(1, 2, "salt", c, 200)), s, c
 }
