@@ -101,16 +101,16 @@ func (d EventMeta) Select(path string) string {
 	switch d.Function {
 	case EventMetaFunctionAvg:
 		if d.Type == EventMetaTypeInt {
-			return fmt.Sprintf("toInt64(round(avg(%s))) %s", expression, d.Column(""))
+			return fmt.Sprintf("toInt64(round(avgOrDefault(%s))) %s", expression, d.Column(""))
 		}
 
-		return fmt.Sprintf("toFloat64(avg(%s)) %s", expression, d.Column(""))
+		return fmt.Sprintf("toFloat64(avgOrDefault(%s)) %s", expression, d.Column(""))
 	case EventMetaFunctionMedian:
 		if d.Type == EventMetaTypeInt {
-			return fmt.Sprintf("toInt64(round(median(%s))) %s", expression, d.Column(""))
+			return fmt.Sprintf("toInt64(round(medianOrDefault(%s))) %s", expression, d.Column(""))
 		}
 
-		return fmt.Sprintf("toFloat64(median(%s)) %s", expression, d.Column(""))
+		return fmt.Sprintf("toFloat64(medianOrDefault(%s)) %s", expression, d.Column(""))
 	case EventMetaFunctionSum:
 		if d.Type == EventMetaTypeInt {
 			return fmt.Sprintf("toInt64(sum(%s)) %s", expression, d.Column(""))
