@@ -1,4 +1,8 @@
-CREATE TABLE session_v7 (
+{{ if .Cluster }}
+    CREATE TABLE session_v7 ON CLUSTER '{{.Cluster}}' (
+{{ else }}
+   CREATE TABLE session_v7 (
+{{ end }}
     `sign` Int8,
     `version` UInt16,
     `site_id` UInt64,
@@ -41,7 +45,11 @@ ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE page_view_v7 (
+{{ if .Cluster }}
+    CREATE TABLE page_view_v7 ON CLUSTER '{{.Cluster}}' (
+{{ else }}
+    CREATE TABLE page_view_v7 (
+{{ end }}
     `site_id` UInt64,
     `visitor_id` UInt64,
     `session_id` UInt32 DEFAULT 0,
@@ -77,7 +85,11 @@ ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE event_v7 (
+{{ if .Cluster }}
+    CREATE TABLE event_v7 ON CLUSTER '{{.Cluster}}' (
+{{ else }}
+    CREATE TABLE event_v7 (
+{{ end }}
     `site_id` UInt64,
     `visitor_id` UInt64,
     `session_id` UInt32 DEFAULT 0,
@@ -113,8 +125,11 @@ ORDER BY (site_id, visitor_id, session_id, time)
 SAMPLE BY visitor_id
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE request_v7
-(
+{{ if .Cluster }}
+    CREATE TABLE request_v7 ON CLUSTER '{{.Cluster}}' (
+{{ else }}
+    CREATE TABLE request_v7 (
+{{ end }}
     `site_id` UInt64,
     `visitor_id` UInt64,
     `time` DateTime64(3, 'UTC'),
@@ -139,3 +154,19 @@ PARTITION BY toYYYYMM(time)
 ORDER BY time
 TTL toDateTime(time) + toIntervalMonth(1)
 SETTINGS index_granularity = 8192;
+
+ALTER TABLE "imported_browser" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_city" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_country" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_device" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_entry_page" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_exit_page" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_language" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_os" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_page" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_referrer" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_region" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_utm_campaign" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_utm_medium" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_utm_source" ADD COLUMN site_id UInt64 ALIAS client_id;
+ALTER TABLE "imported_visitors" ADD COLUMN site_id UInt64 ALIAS client_id;
