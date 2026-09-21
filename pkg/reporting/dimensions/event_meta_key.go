@@ -16,9 +16,19 @@ func (d EventMetaKey) Table() []string {
 	return []string{pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d EventMetaKey) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d EventMetaKey) Column(_ string) string {
 	return "meta_data"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d EventMetaKey) ColumnImported() string {
+	return ""
 }
 
 // Expression implements the Dimension interface.
@@ -28,6 +38,11 @@ func (d EventMetaKey) Expression(_ *DimensionExpressionOptions) string {
 	}
 
 	return "JSONAllPaths(meta_data)"
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d EventMetaKey) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

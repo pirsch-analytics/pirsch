@@ -24,6 +24,11 @@ func (d EventMetaValue) Table() []string {
 	return []string{pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d EventMetaValue) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d EventMetaValue) Column(_ string) string {
 	if d.ColumnName != "" {
@@ -33,9 +38,19 @@ func (d EventMetaValue) Column(_ string) string {
 	return "meta_data_value"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d EventMetaValue) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d EventMetaValue) Expression(_ *DimensionExpressionOptions) string {
 	return "toString(meta_data)"
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d EventMetaValue) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

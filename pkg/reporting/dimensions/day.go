@@ -15,9 +15,19 @@ func (d Day) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Day) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Day) Column(_ string) string {
 	return "day"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d Day) ColumnImported() string {
+	return ""
 }
 
 // Expression implements the Dimension interface.
@@ -27,6 +37,11 @@ func (d Day) Expression(options *DimensionExpressionOptions) string {
 	}
 
 	return fmt.Sprintf(`toDate("time", '%s')`, options.Timezone.String())
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Day) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

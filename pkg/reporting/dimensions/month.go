@@ -15,9 +15,19 @@ func (d Month) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Month) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Month) Column(_ string) string {
 	return "month"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d Month) ColumnImported() string {
+	return ""
 }
 
 // Expression implements the Dimension interface.
@@ -27,6 +37,11 @@ func (d Month) Expression(options *DimensionExpressionOptions) string {
 	}
 
 	return fmt.Sprintf(`toStartOfMonth("time", '%s')`, options.Timezone.String())
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Month) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

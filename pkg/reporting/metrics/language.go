@@ -15,6 +15,11 @@ func (m Language) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m Language) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m Language) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m Language) Column() string {
 	return "language"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Language) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m Language) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m Language) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Language) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

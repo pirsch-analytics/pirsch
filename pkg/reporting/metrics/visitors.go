@@ -10,6 +10,11 @@ func (m Visitors) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m Visitors) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m Visitors) JoinTable() string {
 	return ""
@@ -20,9 +25,19 @@ func (m Visitors) Column() string {
 	return "visitors"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Visitors) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metric interface.
 func (m Visitors) Expression(_ string) (string, bool) {
 	return "uniq(visitor_id)", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Visitors) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

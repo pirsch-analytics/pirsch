@@ -15,6 +15,11 @@ func (m ReferrerIcon) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m ReferrerIcon) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m ReferrerIcon) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m ReferrerIcon) Column() string {
 	return "referrer_icon"
 }
 
+// ColumnImported implements the Metric interface.
+func (m ReferrerIcon) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m ReferrerIcon) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m ReferrerIcon) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m ReferrerIcon) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

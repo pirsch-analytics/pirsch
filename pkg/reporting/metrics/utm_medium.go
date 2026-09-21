@@ -15,6 +15,11 @@ func (m UTMMedium) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m UTMMedium) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m UTMMedium) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m UTMMedium) Column() string {
 	return "utm_medium"
 }
 
+// ColumnImported implements the Metric interface.
+func (m UTMMedium) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m UTMMedium) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m UTMMedium) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m UTMMedium) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

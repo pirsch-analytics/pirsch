@@ -12,13 +12,28 @@ func (d EntryPath) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Dimension interface.
+func (d EntryPath) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d EntryPath) Column(_ string) string {
 	return "entry_path"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d EntryPath) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d EntryPath) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d EntryPath) ExpressionImported() string {
 	return ""
 }
 

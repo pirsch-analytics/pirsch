@@ -15,6 +15,11 @@ func (m ExitTitle) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m ExitTitle) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m ExitTitle) JoinTable() string {
 	return pkg.TableSessions
@@ -25,6 +30,11 @@ func (m ExitTitle) Column() string {
 	return "exit_title"
 }
 
+// ColumnImported implements the Metric interface.
+func (m ExitTitle) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m ExitTitle) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m ExitTitle) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m ExitTitle) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

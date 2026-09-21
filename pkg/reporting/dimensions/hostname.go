@@ -12,13 +12,28 @@ func (d Hostname) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Hostname) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Hostname) Column(_ string) string {
 	return "hostname"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Hostname) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Hostname) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Hostname) ExpressionImported() string {
 	return ""
 }
 

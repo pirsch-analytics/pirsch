@@ -12,13 +12,28 @@ func (d Platform) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Platform) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Platform) Column(_ string) string {
 	return "platform"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Platform) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Platform) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Platform) ExpressionImported() string {
 	return ""
 }
 

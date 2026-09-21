@@ -46,6 +46,11 @@ func (d EventMeta) Table() []string {
 	return []string{pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d EventMeta) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d EventMeta) Column(_ string) string {
 	if d.Type == EventMetaTypeNone && d.Function == EventMetaFunctionNone {
@@ -59,9 +64,19 @@ func (d EventMeta) Column(_ string) string {
 	return ""
 }
 
+// ColumnImported implements the Dimension interface.
+func (d EventMeta) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d EventMeta) Expression(_ *DimensionExpressionOptions) string {
 	return "toString(meta_data)"
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d EventMeta) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

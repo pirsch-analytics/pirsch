@@ -12,13 +12,28 @@ func (d ExitTitle) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Dimension interface.
+func (d ExitTitle) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d ExitTitle) Column(_ string) string {
 	return "exit_title"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d ExitTitle) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d ExitTitle) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d ExitTitle) ExpressionImported() string {
 	return ""
 }
 

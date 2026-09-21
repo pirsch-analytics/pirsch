@@ -15,6 +15,11 @@ func (m Country) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m Country) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m Country) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m Country) Column() string {
 	return "country_code"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Country) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m Country) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m Country) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Country) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

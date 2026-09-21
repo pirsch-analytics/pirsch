@@ -10,6 +10,11 @@ func (m ExitRate) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m ExitRate) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m ExitRate) JoinTable() string {
 	return pkg.TableSessions
@@ -20,9 +25,19 @@ func (m ExitRate) Column() string {
 	return "exit_rate"
 }
 
+// ColumnImported implements the Metric interface.
+func (m ExitRate) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metric interface.
 func (m ExitRate) Expression(_ string) (string, bool) {
 	return `toFloat64OrDefault(exits / greatest((SELECT uniq(visitor_id, session_id) FROM "session_v7" %s), 1))`, true
+}
+
+// ExpressionImported implements the Metric interface.
+func (m ExitRate) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

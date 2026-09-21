@@ -10,6 +10,11 @@ func (m BounceRate) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m BounceRate) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m BounceRate) JoinTable() string {
 	return pkg.TableSessions
@@ -20,9 +25,19 @@ func (m BounceRate) Column() string {
 	return "bounce_rate"
 }
 
+// ColumnImported implements the Metric interface.
+func (m BounceRate) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metric interface.
 func (m BounceRate) Expression(_ string) (string, bool) {
 	return "bounces / IF(uniq(visitor_id, session_id) = 0, 1, uniq(visitor_id, session_id))", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m BounceRate) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

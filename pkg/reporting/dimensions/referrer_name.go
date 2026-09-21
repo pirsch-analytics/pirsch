@@ -12,13 +12,28 @@ func (d ReferrerName) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d ReferrerName) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d ReferrerName) Column(_ string) string {
 	return "referrer_name"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d ReferrerName) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d ReferrerName) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d ReferrerName) ExpressionImported() string {
 	return ""
 }
 

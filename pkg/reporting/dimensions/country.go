@@ -15,9 +15,19 @@ func (d Country) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Country) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Country) Column(_ string) string {
 	return "country_code"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d Country) ColumnImported() string {
+	return ""
 }
 
 // Expression implements the Dimension interface.
@@ -26,6 +36,11 @@ func (d Country) Expression(_ *DimensionExpressionOptions) string {
 		return "any(country_code)"
 	}
 
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Country) ExpressionImported() string {
 	return ""
 }
 

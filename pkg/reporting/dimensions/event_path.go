@@ -12,6 +12,11 @@ func (d EventPath) Table() []string {
 	return []string{pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d EventPath) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d EventPath) Column(table string) string {
 	// filter/join on entry path for metrics like the bounce rate
@@ -22,8 +27,18 @@ func (d EventPath) Column(table string) string {
 	return "path"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d EventPath) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d EventPath) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d EventPath) ExpressionImported() string {
 	return ""
 }
 

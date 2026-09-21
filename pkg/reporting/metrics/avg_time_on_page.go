@@ -11,6 +11,11 @@ func (m AvgTimeOnPage) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m AvgTimeOnPage) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m AvgTimeOnPage) JoinTable() string {
 	return ""
@@ -21,9 +26,19 @@ func (m AvgTimeOnPage) Column() string {
 	return "avg_time_on_page"
 }
 
+// ColumnImported implements the Metric interface.
+func (m AvgTimeOnPage) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metric interface.
 func (m AvgTimeOnPage) Expression(_ string) (string, bool) {
 	return "any(avg_time_on_page)", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m AvgTimeOnPage) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

@@ -15,6 +15,11 @@ func (d TagValue) Table() []string {
 	return []string{pkg.TablePageViews}
 }
 
+// TableImported implements the Dimension interface.
+func (d TagValue) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d TagValue) Column(_ string) string {
 	if d.Key != "" {
@@ -24,6 +29,11 @@ func (d TagValue) Column(_ string) string {
 	return "tags"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d TagValue) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d TagValue) Expression(_ *DimensionExpressionOptions) string {
 	if d.Key != "" {
@@ -31,6 +41,11 @@ func (d TagValue) Expression(_ *DimensionExpressionOptions) string {
 	}
 
 	return "arrayJoin(mapValues(tags))"
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d TagValue) ExpressionImported() string {
+	return ""
 }
 
 // Args implements the Dimension interface.

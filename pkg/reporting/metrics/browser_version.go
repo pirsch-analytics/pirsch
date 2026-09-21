@@ -15,6 +15,11 @@ func (m BrowserVersion) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m BrowserVersion) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m BrowserVersion) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m BrowserVersion) Column() string {
 	return "browser_version"
 }
 
+// ColumnImported implements the Metric interface.
+func (m BrowserVersion) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m BrowserVersion) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m BrowserVersion) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m BrowserVersion) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.
