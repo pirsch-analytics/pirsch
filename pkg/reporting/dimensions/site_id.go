@@ -14,7 +14,23 @@ func (d SiteID) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d SiteID) TableImported() []string {
-	return nil
+	return []string{
+		pkg.TableImportedBrowser,
+		pkg.TableImportedCity,
+		pkg.TableImportedCountry,
+		pkg.TableImportedDevice,
+		pkg.TableImportedEntryPage,
+		pkg.TableImportedExitPage,
+		pkg.TableImportedLanguage,
+		pkg.TableImportedOS,
+		pkg.TableImportedPage,
+		pkg.TableImportedReferrer,
+		pkg.TableImportedRegion,
+		pkg.TableImportedUTMCampaign,
+		pkg.TableImportedUTMMedium,
+		pkg.TableImportedUTMSource,
+		pkg.TableImportedVisitors,
+	}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +40,7 @@ func (d SiteID) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d SiteID) ColumnImported() string {
-	return ""
+	return "site_id"
 }
 
 // Expression implements the Dimension interface.

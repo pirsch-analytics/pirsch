@@ -84,6 +84,10 @@ func (r *Request) Validate() []error {
 
 	errs = append(errs, validateOrderBy(r.OrderBy, r.Dimensions, r.Metrics)...)
 
+	if err := validateImportedStatistics(r.Dimensions); err != nil {
+		errs = append(errs, err)
+	}
+
 	// TODO check other relevant fields and filter combinations
 	/*
 		for _, m := range ms {

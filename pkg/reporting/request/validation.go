@@ -97,7 +97,7 @@ func validateOrderByDimension(order dimensions.Dimension, requestDimensions []di
 			}
 		}
 
-		return fmt.Errorf("order by tag value key %q not found in dimensions", o.Key)
+		return fmt.Errorf("order by tag value key '%s' not found in dimensions", o.Key)
 	case dimensions.EventMeta:
 		if o.Path == "" {
 			return nil
@@ -110,7 +110,7 @@ func validateOrderByDimension(order dimensions.Dimension, requestDimensions []di
 			}
 		}
 
-		return fmt.Errorf("order by event meta path %q not found in dimensions", o.Path)
+		return fmt.Errorf("order by event meta path '%s' not found in dimensions", o.Path)
 	default:
 		// for non-parameterized dimensions, check by column name
 		column := order.Column("")
@@ -121,7 +121,7 @@ func validateOrderByDimension(order dimensions.Dimension, requestDimensions []di
 			}
 		}
 
-		return fmt.Errorf("order by dimension %q not found in dimensions", column)
+		return fmt.Errorf("order by dimension '%s' not found in dimensions", column)
 	}
 }
 
@@ -134,5 +134,28 @@ func validateOrderByMetric(order metrics.Metric, requestMetrics []metrics.Metric
 		}
 	}
 
-	return fmt.Errorf("order by metric %q not found in metrics", column)
+	return fmt.Errorf("order by metric '%s' not found in metrics", column)
+}
+
+func validateImportedStatistics(requestDimensions []dimensions.Dimension) error {
+	countGroupByDimensions, countDateDimensions := 0, 0
+
+	for _, d := range requestDimensions {
+		if len(d.TableImported()) == 0 {
+			return fmt.Errorf("dimension '%s' does not support imported statistics", d.Column(""))
+		}
+
+		switch d.(type) {
+		case dimensions.Day, dimensions.Week, dimensions.Weekday, dimensions.Month, dimensions.Year:
+			countDateDimensions++
+		default:
+			countGroupByDimensions++
+		}
+	}
+
+	if countGroupByDimensions > 1 || countDateDimensions > 1 {
+		return errors.New("imported statistics only support one aggregate and one time dimension")
+	}
+
+	return nil
 }
