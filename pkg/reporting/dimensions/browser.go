@@ -14,7 +14,7 @@ func (d Browser) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d Browser) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedBrowser}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d Browser) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d Browser) ColumnImported() string {
-	return ""
+	return "browser"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d Browser) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Browser) ExpressionImported() string {
+func (d Browser) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

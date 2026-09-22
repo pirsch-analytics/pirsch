@@ -40,7 +40,7 @@ func (d Hour) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Hour) ExpressionImported() string {
+func (d Hour) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

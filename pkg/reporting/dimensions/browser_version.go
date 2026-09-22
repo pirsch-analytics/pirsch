@@ -33,7 +33,7 @@ func (d BrowserVersion) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d BrowserVersion) ExpressionImported() string {
+func (d BrowserVersion) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

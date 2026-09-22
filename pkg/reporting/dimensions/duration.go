@@ -33,7 +33,7 @@ func (d Duration) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Duration) ExpressionImported() string {
+func (d Duration) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

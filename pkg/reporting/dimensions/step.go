@@ -35,7 +35,7 @@ func (d Step) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Step) ExpressionImported() string {
+func (d Step) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

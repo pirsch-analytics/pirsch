@@ -38,7 +38,7 @@ func (d EventPath) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d EventPath) ExpressionImported() string {
+func (d EventPath) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

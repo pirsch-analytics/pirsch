@@ -17,7 +17,7 @@ func (d Region) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d Region) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedRegion}
 }
 
 // Column implements the Dimension interface.
@@ -27,7 +27,7 @@ func (d Region) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d Region) ColumnImported() string {
-	return ""
+	return "region"
 }
 
 // Expression implements the Dimension interface.
@@ -40,7 +40,7 @@ func (d Region) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Region) ExpressionImported() string {
+func (d Region) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

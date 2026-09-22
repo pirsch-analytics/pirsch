@@ -33,7 +33,7 @@ func (d PageViews) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d PageViews) ExpressionImported() string {
+func (d PageViews) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

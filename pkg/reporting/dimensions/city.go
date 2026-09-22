@@ -14,7 +14,7 @@ func (d City) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d City) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedCity}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d City) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d City) ColumnImported() string {
-	return ""
+	return "city"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d City) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d City) ExpressionImported() string {
+func (d City) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

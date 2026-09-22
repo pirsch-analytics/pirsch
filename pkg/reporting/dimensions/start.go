@@ -40,7 +40,7 @@ func (d Start) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Start) ExpressionImported() string {
+func (d Start) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

@@ -33,7 +33,7 @@ func (d ReferrerIcon) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d ReferrerIcon) ExpressionImported() string {
+func (d ReferrerIcon) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

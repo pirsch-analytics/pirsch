@@ -12,7 +12,7 @@ func (m AvgSessionDuration) Table() []string {
 
 // TableImported implements the Metric interface.
 func (m AvgSessionDuration) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedVisitors}
 }
 
 // JoinTable implements the Metric interface.
@@ -27,7 +27,7 @@ func (m AvgSessionDuration) Column() string {
 
 // ColumnImported implements the Metric interface.
 func (m AvgSessionDuration) ColumnImported() string {
-	return ""
+	return "session_duration"
 }
 
 // Expression implements the Metric interface.
@@ -37,7 +37,7 @@ func (m AvgSessionDuration) Expression(_ string) (string, bool) {
 
 // ExpressionImported implements the Metric interface.
 func (m AvgSessionDuration) ExpressionImported() string {
-	return ""
+	return "avgOrDefaultIf(session_duration, session_duration > 0)"
 }
 
 // ScanType implements the Metric interface.

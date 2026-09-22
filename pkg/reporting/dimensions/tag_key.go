@@ -33,7 +33,7 @@ func (d TagKey) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d TagKey) ExpressionImported() string {
+func (d TagKey) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

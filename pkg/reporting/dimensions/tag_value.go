@@ -44,7 +44,7 @@ func (d TagValue) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d TagValue) ExpressionImported() string {
+func (d TagValue) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

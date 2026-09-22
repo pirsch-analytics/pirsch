@@ -33,7 +33,7 @@ func (d ScreenClass) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d ScreenClass) ExpressionImported() string {
+func (d ScreenClass) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

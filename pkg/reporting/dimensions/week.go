@@ -17,7 +17,23 @@ func (d Week) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d Week) TableImported() []string {
-	return nil
+	return []string{
+		pkg.TableImportedBrowser,
+		pkg.TableImportedCity,
+		pkg.TableImportedCountry,
+		pkg.TableImportedDevice,
+		pkg.TableImportedEntryPage,
+		pkg.TableImportedExitPage,
+		pkg.TableImportedLanguage,
+		pkg.TableImportedOS,
+		pkg.TableImportedPage,
+		pkg.TableImportedReferrer,
+		pkg.TableImportedRegion,
+		pkg.TableImportedUTMCampaign,
+		pkg.TableImportedUTMMedium,
+		pkg.TableImportedUTMSource,
+		pkg.TableImportedVisitors,
+	}
 }
 
 // Column implements the Dimension interface.
@@ -27,7 +43,7 @@ func (d Week) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d Week) ColumnImported() string {
-	return ""
+	return "week"
 }
 
 // Expression implements the Dimension interface.
@@ -44,8 +60,16 @@ func (d Week) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Week) ExpressionImported() string {
-	return ""
+func (d Week) ExpressionImported(options *DimensionExpressionOptions) string {
+	if options == nil || options.Timezone == nil {
+		return `toStartOfWeek("date")`
+	}
+
+	if options.Timezone == nil {
+		return fmt.Sprintf(`toStartOfWeek("date", %d)`, options.WeekdayMode)
+	}
+
+	return fmt.Sprintf(`toStartOfWeek("date", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
 }
 
 // Args implements the Dimension interface.

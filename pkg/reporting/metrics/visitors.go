@@ -12,7 +12,23 @@ func (m Visitors) Table() []string {
 
 // TableImported implements the Metric interface.
 func (m Visitors) TableImported() []string {
-	return nil
+	return []string{
+		pkg.TableImportedBrowser,
+		pkg.TableImportedCity,
+		pkg.TableImportedCountry,
+		pkg.TableImportedDevice,
+		pkg.TableImportedEntryPage,
+		pkg.TableImportedExitPage,
+		pkg.TableImportedLanguage,
+		pkg.TableImportedOS,
+		pkg.TableImportedPage,
+		pkg.TableImportedReferrer,
+		pkg.TableImportedRegion,
+		pkg.TableImportedUTMCampaign,
+		pkg.TableImportedUTMMedium,
+		pkg.TableImportedUTMSource,
+		pkg.TableImportedVisitors,
+	}
 }
 
 // JoinTable implements the Metric interface.
@@ -27,7 +43,7 @@ func (m Visitors) Column() string {
 
 // ColumnImported implements the Metric interface.
 func (m Visitors) ColumnImported() string {
-	return ""
+	return "visitors"
 }
 
 // Expression implements the Metric interface.
@@ -37,7 +53,7 @@ func (m Visitors) Expression(_ string) (string, bool) {
 
 // ExpressionImported implements the Metric interface.
 func (m Visitors) ExpressionImported() string {
-	return ""
+	return "sum(visitors)"
 }
 
 // ScanType implements the Metric interface.

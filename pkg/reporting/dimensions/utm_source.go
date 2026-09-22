@@ -14,7 +14,7 @@ func (d UTMSource) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d UTMSource) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedUTMSource}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d UTMSource) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d UTMSource) ColumnImported() string {
-	return ""
+	return "utm_source"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d UTMSource) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d UTMSource) ExpressionImported() string {
+func (d UTMSource) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

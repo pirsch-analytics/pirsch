@@ -14,7 +14,7 @@ func (d UTMMedium) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d UTMMedium) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedUTMMedium}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d UTMMedium) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d UTMMedium) ColumnImported() string {
-	return ""
+	return "utm_medium"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d UTMMedium) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d UTMMedium) ExpressionImported() string {
+func (d UTMMedium) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

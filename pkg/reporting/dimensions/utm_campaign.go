@@ -14,7 +14,7 @@ func (d UTMCampaign) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d UTMCampaign) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedUTMCampaign}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d UTMCampaign) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d UTMCampaign) ColumnImported() string {
-	return ""
+	return "utm_campaign"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d UTMCampaign) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d UTMCampaign) ExpressionImported() string {
+func (d UTMCampaign) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

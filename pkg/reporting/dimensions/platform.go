@@ -14,7 +14,7 @@ func (d Platform) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d Platform) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedDevice}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d Platform) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d Platform) ColumnImported() string {
-	return ""
+	return "platform"
 }
 
 // Expression implements the Dimension interface.
@@ -33,8 +33,8 @@ func (d Platform) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Platform) ExpressionImported() string {
-	return ""
+func (d Platform) ExpressionImported(_ *DimensionExpressionOptions) string {
+	return "category"
 }
 
 // Args implements the Dimension interface.

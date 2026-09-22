@@ -41,7 +41,7 @@ func (d EventMetaKey) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d EventMetaKey) ExpressionImported() string {
+func (d EventMetaKey) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

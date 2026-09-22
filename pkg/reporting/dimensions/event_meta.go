@@ -75,7 +75,7 @@ func (d EventMeta) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d EventMeta) ExpressionImported() string {
+func (d EventMeta) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

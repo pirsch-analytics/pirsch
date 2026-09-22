@@ -25,7 +25,7 @@ type Dimension interface {
 	Expression(*DimensionExpressionOptions) string
 
 	// ExpressionImported returns the SQL expression for aggregation for the imported statistics table.
-	ExpressionImported() string
+	ExpressionImported(*DimensionExpressionOptions) string
 
 	// Args returns optional arguments for the Expression.
 	Args() []any

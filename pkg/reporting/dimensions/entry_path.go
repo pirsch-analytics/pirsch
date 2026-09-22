@@ -14,7 +14,7 @@ func (d EntryPath) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d EntryPath) TableImported() []string {
-	return nil
+	return []string{pkg.TableImportedEntryPage}
 }
 
 // Column implements the Dimension interface.
@@ -24,7 +24,7 @@ func (d EntryPath) Column(_ string) string {
 
 // ColumnImported implements the Dimension interface.
 func (d EntryPath) ColumnImported() string {
-	return ""
+	return "entry_path"
 }
 
 // Expression implements the Dimension interface.
@@ -33,7 +33,7 @@ func (d EntryPath) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d EntryPath) ExpressionImported() string {
+func (d EntryPath) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

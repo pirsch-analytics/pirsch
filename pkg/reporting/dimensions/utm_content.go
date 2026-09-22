@@ -33,7 +33,7 @@ func (d UTMContent) Expression(_ *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d UTMContent) ExpressionImported() string {
+func (d UTMContent) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
