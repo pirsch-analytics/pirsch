@@ -3920,6 +3920,7 @@ func TestQueryImportedTable(t *testing.T) {
 	assert.Empty(t, q.subqueryFilter)
 }
 
+// TODO
 func TestQueryImportedReferrer(t *testing.T) {
 	loadTestData(t, []string{
 		"simple",
@@ -3954,6 +3955,43 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Empty(t, q.primaryFilter)
 	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
 	assert.Empty(t, q.subqueryFilter)
+}
+
+func TestQueryBuildQueryImported(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.RelativeVisitors{},
+			metrics.BounceRate{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Referrer{},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+	q.prepare(&req)
+	query, args := q.buildQueryImported(req)
+	assert.Equal(t, `SELECT referrer, sum(visitors) visitors, sum(sessions) sessions, sum(bounces) bounces, toFloat64OrDefault(visitors / greatest(visitors, 1)) relative_visitors, toFloat64OrDefault(bounces / greatest(sessions, 1)) bounce_rate FROM "imported_referrer" WHERE site_id = ? AND toDate(date, 'UTC') BETWEEN toDate(?, 'UTC') AND toDate(?, 'UTC') GROUP BY referrer `, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2025-12-29", args[1])
+	assert.Equal(t, "2026-01-01", args[2])
 }
 
 func newQuery() (*Query, time.Time, time.Time) {

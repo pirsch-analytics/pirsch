@@ -37,7 +37,7 @@ func (m RelativeVisitors) Expression(_ string) (string, bool) {
 
 // ExpressionImported implements the Metric interface.
 func (m RelativeVisitors) ExpressionImported() string {
-	return "toFloat64OrDefault(visitors / greatest(sum(visitors), 1))"
+	return "toFloat64OrDefault(visitors / greatest(visitors, 1))"
 }
 
 // ScanType implements the Metric interface.

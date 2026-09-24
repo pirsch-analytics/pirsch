@@ -37,7 +37,7 @@ func (m BounceRate) Expression(_ string) (string, bool) {
 
 // ExpressionImported implements the Metric interface.
 func (m BounceRate) ExpressionImported() string {
-	return "toFloat64OrDefault(sum(bounces) / greatest(sum(sessions), 1))"
+	return "toFloat64OrDefault(bounces / greatest(sessions, 1))"
 }
 
 // ScanType implements the Metric interface.

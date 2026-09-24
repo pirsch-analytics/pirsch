@@ -160,6 +160,8 @@ func (q *Query) DryRun(req request.Request) (string, []any, string, []any, []err
 		return "", nil, "", nil, errs
 	}
 
+	// TODO imported statistics
+
 	if q.joinTable != "" {
 		_, primaryQuery, primaryArgs, _, secondaryQuery, secondaryArgs, _, _ := q.prepareRunWithJoinQueries(req)
 		return primaryQuery, primaryArgs, secondaryQuery, secondaryArgs, nil
@@ -231,6 +233,7 @@ func (q *Query) prepare(req *request.Request) []error {
 	return nil
 }
 
+// TODO imported statistics
 func (q *Query) runWithJoin(req request.Request) report.Report {
 	// run both in parallel
 	requestMetrics,
@@ -307,6 +310,7 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 	}
 }
 
+// TODO imported statistics
 func (q *Query) run(req request.Request) report.Report {
 	query, args := q.buildQuery(req)
 	rows, err := q.db.Query(req.Ctx, query, args...)
@@ -1026,6 +1030,59 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(orderByQuery)
 	args = append(args, orderByArgs...)
 	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}
+
+// TODO filter
+func (q *Query) buildQueryImported(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	fields := make([]string, 0, len(req.Dimensions)+len(req.Metrics))
+
+	for _, d := range req.Dimensions {
+		expression := d.ExpressionImported(&dimensions.DimensionExpressionOptions{
+			Timezone:    req.Period.Timezone,
+			WeekdayMode: int(req.Period.WeekdayMode),
+		})
+		column := d.ColumnImported()
+
+		if expression != "" {
+			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
+		} else {
+			fields = append(fields, column)
+		}
+	}
+
+	for _, m := range req.Metrics {
+		expression := m.ExpressionImported()
+		column := m.ColumnImported()
+
+		if expression == "" {
+			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
+		}
+	}
+
+	tz := time.UTC.String()
+
+	if req.Period.Timezone != nil {
+		tz = req.Period.Timezone.String()
+	}
+
+	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" WHERE site_id = ? `, strings.Join(fields, ", "), q.importedTable))
+	query.WriteString(fmt.Sprintf("AND toDate(date, '%s') BETWEEN toDate(?, '%s') AND toDate(?, '%s') ", tz, tz, tz))
+	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.ImportedUntil.Format(time.DateOnly))
+	groupBy := make([]string, 0, len(req.Dimensions))
+
+	for _, d := range req.Dimensions {
+		groupBy = append(groupBy, d.ColumnImported())
+	}
+
+	if len(groupBy) > 0 {
+		query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupBy, ", ")))
+	}
+
 	return query.String(), args
 }
 
@@ -1758,3 +1815,61 @@ func (q *Query) scanRows(rows driver.Rows, dimensions []dimensions.Dimension, me
 
 	return results, rows.Err()
 }
+
+// TODO
+/*
+// buildUnionQuery wraps native and imported queries in a UNION ALL with outer aggregation.
+func (q *Query) buildUnionQuery(req request.Request, importedTable string) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+
+	// native query covers ImportedUntil to To
+	nativeReq := req
+	nativeReq.Period.From = req.Period.ImportedUntil
+
+	// strip imported flag so buildQuery doesn't recurse
+	nativeReq.Options = &request.Options{}
+	*nativeReq.Options = *req.Options
+	nativeReq.Options.IncludeImportedStatistics = false
+	nativeReq.Pagination = nil
+	nativeReq.OrderBy = nil
+	nativeQuery, nativeArgs := q.buildQuery(nativeReq)
+
+	// imported query covers From to ImportedUntil
+	importedQuery, importedArgs := q.buildImportedQuery(req, importedTable)
+
+	// outer SELECT re-aggregates both sides
+	outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+
+	for _, m := range req.Metrics {
+		outerFields = append(outerFields, fmt.Sprintf("sum(%s) AS %s", m.Column(), m.Column()))
+	}
+
+	for _, d := range req.Dimensions {
+		outerFields = append(outerFields, d.Column(""))
+	}
+
+	query.WriteString(fmt.Sprintf("SELECT %s FROM (", strings.Join(outerFields, ", ")))
+	query.WriteString(nativeQuery)
+	query.WriteString(" UNION ALL ")
+	query.WriteString(importedQuery)
+	query.WriteString(") ")
+	args = append(args, nativeArgs...)
+	args = append(args, importedArgs...)
+
+	groupCols := make([]string, 0, len(req.Dimensions))
+
+	for _, d := range req.Dimensions {
+		groupCols = append(groupCols, d.Column(""))
+	}
+
+	if len(groupCols) > 0 {
+		query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupCols, ", ")))
+	}
+
+	orderByQuery, orderByArgs := q.buildOrderBy(req)
+	query.WriteString(orderByQuery)
+	args = append(args, orderByArgs...)
+	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}*/
