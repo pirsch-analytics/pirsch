@@ -1,19 +1,12 @@
 package query
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
-	"os"
-	"slices"
 	"testing"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
-	"github.com/gocarina/gocsv"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
-	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
-	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
@@ -3927,95 +3920,45 @@ func TestQueryImportedTable(t *testing.T) {
 	assert.Empty(t, q.subqueryFilter)
 }
 
+func TestQueryImportedReferrer(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.RelativeVisitors{},
+			metrics.BounceRate{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Referrer{},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+}
+
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
 	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
 	return q, from, to
-}
-
-type sessionData struct {
-	model.Session
-	Scenario string `csv:"scenario"`
-}
-
-type pageViewData struct {
-	model.PageView
-	Scenario string `csv:"scenario"`
-	Tags     string `csv:"tags"`
-}
-
-type eventData struct {
-	model.Event
-	Scenario string `csv:"scenario"`
-	MetaData string `csv:"meta_data"`
-}
-
-func loadTestData(t *testing.T, scenarios []string) {
-	db.CleanupDB(t, client)
-
-	// load and store sessions
-	sessionsFile, err := os.ReadFile("../../../test/sessions.csv")
-	assert.NoError(t, err)
-	var sessionData []sessionData
-	assert.NoError(t, gocsv.UnmarshalBytes(sessionsFile, &sessionData))
-	sessions := make([]model.Session, 0, len(sessionData))
-
-	for _, s := range sessionData {
-		if len(scenarios) == 0 || slices.Contains(scenarios, s.Scenario) {
-			sessions = append(sessions, s.Session)
-		}
-	}
-
-	assert.NoError(t, client.SaveSessions(context.Background(), sessions))
-
-	// load and store page views
-	pageViewsFile, err := os.ReadFile("../../../test/page_views.csv")
-	assert.NoError(t, err)
-	var pageViewData []pageViewData
-	assert.NoError(t, gocsv.UnmarshalBytes(pageViewsFile, &pageViewData))
-	pageViews := make([]model.PageView, 0, len(pageViewData))
-
-	for _, pv := range pageViewData {
-		if len(scenarios) == 0 || slices.Contains(scenarios, pv.Scenario) {
-			pageViews = append(pageViews, pv.PageView)
-
-			if pv.Tags != "" {
-				var tags map[string]string
-
-				if err := json.Unmarshal([]byte(pv.Tags), &tags); err != nil {
-					t.Fatal(err)
-				}
-
-				pageViews[len(pageViews)-1].Tags = tags
-			}
-		}
-	}
-
-	assert.NoError(t, client.SavePageViews(context.Background(), pageViews))
-
-	// load and store events
-	eventsFile, err := os.ReadFile("../../../test/events.csv")
-	assert.NoError(t, err)
-	var eventData []eventData
-	assert.NoError(t, gocsv.UnmarshalBytes(eventsFile, &eventData))
-	events := make([]model.Event, 0, len(eventData))
-
-	for _, e := range eventData {
-		if len(scenarios) == 0 || slices.Contains(scenarios, e.Scenario) {
-			events = append(events, e.Event)
-
-			if e.MetaData != "" {
-				var metaData map[string]any
-
-				if err := json.Unmarshal([]byte(e.MetaData), &metaData); err != nil {
-					t.Fatal(err)
-				}
-
-				events[len(events)-1].MetaData = metaData
-			}
-		}
-	}
-
-	assert.NoError(t, client.SaveEvents(context.Background(), events))
 }
