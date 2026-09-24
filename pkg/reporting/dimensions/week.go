@@ -17,23 +17,7 @@ func (d Week) Table() []string {
 
 // TableImported implements the Dimension interface.
 func (d Week) TableImported() []string {
-	return []string{
-		pkg.TableImportedBrowser,
-		pkg.TableImportedCity,
-		pkg.TableImportedCountry,
-		pkg.TableImportedDevice,
-		pkg.TableImportedEntryPage,
-		pkg.TableImportedExitPage,
-		pkg.TableImportedLanguage,
-		pkg.TableImportedOS,
-		pkg.TableImportedPage,
-		pkg.TableImportedReferrer,
-		pkg.TableImportedRegion,
-		pkg.TableImportedUTMCampaign,
-		pkg.TableImportedUTMMedium,
-		pkg.TableImportedUTMSource,
-		pkg.TableImportedVisitors,
-	}
+	return pkg.ImportedTables
 }
 
 // Column implements the Dimension interface.

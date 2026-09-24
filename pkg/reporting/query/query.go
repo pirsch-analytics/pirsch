@@ -35,6 +35,7 @@ type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
 	joinTable      string
+	importedTable  string
 	joinStep       int
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
@@ -214,6 +215,12 @@ func (q *Query) prepare(req *request.Request) []error {
 
 	q.resolvePrimaryTable(*req)
 	q.resolveJoinTable(*req)
+
+	if q.useImportedStatistics(*req) {
+		if err := q.resolveImportedTable(*req); err != nil {
+			return []error{err}
+		}
+	}
 
 	for _, filter := range req.Filter {
 		if err := q.classifyFilter(filter); err != nil {
@@ -474,6 +481,10 @@ func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
 	return query.String(), args
 }
 
+func (q *Query) useImportedStatistics(req request.Request) bool {
+	return req.Options != nil && req.Options.IncludeImportedStatistics && !req.Period.ImportedUntil.IsZero()
+}
+
 func (q *Query) zeroValues(metrics []metrics.Metric) []any {
 	zeroValues := make([]any, len(metrics))
 
@@ -601,6 +612,29 @@ func (q *Query) resolveJoinTable(req request.Request) {
 			return
 		}
 	}
+}
+
+func (q *Query) resolveImportedTable(req request.Request) error {
+	candidates := slices.Clone(pkg.ImportedTables)
+
+	for _, d := range req.Dimensions {
+		candidates = slices.DeleteFunc(candidates, func(t string) bool {
+			return !slices.Contains(d.TableImported(), t)
+		})
+	}
+
+	for _, m := range req.Metrics {
+		candidates = slices.DeleteFunc(candidates, func(t string) bool {
+			return !slices.Contains(m.TableImported(), t)
+		})
+	}
+
+	if len(candidates) == 0 {
+		return errors.New("no overlapping imported statistics table found")
+	}
+
+	q.importedTable = candidates[0]
+	return nil
 }
 
 func (q *Query) splitMetrics(requestMetrics []metrics.Metric) ([]metrics.Metric, []metrics.Metric) {

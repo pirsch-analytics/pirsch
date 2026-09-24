@@ -12,23 +12,7 @@ func (m RelativeVisitors) Table() []string {
 
 // TableImported implements the Metric interface.
 func (m RelativeVisitors) TableImported() []string {
-	return []string{
-		pkg.TableImportedBrowser,
-		pkg.TableImportedCity,
-		pkg.TableImportedCountry,
-		pkg.TableImportedDevice,
-		pkg.TableImportedEntryPage,
-		pkg.TableImportedExitPage,
-		pkg.TableImportedLanguage,
-		pkg.TableImportedOS,
-		pkg.TableImportedPage,
-		pkg.TableImportedReferrer,
-		pkg.TableImportedRegion,
-		pkg.TableImportedUTMCampaign,
-		pkg.TableImportedUTMMedium,
-		pkg.TableImportedUTMSource,
-		pkg.TableImportedVisitors,
-	}
+	return pkg.ImportedTables
 }
 
 // JoinTable implements the Metric interface.

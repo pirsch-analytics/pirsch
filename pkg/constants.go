@@ -113,3 +113,24 @@ const (
 	// PlatformMobile is the platform for a mobile device.
 	PlatformMobile
 )
+
+var (
+	// ImportedTables is a list of all imported statistics tables.
+	ImportedTables = []string{
+		TableImportedBrowser,
+		TableImportedCity,
+		TableImportedCountry,
+		TableImportedDevice,
+		TableImportedEntryPage,
+		TableImportedExitPage,
+		TableImportedLanguage,
+		TableImportedOS,
+		TableImportedPage,
+		TableImportedReferrer,
+		TableImportedRegion,
+		TableImportedUTMCampaign,
+		TableImportedUTMMedium,
+		TableImportedUTMSource,
+		TableImportedVisitors,
+	}
+)

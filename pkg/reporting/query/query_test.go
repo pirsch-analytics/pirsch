@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"slices"
 	"testing"
@@ -3865,6 +3866,65 @@ func TestQueryPattern(t *testing.T) {
 			assert.Equal(t, uint64(0), result.MetricValues[0], i)
 		}
 	}
+}
+
+func TestQueryInvalidImportedTable(t *testing.T) {
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from,
+			To:            to,
+			ImportedUntil: from.Add(time.Hour * 24 * 15),
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Sessions{}, // does not exist for imported regions
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Region{},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+	r := q.Run(req)
+	assert.Len(t, r.Meta.Errors, 1)
+	assert.Equal(t, errors.New("no overlapping imported statistics table found"), r.Meta.Errors[0])
+}
+
+func TestQueryImportedTable(t *testing.T) {
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from,
+			To:            to,
+			ImportedUntil: from.Add(time.Hour * 24 * 15),
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Sessions{},
+			metrics.Bounces{},
+			metrics.RelativeVisitors{},
+			metrics.BounceRate{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+			dimensions.Referrer{},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
 }
 
 func newQuery() (*Query, time.Time, time.Time) {
