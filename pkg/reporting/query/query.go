@@ -233,7 +233,7 @@ func (q *Query) prepare(req *request.Request) []error {
 	return nil
 }
 
-// TODO imported statistics
+// TODO imported statistics?
 func (q *Query) runWithJoin(req request.Request) report.Report {
 	// run both in parallel
 	requestMetrics,
@@ -310,9 +310,16 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 	}
 }
 
-// TODO imported statistics
 func (q *Query) run(req request.Request) report.Report {
-	query, args := q.buildQuery(req)
+	var query string
+	var args []any
+
+	if q.useImportedStatistics(req) {
+		query, args = q.buildUnionQuery(req)
+	} else {
+		query, args = q.buildQuery(req)
+	}
+
 	rows, err := q.db.Query(req.Ctx, query, args...)
 
 	if err != nil {
@@ -345,6 +352,7 @@ func (q *Query) run(req request.Request) report.Report {
 	}
 }
 
+// TODO imported statistics?
 func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 	// determine if the results must be merged in order or by dimensions
 	mergeInOrder := false
@@ -486,7 +494,8 @@ func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
 }
 
 func (q *Query) useImportedStatistics(req request.Request) bool {
-	return req.Options != nil && req.Options.IncludeImportedStatistics && !req.Period.ImportedUntil.IsZero()
+	return req.Options != nil && req.Options.IncludeImportedStatistics &&
+		!req.Period.ImportedUntil.IsZero() && req.Period.From.Before(req.Period.ImportedUntil)
 }
 
 func (q *Query) zeroValues(metrics []metrics.Metric) []any {
@@ -1033,11 +1042,84 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-// TODO filter
+func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
+	// query natively if required
+	var nativeQuery string
+	var nativeArgs []any
+	queryNative := req.Period.To.After(req.Period.ImportedUntil) || req.Period.To.Equal(req.Period.ImportedUntil)
+
+	if queryNative {
+		nativeReq := req
+		nativeReq.Pagination = nil
+		nativeReq.OrderBy = nil
+		nativeReq.Options.IncludeImportedStatistics = false
+		nativeReq.Period.From = nativeReq.Period.ImportedUntil
+		nativeQuery, nativeArgs = q.buildQuery(nativeReq)
+	}
+
+	// query imported statistics
+	importedQuery, importedArgs := q.buildQueryImported(req)
+
+	// union queries
+	var query strings.Builder
+	args := make([]any, 0)
+	args = append(args, nativeArgs...)
+	args = append(args, importedArgs...)
+
+	if queryNative {
+		outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+
+		// FIXME use appropriate function
+		for _, m := range req.Metrics {
+			outerFields = append(outerFields, fmt.Sprintf("sum(%s) %s", m.Column(), m.Column()))
+		}
+
+		for _, d := range req.Dimensions {
+			outerFields = append(outerFields, d.Column(""))
+		}
+
+		query.WriteString(fmt.Sprintf("SELECT %s FROM (", strings.Join(outerFields, ", ")))
+		query.WriteString(nativeQuery)
+		query.WriteString("UNION ALL ")
+		query.WriteString(importedQuery)
+		query.WriteString(") ")
+		groupColumns := make([]string, 0, len(req.Dimensions))
+
+		for _, d := range req.Dimensions {
+			groupColumns = append(groupColumns, d.Column(""))
+		}
+
+		if len(groupColumns) > 0 {
+			query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupColumns, ", ")))
+		}
+	} else {
+		query.WriteString(importedQuery)
+	}
+
+	// order by, and offset/limit
+	orderByQuery, orderByArgs := q.buildOrderBy(req)
+	args = append(args, orderByArgs...)
+	query.WriteString(orderByQuery)
+	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}
+
+// TODO filter on dimension
 func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
-	fields := make([]string, 0, len(req.Dimensions)+len(req.Metrics))
+	fields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+
+	for _, m := range req.Metrics {
+		expression := m.ExpressionImported()
+		column := m.ColumnImported()
+
+		if expression == "" {
+			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
+		}
+	}
 
 	for _, d := range req.Dimensions {
 		expression := d.ExpressionImported(&dimensions.DimensionExpressionOptions{
@@ -1050,17 +1132,6 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
 		} else {
 			fields = append(fields, column)
-		}
-	}
-
-	for _, m := range req.Metrics {
-		expression := m.ExpressionImported()
-		column := m.ColumnImported()
-
-		if expression == "" {
-			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
-		} else {
-			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
 		}
 	}
 
@@ -1815,61 +1886,3 @@ func (q *Query) scanRows(rows driver.Rows, dimensions []dimensions.Dimension, me
 
 	return results, rows.Err()
 }
-
-// TODO
-/*
-// buildUnionQuery wraps native and imported queries in a UNION ALL with outer aggregation.
-func (q *Query) buildUnionQuery(req request.Request, importedTable string) (string, []any) {
-	var query strings.Builder
-	args := make([]any, 0)
-
-	// native query covers ImportedUntil to To
-	nativeReq := req
-	nativeReq.Period.From = req.Period.ImportedUntil
-
-	// strip imported flag so buildQuery doesn't recurse
-	nativeReq.Options = &request.Options{}
-	*nativeReq.Options = *req.Options
-	nativeReq.Options.IncludeImportedStatistics = false
-	nativeReq.Pagination = nil
-	nativeReq.OrderBy = nil
-	nativeQuery, nativeArgs := q.buildQuery(nativeReq)
-
-	// imported query covers From to ImportedUntil
-	importedQuery, importedArgs := q.buildImportedQuery(req, importedTable)
-
-	// outer SELECT re-aggregates both sides
-	outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
-
-	for _, m := range req.Metrics {
-		outerFields = append(outerFields, fmt.Sprintf("sum(%s) AS %s", m.Column(), m.Column()))
-	}
-
-	for _, d := range req.Dimensions {
-		outerFields = append(outerFields, d.Column(""))
-	}
-
-	query.WriteString(fmt.Sprintf("SELECT %s FROM (", strings.Join(outerFields, ", ")))
-	query.WriteString(nativeQuery)
-	query.WriteString(" UNION ALL ")
-	query.WriteString(importedQuery)
-	query.WriteString(") ")
-	args = append(args, nativeArgs...)
-	args = append(args, importedArgs...)
-
-	groupCols := make([]string, 0, len(req.Dimensions))
-
-	for _, d := range req.Dimensions {
-		groupCols = append(groupCols, d.Column(""))
-	}
-
-	if len(groupCols) > 0 {
-		query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupCols, ", ")))
-	}
-
-	orderByQuery, orderByArgs := q.buildOrderBy(req)
-	query.WriteString(orderByQuery)
-	args = append(args, orderByArgs...)
-	query.WriteString(q.buildQueryPagination(req.Pagination))
-	return query.String(), args
-}*/

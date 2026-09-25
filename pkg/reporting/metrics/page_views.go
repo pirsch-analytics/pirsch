@@ -40,15 +40,15 @@ func (m PageViews) Expression(table string) (string, bool) {
 	}
 
 	if table == pkg.TableSessions {
-		return "sum(page_views)", false
+		return "toUInt64(sum(page_views))", false
 	}
 
-	return "count(*)", false
+	return "toUInt64(count(*))", false
 }
 
 // ExpressionImported implements the Metric interface.
 func (m PageViews) ExpressionImported() string {
-	return "sum(views)"
+	return "toUInt64(sum(views))"
 }
 
 // ScanType implements the Metric interface.

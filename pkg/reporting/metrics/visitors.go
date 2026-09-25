@@ -32,12 +32,12 @@ func (m Visitors) ColumnImported() string {
 
 // Expression implements the Metric interface.
 func (m Visitors) Expression(_ string) (string, bool) {
-	return "uniq(visitor_id)", false
+	return "toUInt64(uniq(visitor_id))", false
 }
 
 // ExpressionImported implements the Metric interface.
 func (m Visitors) ExpressionImported() string {
-	return "sum(visitors)"
+	return "toUInt64(sum(visitors))"
 }
 
 // ScanType implements the Metric interface.

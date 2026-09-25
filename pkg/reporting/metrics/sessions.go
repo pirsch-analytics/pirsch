@@ -38,12 +38,12 @@ func (m Sessions) ColumnImported() string {
 
 // Expression implements the Metric interface.
 func (m Sessions) Expression(_ string) (string, bool) {
-	return "uniq(session_id)", false
+	return "toUInt64(uniq(session_id))", false
 }
 
 // ExpressionImported implements the Metric interface.
 func (m Sessions) ExpressionImported() string {
-	return "sum(sessions)"
+	return "toUInt64(sum(sessions))"
 }
 
 // ScanType implements the Metric interface.
