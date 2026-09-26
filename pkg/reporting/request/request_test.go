@@ -40,5 +40,5 @@ func TestRequestString(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, `{"Ctx":null,"SiteID":1,"Period":{"From":"0001-01-01T00:00:00Z","To":"0001-01-01T00:00:00Z","Timezone":null,"WeekdayMode":0,"IncludeTime":false,"Compare":null},"Metrics":[],"Dimensions":[],"Filter":[{"Operator":1,"Dimension":{},"Values":["London"],"Filter":[]}],"OrderBy":[],"Pagination":null,"Options":null}`, r.String())
+	assert.Equal(t, `{"Ctx":null,"SiteID":1,"Period":{"From":"0001-01-01T00:00:00Z","To":"0001-01-01T00:00:00Z","Timezone":null,"WeekdayMode":0,"IncludeTime":false,"Compare":null,"ImportedUntil":"0001-01-01T00:00:00Z"},"Metrics":[],"Dimensions":[],"Filter":[{"Operator":1,"Dimension":{},"Values":["London"],"Filter":[]}],"OrderBy":[],"Pagination":null,"Options":null}`, r.String())
 }

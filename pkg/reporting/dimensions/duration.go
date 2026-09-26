@@ -12,13 +12,28 @@ func (d Duration) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Dimension interface.
+func (d Duration) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Duration) Column(_ string) string {
 	return "duration_seconds"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Duration) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Duration) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Duration) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

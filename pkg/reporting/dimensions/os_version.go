@@ -12,13 +12,28 @@ func (d OSVersion) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d OSVersion) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d OSVersion) Column(_ string) string {
 	return "os_version"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d OSVersion) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d OSVersion) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d OSVersion) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

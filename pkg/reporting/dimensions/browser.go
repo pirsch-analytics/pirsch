@@ -12,13 +12,28 @@ func (d Browser) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Browser) TableImported() []string {
+	return []string{pkg.TableImportedBrowser}
+}
+
 // Column implements the Dimension interface.
 func (d Browser) Column(_ string) string {
 	return "browser"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Browser) ColumnImported() string {
+	return "browser"
+}
+
 // Expression implements the Dimension interface.
 func (d Browser) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Browser) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

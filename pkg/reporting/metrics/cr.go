@@ -12,6 +12,11 @@ func (m CR) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m CR) TableImported() []string {
+	return pkg.ImportedTables
+}
+
 // JoinTable implements the Metric interface.
 func (m CR) JoinTable() string {
 	return ""
@@ -22,9 +27,19 @@ func (m CR) Column() string {
 	return "cr"
 }
 
+// ColumnImported implements the Metric interface.
+func (m CR) ColumnImported() string {
+	return "cr"
+}
+
 // Expression implements the Metric interface.
 func (m CR) Expression(_ string) (string, bool) {
 	return `toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session_v7" %s), 1))`, true
+}
+
+// ExpressionImported implements the Metric interface.
+func (m CR) ExpressionImported() string {
+	return "toFloat64OrDefault(visitors / greatest(sum(visitors), 1))"
 }
 
 // ScanType implements the Metric interface.

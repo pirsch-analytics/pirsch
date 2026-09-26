@@ -12,13 +12,28 @@ func (d Event) Table() []string {
 	return []string{pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Event) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Event) Column(_ string) string {
 	return "name"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Event) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Event) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Event) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

@@ -15,8 +15,18 @@ func (d Year) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Year) TableImported() []string {
+	return pkg.ImportedTables
+}
+
 // Column implements the Dimension interface.
 func (d Year) Column(_ string) string {
+	return "year"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d Year) ColumnImported() string {
 	return "year"
 }
 
@@ -27,6 +37,15 @@ func (d Year) Expression(options *DimensionExpressionOptions) string {
 	}
 
 	return fmt.Sprintf(`toStartOfYear("time", '%s')`, options.Timezone.String())
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Year) ExpressionImported(options *DimensionExpressionOptions) string {
+	if options == nil || options.Timezone == nil {
+		return `toStartOfYear("date")`
+	}
+
+	return fmt.Sprintf(`toStartOfYear("date", '%s')`, options.Timezone.String())
 }
 
 // Args implements the Dimension interface.

@@ -10,6 +10,11 @@ func (m Bounces) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m Bounces) TableImported() []string {
+	return []string{pkg.TableImportedPage, pkg.TableImportedReferrer, pkg.TableImportedVisitors}
+}
+
 // JoinTable implements the Metric interface.
 func (m Bounces) JoinTable() string {
 	return pkg.TableSessions
@@ -20,19 +25,29 @@ func (m Bounces) Column() string {
 	return "bounces"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Bounces) ColumnImported() string {
+	return "bounces"
+}
+
 // Expression implements the Metric interface.
 func (m Bounces) Expression(_ string) (string, bool) {
-	return "sum(is_bounce * sign)", false
+	return "toUInt64(sum(is_bounce * sign))", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Bounces) ExpressionImported() string {
+	return "toUInt64(sum(bounces))"
 }
 
 // ScanType implements the Metric interface.
 func (m Bounces) ScanType() any {
-	return new(int64)
+	return new(uint64)
 }
 
 // Zero implements the Metric interface.
 func (m Bounces) Zero() any {
-	return int64(0)
+	return uint64(0)
 }
 
 // String implements the Metric interface.

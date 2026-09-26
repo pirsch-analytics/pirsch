@@ -10,6 +10,11 @@ func (m RelativeViews) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews}
 }
 
+// TableImported implements the Metric interface.
+func (m RelativeViews) TableImported() []string {
+	return []string{pkg.TableImportedPage, pkg.TableImportedVisitors}
+}
+
 // JoinTable implements the Metric interface.
 func (m RelativeViews) JoinTable() string {
 	return ""
@@ -20,9 +25,19 @@ func (m RelativeViews) Column() string {
 	return "relative_views"
 }
 
+// ColumnImported implements the Metric interface.
+func (m RelativeViews) ColumnImported() string {
+	return "relative_views"
+}
+
 // Expression implements the Metric interface.
 func (m RelativeViews) Expression(_ string) (string, bool) {
 	return `toFloat64OrDefault(page_views / greatest((SELECT sum(page_views * sign) FROM "session_v7" %s), 1))`, true
+}
+
+// ExpressionImported implements the Metric interface.
+func (m RelativeViews) ExpressionImported() string {
+	return "toFloat64OrDefault(views / greatest(sum(views), 1))"
 }
 
 // ScanType implements the Metric interface.

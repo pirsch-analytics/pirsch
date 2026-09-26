@@ -70,6 +70,10 @@ func (r *FunnelRequest) Validate() []error {
 		}
 	}
 
+	if r.Options != nil && r.Options.IncludeImportedStatistics && !r.Period.ImportedUntil.IsZero() {
+		errs = append(errs, errors.New("funnels do not support imported statistics"))
+	}
+
 	// TODO check other relevant fields and filter combinations
 
 	if len(errs) > 0 {

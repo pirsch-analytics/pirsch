@@ -15,6 +15,11 @@ func (m Duration) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m Duration) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m Duration) JoinTable() string {
 	return pkg.TableSessions
@@ -25,6 +30,11 @@ func (m Duration) Column() string {
 	return "duration_seconds"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Duration) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m Duration) Expression(_ string) (string, bool) {
 	if m.Max {
@@ -32,6 +42,11 @@ func (m Duration) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Duration) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

@@ -12,13 +12,28 @@ func (d Tags) Table() []string {
 	return []string{pkg.TablePageViews}
 }
 
+// TableImported implements the Dimension interface.
+func (d Tags) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Tags) Column(_ string) string {
 	return "tags"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Tags) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Tags) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Tags) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 
