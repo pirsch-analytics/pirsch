@@ -3937,8 +3937,8 @@ func TestQueryImportedReferrer(t *testing.T) {
 			metrics.Visitors{},
 			metrics.Sessions{},
 			metrics.Bounces{},
-			metrics.RelativeVisitors{}, // FIXME
-			metrics.BounceRate{},       // FIXME
+			metrics.RelativeVisitors{},
+			metrics.BounceRate{},
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Referrer{},
@@ -3968,6 +3968,8 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Equal(t, uint64(12), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(17), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, 0.15625, r.Results[0].MetricValues[4])
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 
 	// result row 1
@@ -3975,6 +3977,8 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[1].MetricValues[3])
+	assert.Equal(t, float64(1), r.Results[1].MetricValues[4])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
 }
 
@@ -3995,8 +3999,8 @@ func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
 			metrics.Visitors{},
 			metrics.Sessions{},
 			metrics.Bounces{},
-			metrics.RelativeVisitors{}, // FIXME
-			metrics.BounceRate{},       // FIXME
+			metrics.RelativeVisitors{},
+			metrics.BounceRate{},
 		},
 		Dimensions: []dimensions.Dimension{
 			dimensions.Referrer{},
@@ -4026,6 +4030,8 @@ func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
 	assert.Equal(t, uint64(11), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(16), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, 0.3125, r.Results[0].MetricValues[4])
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 
 	// result row 1
@@ -4033,6 +4039,8 @@ func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
+	assert.Equal(t, float64(1), r.Results[1].MetricValues[3])
+	assert.Equal(t, float64(1), r.Results[1].MetricValues[4])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
 }
 

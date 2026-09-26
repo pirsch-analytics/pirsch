@@ -352,7 +352,7 @@ func (q *Query) run(req request.Request) report.Report {
 	}
 }
 
-// TODO imported statistics?
+// TODO test imported statistics
 func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 	// determine if the results must be merged in order or by dimensions
 	mergeInOrder := false
@@ -1069,9 +1069,13 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	if queryNative {
 		outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
 
-		// FIXME use appropriate function
 		for _, m := range req.Metrics {
-			outerFields = append(outerFields, fmt.Sprintf("sum(%s) %s", m.Column(), m.Column()))
+			switch m.ScanType().(type) {
+			case *float64:
+				outerFields = append(outerFields, fmt.Sprintf("avg(%s) %s", m.Column(), m.Column()))
+			default:
+				outerFields = append(outerFields, fmt.Sprintf("sum(%s) %s", m.Column(), m.Column()))
+			}
 		}
 
 		for _, d := range req.Dimensions {
