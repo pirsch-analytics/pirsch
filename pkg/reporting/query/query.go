@@ -222,6 +222,10 @@ func (q *Query) prepare(req *request.Request) []error {
 		if err := q.resolveImportedTable(*req); err != nil {
 			return []error{err}
 		}
+
+		if err := q.checkFilterImportedTable(req.Filter); err != nil {
+			return []error{err}
+		}
 	}
 
 	for _, filter := range req.Filter {
@@ -647,6 +651,20 @@ func (q *Query) resolveImportedTable(req request.Request) error {
 	}
 
 	q.importedTable = candidates[0]
+	return nil
+}
+
+func (q *Query) checkFilterImportedTable(filter []request.Filter) error {
+	for _, f := range filter {
+		if !slices.Contains(f.Dimension.TableImported(), q.importedTable) {
+			return errors.New("filter dimension does not apply to imported statistics table")
+		}
+
+		if err := q.checkFilterImportedTable(f.Filter); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -1108,7 +1126,6 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-// TODO filter on dimension
 func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
@@ -1148,6 +1165,15 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" WHERE site_id = ? `, strings.Join(fields, ", "), q.importedTable))
 	query.WriteString(fmt.Sprintf("AND toDate(date, '%s') BETWEEN toDate(?, '%s') AND toDate(?, '%s') ", tz, tz, tz))
 	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.ImportedUntil.Format(time.DateOnly))
+
+	for _, filter := range q.primaryFilter {
+		query.WriteString("AND (")
+		where, a := q.buildQueryFilter(q.importedTable, filter.filter)
+		query.WriteString(where)
+		args = append(args, a...)
+		query.WriteString(") ")
+	}
+
 	groupBy := make([]string, 0, len(req.Dimensions))
 
 	for _, d := range req.Dimensions {

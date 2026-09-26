@@ -3962,9 +3962,9 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Empty(t, q.primaryFilter)
 	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
 	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 2)
 
 	// result row 0
-	assert.Len(t, r.Results, 2)
 	assert.Equal(t, uint64(12), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(17), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
@@ -3973,13 +3973,63 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 
 	// result row 1
-	assert.Len(t, r.Results, 2)
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
 	assert.Equal(t, float64(1), r.Results[1].MetricValues[3])
 	assert.Equal(t, float64(1), r.Results[1].MetricValues[4])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
+}
+
+func TestQueryImportedReferrerFiltered(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Referrer{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Referrer{},
+				Values:    []any{"https://duckduckgo.com"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 1)
+
+	// result row
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[0].DimensionValues[0])
 }
 
 func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
@@ -4024,9 +4074,9 @@ func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
 	assert.Empty(t, q.primaryFilter)
 	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
 	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 2)
 
 	// result row 0
-	assert.Len(t, r.Results, 2)
 	assert.Equal(t, uint64(11), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(16), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
@@ -4035,7 +4085,6 @@ func TestQueryImportedReferrerNativeNotRequired(t *testing.T) {
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 
 	// result row 1
-	assert.Len(t, r.Results, 2)
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
@@ -4080,6 +4129,49 @@ func TestQueryBuildQueryImported(t *testing.T) {
 	assert.Equal(t, "2025-12-29", args[1])
 	assert.Equal(t, "2026-01-01", args[2])
 }
+
+func TestQueryImportedReferrerFilterIncompatible(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Referrer{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Country{},
+				Values:    []any{"gb"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+	r := q.Run(req)
+	assert.Len(t, r.Meta.Errors, 1)
+	assert.Equal(t, errors.New("filter dimension does not apply to imported statistics table"), r.Meta.Errors[0])
+}
+
+// TODO referrer + day/week/month/year
 
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
