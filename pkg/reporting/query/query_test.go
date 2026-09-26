@@ -4171,7 +4171,81 @@ func TestQueryImportedReferrerFilterIncompatible(t *testing.T) {
 	assert.Equal(t, errors.New("filter dimension does not apply to imported statistics table"), r.Meta.Errors[0])
 }
 
-// TODO referrer + day/week/month/year
+func TestQueryImportedReferrerPeriod(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+			dimensions.Referrer{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+			{
+				Dimension: dimensions.Referrer{},
+				Direction: request.DirectionASC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedReferrer, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 6)
+
+	// result row 0
+	assert.Equal(t, uint64(5), r.Results[0].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 29, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[1])
+
+	// result row 1
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[1])
+
+	// result row 2
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[1])
+
+	// result row 3
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[1])
+
+	// result row 4
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[1])
+
+	// result row 5
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[1])
+}
 
 func newQuery() (*Query, time.Time, time.Time) {
 	q := NewQuery(client)
