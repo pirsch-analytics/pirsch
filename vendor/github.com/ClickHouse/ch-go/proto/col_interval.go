@@ -54,12 +54,13 @@ func (i Interval) Add(t time.Time) time.Time {
 
 func (i Interval) String() string {
 	var out strings.Builder
-	out.WriteString(fmt.Sprintf("%d", i.Value))
+	fmt.Fprintf(&out, "%d", i.Value)
 	out.WriteRune(' ')
 	out.WriteString(strings.ToLower(strings.TrimPrefix(i.Scale.String(), ColumnTypeInterval.String())))
 	if i.Value > 1 || i.Value < 1 {
 		out.WriteRune('s')
 	}
+
 	return out.String()
 }
 

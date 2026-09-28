@@ -20,6 +20,19 @@ errors.Wrap(err, "message")
 * The [cockroachdb/errors](https://github.com/cockroachdb/errors) is too big
 * The `errors` has no caller stack trace
 
+## Wrap on nil
+
+`Wrap(nil, "msg")` returns a **non-nil** error, matching `fmt.Errorf("msg: %w", err)`
+with a nil `err` (and unlike `pkg/errors`, which returns nil). Wrap only after
+checking `err != nil`:
+
+```go
+if err := do(); err != nil {
+    return errors.Wrap(err, "do")
+}
+return nil
+```
+
 ## Don't need traces?
 Call `errors.DisableTrace` or use build tag `noerrtrace`.
 

@@ -78,6 +78,10 @@ func (e *wrapError) Unwrap() error {
 }
 
 // Wrap error with message and caller.
+//
+// Wrap always returns a non-nil error, even if err is nil, matching the
+// behavior of fmt.Errorf with a nil %w operand. Call Wrap only after
+// checking that err is non-nil.
 func Wrap(err error, message string) error {
 	frame := Frame{}
 	if Trace() {
@@ -87,6 +91,8 @@ func Wrap(err error, message string) error {
 }
 
 // Wrapf wraps error with formatted message and caller.
+//
+// Like Wrap, Wrapf always returns a non-nil error, even if err is nil.
 func Wrapf(err error, format string, a ...interface{}) error {
 	frame := Frame{}
 	if Trace() {

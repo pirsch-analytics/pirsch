@@ -16,8 +16,12 @@ import (
 //
 // Internally, QBit is represented as a Tuple of FixedString columns where:
 //   - Number of columns = bit width of element type (16/32/64)
-//   - Each FixedString length = dimension (stores one bit from each element)
-//   - Column i stores the i-th bit from all elements of all vectors
+//   - Each FixedString is ceil(dimension/8) bytes, one bit per element
+//   - Column i holds bit i (MSB first) of every element
+//
+// Within a plane CH reverses byte groups: element e occupies byte
+// bytesPerRow-1-e/8, bit e%8. So for dimension>8 element group 0 lands in the
+// last byte. See ClickHouse SerializationQBit::transposeBits.
 type ColQBit struct {
 	// elementType can be BFloat16, Float32, or Float64
 	elementType ColumnType
@@ -147,7 +151,8 @@ func (c *ColQBit) Row(i int) []float32 {
 
 	// Reconstruct each element from its bits across all bit planes
 	for elemIdx := range c.dimension {
-		byteIdx := elemIdx / 8
+		// CH byte-group reversal within plane
+		byteIdx := c.bytesPerRow - 1 - elemIdx/8
 		bitIdx := uint(elemIdx % 8)
 
 		var bits uint64
@@ -204,7 +209,8 @@ func (c *ColQBit) Append(vector []float32) error {
 		bitMask := uint64(1) << uint(c.bitWidth-1-planeIdx)
 		for elemIdx := range c.dimension {
 			if (bits[elemIdx] & bitMask) != 0 {
-				byteIdx := elemIdx / 8
+				// CH byte-group reversal within plane
+				byteIdx := c.bytesPerRow - 1 - elemIdx/8
 				bitIdx := uint(elemIdx % 8)
 				c.bitPlanes[planeIdx][startLen+byteIdx] |= 1 << bitIdx
 			}

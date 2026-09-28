@@ -8,7 +8,6 @@ type Exception struct {
 	Name    string
 	Message string
 	Stack   string
-	Nested  bool
 }
 
 // DecodeAware decodes exception.
@@ -40,11 +39,10 @@ func (e *Exception) DecodeAware(r *Reader, _ int) error {
 		}
 		e.Stack = s
 	}
-	nested, err := r.Bool()
-	if err != nil {
+	// obsolete: https://github.com/ClickHouse/ClickHouse/blob/ef11941cf5a/src/IO/ReadHelpers.cpp#L2017
+	if _, err := r.Bool(); err != nil {
 		return errors.Wrap(err, "nested")
 	}
-	e.Nested = nested
 
 	return nil
 }
@@ -55,5 +53,5 @@ func (e *Exception) EncodeAware(b *Buffer, _ int) {
 	b.PutString(e.Name)
 	b.PutString(e.Message)
 	b.PutString(e.Stack)
-	b.PutBool(e.Nested)
+	b.PutBool(false) // obsolete "has nested" flag
 }

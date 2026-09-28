@@ -325,8 +325,10 @@ func (c *ColLowCardinality[T]) Prepare() error {
 	c.keys = append(c.keys[:0], make([]int, len(c.Values))...)
 	if c.kv == nil {
 		c.kv = map[T]int{}
-		c.index.Reset()
+	} else {
+		clear(c.kv)
 	}
+	c.index.Reset()
 
 	// Fill keys with value indexes.
 	var last int
@@ -342,11 +344,13 @@ func (c *ColLowCardinality[T]) Prepare() error {
 	}
 
 	// Select minimum possible size for key.
-	if n := last; n < math.MaxUint8 {
+	// n is the `count` of distinct values, not the values itself; stored keys range over [0, n-1].
+	// So n == MaxUint8+1 (256) still fits in uint8 (max key 255), and likewise at the wider boundaries.
+	if n := last; n <= math.MaxUint8+1 {
 		c.key = KeyUInt8
-	} else if n < math.MaxUint16 {
+	} else if n <= math.MaxUint16+1 {
 		c.key = KeyUInt16
-	} else if uint32(n) < math.MaxUint32 {
+	} else if uint64(n) <= math.MaxUint32+1 {
 		c.key = KeyUInt32
 	} else {
 		c.key = KeyUInt64
