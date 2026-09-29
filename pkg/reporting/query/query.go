@@ -73,7 +73,13 @@ func (q *Query) Run(req request.Request) report.Report {
 	}
 
 	if req.Period.Compare != nil {
-		q.runWithComparison(req, &r)
+		if err := q.runWithComparison(req, &r); err != nil {
+			return report.Report{
+				Meta: report.Meta{
+					Errors: []error{err},
+				},
+			}
+		}
 	}
 
 	return r
@@ -160,14 +166,20 @@ func (q *Query) DryRun(req request.Request) (string, []any, string, []any, []err
 		return "", nil, "", nil, errs
 	}
 
-	// TODO imported statistics
-
 	if q.joinTable != "" {
 		_, primaryQuery, primaryArgs, _, secondaryQuery, secondaryArgs, _, _ := q.prepareRunWithJoinQueries(req)
 		return primaryQuery, primaryArgs, secondaryQuery, secondaryArgs, nil
 	}
 
-	query, args := q.buildQuery(req)
+	var query string
+	var args []any
+
+	if q.useImportedStatistics(req) {
+		query, args = q.buildUnionQuery(req)
+	} else {
+		query, args = q.buildQuery(req)
+	}
+
 	return query, args, "", nil, nil
 }
 
@@ -218,19 +230,27 @@ func (q *Query) prepare(req *request.Request) []error {
 	q.resolvePrimaryTable(*req)
 	q.resolveJoinTable(*req)
 
-	if q.useImportedStatistics(*req) {
-		if err := q.resolveImportedTable(*req); err != nil {
-			return []error{err}
-		}
-
-		if err := q.checkFilterImportedTable(req.Filter); err != nil {
-			return []error{err}
-		}
+	if err := q.prepareImported(req); err != nil {
+		return []error{err}
 	}
 
 	for _, filter := range req.Filter {
 		if err := q.classifyFilter(filter); err != nil {
 			return []error{err}
+		}
+	}
+
+	return nil
+}
+
+func (q *Query) prepareImported(req *request.Request) error {
+	if q.useImportedStatistics(*req) {
+		if err := q.resolveImportedTable(*req); err != nil {
+			return err
+		}
+
+		if err := q.checkFilterImportedTable(req.Filter); err != nil {
+			return err
 		}
 	}
 
@@ -356,8 +376,7 @@ func (q *Query) run(req request.Request) report.Report {
 	}
 }
 
-// TODO test imported statistics
-func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
+func (q *Query) runWithComparison(req request.Request, rep *report.Report) error {
 	// determine if the results must be merged in order or by dimensions
 	mergeInOrder := false
 
@@ -382,6 +401,11 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 
 	if !mergeInOrder {
 		req.OrderBy = nil
+	}
+
+	// prepare imported statistics table based on the new dates if needed
+	if err := q.prepareImported(&req); err != nil {
+		return err
 	}
 
 	var r report.Report
@@ -418,6 +442,8 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 			}
 		}
 	}
+
+	return nil
 }
 
 func (q *Query) prepareRunWithJoinQueries(req request.Request) ([]metrics.Metric, string, []any, []metrics.Metric, string, []any, []metrics.Metric, bool) {
@@ -1164,7 +1190,7 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 
 	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" WHERE site_id = ? `, strings.Join(fields, ", "), q.importedTable))
 	query.WriteString(fmt.Sprintf("AND toDate(date, '%s') BETWEEN toDate(?, '%s') AND toDate(?, '%s') ", tz, tz, tz))
-	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.ImportedUntil.Format(time.DateOnly))
+	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.To.Format(time.DateOnly))
 
 	for _, filter := range q.primaryFilter {
 		query.WriteString("AND (")
