@@ -257,7 +257,6 @@ func (q *Query) prepareImported(req *request.Request) error {
 	return nil
 }
 
-// TODO imported statistics?
 func (q *Query) runWithJoin(req request.Request) report.Report {
 	// run both in parallel
 	requestMetrics,
