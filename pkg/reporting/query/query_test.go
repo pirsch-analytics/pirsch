@@ -3496,6 +3496,12 @@ func TestQueryComparison(t *testing.T) {
 			metrics.BounceRate{},
 			metrics.AvgSessionDuration{},
 		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+		},
 	}
 
 	// tables
@@ -4175,7 +4181,7 @@ func TestQueryBuildQueryImported(t *testing.T) {
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, "2025-12-29", args[1])
-	assert.Equal(t, "2026-01-01", args[2])
+	assert.Equal(t, "2026-01-31", args[2])
 }
 
 func TestQueryImportedReferrerFilterIncompatible(t *testing.T) {
@@ -4340,8 +4346,10 @@ func TestQueryImportedCompare(t *testing.T) {
 
 	// results
 	assert.Len(t, r.Results, 2)
-	assert.Equal(t, uint64(6), r.Results[0].MetricValues[0])
-	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, uint64(0), r.Results[1].MetricValues[0])
+	assert.Equal(t, uint64(6), r.Results[0].CompareMetricValues[0])
+	assert.Equal(t, uint64(1), r.Results[1].CompareMetricValues[0])
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
 }

@@ -376,12 +376,12 @@ func (q *Query) run(req request.Request) report.Report {
 	}
 }
 
-func (q *Query) runWithComparison(req request.Request, rep *report.Report) error {
-	// determine if the results must be merged in order or by dimensions
+func (q *Query) runWithComparison(req request.Request, currentReport *report.Report) error {
+	// determine if the results should be merged in order (positionally) or by keys
 	mergeInOrder := false
 
-	for _, d := range req.Dimensions {
-		switch d.(type) {
+	if len(req.OrderBy) > 0 && req.OrderBy[0].Dimension != nil {
+		switch req.OrderBy[0].Dimension.(type) {
 		case dimensions.Time,
 			dimensions.Start,
 			dimensions.Day,
@@ -389,8 +389,23 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) error
 			dimensions.Month,
 			dimensions.Year,
 			dimensions.Hour:
-			mergeInOrder = true
-			break
+			allTime := true
+
+			for _, d := range req.Dimensions {
+				switch d.(type) {
+				case dimensions.Time,
+					dimensions.Start,
+					dimensions.Day,
+					dimensions.Week,
+					dimensions.Month,
+					dimensions.Year,
+					dimensions.Hour:
+				default:
+					allTime = false
+				}
+			}
+
+			mergeInOrder = allTime
 		}
 	}
 
@@ -408,37 +423,51 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) error
 		return err
 	}
 
-	var r report.Report
+	// get the report for the comparison period
+	var previousReport report.Report
 
 	if q.joinTable != "" {
-		r = q.runWithJoin(req)
+		previousReport = q.runWithJoin(req)
 	} else {
-		r = q.run(req)
+		previousReport = q.run(req)
 	}
 
 	// merge results
 	if mergeInOrder {
-		for i := range rep.Results {
-			if i < len(r.Results) {
-				rep.Results[i].CompareMetricValues = r.Results[i].MetricValues
+		for i := range currentReport.Results {
+			if i < len(previousReport.Results) {
+				currentReport.Results[i].CompareMetricValues = previousReport.Results[i].MetricValues
 			} else {
-				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+				currentReport.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
 			}
 		}
-	} else {
-		index := make(map[string]int, len(r.Results))
 
-		for i, r := range r.Results {
-			index[q.dimensionKey(r.DimensionValues)] = i
+		for i := len(currentReport.Results); i < len(previousReport.Results); i++ {
+			currentReport.Results = append(currentReport.Results, report.Result{
+				DimensionValues:     previousReport.Results[i].DimensionValues,
+				MetricValues:        q.zeroValues(req.Metrics),
+				CompareMetricValues: previousReport.Results[i].MetricValues,
+			})
+		}
+	} else {
+		primaryIndex := make(map[string]int, len(currentReport.Results))
+
+		for i, result := range currentReport.Results {
+			primaryIndex[q.dimensionKey(result.DimensionValues)] = i
+			currentReport.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
 		}
 
-		for i := range rep.Results {
-			key := q.dimensionKey(rep.Results[i].DimensionValues)
+		for _, compResult := range previousReport.Results {
+			key := q.dimensionKey(compResult.DimensionValues)
 
-			if j, ok := index[key]; ok {
-				rep.Results[i].CompareMetricValues = r.Results[j].MetricValues
+			if i, ok := primaryIndex[key]; ok {
+				currentReport.Results[i].CompareMetricValues = compResult.MetricValues
 			} else {
-				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+				currentReport.Results = append(currentReport.Results, report.Result{
+					DimensionValues:     compResult.DimensionValues,
+					MetricValues:        q.zeroValues(req.Metrics),
+					CompareMetricValues: compResult.MetricValues,
+				})
 			}
 		}
 	}
