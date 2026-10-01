@@ -15,6 +15,11 @@ func (m Bounced) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m Bounced) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m Bounced) JoinTable() string {
 	return pkg.TableSessions
@@ -25,6 +30,11 @@ func (m Bounced) Column() string {
 	return "is_bounce"
 }
 
+// ColumnImported implements the Metric interface.
+func (m Bounced) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m Bounced) Expression(_ string) (string, bool) {
 	if m.Min {
@@ -32,6 +42,11 @@ func (m Bounced) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m Bounced) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

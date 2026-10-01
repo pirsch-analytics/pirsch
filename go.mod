@@ -7,7 +7,7 @@ require (
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.1
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-redsync/redsync/v4 v4.17.0
+	github.com/go-redsync/redsync/v4 v4.18.0
 	github.com/gocarina/gocsv v0.0.0-20260908110832-9ab82d65b1cc
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.52
@@ -25,7 +25,7 @@ require (
 	github.com/go-faster/errors v0.8.0 // indirect
 	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/paulmach/orb v0.13.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.29 // indirect
+	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect

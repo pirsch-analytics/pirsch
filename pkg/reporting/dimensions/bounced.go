@@ -12,13 +12,28 @@ func (d Bounced) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Dimension interface.
+func (d Bounced) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Bounced) Column(_ string) string {
 	return "is_bounce"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Bounced) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Bounced) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Bounced) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

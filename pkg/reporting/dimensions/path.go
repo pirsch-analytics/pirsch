@@ -12,6 +12,11 @@ func (d Path) Table() []string {
 	return []string{pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Path) TableImported() []string {
+	return []string{pkg.TableImportedPage}
+}
+
 // Column implements the Dimension interface.
 func (d Path) Column(table string) string {
 	// filter/join on entry path for metrics like the bounce rate
@@ -22,8 +27,18 @@ func (d Path) Column(table string) string {
 	return "path"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Path) ColumnImported() string {
+	return "path"
+}
+
 // Expression implements the Dimension interface.
 func (d Path) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Path) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

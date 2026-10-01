@@ -34,6 +34,10 @@ type Period struct {
 
 	// Compare is optional. When set, the query runs for both periods and results are merged.
 	Compare *ComparePeriod
+
+	// ImportedUntil includes imported statistics when set up to this date.
+	// Native statistics are used from this date onwards.
+	ImportedUntil time.Time
 }
 
 // ComparePeriod is the start and end date for a previous period for the Request.

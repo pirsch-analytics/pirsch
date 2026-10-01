@@ -13,6 +13,11 @@ func (m PageViews) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews}
 }
 
+// TableImported implements the Metric interface.
+func (m PageViews) TableImported() []string {
+	return []string{pkg.TableImportedPage, pkg.TableImportedVisitors}
+}
+
 // JoinTable implements the Metric interface.
 func (m PageViews) JoinTable() string {
 	return ""
@@ -23,6 +28,11 @@ func (m PageViews) Column() string {
 	return "page_views"
 }
 
+// ColumnImported implements the Metric interface.
+func (m PageViews) ColumnImported() string {
+	return "views"
+}
+
 // Expression implements the Metric interface.
 func (m PageViews) Expression(table string) (string, bool) {
 	if m.Max {
@@ -30,10 +40,15 @@ func (m PageViews) Expression(table string) (string, bool) {
 	}
 
 	if table == pkg.TableSessions {
-		return "sum(page_views)", false
+		return "toUInt64(sum(page_views))", false
 	}
 
-	return "count(*)", false
+	return "toUInt64(count(*))", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m PageViews) ExpressionImported() string {
+	return "toUInt64(sum(views))"
 }
 
 // ScanType implements the Metric interface.

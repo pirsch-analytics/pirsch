@@ -15,9 +15,19 @@ func (d Start) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Dimension interface.
+func (d Start) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Start) Column(_ string) string {
 	return "start"
+}
+
+// ColumnImported implements the Dimension interface.
+func (d Start) ColumnImported() string {
+	return ""
 }
 
 // Expression implements the Dimension interface.
@@ -27,6 +37,11 @@ func (d Start) Expression(options *DimensionExpressionOptions) string {
 	}
 
 	return fmt.Sprintf(`toTimezone("start", '%s')`, options.Timezone.String())
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Start) ExpressionImported(_ *DimensionExpressionOptions) string {
+	return ""
 }
 
 // Args implements the Dimension interface.

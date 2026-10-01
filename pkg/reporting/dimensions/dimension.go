@@ -10,13 +10,22 @@ type Dimension interface {
 	// Table returns the valid database tables for the Dimension.
 	Table() []string
 
+	// TableImported returns the valid database tables for the Dimension's imported statistics.
+	TableImported() []string
+
 	// Column returns the database column name for the given table for the Dimension.
 	// This also handles "joins" by potentially returning an entirely different column (like entry_path instead of path for bounces).
 	Column(string) string
 
+	// ColumnImported returns the database column name for the Metric's imported statistics.
+	ColumnImported() string
+
 	// Expression returns the SQL aggregation expression for the given options.
 	// If empty, the Column name will be used instead.
 	Expression(*DimensionExpressionOptions) string
+
+	// ExpressionImported returns the SQL expression for aggregation for the imported statistics table.
+	ExpressionImported(*DimensionExpressionOptions) string
 
 	// Args returns optional arguments for the Expression.
 	Args() []any

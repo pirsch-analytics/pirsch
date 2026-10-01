@@ -12,13 +12,28 @@ func (d Channel) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d Channel) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Channel) Column(_ string) string {
 	return "channel"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Channel) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Channel) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Channel) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

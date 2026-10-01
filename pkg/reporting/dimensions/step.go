@@ -14,13 +14,28 @@ func (d Step) Table() []string {
 	return []string{fmt.Sprintf("step%d", d.Number)}
 }
 
+// TableImported implements the Dimension interface.
+func (d Step) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d Step) Column(_ string) string {
 	return ""
 }
 
+// ColumnImported implements the Dimension interface.
+func (d Step) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d Step) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d Step) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

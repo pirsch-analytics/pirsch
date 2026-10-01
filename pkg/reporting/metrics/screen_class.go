@@ -15,6 +15,11 @@ func (m ScreenClass) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m ScreenClass) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m ScreenClass) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m ScreenClass) Column() string {
 	return "screen_class"
 }
 
+// ColumnImported implements the Metric interface.
+func (m ScreenClass) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m ScreenClass) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m ScreenClass) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m ScreenClass) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

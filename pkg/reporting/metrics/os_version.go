@@ -15,6 +15,11 @@ func (m OSVersion) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Metric interface.
+func (m OSVersion) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m OSVersion) JoinTable() string {
 	return ""
@@ -25,6 +30,11 @@ func (m OSVersion) Column() string {
 	return "os_version"
 }
 
+// ColumnImported implements the Metric interface.
+func (m OSVersion) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m OSVersion) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -32,6 +42,11 @@ func (m OSVersion) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m OSVersion) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

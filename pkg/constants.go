@@ -56,6 +56,51 @@ const (
 
 	// TableEvents is the events table name.
 	TableEvents = "event_v7"
+
+	// TableImportedBrowser is an imported statistics table.
+	TableImportedBrowser = "imported_browser"
+
+	// TableImportedCity is an imported statistics table.
+	TableImportedCity = "imported_city"
+
+	// TableImportedCountry is an imported statistics table.
+	TableImportedCountry = "imported_country"
+
+	// TableImportedDevice is an imported statistics table.
+	TableImportedDevice = "imported_device"
+
+	// TableImportedEntryPage is an imported statistics table.
+	TableImportedEntryPage = "imported_entry_page"
+
+	// TableImportedExitPage is an imported statistics table.
+	TableImportedExitPage = "imported_exit_page"
+
+	// TableImportedLanguage is an imported statistics table.
+	TableImportedLanguage = "imported_language"
+
+	// TableImportedOS is an imported statistics table.
+	TableImportedOS = "imported_os"
+
+	// TableImportedPage is an imported statistics table.
+	TableImportedPage = "imported_page"
+
+	// TableImportedReferrer is an imported statistics table.
+	TableImportedReferrer = "imported_referrer"
+
+	// TableImportedRegion is an imported statistics table.
+	TableImportedRegion = "imported_region"
+
+	// TableImportedUTMCampaign is an imported statistics table.
+	TableImportedUTMCampaign = "imported_utm_campaign"
+
+	// TableImportedUTMMedium is an imported statistics table.
+	TableImportedUTMMedium = "imported_utm_medium"
+
+	// TableImportedUTMSource is an imported statistics table.
+	TableImportedUTMSource = "imported_utm_source"
+
+	// TableImportedVisitors is an imported statistics table.
+	TableImportedVisitors = "imported_visitors"
 )
 
 const (
@@ -67,4 +112,25 @@ const (
 
 	// PlatformMobile is the platform for a mobile device.
 	PlatformMobile
+)
+
+var (
+	// ImportedTables is a list of all imported statistics tables.
+	ImportedTables = []string{
+		TableImportedBrowser,
+		TableImportedCity,
+		TableImportedCountry,
+		TableImportedDevice,
+		TableImportedEntryPage,
+		TableImportedExitPage,
+		TableImportedLanguage,
+		TableImportedOS,
+		TableImportedPage,
+		TableImportedReferrer,
+		TableImportedRegion,
+		TableImportedUTMCampaign,
+		TableImportedUTMMedium,
+		TableImportedUTMSource,
+		TableImportedVisitors,
+	}
 )

@@ -13,6 +13,11 @@ func (m EntryPath) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
+// TableImported implements the Metric interface.
+func (m EntryPath) TableImported() []string {
+	return nil
+}
+
 // JoinTable implements the Metric interface.
 func (m EntryPath) JoinTable() string {
 	return pkg.TableSessions
@@ -23,6 +28,11 @@ func (m EntryPath) Column() string {
 	return "entry_path"
 }
 
+// ColumnImported implements the Metric interface.
+func (m EntryPath) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Metic interface.
 func (m EntryPath) Expression(_ string) (string, bool) {
 	if m.Any {
@@ -30,6 +40,11 @@ func (m EntryPath) Expression(_ string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// ExpressionImported implements the Metric interface.
+func (m EntryPath) ExpressionImported() string {
+	return ""
 }
 
 // ScanType implements the Metric interface.

@@ -12,13 +12,28 @@ func (d UTMContent) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
+// TableImported implements the Dimension interface.
+func (d UTMContent) TableImported() []string {
+	return nil
+}
+
 // Column implements the Dimension interface.
 func (d UTMContent) Column(_ string) string {
 	return "utm_content"
 }
 
+// ColumnImported implements the Dimension interface.
+func (d UTMContent) ColumnImported() string {
+	return ""
+}
+
 // Expression implements the Dimension interface.
 func (d UTMContent) Expression(_ *DimensionExpressionOptions) string {
+	return ""
+}
+
+// ExpressionImported implements the Dimension interface.
+func (d UTMContent) ExpressionImported(_ *DimensionExpressionOptions) string {
 	return ""
 }
 

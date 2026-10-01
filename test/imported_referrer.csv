@@ -1,0 +1,5 @@
+scenario,site_id,date,referrer,visitors,sessions,bounces
+imported referrer,1,2025-12-29T00:00:00.000Z,https://google.com,5,6,3
+imported referrer,1,2025-12-30T00:00:00.000Z,https://google.com,3,5,1
+imported referrer,1,2025-12-30T00:00:00.000Z,https://duckduckgo.com,1,1,1
+imported referrer,1,2025-12-31T00:00:00.000Z,https://google.com,3,5,1

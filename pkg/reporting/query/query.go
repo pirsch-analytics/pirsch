@@ -35,6 +35,7 @@ type Query struct {
 	db             *db.ClickHouse
 	primaryTable   string
 	joinTable      string
+	importedTable  string
 	joinStep       int
 	primaryFilter  []classifiedFilter
 	subqueryFilter []classifiedFilter
@@ -72,7 +73,13 @@ func (q *Query) Run(req request.Request) report.Report {
 	}
 
 	if req.Period.Compare != nil {
-		q.runWithComparison(req, &r)
+		if err := q.runWithComparison(req, &r); err != nil {
+			return report.Report{
+				Meta: report.Meta{
+					Errors: []error{err},
+				},
+			}
+		}
 	}
 
 	return r
@@ -164,7 +171,15 @@ func (q *Query) DryRun(req request.Request) (string, []any, string, []any, []err
 		return primaryQuery, primaryArgs, secondaryQuery, secondaryArgs, nil
 	}
 
-	query, args := q.buildQuery(req)
+	var query string
+	var args []any
+
+	if q.useImportedStatistics(req) {
+		query, args = q.buildUnionQuery(req)
+	} else {
+		query, args = q.buildQuery(req)
+	}
+
 	return query, args, "", nil, nil
 }
 
@@ -215,9 +230,27 @@ func (q *Query) prepare(req *request.Request) []error {
 	q.resolvePrimaryTable(*req)
 	q.resolveJoinTable(*req)
 
+	if err := q.prepareImported(req); err != nil {
+		return []error{err}
+	}
+
 	for _, filter := range req.Filter {
 		if err := q.classifyFilter(filter); err != nil {
 			return []error{err}
+		}
+	}
+
+	return nil
+}
+
+func (q *Query) prepareImported(req *request.Request) error {
+	if q.useImportedStatistics(*req) {
+		if err := q.resolveImportedTable(*req); err != nil {
+			return err
+		}
+
+		if err := q.checkFilterImportedTable(req.Filter); err != nil {
+			return err
 		}
 	}
 
@@ -301,7 +334,15 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 }
 
 func (q *Query) run(req request.Request) report.Report {
-	query, args := q.buildQuery(req)
+	var query string
+	var args []any
+
+	if q.useImportedStatistics(req) {
+		query, args = q.buildUnionQuery(req)
+	} else {
+		query, args = q.buildQuery(req)
+	}
+
 	rows, err := q.db.Query(req.Ctx, query, args...)
 
 	if err != nil {
@@ -334,12 +375,12 @@ func (q *Query) run(req request.Request) report.Report {
 	}
 }
 
-func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
-	// determine if the results must be merged in order or by dimensions
+func (q *Query) runWithComparison(req request.Request, currentReport *report.Report) error {
+	// determine if the results should be merged in order (positionally) or by keys
 	mergeInOrder := false
 
-	for _, d := range req.Dimensions {
-		switch d.(type) {
+	if len(req.OrderBy) > 0 && req.OrderBy[0].Dimension != nil {
+		switch req.OrderBy[0].Dimension.(type) {
 		case dimensions.Time,
 			dimensions.Start,
 			dimensions.Day,
@@ -347,8 +388,23 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 			dimensions.Month,
 			dimensions.Year,
 			dimensions.Hour:
-			mergeInOrder = true
-			break
+			allTime := true
+
+			for _, d := range req.Dimensions {
+				switch d.(type) {
+				case dimensions.Time,
+					dimensions.Start,
+					dimensions.Day,
+					dimensions.Week,
+					dimensions.Month,
+					dimensions.Year,
+					dimensions.Hour:
+				default:
+					allTime = false
+				}
+			}
+
+			mergeInOrder = allTime
 		}
 	}
 
@@ -361,40 +417,61 @@ func (q *Query) runWithComparison(req request.Request, rep *report.Report) {
 		req.OrderBy = nil
 	}
 
-	var r report.Report
+	// prepare imported statistics table based on the new dates if needed
+	if err := q.prepareImported(&req); err != nil {
+		return err
+	}
+
+	// get the report for the comparison period
+	var previousReport report.Report
 
 	if q.joinTable != "" {
-		r = q.runWithJoin(req)
+		previousReport = q.runWithJoin(req)
 	} else {
-		r = q.run(req)
+		previousReport = q.run(req)
 	}
 
 	// merge results
 	if mergeInOrder {
-		for i := range rep.Results {
-			if i < len(r.Results) {
-				rep.Results[i].CompareMetricValues = r.Results[i].MetricValues
+		for i := range currentReport.Results {
+			if i < len(previousReport.Results) {
+				currentReport.Results[i].CompareMetricValues = previousReport.Results[i].MetricValues
 			} else {
-				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+				currentReport.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
 			}
 		}
-	} else {
-		index := make(map[string]int, len(r.Results))
 
-		for i, r := range r.Results {
-			index[q.dimensionKey(r.DimensionValues)] = i
+		for i := len(currentReport.Results); i < len(previousReport.Results); i++ {
+			currentReport.Results = append(currentReport.Results, report.Result{
+				DimensionValues:     previousReport.Results[i].DimensionValues,
+				MetricValues:        q.zeroValues(req.Metrics),
+				CompareMetricValues: previousReport.Results[i].MetricValues,
+			})
+		}
+	} else {
+		primaryIndex := make(map[string]int, len(currentReport.Results))
+
+		for i, result := range currentReport.Results {
+			primaryIndex[q.dimensionKey(result.DimensionValues)] = i
+			currentReport.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
 		}
 
-		for i := range rep.Results {
-			key := q.dimensionKey(rep.Results[i].DimensionValues)
+		for _, compResult := range previousReport.Results {
+			key := q.dimensionKey(compResult.DimensionValues)
 
-			if j, ok := index[key]; ok {
-				rep.Results[i].CompareMetricValues = r.Results[j].MetricValues
+			if i, ok := primaryIndex[key]; ok {
+				currentReport.Results[i].CompareMetricValues = compResult.MetricValues
 			} else {
-				rep.Results[i].CompareMetricValues = q.zeroValues(req.Metrics)
+				currentReport.Results = append(currentReport.Results, report.Result{
+					DimensionValues:     compResult.DimensionValues,
+					MetricValues:        q.zeroValues(req.Metrics),
+					CompareMetricValues: compResult.MetricValues,
+				})
 			}
 		}
 	}
+
+	return nil
 }
 
 func (q *Query) prepareRunWithJoinQueries(req request.Request) ([]metrics.Metric, string, []any, []metrics.Metric, string, []any, []metrics.Metric, bool) {
@@ -472,6 +549,11 @@ func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
 
 	query.WriteString(") ORDER BY step")
 	return query.String(), args
+}
+
+func (q *Query) useImportedStatistics(req request.Request) bool {
+	return req.Options != nil && req.Options.IncludeImportedStatistics &&
+		!req.Period.ImportedUntil.IsZero() && req.Period.From.Before(req.Period.ImportedUntil)
 }
 
 func (q *Query) zeroValues(metrics []metrics.Metric) []any {
@@ -601,6 +683,43 @@ func (q *Query) resolveJoinTable(req request.Request) {
 			return
 		}
 	}
+}
+
+func (q *Query) resolveImportedTable(req request.Request) error {
+	candidates := slices.Clone(pkg.ImportedTables)
+
+	for _, d := range req.Dimensions {
+		candidates = slices.DeleteFunc(candidates, func(t string) bool {
+			return !slices.Contains(d.TableImported(), t)
+		})
+	}
+
+	for _, m := range req.Metrics {
+		candidates = slices.DeleteFunc(candidates, func(t string) bool {
+			return !slices.Contains(m.TableImported(), t)
+		})
+	}
+
+	if len(candidates) == 0 {
+		return errors.New("no overlapping imported statistics table found")
+	}
+
+	q.importedTable = candidates[0]
+	return nil
+}
+
+func (q *Query) checkFilterImportedTable(filter []request.Filter) error {
+	for _, f := range filter {
+		if !slices.Contains(f.Dimension.TableImported(), q.importedTable) {
+			return errors.New("filter dimension does not apply to imported statistics table")
+		}
+
+		if err := q.checkFilterImportedTable(f.Filter); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (q *Query) splitMetrics(requestMetrics []metrics.Metric) ([]metrics.Metric, []metrics.Metric) {
@@ -992,6 +1111,133 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	query.WriteString(orderByQuery)
 	args = append(args, orderByArgs...)
 	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}
+
+func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
+	// query natively if required
+	var nativeQuery string
+	var nativeArgs []any
+	queryNative := req.Period.To.After(req.Period.ImportedUntil) || req.Period.To.Equal(req.Period.ImportedUntil)
+
+	if queryNative {
+		nativeReq := req
+		nativeReq.Pagination = nil
+		nativeReq.OrderBy = nil
+		nativeReq.Options.IncludeImportedStatistics = false
+		nativeReq.Period.From = nativeReq.Period.ImportedUntil
+		nativeQuery, nativeArgs = q.buildQuery(nativeReq)
+	}
+
+	// query imported statistics
+	importedQuery, importedArgs := q.buildQueryImported(req)
+
+	// union queries
+	var query strings.Builder
+	args := make([]any, 0)
+	args = append(args, nativeArgs...)
+	args = append(args, importedArgs...)
+
+	if queryNative {
+		outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+
+		for _, m := range req.Metrics {
+			switch m.ScanType().(type) {
+			case *float64:
+				outerFields = append(outerFields, fmt.Sprintf("avg(%s) %s", m.Column(), m.Column()))
+			default:
+				outerFields = append(outerFields, fmt.Sprintf("sum(%s) %s", m.Column(), m.Column()))
+			}
+		}
+
+		for _, d := range req.Dimensions {
+			outerFields = append(outerFields, d.Column(""))
+		}
+
+		query.WriteString(fmt.Sprintf("SELECT %s FROM (", strings.Join(outerFields, ", ")))
+		query.WriteString(nativeQuery)
+		query.WriteString("UNION ALL ")
+		query.WriteString(importedQuery)
+		query.WriteString(") ")
+		groupColumns := make([]string, 0, len(req.Dimensions))
+
+		for _, d := range req.Dimensions {
+			groupColumns = append(groupColumns, d.Column(""))
+		}
+
+		if len(groupColumns) > 0 {
+			query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupColumns, ", ")))
+		}
+	} else {
+		query.WriteString(importedQuery)
+	}
+
+	// order by, and offset/limit
+	orderByQuery, orderByArgs := q.buildOrderBy(req)
+	args = append(args, orderByArgs...)
+	query.WriteString(orderByQuery)
+	query.WriteString(q.buildQueryPagination(req.Pagination))
+	return query.String(), args
+}
+
+func (q *Query) buildQueryImported(req request.Request) (string, []any) {
+	var query strings.Builder
+	args := make([]any, 0)
+	fields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
+
+	for _, m := range req.Metrics {
+		expression := m.ExpressionImported()
+		column := m.ColumnImported()
+
+		if expression == "" {
+			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
+		}
+	}
+
+	for _, d := range req.Dimensions {
+		expression := d.ExpressionImported(&dimensions.DimensionExpressionOptions{
+			Timezone:    req.Period.Timezone,
+			WeekdayMode: int(req.Period.WeekdayMode),
+		})
+		column := d.ColumnImported()
+
+		if expression != "" {
+			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
+		} else {
+			fields = append(fields, column)
+		}
+	}
+
+	tz := time.UTC.String()
+
+	if req.Period.Timezone != nil {
+		tz = req.Period.Timezone.String()
+	}
+
+	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" WHERE site_id = ? `, strings.Join(fields, ", "), q.importedTable))
+	query.WriteString(fmt.Sprintf("AND toDate(date, '%s') BETWEEN toDate(?, '%s') AND toDate(?, '%s') ", tz, tz, tz))
+	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.To.Format(time.DateOnly))
+
+	for _, filter := range q.primaryFilter {
+		query.WriteString("AND (")
+		where, a := q.buildQueryFilter(q.importedTable, filter.filter)
+		query.WriteString(where)
+		args = append(args, a...)
+		query.WriteString(") ")
+	}
+
+	groupBy := make([]string, 0, len(req.Dimensions))
+
+	for _, d := range req.Dimensions {
+		groupBy = append(groupBy, d.ColumnImported())
+	}
+
+	if len(groupBy) > 0 {
+		query.WriteString(fmt.Sprintf("GROUP BY %s ", strings.Join(groupBy, ", ")))
+	}
+
 	return query.String(), args
 }
 
