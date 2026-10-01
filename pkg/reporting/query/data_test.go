@@ -45,6 +45,15 @@ type importedReferrerData struct {
 	Bounces  uint64 `csv:"bounces"`
 }
 
+type importedVisitorsData struct {
+	ImportedData
+	Visitors        uint64 `csv:"visitors"`
+	Views           uint64 `csv:"views"`
+	Sessions        uint64 `csv:"sessions"`
+	Bounces         uint64 `csv:"bounces"`
+	SessionDuration uint64 `csv:"session_duration"`
+}
+
 func loadTestData(t *testing.T, scenarios []string) {
 	db.CleanupDB(t, client)
 
@@ -113,7 +122,7 @@ func loadTestData(t *testing.T, scenarios []string) {
 
 	assert.NoError(t, client.SaveEvents(context.Background(), events))
 
-	// load and store imported statistics
+	// load and store imported referrer
 	importedReferrerFile, err := os.ReadFile("../../../test/imported_referrer.csv")
 	assert.NoError(t, err)
 	var referrerData []importedReferrerData
@@ -127,6 +136,21 @@ func loadTestData(t *testing.T, scenarios []string) {
 	}
 
 	assert.NoError(t, saveImportedReferrer(referrer))
+
+	// load and store imported visitors
+	importedVisitorsFile, err := os.ReadFile("../../../test/imported_visitors.csv")
+	assert.NoError(t, err)
+	var visitorsData []importedVisitorsData
+	assert.NoError(t, gocsv.UnmarshalBytes(importedVisitorsFile, &visitorsData))
+	visitors := make([]importedVisitorsData, 0, len(visitorsData))
+
+	for _, r := range visitorsData {
+		if len(scenarios) == 0 || slices.Contains(scenarios, r.Scenario) {
+			visitors = append(visitors, r)
+		}
+	}
+
+	assert.NoError(t, saveImportedVisitors(visitors))
 }
 
 func saveImportedReferrer(referrer []importedReferrerData) error {
@@ -143,6 +167,28 @@ func saveImportedReferrer(referrer []importedReferrerData) error {
 			ref.Visitors,
 			ref.Sessions,
 			ref.Bounces); err != nil {
+			return err
+		}
+	}
+
+	return stmt.Send()
+}
+
+func saveImportedVisitors(visitors []importedVisitorsData) error {
+	stmt, err := client.Conn.PrepareBatch(context.Background(), `INSERT INTO "imported_visitors" (client_id, date, visitors, views, sessions, bounces, session_duration)`)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range visitors {
+		if err := stmt.Append(v.SiteID,
+			v.Date,
+			v.Visitors,
+			v.Views,
+			v.Sessions,
+			v.Bounces,
+			v.Sessions); err != nil {
 			return err
 		}
 	}

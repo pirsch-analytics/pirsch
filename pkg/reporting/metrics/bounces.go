@@ -12,7 +12,7 @@ func (m Bounces) Table() []string {
 
 // TableImported implements the Metric interface.
 func (m Bounces) TableImported() []string {
-	return []string{pkg.TableImportedPage, pkg.TableImportedReferrer, pkg.TableImportedVisitors}
+	return []string{pkg.TableImportedVisitors, pkg.TableImportedPage, pkg.TableImportedReferrer}
 }
 
 // JoinTable implements the Metric interface.

@@ -13,11 +13,11 @@ func (m Sessions) Table() []string {
 // TableImported implements the Metric interface.
 func (m Sessions) TableImported() []string {
 	return []string{
+		pkg.TableImportedVisitors,
+		pkg.TableImportedPage,
 		pkg.TableImportedEntryPage,
 		pkg.TableImportedExitPage,
-		pkg.TableImportedPage,
 		pkg.TableImportedReferrer,
-		pkg.TableImportedVisitors,
 	}
 }
 

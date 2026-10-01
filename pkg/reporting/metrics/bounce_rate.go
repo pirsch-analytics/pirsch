@@ -12,7 +12,7 @@ func (m BounceRate) Table() []string {
 
 // TableImported implements the Metric interface.
 func (m BounceRate) TableImported() []string {
-	return []string{pkg.TableImportedPage, pkg.TableImportedReferrer, pkg.TableImportedVisitors}
+	return []string{pkg.TableImportedVisitors, pkg.TableImportedPage, pkg.TableImportedReferrer}
 }
 
 // JoinTable implements the Metric interface.

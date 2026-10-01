@@ -1,0 +1,4 @@
+scenario,site_id,date,visitors,views,sessions,bounces,session_duration
+imported visitors,1,2025-12-29T00:00:00.000Z,5,9,6,3,122
+imported visitors,1,2025-12-30T00:00:00.000Z,4,6,6,1,31
+imported visitors,1,2025-12-31T00:00:00.000Z,3,3,5,1,82

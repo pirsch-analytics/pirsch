@@ -1119,9 +1119,10 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	var nativeQuery string
 	var nativeArgs []any
 	queryNative := req.Period.To.After(req.Period.ImportedUntil) || req.Period.To.Equal(req.Period.ImportedUntil)
+	var nativeReq request.Request
 
 	if queryNative {
-		nativeReq := req
+		nativeReq = req
 		nativeReq.Pagination = nil
 		nativeReq.OrderBy = nil
 		nativeReq.Options.IncludeImportedStatistics = false
@@ -1135,16 +1136,28 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	// union queries
 	var query strings.Builder
 	args := make([]any, 0)
-	args = append(args, nativeArgs...)
-	args = append(args, importedArgs...)
 
 	if queryNative {
 		outerFields := make([]string, 0, len(req.Metrics)+len(req.Dimensions))
 
 		for _, m := range req.Metrics {
-			switch m.ScanType().(type) {
-			case *float64:
-				outerFields = append(outerFields, fmt.Sprintf("avg(%s) %s", m.Column(), m.Column()))
+			switch m.(type) {
+			case metrics.RelativeVisitors, metrics.RelativeViews:
+				whereSiteAndPeriodNative, whereSiteAndPeriodNativeArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, nativeReq.Period, q.primaryTable, false)
+				req.Period.To = req.Period.ImportedUntil.Add(time.Hour * -24)
+				whereSiteAndPeriodImported, whereSiteAndPeriodImportedArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.importedTable, true)
+				args = append(args, whereSiteAndPeriodNativeArgs...)
+				args = append(args, whereSiteAndPeriodImportedArgs...)
+
+				if m.Column() == "relative_visitors" {
+					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session_v7" %s) + (SELECT sum(visitors) FROM "%s" %s), 1)) %s`,
+						whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
+				} else {
+					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(page_views / greatest((SELECT sum(page_views * sign) FROM "session_v7" %s) + (SELECT sum(views) FROM "%s" %s), 1)) %s`,
+						whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
+				}
+			case metrics.BounceRate:
+				outerFields = append(outerFields, fmt.Sprintf("toFloat64OrDefault(bounces / greatest(sessions, 1)) %s", m.Column()))
 			default:
 				outerFields = append(outerFields, fmt.Sprintf("sum(%s) %s", m.Column(), m.Column()))
 			}
@@ -1171,6 +1184,9 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	} else {
 		query.WriteString(importedQuery)
 	}
+
+	args = append(args, nativeArgs...)
+	args = append(args, importedArgs...)
 
 	// order by, and offset/limit
 	orderByQuery, orderByArgs := q.buildOrderBy(req)
@@ -1406,7 +1422,7 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 		expression, requiresSubquery := metric.Expression(q.primaryTable)
 
 		if requiresSubquery {
-			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable, false)
 			expression = fmt.Sprintf(expression, subquery)
 			args = append(args, a...)
 		}
@@ -1461,7 +1477,7 @@ func (q *Query) buildQuereFrom(table string, sample uint) string {
 func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	var query strings.Builder
 	args := make([]any, 0)
-	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable)
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable, false)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
 
@@ -1491,7 +1507,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 			filters := byTable[table]
 			query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
 			query.WriteString(q.buildQuereFrom(table, req.Options.Sample))
-			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, table)
+			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, table, false)
 			query.WriteString(subWhereQuery)
 			args = append(args, subWhereArgs...)
 
@@ -1510,7 +1526,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	return query.String(), args
 }
 
-func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string) (string, []any) {
+func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string, imported bool) (string, []any) {
 	if period.From.IsZero() && period.To.IsZero() {
 		return "WHERE site_id = ? ", []any{siteID}
 	}
@@ -1523,13 +1539,15 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 
 	timeColumn := "time"
 
-	if period.IncludeTime && table == pkg.TableSessions {
+	if imported {
+		timeColumn = "date"
+	} else if period.IncludeTime && table == pkg.TableSessions {
 		timeColumn = "start"
 	}
 
 	dateFunc := "toDate"
 
-	if period.IncludeTime {
+	if !imported && period.IncludeTime {
 		dateFunc = "toDateTime"
 	}
 

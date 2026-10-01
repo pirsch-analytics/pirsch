@@ -85,7 +85,7 @@ func TestQueryDryRunImported(t *testing.T) {
 	query, args, _, _, err := q.DryRun(req)
 	assert.Empty(t, err)
 	assert.NotEmpty(t, query)
-	assert.Len(t, args, 9)
+	assert.Len(t, args, 15)
 }
 
 func TestQuerySessions(t *testing.T) {
@@ -4022,17 +4022,79 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.Equal(t, uint64(12), r.Results[0].MetricValues[0])
 	assert.Equal(t, uint64(17), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(5), r.Results[0].MetricValues[2])
-	assert.Equal(t, float64(1), r.Results[0].MetricValues[3])
-	assert.Equal(t, 0.15625, r.Results[0].MetricValues[4])
+	assert.InDelta(t, 0.923, r.Results[0].MetricValues[3], 0.001)
+	assert.InDelta(t, 0.294, r.Results[0].MetricValues[4], 0.001)
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 
 	// result row 1
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[0])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
-	assert.Equal(t, float64(1), r.Results[1].MetricValues[3])
+	assert.InDelta(t, 0.076, r.Results[1].MetricValues[3], 0.001)
 	assert.Equal(t, float64(1), r.Results[1].MetricValues[4])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
+}
+
+func TestQueryImportedPageViews(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported visitors",
+	})
+	q, from, _ := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC),
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.PageViews{},
+			metrics.RelativeViews{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Day{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.Day{},
+				Direction: request.DirectionASC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedVisitors, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 4)
+
+	// result row 0
+	assert.Equal(t, uint64(9), r.Results[0].MetricValues[0])
+	assert.InDelta(t, 0.45, r.Results[0].MetricValues[1], 0.001)
+	assert.Equal(t, time.Date(2025, time.December, 29, 0, 0, 0, 0, time.UTC), r.Results[0].DimensionValues[0])
+
+	// result row 1
+	assert.Equal(t, uint64(6), r.Results[1].MetricValues[0])
+	assert.InDelta(t, 0.3, r.Results[1].MetricValues[1], 0.001)
+	assert.Equal(t, time.Date(2025, time.December, 30, 0, 0, 0, 0, time.UTC), r.Results[1].DimensionValues[0])
+
+	// result row 2
+	assert.Equal(t, uint64(3), r.Results[2].MetricValues[0])
+	assert.InDelta(t, 0.15, r.Results[2].MetricValues[1], 0.001)
+	assert.Equal(t, time.Date(2025, time.December, 31, 0, 0, 0, 0, time.UTC), r.Results[2].DimensionValues[0])
+
+	// result row 3
+	assert.Equal(t, uint64(2), r.Results[3].MetricValues[0])
+	assert.InDelta(t, 0.1, r.Results[3].MetricValues[1], 0.001)
+	assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC), r.Results[3].DimensionValues[0])
 }
 
 func TestQueryImportedReferrerFiltered(t *testing.T) {
