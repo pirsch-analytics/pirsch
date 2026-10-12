@@ -40,12 +40,8 @@ func (d Year) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Year) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil || options.Timezone == nil {
-		return `toStartOfYear("date")`
-	}
-
-	return fmt.Sprintf(`toStartOfYear("date", '%s')`, options.Timezone.String())
+func (d Year) ExpressionImported(_ *DimensionExpressionOptions) string {
+	return `toStartOfYear("date")`
 }
 
 // Args implements the Dimension interface.
