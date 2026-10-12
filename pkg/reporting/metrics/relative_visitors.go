@@ -10,11 +10,6 @@ func (m RelativeVisitors) Table() []string {
 	return []string{pkg.TableSessions, pkg.TableSessions, pkg.TableEvents}
 }
 
-// TableImported implements the Metric interface.
-func (m RelativeVisitors) TableImported() []string {
-	return pkg.ImportedTables
-}
-
 // JoinTable implements the Metric interface.
 func (m RelativeVisitors) JoinTable() string {
 	return ""

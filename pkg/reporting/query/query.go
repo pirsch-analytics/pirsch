@@ -694,12 +694,6 @@ func (q *Query) resolveImportedTable(req request.Request) error {
 		})
 	}
 
-	for _, m := range req.Metrics {
-		candidates = slices.DeleteFunc(candidates, func(t string) bool {
-			return !slices.Contains(m.TableImported(), t)
-		})
-	}
-
 	if len(candidates) == 0 {
 		return errors.New("no overlapping imported statistics table found")
 	}
@@ -711,7 +705,7 @@ func (q *Query) resolveImportedTable(req request.Request) error {
 func (q *Query) checkFilterImportedTable(filter []request.Filter) error {
 	for _, f := range filter {
 		if !slices.Contains(f.Dimension.TableImported(), q.importedTable) {
-			return fmt.Errorf("filter dimension '%s' does not apply to imported statistics table", f.Dimension)
+			return fmt.Errorf("filter dimension '%s' does not apply to imported statistics table '%s'", f.Dimension, q.importedTable)
 		}
 
 		if err := q.checkFilterImportedTable(f.Filter); err != nil {

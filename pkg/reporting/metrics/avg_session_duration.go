@@ -10,11 +10,6 @@ func (m AvgSessionDuration) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
-// TableImported implements the Metric interface.
-func (m AvgSessionDuration) TableImported() []string {
-	return []string{pkg.TableImportedVisitors}
-}
-
 // JoinTable implements the Metric interface.
 func (m AvgSessionDuration) JoinTable() string {
 	return pkg.TableSessions

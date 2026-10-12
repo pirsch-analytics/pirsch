@@ -4036,32 +4036,6 @@ func TestQueryPattern(t *testing.T) {
 	}
 }
 
-func TestQueryInvalidImportedTable(t *testing.T) {
-	q, from, to := newQuery()
-	req := request.Request{
-		SiteID: 1,
-		Period: request.Period{
-			From:          from,
-			To:            to,
-			ImportedUntil: from.Add(time.Hour * 24 * 15),
-		},
-		Metrics: []metrics.Metric{
-			metrics.Visitors{},
-			metrics.Sessions{}, // does not exist for imported regions
-		},
-		Dimensions: []dimensions.Dimension{
-			dimensions.Region{},
-		},
-		Options: &request.Options{
-			IncludeImportedStatistics: true,
-		},
-	}
-	req.Validate()
-	r := q.Run(req)
-	assert.Len(t, r.Meta.Errors, 1)
-	assert.Equal(t, errors.New("no overlapping imported statistics table found"), r.Meta.Errors[0])
-}
-
 func TestQueryImportedTable(t *testing.T) {
 	q, from, to := newQuery()
 	req := request.Request{
@@ -4154,6 +4128,110 @@ func TestQueryImportedReferrer(t *testing.T) {
 	assert.InDelta(t, 0.076, r.Results[1].MetricValues[3], 0.001)
 	assert.Equal(t, float64(1), r.Results[1].MetricValues[4])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
+}
+
+func TestQueryImportedEntryPages(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Entries{},
+			metrics.EntryRate{},
+			metrics.Visitors{},
+			metrics.Sessions{},
+			metrics.AvgTimeOnPage{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EntryPath{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedEntryPage, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 1)
+
+	// result row
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[2])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[3])
+	assert.InDelta(t, 300, r.Results[0].MetricValues[4], 0.001)
+	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
+}
+
+func TestQueryImportedExitPages(t *testing.T) {
+	loadTestData(t, []string{
+		"simple",
+		"imported referrer",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:          from.Add(time.Hour * 24 * -3),
+			To:            to,
+			ImportedUntil: from,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Exits{},
+			metrics.ExitRate{},
+			metrics.Visitors{},
+			metrics.Sessions{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.ExitPath{},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+		},
+		Options: &request.Options{
+			IncludeImportedStatistics: true,
+		},
+	}
+	req.Validate()
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableSessions, q.primaryTable)
+	assert.Empty(t, q.primaryFilter)
+	assert.Equal(t, pkg.TableImportedExitPage, q.importedTable)
+	assert.Empty(t, q.subqueryFilter)
+	assert.Len(t, r.Results, 1)
+
+	// result row
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[1])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[2])
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[3])
+	assert.Equal(t, "/pricing", r.Results[0].DimensionValues[0])
 }
 
 func TestQueryImportedPageViews(t *testing.T) {
@@ -4405,7 +4483,7 @@ func TestQueryImportedReferrerFilterIncompatible(t *testing.T) {
 	req.Validate()
 	r := q.Run(req)
 	assert.Len(t, r.Meta.Errors, 1)
-	assert.Equal(t, errors.New("filter dimension 'country' does not apply to imported statistics table"), r.Meta.Errors[0])
+	assert.Equal(t, errors.New("filter dimension 'country' does not apply to imported statistics table 'imported_referrer'"), r.Meta.Errors[0])
 }
 
 func TestQueryImportedReferrerPeriod(t *testing.T) {

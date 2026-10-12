@@ -5,9 +5,6 @@ type Metric interface {
 	// Table returns the valid database tables for the Metric.
 	Table() []string
 
-	// TableImported returns the valid database tables for the Metric's imported statistics.
-	TableImported() []string
-
 	// JoinTable returns the secondary tables to query if the Metric cannot be calculated from the primary table.
 	JoinTable() string
 

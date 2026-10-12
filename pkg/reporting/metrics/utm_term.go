@@ -15,11 +15,6 @@ func (m UTMTerm) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
-// TableImported implements the Metric interface.
-func (m UTMTerm) TableImported() []string {
-	return nil
-}
-
 // JoinTable implements the Metric interface.
 func (m UTMTerm) JoinTable() string {
 	return ""

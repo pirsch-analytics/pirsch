@@ -15,11 +15,6 @@ func (m City) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
-// TableImported implements the Metric interface.
-func (m City) TableImported() []string {
-	return nil
-}
-
 // JoinTable implements the Metric interface.
 func (m City) JoinTable() string {
 	return ""

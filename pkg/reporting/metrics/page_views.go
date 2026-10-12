@@ -13,11 +13,6 @@ func (m PageViews) Table() []string {
 	return []string{pkg.TableSessions, pkg.TablePageViews}
 }
 
-// TableImported implements the Metric interface.
-func (m PageViews) TableImported() []string {
-	return []string{pkg.TableImportedVisitors, pkg.TableImportedPage}
-}
-
 // JoinTable implements the Metric interface.
 func (m PageViews) JoinTable() string {
 	return ""
