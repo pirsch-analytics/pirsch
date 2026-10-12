@@ -40,12 +40,8 @@ func (d Month) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Month) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil || options.Timezone == nil {
-		return `toStartOfMonth("date")`
-	}
-
-	return fmt.Sprintf(`toStartOfMonth("date", '%s')`, options.Timezone.String())
+func (d Month) ExpressionImported(_ *DimensionExpressionOptions) string {
+	return `toStartOfMonth("date")`
 }
 
 // Args implements the Dimension interface.

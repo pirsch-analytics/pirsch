@@ -4405,7 +4405,7 @@ func TestQueryImportedReferrerFilterIncompatible(t *testing.T) {
 	req.Validate()
 	r := q.Run(req)
 	assert.Len(t, r.Meta.Errors, 1)
-	assert.Equal(t, errors.New("filter dimension does not apply to imported statistics table"), r.Meta.Errors[0])
+	assert.Equal(t, errors.New("filter dimension 'country' does not apply to imported statistics table"), r.Meta.Errors[0])
 }
 
 func TestQueryImportedReferrerPeriod(t *testing.T) {

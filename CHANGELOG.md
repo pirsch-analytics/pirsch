@@ -2,6 +2,8 @@
 
 ## 7.0.0
 
+This major update is a rewrite of the entire code base. A non-exhaustive list of important changes include:
+
 * added native ClickHouse client support
 * added JSON metadata support to events
 * added new ingestion system

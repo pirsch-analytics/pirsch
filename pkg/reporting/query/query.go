@@ -711,7 +711,7 @@ func (q *Query) resolveImportedTable(req request.Request) error {
 func (q *Query) checkFilterImportedTable(filter []request.Filter) error {
 	for _, f := range filter {
 		if !slices.Contains(f.Dimension.TableImported(), q.importedTable) {
-			return errors.New("filter dimension does not apply to imported statistics table")
+			return fmt.Errorf("filter dimension '%s' does not apply to imported statistics table", f.Dimension)
 		}
 
 		if err := q.checkFilterImportedTable(f.Filter); err != nil {
