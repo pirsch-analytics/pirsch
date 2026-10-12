@@ -29,6 +29,10 @@ func (m Start) JoinTable() string {
 
 // Column implements the Metic interface.
 func (m Start) Column() string {
+	if m.Min {
+		return "min_start"
+	}
+
 	return "start"
 }
 
