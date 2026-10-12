@@ -3,33 +3,33 @@ module github.com/pirsch-analytics/pirsch/v7
 go 1.27.0
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.49.0
 	github.com/dchest/siphash v1.2.3
 	github.com/emvi/iso-639-1 v1.1.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.18.0
-	github.com/gocarina/gocsv v0.0.0-20260908110832-9ab82d65b1cc
+	github.com/gocarina/gocsv v0.0.0-20260926200228-b2c6eb8fefab
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.61.0
 )
 
 require (
 	github.com/ClickHouse/ch-go v0.74.0 // indirect
-	github.com/andybalholm/brotli v1.2.4 // indirect
+	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.8.0 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/paulmach/orb v0.13.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.30 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
-	github.com/shopspring/decimal v1.4.0 // indirect
-	go.opentelemetry.io/otel v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
+	github.com/shopspring/decimal v1.5.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )

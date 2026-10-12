@@ -65,6 +65,9 @@ func validate(um *Unmarshaller, s interface{}, headers []string) error {
 		return err
 	}
 	structInfo := getStructInfo(concreteType) // Get struct info to get CSV annotations.
+	if structInfo.Err != nil {
+		return structInfo.Err
+	}
 	if len(structInfo.Fields) == 0 {
 		return ErrNoStructTags
 	}
@@ -115,7 +118,7 @@ func (um *Unmarshaller) unmarshalRow(row []string, unmatched map[string]string) 
 			if err := setInnerField(&outValue, isPointer, fieldInfo.IndexChain, value, fieldInfo.omitEmpty); err != nil { // Set field of struct
 				return nil, fmt.Errorf("cannot assign field at %v to %s through index chain %v: %v", j, outValue.Type(), fieldInfo.IndexChain, err)
 			}
-		} else if unmatched != nil {
+		} else if unmatched != nil && j < len(um.Headers) {
 			unmatched[um.Headers[j]] = csvColumnContent
 		}
 	}
