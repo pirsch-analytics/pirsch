@@ -26,8 +26,8 @@ github.com/go-redis/redis/v8 v8.11.5 h1:AcZZR7igkdvfVmQTPnu9WE37LRrO/YrBH5zWyjDC
 github.com/go-redis/redis/v8 v8.11.5/go.mod h1:gREzHqY1hg6oD9ngVRbLStwAWKhA0FEgq8Jd4h5lpwo=
 github.com/go-redsync/redsync/v4 v4.18.0 h1:DDM09PEhmNTf/vziolf2x6391y1hHxF5vQ4ytHl9xQc=
 github.com/go-redsync/redsync/v4 v4.18.0/go.mod h1:yuoqcQ55FS1VypSeVTMqFsJqTdWpEH5eA4MQGKJ9c4M=
-github.com/gocarina/gocsv v0.0.0-20260926200228-b2c6eb8fefab h1:zMBDFE5FAMuDWBE0a6Ma0p5RAbKNoUeFS0v/j1bAAak=
-github.com/gocarina/gocsv v0.0.0-20260926200228-b2c6eb8fefab/go.mod h1:5YoVOkjYAQumqlV356Hj3xeYh4BdZuLE0/nRkf2NKkI=
+github.com/gocarina/gocsv v0.0.0-20261012193826-401c25af6907 h1:MVuIVNIHXT01Nxrr2om3bIh9BWgvCJ7Nk8tmgq+LnVM=
+github.com/gocarina/gocsv v0.0.0-20261012193826-401c25af6907/go.mod h1:5YoVOkjYAQumqlV356Hj3xeYh4BdZuLE0/nRkf2NKkI=
 github.com/gomodule/redigo v1.9.3 h1:dNPSXeXv6HCq2jdyWfjgmhBdqnR6PRO3m/G05nvpPC8=
 github.com/gomodule/redigo v1.9.3/go.mod h1:KsU3hiK/Ay8U42qpaJk+kuNa3C+spxapWpM+ywhcgtw=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=

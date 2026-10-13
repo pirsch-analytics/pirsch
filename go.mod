@@ -8,7 +8,7 @@ require (
 	github.com/emvi/iso-639-1 v1.1.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redsync/redsync/v4 v4.18.0
-	github.com/gocarina/gocsv v0.0.0-20260926200228-b2c6eb8fefab
+	github.com/gocarina/gocsv v0.0.0-20261012193826-401c25af6907
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/oschwald/maxminddb-golang v1.13.1

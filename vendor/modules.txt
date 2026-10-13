@@ -52,7 +52,7 @@ github.com/go-redis/redis/v8/internal/util
 github.com/go-redsync/redsync/v4
 github.com/go-redsync/redsync/v4/redis
 github.com/go-redsync/redsync/v4/redis/goredis/v8
-# github.com/gocarina/gocsv v0.0.0-20260926200228-b2c6eb8fefab
+# github.com/gocarina/gocsv v0.0.0-20261012193826-401c25af6907
 ## explicit; go 1.13
 github.com/gocarina/gocsv
 # github.com/google/uuid v1.6.0
