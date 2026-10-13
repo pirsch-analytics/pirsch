@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.28.5
+
+* updated User-Agent and referrer blacklists
+* updated dependencies
+
 ## 6.28.4
 
 * added hourly statistics to TimeSpentStats

@@ -137,10 +137,23 @@ type connect struct {
 	maxCompressionBuffer int
 	readerMutex          sync.Mutex
 	closeMutex           sync.Mutex
+	// clusterSalt signs queries on this connection.
+	clusterSalt string
 }
 
 func (c *connect) connID() int {
 	return c.id
+}
+
+// effectiveInitialUser returns the user for an interserver query.
+func (c *connect) effectiveInitialUser(queryUser string) string {
+	if c.opt.Cluster.Secret == "" {
+		return ""
+	}
+	if queryUser != "" {
+		return queryUser
+	}
+	return c.opt.Auth.Username
 }
 
 func (c *connect) getLogger() *slog.Logger {
@@ -183,20 +196,21 @@ func (c *connect) settings(querySettings Settings) []proto.Setting {
 	return settings
 }
 
-func (c *connect) isBad() bool {
+func (c *connect) healthCheck() error {
 	if c.isClosed() {
-		return true
+		return ErrConnectionClosed
 	}
 
-	if time.Since(c.connectedAt) >= c.opt.ConnMaxLifetime {
-		return true
+	if age := time.Since(c.connectedAt); age >= c.opt.ConnMaxLifetime {
+		return fmt.Errorf("%w: age %s exceeds max lifetime %s",
+			errConnMaxLifetimeExceeded, age.Round(time.Millisecond), c.opt.ConnMaxLifetime)
 	}
 
 	if err := c.connCheck(); err != nil {
-		return true
+		return fmt.Errorf("clickhouse: connection check failed: %w", err)
 	}
 
-	return false
+	return nil
 }
 
 func (c *connect) isReleased() bool {
