@@ -117,20 +117,20 @@ const (
 var (
 	// ImportedTables is a list of all imported statistics tables.
 	ImportedTables = []string{
+		TableImportedVisitors,
+		TableImportedPage,
+		TableImportedEntryPage,
+		TableImportedExitPage,
 		TableImportedBrowser,
 		TableImportedCity,
 		TableImportedCountry,
 		TableImportedDevice,
-		TableImportedEntryPage,
-		TableImportedExitPage,
 		TableImportedLanguage,
 		TableImportedOS,
-		TableImportedPage,
 		TableImportedReferrer,
 		TableImportedRegion,
 		TableImportedUTMCampaign,
 		TableImportedUTMMedium,
 		TableImportedUTMSource,
-		TableImportedVisitors,
 	}
 )

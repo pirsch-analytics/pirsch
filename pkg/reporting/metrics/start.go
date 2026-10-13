@@ -17,11 +17,6 @@ func (m Start) Table() []string {
 	return []string{pkg.TableSessions}
 }
 
-// TableImported implements the Metric interface.
-func (m Start) TableImported() []string {
-	return nil
-}
-
 // JoinTable implements the Metric interface.
 func (m Start) JoinTable() string {
 	return pkg.TableSessions
@@ -29,6 +24,10 @@ func (m Start) JoinTable() string {
 
 // Column implements the Metic interface.
 func (m Start) Column() string {
+	if m.Min {
+		return "min_start"
+	}
+
 	return "start"
 }
 

@@ -40,12 +40,8 @@ func (d Day) Expression(options *DimensionExpressionOptions) string {
 }
 
 // ExpressionImported implements the Dimension interface.
-func (d Day) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil || options.Timezone == nil {
-		return `toDate("date")`
-	}
-
-	return fmt.Sprintf(`toDate("date", '%s')`, options.Timezone.String())
+func (d Day) ExpressionImported(_ *DimensionExpressionOptions) string {
+	return `toDate("date")`
 }
 
 // Args implements the Dimension interface.

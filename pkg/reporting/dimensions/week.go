@@ -45,15 +45,11 @@ func (d Week) Expression(options *DimensionExpressionOptions) string {
 
 // ExpressionImported implements the Dimension interface.
 func (d Week) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil || options.Timezone == nil {
+	if options == nil {
 		return `toStartOfWeek("date")`
 	}
 
-	if options.Timezone == nil {
-		return fmt.Sprintf(`toStartOfWeek("date", %d)`, options.WeekdayMode)
-	}
-
-	return fmt.Sprintf(`toStartOfWeek("date", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
+	return fmt.Sprintf(`toStartOfWeek("date", %d)`, options.WeekdayMode)
 }
 
 // Args implements the Dimension interface.
