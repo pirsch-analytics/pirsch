@@ -34,7 +34,7 @@ func (d Platform) Expression(_ *DimensionExpressionOptions) string {
 
 // ExpressionImported implements the Dimension interface.
 func (d Platform) ExpressionImported(_ *DimensionExpressionOptions) string {
-	return "category"
+	return "multiIf(category = 'desktop', 1, category = 'mobile', 2, 0)"
 }
 
 // Args implements the Dimension interface.
