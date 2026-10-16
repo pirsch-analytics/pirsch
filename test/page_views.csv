@@ -12,3 +12,9 @@ hourly timezone,1,6,6,2026-01-16T01:00:00Z,0,example.com,/,Home,en,us,Virginia,A
 hourly timezone,1,7,7,2026-01-16T12:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
 hourly timezone,1,8,8,2026-01-16T23:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
 hourly timezone,1,9,9,2026-01-17T00:30:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,iOS,16,Chrome,141,2,Full HD,"","","","","","",""
+funnel steps,1,10,10,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://google.com,Google,,Windows,11,Chrome,142,1,Full HD,,,,,,,Organic Search
+funnel steps,1,11,11,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,11,Firefox,123,1,Full HD,,,,,,,Organic Search
+funnel steps,1,11,11,2026-01-01T08:05:00Z,300,example.com,/checkout,Checkout,en,us,Virginia,Ashburn,https://duckduckgo.com,DuckDuckGo,,Windows,11,Firefox,123,1,Full HD,,,,,,,Organic Search
+funnel steps,1,12,12,2026-01-01T08:00:00Z,0,example.com,/,Home,en,us,Virginia,Ashburn,https://bing.com,Bing,,Android,17,Chrome,142,2,Full HD,,,,,,,Organic Search
+funnel steps,1,12,12,2026-01-01T08:05:00Z,300,example.com,/checkout,Checkout,en,us,Virginia,Ashburn,https://bing.com,Bing,,Android,17,Chrome,142,2,Full HD,,,,,,,Organic Search
+funnel steps,1,12,12,2026-01-01T08:10:00Z,300,example.com,/complete,Complete,en,us,Virginia,Ashburn,https://bing.com,Bing,,Android,17,Chrome,142,2,Full HD,,,,,,,Organic Search

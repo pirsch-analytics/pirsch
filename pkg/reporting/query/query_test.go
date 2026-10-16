@@ -3729,6 +3729,213 @@ func TestQueryFunnel(t *testing.T) {
 	assert.Equal(t, float64(1), r.Steps[3].DropOff)
 }
 
+func TestQueryFunnelSteps(t *testing.T) {
+	loadTestData(t, []string{
+		"funnel steps",
+	})
+	q, _, _ := newQuery()
+	r := q.Funnel(request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: [][]request.Filter{
+			{
+				{
+					Dimension: dimensions.EntryPath{},
+					Values:    []any{"/"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/checkout"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.ExitPath{},
+					Values:    []any{"/complete"},
+				},
+			},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 3)
+
+	// step 1
+	assert.Equal(t, uint8(1), r.Steps[0].Step)
+	assert.Equal(t, uint64(3), r.Steps[0].Visitors)
+	assert.Equal(t, float64(1), r.Steps[0].RelativeVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].PreviousVisitors)
+	assert.Equal(t, float64(0), r.Steps[0].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].Dropped)
+	assert.Equal(t, float64(0), r.Steps[0].DropOff)
+
+	// step 2
+	assert.Equal(t, uint8(2), r.Steps[1].Step)
+	assert.Equal(t, uint64(2), r.Steps[1].Visitors)
+	assert.InDelta(t, 0.6666, r.Steps[1].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(3), r.Steps[1].PreviousVisitors)
+	assert.InDelta(t, 1, r.Steps[1].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[1].Dropped)
+	assert.InDelta(t, 0.3333, r.Steps[1].DropOff, 0.001)
+
+	// step 3
+	assert.Equal(t, uint8(3), r.Steps[2].Step)
+	assert.Equal(t, uint64(1), r.Steps[2].Visitors)
+	assert.InDelta(t, 0.3333, r.Steps[2].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(2), r.Steps[2].PreviousVisitors)
+	assert.InDelta(t, 0.6666, r.Steps[2].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[2].Dropped)
+	assert.InDelta(t, 0.5, r.Steps[2].DropOff, 0.001)
+}
+
+func TestQueryFunnelStepsOrder(t *testing.T) {
+	loadTestData(t, []string{
+		"funnel steps",
+	})
+	q, _, _ := newQuery()
+	r := q.Funnel(request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: [][]request.Filter{
+			{
+				{
+					Dimension: dimensions.EntryPath{},
+					Values:    []any{"/"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/complete"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/checkout"},
+				},
+			},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 3)
+
+	// step 1
+	assert.Equal(t, uint8(1), r.Steps[0].Step)
+	assert.Equal(t, uint64(3), r.Steps[0].Visitors)
+	assert.Equal(t, float64(1), r.Steps[0].RelativeVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].PreviousVisitors)
+	assert.Equal(t, float64(0), r.Steps[0].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].Dropped)
+	assert.Equal(t, float64(0), r.Steps[0].DropOff)
+
+	// step 2
+	assert.Equal(t, uint8(2), r.Steps[1].Step)
+	assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+	assert.InDelta(t, 0.3333, r.Steps[1].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(3), r.Steps[1].PreviousVisitors)
+	assert.InDelta(t, 1, r.Steps[1].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(2), r.Steps[1].Dropped)
+	assert.InDelta(t, 0.6666, r.Steps[1].DropOff, 0.001)
+
+	// step 3
+	assert.Equal(t, uint8(3), r.Steps[2].Step)
+	assert.Equal(t, uint64(0), r.Steps[2].Visitors)
+	assert.InDelta(t, 0, r.Steps[2].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[2].PreviousVisitors)
+	assert.InDelta(t, 0.3333, r.Steps[2].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[2].Dropped)
+	assert.InDelta(t, 1, r.Steps[2].DropOff, 0.001)
+}
+
+func TestQueryFunnelStepEvent(t *testing.T) {
+	loadTestData(t, []string{
+		"funnel steps",
+	})
+	q, _, _ := newQuery()
+	r := q.Funnel(request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: [][]request.Filter{
+			{
+				{
+					Dimension: dimensions.EntryPath{},
+					Values:    []any{"/"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/checkout"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.ExitPath{},
+					Values:    []any{"/complete"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Event{},
+					Values:    []any{"Checkout Completed"},
+				},
+			},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 4)
+
+	// step 1
+	assert.Equal(t, uint8(1), r.Steps[0].Step)
+	assert.Equal(t, uint64(3), r.Steps[0].Visitors)
+	assert.Equal(t, float64(1), r.Steps[0].RelativeVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].PreviousVisitors)
+	assert.Equal(t, float64(0), r.Steps[0].RelativePreviousVisitors)
+	assert.Equal(t, uint64(0), r.Steps[0].Dropped)
+	assert.Equal(t, float64(0), r.Steps[0].DropOff)
+
+	// step 2
+	assert.Equal(t, uint8(2), r.Steps[1].Step)
+	assert.Equal(t, uint64(2), r.Steps[1].Visitors)
+	assert.InDelta(t, 0.6666, r.Steps[1].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(3), r.Steps[1].PreviousVisitors)
+	assert.InDelta(t, 1, r.Steps[1].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[1].Dropped)
+	assert.InDelta(t, 0.3333, r.Steps[1].DropOff, 0.001)
+
+	// step 3
+	assert.Equal(t, uint8(3), r.Steps[2].Step)
+	assert.Equal(t, uint64(1), r.Steps[2].Visitors)
+	assert.InDelta(t, 0.3333, r.Steps[2].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(2), r.Steps[2].PreviousVisitors)
+	assert.InDelta(t, 0.6666, r.Steps[2].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[2].Dropped)
+	assert.InDelta(t, 0.5, r.Steps[2].DropOff, 0.001)
+
+	// step 4
+	assert.Equal(t, uint8(4), r.Steps[3].Step)
+	assert.Equal(t, uint64(1), r.Steps[3].Visitors)
+	assert.InDelta(t, 0.3333, r.Steps[3].RelativeVisitors, 0.001)
+	assert.Equal(t, uint64(1), r.Steps[3].PreviousVisitors)
+	assert.InDelta(t, 0.3333, r.Steps[3].RelativePreviousVisitors, 0.001)
+	assert.Equal(t, uint64(0), r.Steps[3].Dropped)
+	assert.InDelta(t, 0, r.Steps[3].DropOff, 0.001)
+}
+
 func TestBuildQueryFilterJSONPath(t *testing.T) {
 	input := []string{
 		"field",

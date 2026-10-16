@@ -32,13 +32,15 @@ type classifiedFilter struct {
 
 // Query queries results for a report.Report.
 type Query struct {
-	db             *db.ClickHouse
-	primaryTable   string
-	joinTable      string
-	importedTable  string
-	joinStep       int
-	primaryFilter  []classifiedFilter
-	subqueryFilter []classifiedFilter
+	db                            *db.ClickHouse
+	primaryTable                  string
+	joinTable                     string
+	importedTable                 string
+	funnelTimeColumn              string
+	funnelTimeAggregationFunction string
+	joinStep                      int
+	primaryFilter                 []classifiedFilter
+	subqueryFilter                []classifiedFilter
 }
 
 // NewQuery returns a new Query for given database connection.
@@ -200,10 +202,6 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		dimensions.SessionID{},
 	}
 
-	if stepIndex > 0 {
-		stepDimensions = append(stepDimensions, dimensions.Step{Number: stepIndex + 1})
-	}
-
 	r := request.Request{
 		Ctx:        req.Ctx,
 		SiteID:     req.SiteID,
@@ -215,11 +213,66 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 	query := NewQuery(q.db)
 	query.prepare(&r)
 	query.joinStep = stepIndex // join the previous step (starting at 1)
+
+	// Determine the time column for step ordering based on the query filters.
+	// Subquery filters will be promoted to primary if they resolve to page views or events.
+	// For pure session queries, determine which field to use (time or start), depending on entry/exit path or title filters.
+	if len(query.subqueryFilter) > 0 {
+		subqueryTable := query.subqueryFilter[0].table
+		demoted := make([]classifiedFilter, 0, len(query.primaryFilter))
+
+		for _, f := range query.primaryFilter {
+			demoted = append(demoted, classifiedFilter{table: f.table, filter: f.filter})
+		}
+
+		promoted := make([]classifiedFilter, 0, len(query.subqueryFilter))
+
+		for _, f := range query.subqueryFilter {
+			promoted = append(promoted, classifiedFilter{table: subqueryTable, filter: f.filter})
+		}
+
+		query.primaryTable = subqueryTable
+		query.primaryFilter = promoted
+		query.subqueryFilter = demoted
+		query.funnelTimeColumn = "time"
+		query.funnelTimeAggregationFunction = "min"
+	} else if query.primaryTable == pkg.TableSessions {
+		if funnelStepHasExitFilter(stepFilter) {
+			query.funnelTimeColumn = "time"
+			query.funnelTimeAggregationFunction = "max"
+		} else {
+			query.funnelTimeColumn = "start"
+			query.funnelTimeAggregationFunction = "min"
+		}
+	} else {
+		query.funnelTimeColumn = "time"
+		query.funnelTimeAggregationFunction = "min"
+	}
+
 	return query.buildQuery(r)
 }
 
 func (q *Query) funnelStepsEqual(a, b []request.Filter) bool {
 	return len(a) == len(b) && fmt.Sprint(a) == fmt.Sprint(b)
+}
+
+func funnelStepHasExitFilter(filters []request.Filter) bool {
+	for _, f := range filters {
+		if len(f.Filter) > 0 {
+			if funnelStepHasExitFilter(f.Filter) {
+				return true
+			}
+
+			continue
+		}
+
+		switch f.Dimension.(type) {
+		case dimensions.ExitPath, dimensions.ExitTitle:
+			return true
+		}
+	}
+
+	return false
 }
 
 func (q *Query) prepare(req *request.Request) []error {
@@ -1391,7 +1444,7 @@ func (q *Query) buildQueryWithJoin(req request.Request) string {
 }
 
 func (q *Query) buildQueryWithJoinStep() string {
-	return fmt.Sprintf("JOIN step%d s ON visitor_id = s.visitor_id AND session_id = s.session_id ", q.joinStep)
+	return fmt.Sprintf(`JOIN step%d s ON visitor_id = s.visitor_id AND session_id = s.session_id AND "%s" > s.step_time `, q.joinStep, q.funnelTimeColumn)
 }
 
 func (q *Query) buildQueryWithFilterDimensions(req request.Request) []dimensions.Dimension {
@@ -1427,6 +1480,17 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 	for _, dimension := range req.Dimensions {
 		fields = append(fields, q.buildQuerySelectColumn(dimension, req.Period.Timezone, req.Period.WeekdayMode))
 		args = append(args, dimension.Args()...)
+	}
+
+	// expose the step time for funnel ordering so subsequent steps can enforce time > s.step_time
+	if q.funnelTimeColumn != "" {
+		aggregationFunc := q.funnelTimeAggregationFunction
+
+		if aggregationFunc == "" {
+			aggregationFunc = "min"
+		}
+
+		fields = append(fields, fmt.Sprintf(`%s("%s") AS step_time`, aggregationFunc, q.funnelTimeColumn))
 	}
 
 	return fmt.Sprintf("SELECT %s ", strings.Join(fields, ",")), args
@@ -1803,6 +1867,10 @@ func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
 }
 
 func (q *Query) buildQueryGroupBy(d []dimensions.Dimension) string {
+	if q.funnelTimeColumn != "" {
+		return "GROUP BY visitor_id, session_id "
+	}
+
 	if q.joinStep == 0 && len(d) > 0 {
 		fields := make([]string, 0, len(d))
 
