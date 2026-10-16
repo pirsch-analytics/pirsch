@@ -1155,6 +1155,62 @@ func TestQueryEventListMetaDataKeys(t *testing.T) {
 	assert.InDelta(t, 99.54, r.Results[1].DimensionValues[2].(float64), 0.01)
 }
 
+func TestQueryEventListMetaDataValues(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventMetaValue{
+				Path: "position",
+			},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.EventMetaKey{},
+				Values:    []any{"position"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Dimension: dimensions.EventMetaValue{
+					Path: "position",
+				}, Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+
+	// tables
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.Equal(t, pkg.TableEvents, q.primaryTable)
+	assert.Len(t, q.primaryFilter, 1)
+	assert.Empty(t, q.subqueryFilter)
+
+	// query
+	query, args := q.buildQuery(req)
+	assert.NotEmpty(t, query)
+	assert.Len(t, args, 3)
+	assert.Equal(t, uint64(1), args[0])
+	assert.Equal(t, "2026-01-01", args[1])
+	assert.Equal(t, "2026-01-31", args[2])
+
+	// result dimensions and metrics
+	assert.Len(t, r.Results, 2)
+	assert.Equal(t, "hero", r.Results[0].DimensionValues[0])
+	assert.Equal(t, "text", r.Results[1].DimensionValues[0])
+}
+
 func TestQueryEventListMetaDataKeysAny(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",
