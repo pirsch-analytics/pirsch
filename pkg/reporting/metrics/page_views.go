@@ -35,7 +35,7 @@ func (m PageViews) Expression(table string) (string, bool) {
 	}
 
 	if table == pkg.TableSessions {
-		return "toUInt64(sum(page_views))", false
+		return "toUInt64(sum(page_views * sign))", false
 	}
 
 	return "toUInt64(count(*))", false
