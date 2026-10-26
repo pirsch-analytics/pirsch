@@ -40,7 +40,11 @@ var browserBlacklist = []string{
 `)
 
 	for _, entry := range browser {
-		out.WriteString(fmt.Sprintf("\"%s\",\n", entry))
+		_, err := fmt.Fprintf(&out, "\"%s\",\n", entry)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	out.WriteString("}\n")
@@ -67,7 +71,7 @@ func readLines(list *os.File) map[string]struct{} {
 		line := scanner.Text()
 
 		if strings.HasPrefix(line, `"`) && strings.HasSuffix(line, `"`) {
-			line = line[1 : len(line)-1]
+			line = strings.Trim(line, `"`)
 		}
 
 		if line != "" && !strings.HasPrefix(line, "#") {

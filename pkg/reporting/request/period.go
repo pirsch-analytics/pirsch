@@ -50,16 +50,20 @@ type ComparePeriod struct {
 }
 
 func (p *Period) validate() {
-	if p.From.After(p.To) {
-		p.From, p.To = p.To, p.From
-	}
-
 	if p.Timezone == nil {
 		p.Timezone = time.UTC
 	}
 
 	if p.WeekdayMode != WeekdayMonday && p.WeekdayMode != WeekdaySunday {
 		p.WeekdayMode = WeekdayMonday
+	}
+
+	if p.From.After(p.To) {
+		p.From, p.To = p.To, p.From
+	}
+
+	if p.Compare != nil && p.Compare.From.After(p.Compare.To) {
+		p.Compare.From, p.Compare.To = p.Compare.To, p.Compare.From
 	}
 }
 

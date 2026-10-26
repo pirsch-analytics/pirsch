@@ -61,7 +61,11 @@ var userAgentBlacklist = []string{
 `)
 
 	for _, entry := range ua {
-		out.WriteString(fmt.Sprintf("\"%s\",\n", entry))
+		_, err := fmt.Fprintf(&out, "\"%s\",\n", entry)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	out.WriteString("}\n\n")

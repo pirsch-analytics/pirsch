@@ -73,11 +73,7 @@ func (client *Mock) PageViews() []model.PageView {
 	data := make([]model.PageView, len(client.pageViews))
 	copy(data, client.pageViews)
 	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Before(data[j].Time) {
-			return true
-		}
-
-		return false
+		return data[i].Time.Before(data[j].Time)
 	})
 	return data
 }
@@ -98,11 +94,7 @@ func (client *Mock) Events() []model.Event {
 	data := make([]model.Event, len(client.events))
 	copy(data, client.events)
 	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Before(data[j].Time) {
-			return true
-		}
-
-		return false
+		return data[i].Time.Before(data[j].Time)
 	})
 	return data
 }
@@ -114,11 +106,7 @@ func (client *Mock) Requests() []model.Request {
 	data := make([]model.Request, len(client.requests))
 	copy(data, client.requests)
 	sort.Slice(data, func(i, j int) bool {
-		if data[i].Time.Before(data[j].Time) {
-			return true
-		}
-
-		return false
+		return data[i].Time.Before(data[j].Time)
 	})
 	return data
 }

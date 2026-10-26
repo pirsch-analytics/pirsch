@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	isDomain = regexp.MustCompile("^.*\\.[a-zA-Z]+$")
+	isDomain = regexp.MustCompile(`^.*\.[a-zA-Z]+$`)
 )
 
 // Referrer maps referrers to groups and filters bot requests based on the referrer.

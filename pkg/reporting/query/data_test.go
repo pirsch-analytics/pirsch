@@ -154,7 +154,7 @@ func loadTestData(t *testing.T, scenarios []string) {
 }
 
 func saveImportedReferrer(referrer []importedReferrerData) error {
-	stmt, err := client.Conn.PrepareBatch(context.Background(), `INSERT INTO "imported_referrer" (client_id, date, referrer, visitors, sessions, bounces)`)
+	stmt, err := client.PrepareBatch(context.Background(), `INSERT INTO "imported_referrer" (client_id, date, referrer, visitors, sessions, bounces)`)
 
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func saveImportedReferrer(referrer []importedReferrerData) error {
 }
 
 func saveImportedVisitors(visitors []importedVisitorsData) error {
-	stmt, err := client.Conn.PrepareBatch(context.Background(), `INSERT INTO "imported_visitors" (client_id, date, visitors, views, sessions, bounces, session_duration)`)
+	stmt, err := client.PrepareBatch(context.Background(), `INSERT INTO "imported_visitors" (client_id, date, visitors, views, sessions, bounces, session_duration)`)
 
 	if err != nil {
 		return err

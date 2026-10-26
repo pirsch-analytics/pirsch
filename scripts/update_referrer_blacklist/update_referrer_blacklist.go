@@ -54,7 +54,11 @@ var referrerBlacklist = []string{
 `)
 
 	for _, entry := range keywords {
-		out.WriteString(fmt.Sprintf("\"%s\",\n", entry))
+		_, err := fmt.Fprintf(&out, "\"%s\",\n", entry)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	out.WriteString("}\n")

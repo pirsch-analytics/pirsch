@@ -39,19 +39,14 @@ func NewChannel(list map[string]string) *Channel {
 		switch c {
 		case SourceCategorySearch:
 			searchChannel = append(searchChannel, strings.ToLower(hostname))
-			break
 		case SourceCategorySocial:
 			socialChannel = append(socialChannel, strings.ToLower(hostname))
-			break
 		case SourceCategoryShopping:
 			shoppingChannel = append(shoppingChannel, strings.ToLower(hostname))
-			break
 		case SourceCategoryVideo:
 			videoChannel = append(videoChannel, strings.ToLower(hostname))
-			break
 		case SourceCategoryAI:
 			aiChannel = append(aiChannel, strings.ToLower(hostname))
-			break
 		default:
 			panic(fmt.Sprintf("unknown channel type: %s", c))
 		}

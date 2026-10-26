@@ -266,12 +266,12 @@ func (ua *UserAgent) getIOSVersion(system []string) string {
 
 		if len(parts) > 3 {
 			if parts[2] == "OS" {
-				return ua.getOSVersion(strings.Replace(parts[3], "_", ".", -1), 1)
+				return ua.getOSVersion(strings.ReplaceAll(parts[3], "_", "."), 1)
 			}
 
-			return ua.getOSVersion(strings.Replace(parts[2], "_", ".", -1), 1)
+			return ua.getOSVersion(strings.ReplaceAll(parts[2], "_", "."), 1)
 		} else if len(parts) == 2 && parts[0] == "iOS" {
-			return ua.getOSVersion(strings.Replace(parts[1], "_", ".", -1), 1)
+			return ua.getOSVersion(strings.ReplaceAll(parts[1], "_", "."), 1)
 		}
 	}
 
@@ -303,7 +303,7 @@ func (ua *UserAgent) getProductVersion(version string, n int) string {
 	read := false
 	dots := 0
 
-	for _, r := range []rune(version) {
+	for _, r := range version {
 		if r == uaProductVersionDelimiter {
 			read = true
 		} else if read && unicode.IsNumber(r) || r == uaVersionDelimiter {
@@ -340,7 +340,7 @@ func (ua *UserAgent) getOSVersion(version string, n int) string {
 	out := make([]rune, 0, len(version))
 	dots := 0
 
-	for _, r := range []rune(version) {
+	for _, r := range version {
 		if unicode.IsNumber(r) || r == uaVersionDelimiter {
 			if r == uaVersionDelimiter {
 				dots++

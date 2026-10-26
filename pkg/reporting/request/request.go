@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json/v2"
 	"regexp"
-	"time"
 
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
@@ -56,22 +55,7 @@ func (r *Request) Validate() []error {
 		r.Options = new(Options)
 	}
 
-	if r.Period.Timezone == nil {
-		r.Period.Timezone = time.UTC
-	}
-
-	if r.Period.WeekdayMode == 0 {
-		r.Period.WeekdayMode = WeekdayMonday
-	}
-
-	if r.Period.From.After(r.Period.To) {
-		r.Period.From, r.Period.To = r.Period.To, r.Period.From
-	}
-
-	if r.Period.Compare != nil && r.Period.Compare.From.After(r.Period.Compare.To) {
-		r.Period.Compare.From, r.Period.Compare.To = r.Period.Compare.To, r.Period.Compare.From
-	}
-
+	r.Period.validate()
 	errs := make([]error, 0)
 
 	if err := validateSiteID(r.SiteID); err != nil {

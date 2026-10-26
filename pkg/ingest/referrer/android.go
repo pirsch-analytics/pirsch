@@ -44,12 +44,7 @@ func newAndroid() *android {
 }
 
 func (cache *android) get(referrer string) (string, string) {
-	packageName := referrer[len(androidAppPrefix):]
-
-	if strings.HasSuffix(packageName, "/") {
-		packageName = packageName[:len(packageName)-1]
-	}
-
+	packageName := strings.TrimSuffix(referrer[len(androidAppPrefix):], "/")
 	cache.m.RLock()
 	app, found := cache.cache[packageName]
 	cache.m.RUnlock()
