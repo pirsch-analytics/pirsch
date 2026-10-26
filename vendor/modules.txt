@@ -1,9 +1,9 @@
-# github.com/ClickHouse/ch-go v0.74.0
-## explicit; go 1.25.0
+# github.com/ClickHouse/ch-go v0.75.0
+## explicit; go 1.26.0
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
-# github.com/ClickHouse/clickhouse-go/v2 v2.49.0
-## explicit; go 1.25.0
+# github.com/ClickHouse/clickhouse-go/v2 v2.50.0
+## explicit; go 1.26.0
 github.com/ClickHouse/clickhouse-go/v2
 github.com/ClickHouse/clickhouse-go/v2/ext
 github.com/ClickHouse/clickhouse-go/v2/internal/circular
@@ -15,7 +15,7 @@ github.com/ClickHouse/clickhouse-go/v2/lib/driver
 github.com/ClickHouse/clickhouse-go/v2/lib/proto
 github.com/ClickHouse/clickhouse-go/v2/lib/timezone
 github.com/ClickHouse/clickhouse-go/v2/resources
-# github.com/andybalholm/brotli v1.2.6
+# github.com/andybalholm/brotli v1.2.7
 ## explicit; go 1.22
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
@@ -47,7 +47,7 @@ github.com/go-redis/redis/v8/internal/pool
 github.com/go-redis/redis/v8/internal/proto
 github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
-# github.com/go-redsync/redsync/v4 v4.18.0
+# github.com/go-redsync/redsync/v4 v4.18.1
 ## explicit; go 1.26.0
 github.com/go-redsync/redsync/v4
 github.com/go-redsync/redsync/v4/redis
@@ -93,7 +93,7 @@ github.com/segmentio/asm/cpu/arm
 github.com/segmentio/asm/cpu/arm64
 github.com/segmentio/asm/cpu/cpuid
 github.com/segmentio/asm/cpu/x86
-# github.com/shopspring/decimal v1.5.0
+# github.com/shopspring/decimal v1.6.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
 # github.com/stretchr/testify v1.12.1
