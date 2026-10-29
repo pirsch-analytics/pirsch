@@ -1,4 +1,4 @@
-.PHONY: test deps referrer referrer_blacklist ua
+.PHONY: test deps fix lint referrer referrer_blacklist ua browser
 
 all: deps referrer referrer_blacklist ua browser test
 
@@ -13,6 +13,10 @@ deps:
 fix:
 	go fix ./...
 	go fmt ./...
+
+lint:
+	go vet ./...
+	golangci-lint run ./...
 
 referrer:
 	go run scripts/update_referrer_list/update_referrer_list.go

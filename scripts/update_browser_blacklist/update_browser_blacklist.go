@@ -40,11 +40,7 @@ var browserBlacklist = []string{
 `)
 
 	for _, entry := range browser {
-		_, err := fmt.Fprintf(&out, "\"%s\",\n", entry)
-
-		if err != nil {
-			panic(err)
-		}
+		out.WriteString(fmt.Sprintf("\"%s\",\n", entry))
 	}
 
 	out.WriteString("}\n")
