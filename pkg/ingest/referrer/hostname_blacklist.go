@@ -1,15 +1,19 @@
 package referrer
 
-// HostnameBlacklist contains blacklisted referrer hostnames.
-var HostnameBlacklist = map[string]struct{}{
+// Contains all blacklisted referrer hostnames.
+// Please add the reference in case you copy an existing list.
+// Make sure it doesn't contain duplicates.
+var hostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 	"baidu.io":      {},
 	"yahoo.io":      {},
 	"yandex.io":     {},
 	"bing.io":       {},
+	"google.io":     {},
+	"aocr.org":      {},
 
-	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2026-10-13)
+	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2026-11-06)
 	"0-0.fr":                               {},
 	"007agent-i.fr":                        {},
 	"01casino-x.ru":                        {},

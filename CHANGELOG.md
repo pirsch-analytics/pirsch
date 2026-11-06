@@ -37,6 +37,20 @@ This major update is a rewrite of the entire code base. A non-exhaustive list of
 * fixed memory session cache not overwriting sessions
 * updated dependencies
 
+## 6.28.6
+
+* updated referrer blacklist
+* updated dependencies
+
+## 6.28.5
+
+* updated User-Agent and referrer blacklists
+* updated dependencies
+
+## 6.28.4
+
+* added hourly statistics to TimeSpentStats
+
 ## 6.28.3
 
 * improved bot filter based on:
