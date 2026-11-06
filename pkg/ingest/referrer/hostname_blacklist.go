@@ -1,9 +1,7 @@
 package referrer
 
-// Contains all blacklisted referrer hostnames.
-// Please add the reference in case you copy an existing list.
-// Make sure it doesn't contain duplicates.
-var hostnameBlacklist = map[string]struct{}{
+// HostnameBlacklist contains blacklisted referrer hostnames.
+var HostnameBlacklist = map[string]struct{}{
 	// custom
 	"temp-mail.org": {},
 	"baidu.io":      {},
