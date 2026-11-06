@@ -11,6 +11,7 @@ var hostnameBlacklist = map[string]struct{}{
 	"yandex.io":     {},
 	"bing.io":       {},
 	"google.io":     {},
+	"aocr.org":      {},
 
 	// https://github.com/matomo-org/referrer-spam-list/blob/master/spammers.txt (2026-10-13)
 	"0-0.fr":                               {},

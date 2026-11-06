@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.28.6
+
+* updated referrer blacklist
+* updated dependencies
+
 ## 6.28.5
 
 * updated User-Agent and referrer blacklists

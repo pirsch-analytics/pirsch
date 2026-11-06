@@ -1,9 +1,9 @@
-# github.com/ClickHouse/ch-go v0.74.0
-## explicit; go 1.25.0
+# github.com/ClickHouse/ch-go v0.75.0
+## explicit; go 1.26.0
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto
-# github.com/ClickHouse/clickhouse-go/v2 v2.49.0
-## explicit; go 1.25.0
+# github.com/ClickHouse/clickhouse-go/v2 v2.50.0
+## explicit; go 1.26.0
 github.com/ClickHouse/clickhouse-go/v2
 github.com/ClickHouse/clickhouse-go/v2/ext
 github.com/ClickHouse/clickhouse-go/v2/internal/circular
@@ -15,7 +15,7 @@ github.com/ClickHouse/clickhouse-go/v2/lib/driver
 github.com/ClickHouse/clickhouse-go/v2/lib/proto
 github.com/ClickHouse/clickhouse-go/v2/lib/timezone
 github.com/ClickHouse/clickhouse-go/v2/resources
-# github.com/andybalholm/brotli v1.2.6
+# github.com/andybalholm/brotli v1.2.8
 ## explicit; go 1.22
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
@@ -52,7 +52,7 @@ github.com/go-redis/redis/v8/internal/pool
 github.com/go-redis/redis/v8/internal/proto
 github.com/go-redis/redis/v8/internal/rand
 github.com/go-redis/redis/v8/internal/util
-# github.com/go-redsync/redsync/v4 v4.18.0
+# github.com/go-redsync/redsync/v4 v4.18.1
 ## explicit; go 1.26.0
 github.com/go-redsync/redsync/v4
 github.com/go-redsync/redsync/v4/redis
@@ -77,13 +77,13 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/kr/text v0.2.0
 ## explicit
-# github.com/mattn/go-sqlite3 v1.14.52
+# github.com/mattn/go-sqlite3 v1.14.53
 ## explicit; go 1.21
 github.com/mattn/go-sqlite3
 # github.com/oschwald/maxminddb-golang v1.13.1
 ## explicit; go 1.21
 github.com/oschwald/maxminddb-golang
-# github.com/paulmach/orb v0.13.0
+# github.com/paulmach/orb v0.14.0
 ## explicit; go 1.18
 github.com/paulmach/orb
 # github.com/pierrec/lz4/v4 v4.1.33
@@ -105,7 +105,7 @@ github.com/segmentio/asm/cpu/arm
 github.com/segmentio/asm/cpu/arm64
 github.com/segmentio/asm/cpu/cpuid
 github.com/segmentio/asm/cpu/x86
-# github.com/shopspring/decimal v1.5.0
+# github.com/shopspring/decimal v1.6.0
 ## explicit; go 1.10
 github.com/shopspring/decimal
 # github.com/stretchr/testify v1.12.1
@@ -126,10 +126,10 @@ go.opentelemetry.io/otel/semconv/v1.43.0
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/internal/telemetry
-# go.yaml.in/yaml/v3 v3.0.5
+# go.yaml.in/yaml/v3 v3.0.6
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/net v0.61.0
+# golang.org/x/net v0.62.0
 ## explicit; go 1.26.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
