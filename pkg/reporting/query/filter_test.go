@@ -29,7 +29,7 @@ func TestQueryBuildQueryFilterGroups(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, "(country_code = ?) AND ((city = ?) OR (city = ?))", where)
+	assert.Equal(t, `("session_v7"."country_code" = ?) AND (("session_v7"."city" = ?) OR ("session_v7"."city" = ?))`, where)
 	assert.Equal(t, []any{"de", "Berlin", "Hamburg"}, args)
 
 	// NOT negates the whole group
@@ -40,7 +40,7 @@ func TestQueryBuildQueryFilterGroups(t *testing.T) {
 			{Dimension: dimensions.City{}, Values: []any{"Berlin"}},
 		},
 	})
-	assert.Equal(t, "NOT ((country_code = ?) AND (city = ?))", where)
+	assert.Equal(t, `NOT (("session_v7"."country_code" = ?) AND ("session_v7"."city" = ?))`, where)
 	assert.Equal(t, []any{"de", "Berlin"}, args)
 
 	// empty filters are skipped
@@ -51,7 +51,7 @@ func TestQueryBuildQueryFilterGroups(t *testing.T) {
 			{Dimension: dimensions.City{}, Values: []any{"Berlin"}},
 		},
 	})
-	assert.Equal(t, "(city = ?)", where)
+	assert.Equal(t, `("session_v7"."city" = ?)`, where)
 	assert.Equal(t, []any{"Berlin"}, args)
 
 	where, args = q.buildQueryFilter(pkg.TableSessions, request.Filter{
@@ -78,7 +78,7 @@ func TestQueryBuildQueryWhereEmptyFilter(t *testing.T) {
 	}
 	assert.Nil(t, q.prepare(&req))
 	where, args := q.buildQueryWhere(req)
-	assert.Equal(t, "WHERE site_id = ? ", where)
+	assert.Equal(t, `WHERE "session_v7"."site_id" = ? `, where)
 	assert.Equal(t, []any{uint64(1)}, args)
 }
 
@@ -135,44 +135,50 @@ func TestQueryBuildQueryWhereSiteAndPeriod(t *testing.T) {
 	}{
 		{
 			period: request.Period{},
-			query:  "WHERE site_id = ? ",
+			query:  `WHERE "session_v7"."site_id" = ? `,
 			args:   []any{uint64(1)},
 		},
 		{
 			period: request.Period{From: day, To: day, Timezone: tz},
-			query:  `WHERE site_id = ? AND toDate("time", 'Europe/Berlin') = toDate(?, 'Europe/Berlin') `,
+			query:  `WHERE "session_v7"."site_id" = ? AND toDate("session_v7"."time", 'Europe/Berlin') = toDate(?, 'Europe/Berlin') `,
 			args:   []any{uint64(1), "2026-01-16"},
 		},
 		{
 			period: request.Period{From: day, To: day.AddDate(0, 0, 1), Timezone: tz},
-			query:  `WHERE site_id = ? AND toDate("time", 'Europe/Berlin') BETWEEN toDate(?, 'Europe/Berlin') AND toDate(?, 'Europe/Berlin') `,
+			query:  `WHERE "session_v7"."site_id" = ? AND toDate("session_v7"."time", 'Europe/Berlin') BETWEEN toDate(?, 'Europe/Berlin') AND toDate(?, 'Europe/Berlin') `,
 			args:   []any{uint64(1), "2026-01-16", "2026-01-17"},
 		},
 		{
 			period: request.Period{From: day, To: day.Add(time.Hour), Timezone: tz, IncludeTime: true},
-			query:  `WHERE site_id = ? AND toDateTime("start", 'Europe/Berlin') BETWEEN toDateTime(?, 'Europe/Berlin') AND toDateTime(?, 'Europe/Berlin') `,
+			query:  `WHERE "session_v7"."site_id" = ? AND toDateTime("session_v7"."start", 'Europe/Berlin') BETWEEN toDateTime(?, 'Europe/Berlin') AND toDateTime(?, 'Europe/Berlin') `,
 			args:   []any{uint64(1), "2026-01-16 00:00:00", "2026-01-16 01:00:00"},
 		},
 		{
 			// open-ended
 			period: request.Period{From: day, Timezone: tz},
-			query:  `WHERE site_id = ? AND toDate("time", 'Europe/Berlin') >= toDate(?, 'Europe/Berlin') `,
+			query:  `WHERE "session_v7"."site_id" = ? AND toDate("session_v7"."time", 'Europe/Berlin') >= toDate(?, 'Europe/Berlin') `,
 			args:   []any{uint64(1), "2026-01-16"},
 		},
 		{
 			period: request.Period{To: day, Timezone: tz},
-			query:  `WHERE site_id = ? AND toDate("time", 'Europe/Berlin') <= toDate(?, 'Europe/Berlin') `,
+			query:  `WHERE "session_v7"."site_id" = ? AND toDate("session_v7"."time", 'Europe/Berlin') <= toDate(?, 'Europe/Berlin') `,
 			args:   []any{uint64(1), "2026-01-16"},
 		},
 		{
 			// imported statistics are stored by date without timezone
 			period:   request.Period{From: day, To: day.AddDate(0, 0, 1), Timezone: tz},
 			imported: true,
-			query:    `WHERE site_id = ? AND "date" BETWEEN toDate(?) AND toDate(?) `,
+			query:    `WHERE "imported_visitors"."site_id" = ? AND "imported_visitors"."date" BETWEEN toDate(?) AND toDate(?) `,
 			args:     []any{uint64(1), "2026-01-16", "2026-01-17"},
 		},
 	} {
-		query, args := q.buildQueryWhereSiteAndPeriod(1, testCase.period, pkg.TableSessions, testCase.imported)
+		table := pkg.TableSessions
+
+		if testCase.imported {
+			table = pkg.TableImportedVisitors
+		}
+
+		query, args := q.buildQueryWhereSiteAndPeriod(1, testCase.period, table, testCase.imported)
 		assert.Equal(t, testCase.query, query)
 		assert.Equal(t, testCase.args, args)
 	}
@@ -294,4 +300,83 @@ func TestQueryFunnelStepError(t *testing.T) {
 	assert.Nil(t, args)
 	r := NewQuery(client).Funnel(req)
 	assert.Len(t, r.Meta.Errors, 1)
+}
+
+func TestQueryFilterAnyDimensions(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"simple",
+		"three page views + event",
+	})
+	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	period := request.Period{
+		From: from,
+		To:   from.AddDate(0, 0, 30),
+	}
+
+	// filters on columns selected using any() must not reference the aggregation in WHERE
+	r := NewQuery(client).Run(request.Request{
+		SiteID: 1,
+		Period: period,
+		Dimensions: []dimensions.Dimension{
+			dimensions.City{},
+			dimensions.Region{Any: true},
+			dimensions.Country{Any: true},
+			dimensions.Referrer{Any: true},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{Dimension: dimensions.Country{}, Values: []any{"de"}},
+			{Dimension: dimensions.Region{}, Values: []any{"Bavaria"}},
+			{Dimension: dimensions.City{}, Values: []any{"Munich"}},
+			{Dimension: dimensions.Referrer{}, Values: []any{"https://google.com"}},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	assert.Equal(t, []any{"Munich", "Bavaria", "de", "https://google.com"}, r.Results[0].DimensionValues)
+
+	// tags
+	r = NewQuery(client).Run(request.Request{
+		SiteID: 1,
+		Period: period,
+		Dimensions: []dimensions.Dimension{
+			dimensions.TagValue{Key: "author"},
+			dimensions.Country{Any: true},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{Dimension: dimensions.TagKey{}, Values: []any{"author"}},
+			{Dimension: dimensions.TagValue{Key: "author"}, Values: []any{"John Doe"}},
+			{Dimension: dimensions.Country{}, Values: []any{"de"}},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, []any{"John Doe", "de"}, r.Results[0].DimensionValues)
+
+	// event metadata
+	r = NewQuery(client).Run(request.Request{
+		SiteID: 1,
+		Period: period,
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMetaKey{Any: true},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+		},
+		Filter: []request.Filter{
+			{Dimension: dimensions.EventMetaKey{}, Values: []any{"position"}},
+			{Dimension: dimensions.EventMeta{Path: "position"}, Values: []any{"hero"}},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Results, 1)
+	assert.Equal(t, "Contact Button", r.Results[0].DimensionValues[0])
 }

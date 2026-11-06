@@ -15,7 +15,7 @@ github.com/ClickHouse/clickhouse-go/v2/lib/driver
 github.com/ClickHouse/clickhouse-go/v2/lib/proto
 github.com/ClickHouse/clickhouse-go/v2/lib/timezone
 github.com/ClickHouse/clickhouse-go/v2/resources
-# github.com/andybalholm/brotli v1.2.7
+# github.com/andybalholm/brotli v1.2.8
 ## explicit; go 1.22
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
@@ -52,7 +52,7 @@ github.com/go-redis/redis/v8/internal/util
 github.com/go-redsync/redsync/v4
 github.com/go-redsync/redsync/v4/redis
 github.com/go-redsync/redsync/v4/redis/goredis/v8
-# github.com/gocarina/gocsv v0.0.0-20261012193826-401c25af6907
+# github.com/gocarina/gocsv v0.0.0-20261101205459-d0dd027dcbfa
 ## explicit; go 1.13
 github.com/gocarina/gocsv
 # github.com/google/uuid v1.6.0
@@ -69,13 +69,13 @@ github.com/klauspost/compress/internal/regmask
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/mattn/go-sqlite3 v1.14.52
+# github.com/mattn/go-sqlite3 v1.14.53
 ## explicit; go 1.21
 github.com/mattn/go-sqlite3
 # github.com/oschwald/maxminddb-golang v1.13.1
 ## explicit; go 1.21
 github.com/oschwald/maxminddb-golang
-# github.com/paulmach/orb v0.13.0
+# github.com/paulmach/orb v0.14.0
 ## explicit; go 1.18
 github.com/paulmach/orb
 # github.com/pierrec/lz4/v4 v4.1.33
@@ -114,10 +114,10 @@ go.opentelemetry.io/otel/semconv/v1.43.0
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/internal/telemetry
-# go.yaml.in/yaml/v3 v3.0.5
+# go.yaml.in/yaml/v3 v3.0.6
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/net v0.61.0
+# golang.org/x/net v0.62.0
 ## explicit; go 1.26.0
 golang.org/x/net/html
 golang.org/x/net/html/atom

@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.2
+
+* fixed filters on referrers, countries, regions, cities, tags, and event metadata failing when the same column is selected using any()
+* updated dependencies
+
 ## 7.0.1
 
 * added validation timezones, event metadata, and column names

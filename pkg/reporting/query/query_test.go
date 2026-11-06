@@ -4705,7 +4705,7 @@ func TestQueryBuildQueryImported(t *testing.T) {
 	req.Validate()
 	q.prepare(&req)
 	query, args := q.buildQueryImported(req)
-	assert.Equal(t, `SELECT toUInt64(sum(visitors)) visitors, toUInt64(sum(sessions)) sessions, toUInt64(sum(bounces)) bounces, toFloat64OrDefault(visitors / greatest(visitors, 1)) relative_visitors, toFloat64OrDefault(bounces / greatest(sessions, 1)) bounce_rate, referrer FROM "imported_referrer" WHERE site_id = ? AND "date" BETWEEN toDate(?) AND toDate(?) GROUP BY referrer `, query)
+	assert.Equal(t, `SELECT toUInt64(sum(visitors)) visitors, toUInt64(sum(sessions)) sessions, toUInt64(sum(bounces)) bounces, toFloat64OrDefault(visitors / greatest(visitors, 1)) relative_visitors, toFloat64OrDefault(bounces / greatest(sessions, 1)) bounce_rate, referrer FROM "imported_referrer" WHERE "imported_referrer"."site_id" = ? AND "imported_referrer"."date" BETWEEN toDate(?) AND toDate(?) GROUP BY referrer `, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, "2025-12-29", args[1])

@@ -1231,7 +1231,7 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 		for _, m := range req.Metrics {
 			switch m.(type) {
 			case metrics.RelativeVisitors, metrics.RelativeViews:
-				whereSiteAndPeriodNative, whereSiteAndPeriodNativeArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, nativeReq.Period, q.primaryTable, false)
+				whereSiteAndPeriodNative, whereSiteAndPeriodNativeArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, nativeReq.Period, pkg.TableSessions, false)
 				whereSiteAndPeriodImported, whereSiteAndPeriodImportedArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, importedReq.Period, q.importedTable, true)
 				args = append(args, whereSiteAndPeriodNativeArgs...)
 				args = append(args, whereSiteAndPeriodImportedArgs...)
@@ -1496,7 +1496,8 @@ func (q *Query) buildQuerySelect(req request.Request) (string, []any) {
 		expression, requiresSubquery := metric.Expression(q.primaryTable)
 
 		if requiresSubquery {
-			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable, false)
+			// metric subqueries always select from the sessions table
+			subquery, a := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, pkg.TableSessions, false)
 			expression = fmt.Sprintf(expression, subquery)
 			args = append(args, a...)
 		}
@@ -1597,7 +1598,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string, imported bool) (string, []any) {
 	var query strings.Builder
 	args := []any{siteID}
-	query.WriteString("WHERE site_id = ? ")
+	query.WriteString(fmt.Sprintf("WHERE %s = ? ", q.buildQualifiedColumn(table, "site_id")))
 
 	if period.From.IsZero() && period.To.IsZero() {
 		return query.String(), args
@@ -1611,7 +1612,7 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		timeColumn = "start"
 	}
 
-	column := fmt.Sprintf(`"%s"`, timeColumn)
+	column := q.buildQualifiedColumn(table, timeColumn)
 	param := "toDate(?)"
 	format := time.DateOnly
 
@@ -1619,11 +1620,11 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		tz := q.timezoneName(period)
 
 		if period.IncludeTime {
-			column = fmt.Sprintf(`toDateTime("%s", '%s')`, timeColumn, tz)
+			column = fmt.Sprintf(`toDateTime(%s, '%s')`, column, tz)
 			param = fmt.Sprintf("toDateTime(?, '%s')", tz)
 			format = time.DateTime
 		} else {
-			column = fmt.Sprintf(`toDate("%s", '%s')`, timeColumn, tz)
+			column = fmt.Sprintf(`toDate(%s, '%s')`, column, tz)
 			param = fmt.Sprintf("toDate(?, '%s')", tz)
 		}
 	}
@@ -1715,79 +1716,81 @@ func (q *Query) writeQueryFilters(query *strings.Builder, table string, filters 
 func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (string, []any) {
 	switch filter.Dimension.(type) {
 	case dimensions.TagKey:
+		tagKeys := fmt.Sprintf("mapKeys(%s)", q.buildQualifiedColumn(table, "tags"))
+
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "has(mapKeys(tags), ?) = 0")
+					group = append(group, fmt.Sprintf("has(%s, ?) = 0", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "has(mapKeys(tags), ?) = 0", filter.Values
+			return fmt.Sprintf("has(%s, ?) = 0", tagKeys), filter.Values
 		case request.OperatorContains:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "arrayExists(k -> ilike(k, '%%' || ? || '%%'), mapKeys(tags))")
+					group = append(group, fmt.Sprintf("arrayExists(k -> ilike(k, '%%' || ? || '%%'), %s)", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "arrayExists(k -> ilike(k, '%%' || ? || '%%'), mapKeys(tags))", filter.Values
+			return fmt.Sprintf("arrayExists(k -> ilike(k, '%%' || ? || '%%'), %s)", tagKeys), filter.Values
 		case request.OperatorContainsNot:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "arrayExists(k -> ilike(k, '%%' || ? || '%%'), mapKeys(tags)) = 0")
+					group = append(group, fmt.Sprintf("arrayExists(k -> ilike(k, '%%' || ? || '%%'), %s) = 0", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "arrayExists(k -> ilike(k, '%%' || ? || '%%'), mapKeys(tags)) = 0", filter.Values
+			return fmt.Sprintf("arrayExists(k -> ilike(k, '%%' || ? || '%%'), %s) = 0", tagKeys), filter.Values
 		case request.OperatorMatches:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "arrayExists(k -> match(k, ?), mapKeys(tags))")
+					group = append(group, fmt.Sprintf("arrayExists(k -> match(k, ?), %s)", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "arrayExists(k -> match(k, ?), mapKeys(tags))", filter.Values
+			return fmt.Sprintf("arrayExists(k -> match(k, ?), %s)", tagKeys), filter.Values
 		case request.OperatorMatchesNot:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "arrayExists(k -> match(k, ?), mapKeys(tags)) = 0")
+					group = append(group, fmt.Sprintf("arrayExists(k -> match(k, ?), %s) = 0", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "arrayExists(k -> match(k, ?), mapKeys(tags)) = 0", filter.Values
+			return fmt.Sprintf("arrayExists(k -> match(k, ?), %s) = 0", tagKeys), filter.Values
 		default:
 			if len(filter.Values) > 1 {
 				group := make([]string, 0, len(filter.Values))
 
 				for range filter.Values {
-					group = append(group, "has(mapKeys(tags), ?)")
+					group = append(group, fmt.Sprintf("has(%s, ?)", tagKeys))
 				}
 
 				return strings.Join(group, " OR "), filter.Values
 			}
 
-			return "has(mapKeys(tags), ?)", filter.Values
+			return fmt.Sprintf("has(%s, ?)", tagKeys), filter.Values
 		}
 	case dimensions.EventMetaKey:
 		expression, _ := q.buildQueryWhereColumn(table, filter)
@@ -1881,14 +1884,20 @@ func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (str
 func (q *Query) buildQueryWhereColumn(table string, filter request.Filter) (string, []any) {
 	switch d := filter.Dimension.(type) {
 	case dimensions.TagValue:
-		return "tags[?]", []any{d.Key}
+		return fmt.Sprintf("%s[?]", q.buildQualifiedColumn(table, "tags")), []any{d.Key}
 	case dimensions.EventMeta:
-		return fmt.Sprintf("%s%s", d.Column(""), q.buildQueryFilterJSONPath(d.Path)), nil
+		return fmt.Sprintf("%s%s", q.buildQualifiedColumn(table, "meta_data"), q.buildQueryFilterJSONPath(d.Path)), nil
 	case dimensions.EventMetaValue:
-		return fmt.Sprintf("meta_data%s", q.buildQueryFilterJSONPath(d.Path)), nil
+		return fmt.Sprintf("%s%s", q.buildQualifiedColumn(table, "meta_data"), q.buildQueryFilterJSONPath(d.Path)), nil
+	case dimensions.EventMetaKey:
+		return q.buildQualifiedColumn(table, "meta_data"), nil
 	default:
-		return d.Column(table), nil
+		return q.buildQualifiedColumn(table, d.Column(table)), nil
 	}
+}
+
+func (q *Query) buildQualifiedColumn(table, column string) string {
+	return fmt.Sprintf(`"%s"."%s"`, table, column)
 }
 
 func (q *Query) buildQueryFilterJSONPath(value string) string {
