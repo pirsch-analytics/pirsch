@@ -11,6 +11,7 @@ import (
 
 var (
 	metaKeyValidKeySegment = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	columnNameValid        = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 )
 
 // Request generates a report.Report.
@@ -55,12 +56,17 @@ func (r *Request) Validate() []error {
 		r.Options = new(Options)
 	}
 
-	r.Period.validate()
 	errs := make([]error, 0)
+
+	if err := r.Period.validate(); err != nil {
+		errs = append(errs, err)
+	}
 
 	if err := validateSiteID(r.SiteID); err != nil {
 		errs = append(errs, err)
 	}
+
+	errs = append(errs, validateDimensions(r.Dimensions)...)
 
 	for _, f := range r.Filter {
 		errs = append(errs, validateFilterValues(f)...)

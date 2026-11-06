@@ -17,8 +17,51 @@ func validateSiteID(siteID uint64) error {
 	return nil
 }
 
+func validateDimensions(requestDimensions []dimensions.Dimension) []error {
+	errs := make([]error, 0)
+
+	for _, d := range requestDimensions {
+		if err := validateDimension(d); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func validateDimension(d dimensions.Dimension) error {
+	switch dim := d.(type) {
+	case dimensions.EventMeta:
+		return validateEventMetaFields(dim.Path, dim.ColumnName)
+	case dimensions.EventMetaValue:
+		return validateEventMetaFields(dim.Path, dim.ColumnName)
+	}
+
+	return nil
+}
+
+func validateEventMetaFields(path, columnName string) error {
+	if path != "" {
+		if err := validateMetadataKey(path); err != nil {
+			return err
+		}
+	}
+
+	if columnName != "" && !columnNameValid.MatchString(columnName) {
+		return fmt.Errorf("column name '%s' contains invalid characters: only a-z, A-Z, 0-9 and _ are allowed and it must not start with a digit", columnName)
+	}
+
+	return nil
+}
+
 func validateFilterValues(filter Filter) []error {
 	errs := make([]error, 0)
+
+	if filter.Dimension != nil {
+		if err := validateDimension(filter.Dimension); err != nil {
+			errs = append(errs, err)
+		}
+	}
 
 	switch filter.Dimension.(type) {
 	case dimensions.EventMetaKey:
@@ -68,7 +111,9 @@ func validateOrderBy(order []OrderBy, requestDimensions []dimensions.Dimension, 
 
 	for _, o := range order {
 		if o.Dimension != nil {
-			if err := validateOrderByDimension(o.Dimension, requestDimensions); err != nil {
+			if err := validateDimension(o.Dimension); err != nil {
+				errs = append(errs, err)
+			} else if err := validateOrderByDimension(o.Dimension, requestDimensions); err != nil {
 				errs = append(errs, err)
 			}
 		} else if o.Metric != nil {

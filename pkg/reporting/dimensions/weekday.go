@@ -31,28 +31,18 @@ func (d Weekday) ColumnImported() string {
 
 // Expression implements the Dimension interface.
 func (d Weekday) Expression(options *DimensionExpressionOptions) string {
+	mode := weekdayMode(options)
+
 	if options == nil || options.Timezone == nil {
-		return `toDayOfWeek("time")`
+		return fmt.Sprintf(`toDayOfWeek("time", %d)`, mode)
 	}
 
-	if options.Timezone == nil {
-		return fmt.Sprintf(`toDayOfWeek("time", %d)`, options.WeekdayMode)
-	}
-
-	return fmt.Sprintf(`toDayOfWeek("time", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
+	return fmt.Sprintf(`toDayOfWeek("time", %d, '%s')`, mode, options.Timezone.String())
 }
 
 // ExpressionImported implements the Dimension interface.
 func (d Weekday) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil || options.Timezone == nil {
-		return `toDayOfWeek("date")`
-	}
-
-	if options.Timezone == nil {
-		return fmt.Sprintf(`toDayOfWeek("date", %d)`, options.WeekdayMode)
-	}
-
-	return fmt.Sprintf(`toDayOfWeek("date", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
+	return fmt.Sprintf(`toDayOfWeek("date", %d)`, weekdayMode(options))
 }
 
 // Args implements the Dimension interface.
@@ -68,4 +58,12 @@ func (d Weekday) ScanType() any {
 // String implements the Dimension interface.
 func (d Weekday) String() string {
 	return "weekday"
+}
+
+func weekdayMode(options *DimensionExpressionOptions) int {
+	if options == nil || options.WeekdayMode == 0 {
+		return 1
+	}
+
+	return options.WeekdayMode
 }

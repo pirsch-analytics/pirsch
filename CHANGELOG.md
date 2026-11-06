@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.0.1
+
+* added validation timezones, event metadata, and column names
+* fixed missing hours and minutes for the last day in time series
+* fixed inconsistent weekday results depending on the timezone
+* fixed imported statistics being counted twice
+* fixed time series being cut short when using relative metrics with imported statistics
+* fixed nested filter groups being combined incorrectly
+* fixed NOT filter groups being ignored
+* fixed invalid queries for empty filters
+* fixed wildcards in contains filters
+* fixed metric values being mixed up in join queries
+* fixed sorting by dimension in join queries
+* fixed errors in comparison periods and funnel steps being ignored
+* fixed "too many open files" errors in tests (it now uses TRUNCATE)
+
 ## 7.0.0
 
 This major update is a rewrite of the entire code base. A non-exhaustive list of important changes include:

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,25 +73,10 @@ func CleanupDB(t *testing.T, client *ClickHouse) {
 		"imported_utm_source",
 		"imported_visitors",
 	}
-	var wg sync.WaitGroup
-	wg.Add(len(tables))
 
 	for _, table := range tables {
-		go func() {
-			err := client.Exec(context.Background(), fmt.Sprintf(`ALTER TABLE "%s" DELETE WHERE 1=1`, table))
-			wg.Done()
-			assert.NoError(t, err)
-		}()
-	}
-
-	wg.Wait()
-
-	for _, table := range tables {
-		count := uint64(1)
-
-		for count > 0 {
-			row := client.QueryRow(context.Background(), fmt.Sprintf(`SELECT count(*) FROM "%s"`, table))
-			assert.NoError(t, row.Scan(&count))
+		if err := client.Exec(context.Background(), fmt.Sprintf(`TRUNCATE TABLE IF EXISTS "%s"`, table)); err != nil {
+			t.Fatalf("error truncating table '%s': %s", table, err)
 		}
 	}
 

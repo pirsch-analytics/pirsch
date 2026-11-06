@@ -838,7 +838,7 @@ func TestQueryDimensionOnly(t *testing.T) {
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, "2026-01-01", args[1])
 	assert.Equal(t, "2026-01-31", args[2])
-	assert.Equal(t, "%go%", args[3])
+	assert.Equal(t, "go", args[3])
 
 	// result
 	assert.Len(t, r.Results, 2)
@@ -2156,10 +2156,10 @@ func TestQueryEventPath(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[1])
 	assert.Equal(t, uint64(2), r.Results[0].MetricValues[2])
 	assert.Equal(t, uint64(3), r.Results[0].MetricValues[3])
-	assert.Equal(t, float64(1), r.Results[0].MetricValues[4])
+	assert.Equal(t, uint64(2), r.Results[0].MetricValues[4])
 	assert.InDelta(t, 0.6666, r.Results[0].MetricValues[5], 0.001)
 	assert.InDelta(t, 0.3333, r.Results[0].MetricValues[6], 0.001)
-	assert.Equal(t, float64(0), r.Results[0].MetricValues[7])
+	assert.Equal(t, float64(1), r.Results[0].MetricValues[7])
 	assert.Equal(t, "/", r.Results[0].DimensionValues[0])
 
 	// result row 1
@@ -2167,7 +2167,7 @@ func TestQueryEventPath(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[1])
 	assert.Equal(t, uint64(1), r.Results[1].MetricValues[2])
 	assert.Equal(t, uint64(0), r.Results[1].MetricValues[3])
-	assert.Equal(t, float64(0), r.Results[1].MetricValues[4])
+	assert.Equal(t, uint64(1), r.Results[1].MetricValues[4])
 	assert.InDelta(t, 0.3333, r.Results[1].MetricValues[5], 0.001)
 	assert.InDelta(t, 0.1666, r.Results[1].MetricValues[6], 0.001)
 	assert.Equal(t, float64(0), r.Results[1].MetricValues[7])
@@ -4536,7 +4536,7 @@ func TestQueryImportedPageViews(t *testing.T) {
 	assert.Empty(t, q.primaryFilter)
 	assert.Equal(t, pkg.TableImportedVisitors, q.importedTable)
 	assert.Empty(t, q.subqueryFilter)
-	assert.Len(t, r.Results, 4)
+	assert.Len(t, r.Results, 5)
 
 	// result row 0
 	assert.Equal(t, uint64(9), r.Results[0].MetricValues[0])
@@ -4557,6 +4557,10 @@ func TestQueryImportedPageViews(t *testing.T) {
 	assert.Equal(t, uint64(2), r.Results[3].MetricValues[0])
 	assert.InDelta(t, 0.1, r.Results[3].MetricValues[1], 0.001)
 	assert.Equal(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC), r.Results[3].DimensionValues[0])
+
+	// result row 4 (filled, the period ends on the 2nd)
+	assert.Equal(t, uint64(0), r.Results[4].MetricValues[0])
+	assert.Equal(t, time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC), r.Results[4].DimensionValues[0])
 }
 
 func TestQueryImportedReferrerFiltered(t *testing.T) {
@@ -4701,7 +4705,7 @@ func TestQueryBuildQueryImported(t *testing.T) {
 	req.Validate()
 	q.prepare(&req)
 	query, args := q.buildQueryImported(req)
-	assert.Equal(t, `SELECT toUInt64(sum(visitors)) visitors, toUInt64(sum(sessions)) sessions, toUInt64(sum(bounces)) bounces, toFloat64OrDefault(visitors / greatest(visitors, 1)) relative_visitors, toFloat64OrDefault(bounces / greatest(sessions, 1)) bounce_rate, referrer FROM "imported_referrer" WHERE site_id = ? AND toDate(date, 'UTC') BETWEEN toDate(?, 'UTC') AND toDate(?, 'UTC') GROUP BY referrer `, query)
+	assert.Equal(t, `SELECT toUInt64(sum(visitors)) visitors, toUInt64(sum(sessions)) sessions, toUInt64(sum(bounces)) bounces, toFloat64OrDefault(visitors / greatest(visitors, 1)) relative_visitors, toFloat64OrDefault(bounces / greatest(sessions, 1)) bounce_rate, referrer FROM "imported_referrer" WHERE site_id = ? AND "date" BETWEEN toDate(?) AND toDate(?) GROUP BY referrer `, query)
 	assert.Len(t, args, 3)
 	assert.Equal(t, uint64(1), args[0])
 	assert.Equal(t, "2025-12-29", args[1])

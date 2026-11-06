@@ -32,24 +32,18 @@ func (d Week) ColumnImported() string {
 
 // Expression implements the Dimension interface.
 func (d Week) Expression(options *DimensionExpressionOptions) string {
+	mode := weekdayMode(options)
+
 	if options == nil || options.Timezone == nil {
-		return `toStartOfWeek("time")`
+		return fmt.Sprintf(`toStartOfWeek("time", %d)`, mode)
 	}
 
-	if options.Timezone == nil {
-		return fmt.Sprintf(`toStartOfWeek("time", %d)`, options.WeekdayMode)
-	}
-
-	return fmt.Sprintf(`toStartOfWeek("time", %d, '%s')`, options.WeekdayMode, options.Timezone.String())
+	return fmt.Sprintf(`toStartOfWeek("time", %d, '%s')`, mode, options.Timezone.String())
 }
 
 // ExpressionImported implements the Dimension interface.
 func (d Week) ExpressionImported(options *DimensionExpressionOptions) string {
-	if options == nil {
-		return `toStartOfWeek("date")`
-	}
-
-	return fmt.Sprintf(`toStartOfWeek("date", %d)`, options.WeekdayMode)
+	return fmt.Sprintf(`toStartOfWeek("date", %d)`, weekdayMode(options))
 }
 
 // Args implements the Dimension interface.

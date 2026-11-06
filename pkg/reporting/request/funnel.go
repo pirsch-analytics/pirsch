@@ -5,7 +5,6 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
-	"time"
 )
 
 // FunnelRequest generates a funnel.
@@ -38,19 +37,11 @@ func (r *FunnelRequest) Validate() []error {
 		r.Options = new(Options)
 	}
 
-	if r.Period.Timezone == nil {
-		r.Period.Timezone = time.UTC
-	}
-
-	if r.Period.WeekdayMode == 0 {
-		r.Period.WeekdayMode = WeekdayMonday
-	}
-
-	if r.Period.From.After(r.Period.To) {
-		r.Period.From, r.Period.To = r.Period.To, r.Period.From
-	}
-
 	errs := make([]error, 0)
+
+	if err := r.Period.validate(); err != nil {
+		errs = append(errs, err)
+	}
 
 	if err := validateSiteID(r.SiteID); err != nil {
 		errs = append(errs, err)

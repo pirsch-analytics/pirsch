@@ -1,6 +1,8 @@
 package query
 
 import (
+	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -19,10 +21,23 @@ import (
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
 )
 
-var tablePriority = map[string]int{
-	pkg.TableSessions:  1,
-	pkg.TablePageViews: 2,
-	pkg.TableEvents:    2,
+var (
+	tablePriority = map[string]int{
+		pkg.TableSessions:  1,
+		pkg.TablePageViews: 2,
+		pkg.TableEvents:    2,
+	}
+	likeEscaper = strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`)
+)
+
+type joinQueries struct {
+	primaryQuery        string
+	primaryArgs         []any
+	primaryMetrics      []metrics.Metric
+	secondaryQuery      string
+	secondaryArgs       []any
+	secondaryMetrics    []metrics.Metric
+	sortingByJoinMetric bool
 }
 
 type classifiedFilter struct {
@@ -98,7 +113,16 @@ func (q *Query) Funnel(req request.FunnelRequest) report.FunnelReport {
 	}
 
 	// query and scan results
-	query, args := q.prepareFunnel(req)
+	query, args, err := q.prepareFunnel(req)
+
+	if err != nil {
+		return report.FunnelReport{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
 	rows, err := q.db.Query(req.Ctx, query, args...)
 
 	if err != nil {
@@ -169,8 +193,13 @@ func (q *Query) DryRun(req request.Request) (string, []any, string, []any, []err
 	}
 
 	if q.joinTable != "" {
-		_, primaryQuery, primaryArgs, _, secondaryQuery, secondaryArgs, _, _ := q.prepareRunWithJoinQueries(req)
-		return primaryQuery, primaryArgs, secondaryQuery, secondaryArgs, nil
+		join, err := q.prepareRunWithJoinQueries(req)
+
+		if err != nil {
+			return "", nil, "", nil, []error{err}
+		}
+
+		return join.primaryQuery, join.primaryArgs, join.secondaryQuery, join.secondaryArgs, nil
 	}
 
 	var query string
@@ -192,11 +221,16 @@ func (q *Query) DryRunFunnel(req request.FunnelRequest) (string, []any, []error)
 	}
 
 	// generate one subquery for each step
-	query, args := q.prepareFunnel(req)
+	query, args, err := q.prepareFunnel(req)
+
+	if err != nil {
+		return "", nil, []error{err}
+	}
+
 	return query, args, nil
 }
 
-func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any) {
+func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, stepFilter []request.Filter) (string, []any, error) {
 	stepDimensions := []dimensions.Dimension{
 		dimensions.VisitorID{},
 		dimensions.SessionID{},
@@ -211,7 +245,11 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		Options:    req.Options,
 	}
 	query := NewQuery(q.db)
-	query.prepare(&r)
+
+	if errs := query.prepare(&r); errs != nil {
+		return "", nil, fmt.Errorf("funnel step %d: %w", stepIndex+1, errors.Join(errs...))
+	}
+
 	query.joinStep = stepIndex // join the previous step (starting at 1)
 
 	// Determine the time column for step ordering based on the query filters.
@@ -249,7 +287,8 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		query.funnelTimeAggregationFunction = "min"
 	}
 
-	return query.buildQuery(r)
+	stepQuery, stepArgs := query.buildQuery(r)
+	return stepQuery, stepArgs, nil
 }
 
 func (q *Query) funnelStepsEqual(a, b []request.Filter) bool {
@@ -311,58 +350,29 @@ func (q *Query) prepareImported(req *request.Request) error {
 }
 
 func (q *Query) runWithJoin(req request.Request) report.Report {
+	join, err := q.prepareRunWithJoinQueries(req)
+
+	if err != nil {
+		return report.Report{
+			Meta: report.Meta{
+				Errors: []error{err},
+			},
+		}
+	}
+
 	// run both in parallel
-	requestMetrics,
-		primaryQuery,
-		primaryArgs,
-		primaryMetrics,
-		secondaryQuery,
-		secondaryArgs,
-		secondaryMetrics,
-		sortingByJoinMetric := q.prepareRunWithJoinQueries(req)
 	var wg sync.WaitGroup
-	var m sync.Mutex
+	var primaryErr, secondaryErr error
 	var results, secondaryResults []report.Result
-	var err error
 	wg.Go(func() {
-		primaryRows, e := q.db.Query(req.Ctx, primaryQuery, primaryArgs...)
-
-		if e != nil {
-			m.Lock()
-			defer m.Unlock()
-			err = e
-			return
-		}
-
-		results, e = q.scanRows(primaryRows, req.Dimensions, primaryMetrics)
-
-		if e != nil {
-			m.Lock()
-			defer m.Unlock()
-			err = e
-		}
+		results, primaryErr = q.queryAndScan(req.Ctx, join.primaryQuery, join.primaryArgs, req.Dimensions, join.primaryMetrics)
 	})
 	wg.Go(func() {
-		secondaryRows, e := q.db.Query(req.Ctx, secondaryQuery, secondaryArgs...)
-
-		if e != nil {
-			m.Lock()
-			defer m.Unlock()
-			err = e
-			return
-		}
-
-		secondaryResults, e = q.scanRows(secondaryRows, req.Dimensions, secondaryMetrics)
-
-		if e != nil {
-			m.Lock()
-			defer m.Unlock()
-			err = e
-		}
+		secondaryResults, secondaryErr = q.queryAndScan(req.Ctx, join.secondaryQuery, join.secondaryArgs, req.Dimensions, join.secondaryMetrics)
 	})
 	wg.Wait()
 
-	if err != nil {
+	if err := errors.Join(primaryErr, secondaryErr); err != nil {
 		return report.Report{
 			Meta: report.Meta{
 				Errors: []error{
@@ -373,10 +383,10 @@ func (q *Query) runWithJoin(req request.Request) report.Report {
 		}
 	}
 
-	q.mergeResults(results, secondaryResults, requestMetrics, primaryMetrics)
+	q.mergeResults(results, secondaryResults, req.Metrics, join.primaryMetrics)
 
-	if sortingByJoinMetric {
-		q.sortResults(results, requestMetrics, req.OrderBy)
+	if join.sortingByJoinMetric {
+		q.sortResults(results, req.Dimensions, req.Metrics, req.OrderBy)
 		results = q.paginateResults(results, req.Pagination)
 	}
 
@@ -396,26 +406,13 @@ func (q *Query) run(req request.Request) report.Report {
 		query, args = q.buildQuery(req)
 	}
 
-	rows, err := q.db.Query(req.Ctx, query, args...)
+	results, err := q.queryAndScan(req.Ctx, query, args, req.Dimensions, req.Metrics)
 
 	if err != nil {
 		return report.Report{
 			Meta: report.Meta{
 				Errors: []error{
 					errors.New("error executing query"),
-					err,
-				},
-			},
-		}
-	}
-
-	results, err := q.scanRows(rows, req.Dimensions, req.Metrics)
-
-	if err != nil {
-		return report.Report{
-			Meta: report.Meta{
-				Errors: []error{
-					errors.New("error scanning rows"),
 					err,
 				},
 			},
@@ -484,6 +481,10 @@ func (q *Query) runWithComparison(req request.Request, currentReport *report.Rep
 		previousReport = q.run(req)
 	}
 
+	if len(previousReport.Meta.Errors) > 0 {
+		return errors.Join(previousReport.Meta.Errors...)
+	}
+
 	// merge results
 	if mergeInOrder {
 		for i := range currentReport.Results {
@@ -527,46 +528,63 @@ func (q *Query) runWithComparison(req request.Request, currentReport *report.Rep
 	return nil
 }
 
-func (q *Query) prepareRunWithJoinQueries(req request.Request) ([]metrics.Metric, string, []any, []metrics.Metric, string, []any, []metrics.Metric, bool) {
-	requestMetrics := req.Metrics
-	primaryMetrics, secondaryMetrics := q.splitMetrics(requestMetrics)
-	sortingByJoinMetric := q.orderByContainsJoinMetric(req.OrderBy)
+func (q *Query) queryAndScan(ctx context.Context, query string, args []any, dimensions []dimensions.Dimension, metrics []metrics.Metric) ([]report.Result, error) {
+	rows, err := q.db.Query(ctx, query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = rows.Close()
+	}()
+	return q.scanRows(rows, dimensions, metrics)
+}
+
+func (q *Query) prepareRunWithJoinQueries(req request.Request) (joinQueries, error) {
+	var join joinQueries
+	join.primaryMetrics, join.secondaryMetrics = q.splitMetrics(req.Metrics)
+	join.sortingByJoinMetric = q.orderByContainsJoinMetric(req.OrderBy)
 
 	// build query for primary metrics
 	primaryReq := req
-	primaryReq.Metrics = primaryMetrics
-	primaryReq.OrderBy = q.filterOrderByForPrimary(req.OrderBy, primaryMetrics)
+	primaryReq.Metrics = join.primaryMetrics
+	primaryReq.OrderBy = q.filterOrderByForPrimary(req.OrderBy, join.primaryMetrics)
 
-	if sortingByJoinMetric {
+	if join.sortingByJoinMetric {
 		primaryReq.Pagination = nil
 	}
 
-	primaryQuery, primaryArgs := q.buildQuery(primaryReq)
+	join.primaryQuery, join.primaryArgs = q.buildQuery(primaryReq)
 
 	// build query for secondary metrics
 	savedPrimaryTable := q.primaryTable
 	savedPrimaryFilter := q.primaryFilter
 	savedSubqueryFilter := q.subqueryFilter
+	defer func() {
+		q.primaryTable = savedPrimaryTable
+		q.primaryFilter = savedPrimaryFilter
+		q.subqueryFilter = savedSubqueryFilter
+	}()
 	q.primaryTable = q.joinTable
 	q.primaryFilter = make([]classifiedFilter, 0)
 	q.subqueryFilter = make([]classifiedFilter, 0)
 
 	for _, filter := range req.Filter {
-		_ = q.classifyFilter(filter)
+		if err := q.classifyFilter(filter); err != nil {
+			return joinQueries{}, err
+		}
 	}
 
 	secondaryReq := req
-	secondaryReq.Metrics = secondaryMetrics
+	secondaryReq.Metrics = join.secondaryMetrics
 	secondaryReq.OrderBy = nil
 	secondaryReq.Pagination = nil
-	secondaryQuery, secondaryArgs := q.buildQuery(secondaryReq)
-	q.primaryTable = savedPrimaryTable
-	q.primaryFilter = savedPrimaryFilter
-	q.subqueryFilter = savedSubqueryFilter
-	return requestMetrics, primaryQuery, primaryArgs, primaryMetrics, secondaryQuery, secondaryArgs, secondaryMetrics, sortingByJoinMetric
+	join.secondaryQuery, join.secondaryArgs = q.buildQuery(secondaryReq)
+	return join, nil
 }
 
-func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
+func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any, error) {
 	var query strings.Builder
 	args := make([]any, 0)
 
@@ -581,7 +599,12 @@ func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
 		if i > 0 && q.funnelStepsEqual(req.Filter[i], req.Filter[i-1]) {
 			query.WriteString(fmt.Sprintf("SELECT * FROM step%d", i))
 		} else {
-			stepQuery, stepArgs := q.buildFunnelStepQuery(req, i, step)
+			stepQuery, stepArgs, err := q.buildFunnelStepQuery(req, i, step)
+
+			if err != nil {
+				return "", nil, err
+			}
+
 			query.WriteString(stepQuery)
 			args = append(args, stepArgs...)
 		}
@@ -601,7 +624,7 @@ func (q *Query) prepareFunnel(req request.FunnelRequest) (string, []any) {
 	}
 
 	query.WriteString(") ORDER BY step")
-	return query.String(), args
+	return query.String(), args, nil
 }
 
 func (q *Query) useImportedStatistics(req request.Request) bool {
@@ -774,7 +797,7 @@ func (q *Query) splitMetrics(requestMetrics []metrics.Metric) ([]metrics.Metric,
 	secondary := make([]metrics.Metric, 0)
 
 	for _, m := range requestMetrics {
-		if m.JoinTable() == q.joinTable {
+		if q.isSecondaryMetric(m) {
 			secondary = append(secondary, m)
 		} else {
 			primary = append(primary, m)
@@ -796,7 +819,7 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 	secondaryPos := make(map[string]int, totalCount-len(primaryMetrics))
 
 	for _, m := range requestMetrics {
-		if m.JoinTable() != "" {
+		if q.isSecondaryMetric(m) {
 			secondaryPos[m.Column()] = secondaryIndices
 			secondaryIndices++
 		}
@@ -806,7 +829,7 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 		expanded := make([]any, totalCount)
 
 		for fullIndex, m := range requestMetrics {
-			if m.JoinTable() == "" {
+			if !q.isSecondaryMetric(m) {
 				if pos, ok := primaryPos[m.Column()]; ok && pos < len(primary[i].MetricValues) {
 					expanded[fullIndex] = primary[i].MetricValues[pos]
 				}
@@ -833,7 +856,7 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 		}
 
 		for fullIndex, m := range requestMetrics {
-			if m.JoinTable() == "" {
+			if !q.isSecondaryMetric(m) {
 				continue
 			}
 
@@ -846,12 +869,16 @@ func (q *Query) mergeResults(primary []report.Result, secondary []report.Result,
 
 func (q *Query) orderByContainsJoinMetric(order []request.OrderBy) bool {
 	for _, o := range order {
-		if o.Metric != nil && o.Metric.JoinTable() != "" {
+		if o.Metric != nil && q.isSecondaryMetric(o.Metric) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (q *Query) isSecondaryMetric(m metrics.Metric) bool {
+	return q.joinTable != "" && m.JoinTable() == q.joinTable
 }
 
 func (q *Query) filterOrderByForPrimary(order []request.OrderBy, primaryMetrics []metrics.Metric) []request.OrderBy {
@@ -876,57 +903,52 @@ func (q *Query) filterOrderByForPrimary(order []request.OrderBy, primaryMetrics 
 	return result
 }
 
-func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Metric, order []request.OrderBy) {
+func (q *Query) sortResults(results []report.Result, requestDimensions []dimensions.Dimension, requestMetrics []metrics.Metric, order []request.OrderBy) {
 	if len(order) == 0 {
 		return
 	}
 
-	// index lookup map
+	// index lookup maps
 	metricIndex := make(map[string]int, len(requestMetrics))
 
 	for i, m := range requestMetrics {
 		metricIndex[m.Column()] = i
 	}
 
+	dimensionIndex := make(map[string]int, len(requestDimensions))
+
+	for i, d := range requestDimensions {
+		dimensionIndex[d.Column(q.primaryTable)] = i
+	}
+
 	slices.SortStableFunc(results, func(a, b report.Result) int {
 		for _, o := range order {
-			var cmp int
+			var compare int
 
 			if o.Metric != nil {
 				index, ok := metricIndex[o.Metric.Column()]
 
-				if !ok {
+				if !ok || index >= len(a.MetricValues) || index >= len(b.MetricValues) {
 					continue
 				}
 
-				cmp = q.compareAny(a.MetricValues[index], b.MetricValues[index])
+				compare = q.compareAny(a.MetricValues[index], b.MetricValues[index])
 			} else if o.Dimension != nil {
-				col := o.Dimension.Column(q.primaryTable)
-				// find dimension index by column name
-				dimensionIndex := -1
+				index, ok := dimensionIndex[o.Dimension.Column(q.primaryTable)]
 
-				for i, d := range requestMetrics {
-					if d.Column() == col {
-						dimensionIndex = i
-						break
-					}
-				}
-
-				if dimensionIndex < 0 {
+				if !ok || index >= len(a.DimensionValues) || index >= len(b.DimensionValues) {
 					continue
 				}
 
-				cmp = q.compareAny(a.DimensionValues[dimensionIndex], b.DimensionValues[dimensionIndex])
+				compare = q.compareAny(a.DimensionValues[index], b.DimensionValues[index])
 			}
 
-			if o.Direction == request.DirectionASC {
-				if cmp != 0 {
-					return cmp
+			if compare != 0 {
+				if o.Direction == request.DirectionASC {
+					return compare
 				}
-			} else {
-				if cmp != 0 {
-					return -cmp
-				}
+
+				return -compare
 			}
 		}
 
@@ -935,29 +957,44 @@ func (q *Query) sortResults(results []report.Result, requestMetrics []metrics.Me
 }
 
 func (q *Query) compareAny(a, b any) int {
+	if a == nil || b == nil {
+		switch {
+		case a == nil && b == nil:
+			return 0
+		case a == nil:
+			return -1
+		default:
+			return 1
+		}
+	}
+
 	switch av := a.(type) {
 	case uint64:
-		bv := b.(uint64)
-
-		if av < bv {
-			return -1
-		} else if av > bv {
-			return 1
-		}
-
-		return 0
+		return q.compareTyped(av, b)
+	case uint32:
+		return q.compareTyped(av, b)
+	case uint8:
+		return q.compareTyped(av, b)
+	case int64:
+		return q.compareTyped(av, b)
+	case int:
+		return q.compareTyped(av, b)
 	case float64:
-		bv := b.(float64)
-
-		if av < bv {
-			return -1
-		} else if av > bv {
-			return 1
-		}
-
-		return 0
+		return q.compareTyped(av, b)
 	case string:
-		return strings.Compare(av, b.(string))
+		return q.compareTyped(av, b)
+	case time.Time:
+		if bv, ok := b.(time.Time); ok {
+			return av.Compare(bv)
+		}
+	}
+
+	return 0
+}
+
+func (q *Query) compareTyped[T cmp.Ordered](a T, b any) int {
+	if bv, ok := b.(T); ok {
+		return cmp.Compare(a, bv)
 	}
 
 	return 0
@@ -1139,7 +1176,7 @@ func (q *Query) buildQuery(req request.Request) (string, []any) {
 	selectQuery, selectArgs := q.buildQuerySelect(req)
 	query.WriteString(selectQuery)
 	args = append(args, selectArgs...)
-	query.WriteString(q.buildQuereFrom(q.primaryTable, req.Options.Sample))
+	query.WriteString(q.buildQueryFrom(q.primaryTable, req.Options.Sample))
 
 	if withRequired {
 		query.WriteString(q.buildQueryWithJoin(req))
@@ -1165,20 +1202,24 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 	// query natively if required
 	var nativeQuery string
 	var nativeArgs []any
-	queryNative := req.Period.To.After(req.Period.ImportedUntil) || req.Period.To.Equal(req.Period.ImportedUntil)
+	queryNative := !req.Period.To.Before(req.Period.ImportedUntil)
 	var nativeReq request.Request
+	importedReq := req
 
 	if queryNative {
+		importedReq.Period.To = req.Period.ImportedUntil.AddDate(0, 0, -1)
 		nativeReq = req
 		nativeReq.Pagination = nil
 		nativeReq.OrderBy = nil
-		nativeReq.Options.IncludeImportedStatistics = false
+		nativeOptions := *req.Options // copy, the options are shared with the request
+		nativeOptions.IncludeImportedStatistics = false
+		nativeReq.Options = &nativeOptions
 		nativeReq.Period.From = nativeReq.Period.ImportedUntil
 		nativeQuery, nativeArgs = q.buildQuery(nativeReq)
 	}
 
 	// query imported statistics
-	importedQuery, importedArgs := q.buildQueryImported(req)
+	importedQuery, importedArgs := q.buildQueryImported(importedReq)
 
 	// union queries
 	var query strings.Builder
@@ -1191,17 +1232,16 @@ func (q *Query) buildUnionQuery(req request.Request) (string, []any) {
 			switch m.(type) {
 			case metrics.RelativeVisitors, metrics.RelativeViews:
 				whereSiteAndPeriodNative, whereSiteAndPeriodNativeArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, nativeReq.Period, q.primaryTable, false)
-				req.Period.To = req.Period.ImportedUntil.Add(time.Hour * -24)
-				whereSiteAndPeriodImported, whereSiteAndPeriodImportedArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.importedTable, true)
+				whereSiteAndPeriodImported, whereSiteAndPeriodImportedArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, importedReq.Period, q.importedTable, true)
 				args = append(args, whereSiteAndPeriodNativeArgs...)
 				args = append(args, whereSiteAndPeriodImportedArgs...)
 
 				if m.Column() == "relative_visitors" {
-					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "session_v7" %s) + (SELECT sum(visitors) FROM "%s" %s), 1)) %s`,
-						whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
+					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(visitors / greatest((SELECT uniq(visitor_id) FROM "%s" %s) + (SELECT sum(visitors) FROM "%s" %s), 1)) %s`,
+						pkg.TableSessions, whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
 				} else {
-					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(page_views / greatest((SELECT sum(page_views * sign) FROM "session_v7" %s) + (SELECT sum(views) FROM "%s" %s), 1)) %s`,
-						whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
+					outerFields = append(outerFields, fmt.Sprintf(`toFloat64OrDefault(page_views / greatest((SELECT sum(page_views * sign) FROM "%s" %s) + (SELECT sum(views) FROM "%s" %s), 1)) %s`,
+						pkg.TableSessions, whereSiteAndPeriodNative, q.importedTable, whereSiteAndPeriodImported, m.Column()))
 				}
 			case metrics.BounceRate:
 				outerFields = append(outerFields, fmt.Sprintf("toFloat64OrDefault(bounces / greatest(sessions, 1)) %s", m.Column()))
@@ -1273,24 +1313,11 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 		}
 	}
 
-	tz := time.UTC.String()
-
-	if req.Period.Timezone != nil {
-		tz = req.Period.Timezone.String()
-	}
-
-	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" WHERE site_id = ? `, strings.Join(fields, ", "), q.importedTable))
-	query.WriteString(fmt.Sprintf("AND toDate(date, '%s') BETWEEN toDate(?, '%s') AND toDate(?, '%s') ", tz, tz, tz))
-	args = append(args, req.SiteID, req.Period.From.Format(time.DateOnly), req.Period.To.Format(time.DateOnly))
-
-	for _, filter := range q.primaryFilter {
-		query.WriteString("AND (")
-		where, a := q.buildQueryFilter(q.importedTable, filter.filter)
-		query.WriteString(where)
-		args = append(args, a...)
-		query.WriteString(") ")
-	}
-
+	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.importedTable, true)
+	query.WriteString(fmt.Sprintf(`SELECT %s FROM "%s" `, strings.Join(fields, ", "), q.importedTable))
+	query.WriteString(whereQuery)
+	args = append(args, whereArgs...)
+	args = append(args, q.writeQueryFilters(&query, q.importedTable, q.primaryFilter)...)
 	groupBy := make([]string, 0, len(req.Dimensions))
 
 	for _, d := range req.Dimensions {
@@ -1353,7 +1380,7 @@ func (q *Query) buildQueryWith(req request.Request) (string, []any) {
 					ORDER BY time ASC
 					ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
 				) time_on_page
-			FROM page_view_v7 `)
+			FROM ` + pkg.TablePageViews + ` `)
 	query.WriteString(whereQuery)
 	query.WriteString("), avgtop AS (SELECT path, ")
 
@@ -1524,7 +1551,7 @@ func (q *Query) buildQuerySelectColumn(dimension dimensions.Dimension, location 
 	}
 }
 
-func (q *Query) buildQuereFrom(table string, sample uint) string {
+func (q *Query) buildQueryFrom(table string, sample uint) string {
 	if sample > 0 {
 		return fmt.Sprintf("FROM %s SAMPLE %d ", table, sample)
 	}
@@ -1538,16 +1565,7 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 	whereQuery, whereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, q.primaryTable, false)
 	query.WriteString(whereQuery)
 	args = append(args, whereArgs...)
-
-	if len(q.primaryFilter) > 0 {
-		for _, filter := range q.primaryFilter {
-			query.WriteString("AND (")
-			where, a := q.buildQueryFilter(q.primaryTable, filter.filter)
-			query.WriteString(where)
-			args = append(args, a...)
-			query.WriteString(") ")
-		}
-	}
+	args = append(args, q.writeQueryFilters(&query, q.primaryTable, q.primaryFilter)...)
 
 	if len(q.subqueryFilter) > 0 {
 		byTable := make(map[string][]classifiedFilter)
@@ -1564,19 +1582,11 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 		for _, table := range tableOrder {
 			filters := byTable[table]
 			query.WriteString("AND (visitor_id, session_id) IN (SELECT visitor_id, session_id ")
-			query.WriteString(q.buildQuereFrom(table, req.Options.Sample))
+			query.WriteString(q.buildQueryFrom(table, req.Options.Sample))
 			subWhereQuery, subWhereArgs := q.buildQueryWhereSiteAndPeriod(req.SiteID, req.Period, table, false)
 			query.WriteString(subWhereQuery)
 			args = append(args, subWhereArgs...)
-
-			for _, filter := range filters {
-				query.WriteString("AND (")
-				where, a := q.buildQueryFilter(table, filter.filter)
-				query.WriteString(where)
-				args = append(args, a...)
-				query.WriteString(") ")
-			}
-
+			args = append(args, q.writeQueryFilters(&query, table, filters)...)
 			query.WriteString(") ")
 		}
 	}
@@ -1585,14 +1595,12 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Period, table string, imported bool) (string, []any) {
+	var query strings.Builder
+	args := []any{siteID}
+	query.WriteString("WHERE site_id = ? ")
+
 	if period.From.IsZero() && period.To.IsZero() {
-		return "WHERE site_id = ? ", []any{siteID}
-	}
-
-	tz := time.UTC.String()
-
-	if period.Timezone != nil {
-		tz = period.Timezone.String()
+		return query.String(), args
 	}
 
 	timeColumn := "time"
@@ -1603,36 +1611,47 @@ func (q *Query) buildQueryWhereSiteAndPeriod(siteID uint64, period request.Perio
 		timeColumn = "start"
 	}
 
-	dateFunc := "toDate"
+	column := fmt.Sprintf(`"%s"`, timeColumn)
+	param := "toDate(?)"
+	format := time.DateOnly
 
-	if !imported && period.IncludeTime {
-		dateFunc = "toDateTime"
+	if !imported {
+		tz := q.timezoneName(period)
+
+		if period.IncludeTime {
+			column = fmt.Sprintf(`toDateTime("%s", '%s')`, timeColumn, tz)
+			param = fmt.Sprintf("toDateTime(?, '%s')", tz)
+			format = time.DateTime
+		} else {
+			column = fmt.Sprintf(`toDate("%s", '%s')`, timeColumn, tz)
+			param = fmt.Sprintf("toDate(?, '%s')", tz)
+		}
 	}
 
-	var query strings.Builder
-	args := make([]any, 0)
-	query.WriteString("WHERE site_id = ? ")
-	args = append(args, siteID)
-
-	if period.From.Equal(period.To) {
-		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') = %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz))
-
-		if dateFunc == "toDate" {
-			args = append(args, period.From.Format(time.DateOnly))
-		} else {
-			args = append(args, period.From.Format(time.DateTime))
-		}
-	} else {
-		query.WriteString(fmt.Sprintf(`AND %s("%s", '%s') BETWEEN %s(?, '%s') AND %s(?, '%s') `, dateFunc, timeColumn, tz, dateFunc, tz, dateFunc, tz))
-
-		if dateFunc == "toDate" {
-			args = append(args, period.From.Format(time.DateOnly), period.To.Format(time.DateOnly))
-		} else {
-			args = append(args, period.From.Format(time.DateTime), period.To.Format(time.DateTime))
-		}
+	switch {
+	case period.From.IsZero():
+		query.WriteString(fmt.Sprintf("AND %s <= %s ", column, param))
+		args = append(args, period.To.Format(format))
+	case period.To.IsZero():
+		query.WriteString(fmt.Sprintf("AND %s >= %s ", column, param))
+		args = append(args, period.From.Format(format))
+	case period.From.Equal(period.To):
+		query.WriteString(fmt.Sprintf("AND %s = %s ", column, param))
+		args = append(args, period.From.Format(format))
+	default:
+		query.WriteString(fmt.Sprintf("AND %s BETWEEN %s AND %s ", column, param, param))
+		args = append(args, period.From.Format(format), period.To.Format(format))
 	}
 
 	return query.String(), args
+}
+
+func (q *Query) timezoneName(period request.Period) string {
+	if period.Timezone == nil {
+		return time.UTC.String()
+	}
+
+	return period.Timezone.String()
 }
 
 func (q *Query) buildQueryFilter(table string, filter request.Filter) (string, []any) {
@@ -1651,15 +1670,46 @@ func (q *Query) buildQueryFilter(table string, filter request.Filter) (string, [
 
 	for _, f := range filter.Filter {
 		group, groupArgs := q.buildQueryFilter(table, f)
-		groups = append(groups, group)
+
+		if group == "" {
+			continue
+		}
+
+		groups = append(groups, fmt.Sprintf("(%s)", group))
 		args = append(args, groupArgs...)
 	}
 
-	if filter.Operator == request.OperatorGroupOr {
-		return strings.Join(groups, " OR "), args
+	if len(groups) == 0 {
+		return "", nil
 	}
 
-	return strings.Join(groups, " AND "), args
+	switch filter.Operator {
+	case request.OperatorGroupOr:
+		return strings.Join(groups, " OR "), args
+	case request.OperatorGroupNot:
+		return fmt.Sprintf("NOT (%s)", strings.Join(groups, " AND ")), args
+	default:
+		return strings.Join(groups, " AND "), args
+	}
+}
+
+func (q *Query) writeQueryFilters(query *strings.Builder, table string, filters []classifiedFilter) []any {
+	args := make([]any, 0)
+
+	for _, filter := range filters {
+		where, a := q.buildQueryFilter(table, filter.filter)
+
+		if where == "" {
+			continue
+		}
+
+		query.WriteString("AND (")
+		query.WriteString(where)
+		query.WriteString(") ")
+		args = append(args, a...)
+	}
+
+	return args
 }
 
 func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (string, []any) {
@@ -1740,7 +1790,7 @@ func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (str
 			return "has(mapKeys(tags), ?)", filter.Values
 		}
 	case dimensions.EventMetaKey:
-		expression, _ := q.buildQuereWhereColumn(table, filter)
+		expression, _ := q.buildQueryWhereColumn(table, filter)
 
 		switch filter.Operator {
 		case request.OperatorIsNot:
@@ -1769,7 +1819,7 @@ func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (str
 			return fmt.Sprintf(`isNotNull(%s%s)`, expression, q.buildQueryFilterJSONPath(filter.Values[0].(string))), nil
 		}
 	default:
-		expression, args := q.buildQuereWhereColumn(table, filter)
+		expression, args := q.buildQueryWhereColumn(table, filter)
 
 		switch filter.Operator {
 		case request.OperatorIsNot:
@@ -1828,7 +1878,7 @@ func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (str
 	}
 }
 
-func (q *Query) buildQuereWhereColumn(table string, filter request.Filter) (string, []any) {
+func (q *Query) buildQueryWhereColumn(table string, filter request.Filter) (string, []any) {
 	switch d := filter.Dimension.(type) {
 	case dimensions.TagValue:
 		return "tags[?]", []any{d.Key}
@@ -1860,7 +1910,7 @@ func (q *Query) buildQueryFilterILikeValues(filterValues []any) []any {
 	values := make([]any, 0, len(filterValues))
 
 	for _, v := range filterValues {
-		values = append(values, fmt.Sprintf("%%%s%%", v))
+		values = append(values, likeEscaper.Replace(fmt.Sprint(v)))
 	}
 
 	return values
@@ -1950,11 +2000,11 @@ func (q *Query) buildOrderBy(req request.Request) (string, []any) {
 }
 
 func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dimension) (string, []any) {
-	tz := time.UTC.String()
-
-	if req.Period.Timezone != nil {
-		tz = req.Period.Timezone.String()
+	if req.Period.From.IsZero() || req.Period.To.IsZero() {
+		return "", nil
 	}
+
+	tz := q.timezoneName(req.Period)
 
 	// use wall clock, so that it won't be converted by the driver
 	args := []any{
@@ -1964,17 +2014,17 @@ func (q *Query) buildQueryWithFill(req request.Request, dimension dimensions.Dim
 
 	switch dimension.(type) {
 	case dimensions.Minute:
-		if req.Period.From.Equal(req.Period.To) {
-			return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') + INTERVAL 1 HOUR STEP INTERVAL 1 MINUTE", tz, tz), args
+		if req.Period.IncludeTime {
+			return fmt.Sprintf("WITH FILL FROM toStartOfMinute(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
 		}
 
-		return fmt.Sprintf("WITH FILL FROM toDateTime(?, '%s') TO toDateTime(?, '%s') STEP INTERVAL 1 MINUTE", tz, tz), args
+		return fmt.Sprintf("WITH FILL FROM toStartOfDay(toDateTime(?, '%s')) TO toStartOfDay(toDateTime(?, '%s')) + INTERVAL 1 DAY STEP INTERVAL 1 MINUTE", tz, tz), args
 	case dimensions.Hour:
-		if req.Period.From.Equal(req.Period.To) {
-			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 HOUR", tz, tz), args
+		if req.Period.IncludeTime {
+			return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
 		}
 
-		return fmt.Sprintf("WITH FILL FROM toStartOfHour(toDateTime(?, '%s')) TO toDateTime(?, '%s') STEP INTERVAL 1 HOUR", tz, tz), args
+		return fmt.Sprintf("WITH FILL FROM toStartOfDay(toDateTime(?, '%s')) TO toStartOfDay(toDateTime(?, '%s')) + INTERVAL 1 DAY STEP INTERVAL 1 HOUR", tz, tz), args
 	case dimensions.Day:
 		return fmt.Sprintf("WITH FILL FROM toDate(?, '%s') TO toDate(?, '%s') + INTERVAL 1 DAY STEP INTERVAL 1 DAY", tz, tz), args
 	case dimensions.Week:

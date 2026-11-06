@@ -2,6 +2,7 @@ package request
 
 import (
 	"encoding/json/v2"
+	"fmt"
 	"time"
 )
 
@@ -16,13 +17,16 @@ type WeekdayMode int
 // Period is the start and end date and time for the Request, as well as the timezone.
 type Period struct {
 	// From is the start date and time for the Period.
+	// The value is interpreted as wall clock time in Timezone. The location of the time.Time itself is ignored,
+	// as the date (and time) is passed to ClickHouse as a string and converted to Timezone there.
 	From time.Time
 
-	// To is the end date and time for the Period.
+	// To is the end date and time for the Period (inclusive).
+	// The value is interpreted as wall clock time in Timezone, see From.
 	To time.Time
 
 	// Timezone is the timezone for the Request and Report.
-	// It is set to UTC by default.
+	// It is set to UTC by default and must be a valid IANA timezone (time.Local is not supported).
 	Timezone *time.Location
 
 	// WeekdayMode sets the start day of the week (WeekdayMonday or WeekdaySunday).
@@ -49,7 +53,7 @@ type ComparePeriod struct {
 	To time.Time
 }
 
-func (p *Period) validate() {
+func (p *Period) validate() error {
 	if p.Timezone == nil {
 		p.Timezone = time.UTC
 	}
@@ -58,13 +62,30 @@ func (p *Period) validate() {
 		p.WeekdayMode = WeekdayMonday
 	}
 
-	if p.From.After(p.To) {
+	// only swap if both are set, so that open-ended periods stay open-ended
+	if !p.From.IsZero() && !p.To.IsZero() && p.From.After(p.To) {
 		p.From, p.To = p.To, p.From
 	}
 
-	if p.Compare != nil && p.Compare.From.After(p.Compare.To) {
+	if p.Compare != nil && !p.Compare.From.IsZero() && !p.Compare.To.IsZero() && p.Compare.From.After(p.Compare.To) {
 		p.Compare.From, p.Compare.To = p.Compare.To, p.Compare.From
 	}
+
+	return validateTimezone(p.Timezone)
+}
+
+func validateTimezone(tz *time.Location) error {
+	name := tz.String()
+
+	if name == "" || name == "Local" {
+		return fmt.Errorf("timezone '%s' is not a valid IANA timezone name", name)
+	}
+
+	if _, err := time.LoadLocation(name); err != nil {
+		return fmt.Errorf("timezone '%s' is not a valid IANA timezone name", name)
+	}
+
+	return nil
 }
 
 // String implements the fmt.Stringer interface.
