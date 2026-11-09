@@ -1,12 +1,14 @@
 package query
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/request"
@@ -3992,6 +3994,82 @@ func TestQueryFunnelStepEvent(t *testing.T) {
 	assert.InDelta(t, 0, r.Steps[3].DropOff, 0.001)
 }
 
+func TestQueryFunnelExitPathCollapsedSession(t *testing.T) {
+	saveFunnelSessionUpdates(t)
+	q, _, _ := newQuery()
+
+	for _, exitPath := range []string{"/", "/pricing"} {
+		r := q.Funnel(funnelSessionUpdatesRequest(t, []request.Filter{
+			{
+				Dimension: dimensions.ExitPath{},
+				Values:    []any{exitPath},
+			},
+		}))
+		assert.Empty(t, r.Meta.Errors)
+		assert.Len(t, r.Steps, 2)
+		assert.Equal(t, uint64(1), r.Steps[0].Visitors)
+		assert.Equal(t, uint64(0), r.Steps[1].Visitors, exitPath)
+	}
+
+	r := q.Funnel(funnelSessionUpdatesRequest(t, []request.Filter{
+		{
+			Dimension: dimensions.ExitPath{},
+			Values:    []any{"/signup"},
+		},
+	}))
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 2)
+	assert.Equal(t, uint64(1), r.Steps[0].Visitors)
+	assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+}
+
+func TestQueryFunnelExitPathCollapsedSessionAfterPath(t *testing.T) {
+	saveFunnelSessionUpdates(t)
+	q, _, _ := newQuery()
+	r := q.Funnel(funnelSessionUpdatesRequest(t,
+		[]request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []any{"/pricing"},
+			},
+		},
+		[]request.Filter{
+			{
+				Dimension: dimensions.ExitPath{},
+				Values:    []any{"/pricing"},
+			},
+		},
+	))
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 3)
+	assert.Equal(t, uint64(1), r.Steps[0].Visitors)
+	assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+	assert.Equal(t, uint64(0), r.Steps[2].Visitors)
+}
+
+func TestQueryFunnelExitTitleCollapsedSession(t *testing.T) {
+	saveFunnelSessionUpdates(t)
+	q, _, _ := newQuery()
+	r := q.Funnel(funnelSessionUpdatesRequest(t,
+		[]request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Values:    []any{"/pricing"},
+			},
+		},
+		[]request.Filter{
+			{
+				Dimension: dimensions.ExitTitle{},
+				Values:    []any{"Pricing"},
+			},
+		},
+	))
+	assert.Empty(t, r.Meta.Errors)
+	assert.Len(t, r.Steps, 3)
+	assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+	assert.Equal(t, uint64(0), r.Steps[2].Visitors)
+}
+
 func TestBuildQueryFilterJSONPath(t *testing.T) {
 	input := []string{
 		"field",
@@ -4887,4 +4965,77 @@ func newQuery() (*Query, time.Time, time.Time) {
 	from := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2026, time.January, 31, 0, 0, 0, 0, time.UTC)
 	return q, from, to
+}
+
+func funnelSessionUpdatesRequest(_ *testing.T, steps ...[]request.Filter) request.FunnelRequest {
+	filter := [][]request.Filter{
+		{
+			{
+				Dimension: dimensions.EntryPath{},
+				Values:    []any{"/"},
+			},
+		},
+	}
+	filter = append(filter, steps...)
+	return request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: filter,
+	}
+}
+
+func saveFunnelSessionUpdates(t *testing.T) {
+	loadTestData(t, []string{"none"})
+	start := time.Date(2026, time.January, 1, 8, 0, 0, 0, time.UTC)
+	pages := []struct {
+		path  string
+		title string
+	}{
+		{"/", "Home"},
+		{"/pricing", "Pricing"},
+		{"/signup", "Signup"},
+	}
+	newSession := func(i int, sign int8) model.Session {
+		return model.Session{
+			SiteID:          1,
+			VisitorID:       20,
+			SessionID:       20,
+			Time:            start.Add(time.Minute * time.Duration(i)),
+			Hostname:        "example.com",
+			Sign:            sign,
+			Version:         uint16(i + 1),
+			Start:           start,
+			DurationSeconds: uint32(i * 60),
+			PageViews:       uint16(i + 1),
+			IsBounce:        i == 0,
+			EntryPath:       "/",
+			ExitPath:        pages[i].path,
+			EntryTitle:      "Home",
+			ExitTitle:       pages[i].title,
+		}
+	}
+	pageViews := make([]model.PageView, 0, len(pages))
+
+	for i, page := range pages {
+		if i > 0 {
+			assert.NoError(t, client.SaveSessions(context.Background(), []model.Session{newSession(i-1, -1)}))
+		}
+
+		assert.NoError(t, client.SaveSessions(context.Background(), []model.Session{newSession(i, 1)}))
+		pageViews = append(pageViews, model.PageView{
+			SiteID:    1,
+			VisitorID: 20,
+			SessionID: 20,
+			Time:      start.Add(time.Minute * time.Duration(i)),
+			Hostname:  "example.com",
+			Path:      page.path,
+			Title:     page.title,
+		})
+	}
+
+	assert.NoError(t, client.SavePageViews(context.Background(), pageViews))
 }

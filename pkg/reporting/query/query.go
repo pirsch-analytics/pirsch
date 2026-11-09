@@ -1588,6 +1588,12 @@ func (q *Query) buildQueryWhere(req request.Request) (string, []any) {
 			query.WriteString(subWhereQuery)
 			args = append(args, subWhereArgs...)
 			args = append(args, q.writeQueryFilters(&query, table, filters)...)
+
+			// only match the latest state of a session, ignoring canceled rows
+			if table == pkg.TableSessions {
+				query.WriteString("GROUP BY visitor_id, session_id HAVING sum(sign) > 0 ")
+			}
+
 			query.WriteString(") ")
 		}
 	}
@@ -2060,7 +2066,7 @@ func (q *Query) buildQueryPagination(pagination *request.Pagination) string {
 }
 
 func (q *Query) buildQueryHaving() string {
-	if q.primaryTable == pkg.TableSessions && q.joinStep == 0 {
+	if q.primaryTable == pkg.TableSessions {
 		return "HAVING sum(sign) > 0 "
 	}
 
