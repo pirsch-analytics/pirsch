@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.4
+
+* set default ingestion buffer size to 200 instead of 0 (unbuffered)
+* fixed concurrency issues in Pipe
+
 ## 7.0.3
 
 * fixed funnels ignoring canceled sessions

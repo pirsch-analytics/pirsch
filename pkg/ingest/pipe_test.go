@@ -80,31 +80,34 @@ func TestPipeTimeout(t *testing.T) {
 }
 
 func TestPipeBufferLimit(t *testing.T) {
-	// create a pipeline with one worker and a max channel size of 10 requests
-	storage := db.NewMock()
-	pipe := NewPipe(PipeOptions{
-		Storage:          storage,
-		Worker:           1,
-		WorkerBufferSize: 10,
-	}).Use(&sessionStep{})
+	synctest.Test(t, func(t *testing.T) {
+		// create a pipeline with one worker and a max buffer size of 10 requests
+		storage := db.NewMock()
+		pipe := NewPipe(PipeOptions{
+			Storage:          storage,
+			Worker:           1,
+			WorkerBufferSize: 10,
+		}).Use(&sessionStep{})
 
-	// ingest requests
-	for range 11 {
-		req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
-		req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
-		accepted, err := pipe.Process(&Request{Request: req})
-		assert.NoError(t, err)
-		assert.True(t, accepted)
-	}
+		// ingest requests
+		for range 11 {
+			req, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
+			req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36")
+			accepted, err := pipe.Process(&Request{Request: req})
+			assert.NoError(t, err)
+			assert.True(t, accepted)
+		}
 
-	// the buffer must have been flushed when it reached 10 requests
-	assert.Len(t, storage.Sessions(), 10)
-	assert.Len(t, storage.PageViews(), 10)
+		// the buffer must have been flushed when it reached 10 requests
+		synctest.Wait()
+		assert.Len(t, storage.Sessions(), 10)
+		assert.Len(t, storage.PageViews(), 10)
 
-	// flush the remaining request
-	pipe.Stop()
-	assert.Len(t, storage.Sessions(), 11)
-	assert.Len(t, storage.PageViews(), 11)
+		// flush the remaining request
+		pipe.Stop()
+		assert.Len(t, storage.Sessions(), 11)
+		assert.Len(t, storage.PageViews(), 11)
+	})
 }
 
 func TestPipeRetrySave(t *testing.T) {

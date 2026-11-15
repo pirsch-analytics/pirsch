@@ -19,6 +19,8 @@ type Pipe struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
+	m        sync.RWMutex
+	stopped  bool
 	steps    []PipeStep
 	requests chan *Request
 	storage  db.Storage
@@ -91,6 +93,13 @@ func (p *Pipe) Process(request *Request) (bool, error) {
 
 	// schedule request to be stored in batch if not disabled
 	if !request.DisableStorage {
+		p.m.RLock()
+		defer p.m.RUnlock()
+
+		if p.stopped {
+			return false, context.Canceled
+		}
+
 		p.requests <- request
 	}
 
@@ -98,8 +107,19 @@ func (p *Pipe) Process(request *Request) (bool, error) {
 }
 
 // Stop flushes all data currently within the pipe and stops processing new data.
+// Requests already sent to the pipe are drained and stored before Stop returns.
 func (p *Pipe) Stop() {
+	p.m.Lock()
+
+	if p.stopped {
+		p.m.Unlock()
+		return
+	}
+
+	p.stopped = true
 	p.cancel()
+	close(p.requests)
+	p.m.Unlock()
 	p.wg.Wait()
 }
 
@@ -115,7 +135,12 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 
 		for {
 			select {
-			case request := <-p.requests:
+			case request, ok := <-p.requests:
+				if !ok {
+					p.flush(sessions, pageViews, events, requests)
+					return
+				}
+
 				if !p.logIP {
 					request.IP = ""
 				}
@@ -187,13 +212,6 @@ func (p *Pipe) collect(bufferSize int, timeout time.Duration) func() {
 				events = events[:0]
 				requests = requests[:0]
 				timer.Reset(timeout)
-			case <-p.ctx.Done():
-				p.flush(sessions, pageViews, events, requests)
-				sessions = sessions[:0]
-				pageViews = pageViews[:0]
-				events = events[:0]
-				requests = requests[:0]
-				return
 			}
 		}
 	}

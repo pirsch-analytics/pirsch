@@ -13,7 +13,7 @@ type PipeOptions struct {
 	Storage db.Storage
 
 	// RequestChannelBufferSize is the channel buffer size for the data ingestion.
-	// 0 means unbuffered.
+	// Defaults to 200.
 	RequestChannelBufferSize int
 
 	// Worker is the number of workers collecting and storing requests in batch.
@@ -34,8 +34,8 @@ type PipeOptions struct {
 }
 
 func (options *PipeOptions) validate() {
-	if options.RequestChannelBufferSize < 0 {
-		options.RequestChannelBufferSize = 0
+	if options.RequestChannelBufferSize < 1 {
+		options.RequestChannelBufferSize = 200
 	}
 
 	if options.Worker < 1 {
