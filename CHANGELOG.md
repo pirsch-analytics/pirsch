@@ -4,6 +4,7 @@
 
 * set default ingestion buffer size to 200 instead of 0 (unbuffered)
 * fixed concurrency issues in Pipe
+* updated dependencies
 
 ## 7.0.3
 
