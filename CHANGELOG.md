@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.5
+
+* fixed locks in session caches
+* updated dependencies
+
 ## 7.0.4
 
 * set default ingestion buffer size to 200 instead of 0 (unbuffered)

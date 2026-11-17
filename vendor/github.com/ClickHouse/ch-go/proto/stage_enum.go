@@ -32,11 +32,14 @@ func _StageNoOp() {
 var _StageValues = []Stage{StageFetchColumns, StageWithMergeableState, StageComplete}
 
 var _StageNameToValueMap = map[string]Stage{
-	_StageName[0:12]:       StageFetchColumns,
+	_StageName[0:12]:  StageFetchColumns,
+	_StageName[12:30]: StageWithMergeableState,
+	_StageName[30:38]: StageComplete,
+}
+
+var _StageLowerNameToValueMap = map[string]Stage{
 	_StageLowerName[0:12]:  StageFetchColumns,
-	_StageName[12:30]:      StageWithMergeableState,
 	_StageLowerName[12:30]: StageWithMergeableState,
-	_StageName[30:38]:      StageComplete,
 	_StageLowerName[30:38]: StageComplete,
 }
 
@@ -53,7 +56,7 @@ func StageString(s string) (Stage, error) {
 		return val, nil
 	}
 
-	if val, ok := _StageNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _StageLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to Stage values", s)

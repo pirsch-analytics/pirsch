@@ -23,20 +23,35 @@ type RedisCache struct {
 	logger *slog.Logger
 }
 
-// RedisMutex wraps a redis mutex.
+// RedisMutex wraps a Redis mutex.
+// Errors are logged instead of causing a panic, so that the request is processed without a lock rather than being dropped.
 type RedisMutex struct {
-	m *redsync.Mutex
+	m      *redsync.Mutex
+	logger *slog.Logger
+	locked bool
 }
 
+// Lock implements the sync.Locker interface.
 func (m *RedisMutex) Lock() {
 	if err := m.m.Lock(); err != nil {
-		panic(err)
+		m.locked = false
+		m.logger.Warn("error acquiring session lock, continuing without lock", "err", err)
+		return
 	}
+
+	m.locked = true
 }
 
+// Unlock implements the sync.Locker interface.
 func (m *RedisMutex) Unlock() {
+	if !m.locked {
+		return
+	}
+
+	m.locked = false
+
 	if _, err := m.m.Unlock(); err != nil {
-		panic(err)
+		m.logger.Warn("error releasing session lock", "err", err)
 	}
 }
 
@@ -95,5 +110,8 @@ func (cache *RedisCache) Clear() {
 
 // NewMutex implements the Cache interface.
 func (cache *RedisCache) NewMutex(siteID, fingerprint uint64) sync.Locker {
-	return &RedisMutex{cache.rs.NewMutex(getSessionKey(siteID, fingerprint) + "_lock")}
+	return &RedisMutex{
+		m:      cache.rs.NewMutex(getSessionKey(siteID, fingerprint) + "_lock"),
+		logger: cache.logger,
+	}
 }

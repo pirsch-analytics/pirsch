@@ -1,4 +1,4 @@
-# github.com/ClickHouse/ch-go v0.75.0
+# github.com/ClickHouse/ch-go v0.76.0
 ## explicit; go 1.26.0
 github.com/ClickHouse/ch-go/compress
 github.com/ClickHouse/ch-go/proto

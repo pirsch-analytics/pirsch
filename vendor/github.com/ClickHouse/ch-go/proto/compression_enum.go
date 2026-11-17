@@ -31,9 +31,12 @@ func _CompressionNoOp() {
 var _CompressionValues = []Compression{CompressionDisabled, CompressionEnabled}
 
 var _CompressionNameToValueMap = map[string]Compression{
-	_CompressionName[0:8]:       CompressionDisabled,
+	_CompressionName[0:8]:  CompressionDisabled,
+	_CompressionName[8:15]: CompressionEnabled,
+}
+
+var _CompressionLowerNameToValueMap = map[string]Compression{
 	_CompressionLowerName[0:8]:  CompressionDisabled,
-	_CompressionName[8:15]:      CompressionEnabled,
 	_CompressionLowerName[8:15]: CompressionEnabled,
 }
 
@@ -49,7 +52,7 @@ func CompressionString(s string) (Compression, error) {
 		return val, nil
 	}
 
-	if val, ok := _CompressionNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _CompressionLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to Compression values", s)

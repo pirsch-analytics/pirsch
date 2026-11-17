@@ -48,21 +48,24 @@ func _ClientCodeNoOp() {
 var _ClientCodeValues = []ClientCode{ClientCodeHello, ClientCodeQuery, ClientCodeData, ClientCodeCancel, ClientCodePing, ClientTablesStatusRequest, ClientCodeSSHChallengeRequest, ClientCodeSSHChallengeResponse}
 
 var _ClientCodeNameToValueMap = map[string]ClientCode{
-	_ClientCodeName_0[0:5]:        ClientCodeHello,
+	_ClientCodeName_0[0:5]:   ClientCodeHello,
+	_ClientCodeName_0[5:10]:  ClientCodeQuery,
+	_ClientCodeName_0[10:14]: ClientCodeData,
+	_ClientCodeName_0[14:20]: ClientCodeCancel,
+	_ClientCodeName_0[20:24]: ClientCodePing,
+	_ClientCodeName_0[24:49]: ClientTablesStatusRequest,
+	_ClientCodeName_1[0:19]:  ClientCodeSSHChallengeRequest,
+	_ClientCodeName_1[19:39]: ClientCodeSSHChallengeResponse,
+}
+
+var _ClientCodeLowerNameToValueMap = map[string]ClientCode{
 	_ClientCodeLowerName_0[0:5]:   ClientCodeHello,
-	_ClientCodeName_0[5:10]:       ClientCodeQuery,
 	_ClientCodeLowerName_0[5:10]:  ClientCodeQuery,
-	_ClientCodeName_0[10:14]:      ClientCodeData,
 	_ClientCodeLowerName_0[10:14]: ClientCodeData,
-	_ClientCodeName_0[14:20]:      ClientCodeCancel,
 	_ClientCodeLowerName_0[14:20]: ClientCodeCancel,
-	_ClientCodeName_0[20:24]:      ClientCodePing,
 	_ClientCodeLowerName_0[20:24]: ClientCodePing,
-	_ClientCodeName_0[24:49]:      ClientTablesStatusRequest,
 	_ClientCodeLowerName_0[24:49]: ClientTablesStatusRequest,
-	_ClientCodeName_1[0:19]:       ClientCodeSSHChallengeRequest,
 	_ClientCodeLowerName_1[0:19]:  ClientCodeSSHChallengeRequest,
-	_ClientCodeName_1[19:39]:      ClientCodeSSHChallengeResponse,
 	_ClientCodeLowerName_1[19:39]: ClientCodeSSHChallengeResponse,
 }
 
@@ -84,7 +87,7 @@ func ClientCodeString(s string) (ClientCode, error) {
 		return val, nil
 	}
 
-	if val, ok := _ClientCodeNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _ClientCodeLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to ClientCode values", s)

@@ -26,13 +26,14 @@ func (c *ColUUID) DecodeColumn(r *Reader, rows int) error {
 
 func (c ColUUID) EncodeColumn(b *Buffer) {
 	const size = 16
-	offset := len(b.Buf)
+	start := len(b.Buf)
 	b.Buf = append(b.Buf, make([]byte, size*len(c))...)
+	offset := start
 	for _, v := range c {
 		copy(b.Buf[offset:offset+size], v[:])
 		offset += size
 	}
-	bswap.Swap64(b.Buf) // BE <-> LE
+	bswap.Swap64(b.Buf[start:]) // BE <-> LE
 }
 
 // WriteColumn encodes ColUUID rows to *Writer.

@@ -81,3 +81,30 @@ func TestMemCache(t *testing.T) {
 	cache.Clear()
 	assert.Len(t, cache.sessions, 0)
 }
+
+func TestMemCacheMutex(t *testing.T) {
+	cache := NewMemCache(db.NewMock(), 10)
+	assert.Same(t, cache.NewMutex(1, 2), cache.NewMutex(1, 2))
+	m := cache.NewMutex(1, 2)
+	m.Lock()
+	locked := make(chan struct{})
+
+	go func() {
+		cache.NewMutex(1, 2).Lock()
+		close(locked)
+	}()
+
+	select {
+	case <-locked:
+		t.Fatal("mutex must block while the session is locked")
+	case <-time.After(time.Millisecond * 50):
+	}
+
+	m.Unlock()
+
+	select {
+	case <-locked:
+	case <-time.After(time.Second):
+		t.Fatal("mutex must be acquired after unlock")
+	}
+}

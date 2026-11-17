@@ -33,13 +33,16 @@ func _MethodNoOp() {
 var _MethodValues = []Method{None, LZ4, LZ4HC, ZSTD}
 
 var _MethodNameToValueMap = map[string]Method{
-	_MethodName[0:4]:        None,
+	_MethodName[0:4]:   None,
+	_MethodName[4:7]:   LZ4,
+	_MethodName[7:12]:  LZ4HC,
+	_MethodName[12:16]: ZSTD,
+}
+
+var _MethodLowerNameToValueMap = map[string]Method{
 	_MethodLowerName[0:4]:   None,
-	_MethodName[4:7]:        LZ4,
 	_MethodLowerName[4:7]:   LZ4,
-	_MethodName[7:12]:       LZ4HC,
 	_MethodLowerName[7:12]:  LZ4HC,
-	_MethodName[12:16]:      ZSTD,
 	_MethodLowerName[12:16]: ZSTD,
 }
 
@@ -57,7 +60,7 @@ func MethodString(s string) (Method, error) {
 		return val, nil
 	}
 
-	if val, ok := _MethodNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _MethodLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to Method values", s)

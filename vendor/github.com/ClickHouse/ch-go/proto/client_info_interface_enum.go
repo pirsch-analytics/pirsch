@@ -32,9 +32,12 @@ func _InterfaceNoOp() {
 var _InterfaceValues = []Interface{InterfaceTCP, InterfaceHTTP}
 
 var _InterfaceNameToValueMap = map[string]Interface{
-	_InterfaceName[0:3]:      InterfaceTCP,
+	_InterfaceName[0:3]: InterfaceTCP,
+	_InterfaceName[3:7]: InterfaceHTTP,
+}
+
+var _InterfaceLowerNameToValueMap = map[string]Interface{
 	_InterfaceLowerName[0:3]: InterfaceTCP,
-	_InterfaceName[3:7]:      InterfaceHTTP,
 	_InterfaceLowerName[3:7]: InterfaceHTTP,
 }
 
@@ -50,7 +53,7 @@ func InterfaceString(s string) (Interface, error) {
 		return val, nil
 	}
 
-	if val, ok := _InterfaceNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _InterfaceLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to Interface values", s)

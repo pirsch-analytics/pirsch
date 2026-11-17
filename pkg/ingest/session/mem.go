@@ -12,6 +12,7 @@ import (
 
 const (
 	defaultMaxSessions = 10_000
+	lockShards         = 1024
 )
 
 // MemCache caches sessions in memory.
@@ -21,6 +22,7 @@ type MemCache struct {
 	maxSessions int
 	client      db.Storage
 	m           sync.RWMutex
+	locks       [lockShards]sync.Mutex
 }
 
 // NewMemCache creates a new cache for a given client and maximum size.
@@ -72,8 +74,12 @@ func (cache *MemCache) Clear() {
 }
 
 // NewMutex implements the Cache interface.
-func (cache *MemCache) NewMutex(uint64, uint64) sync.Locker {
-	return new(sync.Mutex)
+func (cache *MemCache) NewMutex(siteID, fingerprint uint64) sync.Locker {
+	h := siteID*0x9e3779b97f4a7c15 ^ fingerprint
+	h ^= h >> 33
+	h *= 0xff51afd7ed558ccd
+	h ^= h >> 33
+	return &cache.locks[h%lockShards]
 }
 
 // Sessions returns a copy of all sessions.

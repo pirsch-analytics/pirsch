@@ -33,9 +33,12 @@ func _ProfileEventTypeNoOp() {
 var _ProfileEventTypeValues = []ProfileEventType{ProfileIncrement, ProfileGauge}
 
 var _ProfileEventTypeNameToValueMap = map[string]ProfileEventType{
-	_ProfileEventTypeName[0:9]:       ProfileIncrement,
+	_ProfileEventTypeName[0:9]:  ProfileIncrement,
+	_ProfileEventTypeName[9:14]: ProfileGauge,
+}
+
+var _ProfileEventTypeLowerNameToValueMap = map[string]ProfileEventType{
 	_ProfileEventTypeLowerName[0:9]:  ProfileIncrement,
-	_ProfileEventTypeName[9:14]:      ProfileGauge,
 	_ProfileEventTypeLowerName[9:14]: ProfileGauge,
 }
 
@@ -51,7 +54,7 @@ func ProfileEventTypeString(s string) (ProfileEventType, error) {
 		return val, nil
 	}
 
-	if val, ok := _ProfileEventTypeNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _ProfileEventTypeLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to ProfileEventType values", s)

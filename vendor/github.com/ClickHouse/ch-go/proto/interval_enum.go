@@ -37,21 +37,24 @@ func _IntervalScaleNoOp() {
 var _IntervalScaleValues = []IntervalScale{IntervalSecond, IntervalMinute, IntervalHour, IntervalDay, IntervalWeek, IntervalMonth, IntervalQuarter, IntervalYear}
 
 var _IntervalScaleNameToValueMap = map[string]IntervalScale{
-	_IntervalScaleName[0:14]:        IntervalSecond,
+	_IntervalScaleName[0:14]:   IntervalSecond,
+	_IntervalScaleName[14:28]:  IntervalMinute,
+	_IntervalScaleName[28:40]:  IntervalHour,
+	_IntervalScaleName[40:51]:  IntervalDay,
+	_IntervalScaleName[51:63]:  IntervalWeek,
+	_IntervalScaleName[63:76]:  IntervalMonth,
+	_IntervalScaleName[76:91]:  IntervalQuarter,
+	_IntervalScaleName[91:103]: IntervalYear,
+}
+
+var _IntervalScaleLowerNameToValueMap = map[string]IntervalScale{
 	_IntervalScaleLowerName[0:14]:   IntervalSecond,
-	_IntervalScaleName[14:28]:       IntervalMinute,
 	_IntervalScaleLowerName[14:28]:  IntervalMinute,
-	_IntervalScaleName[28:40]:       IntervalHour,
 	_IntervalScaleLowerName[28:40]:  IntervalHour,
-	_IntervalScaleName[40:51]:       IntervalDay,
 	_IntervalScaleLowerName[40:51]:  IntervalDay,
-	_IntervalScaleName[51:63]:       IntervalWeek,
 	_IntervalScaleLowerName[51:63]:  IntervalWeek,
-	_IntervalScaleName[63:76]:       IntervalMonth,
 	_IntervalScaleLowerName[63:76]:  IntervalMonth,
-	_IntervalScaleName[76:91]:       IntervalQuarter,
 	_IntervalScaleLowerName[76:91]:  IntervalQuarter,
-	_IntervalScaleName[91:103]:      IntervalYear,
 	_IntervalScaleLowerName[91:103]: IntervalYear,
 }
 
@@ -73,7 +76,7 @@ func IntervalScaleString(s string) (IntervalScale, error) {
 		return val, nil
 	}
 
-	if val, ok := _IntervalScaleNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _IntervalScaleLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to IntervalScale values", s)

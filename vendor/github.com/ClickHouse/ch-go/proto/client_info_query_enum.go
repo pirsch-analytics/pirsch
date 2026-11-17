@@ -32,11 +32,14 @@ func _ClientQueryKindNoOp() {
 var _ClientQueryKindValues = []ClientQueryKind{ClientQueryNone, ClientQueryInitial, ClientQuerySecondary}
 
 var _ClientQueryKindNameToValueMap = map[string]ClientQueryKind{
-	_ClientQueryKindName[0:15]:       ClientQueryNone,
+	_ClientQueryKindName[0:15]:  ClientQueryNone,
+	_ClientQueryKindName[15:33]: ClientQueryInitial,
+	_ClientQueryKindName[33:53]: ClientQuerySecondary,
+}
+
+var _ClientQueryKindLowerNameToValueMap = map[string]ClientQueryKind{
 	_ClientQueryKindLowerName[0:15]:  ClientQueryNone,
-	_ClientQueryKindName[15:33]:      ClientQueryInitial,
 	_ClientQueryKindLowerName[15:33]: ClientQueryInitial,
-	_ClientQueryKindName[33:53]:      ClientQuerySecondary,
 	_ClientQueryKindLowerName[33:53]: ClientQuerySecondary,
 }
 
@@ -53,7 +56,7 @@ func ClientQueryKindString(s string) (ClientQueryKind, error) {
 		return val, nil
 	}
 
-	if val, ok := _ClientQueryKindNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _ClientQueryKindLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to ClientQueryKind values", s)

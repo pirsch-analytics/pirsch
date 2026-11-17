@@ -28,3 +28,16 @@ func TestRedisCache(t *testing.T) {
 	session = cache.Get(1, 1, time.Time{})
 	assert.Nil(t, session)
 }
+
+func TestRedisMutexNoPanic(t *testing.T) {
+	cache := NewRedisCache(time.Second, nil, &redis.Options{
+		Addr:        "localhost:1",
+		DialTimeout: time.Millisecond * 10,
+		MaxRetries:  -1,
+	})
+	m := cache.NewMutex(1, 1)
+	assert.NotPanics(t, func() {
+		m.Lock()
+		m.Unlock()
+	})
+}

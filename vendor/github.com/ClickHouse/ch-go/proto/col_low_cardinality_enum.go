@@ -33,13 +33,16 @@ func _CardinalityKeyNoOp() {
 var _CardinalityKeyValues = []CardinalityKey{KeyUInt8, KeyUInt16, KeyUInt32, KeyUInt64}
 
 var _CardinalityKeyNameToValueMap = map[string]CardinalityKey{
-	_CardinalityKeyName[0:5]:        KeyUInt8,
+	_CardinalityKeyName[0:5]:   KeyUInt8,
+	_CardinalityKeyName[5:11]:  KeyUInt16,
+	_CardinalityKeyName[11:17]: KeyUInt32,
+	_CardinalityKeyName[17:23]: KeyUInt64,
+}
+
+var _CardinalityKeyLowerNameToValueMap = map[string]CardinalityKey{
 	_CardinalityKeyLowerName[0:5]:   KeyUInt8,
-	_CardinalityKeyName[5:11]:       KeyUInt16,
 	_CardinalityKeyLowerName[5:11]:  KeyUInt16,
-	_CardinalityKeyName[11:17]:      KeyUInt32,
 	_CardinalityKeyLowerName[11:17]: KeyUInt32,
-	_CardinalityKeyName[17:23]:      KeyUInt64,
 	_CardinalityKeyLowerName[17:23]: KeyUInt64,
 }
 
@@ -57,7 +60,7 @@ func CardinalityKeyString(s string) (CardinalityKey, error) {
 		return val, nil
 	}
 
-	if val, ok := _CardinalityKeyNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _CardinalityKeyLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to CardinalityKey values", s)

@@ -55,37 +55,40 @@ func _ServerCodeNoOp() {
 var _ServerCodeValues = []ServerCode{ServerCodeHello, ServerCodeData, ServerCodeException, ServerCodeProgress, ServerCodePong, ServerCodeEndOfStream, ServerCodeProfile, ServerCodeTotals, ServerCodeExtremes, ServerCodeTablesStatus, ServerCodeLog, ServerCodeTableColumns, ServerPartUUIDs, ServerReadTaskRequest, ServerProfileEvents, ServerCodeSSHChallenge}
 
 var _ServerCodeNameToValueMap = map[string]ServerCode{
-	_ServerCodeName_0[0:5]:          ServerCodeHello,
+	_ServerCodeName_0[0:5]:     ServerCodeHello,
+	_ServerCodeName_0[5:9]:     ServerCodeData,
+	_ServerCodeName_0[9:18]:    ServerCodeException,
+	_ServerCodeName_0[18:26]:   ServerCodeProgress,
+	_ServerCodeName_0[26:30]:   ServerCodePong,
+	_ServerCodeName_0[30:41]:   ServerCodeEndOfStream,
+	_ServerCodeName_0[41:48]:   ServerCodeProfile,
+	_ServerCodeName_0[48:54]:   ServerCodeTotals,
+	_ServerCodeName_0[54:62]:   ServerCodeExtremes,
+	_ServerCodeName_0[62:74]:   ServerCodeTablesStatus,
+	_ServerCodeName_0[74:77]:   ServerCodeLog,
+	_ServerCodeName_0[77:89]:   ServerCodeTableColumns,
+	_ServerCodeName_0[89:104]:  ServerPartUUIDs,
+	_ServerCodeName_0[104:125]: ServerReadTaskRequest,
+	_ServerCodeName_0[125:144]: ServerProfileEvents,
+	_ServerCodeName_1[0:12]:    ServerCodeSSHChallenge,
+}
+
+var _ServerCodeLowerNameToValueMap = map[string]ServerCode{
 	_ServerCodeLowerName_0[0:5]:     ServerCodeHello,
-	_ServerCodeName_0[5:9]:          ServerCodeData,
 	_ServerCodeLowerName_0[5:9]:     ServerCodeData,
-	_ServerCodeName_0[9:18]:         ServerCodeException,
 	_ServerCodeLowerName_0[9:18]:    ServerCodeException,
-	_ServerCodeName_0[18:26]:        ServerCodeProgress,
 	_ServerCodeLowerName_0[18:26]:   ServerCodeProgress,
-	_ServerCodeName_0[26:30]:        ServerCodePong,
 	_ServerCodeLowerName_0[26:30]:   ServerCodePong,
-	_ServerCodeName_0[30:41]:        ServerCodeEndOfStream,
 	_ServerCodeLowerName_0[30:41]:   ServerCodeEndOfStream,
-	_ServerCodeName_0[41:48]:        ServerCodeProfile,
 	_ServerCodeLowerName_0[41:48]:   ServerCodeProfile,
-	_ServerCodeName_0[48:54]:        ServerCodeTotals,
 	_ServerCodeLowerName_0[48:54]:   ServerCodeTotals,
-	_ServerCodeName_0[54:62]:        ServerCodeExtremes,
 	_ServerCodeLowerName_0[54:62]:   ServerCodeExtremes,
-	_ServerCodeName_0[62:74]:        ServerCodeTablesStatus,
 	_ServerCodeLowerName_0[62:74]:   ServerCodeTablesStatus,
-	_ServerCodeName_0[74:77]:        ServerCodeLog,
 	_ServerCodeLowerName_0[74:77]:   ServerCodeLog,
-	_ServerCodeName_0[77:89]:        ServerCodeTableColumns,
 	_ServerCodeLowerName_0[77:89]:   ServerCodeTableColumns,
-	_ServerCodeName_0[89:104]:       ServerPartUUIDs,
 	_ServerCodeLowerName_0[89:104]:  ServerPartUUIDs,
-	_ServerCodeName_0[104:125]:      ServerReadTaskRequest,
 	_ServerCodeLowerName_0[104:125]: ServerReadTaskRequest,
-	_ServerCodeName_0[125:144]:      ServerProfileEvents,
 	_ServerCodeLowerName_0[125:144]: ServerProfileEvents,
-	_ServerCodeName_1[0:12]:         ServerCodeSSHChallenge,
 	_ServerCodeLowerName_1[0:12]:    ServerCodeSSHChallenge,
 }
 
@@ -115,7 +118,7 @@ func ServerCodeString(s string) (ServerCode, error) {
 		return val, nil
 	}
 
-	if val, ok := _ServerCodeNameToValueMap[strings.ToLower(s)]; ok {
+	if val, ok := _ServerCodeLowerNameToValueMap[strings.ToLower(s)]; ok {
 		return val, nil
 	}
 	return 0, fmt.Errorf("%s does not belong to ServerCode values", s)

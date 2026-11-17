@@ -320,7 +320,7 @@ func (s *ColInfoInput) DecodeResult(r *Reader, version int, b Block) error {
 				return errors.Wrapf(err, "column [%d] custom serialization", i)
 			}
 			if customSerialization {
-				return errors.Wrapf(err, "column [%d] has custom serialization (not supported)", i)
+				return errors.Errorf("column [%d] has custom serialization (not supported)", i)
 			}
 		}
 		*s = append(*s, ColInfo{
