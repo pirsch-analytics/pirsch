@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.6
+
+* fixed using page views table when calculating page view relevant metrics
+* fixed typo in relative visitors metric
+
 ## 7.0.5
 
 * fixed locks in session caches

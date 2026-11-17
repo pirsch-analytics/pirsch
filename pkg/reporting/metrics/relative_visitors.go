@@ -7,7 +7,7 @@ type RelativeVisitors struct{}
 
 // Table implements the Metric interface.
 func (m RelativeVisitors) Table() []string {
-	return []string{pkg.TableSessions, pkg.TableSessions, pkg.TableEvents}
+	return []string{pkg.TableSessions, pkg.TablePageViews, pkg.TableEvents}
 }
 
 // JoinTable implements the Metric interface.

@@ -53,6 +53,7 @@ type Query struct {
 	importedTable                 string
 	funnelTimeColumn              string
 	funnelTimeAggregationFunction string
+	funnel                        bool
 	joinStep                      int
 	primaryFilter                 []classifiedFilter
 	subqueryFilter                []classifiedFilter
@@ -245,6 +246,7 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		Options:    req.Options,
 	}
 	query := NewQuery(q.db)
+	query.funnel = true
 
 	if errs := query.prepare(&r); errs != nil {
 		return "", nil, fmt.Errorf("funnel step %d: %w", stepIndex+1, errors.Join(errs...))
@@ -320,6 +322,11 @@ func (q *Query) prepare(req *request.Request) []error {
 	}
 
 	q.resolvePrimaryTable(*req)
+
+	if !q.funnel && !q.useImportedStatistics(*req) {
+		q.preferPageViewsTable(*req)
+	}
+
 	q.resolveJoinTable(*req)
 
 	if err := q.prepareImported(req); err != nil {
@@ -657,6 +664,50 @@ func (q *Query) resolvePrimaryTable(req request.Request) {
 
 	// fall back to sessions for simple queries
 	q.primaryTable = pkg.TableSessions
+}
+
+func (q *Query) preferPageViewsTable(req request.Request) {
+	if q.primaryTable != pkg.TableSessions {
+		return
+	}
+
+	for _, d := range req.Dimensions {
+		if !slices.Contains(d.Table(), pkg.TablePageViews) {
+			return
+		}
+	}
+
+	pageViews := false
+
+	for _, m := range req.Metrics {
+		switch metric := m.(type) {
+		case metrics.PageViews:
+			if metric.Max {
+				return
+			}
+
+			pageViews = true
+		case metrics.RelativeViews, metrics.AvgTimeOnPage:
+			pageViews = true
+		}
+
+		if !slices.Contains(m.Table(), pkg.TablePageViews) && m.JoinTable() != pkg.TableSessions {
+			return
+		}
+	}
+
+	if !pageViews {
+		return
+	}
+
+	for _, f := range req.Filter {
+		table, err := q.filterTable(f)
+
+		if err == nil && table == pkg.TablePageViews {
+			q.primaryTable = pkg.TablePageViews
+			return
+		}
+	}
 }
 
 func (q *Query) resolveBestTable(tableSets [][]string) string {
@@ -1350,6 +1401,12 @@ func (q *Query) buildQueryWith(req request.Request) (string, []any) {
 	primaryTable := q.primaryTable
 	q.primaryTable = pkg.TablePageViews
 	q.primaryFilter = q.buildQueryFiltersForTable(primaryFilter, pkg.TablePageViews)
+
+	// page level filters (like the path) must not be applied before calculating the time on page,
+	// as it depends on the next page view of the session
+	q.primaryFilter = slices.DeleteFunc(q.primaryFilter, func(f classifiedFilter) bool {
+		return !q.buildQueryFilterCompatibleWithTable(f.filter, pkg.TableSessions)
+	})
 
 	// build where query
 	var query strings.Builder
