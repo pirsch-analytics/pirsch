@@ -87,7 +87,19 @@ func (p *Pipe) Process(request *Request) (bool, error) {
 		if cancel {
 			// mark the request as canceled, but keep storing it (for bot analysis)
 			request.cancelled = true
+			request.IsBot = request.BotReason != ""
+			request.setRawFields()
 			break
+		}
+	}
+
+	// set the visitor ID for requests canceled before it has been set (for bot analysis)
+	if request.VisitorID == 0 {
+		for _, step := range p.steps {
+			if provider, ok := step.(VisitorIDProvider); ok {
+				request.VisitorID = provider.VisitorID(request)
+				break
+			}
 		}
 	}
 

@@ -108,6 +108,11 @@ func (s *Session) Step(request *ingest.Request) (bool, error) {
 	return false, nil
 }
 
+// VisitorID implements ingest.VisitorIDProvider.
+func (s *Session) VisitorID(request *ingest.Request) uint64 {
+	return s.fingerprint(request.UserAgent, request.IP, request.Time)
+}
+
 func (s *Session) new(request *ingest.Request) *model.Session {
 	request.SessionID = rand.Uint32()
 	return &model.Session{

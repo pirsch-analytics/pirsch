@@ -698,6 +698,66 @@ func TestIntegrationEventNonInteractive(t *testing.T) {
 	})
 }
 
+func TestIntegrationRequestLog(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		p, s, _ := newPipeline(t, pipelineOptions{})
+		userAgent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+
+		// regular visitor
+		accepted, err := p.Process(&ingest.Request{
+			SiteID:  1,
+			Request: newRequest(requestOptions{}),
+		})
+		assert.NoError(t, err)
+		assert.True(t, accepted)
+
+		// bot filtered by IP
+		botIP := "89.123.21.128"
+		accepted, err = p.Process(&ingest.Request{
+			SiteID:  1,
+			Request: newRequest(requestOptions{IP: &botIP}),
+		})
+		assert.NoError(t, err)
+		assert.False(t, accepted)
+		p.Stop()
+
+		requests := s.Requests()
+		assert.Len(t, requests, 2)
+		slices.SortFunc(requests, func(a, b model.Request) int {
+			if a.Bot == b.Bot {
+				return 0
+			} else if a.Bot {
+				return 1
+			}
+
+			return -1
+		})
+
+		for _, r := range requests {
+			assert.Equal(t, uint64(1), r.SiteID)
+			assert.NotZero(t, r.VisitorID)
+			assert.False(t, r.Time.IsZero())
+			assert.Equal(t, "example.com", r.Hostname)
+			assert.Equal(t, "/", r.Path)
+			assert.NotEmpty(t, r.Query)
+			assert.Equal(t, userAgent, r.UserAgent)
+			assert.Equal(t, "en-US,en;q=0.5", r.Headers["Accept-Language"])
+			assert.Equal(t, "https://google.com", r.Referrer)
+			assert.Equal(t, "Source", r.UTMSource)
+			assert.Equal(t, "Medium", r.UTMMedium)
+			assert.Equal(t, "Campaign", r.UTMCampaign)
+			assert.Equal(t, "Content", r.UTMContent)
+			assert.Equal(t, "Term", r.UTMTerm)
+		}
+
+		assert.False(t, requests[0].Bot)
+		assert.Empty(t, requests[0].BotReason)
+		assert.True(t, requests[1].Bot)
+		assert.Equal(t, "ip", requests[1].BotReason)
+		assert.NotEqual(t, requests[0].VisitorID, requests[1].VisitorID)
+	})
+}
+
 func first(m map[string]model.Session) model.Session {
 	for _, v := range m {
 		return v

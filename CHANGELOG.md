@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.8
+
+* fixed bot request table enrichment
+* fixed pipeline step order
+
 ## 7.0.7
 
 * fixed getting the page title for event pages

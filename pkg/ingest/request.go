@@ -320,6 +320,10 @@ func (request *Request) validate() {
 		request.Hostname = request.Request.URL.Hostname()
 	}
 
+	if request.UserAgent == "" {
+		request.UserAgent = strings.TrimSpace(request.Request.UserAgent())
+	}
+
 	request.Title = util.Shorten(request.Title, 512)
 	request.Path = util.Shorten(request.Path, 2000)
 	request.EventName = strings.TrimSpace(request.EventName)
@@ -362,4 +366,26 @@ func (request *Request) validate() {
 			request.Headers[k] = v[0]
 		}
 	}
+}
+
+func (request *Request) setRawFields() {
+	if request.Request == nil {
+		return
+	}
+
+	if request.Referrer == "" {
+		request.Referrer = util.Shorten(strings.TrimSpace(request.Request.Header.Get("Referer")), 200)
+	}
+
+	query := request.Request.URL.Query()
+	setIfEmpty := func(field *string, param string) {
+		if *field == "" {
+			*field = strings.TrimSpace(query.Get(param))
+		}
+	}
+	setIfEmpty(&request.UTMSource, "utm_source")
+	setIfEmpty(&request.UTMMedium, "utm_medium")
+	setIfEmpty(&request.UTMCampaign, "utm_campaign")
+	setIfEmpty(&request.UTMContent, "utm_content")
+	setIfEmpty(&request.UTMTerm, "utm_term")
 }
