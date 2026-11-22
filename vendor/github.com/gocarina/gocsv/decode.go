@@ -388,7 +388,7 @@ func readEachWithoutHeaders(decoder SimpleDecoder, c interface{}) error {
 			fieldInfo := outInnerStructInfo.Fields[j]
 			if err := setInnerField(&outInner, outInnerWasPointer, fieldInfo.IndexChain, csvColumnContent, fieldInfo.omitEmpty); err != nil { // Set field of struct
 				return &csv.ParseError{
-					Line:   i + 2, //add 2 to account for the header & 0-indexing of arrays
+					Line:   i + 1,
 					Column: j + 1,
 					Err:    err,
 				}
@@ -481,6 +481,12 @@ func ensureOutCapacity(out *reflect.Value, csvLen int) error {
 			return fmt.Errorf("slice capacity problem and is not addressable (did you forget &?)")
 		} else if out.CanAddr() && out.Len() < csvLen-1 {
 			out.Set(reflect.MakeSlice(out.Type(), csvLen-1, csvLen-1)) // Slice is not big enough, so grows it
+		} else if out.CanAddr() && out.Len() > csvLen-1 {
+			zero := reflect.Zero(out.Type().Elem())
+			for i := csvLen - 1; i < out.Len(); i++ {
+				out.Index(i).Set(zero)
+			}
+			out.SetLen(csvLen - 1)
 		}
 	}
 	return nil

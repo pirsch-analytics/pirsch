@@ -3,6 +3,7 @@
 ## 7.0.7
 
 * fixed getting the page title for event pages
+* updated dependencies
 
 ## 7.0.6
 

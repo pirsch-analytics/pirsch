@@ -352,34 +352,71 @@ func UnmarshalBytesToChan(in []byte, c interface{}) error {
 	return UnmarshalToChan(bytes.NewReader(in), c)
 }
 
+// unmarshalResult is the result of a decode that runs in its own goroutine.
+type unmarshalResult struct {
+	err      error
+	panicked bool
+	value    interface{}
+}
+
+// forwardPanic sends a panic of the goroutine that decodes on res.
+// It must be deferred in that goroutine.
+func forwardPanic(res chan<- unmarshalResult) {
+	if r := recover(); r != nil {
+		res <- unmarshalResult{panicked: true, value: r}
+	}
+}
+
+// get returns the error of the decode. If the decode panicked, get panics with the
+// same value in the caller's goroutine, so the caller can recover it as with Unmarshal.
+func (r unmarshalResult) get() error {
+	if r.panicked {
+		panic(r.value)
+	}
+	return r.err
+}
+
 // UnmarshalToCallback parses the CSV from the reader and send each value to the given func f.
 // The func must look like func(Struct). If its last return value is an error,
 // the parser is drained without further callback calls before returning that error.
 func UnmarshalToCallback(in io.Reader, f interface{}) error {
+	return unmarshalToCallback(in, f, false)
+}
+
+// UnmarshalToCallbackWithoutHeaders decodes every record, including the first,
+// by struct field order. It accepts the same callbacks as UnmarshalToCallback.
+// An empty CSV returns ErrEmptyCSVFile without calling f.
+func UnmarshalToCallbackWithoutHeaders(in io.Reader, f interface{}) error {
+	return unmarshalToCallback(in, f, true)
+}
+
+func unmarshalToCallback(in io.Reader, f interface{}, withoutHeaders bool) error {
 	valueFunc := reflect.ValueOf(f)
-	t := reflect.TypeOf(f)
+	if valueFunc.Kind() != reflect.Func || valueFunc.IsNil() {
+		return fmt.Errorf("the given callback must be a non-nil function")
+	}
+	t := valueFunc.Type()
 	if t.NumIn() != 1 {
 		return fmt.Errorf("the given function must have exactly one parameter")
 	}
-	cerr := make(chan error)
+	readRows := UnmarshalToChan
+	if withoutHeaders {
+		readRows = UnmarshalToChanWithoutHeaders
+	}
+	cerr := make(chan unmarshalResult)
 	c := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, t.In(0)), 0)
 	go func() {
-		cerr <- UnmarshalToChan(in, c.Interface())
+		defer forwardPanic(cerr)
+		cerr <- unmarshalResult{err: readRows(in, c.Interface())}
 	}()
 	var callbackErr error
+	seenRow := false
 	for {
-		select {
-		case err := <-cerr:
-			if callbackErr != nil {
-				return callbackErr
-			}
-			return err
-		default:
-		}
-		v, notClosed := c.Recv()
-		if !notClosed || v.Interface() == nil {
+		v, ok := c.Recv()
+		if !ok {
 			break
 		}
+		seenRow = true
 		if callbackErr != nil {
 			continue // Drain the producer without invoking the callback again.
 		}
@@ -391,9 +428,12 @@ func UnmarshalToCallback(in io.Reader, f interface{}) error {
 			}
 		}
 	}
-	err := <-cerr
+	err := (<-cerr).get()
 	if callbackErr != nil {
 		return callbackErr
+	}
+	if err == nil && withoutHeaders && !seenRow {
+		return ErrEmptyCSVFile
 	}
 	return err
 }
@@ -406,15 +446,16 @@ func UnmarshalDecoderToCallback(in SimpleDecoder, f interface{}) error {
 	if t.NumIn() != 1 {
 		return fmt.Errorf("the given function must have exactly one parameter")
 	}
-	cerr := make(chan error)
+	cerr := make(chan unmarshalResult)
 	c := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, t.In(0)), 0)
 	go func() {
-		cerr <- UnmarshalDecoderToChan(in, c.Interface())
+		defer forwardPanic(cerr)
+		cerr <- unmarshalResult{err: UnmarshalDecoderToChan(in, c.Interface())}
 	}()
 	for {
 		select {
-		case err := <-cerr:
-			return err
+		case res := <-cerr:
+			return res.get()
 		default:
 		}
 		v, notClosed := c.Recv()
@@ -423,7 +464,7 @@ func UnmarshalDecoderToCallback(in SimpleDecoder, f interface{}) error {
 		}
 		valueFunc.Call([]reflect.Value{v})
 	}
-	return <-cerr
+	return (<-cerr).get()
 }
 
 // UnmarshalBytesToCallback parses the CSV from the bytes and send each value to the given func f.
@@ -458,17 +499,18 @@ func UnmarshalToCallbackWithError(in io.Reader, f interface{}) error {
 		return fmt.Errorf("the given function must only return error")
 	}
 
-	cerr := make(chan error)
+	cerr := make(chan unmarshalResult)
 	c := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, t.In(0)), 0)
 	go func() {
-		cerr <- UnmarshalToChan(in, c.Interface())
+		defer forwardPanic(cerr)
+		cerr <- unmarshalResult{err: UnmarshalToChan(in, c.Interface())}
 	}()
 
 	var fErr error
 	for {
 		select {
-		case err := <-cerr:
-			if err != nil {
+		case res := <-cerr:
+			if err := res.get(); err != nil {
 				return err
 			}
 			return fErr
@@ -476,7 +518,7 @@ func UnmarshalToCallbackWithError(in io.Reader, f interface{}) error {
 		}
 		v, notClosed := c.Recv()
 		if !notClosed || v.Interface() == nil {
-			if err := <-cerr; err != nil {
+			if err := (<-cerr).get(); err != nil {
 				fErr = err
 			}
 			break

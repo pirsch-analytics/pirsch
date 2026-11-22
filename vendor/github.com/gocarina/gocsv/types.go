@@ -199,6 +199,15 @@ func toUint(in interface{}) (uint64, error) {
 }
 
 func toFloat(in interface{}) (float64, error) {
+	return toFloatBits(in, 64)
+}
+
+// toFloatBits converts in to a float that fits in bitSize (32 or 64) bits.
+// Parsing a string at the field's own size matters at the edges: strconv
+// prints math.MaxFloat32 as 3.4028235e+38, which reads back as MaxFloat32 at
+// 32 bits but is out of range once parsed as a float64 and checked against
+// the float32 limit.
+func toFloatBits(in interface{}, bitSize int) (float64, error) {
 	inValue := reflect.ValueOf(in)
 
 	switch inValue.Kind() {
@@ -208,7 +217,7 @@ func toFloat(in interface{}) (float64, error) {
 			return 0, nil
 		}
 		s = strings.Replace(s, ",", ".", -1)
-		return strconv.ParseFloat(s, 64)
+		return strconv.ParseFloat(s, bitSize)
 	case reflect.Bool:
 		if inValue.Bool() {
 			return 1, nil
@@ -224,12 +233,20 @@ func toFloat(in interface{}) (float64, error) {
 	return 0, fmt.Errorf("No known conversion from " + inValue.Type().String() + " to float")
 }
 
+// isOnlyTextUnmarshaler reports whether t decodes through UnmarshalText, which
+// for types like time.Time rejects an empty string. A TypeUnmarshaller decides
+// for itself what an empty cell means.
+func isOnlyTextUnmarshaler(t reflect.Type) bool {
+	return t.Implements(reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()) &&
+		!t.Implements(reflect.TypeOf((*TypeUnmarshaller)(nil)).Elem())
+}
+
 func setField(field reflect.Value, value string, omitEmpty bool) error {
 	if field.Kind() == reflect.Ptr {
 		if omitEmpty && value == "" {
 			return nil
 		}
-		if value == "" && field.Type().Elem() == reflect.TypeOf(false) {
+		if value == "" && (field.Type().Elem() == reflect.TypeOf(false) || isOnlyTextUnmarshaler(field.Type())) {
 			field.SetZero()
 			return nil
 		}
@@ -271,7 +288,7 @@ func setField(field reflect.Value, value string, omitEmpty bool) error {
 		}
 		field.SetUint(ui)
 	case float32, float64:
-		f, err := toFloat(value)
+		f, err := toFloatBits(value, field.Type().Bits())
 		if err != nil {
 			return err
 		}
@@ -318,7 +335,7 @@ func setField(field reflect.Value, value string, omitEmpty bool) error {
 				}
 				field.SetUint(ui)
 			case reflect.Float32, reflect.Float64:
-				f, err := toFloat(value)
+				f, err := toFloatBits(value, field.Type().Bits())
 				if err != nil {
 					return err
 				}
@@ -364,9 +381,9 @@ func getFieldAsString(field reflect.Value) (str string, err error) {
 				return "false", nil
 			}
 		case int, int8, int16, int32, int64:
-			return fmt.Sprintf("%v", field.Int()), nil
+			return strconv.FormatInt(field.Int(), 10), nil
 		case uint, uint8, uint16, uint32, uint64:
-			return fmt.Sprintf("%v", field.Uint()), nil
+			return strconv.FormatUint(field.Uint(), 10), nil
 		case float32:
 			str, err = toString(float32(field.Float()))
 			if err != nil {
