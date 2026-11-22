@@ -2176,6 +2176,62 @@ func TestQueryEventPath(t *testing.T) {
 	assert.Equal(t, "/landing", r.Results[1].DimensionValues[0])
 }
 
+func TestQueryEventPathTitle(t *testing.T) {
+	loadTestData(t, []string{
+		"simple bounced + event (non-interactive)",
+		"three page views + event",
+		"referrer reset",
+	})
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.EventPath{},
+			dimensions.Title{},
+		},
+		Metrics: []metrics.Metric{
+			metrics.Visitors{},
+			metrics.Sessions{},
+			metrics.PageViews{},
+			metrics.Bounces{},
+			metrics.RelativeVisitors{},
+			metrics.RelativeViews{},
+			metrics.BounceRate{},
+		},
+		Filter: []request.Filter{
+			{
+				Dimension: dimensions.Path{},
+				Operator:  request.OperatorContains,
+				Values:    []any{"/"},
+			},
+		},
+		OrderBy: []request.OrderBy{
+			{
+				Metric:    metrics.Visitors{},
+				Direction: request.DirectionDESC,
+			},
+			{
+				Dimension: dimensions.EventPath{},
+				Direction: request.DirectionASC,
+			},
+		},
+	}
+	assert.Empty(t, req.Validate())
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	assert.NotEmpty(t, r.Results)
+
+	for _, row := range r.Results {
+		assert.Len(t, row.DimensionValues, 2)
+		assert.Len(t, row.MetricValues, 7)
+	}
+}
+
 func TestQueryTagKeysList(t *testing.T) {
 	loadTestData(t, []string{
 		"simple bounced + event (non-interactive)",

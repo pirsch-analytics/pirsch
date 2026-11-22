@@ -18,7 +18,11 @@ func (d Title) TableImported() []string {
 }
 
 // Column implements the Dimension interface.
-func (d Title) Column(_ string) string {
+func (d Title) Column(table string) string {
+	if table == pkg.TableSessions {
+		return "entry_title"
+	}
+
 	return "title"
 }
 

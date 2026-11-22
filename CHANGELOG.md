@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.7
+
+* fixed getting the page title for event pages
+
 ## 7.0.6
 
 * fixed using page views table when calculating page view relevant metrics
