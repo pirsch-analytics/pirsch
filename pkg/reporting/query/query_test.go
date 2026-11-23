@@ -8,6 +8,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/timezone"
 	"github.com/pirsch-analytics/pirsch/v7/pkg"
+	"github.com/pirsch-analytics/pirsch/v7/pkg/db"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/model"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/dimensions"
 	"github.com/pirsch-analytics/pirsch/v7/pkg/reporting/metrics"
@@ -1410,7 +1411,7 @@ func TestQueryEventMetaDataFilterValue(t *testing.T) {
 	assert.Equal(t, "2026-01-01", args[1])
 	assert.Equal(t, "2026-01-31", args[2])
 	assert.Equal(t, "hero", args[3])
-	assert.Equal(t, 1, args[4])
+	assert.Equal(t, "1", args[4])
 
 	// result dimensions and metrics
 	assert.Len(t, r.Results, 1)
@@ -5172,6 +5173,230 @@ func TestQueryImportedCompare(t *testing.T) {
 	assert.Equal(t, uint64(1), r.Results[1].CompareMetricValues[0])
 	assert.Equal(t, "https://google.com", r.Results[0].DimensionValues[0])
 	assert.Equal(t, "https://duckduckgo.com", r.Results[1].DimensionValues[0])
+}
+
+func TestQueryImportedEntryExitPagesOrderByMetric(t *testing.T) {
+	db.CleanupDB(t, client)
+	_, from, to := newQuery()
+
+	for _, tc := range []struct {
+		dimension dimensions.Dimension
+		metrics   []metrics.Metric
+	}{
+		{
+			dimension: dimensions.EntryPath{},
+			metrics:   []metrics.Metric{metrics.Entries{}, metrics.EntryRate{}, metrics.Visitors{}, metrics.Sessions{}, metrics.AvgTimeOnPage{}},
+		},
+		{
+			dimension: dimensions.ExitPath{},
+			metrics:   []metrics.Metric{metrics.Exits{}, metrics.ExitRate{}, metrics.Visitors{}, metrics.Sessions{}},
+		},
+	} {
+		// only imported statistics, and imported + native statistics
+		for _, importedUntil := range []time.Time{to.Add(time.Hour * 24), from.Add(time.Hour * 24 * 15)} {
+			q := NewQuery(client)
+			req := request.Request{
+				SiteID: 1,
+				Period: request.Period{
+					From:          from,
+					To:            to,
+					ImportedUntil: importedUntil,
+					Timezone:      time.UTC,
+				},
+				Metrics:    tc.metrics,
+				Dimensions: []dimensions.Dimension{tc.dimension},
+				OrderBy: []request.OrderBy{
+					{Metric: tc.metrics[0], Direction: request.DirectionDESC},
+					{Dimension: tc.dimension, Direction: request.DirectionASC},
+				},
+				Options: &request.Options{
+					IncludeImportedStatistics: true,
+				},
+				Pagination: &request.Pagination{Limit: 10},
+			}
+			assert.Empty(t, req.Validate())
+			r := q.Run(req)
+			assert.Empty(t, r.Meta.Errors, "%s until %s", tc.dimension, importedUntil)
+		}
+	}
+}
+
+func TestQueryEventMetaValueSearch(t *testing.T) {
+	saveMetaDataEvents(t)
+
+	for _, d := range []dimensions.EventMetaValue{{}, {Path: "query"}} {
+		q, from, to := newQuery()
+		req := request.Request{
+			SiteID: 1,
+			Period: request.Period{
+				From:     from,
+				To:       to,
+				Timezone: time.UTC,
+			},
+			Dimensions: []dimensions.Dimension{d},
+			Filter: []request.Filter{
+				{Dimension: d, Operator: request.OperatorContains, Values: []any{`"kran`}},
+				{Dimension: dimensions.Event{}, Values: []any{"searchCompleted"}},
+				{Dimension: dimensions.EventMeta{Path: "query"}, Values: []any{"app anmeldung"}},
+			},
+			OrderBy: []request.OrderBy{{Dimension: d, Direction: request.DirectionASC}},
+		}
+		assert.Empty(t, req.Validate())
+		r := q.Run(req)
+		assert.Empty(t, r.Meta.Errors, "path %q", d.Path)
+	}
+
+	// search must find values
+	q, from, to := newQuery()
+	d := dimensions.EventMetaValue{Path: "query"}
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Dimensions: []dimensions.Dimension{d},
+		Filter: []request.Filter{
+			{Dimension: d, Operator: request.OperatorContains, Values: []any{"ANMELD"}},
+		},
+		OrderBy: []request.OrderBy{{Dimension: d, Direction: request.DirectionASC}},
+	}
+	assert.Empty(t, req.Validate())
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	if assert.Len(t, r.Results, 1) {
+		assert.Equal(t, "app anmeldung", r.Results[0].DimensionValues[0])
+	}
+}
+
+func TestQueryEventMetaFilterMixedTypes(t *testing.T) {
+	saveMetaDataEvents(t)
+
+	for _, filter := range []request.Filter{
+		{Dimension: dimensions.EventMeta{Path: "step"}, Values: []any{"2-kontakt"}},
+		{Dimension: dimensions.EventMetaValue{Path: "step"}, Values: []any{"2-kontakt"}},
+		{Dimension: dimensions.EventMeta{Path: "step"}, Values: []any{"2-kontakt", "1"}},
+		{Dimension: dimensions.EventMeta{Path: "step"}, Operator: request.OperatorIsNot, Values: []any{"2-kontakt"}},
+		{Dimension: dimensions.EventMeta{Path: "step"}, Operator: request.OperatorContains, Values: []any{"kontakt"}},
+		{Dimension: dimensions.EventMeta{Path: "step"}, Operator: request.OperatorMatches, Values: []any{"^2-"}},
+	} {
+		q, from, to := newQuery()
+		req := request.Request{
+			SiteID: 1,
+			Period: request.Period{
+				From:     from,
+				To:       to,
+				Timezone: time.UTC,
+			},
+			Metrics: []metrics.Metric{
+				metrics.Visitors{},
+				metrics.PageViews{},
+				metrics.Sessions{},
+				metrics.Bounces{},
+				metrics.BounceRate{},
+			},
+			Filter: []request.Filter{filter},
+		}
+		assert.Empty(t, req.Validate())
+		r := q.Run(req)
+		assert.Empty(t, r.Meta.Errors, "%v", filter)
+	}
+
+	// the string value must match
+	q, from, to := newQuery()
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{metrics.Visitors{}},
+		Filter: []request.Filter{
+			{Dimension: dimensions.EventMeta{Path: "step"}, Values: []any{"2-kontakt"}},
+		},
+	}
+	assert.Empty(t, req.Validate())
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	if assert.Len(t, r.Results, 1) {
+		assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	}
+
+	// the numeric value must match as well
+	q, from, to = newQuery()
+	req.Filter = []request.Filter{
+		{Dimension: dimensions.EventMeta{Path: "step"}, Values: []any{"1"}},
+	}
+	r = q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+	if assert.Len(t, r.Results, 1) {
+		assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+	}
+}
+
+func TestQueryFunnelStepPathAndEvent(t *testing.T) {
+	loadTestData(t, []string{
+		"funnel steps",
+	})
+	q, _, _ := newQuery()
+	r := q.Funnel(request.FunnelRequest{
+		SiteID: 1,
+		Period: request.Period{
+			From:     time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			To:       time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+			Timezone: time.UTC,
+		},
+		Filter: [][]request.Filter{
+			{
+				{
+					Dimension: dimensions.EntryPath{},
+					Values:    []any{"/"},
+				},
+			},
+			{
+				{
+					Dimension: dimensions.Path{},
+					Values:    []any{"/complete"},
+				},
+				{
+					Dimension: dimensions.Event{},
+					Values:    []any{"Checkout Completed"},
+				},
+			},
+		},
+	})
+	assert.Empty(t, r.Meta.Errors)
+	if assert.Len(t, r.Steps, 2) {
+		assert.Equal(t, uint64(3), r.Steps[0].Visitors)
+		assert.Equal(t, uint64(1), r.Steps[1].Visitors)
+	}
+}
+
+func saveMetaDataEvents(t *testing.T) {
+	db.CleanupDB(t, client)
+	_, from, _ := newQuery()
+	events := []model.Event{
+		{
+			SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour),
+			Name:     "searchCompleted",
+			Path:     "/",
+			MetaData: map[string]any{"query": "app anmeldung", "step": 1},
+		},
+		{
+			SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2),
+			Name:     "searchCompleted",
+			Path:     "/",
+			MetaData: map[string]any{"query": `"kran`, "step": "2-kontakt"},
+		},
+	}
+	assert.NoError(t, client.SaveEvents(context.Background(), events))
+	sessions := []model.Session{
+		{Sign: 1, Version: 1, SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour), Start: from.Add(time.Hour), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+		{Sign: 1, Version: 1, SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2), Start: from.Add(time.Hour * 2), EntryPath: "/", ExitPath: "/", PageViews: 1, IsBounce: true},
+	}
+	assert.NoError(t, client.SaveSessions(context.Background(), sessions))
 }
 
 func newQuery() (*Query, time.Time, time.Time) {

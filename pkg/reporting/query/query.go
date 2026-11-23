@@ -258,8 +258,8 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 	// Subquery filters will be promoted to primary if they resolve to page views or events.
 	// For pure session queries, determine which field to use (time or start), depending on entry/exit path or title filters.
 	if len(query.subqueryFilter) > 0 {
-		subqueryTable := query.subqueryFilter[0].table
-		demoted := make([]classifiedFilter, 0, len(query.primaryFilter))
+		subqueryTable := query.funnelPromotionTable()
+		demoted := make([]classifiedFilter, 0, len(query.primaryFilter)+len(query.subqueryFilter))
 
 		for _, f := range query.primaryFilter {
 			demoted = append(demoted, classifiedFilter{table: f.table, filter: f.filter})
@@ -268,7 +268,11 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 		promoted := make([]classifiedFilter, 0, len(query.subqueryFilter))
 
 		for _, f := range query.subqueryFilter {
-			promoted = append(promoted, classifiedFilter{table: subqueryTable, filter: f.filter})
+			if query.allCompatible(query.filterTableSets(f.filter), subqueryTable) {
+				promoted = append(promoted, classifiedFilter{table: subqueryTable, filter: f.filter})
+			} else {
+				demoted = append(demoted, f)
+			}
 		}
 
 		query.primaryTable = subqueryTable
@@ -291,6 +295,26 @@ func (q *Query) buildFunnelStepQuery(req request.FunnelRequest, stepIndex int, s
 
 	stepQuery, stepArgs := query.buildQuery(r)
 	return stepQuery, stepArgs, nil
+}
+
+func (q *Query) funnelPromotionTable() string {
+	tableSets := make([][]string, 0, len(q.subqueryFilter))
+
+	for _, f := range q.subqueryFilter {
+		tableSets = append(tableSets, q.filterTableSets(f.filter)...)
+	}
+
+	for _, candidate := range []string{pkg.TablePageViews, pkg.TableEvents} {
+		if q.allCompatible(tableSets, candidate) {
+			return candidate
+		}
+	}
+
+	return q.subqueryFilter[0].table
+}
+
+func (q *Query) filterTableSets(filter request.Filter) [][]string {
+	return q.collectLeafTableSets([]request.Filter{filter})
 }
 
 func (q *Query) funnelStepsEqual(a, b []request.Filter) bool {
@@ -1343,6 +1367,12 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 		expression := m.ExpressionImported()
 		column := m.ColumnImported()
 
+		// use the native column name for metrics that are not available in imported statistics,
+		// so that they can be referenced in the union and order by clause
+		if column == "" {
+			column = m.Column()
+		}
+
 		if expression == "" {
 			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
 		} else {
@@ -1887,6 +1917,18 @@ func (q *Query) buildQueryFilterColumn(table string, filter request.Filter) (str
 	default:
 		expression, args := q.buildQueryWhereColumn(table, filter)
 
+		switch filter.Dimension.(type) {
+		case dimensions.EventMeta, dimensions.EventMetaValue:
+			// metadata is compared as a string
+			values := make([]any, 0, len(filter.Values))
+
+			for _, v := range filter.Values {
+				values = append(values, fmt.Sprint(v))
+			}
+
+			filter.Values = values
+		}
+
 		switch filter.Operator {
 		case request.OperatorIsNot:
 			if len(filter.Values) > 1 {
@@ -1949,9 +1991,9 @@ func (q *Query) buildQueryWhereColumn(table string, filter request.Filter) (stri
 	case dimensions.TagValue:
 		return fmt.Sprintf("%s[?]", q.buildQualifiedColumn(table, "tags")), []any{d.Key}
 	case dimensions.EventMeta:
-		return fmt.Sprintf("%s%s", q.buildQualifiedColumn(table, "meta_data"), q.buildQueryFilterJSONPath(d.Path)), nil
+		return q.buildQueryWhereEventMetaColumn(table, d.Path), nil
 	case dimensions.EventMetaValue:
-		return fmt.Sprintf("%s%s", q.buildQualifiedColumn(table, "meta_data"), q.buildQueryFilterJSONPath(d.Path)), nil
+		return q.buildQueryWhereEventMetaColumn(table, d.Path), nil
 	case dimensions.EventMetaKey:
 		return q.buildQualifiedColumn(table, "meta_data"), nil
 	default:
@@ -1959,11 +2001,19 @@ func (q *Query) buildQueryWhereColumn(table string, filter request.Filter) (stri
 	}
 }
 
+func (q *Query) buildQueryWhereEventMetaColumn(table, path string) string {
+	return fmt.Sprintf("toString(%s%s)", q.buildQualifiedColumn(table, "meta_data"), q.buildQueryFilterJSONPath(path))
+}
+
 func (q *Query) buildQualifiedColumn(table, column string) string {
 	return fmt.Sprintf(`"%s"."%s"`, table, column)
 }
 
 func (q *Query) buildQueryFilterJSONPath(value string) string {
+	if value == "" {
+		return ""
+	}
+
 	parts := strings.Split(value, ".")
 	var path strings.Builder
 

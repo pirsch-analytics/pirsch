@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.9
+
+* fixed conversion error when filtering by event metadata value
+* fixed sorting and merging with imported statistics if the column isn't available
+* fixed incompatible filters in funnel steps (like event name + path)
+
 ## 7.0.8
 
 * fixed bot request table enrichment
