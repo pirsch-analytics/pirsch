@@ -3,6 +3,7 @@
 ## 7.0.10
 
 * fixed rejection of spaces in metadata keys
+* fixed reading zero literals for imported statistics
 
 ## 7.0.9
 

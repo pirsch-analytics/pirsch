@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -5179,6 +5180,19 @@ func TestQueryImportedEntryExitPagesOrderByMetric(t *testing.T) {
 	db.CleanupDB(t, client)
 	_, from, to := newQuery()
 
+	for _, table := range []string{"imported_entry_page", "imported_exit_page"} {
+		column := "entry_path"
+
+		if table == "imported_exit_page" {
+			column = "exit_path"
+		}
+
+		stmt, err := client.PrepareBatch(context.Background(), fmt.Sprintf(`INSERT INTO "%s" (client_id, date, %s, visitors, sessions)`, table, column))
+		assert.NoError(t, err)
+		assert.NoError(t, stmt.Append(uint64(1), from.Add(time.Hour*24*2), "/imported", uint32(3), uint32(4)))
+		assert.NoError(t, stmt.Send())
+	}
+
 	for _, tc := range []struct {
 		dimension dimensions.Dimension
 		metrics   []metrics.Metric
@@ -5217,6 +5231,15 @@ func TestQueryImportedEntryExitPagesOrderByMetric(t *testing.T) {
 			assert.Empty(t, req.Validate())
 			r := q.Run(req)
 			assert.Empty(t, r.Meta.Errors, "%s until %s", tc.dimension, importedUntil)
+
+			if assert.Len(t, r.Results, 1, "%s until %s", tc.dimension, importedUntil) {
+				assert.Len(t, r.Results[0].MetricValues, len(tc.metrics))
+				assert.Equal(t, uint64(0), r.Results[0].MetricValues[0])
+				assert.Equal(t, float64(0), r.Results[0].MetricValues[1])
+				assert.Equal(t, uint64(3), r.Results[0].MetricValues[2])
+				assert.Equal(t, uint64(4), r.Results[0].MetricValues[3])
+				assert.Equal(t, "/imported", r.Results[0].DimensionValues[0])
+			}
 		}
 	}
 }

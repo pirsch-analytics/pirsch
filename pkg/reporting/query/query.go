@@ -1374,7 +1374,7 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 		}
 
 		if expression == "" {
-			fields = append(fields, fmt.Sprintf("%v %s", m.Zero(), column))
+			fields = append(fields, fmt.Sprintf("%s %s", q.buildZeroLiteral(m.Zero()), column))
 		} else {
 			fields = append(fields, fmt.Sprintf("%s %s", expression, column))
 		}
@@ -1410,6 +1410,27 @@ func (q *Query) buildQueryImported(req request.Request) (string, []any) {
 	}
 
 	return query.String(), args
+}
+
+func (q *Query) buildZeroLiteral(zero any) string {
+	switch zero.(type) {
+	case uint64:
+		return "toUInt64(0)"
+	case uint32:
+		return "toUInt32(0)"
+	case uint16:
+		return "toUInt16(0)"
+	case int8:
+		return "toInt8(0)"
+	case float64:
+		return "toFloat64(0)"
+	case time.Time:
+		return "toDateTime(0)"
+	case string:
+		return "''"
+	default:
+		return fmt.Sprint(zero)
+	}
 }
 
 func (q *Query) buildQueryWithRequired(list []metrics.Metric) bool {
