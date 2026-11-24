@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.10
+
+* fixed rejection of spaces in metadata keys
+
 ## 7.0.9
 
 * fixed conversion error when filtering by event metadata value

@@ -99,7 +99,7 @@ func validateMetadataKey(path string) error {
 		}
 
 		if !metaKeyValidKeySegment.MatchString(part) {
-			return fmt.Errorf("metadata key path '%s' segment '%s' contains invalid characters: only a-z, A-Z, 0-9, _ and - are allowed", path, part)
+			return fmt.Errorf("metadata key path '%s' segment '%s' contains invalid characters: only letters, digits, spaces, _ and - are allowed", path, part)
 		}
 	}
 

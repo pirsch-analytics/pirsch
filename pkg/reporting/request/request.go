@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	metaKeyValidKeySegment = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	metaKeyValidKeySegment = regexp.MustCompile(`^[\p{L}\p{N}_ -]+$`)
 	columnNameValid        = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 )
 

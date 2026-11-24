@@ -26,7 +26,28 @@ func TestRequestValidateEventMetaKey(t *testing.T) {
 	}
 	errs := r.Validate()
 	assert.Len(t, errs, 1)
-	assert.Equal(t, "metadata key path 'this.is.not.(DELETE FROM' segment '(DELETE FROM' contains invalid characters: only a-z, A-Z, 0-9, _ and - are allowed", errs[0].Error())
+	assert.Equal(t, "metadata key path 'this.is.not.(DELETE FROM' segment '(DELETE FROM' contains invalid characters: only letters, digits, spaces, _ and - are allowed", errs[0].Error())
+}
+
+func TestRequestValidateEventMetaKeyWithSpaces(t *testing.T) {
+	r := Request{
+		SiteID:     1,
+		Dimensions: []dimensions.Dimension{dimensions.EventMetaValue{Path: "metadata key"}},
+		Filter: []Filter{
+			{Dimension: dimensions.EventMetaKey{}, Values: []any{"metadata key"}},
+			{Dimension: dimensions.EventMeta{Path: "metadata key"}, Values: []any{"value"}},
+			{Dimension: dimensions.EventMetaValue{Path: "nested.metadata key"}, Values: []any{"value"}},
+		},
+	}
+	assert.Empty(t, r.Validate())
+
+	for _, path := range []string{`metadata "key`, "metadata `key", `metadata \key`, "metadata\nkey"} {
+		r := Request{
+			SiteID: 1,
+			Filter: []Filter{{Dimension: dimensions.EventMetaKey{}, Values: []any{path}}},
+		}
+		assert.Len(t, r.Validate(), 1, path)
+	}
 }
 
 func TestRequestValidateEventMetaPath(t *testing.T) {

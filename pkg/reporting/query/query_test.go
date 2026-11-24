@@ -5336,6 +5336,55 @@ func TestQueryEventMetaFilterMixedTypes(t *testing.T) {
 	}
 }
 
+func TestQueryEventMetaKeyWithSpaces(t *testing.T) {
+	db.CleanupDB(t, client)
+	_, from, to := newQuery()
+	assert.NoError(t, client.SaveEvents(context.Background(), []model.Event{
+		{
+			Data:     model.Data{SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour)},
+			Name:     "Event",
+			MetaData: map[string]any{"metadata key": "some value"},
+		},
+		{
+			Data:     model.Data{SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2)},
+			Name:     "Event",
+			MetaData: map[string]any{"other": "other value"},
+		},
+	}))
+
+	for _, filter := range []request.Filter{
+		{Dimension: dimensions.EventMetaKey{}, Values: []any{"metadata key"}},
+		{Dimension: dimensions.EventMeta{Path: "metadata key"}, Values: []any{"some value"}},
+		{Dimension: dimensions.EventMetaValue{Path: "metadata key"}, Values: []any{"some value"}},
+		{Dimension: dimensions.EventMetaValue{Path: "metadata key"}, Operator: request.OperatorContains, Values: []any{"some"}},
+	} {
+		q := NewQuery(client)
+		req := request.Request{
+			SiteID: 1,
+			Period: request.Period{
+				From:     from,
+				To:       to,
+				Timezone: time.UTC,
+			},
+			Metrics: []metrics.Metric{metrics.Visitors{}},
+			Dimensions: []dimensions.Dimension{
+				dimensions.Event{},
+				dimensions.EventMetaValue{Path: "metadata key"},
+			},
+			Filter: []request.Filter{filter},
+		}
+		assert.Empty(t, req.Validate(), "%v", filter)
+		r := q.Run(req)
+		assert.Empty(t, r.Meta.Errors, "%v", filter)
+
+		if assert.Len(t, r.Results, 1, "%v", filter) {
+			assert.Equal(t, uint64(1), r.Results[0].MetricValues[0])
+			assert.Equal(t, "Event", r.Results[0].DimensionValues[0])
+			assert.Equal(t, "some value", r.Results[0].DimensionValues[1])
+		}
+	}
+}
+
 func TestQueryFunnelStepPathAndEvent(t *testing.T) {
 	loadTestData(t, []string{
 		"funnel steps",
