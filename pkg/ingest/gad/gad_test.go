@@ -20,3 +20,18 @@ func TestGAD(t *testing.T) {
 	assert.Equal(t, "Source", r.UTMSource)
 	assert.Equal(t, "Campaign", r.UTMCampaign)
 }
+
+func TestGADDontOverwriteUTM(t *testing.T) {
+	gad := NewGAD()
+	req, _ := http.NewRequest(http.MethodGet, "https://example.com/?gad_source=Source&gad_campaignid=Campaign", nil)
+	r := &ingest.Request{
+		Request:     req,
+		UTMSource:   "UTM_Source",
+		UTMCampaign: "UTM_Campaign",
+	}
+	cancel, err := gad.Step(r)
+	assert.False(t, cancel)
+	assert.NoError(t, err)
+	assert.Equal(t, "UTM_Source", r.UTMSource)
+	assert.Equal(t, "UTM_Campaign", r.UTMCampaign)
+}

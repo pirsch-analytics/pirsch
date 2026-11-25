@@ -19,15 +19,13 @@ func NewGAD() *GAD {
 // It sets the gad_* parameters for the request.
 func (u *GAD) Step(request *ingest.Request) (bool, error) {
 	query := request.Request.URL.Query()
-	source := strings.TrimSpace(query.Get("gad_source"))
-	campaign := strings.TrimSpace(query.Get("gad_campaignid"))
 
-	if source != "" {
-		request.UTMSource = source
+	if request.UTMSource == "" {
+		request.UTMSource = strings.TrimSpace(query.Get("gad_source"))
 	}
 
-	if campaign != "" {
-		request.UTMCampaign = campaign
+	if request.UTMCampaign == "" {
+		request.UTMCampaign = strings.TrimSpace(query.Get("gad_campaignid"))
 	}
 
 	return false, nil

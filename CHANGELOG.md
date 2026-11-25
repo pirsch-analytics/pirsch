@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.11
+
+* fixed gad_* parameters overwriting UTM parameters
+
 ## 7.0.10
 
 * fixed rejection of spaces in metadata keys
