@@ -4297,11 +4297,15 @@ func TestBuildQueryFilterJSONPath(t *testing.T) {
 		"field",
 		"foo.bar",
 		"foo.0.bar.9",
+		"361",
+		"361.0",
 	}
 	result := []string{
 		`."field"`,
 		`."foo"."bar"`,
 		`."foo"[1]."bar"[10]`,
+		`."361"`,
+		`."361"[1]`,
 	}
 	q, _, _ := newQuery()
 
@@ -5348,7 +5352,7 @@ func TestQueryEventMetaFilterMixedTypes(t *testing.T) {
 	}
 
 	// the numeric value must match as well
-	q, from, to = newQuery()
+	q, _, _ = newQuery()
 	req.Filter = []request.Filter{
 		{Dimension: dimensions.EventMeta{Path: "step"}, Values: []any{"1"}},
 	}
@@ -5359,17 +5363,79 @@ func TestQueryEventMetaFilterMixedTypes(t *testing.T) {
 	}
 }
 
+func TestQueryEventMetaNumericKey(t *testing.T) {
+	db.CleanupDB(t, client)
+	_, from, to := newQuery()
+	assert.NoError(t, client.SaveEvents(context.Background(), []model.Event{
+		{
+			SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour),
+			Name:     "Flat viewed",
+			MetaData: map[string]any{"361": "some value", "event_duration": 2.5},
+		},
+		{
+			SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2),
+			Name:     "Flat viewed",
+			MetaData: map[string]any{"other": "other value", "event_duration": 1},
+		},
+	}))
+	q := NewQuery(client)
+	req := request.Request{
+		SiteID: 1,
+		Period: request.Period{
+			From:     from,
+			To:       to,
+			Timezone: time.UTC,
+		},
+		Metrics: []metrics.Metric{
+			metrics.Events{},
+			metrics.Visitors{},
+			metrics.PageViews{},
+			metrics.CR{},
+		},
+		Dimensions: []dimensions.Dimension{
+			dimensions.Event{},
+			dimensions.EventMeta{
+				Path:     "event_duration",
+				Type:     dimensions.EventMetaTypeFloat,
+				Function: dimensions.EventMetaFunctionAvg,
+			},
+			dimensions.EventMetaValue{
+				Path:       "361",
+				ColumnName: "event_meta_field",
+			},
+		},
+		Filter: []request.Filter{
+			{Dimension: dimensions.Event{}, Values: []any{"Flat viewed"}},
+			{Dimension: dimensions.EventMetaKey{}, Values: []any{"361"}},
+		},
+		OrderBy: []request.OrderBy{
+			{Metric: metrics.Visitors{}, Direction: request.DirectionDESC},
+			{Metric: metrics.Events{}, Direction: request.DirectionDESC},
+		},
+	}
+	assert.Empty(t, req.Validate())
+	r := q.Run(req)
+	assert.Empty(t, r.Meta.Errors)
+
+	if assert.Len(t, r.Results, 1) {
+		assert.Equal(t, uint64(1), r.Results[0].MetricValues[1])
+		assert.Equal(t, "Flat viewed", r.Results[0].DimensionValues[0])
+		assert.InDelta(t, 2.5, r.Results[0].DimensionValues[1], 0.001)
+		assert.Equal(t, "some value", r.Results[0].DimensionValues[2])
+	}
+}
+
 func TestQueryEventMetaKeyWithSpaces(t *testing.T) {
 	db.CleanupDB(t, client)
 	_, from, to := newQuery()
 	assert.NoError(t, client.SaveEvents(context.Background(), []model.Event{
 		{
-			Data:     model.Data{SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour)},
+			SiteID: 1, VisitorID: 1, SessionID: 1, Time: from.Add(time.Hour),
 			Name:     "Event",
 			MetaData: map[string]any{"metadata key": "some value"},
 		},
 		{
-			Data:     model.Data{SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2)},
+			SiteID: 1, VisitorID: 2, SessionID: 2, Time: from.Add(time.Hour * 2),
 			Name:     "Event",
 			MetaData: map[string]any{"other": "other value"},
 		},

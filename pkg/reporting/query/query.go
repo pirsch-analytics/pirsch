@@ -2038,8 +2038,9 @@ func (q *Query) buildQueryFilterJSONPath(value string) string {
 	parts := strings.Split(value, ".")
 	var path strings.Builder
 
-	for _, p := range parts {
-		if index, err := strconv.Atoi(p); err == nil {
+	for i, p := range parts {
+		// the root is always an object, so the first segment is a key, even if it's numeric
+		if index, err := strconv.Atoi(p); err == nil && i > 0 {
 			path.WriteString(fmt.Sprintf("[%d]", index+1))
 		} else {
 			path.WriteString(fmt.Sprintf(`."%s"`, p))

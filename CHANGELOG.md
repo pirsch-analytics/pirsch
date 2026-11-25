@@ -3,6 +3,7 @@
 ## 7.0.11
 
 * fixed gad_* parameters overwriting UTM parameters
+* fixed reading event metadata with keys that consist only of digits
 
 ## 7.0.10
 
