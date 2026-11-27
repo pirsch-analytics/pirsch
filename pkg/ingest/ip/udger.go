@@ -122,6 +122,14 @@ func (u *Udger) download() error {
 		return err
 	}
 
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if err := checkDownloadResponse(resp); err != nil {
+		return err
+	}
+
 	data, err := io.ReadAll(resp.Body)
 
 	if err != nil {
@@ -195,6 +203,10 @@ func (u *Udger) loadIPs(db *sql.DB, query string) ([]string, error) {
 		return nil, err
 	}
 
+	defer func() {
+		_ = rows.Close()
+	}()
+
 	for rows.Next() {
 		var ip string
 
@@ -215,6 +227,10 @@ func (u *Udger) loadIPRanges(db *sql.DB, query string) ([]Range, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	for rows.Next() {
 		var ipRange Range

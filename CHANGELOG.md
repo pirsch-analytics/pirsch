@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.12
+
+* added filter step based on the MaxMind GeoLite2 ASN database
+* added filter step based on open-source IP ranges
+
 ## 7.0.11
 
 * fixed gad_* parameters overwriting UTM parameters
